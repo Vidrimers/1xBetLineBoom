@@ -84,7 +84,7 @@ app.get("/api/config", (req, res) => {
   });
 });
 
-// 1. Получить все события
+// 1. Получить все турниры
 app.get("/api/events", (req, res) => {
   try {
     const events = db
@@ -255,11 +255,11 @@ app.get("/api/user/:userId/profile", (req, res) => {
 // 8. Добавить демо-данные (если база пустая)
 app.post("/api/seed-data", (req, res) => {
   try {
-    // Проверяем, есть ли уже события
+    // Проверяем, есть ли уже турниры
     const eventCount = db.prepare("SELECT COUNT(*) as count FROM events").get();
 
     if (eventCount.count === 0) {
-      // Добавляем события
+      // Добавляем турниры
       const event1 = db
         .prepare("INSERT INTO events (name, description) VALUES (?, ?)")
         .run(
@@ -271,7 +271,7 @@ app.post("/api/seed-data", (req, res) => {
         .prepare("INSERT INTO events (name, description) VALUES (?, ?)")
         .run("Чемпионат мира 2026", "Чемпионат мира по футболу");
 
-      // Добавляем матчи для первого события
+      // Добавляем матчи для первого турнира
       db.prepare(
         `
         INSERT INTO matches (event_id, team1_name, team2_name)
@@ -293,7 +293,7 @@ app.post("/api/seed-data", (req, res) => {
       `
       ).run(event1.lastInsertRowid, "Байерн Мюнхен", "ПСЖ");
 
-      // Добавляем матчи для второго события
+      // Добавляем матчи для второго турнира
       db.prepare(
         `
         INSERT INTO matches (event_id, team1_name, team2_name)
@@ -459,7 +459,7 @@ app.post("/api/admin/events", (req, res) => {
 
   // Проверяем обязательные поля
   if (!name) {
-    return res.status(400).json({ error: "Название события обязательно" });
+    return res.status(400).json({ error: "Название турнира обязательно" });
   }
 
   try {

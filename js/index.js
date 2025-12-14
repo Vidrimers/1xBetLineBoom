@@ -13,13 +13,12 @@ async function loadConfig() {
     const response = await fetch("/api/config");
     const config = await response.json();
     ADMIN_USER = config.ADMIN_USER;
-    console.log("✅ Конфиг загружен. ADMIN_USER:", ADMIN_USER);
   } catch (error) {
     console.error("❌ Ошибка при загрузке конфигурации:", error);
   }
 }
 
-// Загрузить события при загрузке страницы
+// Загрузить турниры при загрузке страницы
 document.addEventListener("DOMContentLoaded", async () => {
   // Загружаем конфиг сначала
   await loadConfig();
@@ -93,7 +92,7 @@ async function initUser() {
     authBtn.onclick = () => logoutUser();
 
     // Показываем админ-кнопки если это админ
-    if (user.username === ADMIN_USER) {
+    if (currentUser.username === ADMIN_USER) {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("adminUsersBtn").style.display = "inline-block";
     }
@@ -134,7 +133,7 @@ function logoutUser() {
     '<div class="empty-message">У вас пока нет ставок</div>';
 }
 
-// ===== СОБЫТИЯ =====
+// ===== ТУРНИРЫ =====
 
 async function loadEvents() {
   try {
@@ -506,11 +505,7 @@ function isAdmin() {
 }
 
 // Создать новое событие (только для админа)
-async function createEvent() {
-  console.log("createEvent вызвана");
-  console.log("currentUser:", currentUser);
-  console.log("ADMIN_USER:", ADMIN_USER);
-
+function openCreateEventModal() {
   if (!currentUser) {
     alert("Сначала войдите в систему");
     return;
@@ -521,13 +516,34 @@ async function createEvent() {
     return;
   }
 
-  const name = prompt("Введите название события:");
-  if (!name) return;
+  // Открываем модальное окно
+  const modal = document.getElementById("createEventModal");
+  if (modal) {
+    modal.style.display = "flex";
+  }
+}
 
-  const description = prompt("Введите описание события (опционально):");
-  const start_date = prompt(
-    "Введите дату начала (опционально, формат: YYYY-MM-DD):"
-  );
+// Закрыть модальное окно для создания турнира
+function closeCreateEventModal() {
+  const modal = document.getElementById("createEventModal");
+  modal.style.display = "none";
+  
+  // Очищаем форму
+  document.getElementById("createEventForm").reset();
+}
+
+// Отправить форму создания турнира
+async function submitCreateEvent(event) {
+  event.preventDefault();
+
+  const name = document.getElementById("eventName").value.trim();
+  const description = document.getElementById("eventDescription").value.trim();
+  const start_date = document.getElementById("eventDate").value;
+
+  if (!name) {
+    alert("Пожалуйста, введите название турнира");
+    return;
+  }
 
   try {
     const response = await fetch("/api/admin/events", {
@@ -550,11 +566,14 @@ async function createEvent() {
       return;
     }
 
-    alert(result.message);
+    // Закрываем модальное окно
+    closeCreateEventModal();
+
+    // Перезагружаем турниры
     loadEvents();
   } catch (error) {
-    console.error("Ошибка при создании события:", error);
-    alert("Ошибка при создании события");
+    console.error("Ошибка при создании турнира:", error);
+    alert("Ошибка при создании турнира");
   }
 }
 
@@ -599,8 +618,8 @@ async function deleteEvent(eventId) {
     alert(result.message);
     loadEvents();
   } catch (error) {
-    console.error("Ошибка при удалении события:", error);
-    alert("Ошибка при удалении события");
+    console.error("Ошибка при удалении турнира:", error);
+    alert("Ошибка при удалении турнира");
   }
 }
 

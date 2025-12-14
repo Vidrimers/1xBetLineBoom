@@ -25,10 +25,10 @@
           <button id="authBtn" onclick="initUser()">Начать</button>
           <button
             id="adminBtn"
-            onclick="createEvent()"
+            onclick="openCreateEventModal()"
             style="display: none; background: #ff9800"
           >
-            ➕ Новое событие
+            ➕ Добавить турнир
           </button>
           <button
             id="adminUsersBtn"
@@ -44,13 +44,13 @@
       </div>
 
       <div class="content">
-        <!-- Левая колонка: События и матчи -->
+        <!-- Левая колонка: Турниры и матчи -->
         <div>
-          <!-- События -->
+          <!-- Турниры -->
           <div class="section">
-            <h2>📅 События</h2>
+            <h2>📅 Турниры</h2>
             <div class="events-list" id="eventsList">
-              <div class="empty-message">Загружаем события...</div>
+              <div class="empty-message">Загружаем турниры...</div>
             </div>
           </div>
 
@@ -126,6 +126,36 @@
           <div id="adminUsersList" class="admin-users-list">
             <div class="empty-message">Загружаем пользователей...</div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для создания турнира -->
+    <div id="createEventModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>➕ Создать новый турнир</h2>
+          <button class="modal-close" onclick="closeCreateEventModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="createEventForm" onsubmit="submitCreateEvent(event)">
+            <div class="form-group">
+              <label for="eventName">Название турнира *</label>
+              <input type="text" id="eventName" placeholder="Например: Чемпионат мира 2026" required>
+            </div>
+            <div class="form-group">
+              <label for="eventDescription">Описание</label>
+              <textarea id="eventDescription" placeholder="Описание турнира (опционально)" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="eventDate">Дата начала</label>
+              <input type="date" id="eventDate" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="form-btn-submit">✅ Создать</button>
+              <button type="button" class="form-btn-cancel" onclick="closeCreateEventModal()">❌ Отмена</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
