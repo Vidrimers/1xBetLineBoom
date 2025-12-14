@@ -6,7 +6,7 @@
 
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   min-height: 100vh;
   padding: 20px;
 }
@@ -56,7 +56,7 @@ input[type="text"] {
   flex: 1;
   min-width: 200px;
   padding: 12px 15px;
-  border: 2px solid #667eea;
+  border: 2px solid #0066cc;
   border-radius: 5px;
   font-size: 1em;
   transition: all 0.3s ease;
@@ -64,13 +64,13 @@ input[type="text"] {
 
 input[type="text"]:focus {
   outline: none;
-  border-color: #764ba2;
-  box-shadow: 0 0 10px rgba(118, 75, 162, 0.3);
+  border-color: #ffb81c;
+  box-shadow: 0 0 10px rgba(255, 184, 28, 0.3);
 }
 
 button {
   padding: 12px 25px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
   border: none;
   border-radius: 5px;
@@ -82,7 +82,7 @@ button {
 
 button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
 }
 
 button:active {
@@ -104,10 +104,10 @@ button:active {
 }
 
 .section h2 {
-  color: #667eea;
+  color: #0066cc;
   margin-bottom: 20px;
   font-size: 1.5em;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #0066cc;
   padding-bottom: 10px;
 }
 
@@ -123,18 +123,18 @@ button:active {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0066cc;
 }
 
 .event-item:hover {
   transform: translateX(5px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
 }
 
 .event-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
 }
 
@@ -145,7 +145,7 @@ button:active {
 }
 
 .matches-table th {
-  background: #667eea;
+  background: #0066cc;
   color: white;
   padding: 12px;
   text-align: left;
@@ -169,7 +169,7 @@ button:active {
   padding: 15px;
   background: #f8f9ff;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0066cc;
 }
 
 .match-teams {
@@ -195,7 +195,7 @@ button:active {
 
 .vs-text {
   font-weight: bold;
-  color: #667eea;
+  color: #0066cc;
   font-size: 0.9em;
 }
 
@@ -207,7 +207,7 @@ button:active {
 .bet-btn {
   padding: 8px 12px;
   font-size: 0.9em;
-  background: #667eea;
+  background: #0066cc;
   color: white;
   border: none;
   border-radius: 5px;
@@ -218,7 +218,7 @@ button:active {
 }
 
 .bet-btn:hover {
-  background: #764ba2;
+  background: #001f50;
 }
 
 .bet-btn.team1 {
@@ -239,7 +239,7 @@ button:active {
   padding: 12px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0066cc;
 }
 
 .bet-item.pending {
@@ -268,7 +268,7 @@ button:active {
 
 .bet-prediction {
   padding: 3px 8px;
-  background: #667eea;
+  background: #0066cc;
   color: white;
   border-radius: 3px;
   font-size: 0.85em;
@@ -314,7 +314,7 @@ button:active {
 .tab-btn {
   padding: 12px 20px;
   background: transparent;
-  color: #667eea;
+  color: #0066cc;
   border: none;
   border-bottom: 3px solid transparent;
   cursor: pointer;
@@ -324,12 +324,12 @@ button:active {
 }
 
 .tab-btn:hover {
-  color: #764ba2;
+  color: #001f50;
 }
 
 .tab-btn.active {
-  color: #764ba2;
-  border-bottom-color: #764ba2;
+  color: #001f50;
+  border-bottom-color: #001f50;
 }
 
 .tab-content {
@@ -346,7 +346,7 @@ button:active {
   padding: 15px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0066cc;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -354,7 +354,7 @@ button:active {
 
 .participant-item:hover {
   transform: translateX(5px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
@@ -375,7 +375,7 @@ button:active {
 }
 
 .participant-bets-count {
-  background: #667eea;
+  background: #0066cc;
   color: white;
   padding: 5px 12px;
   border-radius: 20px;
@@ -393,7 +393,7 @@ button:active {
 .profile-header {
   text-align: center;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
   border-radius: 10px;
   margin-bottom: 10px;
@@ -422,7 +422,7 @@ button:active {
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   border-radius: 8px;
   text-align: center;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0066cc;
 }
 
 .stat-card.won {
@@ -447,14 +447,14 @@ button:active {
 .stat-value {
   font-size: 1.8em;
   font-weight: 700;
-  color: #667eea;
+  color: #0066cc;
 }
 
 .profile-section {
   padding: 15px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0066cc;
 }
 
 .profile-section-title {
@@ -495,12 +495,12 @@ button:active {
 .loading {
   text-align: center;
   padding: 20px;
-  color: #667eea;
+  color: #0066cc;
 }
 
 .spinner {
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #667eea;
+  border-top: 3px solid #0066cc;
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -549,8 +549,8 @@ button:active {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 2px solid #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: 2px solid #0066cc;
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
   border-radius: 10px 10px 0 0;
 }
@@ -596,7 +596,7 @@ button:active {
   padding: 15px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0066cc;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -604,7 +604,7 @@ button:active {
 }
 
 .admin-user-item:hover {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   transform: translateX(5px);
@@ -689,7 +689,7 @@ button:active {
 .form-group input[type="date"]:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0066cc;
   box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
 }
 

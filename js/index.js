@@ -527,7 +527,7 @@ function openCreateEventModal() {
 function closeCreateEventModal() {
   const modal = document.getElementById("createEventModal");
   modal.style.display = "none";
-  
+
   // Очищаем форму
   document.getElementById("createEventForm").reset();
 }
