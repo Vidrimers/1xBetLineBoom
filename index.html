@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1xBetLineBoom</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🎯 1xBetLineBoom</h1>
+      </header>
+
+      <!-- Раздел ввода имени пользователя -->
+      <div class="user-section">
+        <div class="user-input">
+          <input
+            type="text"
+            id="username"
+            placeholder="Введите ваше имя для начала"
+            value="Игрок"
+          />
+          <button id="authBtn" onclick="initUser()">Начать</button>
+        </div>
+        <p id="userStatus" style="margin-top: 10px; color: #999; display: none">
+          Вы вошли как: <strong id="usernameBold"></strong>
+        </p>
+      </div>
+
+      <div class="content">
+        <!-- Левая колонка: События и матчи -->
+        <div>
+          <!-- События -->
+          <div class="section">
+            <h2>📅 События</h2>
+            <div class="events-list" id="eventsList">
+              <div class="empty-message">Загружаем события...</div>
+            </div>
+          </div>
+
+          <!-- Матчи -->
+          <div class="section" style="margin-top: 20px">
+            <h2>⚽ Матчи</h2>
+            <div id="matchesContainer">
+              <div class="empty-message">
+                Выберите событие для просмотра матчей
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая колонка: Вкладки Мои ставки / Участники -->
+        <div>
+          <!-- Вкладки -->
+          <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('bets')">
+              💰 Мои ставки
+            </button>
+            <button class="tab-btn" onclick="switchTab('participants')">
+              👥 Участники
+            </button>
+            <button class="tab-btn" onclick="switchTab('profile')">
+              👤 Профиль
+            </button>
+          </div>
+
+          <!-- Содержимое вкладок -->
+          <div class="section tab-content" id="bets-tab">
+            <h2>💰 Мои ставки</h2>
+            <div class="my-bets-list" id="myBetsList">
+              <div class="empty-message">У вас пока нет ставок</div>
+            </div>
+          </div>
+
+          <div
+            class="section tab-content"
+            id="participants-tab"
+            style="display: none"
+          >
+            <h2>👥 Участники</h2>
+            <div class="participants-list" id="participantsList">
+              <div class="empty-message">Загружаем участников...</div>
+            </div>
+          </div>
+
+          <div
+            class="section tab-content"
+            id="profile-tab"
+            style="display: none"
+          >
+            <h2>👤 Мой профиль</h2>
+            <div class="profile-container" id="profileContainer">
+              <div class="empty-message">Загружаем профиль...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/index.js"></script>
+  </body>
+</html>
