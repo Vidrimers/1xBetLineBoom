@@ -9,7 +9,7 @@
   <body>
     <div class="container">
       <header>
-        <img src="img/logo_nobg.png" alt="logo">
+        <img src="img/logo_nobg.png" alt="logo" />
         <h1>1xBetLineBoom</h1>
       </header>
 
@@ -23,6 +23,13 @@
             value="Игрок"
           />
           <button id="authBtn" onclick="initUser()">Начать</button>
+          <button
+            id="adminBtn"
+            onclick="createEvent()"
+            style="display: none; background: #ff9800"
+          >
+            ➕ Новое событие
+          </button>
         </div>
         <p id="userStatus" style="margin-top: 10px; color: #999; display: none">
           Вы вошли как: <strong id="usernameBold"></strong>

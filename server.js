@@ -76,6 +76,14 @@ db.exec(`
 
 // ===== API ENDPOINTS =====
 
+// 0. Получить конфигурацию (включая ADMIN_USER)
+app.get("/api/config", (req, res) => {
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+  res.json({
+    ADMIN_USER: ADMIN_USER || null,
+  });
+});
+
 // 1. Получить все события
 app.get("/api/events", (req, res) => {
   try {
@@ -432,6 +440,84 @@ app.post("/api/football-data/sync-results", async (req, res) => {
     }
 
     res.json({ synced, message: `Синхронизировано ${synced} матчей` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== АДМИН ФУНКЦИИ =====
+
+// POST /api/admin/events - Создать новое событие (только для админа)
+app.post("/api/admin/events", (req, res) => {
+  const { username, name, description, start_date } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  // Проверяем обязательные поля
+  if (!name) {
+    return res.status(400).json({ error: "Название события обязательно" });
+  }
+
+  try {
+    const result = db
+      .prepare(
+        `
+      INSERT INTO events (name, description, start_date)
+      VALUES (?, ?, ?)
+    `
+      )
+      .run(name, description || null, start_date || null);
+
+    res.json({
+      id: result.lastInsertRowid,
+      name,
+      description,
+      start_date,
+      message: "Событие успешно создано",
+    });
+  } catch (error) {
+    if (error.message.includes("UNIQUE constraint failed")) {
+      res
+        .status(400)
+        .json({ error: "Событие с таким названием уже существует" });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+// DELETE /api/admin/events/:eventId - Удалить событие (только для админа)
+app.delete("/api/admin/events/:eventId", (req, res) => {
+  const { eventId } = req.params;
+  const username = req.body.username;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Удаляем связанные ставки
+    db.prepare(
+      "DELETE FROM bets WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)"
+    ).run(eventId);
+
+    // Удаляем связанные матчи
+    db.prepare("DELETE FROM matches WHERE event_id = ?").run(eventId);
+
+    // Удаляем само событие
+    const result = db.prepare("DELETE FROM events WHERE id = ?").run(eventId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    res.json({ message: "Событие успешно удалено" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

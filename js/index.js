@@ -3,11 +3,27 @@ let currentUser = null;
 let currentEventId = null;
 let events = [];
 let matches = [];
+let ADMIN_USER = null;
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 
+// Загрузить конфигурацию сервера
+async function loadConfig() {
+  try {
+    const response = await fetch("/api/config");
+    const config = await response.json();
+    ADMIN_USER = config.ADMIN_USER;
+    console.log("✅ Конфиг загружен. ADMIN_USER:", ADMIN_USER);
+  } catch (error) {
+    console.error("❌ Ошибка при загрузке конфигурации:", error);
+  }
+}
+
 // Загрузить события при загрузке страницы
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Загружаем конфиг сначала
+  await loadConfig();
+
   // Проверяем, есть ли пользователь в localStorage
   const savedUser = localStorage.getItem("currentUser");
 
@@ -26,6 +42,11 @@ document.addEventListener("DOMContentLoaded", () => {
     authBtn.textContent = "Выход";
     authBtn.style.background = "#F44336";
     authBtn.onclick = () => logoutUser();
+
+    // Показываем админ-кнопку если это админ
+    if (user.username === ADMIN_USER) {
+      document.getElementById("adminBtn").style.display = "inline-block";
+    }
 
     loadEvents();
     loadMyBets();
@@ -70,6 +91,11 @@ async function initUser() {
     authBtn.style.background = "#F44336";
     authBtn.onclick = () => logoutUser();
 
+    // Показываем админ-кнопку если это админ
+    if (user.username === ADMIN_USER) {
+      document.getElementById("adminBtn").style.display = "inline-block";
+    }
+
     // Загружаем ставки пользователя
     loadMyBets();
 
@@ -92,6 +118,9 @@ function logoutUser() {
   document.getElementById("userStatus").style.display = "none";
   document.getElementById("username").value = "";
   document.getElementById("username").disabled = false;
+
+  // Скрываем админ-кнопку
+  document.getElementById("adminBtn").style.display = "none";
 
   // Меняем кнопку обратно на "Начать"
   const authBtn = document.getElementById("authBtn");
@@ -458,5 +487,102 @@ async function seedData() {
   } catch (error) {
     console.error("Ошибка при загрузке демо-данных:", error);
     alert("Ошибка при загрузке демо-данных");
+  }
+}
+
+// ===== АДМИН-ФУНКЦИИ =====
+
+// Проверить, является ли пользователь админом
+function isAdmin() {
+  return currentUser && currentUser.username === ADMIN_USER;
+}
+
+// Создать новое событие (только для админа)
+async function createEvent() {
+  console.log("createEvent вызвана");
+  console.log("currentUser:", currentUser);
+  console.log("ADMIN_USER:", ADMIN_USER);
+
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  if (!isAdmin()) {
+    alert("У вас нет прав для создания событий");
+    return;
+  }
+
+  const name = prompt("Введите название события:");
+  if (!name) return;
+
+  const description = prompt("Введите описание события (опционально):");
+  const start_date = prompt(
+    "Введите дату начала (опционально, формат: YYYY-MM-DD):"
+  );
+
+  try {
+    const response = await fetch("/api/admin/events", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+        name,
+        description: description || null,
+        start_date: start_date || null,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    alert(result.message);
+    loadEvents();
+  } catch (error) {
+    console.error("Ошибка при создании события:", error);
+    alert("Ошибка при создании события");
+  }
+}
+
+// Удалить событие (только для админа)
+async function deleteEvent(eventId) {
+  if (!isAdmin()) {
+    alert("У вас нет прав для удаления событий");
+    return;
+  }
+
+  if (!confirm("Вы уверены, что хотите удалить это событие?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    alert(result.message);
+    loadEvents();
+  } catch (error) {
+    console.error("Ошибка при удалении события:", error);
+    alert("Ошибка при удалении события");
   }
 }
