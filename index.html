@@ -45,23 +45,21 @@
 
       <div class="content">
         <!-- Вкладки -->
-        <div style="width: 100%;">
-          <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('allbets')">
-              💳 Ставки
-            </button>
-            <button class="tab-btn" onclick="switchTab('participants')">
-              👥 Участники
-            </button>
-            <button class="tab-btn" onclick="switchTab('profile')">
-              👤 Профиль
-            </button>
-          </div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('allbets')">
+            💳 Ставки
+          </button>
+          <button class="tab-btn" onclick="switchTab('participants')">
+            👥 Участники
+          </button>
+          <button class="tab-btn" onclick="switchTab('profile')">
+            👤 Профиль
+          </button>
         </div>
       </div>
 
       <!-- Содержимое вкладки Ставки (двухколонная структура) -->
-      <div class="content" id="allbets-content">
+      <div id="allbets-content">
         <!-- Левая колонка: Турниры и матчи -->
         <div>
           <!-- Турниры -->
@@ -95,26 +93,21 @@
       </div>
 
       <!-- Содержимое вкладки Участники -->
-      <div class="content" id="participants-content" style="display: none">
-        <div style="width: 100%;">
-          <div class="section">
-            <h2>👥 Участники</h2>
-            <div class="participants-list" id="participantsList">
-              <div class="empty-message">Загружаем участников...</div>
-            </div>
+      <div id="participants-content" style="display: none">
+        <div class="section">
+          <h2>👥 Участники</h2>
+          <div class="participants-list" id="participantsList">
+            <div class="empty-message">Загружаем участников...</div>
           </div>
         </div>
       </div>
 
       <!-- Содержимое вкладки Профиль -->
-      <div class="content" id="profile-content" style="display: none">
-        <div style="width: 100%;">
-          <div class="section">
-            <h2>👤 Мой профиль</h2>
-            <div class="profile-container" id="profileContainer">
-              <div class="empty-message">Загружаем профиль...</div>
-            </div>
-          </div>
+      <div id="profile-content" style="display: none">
+        <div class="section">
+          <h2>👤 Мой профиль</h2>
+          <div class="profile-container" id="profileContainer">
+            <div class="empty-message">Загружаем профиль...</div>
           </div>
         </div>
       </div>

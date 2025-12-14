@@ -352,7 +352,7 @@ function switchTab(tabName) {
 
   // Показываем нужное содержимое и отмечаем кнопку как активную
   if (tabName === "allbets") {
-    document.getElementById("allbets-content").style.display = "flex";
+    document.getElementById("allbets-content").style.display = "grid";
     document.querySelectorAll(".tab-btn")[0].classList.add("active");
     loadEvents();
     loadMatches();
@@ -367,7 +367,6 @@ function switchTab(tabName) {
     loadProfile();
   }
 }
-
 // Загрузить всех участников с их ставками
 async function loadParticipants() {
   try {
