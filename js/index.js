@@ -58,12 +58,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ===== ПОЛЬЗОВАТЕЛЬ =====
 
 async function initUser() {
-  const username = document.getElementById("username").value.trim();
+  let username = document.getElementById("username").value.trim();
 
   if (!username) {
     alert("Пожалуйста, введите имя");
     return;
   }
+
+  // Преобразуем первую букву в заглавную
+  username = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
+
+  // Обновляем input с правильным логином
+  document.getElementById("username").value = username;
 
   try {
     const response = await fetch("/api/user", {

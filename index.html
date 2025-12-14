@@ -19,8 +19,8 @@
           <input
             type="text"
             id="username"
-            placeholder="Как тебя зовут, зайка?"
-            value="Игрок"
+            placeholder="Логин"
+            onkeypress="if(event.key === 'Enter') initUser()"
           />
           <button id="authBtn" onclick="initUser()">Начать</button>
           <button
@@ -38,7 +38,15 @@
             👥 Управление пользователями
           </button>
         </div>
-        <p id="userStatus" style="margin-top: 10px; color: #999; text-align: center; display: none">
+        <p
+          id="userStatus"
+          style="
+            margin-top: 10px;
+            color: #999;
+            text-align: center;
+            display: none;
+          "
+        >
           Вы вошли как: <strong id="usernameBold"></strong>
         </p>
       </div>
