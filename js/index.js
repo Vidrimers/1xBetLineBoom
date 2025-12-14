@@ -340,39 +340,30 @@ function displayMyBets(bets) {
 // ===== ВКЛАДКИ =====
 
 function switchTab(tabName) {
-  // Скрываем все вкладки
-  document.getElementById("allbets-tab").style.display = "none";
-  document.getElementById("bets-tab").style.display = "none";
-  document.getElementById("participants-tab").style.display = "none";
-  document.getElementById("profile-tab").style.display = "none";
+  // Скрываем все содержимое вкладок
+  document.getElementById("allbets-content").style.display = "none";
+  document.getElementById("participants-content").style.display = "none";
+  document.getElementById("profile-content").style.display = "none";
 
-  // Удаляем класс active со всех кнопок
+  // Удаляем активный класс со всех кнопок вкладок
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.remove("active");
   });
 
-  // Показываем выбранную вкладку
+  // Показываем нужное содержимое и отмечаем кнопку как активную
   if (tabName === "allbets") {
-    document.getElementById("allbets-tab").style.display = "block";
-    document
-      .querySelector("button[onclick=\"switchTab('allbets')\"]")
-      .classList.add("active");
-  } else if (tabName === "bets") {
-    document.getElementById("bets-tab").style.display = "block";
-    document
-      .querySelector("button[onclick=\"switchTab('bets')\"]")
-      .classList.add("active");
+    document.getElementById("allbets-content").style.display = "flex";
+    document.querySelectorAll(".tab-btn")[0].classList.add("active");
+    loadEvents();
+    loadMatches();
+    loadMyBets();
   } else if (tabName === "participants") {
-    document.getElementById("participants-tab").style.display = "block";
-    document
-      .querySelector("button[onclick=\"switchTab('participants')\"]")
-      .classList.add("active");
+    document.getElementById("participants-content").style.display = "flex";
+    document.querySelectorAll(".tab-btn")[1].classList.add("active");
     loadParticipants();
   } else if (tabName === "profile") {
-    document.getElementById("profile-tab").style.display = "block";
-    document
-      .querySelector("button[onclick=\"switchTab('profile')\"]")
-      .classList.add("active");
+    document.getElementById("profile-content").style.display = "flex";
+    document.querySelectorAll(".tab-btn")[2].classList.add("active");
     loadProfile();
   }
 }

@@ -90,6 +90,12 @@ button:active {
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.content > div:not(:first-child) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
@@ -309,6 +315,21 @@ button:active {
   gap: 10px;
   margin-bottom: 15px;
   border-bottom: 2px solid #e9ecef;
+  width: 100%;
+}
+
+#allbets-content,
+#participants-content,
+#profile-content {
+  display: none;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#allbets-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
 .tab-btn {

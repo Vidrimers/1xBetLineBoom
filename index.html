@@ -44,11 +44,29 @@
       </div>
 
       <div class="content">
+        <!-- Вкладки -->
+        <div style="width: 100%;">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('allbets')">
+              💳 Ставки
+            </button>
+            <button class="tab-btn" onclick="switchTab('participants')">
+              👥 Участники
+            </button>
+            <button class="tab-btn" onclick="switchTab('profile')">
+              👤 Профиль
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Содержимое вкладки Ставки (двухколонная структура) -->
+      <div class="content" id="allbets-content">
         <!-- Левая колонка: Турниры и матчи -->
         <div>
           <!-- Турниры -->
           <div class="section">
-            <h2>📅 Турниры</h2>
+            <h2>� Турниры</h2>
             <div class="events-list" id="eventsList">
               <div class="empty-message">Загружаем турниры...</div>
             </div>
@@ -65,58 +83,38 @@
           </div>
         </div>
 
-        <!-- Правая колонка: Вкладки Ставки / ТЕСТИК / Участники / Профиль -->
+        <!-- Правая колонка: ТЕСТИК -->
         <div>
-          <!-- Вкладки -->
-          <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('allbets')">
-              💳 Ставки
-            </button>
-            <button class="tab-btn" onclick="switchTab('bets')">
-              💰 ТЕСТИК
-            </button>
-            <button class="tab-btn" onclick="switchTab('participants')">
-              👥 Участники
-            </button>
-            <button class="tab-btn" onclick="switchTab('profile')">
-              👤 Профиль
-            </button>
-          </div>
-
-          <!-- Вкладка Ставки (пустая) -->
-          <div class="section tab-content" id="allbets-tab">
-            <h2>💳 Ставки</h2>
-            <div class="empty-message">Содержимое вкладки Ставки</div>
-          </div>
-
-          <!-- Содержимое вкладок -->
-          <div class="section tab-content" id="bets-tab" style="display: none">
+          <div class="section">
             <h2>💰 ТЕСТИК</h2>
             <div class="my-bets-list" id="myBetsList">
               <div class="empty-message">У вас пока нет ставок</div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div
-            class="section tab-content"
-            id="participants-tab"
-            style="display: none"
-          >
+      <!-- Содержимое вкладки Участники -->
+      <div class="content" id="participants-content" style="display: none">
+        <div style="width: 100%;">
+          <div class="section">
             <h2>👥 Участники</h2>
             <div class="participants-list" id="participantsList">
               <div class="empty-message">Загружаем участников...</div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div
-            class="section tab-content"
-            id="profile-tab"
-            style="display: none"
-          >
+      <!-- Содержимое вкладки Профиль -->
+      <div class="content" id="profile-content" style="display: none">
+        <div style="width: 100%;">
+          <div class="section">
             <h2>👤 Мой профиль</h2>
             <div class="profile-container" id="profileContainer">
               <div class="empty-message">Загружаем профиль...</div>
             </div>
+          </div>
           </div>
         </div>
       </div>
