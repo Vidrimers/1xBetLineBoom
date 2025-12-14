@@ -43,9 +43,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     authBtn.style.background = "#F44336";
     authBtn.onclick = () => logoutUser();
 
-    // Показываем админ-кнопку если это админ
+    // Показываем админ-кнопки если это админ
     if (user.username === ADMIN_USER) {
       document.getElementById("adminBtn").style.display = "inline-block";
+      document.getElementById("adminUsersBtn").style.display = "inline-block";
     }
 
     loadEvents();
@@ -91,15 +92,14 @@ async function initUser() {
     authBtn.style.background = "#F44336";
     authBtn.onclick = () => logoutUser();
 
-    // Показываем админ-кнопку если это админ
+    // Показываем админ-кнопки если это админ
     if (user.username === ADMIN_USER) {
       document.getElementById("adminBtn").style.display = "inline-block";
+      document.getElementById("adminUsersBtn").style.display = "inline-block";
     }
 
     // Загружаем ставки пользователя
     loadMyBets();
-
-    alert(`✅ Добро пожаловать, ${user.username}!`);
   } catch (error) {
     console.error("Ошибка при входе:", error);
     alert("Ошибка при входе");
@@ -119,8 +119,9 @@ function logoutUser() {
   document.getElementById("username").value = "";
   document.getElementById("username").disabled = false;
 
-  // Скрываем админ-кнопку
+  // Скрываем админ-кнопки
   document.getElementById("adminBtn").style.display = "none";
+  document.getElementById("adminUsersBtn").style.display = "none";
 
   // Меняем кнопку обратно на "Начать"
   const authBtn = document.getElementById("authBtn");
@@ -131,8 +132,6 @@ function logoutUser() {
   // Очищаем ставки
   document.getElementById("myBetsList").innerHTML =
     '<div class="empty-message">У вас пока нет ставок</div>';
-
-  alert("👋 Вы вышли из аккаунта");
 }
 
 // ===== СОБЫТИЯ =====
@@ -161,13 +160,22 @@ function displayEvents() {
   eventsList.innerHTML = events
     .map(
       (event) => `
-        <div class="event-item ${
-          event.id === currentEventId ? "active" : ""
-        }" onclick="selectEvent(${event.id}, '${event.name}')">
-            <strong>${event.name}</strong>
-            <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
-              event.description || "Нет описания"
-            }</p>
+        <div class="event-item ${event.id === currentEventId ? "active" : ""}">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div onclick="selectEvent(${event.id}, '${
+        event.name
+      }')" style="flex: 1; cursor: pointer;">
+              <strong>${event.name}</strong>
+              <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
+                event.description || "Нет описания"
+              }</p>
+            </div>
+            ${
+              isAdmin()
+                ? `<button class="event-delete-btn" onclick="deleteEvent(${event.id})" style="background: #f44336; padding: 5px 10px; margin-left: 10px; font-size: 0.8em;">✕ Удалить</button>`
+                : ""
+            }
+          </div>
         </div>
     `
     )
@@ -552,6 +560,15 @@ async function createEvent() {
 
 // Удалить событие (только для админа)
 async function deleteEvent(eventId) {
+  console.log("deleteEvent вызвана для eventId:", eventId);
+  console.log("currentUser:", currentUser);
+  console.log("isAdmin():", isAdmin());
+
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
   if (!isAdmin()) {
     alert("У вас нет прав для удаления событий");
     return;
@@ -584,5 +601,194 @@ async function deleteEvent(eventId) {
   } catch (error) {
     console.error("Ошибка при удалении события:", error);
     alert("Ошибка при удалении события");
+  }
+}
+
+// ===== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (ДЛЯ АДМИНА) =====
+
+let adminUsers = [];
+
+// Загрузить список всех пользователей
+async function loadAdminUsers() {
+  if (!isAdmin()) {
+    alert("У вас нет прав для просмотра пользователей");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/admin/users?username=${currentUser.username}`
+    );
+    adminUsers = await response.json();
+    displayAdminUsersModal();
+    document.getElementById("adminModal").style.display = "flex";
+  } catch (error) {
+    console.error("Ошибка при загрузке пользователей:", error);
+    alert("Ошибка при загрузке пользователей");
+  }
+}
+
+// Закрыть модальное окно
+function closeAdminModal() {
+  document.getElementById("adminModal").style.display = "none";
+}
+
+// Закрыть модальное окно при клике вне его
+window.onclick = function (event) {
+  const modal = document.getElementById("adminModal");
+  if (event.target === modal) {
+    modal.style.display = "none";
+  }
+};
+
+// Отобразить список пользователей в модальном окне
+function displayAdminUsersModal() {
+  const adminUsersList = document.getElementById("adminUsersList");
+
+  if (adminUsers.length === 0) {
+    adminUsersList.innerHTML =
+      '<div class="empty-message">Пользователей не найдено</div>';
+    return;
+  }
+
+  adminUsersList.innerHTML = adminUsers
+    .map(
+      (user) => `
+    <div class="admin-user-item">
+      <div class="admin-user-info">
+        <div class="admin-user-name">${user.username}</div>
+        <div class="admin-user-stats">
+          Ставок: ${user.total_bets || 0} | 
+          Выиграл: ${user.won_bets || 0} | 
+          Проиграл: ${user.lost_bets || 0}
+        </div>
+      </div>
+      <div class="admin-user-actions">
+        <button class="admin-btn admin-btn-rename" onclick="renameUser(${
+          user.id
+        }, '${user.username}')">✏️ Переименовать</button>
+        <button class="admin-btn admin-btn-delete" onclick="deleteUser(${
+          user.id
+        }, '${user.username}')">🗑️ Удалить</button>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+}
+
+// Отобразить список пользователей в отдельном окне
+function displayAdminUsers() {
+  const usersHTML = adminUsers
+    .map(
+      (user) => `
+    <div style="padding: 12px; background: #f0f0f0; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <strong>${user.username}</strong>
+          <p style="font-size: 0.85em; color: #999; margin: 3px 0;">Всего ставок: ${
+            user.total_bets || 0
+          } | Выиграл: ${user.won_bets || 0} | Проиграл: ${
+        user.lost_bets || 0
+      }</p>
+        </div>
+        <div style="display: flex; gap: 5px;">
+          <button onclick="renameUser(${user.id}, '${
+        user.username
+      }')" style="background: #ff9800; padding: 5px 10px; font-size: 0.8em;">✏️ Переименовать</button>
+          <button onclick="deleteUser(${user.id}, '${
+        user.username
+      }')" style="background: #f44336; padding: 5px 10px; font-size: 0.8em;">🗑️ Удалить</button>
+        </div>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+
+  alert(
+    "Список пользователей:\n\n" +
+      adminUsers
+        .map((u) => `${u.username} (Ставок: ${u.total_bets})`)
+        .join("\n")
+  );
+}
+
+// Переименовать пользователя
+async function renameUser(userId, currentUsername) {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  const newUsername = prompt(`Новое имя для ${currentUsername}:`);
+  if (!newUsername || newUsername.trim() === "") {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/users/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+        newUsername: newUsername.trim(),
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    alert(result.message);
+    loadAdminUsers();
+  } catch (error) {
+    console.error("Ошибка при переименовании:", error);
+    alert("Ошибка при переименовании пользователя");
+  }
+}
+
+// Удалить пользователя
+async function deleteUser(userId, username) {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  if (
+    !confirm(
+      `Вы уверены, что хотите удалить пользователя "${username}"?\nВсе его ставки будут удалены!`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/users/${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    loadAdminUsers();
+  } catch (error) {
+    console.error("Ошибка при удалении:", error);
+    alert("Ошибка при удалении пользователя");
   }
 }

@@ -523,6 +523,118 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
   }
 });
 
+// GET /api/admin/users - Получить всех пользователей (только для админа)
+app.get("/api/admin/users", (req, res) => {
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+  const username = req.query.username;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    const users = db
+      .prepare(
+        `
+      SELECT 
+        u.id,
+        u.username,
+        u.created_at,
+        COUNT(b.id) as total_bets,
+        SUM(CASE WHEN b.status = 'won' THEN 1 ELSE 0 END) as won_bets,
+        SUM(CASE WHEN b.status = 'lost' THEN 1 ELSE 0 END) as lost_bets
+      FROM users u
+      LEFT JOIN bets b ON u.id = b.user_id
+      GROUP BY u.id, u.username
+      ORDER BY u.created_at DESC
+    `
+      )
+      .all();
+
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/users/:userId - Переименовать пользователя (только для админа)
+app.put("/api/admin/users/:userId", (req, res) => {
+  const { userId } = req.params;
+  const { username: adminUsername, newUsername } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (adminUsername !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  // Проверяем обязательные поля
+  if (!newUsername || newUsername.trim() === "") {
+    return res
+      .status(400)
+      .json({ error: "Новое имя пользователя обязательно" });
+  }
+
+  try {
+    // Проверяем, не занято ли имя
+    const existing = db
+      .prepare("SELECT id FROM users WHERE username = ?")
+      .get(newUsername);
+    if (existing) {
+      return res.status(400).json({ error: "Это имя уже занято" });
+    }
+
+    const result = db
+      .prepare("UPDATE users SET username = ? WHERE id = ?")
+      .run(newUsername, userId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({ message: "Пользователь успешно переименован", newUsername });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/users/:userId - Удалить пользователя (только для админа)
+app.delete("/api/admin/users/:userId", (req, res) => {
+  const { userId } = req.params;
+  const { username: adminUsername } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (adminUsername !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  // Не даем удалить самого админа
+  const userToDelete = db
+    .prepare("SELECT username FROM users WHERE id = ?")
+    .get(userId);
+  if (userToDelete && userToDelete.username === ADMIN_USER) {
+    return res.status(403).json({ error: "Нельзя удалить админа" });
+  }
+
+  try {
+    // Удаляем все ставки пользователя
+    db.prepare("DELETE FROM bets WHERE user_id = ?").run(userId);
+
+    // Удаляем самого пользователя
+    const result = db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({ message: "Пользователь успешно удален" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Запуск сервера
 app.listen(PORT, () => {
   console.log(

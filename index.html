@@ -30,6 +30,13 @@
           >
             ➕ Новое событие
           </button>
+          <button
+            id="adminUsersBtn"
+            onclick="loadAdminUsers()"
+            style="display: none; background: #2196f3"
+          >
+            👥 Управление пользователями
+          </button>
         </div>
         <p id="userStatus" style="margin-top: 10px; color: #999; display: none">
           Вы вошли как: <strong id="usernameBold"></strong>
@@ -101,6 +108,23 @@
             <div class="profile-container" id="profileContainer">
               <div class="empty-message">Загружаем профиль...</div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для управления пользователями -->
+    <div id="adminModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>👥 Управление пользователями</h2>
+          <button class="modal-close" onclick="closeAdminModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="adminUsersList" class="admin-users-list">
+            <div class="empty-message">Загружаем пользователей...</div>
           </div>
         </div>
       </div>
