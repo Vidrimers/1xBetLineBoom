@@ -65,11 +65,14 @@
           </div>
         </div>
 
-        <!-- Правая колонка: Вкладки ТЕСТИК / Участники -->
+        <!-- Правая колонка: Вкладки Ставки / ТЕСТИК / Участники / Профиль -->
         <div>
           <!-- Вкладки -->
           <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('bets')">
+            <button class="tab-btn active" onclick="switchTab('allbets')">
+              💳 Ставки
+            </button>
+            <button class="tab-btn" onclick="switchTab('bets')">
               💰 ТЕСТИК
             </button>
             <button class="tab-btn" onclick="switchTab('participants')">
@@ -80,8 +83,14 @@
             </button>
           </div>
 
+          <!-- Вкладка Ставки (пустая) -->
+          <div class="section tab-content" id="allbets-tab">
+            <h2>💳 Ставки</h2>
+            <div class="empty-message">Содержимое вкладки Ставки</div>
+          </div>
+
           <!-- Содержимое вкладок -->
-          <div class="section tab-content" id="bets-tab">
+          <div class="section tab-content" id="bets-tab" style="display: none">
             <h2>💰 ТЕСТИК</h2>
             <div class="my-bets-list" id="myBetsList">
               <div class="empty-message">У вас пока нет ставок</div>

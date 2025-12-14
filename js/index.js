@@ -341,6 +341,7 @@ function displayMyBets(bets) {
 
 function switchTab(tabName) {
   // Скрываем все вкладки
+  document.getElementById("allbets-tab").style.display = "none";
   document.getElementById("bets-tab").style.display = "none";
   document.getElementById("participants-tab").style.display = "none";
   document.getElementById("profile-tab").style.display = "none";
@@ -351,7 +352,12 @@ function switchTab(tabName) {
   });
 
   // Показываем выбранную вкладку
-  if (tabName === "bets") {
+  if (tabName === "allbets") {
+    document.getElementById("allbets-tab").style.display = "block";
+    document
+      .querySelector("button[onclick=\"switchTab('allbets')\"]")
+      .classList.add("active");
+  } else if (tabName === "bets") {
     document.getElementById("bets-tab").style.display = "block";
     document
       .querySelector("button[onclick=\"switchTab('bets')\"]")
