@@ -42,7 +42,7 @@ header h1 {
   background: rgba(255, 255, 255, 0.95);
   padding: 20px;
   border-radius: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
@@ -317,7 +317,7 @@ button:active {
   width: 100%;
   background: rgba(255, 255, 255, 0.95);
   padding: 0 25px;
-  border-radius: 10px 10px 0 0;
+  border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 

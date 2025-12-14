@@ -38,7 +38,7 @@
             👥 Управление пользователями
           </button>
         </div>
-        <p id="userStatus" style="margin-top: 10px; color: #999; display: none">
+        <p id="userStatus" style="margin-top: 10px; color: #999; text-align: center; display: none">
           Вы вошли как: <strong id="usernameBold"></strong>
         </p>
       </div>
@@ -46,13 +46,16 @@
       <!-- Вкладки -->
       <div class="tabs content">
         <button class="tab-btn active" onclick="switchTab('allbets')">
-          💳 Ставки
+          💰 Ставки
         </button>
         <button class="tab-btn" onclick="switchTab('participants')">
           👥 Участники
         </button>
         <button class="tab-btn" onclick="switchTab('profile')">
           👤 Профиль
+        </button>
+        <button class="tab-btn" onclick="switchTab('settings')">
+          ⚙️ Настройки
         </button>
       </div>
 
@@ -114,6 +117,20 @@
           <h2>👤 Мой профиль</h2>
           <div class="profile-container" id="profileContainer">
             <div class="empty-message">Загружаем профиль...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Содержимое вкладки Настройки -->
+      <div
+        class="content"
+        id="settings-content"
+        style="display: none; margin-top: -5px"
+      >
+        <div class="section">
+          <h2>⚙️ Настройки</h2>
+          <div class="settings-container" id="settingsContainer">
+            <div class="empty-message">Здесь будут настройки приложения</div>
           </div>
         </div>
       </div>

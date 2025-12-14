@@ -344,6 +344,7 @@ function switchTab(tabName) {
   document.getElementById("allbets-content").style.display = "none";
   document.getElementById("participants-content").style.display = "none";
   document.getElementById("profile-content").style.display = "none";
+  document.getElementById("settings-content").style.display = "none";
 
   // Удаляем активный класс со всех кнопок вкладок
   document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -365,6 +366,10 @@ function switchTab(tabName) {
     document.getElementById("profile-content").style.display = "flex";
     document.querySelectorAll(".tab-btn")[2].classList.add("active");
     loadProfile();
+  } else if (tabName === "settings") {
+    document.getElementById("settings-content").style.display = "flex";
+    document.querySelectorAll(".tab-btn")[3].classList.add("active");
+    loadSettings();
   }
 }
 // Загрузить всех участников с их ставками
@@ -806,4 +811,10 @@ async function deleteUser(userId, username) {
     console.error("Ошибка при удалении:", error);
     alert("Ошибка при удалении пользователя");
   }
+}
+
+// Загрузить настройки
+function loadSettings() {
+  // Заглушка для функции загрузки настроек
+  // Здесь можно добавить загрузку пользовательских настроек
 }
