@@ -245,12 +245,12 @@ function displayEvents() {
                 ? `<div style="display: flex; gap: 5px; margin-left: 10px; flex-wrap: wrap; justify-content: flex-end;">
                   ${
                     event.locked_reason
-                      ? `<button onclick="unlockEvent(${event.id})" style="background: #4caf50; padding: 5px 10px; font-size: 0.8em; border: none; color: white; border-radius: 3px; cursor: pointer;">🔓 Разблокировать</button>`
-                      : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: #ff9800; padding: 5px 10px; font-size: 0.8em; border: none; color: white; border-radius: 3px; cursor: pointer;">🔒 Заблокировать</button>`
+                      ? `<button onclick="unlockEvent(${event.id})" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #4caf50; color: #4caf50; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.1)'" onmouseout="this.style.background='transparent'">🔓 Разблокировать</button>`
+                      : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #ff9800; color: #ff9800; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.1)'" onmouseout="this.style.background='transparent'">🔒 Заблокировать</button>`
                   }
                   <button class="event-delete-btn" onclick="deleteEvent(${
                     event.id
-                  })" style="background: #f44336; padding: 5px 10px; font-size: 0.8em; border: none; color: white; border-radius: 3px; cursor: pointer;">✕ Удалить</button>
+                  })" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #f44336; color: #f44336; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.1)'" onmouseout="this.style.background='transparent'">✕ Удалить</button>
                 </div>`
                 : ""
             }
