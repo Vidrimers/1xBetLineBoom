@@ -268,7 +268,13 @@ function displayMatches() {
                   match.match_date
                     ? `<div style="text-align: center; font-size: 0.85em; color: #999; margin: 10px auto;">${new Date(
                         match.match_date
-                      ).toLocaleString("ru-RU")}</div>`
+                      ).toLocaleString("ru-RU", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                      })}</div>`
                     : ""
                 }
                 <div class="bet-buttons-three">
