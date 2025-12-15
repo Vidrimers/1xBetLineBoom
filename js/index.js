@@ -285,7 +285,7 @@ function displayMatches() {
     .map((match) => {
       // Определяем статус на основе даты
       const effectiveStatus = getMatchStatusByDate(match);
-      
+
       // Проверяем, есть ли ставка пользователя на этот матч
       const userBetOnMatch = userBets.find((bet) => bet.match_id === match.id);
       const betClass = userBetOnMatch ? "has-user-bet" : "";
@@ -293,9 +293,11 @@ function displayMatches() {
       // Определяем текст и цвет статуса
       let statusBadge = "";
       if (effectiveStatus === "ongoing") {
-        statusBadge = '<span style="display: inline-block; padding: 3px 8px; background: #ff9800; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">🔴 ИДЕТ</span>';
+        statusBadge =
+          '<span style="display: inline-block; padding: 3px 8px; background: #ff9800; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">🔴 ИДЕТ</span>';
       } else if (effectiveStatus === "finished") {
-        statusBadge = '<span style="display: inline-block; padding: 3px 8px; background: #666; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">✓ ЗАВЕРШЕН</span>';
+        statusBadge =
+          '<span style="display: inline-block; padding: 3px 8px; background: #666; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">✓ ЗАВЕРШЕН</span>';
       }
 
       return `
@@ -323,22 +325,22 @@ function displayMatches() {
                     <button class="bet-btn team1" onclick="placeBet(${
                       match.id
                     }, '${match.team1_name}', '1')" ${
-                      effectiveStatus !== "pending" ? "disabled" : ""
-                    }>
+        effectiveStatus !== "pending" ? "disabled" : ""
+      }>
                         ${match.team1_name}
                     </button>
                     <button class="bet-btn draw" onclick="placeBet(${
                       match.id
                     }, 'Ничья', 'X')" ${
-                      effectiveStatus !== "pending" ? "disabled" : ""
-                    }>
+        effectiveStatus !== "pending" ? "disabled" : ""
+      }>
                         Ничья
                     </button>
                     <button class="bet-btn team2" onclick="placeBet(${
                       match.id
                     }, '${match.team2_name}', '2')" ${
-                      effectiveStatus !== "pending" ? "disabled" : ""
-                    }>
+        effectiveStatus !== "pending" ? "disabled" : ""
+      }>
                         ${match.team2_name}
                     </button>
                 </div>

@@ -160,21 +160,27 @@ app.post("/api/bets", (req, res) => {
     // Определяем эффективный статус на основе даты
     const now = new Date();
     const matchDate = match.match_date ? new Date(match.match_date) : null;
-    
+
     // Если матч в прошлом (началась дата) - ставка невозможна
     if (matchDate && matchDate <= now && !match.winner) {
       // Матч начался, но нет результата - это ongoing
-      return res.status(400).json({ error: "Ну, куда ты, малютка, матч уже начался" });
+      return res
+        .status(400)
+        .json({ error: "Ну, куда ты, малютка, матч уже начался" });
     }
-    
+
     // Если есть результат - матч завершён
     if (match.winner) {
-      return res.status(400).json({ error: "Ну, куда ты, малютка, матч уже начался" });
+      return res
+        .status(400)
+        .json({ error: "Ну, куда ты, малютка, матч уже начался" });
     }
 
     // Дополнительная проверка статуса из БД (если админ установил вручную)
     if (match.status && match.status !== "pending") {
-      return res.status(400).json({ error: "Ну, куда ты, малютка, матч уже начался" });
+      return res
+        .status(400)
+        .json({ error: "Ну, куда ты, малютка, матч уже начался" });
     }
 
     const result = db
@@ -611,7 +617,10 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
   }
 
   try {
-    db.prepare("UPDATE matches SET status = ? WHERE id = ?").run(status, matchId);
+    db.prepare("UPDATE matches SET status = ? WHERE id = ?").run(
+      status,
+      matchId
+    );
 
     res.json({
       message: "Статус матча успешно изменен",
