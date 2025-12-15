@@ -375,10 +375,47 @@ function displayMyBets(bets) {
                 <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
                     Событие: ${bet.event_name}
                 </div>
+                <button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>
             </div>
         `;
     })
     .join("");
+}
+
+// Удалить ставку
+async function deleteBet(betId) {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  if (!confirm("Вы уверены, что хотите удалить эту ставку?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/bets/${betId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    loadMyBets();
+  } catch (error) {
+    console.error("Ошибка при удалении ставки:", error);
+    alert("Ошибка при удалении ставки");
+  }
 }
 
 // ===== ВКЛАДКИ =====

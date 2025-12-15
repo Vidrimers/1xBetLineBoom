@@ -192,6 +192,29 @@ app.get("/api/user/:userId/bets", (req, res) => {
   }
 });
 
+// DELETE /api/bets/:betId - Удалить ставку пользователя
+app.delete("/api/bets/:betId", (req, res) => {
+  try {
+    const { betId } = req.params;
+    const { user_id } = req.body;
+
+    // Проверяем, что ставка принадлежит пользователю
+    const bet = db
+      .prepare("SELECT * FROM bets WHERE id = ? AND user_id = ?")
+      .get(betId, user_id);
+
+    if (!bet) {
+      return res.status(403).json({ error: "Эта ставка не принадлежит вам" });
+    }
+
+    db.prepare("DELETE FROM bets WHERE id = ?").run(betId);
+
+    res.json({ message: "Ставка удалена" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 6. Получить всех участников с количеством ставок
 app.get("/api/participants", (req, res) => {
   try {
