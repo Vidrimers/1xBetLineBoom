@@ -52,6 +52,7 @@ db.exec(`
     event_id INTEGER NOT NULL,
     team1_name TEXT NOT NULL,
     team2_name TEXT NOT NULL,
+    match_date DATETIME,
     status TEXT DEFAULT 'pending',
     winner TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -73,6 +74,14 @@ db.exec(`
     FOREIGN KEY (match_id) REFERENCES matches(id)
   )
 `);
+
+// ===== DATABASE MIGRATIONS =====
+// Добавляем колонку match_date если её нет
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN match_date DATETIME").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
 
 // ===== API ENDPOINTS =====
 
@@ -487,6 +496,44 @@ app.post("/api/admin/events", (req, res) => {
     } else {
       res.status(500).json({ error: error.message });
     }
+  }
+});
+
+// POST /api/admin/matches - Создать новый матч (только для админа)
+app.post("/api/admin/matches", (req, res) => {
+  const { username, event_id, team1, team2, match_date } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  // Проверяем обязательные поля
+  if (!event_id || !team1 || !team2) {
+    return res.status(400).json({ error: "Турнир, команда 1 и команда 2 обязательны" });
+  }
+
+  try {
+    const result = db
+      .prepare(
+        `
+      INSERT INTO matches (event_id, team1_name, team2_name, match_date)
+      VALUES (?, ?, ?, ?)
+    `
+      )
+      .run(event_id, team1, team2, match_date || null);
+
+    res.json({
+      id: result.lastInsertRowid,
+      event_id,
+      team1_name: team1,
+      team2_name: team2,
+      match_date: match_date || null,
+      message: "Матч успешно создан",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

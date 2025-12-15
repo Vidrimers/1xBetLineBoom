@@ -13,5 +13,6 @@ replacements.txt
 *-copy*.db
 * copy*.db
 *.db
+reset-db.js
 
 DISCORD_OAUTH_SETUP.md

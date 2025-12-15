@@ -266,6 +266,12 @@ button:active {
   gap: 8px;
 }
 
+.bet-buttons-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
 .bet-btn {
   padding: 8px 12px;
   font-size: 0.9em;
@@ -285,6 +291,10 @@ button:active {
 
 .bet-btn.team1 {
   border-left: 3px solid #4caf50;
+}
+
+.bet-btn.draw {
+  border-left: 3px solid #ffb81c;
 }
 
 .bet-btn.team2 {

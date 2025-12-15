@@ -216,6 +216,13 @@ function displayEvents() {
 async function selectEvent(eventId, eventName) {
   currentEventId = eventId;
   displayEvents(); // Обновляем выделение
+
+  // Показываем кнопку добавления матча для админа
+  const addMatchBtn = document.getElementById("addMatchBtn");
+  if (addMatchBtn && isAdmin()) {
+    addMatchBtn.style.display = "inline-block";
+  }
+
   loadMatches(eventId);
 }
 
@@ -248,16 +255,32 @@ function displayMatches() {
         <div class="match-row">
             <div class="match-teams">
                 <div class="match-vs">
-                    <div class="team">${match.team1_name}</div>
+                    <div class="team team-left">${match.team1_name}</div>
                     <div class="vs-text">VS</div>
-                    <div class="team">${match.team2_name}</div>
+                    <div class="team team-right">${match.team2_name}</div>
                 </div>
-                <div class="bet-buttons">
-                    <button class="bet-btn team1" onclick="placeBet(${match.id}, '${match.team1_name}')">
-                        На ${match.team1_name}
+                ${
+                  match.match_date
+                    ? `<div style="text-align: center; font-size: 0.85em; color: #999; margin-top: 8px;">${new Date(
+                        match.match_date
+                      ).toLocaleString("ru-RU")}</div>`
+                    : ""
+                }
+                <div class="bet-buttons-three">
+                    <button class="bet-btn team1" onclick="placeBet(${
+                      match.id
+                    }, '${match.team1_name}', '1')">
+                        ${match.team1_name}
                     </button>
-                    <button class="bet-btn team2" onclick="placeBet(${match.id}, '${match.team2_name}')">
-                        На ${match.team2_name}
+                    <button class="bet-btn draw" onclick="placeBet(${
+                      match.id
+                    }, 'Ничья', 'X')">
+                        Ничья
+                    </button>
+                    <button class="bet-btn team2" onclick="placeBet(${
+                      match.id
+                    }, '${match.team2_name}', '2')">
+                        ${match.team2_name}
                     </button>
                 </div>
             </div>
@@ -269,7 +292,7 @@ function displayMatches() {
 
 // ===== СТАВКИ =====
 
-async function placeBet(matchId, teamName) {
+async function placeBet(matchId, teamName, prediction) {
   if (!currentUser) {
     alert("Сначала введите ваше имя");
     return;
@@ -297,7 +320,7 @@ async function placeBet(matchId, teamName) {
       body: JSON.stringify({
         user_id: currentUser.id,
         match_id: matchId,
-        prediction: teamName,
+        prediction: prediction || teamName,
         amount: betAmount,
       }),
     });
@@ -849,4 +872,90 @@ async function deleteUser(userId, username) {
 function loadSettings() {
   // Заглушка для функции загрузки настроек
   // Здесь можно добавить загрузку пользовательских настроек
+}
+
+// ===== СОЗДАНИЕ МАТЧЕЙ =====
+
+// Открыть модальное окно для создания матча
+function openCreateMatchModal() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  if (!isAdmin()) {
+    alert("У вас нет прав для создания матчей");
+    return;
+  }
+
+  if (!currentEventId) {
+    alert("Пожалуйста, сначала выберите турнир");
+    return;
+  }
+
+  // Открываем модальное окно
+  const modal = document.getElementById("createMatchModal");
+  if (modal) {
+    modal.style.display = "flex";
+  }
+}
+
+// Закрыть модальное окно для создания матча
+function closeCreateMatchModal() {
+  const modal = document.getElementById("createMatchModal");
+  modal.style.display = "none";
+
+  // Очищаем форму
+  document.getElementById("createMatchForm").reset();
+}
+
+// Отправить форму создания матча
+async function submitCreateMatch(event) {
+  event.preventDefault();
+
+  const team1 = document.getElementById("matchTeam1").value.trim();
+  const team2 = document.getElementById("matchTeam2").value.trim();
+  const matchDate = document.getElementById("matchDate").value;
+
+  if (!team1 || !team2) {
+    alert("Пожалуйста, введите обе команды");
+    return;
+  }
+
+  if (!currentEventId) {
+    alert("Турнир не выбран");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/matches", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+        event_id: currentEventId,
+        team1,
+        team2,
+        match_date: matchDate || null,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    // Закрываем модальное окно
+    closeCreateMatchModal();
+
+    // Перезагружаем матчи
+    loadMatches(currentEventId);
+  } catch (error) {
+    console.error("Ошибка при создании матча:", error);
+    alert("Ошибка при создании матча: " + error.message);
+  }
 }
