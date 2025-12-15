@@ -238,6 +238,26 @@ function displayEvents() {
               <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
                 event.description || "Нет описания"
               }</p>
+              ${
+                event.start_date || event.end_date
+                  ? `<p style="font-size: 0.85em; opacity: 0.6; margin-top: 3px;">
+                      ${
+                        event.start_date
+                          ? `📅 с ${new Date(
+                              event.start_date
+                            ).toLocaleDateString("ru-RU")}`
+                          : ""
+                      }
+                      ${
+                        event.end_date
+                          ? ` по ${new Date(event.end_date).toLocaleDateString(
+                              "ru-RU"
+                            )}`
+                          : ""
+                      }
+                    </p>`
+                  : ""
+              }
               ${lockedBadge}
             </div>
             ${
@@ -249,6 +269,8 @@ function displayEvents() {
                     event.description
                       ? event.description.replace(/'/g, "\\'")
                       : ""
+                  }', '${event.start_date || ""}', '${
+                    event.end_date || ""
                   }')" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #2196f3; color: #2196f3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.1)'" onmouseout="this.style.background='transparent'">✏️</button>
                   ${
                     event.locked_reason
@@ -767,6 +789,7 @@ async function submitCreateEvent(event) {
   const name = document.getElementById("eventName").value.trim();
   const description = document.getElementById("eventDescription").value.trim();
   const start_date = document.getElementById("eventDate").value;
+  const end_date = document.getElementById("eventEndDate").value;
 
   if (!name) {
     alert("Пожалуйста, введите название турнира");
@@ -784,6 +807,7 @@ async function submitCreateEvent(event) {
         name,
         description: description || null,
         start_date: start_date || null,
+        end_date: end_date || null,
       }),
     });
 
@@ -959,7 +983,13 @@ async function unlockEvent(eventId) {
 }
 
 // Открыть модальное окно редактирования турнира
-function openEditEventModal(eventId, eventName, eventDescription) {
+function openEditEventModal(
+  eventId,
+  eventName,
+  eventDescription,
+  startDate,
+  endDate
+) {
   if (!isAdmin()) {
     alert("У вас нет прав");
     return;
@@ -971,6 +1001,12 @@ function openEditEventModal(eventId, eventName, eventDescription) {
   // Заполняем поля формы текущими значениями
   document.getElementById("editEventName").value = eventName;
   document.getElementById("editEventDescription").value = eventDescription;
+  document.getElementById("editEventStartDate").value = startDate
+    ? startDate.split("T")[0]
+    : "";
+  document.getElementById("editEventEndDate").value = endDate
+    ? endDate.split("T")[0]
+    : "";
 
   const modal = document.getElementById("editEventModal");
   if (modal) {
@@ -998,6 +1034,8 @@ async function submitEditEvent(event) {
   const description = document
     .getElementById("editEventDescription")
     .value.trim();
+  const start_date = document.getElementById("editEventStartDate").value;
+  const end_date = document.getElementById("editEventEndDate").value;
 
   if (!name) {
     alert("Пожалуйста, укажите название турнира");
@@ -1014,6 +1052,8 @@ async function submitEditEvent(event) {
         username: currentUser.username,
         name: name,
         description: description,
+        start_date: start_date || null,
+        end_date: end_date || null,
       }),
     });
 

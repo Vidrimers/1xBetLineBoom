@@ -90,6 +90,13 @@ try {
   // Колонка уже существует, это нормально
 }
 
+// Добавляем колонку end_date если её нет (для конца турнира)
+try {
+  db.prepare("ALTER TABLE events ADD COLUMN end_date DATETIME").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_USER)
@@ -523,7 +530,7 @@ app.post("/api/football-data/sync-results", async (req, res) => {
 
 // POST /api/admin/events - Создать новое событие (только для админа)
 app.post("/api/admin/events", (req, res) => {
-  const { username, name, description, start_date } = req.body;
+  const { username, name, description, start_date, end_date } = req.body;
   const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
@@ -540,17 +547,18 @@ app.post("/api/admin/events", (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO events (name, description, start_date)
-      VALUES (?, ?, ?)
+      INSERT INTO events (name, description, start_date, end_date)
+      VALUES (?, ?, ?, ?)
     `
       )
-      .run(name, description || null, start_date || null);
+      .run(name, description || null, start_date || null, end_date || null);
 
     res.json({
       id: result.lastInsertRowid,
       name,
       description,
       start_date,
+      end_date,
       message: "Событие успешно создано",
     });
   } catch (error) {
@@ -738,10 +746,10 @@ app.put("/api/admin/events/:eventId/unlock", (req, res) => {
 // PUT /api/admin/events/:eventId - Редактировать турнир (только для админа)
 app.put("/api/admin/events/:eventId", (req, res) => {
   const { eventId } = req.params;
-  const { username, name, description } = req.body;
+  const { username, name, description, start_date, end_date } = req.body;
   const ADMIN_USER = process.env.ADMIN_USER_ID;
 
-  // Проверяем, является ли пользователь админом
+  // Проверяем, является ли пользователем админом
   if (username !== ADMIN_USER) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
@@ -753,8 +761,16 @@ app.put("/api/admin/events/:eventId", (req, res) => {
 
   try {
     const result = db
-      .prepare("UPDATE events SET name = ?, description = ? WHERE id = ?")
-      .run(name, description || null, eventId);
+      .prepare(
+        "UPDATE events SET name = ?, description = ?, start_date = ?, end_date = ? WHERE id = ?"
+      )
+      .run(
+        name,
+        description || null,
+        start_date || null,
+        end_date || null,
+        eventId
+      );
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Событие не найдено" });
@@ -765,6 +781,8 @@ app.put("/api/admin/events/:eventId", (req, res) => {
       eventId,
       name,
       description,
+      start_date,
+      end_date,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
