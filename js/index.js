@@ -261,7 +261,7 @@ function displayMatches() {
                 </div>
                 ${
                   match.match_date
-                    ? `<div style="text-align: center; font-size: 0.85em; color: #999; margin-top: 8px;">${new Date(
+                    ? `<div style="text-align: center; font-size: 0.85em; color: #999; margin: 10px auto;">${new Date(
                         match.match_date
                       ).toLocaleString("ru-RU")}</div>`
                     : ""
@@ -298,18 +298,7 @@ async function placeBet(matchId, teamName, prediction) {
     return;
   }
 
-  const amount = prompt(
-    `На какую сумму ставить на ${teamName}? (по умолчанию 1)`
-  );
-
-  if (amount === null) return; // Отмена
-
-  const betAmount = amount ? parseFloat(amount) : 1;
-
-  if (isNaN(betAmount) || betAmount <= 0) {
-    alert("Введите корректную сумму");
-    return;
-  }
+  const betAmount = 1; // Фиксированная сумма ставки
 
   try {
     const response = await fetch("/api/bets", {
@@ -326,7 +315,7 @@ async function placeBet(matchId, teamName, prediction) {
     });
 
     if (response.ok) {
-      alert(`✅ Ставка на ${teamName} в размере ${betAmount} принята!`);
+      alert(`✅ Ставка на ${teamName} принята!`);
       loadMyBets();
     } else {
       alert("Ошибка при создании ставки");
