@@ -1,3 +1,3 @@
 # 1xBetLineBoom
 
-![Banner](img/logo~1.jpg)
+![Banner](img/logo_anim.webp)
