@@ -983,9 +983,14 @@ function closeAdminModal() {
 
 // Закрыть модальное окно при клике вне его
 window.onclick = function (event) {
-  const modal = document.getElementById("adminModal");
-  if (event.target === modal) {
-    modal.style.display = "none";
+  const adminModal = document.getElementById("adminModal");
+  if (event.target === adminModal) {
+    adminModal.style.display = "none";
+  }
+
+  const lockEventModal = document.getElementById("lockEventModal");
+  if (event.target === lockEventModal) {
+    lockEventModal.style.display = "none";
   }
 };
 
