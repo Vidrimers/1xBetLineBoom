@@ -301,6 +301,25 @@ async function placeBet(matchId, teamName, prediction) {
   const betAmount = 1; // Фиксированная сумма ставки
 
   try {
+    // Сначала проверяем, есть ли уже ставка этого пользователя на этот матч
+    const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
+    const allBets = await checkResponse.json();
+    const existingBet = allBets.find(bet => bet.match_id === matchId);
+
+    // Если уже есть ставка на этот матч - удаляем её
+    if (existingBet) {
+      await fetch(`/api/bets/${existingBet.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+        }),
+      });
+    }
+
+    // Создаём новую ставку
     const response = await fetch("/api/bets", {
       method: "POST",
       headers: {
