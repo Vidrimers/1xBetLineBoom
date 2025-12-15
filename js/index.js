@@ -30,6 +30,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const user = JSON.parse(savedUser);
     currentUser = user;
 
+    // Обновляем классы контейнера для показа контента
+    const container = document.querySelector(".container");
+    container.classList.remove("not-logged-in");
+    container.classList.add("logged-in");
+
+    // Меняем логотип с анимированного на обычный
+    document.getElementById("headerLogo").src = "img/logo_nobg.png";
+
     // Показываем информацию о пользователе
     document.getElementById("userStatus").style.display = "block";
     document.getElementById("usernameBold").textContent = user.username;
@@ -39,7 +47,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Меняем кнопку на "Выход"
     const authBtn = document.getElementById("authBtn");
     authBtn.textContent = "Выход";
-    authBtn.style.background = "#F44336";
+    authBtn.style.border = "1px solid rgba(244, 67, 54)";
+    authBtn.style.background = "transparent";
     authBtn.onclick = () => logoutUser();
 
     // Показываем админ-кнопки если это админ
@@ -86,6 +95,14 @@ async function initUser() {
     // Сохраняем пользователя в localStorage
     localStorage.setItem("currentUser", JSON.stringify(user));
 
+    // Обновляем классы контейнера для показа контента
+    const container = document.querySelector(".container");
+    container.classList.remove("not-logged-in");
+    container.classList.add("logged-in");
+
+    // Меняем логотип с анимированного на обычный
+    document.getElementById("headerLogo").src = "img/logo_nobg.png";
+
     // Показываем информацию о пользователе
     document.getElementById("userStatus").style.display = "block";
     document.getElementById("usernameBold").textContent = user.username;
@@ -94,7 +111,7 @@ async function initUser() {
     // Меняем кнопку на "Выход"
     const authBtn = document.getElementById("authBtn");
     authBtn.textContent = "Выход";
-    authBtn.style.background = "#F44336";
+    authBtn.style.background = "transparent";
     authBtn.onclick = () => logoutUser();
 
     // Показываем админ-кнопки если это админ
@@ -119,6 +136,14 @@ function logoutUser() {
   // Очищаем переменную
   currentUser = null;
 
+  // Обновляем классы контейнера для скрытия контента
+  const container = document.querySelector(".container");
+  container.classList.remove("logged-in");
+  container.classList.add("not-logged-in");
+
+  // Меняем логотип обратно на анимированный
+  document.getElementById("headerLogo").src = "img/logo_anim.gif";
+
   // Скрываем информацию о пользователе
   document.getElementById("userStatus").style.display = "none";
   document.getElementById("username").value = "";
@@ -130,8 +155,9 @@ function logoutUser() {
 
   // Меняем кнопку обратно на "Начать"
   const authBtn = document.getElementById("authBtn");
-  authBtn.textContent = "Начать";
+  authBtn.textContent = "Войти";
   authBtn.style.background = "";
+  authBtn.style.border = "1px solid #0066cc";
   authBtn.onclick = () => initUser();
 
   // Очищаем ставки

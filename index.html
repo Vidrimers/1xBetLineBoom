@@ -7,14 +7,29 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div class="container">
+    <div class="container not-logged-in">
       <header>
-        <img src="img/logo_nobg.png" alt="logo" />
+        <img src="img/logo_anim.webp" alt="logo" id="headerLogo" />
         <h1>1xBetLineBoom</h1>
       </header>
 
       <!-- Раздел ввода имени пользователя -->
       <div class="user-section">
+        <!-- Вкладки -->
+        <div class="tabs content">
+          <button class="tab-btn active" onclick="switchTab('allbets')">
+            💰 Ставки
+          </button>
+          <button class="tab-btn" onclick="switchTab('participants')">
+            👥 Участники
+          </button>
+          <button class="tab-btn" onclick="switchTab('profile')">
+            👤 Профиль
+          </button>
+          <button class="tab-btn" onclick="switchTab('settings')">
+            ⚙️ Настройки
+          </button>
+        </div>
         <div class="user-input">
           <input
             type="text"
@@ -22,20 +37,20 @@
             placeholder="Логин"
             onkeypress="if(event.key === 'Enter') initUser()"
           />
-          <button id="authBtn" onclick="initUser()">Начать</button>
+          <button id="authBtn" onclick="initUser()">Войти</button>
           <button
             id="adminBtn"
             onclick="openCreateEventModal()"
-            style="display: none; background: #ffb81c"
+            style="display: none; background: transparent"
           >
             ➕ Добавить турнир
           </button>
           <button
             id="adminUsersBtn"
             onclick="loadAdminUsers()"
-            style="display: none; background: #0066cc"
+            style="display: none; background: transparent"
           >
-            👥 Управление пользователями
+            👥 Пользователи
           </button>
         </div>
         <p
@@ -51,22 +66,6 @@
         </p>
       </div>
 
-      <!-- Вкладки -->
-      <div class="tabs content">
-        <button class="tab-btn active" onclick="switchTab('allbets')">
-          💰 Ставки
-        </button>
-        <button class="tab-btn" onclick="switchTab('participants')">
-          👥 Участники
-        </button>
-        <button class="tab-btn" onclick="switchTab('profile')">
-          👤 Профиль
-        </button>
-        <button class="tab-btn" onclick="switchTab('settings')">
-          ⚙️ Настройки
-        </button>
-      </div>
-
       <!-- Содержимое вкладки Ставки (двухколонная структура) -->
       <div class="content" id="allbets-content" style="margin-top: -5px">
         <!-- Левая колонка: Турниры и матчи -->
@@ -80,7 +79,7 @@
           </div>
 
           <!-- Матчи -->
-          <div class="section" style="margin-top: 20px">
+          <div class="section" style="margin-top: 10px">
             <h2>⚽ Матчи</h2>
             <div id="matchesContainer">
               <div class="empty-message">
