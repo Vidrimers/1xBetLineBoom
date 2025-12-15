@@ -475,7 +475,7 @@ app.post("/api/football-data/sync-results", async (req, res) => {
           ? match.homeTeam.name
           : match.score.fullTime.home < match.score.fullTime.away
           ? match.awayTeam.name
-          : "Draw";
+          : "Ничья";
 
       try {
         db.prepare(

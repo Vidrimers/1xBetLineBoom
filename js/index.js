@@ -374,21 +374,21 @@ function displayMatches() {
                 <div class="bet-buttons-three">
                     <button class="bet-btn team1" onclick="placeBet(${
                       match.id
-                    }, '${match.team1_name}', '1')" ${
+                    }, '${match.team1_name}', '${match.team1_name}')" ${
         effectiveStatus !== "pending" ? "disabled" : ""
       }>
                         ${match.team1_name}
                     </button>
                     <button class="bet-btn draw" onclick="placeBet(${
                       match.id
-                    }, 'Ничья', 'X')" ${
+                    }, 'Ничья', 'Ничья')" ${
         effectiveStatus !== "pending" ? "disabled" : ""
       }>
                         Ничья
                     </button>
                     <button class="bet-btn team2" onclick="placeBet(${
                       match.id
-                    }, '${match.team2_name}', '2')" ${
+                    }, '${match.team2_name}', '${match.team2_name}')" ${
         effectiveStatus !== "pending" ? "disabled" : ""
       }>
                         ${match.team2_name}
@@ -511,7 +511,6 @@ function displayMyBets(bets) {
                 </div>
                 <div class="bet-info" style="font-size: 0.9em; color: #666;">
                     <span>Ставка: <strong>${bet.prediction}</strong></span>
-                    <span>Сумма: <strong>${bet.amount}</strong></span>
                 </div>
                 <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
                     Событие: ${bet.event_name}
