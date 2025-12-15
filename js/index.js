@@ -1120,6 +1120,16 @@ window.onclick = function (event) {
   if (event.target === editEventModal) {
     editEventModal.style.display = "none";
   }
+
+  const createEventModal = document.getElementById("createEventModal");
+  if (event.target === createEventModal) {
+    createEventModal.style.display = "none";
+  }
+
+  const createMatchModal = document.getElementById("createMatchModal");
+  if (event.target === createMatchModal) {
+    createMatchModal.style.display = "none";
+  }
 };
 
 // Отобразить список пользователей в модальном окне
