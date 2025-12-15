@@ -196,8 +196,26 @@ function displayEvents() {
     return;
   }
 
-  eventsList.innerHTML = events
+  // Сортируем события: активные сверху, заблокированные снизу
+  const sortedEvents = [...events].sort((a, b) => {
+    const aLocked = a.locked_reason ? 1 : 0;
+    const bLocked = b.locked_reason ? 1 : 0;
+    return aLocked - bLocked;
+  });
+
+  let html = "";
+  let lastWasLocked = false;
+
+  html += sortedEvents
     .map((event) => {
+      // Добавляем разделитель перед заблокированными турнирами
+      let separator = "";
+      if (event.locked_reason && !lastWasLocked) {
+        separator =
+          '<div style="margin: 15px 0; text-align: center; color: #ccc; font-size: 0.9em;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
+      }
+      lastWasLocked = !!event.locked_reason;
+
       // Если турнир заблокирован, показываем индикатор
       const lockedBadge = event.locked_reason
         ? `<div style="display: flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 8px; background: #ffe0e0; border-left: 3px solid #f44336; border-radius: 3px;">
@@ -206,12 +224,16 @@ function displayEvents() {
             </div>`
         : "";
 
-      return `
-        <div class="event-item ${event.id === currentEventId ? "active" : ""}">
+      return `${separator}
+        <div class="event-item ${event.locked_reason ? "locked" : ""} ${
+        event.id === currentEventId ? "active" : ""
+      }">
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div onclick="selectEvent(${event.id}, '${
         event.name
-      }')" style="flex: 1; cursor: pointer;">
+      }')" style="flex: 1; cursor: ${
+        event.locked_reason ? "not-allowed" : "pointer"
+      };">
               <strong>${event.name}</strong>
               <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
                 event.description || "Нет описания"
@@ -237,6 +259,8 @@ function displayEvents() {
     `;
     })
     .join("");
+
+  eventsList.innerHTML = html;
 }
 
 async function selectEvent(eventId, eventName) {

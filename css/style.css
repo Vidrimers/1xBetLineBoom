@@ -197,6 +197,26 @@ button:active {
   color: white;
 }
 
+/* Стили для заблокированных турниров */
+.event-item.locked {
+  background: linear-gradient(135deg, #fef3e2 0%, #ffe0d0 100%);
+  border-left: 4px solid #f44336;
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+.event-item.locked:hover {
+  transform: translateX(0);
+  background: linear-gradient(135deg, #fef3e2 0%, #ffe0d0 100%);
+  color: inherit;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
+}
+
+.event-item.locked.active {
+  background: linear-gradient(135deg, #fef3e2 0%, #ffe0d0 100%);
+  color: inherit;
+}
+
 .matches-table {
   width: 100%;
   border-collapse: collapse;
