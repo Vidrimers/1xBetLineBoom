@@ -243,6 +243,13 @@ function displayEvents() {
             ${
               isAdmin()
                 ? `<div style="display: flex; gap: 5px; margin-left: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                  <button onclick="openEditEventModal(${
+                    event.id
+                  }, '${event.name.replace(/'/g, "\\'")}', '${
+                    event.description
+                      ? event.description.replace(/'/g, "\\'")
+                      : ""
+                  }')" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #2196f3; color: #2196f3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.1)'" onmouseout="this.style.background='transparent'">✏️</button>
                   ${
                     event.locked_reason
                       ? `<button onclick="unlockEvent(${event.id})" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #4caf50; color: #4caf50; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.1)'" onmouseout="this.style.background='transparent'">🔓</button>`
@@ -951,6 +958,83 @@ async function unlockEvent(eventId) {
   }
 }
 
+// Открыть модальное окно редактирования турнира
+function openEditEventModal(eventId, eventName, eventDescription) {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  // Сохраняем ID события для использования в submitEditEvent
+  document.getElementById("editEventForm").dataset.eventId = eventId;
+
+  // Заполняем поля формы текущими значениями
+  document.getElementById("editEventName").value = eventName;
+  document.getElementById("editEventDescription").value = eventDescription;
+
+  const modal = document.getElementById("editEventModal");
+  if (modal) {
+    modal.style.display = "flex";
+  }
+}
+
+// Закрыть модальное окно редактирования турнира
+function closeEditEventModal() {
+  const modal = document.getElementById("editEventModal");
+  modal.style.display = "none";
+
+  // Очищаем форму
+  document.getElementById("editEventForm").reset();
+  delete document.getElementById("editEventForm").dataset.eventId;
+}
+
+// Отправить форму редактирования турнира
+async function submitEditEvent(event) {
+  event.preventDefault();
+
+  const form = document.getElementById("editEventForm");
+  const eventId = form.dataset.eventId;
+  const name = document.getElementById("editEventName").value.trim();
+  const description = document
+    .getElementById("editEventDescription")
+    .value.trim();
+
+  if (!name) {
+    alert("Пожалуйста, укажите название турнира");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+        name: name,
+        description: description,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    // Закрываем модальное окно
+    closeEditEventModal();
+
+    // Перезагружаем турниры
+    loadEvents();
+  } catch (error) {
+    console.error("Ошибка при редактировании турнира:", error);
+    alert("Ошибка при редактировании турнира");
+  }
+}
+
 // ===== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (ДЛЯ АДМИНА) =====
 
 let adminUsers = [];
@@ -990,6 +1074,11 @@ window.onclick = function (event) {
   const lockEventModal = document.getElementById("lockEventModal");
   if (event.target === lockEventModal) {
     lockEventModal.style.display = "none";
+  }
+
+  const editEventModal = document.getElementById("editEventModal");
+  if (event.target === editEventModal) {
+    editEventModal.style.display = "none";
   }
 };
 

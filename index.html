@@ -317,6 +317,51 @@
       </div>
     </div>
 
+    <!-- Модальное окно редактирования турнира -->
+    <div id="editEventModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>✏️ Редактировать турнир</h2>
+          <button class="modal-close" onclick="closeEditEventModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="editEventForm" onsubmit="submitEditEvent(event)">
+            <div class="form-group">
+              <label for="editEventName">Название турнира *</label>
+              <input
+                type="text"
+                id="editEventName"
+                placeholder="Введите название турнира"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="editEventDescription">Описание</label>
+              <textarea
+                id="editEventDescription"
+                placeholder="Введите описание турнира (опционально)"
+                rows="3"
+              ></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="form-btn-submit">
+                ✅ Сохранить
+              </button>
+              <button
+                type="button"
+                class="form-btn-cancel"
+                onclick="closeEditEventModal()"
+              >
+                ❌ Отмена
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <script src="js/index.js"></script>
   </body>
 </html>

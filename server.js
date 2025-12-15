@@ -735,6 +735,42 @@ app.put("/api/admin/events/:eventId/unlock", (req, res) => {
   }
 });
 
+// PUT /api/admin/events/:eventId - Редактировать турнир (только для админа)
+app.put("/api/admin/events/:eventId", (req, res) => {
+  const { eventId } = req.params;
+  const { username, name, description } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  // Проверяем обязательные поля
+  if (!name || name.trim() === "") {
+    return res.status(400).json({ error: "Название турнира обязательно" });
+  }
+
+  try {
+    const result = db
+      .prepare("UPDATE events SET name = ?, description = ? WHERE id = ?")
+      .run(name, description || null, eventId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    res.json({
+      message: "Турнир успешно отредактирован",
+      eventId,
+      name,
+      description,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/admin/users - Получить всех пользователей (только для админа)
 app.get("/api/admin/users", (req, res) => {
   const ADMIN_USER = process.env.ADMIN_USER_ID;
