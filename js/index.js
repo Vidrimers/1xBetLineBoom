@@ -63,6 +63,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     loadEvents();
   }
+
+  // Запускаем обновление статусов матчей каждые 30 секунд
+  setInterval(() => {
+    if (matches.length > 0) {
+      displayMatches();
+    }
+  }, 30000);
 });
 
 // ===== ПОЛЬЗОВАТЕЛЬ =====
@@ -229,6 +236,30 @@ async function selectEvent(eventId, eventName) {
 
 // ===== МАТЧИ =====
 
+// Определяем статус матча на основе даты
+function getMatchStatusByDate(match) {
+  if (!match.match_date) {
+    // Если даты нет, возвращаем статус из БД
+    return match.status || "pending";
+  }
+
+  const now = new Date();
+  const matchDate = new Date(match.match_date);
+
+  // Если матч в будущем - pending
+  if (matchDate > now) {
+    return "pending";
+  }
+
+  // Если матч начался (в прошлом) - ongoing (пока не установлен результат)
+  if (!match.winner) {
+    return "ongoing";
+  }
+
+  // Если установлен результат - finished
+  return "finished";
+}
+
 async function loadMatches(eventId) {
   try {
     const response = await fetch(`/api/events/${eventId}/matches`);
@@ -252,9 +283,20 @@ function displayMatches() {
 
   matchesContainer.innerHTML = matches
     .map((match) => {
+      // Определяем статус на основе даты
+      const effectiveStatus = getMatchStatusByDate(match);
+      
       // Проверяем, есть ли ставка пользователя на этот матч
       const userBetOnMatch = userBets.find((bet) => bet.match_id === match.id);
       const betClass = userBetOnMatch ? "has-user-bet" : "";
+
+      // Определяем текст и цвет статуса
+      let statusBadge = "";
+      if (effectiveStatus === "ongoing") {
+        statusBadge = '<span style="display: inline-block; padding: 3px 8px; background: #ff9800; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">🔴 ИДЕТ</span>';
+      } else if (effectiveStatus === "finished") {
+        statusBadge = '<span style="display: inline-block; padding: 3px 8px; background: #666; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">✓ ЗАВЕРШЕН</span>';
+      }
 
       return `
         <div class="match-row ${betClass}">
@@ -274,23 +316,29 @@ function displayMatches() {
                         year: "numeric",
                         month: "2-digit",
                         day: "2-digit",
-                      })}</div>`
+                      })}${statusBadge}</div>`
                     : ""
                 }
                 <div class="bet-buttons-three">
                     <button class="bet-btn team1" onclick="placeBet(${
                       match.id
-                    }, '${match.team1_name}', '1')">
+                    }, '${match.team1_name}', '1')" ${
+                      effectiveStatus !== "pending" ? "disabled" : ""
+                    }>
                         ${match.team1_name}
                     </button>
                     <button class="bet-btn draw" onclick="placeBet(${
                       match.id
-                    }, 'Ничья', 'X')">
+                    }, 'Ничья', 'X')" ${
+                      effectiveStatus !== "pending" ? "disabled" : ""
+                    }>
                         Ничья
                     </button>
                     <button class="bet-btn team2" onclick="placeBet(${
                       match.id
-                    }, '${match.team2_name}', '2')">
+                    }, '${match.team2_name}', '2')" ${
+                      effectiveStatus !== "pending" ? "disabled" : ""
+                    }>
                         ${match.team2_name}
                     </button>
                 </div>
@@ -307,6 +355,16 @@ async function placeBet(matchId, teamName, prediction) {
   if (!currentUser) {
     alert("Сначала введите ваше имя");
     return;
+  }
+
+  // Проверяем статус матча на основе даты
+  const match = matches.find((m) => m.id === matchId);
+  if (match) {
+    const effectiveStatus = getMatchStatusByDate(match);
+    if (effectiveStatus !== "pending") {
+      alert("Ну, куда ты, малютка, матч уже начался");
+      return;
+    }
   }
 
   const betAmount = 1; // Фиксированная сумма ставки

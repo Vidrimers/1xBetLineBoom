@@ -293,6 +293,16 @@ button:active {
   background: #001f50;
 }
 
+.bet-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.bet-btn:disabled:hover {
+  background: #ccc;
+}
+
 .bet-btn.team1 {
   border-left: 3px solid #4caf50;
 }

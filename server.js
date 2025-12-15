@@ -148,6 +148,35 @@ app.post("/api/bets", (req, res) => {
   try {
     const { user_id, match_id, prediction, amount } = req.body;
 
+    // Проверяем матч и его дату
+    const match = db
+      .prepare("SELECT status, match_date, winner FROM matches WHERE id = ?")
+      .get(match_id);
+
+    if (!match) {
+      return res.status(404).json({ error: "Матч не найден" });
+    }
+
+    // Определяем эффективный статус на основе даты
+    const now = new Date();
+    const matchDate = match.match_date ? new Date(match.match_date) : null;
+    
+    // Если матч в прошлом (началась дата) - ставка невозможна
+    if (matchDate && matchDate <= now && !match.winner) {
+      // Матч начался, но нет результата - это ongoing
+      return res.status(400).json({ error: "Ну, куда ты, малютка, матч уже начался" });
+    }
+    
+    // Если есть результат - матч завершён
+    if (match.winner) {
+      return res.status(400).json({ error: "Ну, куда ты, малютка, матч уже начался" });
+    }
+
+    // Дополнительная проверка статуса из БД (если админ установил вручную)
+    if (match.status && match.status !== "pending") {
+      return res.status(400).json({ error: "Ну, куда ты, малютка, матч уже начался" });
+    }
+
     const result = db
       .prepare(
         `
@@ -556,6 +585,38 @@ app.post("/api/admin/matches", (req, res) => {
       team2_name: team2,
       match_date: match_date || null,
       message: "Матч успешно создан",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/matches/:matchId - Изменить статус матча (только для админа)
+app.put("/api/admin/matches/:matchId", (req, res) => {
+  const { matchId } = req.params;
+  const { username, status } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  // Проверяем валидный статус
+  const validStatuses = ["pending", "ongoing", "finished"];
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({
+      error: "Неверный статус. Допустимые значения: pending, ongoing, finished",
+    });
+  }
+
+  try {
+    db.prepare("UPDATE matches SET status = ? WHERE id = ?").run(status, matchId);
+
+    res.json({
+      message: "Статус матча успешно изменен",
+      matchId,
+      status,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
