@@ -489,7 +489,10 @@ function displayProfile(profile) {
 
   profileContainer.innerHTML = `
     <div class="profile-header">
-      <div class="profile-username">🎯 ${profile.username}</div>
+      <div class="profile-avatar">
+      <img src="img/logo_nobg.png" style="width: 100px;">
+      </div>
+      <div class="profile-username">${profile.username}</div>
       <div class="profile-member-since">Участник с ${createdDate}</div>
     </div>
 

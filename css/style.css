@@ -66,7 +66,7 @@ header h1 {
 
 .user-section {
   background: rgba(255, 255, 255, 0.95);
-  padding: 20px;
+  padding: 10px;
   border-radius: 10px;
   /* margin-bottom: 10px; */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -99,15 +99,12 @@ header h1 {
   color: #001f50;
 }
 
-.user-input #adminBtn {
-  /* border: 1px solid rgba(244, 67, 54); */
-  border: 1px solid rgb(255, 184, 28);
-  color: #001f50;
-}
+button#adminBtn,
+button#addMatchBtn,
 .user-input #adminUsersBtn {
-  background: transparent;
-  /* border: 1px solid rgba(244, 67, 54); */
+  border: 1px solid rgb(255, 184, 28);
   border: 1px solid rgb(0, 102, 204);
+  background: transparent;
   color: #001f50;
 }
 
@@ -511,11 +508,34 @@ button.tab-btn:hover {
 
 .profile-header {
   text-align: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
-  color: white;
+  padding: 10px;
+  /* background: linear-gradient(135deg, #0066cc 0%, #001f50 100%); */
+  background: linear-gradient(135deg, #84b0f0 0%, #fff 100%);
+  /* color: white; */
+  color: #06c;
   border-radius: 10px;
   margin-bottom: 10px;
+  /* border: 2px solid #06c; */
+  /* margin: 0 auto; */
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  background: #000;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
+}
+.profile-avatar img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+
 }
 
 .profile-username {

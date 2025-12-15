@@ -511,7 +511,9 @@ app.post("/api/admin/matches", (req, res) => {
 
   // Проверяем обязательные поля
   if (!event_id || !team1 || !team2) {
-    return res.status(400).json({ error: "Турнир, команда 1 и команда 2 обязательны" });
+    return res
+      .status(400)
+      .json({ error: "Турнир, команда 1 и команда 2 обязательны" });
   }
 
   try {
