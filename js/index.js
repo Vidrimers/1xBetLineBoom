@@ -315,7 +315,6 @@ async function placeBet(matchId, teamName, prediction) {
     });
 
     if (response.ok) {
-      alert(`✅ Ставка на ${teamName} принята!`);
       loadMyBets();
     } else {
       alert("Ошибка при создании ставки");
@@ -386,10 +385,6 @@ function displayMyBets(bets) {
 async function deleteBet(betId) {
   if (!currentUser) {
     alert("Сначала войдите в систему");
-    return;
-  }
-
-  if (!confirm("Вы уверены, что хотите удалить эту ставку?")) {
     return;
   }
 
