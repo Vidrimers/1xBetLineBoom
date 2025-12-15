@@ -83,6 +83,13 @@ try {
   // Колонка уже существует, это нормально
 }
 
+// Добавляем колонку locked_reason если её нет (для блокировки турниров)
+try {
+  db.prepare("ALTER TABLE events ADD COLUMN locked_reason TEXT").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_USER)
@@ -660,6 +667,69 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
     }
 
     res.json({ message: "Событие успешно удалено" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/events/:eventId/lock - Заблокировать турнир с причиной (только для админа)
+app.put("/api/admin/events/:eventId/lock", (req, res) => {
+  const { eventId } = req.params;
+  const { username, reason } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  if (!reason || reason.trim() === "") {
+    return res.status(400).json({ error: "Причина блокировки обязательна" });
+  }
+
+  try {
+    const result = db
+      .prepare("UPDATE events SET locked_reason = ? WHERE id = ?")
+      .run(reason.trim(), eventId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    res.json({
+      message: "Турнир заблокирован",
+      eventId,
+      reason: reason.trim(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/events/:eventId/unlock - Разблокировать турнир (только для админа)
+app.put("/api/admin/events/:eventId/unlock", (req, res) => {
+  const { eventId } = req.params;
+  const { username } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    const result = db
+      .prepare("UPDATE events SET locked_reason = NULL WHERE id = ?")
+      .run(eventId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    res.json({
+      message: "Турнир разблокирован",
+      eventId,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

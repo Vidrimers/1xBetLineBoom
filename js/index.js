@@ -197,10 +197,18 @@ function displayEvents() {
   }
 
   eventsList.innerHTML = events
-    .map(
-      (event) => `
+    .map((event) => {
+      // Если турнир заблокирован, показываем индикатор
+      const lockedBadge = event.locked_reason
+        ? `<div style="display: flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 8px; background: #ffe0e0; border-left: 3px solid #f44336; border-radius: 3px;">
+              <span style="color: #f44336; font-weight: bold; font-size: 0.8em;">🔒 ЗАБЛОКИРОВАН</span>
+              <span style="color: #666; font-size: 0.85em;">${event.locked_reason}</span>
+            </div>`
+        : "";
+
+      return `
         <div class="event-item ${event.id === currentEventId ? "active" : ""}">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div onclick="selectEvent(${event.id}, '${
         event.name
       }')" style="flex: 1; cursor: pointer;">
@@ -208,20 +216,38 @@ function displayEvents() {
               <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
                 event.description || "Нет описания"
               }</p>
+              ${lockedBadge}
             </div>
             ${
               isAdmin()
-                ? `<button class="event-delete-btn" onclick="deleteEvent(${event.id})" style="background: #f44336; padding: 5px 10px; margin-left: 10px; font-size: 0.8em;">✕ Удалить</button>`
+                ? `<div style="display: flex; gap: 5px; margin-left: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                  ${
+                    event.locked_reason
+                      ? `<button onclick="unlockEvent(${event.id})" style="background: #4caf50; padding: 5px 10px; font-size: 0.8em; border: none; color: white; border-radius: 3px; cursor: pointer;">🔓 Разблокировать</button>`
+                      : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: #ff9800; padding: 5px 10px; font-size: 0.8em; border: none; color: white; border-radius: 3px; cursor: pointer;">🔒 Заблокировать</button>`
+                  }
+                  <button class="event-delete-btn" onclick="deleteEvent(${
+                    event.id
+                  })" style="background: #f44336; padding: 5px 10px; font-size: 0.8em; border: none; color: white; border-radius: 3px; cursor: pointer;">✕ Удалить</button>
+                </div>`
                 : ""
             }
           </div>
         </div>
-    `
-    )
+    `;
+    })
     .join("");
 }
 
 async function selectEvent(eventId, eventName) {
+  // Проверяем, заблокирован ли турнир
+  const event = events.find((e) => e.id === eventId);
+
+  if (event && event.locked_reason) {
+    alert(`Этот турнир заблокирован.\nПричина: ${event.locked_reason}`);
+    return;
+  }
+
   currentEventId = eventId;
   displayEvents(); // Обновляем выделение
 
@@ -792,6 +818,113 @@ async function deleteEvent(eventId) {
   } catch (error) {
     console.error("Ошибка при удалении турнира:", error);
     alert("Ошибка при удалении турнира");
+  }
+}
+
+// Открыть модальное окно для блокировки турнира
+function openLockEventModal(eventId, eventName) {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  // Сохраняем ID события для использования в submitLockEvent
+  document.getElementById("lockEventForm").dataset.eventId = eventId;
+  document.getElementById("lockEventForm").dataset.eventName = eventName;
+
+  const modal = document.getElementById("lockEventModal");
+  if (modal) {
+    modal.style.display = "flex";
+  }
+}
+
+// Закрыть модальное окно для блокировки турнира
+function closeLockEventModal() {
+  const modal = document.getElementById("lockEventModal");
+  modal.style.display = "none";
+
+  // Очищаем форму
+  document.getElementById("lockEventForm").reset();
+  delete document.getElementById("lockEventForm").dataset.eventId;
+}
+
+// Отправить форму блокировки турнира
+async function submitLockEvent(event) {
+  event.preventDefault();
+
+  const form = document.getElementById("lockEventForm");
+  const eventId = form.dataset.eventId;
+  const reason = document.getElementById("eventLockReason").value.trim();
+
+  if (!reason) {
+    alert("Пожалуйста, укажите причину блокировки");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/lock`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+        reason: reason,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    // Закрываем модальное окно
+    closeLockEventModal();
+
+    // Перезагружаем турниры
+    loadEvents();
+  } catch (error) {
+    console.error("Ошибка при блокировке турнира:", error);
+    alert("Ошибка при блокировке турнира");
+  }
+}
+
+// Разблокировать турнир
+async function unlockEvent(eventId) {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  if (!confirm("Вы уверены, что хотите разблокировать этот турнир?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/unlock`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    // Перезагружаем турниры
+    loadEvents();
+  } catch (error) {
+    console.error("Ошибка при разблокировке турнира:", error);
+    alert("Ошибка при разблокировке турнира");
   }
 }
 
