@@ -3,6 +3,7 @@ let currentUser = null;
 let currentEventId = null;
 let events = [];
 let matches = [];
+let userBets = [];
 let ADMIN_USER = null;
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
@@ -250,9 +251,13 @@ function displayMatches() {
   }
 
   matchesContainer.innerHTML = matches
-    .map(
-      (match) => `
-        <div class="match-row">
+    .map((match) => {
+      // Проверяем, есть ли ставка пользователя на этот матч
+      const userBetOnMatch = userBets.find((bet) => bet.match_id === match.id);
+      const betClass = userBetOnMatch ? "has-user-bet" : "";
+
+      return `
+        <div class="match-row ${betClass}">
             <div class="match-teams">
                 <div class="match-vs">
                     <div class="team team-left">${match.team1_name}</div>
@@ -285,8 +290,8 @@ function displayMatches() {
                 </div>
             </div>
         </div>
-    `
-    )
+    `;
+    })
     .join("");
 }
 
@@ -350,7 +355,9 @@ async function loadMyBets() {
   try {
     const response = await fetch(`/api/user/${currentUser.id}/bets`);
     const bets = await response.json();
+    userBets = bets; // Сохраняем в глобальную переменную
     displayMyBets(bets);
+    displayMatches(); // Перерисовываем матчи чтобы выделить с ставками
   } catch (error) {
     console.error("Ошибка при загрузке ставок:", error);
   }

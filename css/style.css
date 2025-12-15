@@ -229,6 +229,13 @@ button:active {
   background: #f8f9ff;
   border-radius: 8px;
   border-left: 4px solid #0066cc;
+  transition: all 0.2s ease;
+}
+
+.match-row.has-user-bet {
+  background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+  border-left-color: #ffb81c;
+  box-shadow: 0 0 12px rgba(255, 184, 28, 0.2);
 }
 
 .match-teams {
