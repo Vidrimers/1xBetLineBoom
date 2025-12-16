@@ -699,6 +699,12 @@ function displayMyBets(bets) {
         }
       }
 
+      // Показываем кнопку удаления: админу всегда, остальным только для матчей со статусом "pending"
+      const canDelete = isAdmin() || bet.match_status === "pending";
+      const deleteBtn = canDelete
+        ? `<button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>`
+        : "";
+
       return `
             <div class="bet-item ${statusClass}" data-bet-id="${bet.id}">
                 <div class="bet-info">
@@ -711,7 +717,7 @@ function displayMyBets(bets) {
                 <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
                     Турнир: ${bet.event_name}
                 </div>
-                <button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>
+                ${deleteBtn}
             </div>
         `;
     })
@@ -733,6 +739,7 @@ async function deleteBet(betId) {
       },
       body: JSON.stringify({
         user_id: currentUser.id,
+        username: currentUser.username,
       }),
     });
 

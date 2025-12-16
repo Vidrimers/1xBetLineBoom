@@ -268,7 +268,7 @@ app.get("/api/user/:userId/bets", (req, res) => {
     const bets = db
       .prepare(
         `
-      SELECT b.*, m.team1_name, m.team2_name, m.winner, e.name as event_name
+      SELECT b.*, m.team1_name, m.team2_name, m.winner, m.status as match_status, e.name as event_name
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
@@ -287,15 +287,37 @@ app.get("/api/user/:userId/bets", (req, res) => {
 app.delete("/api/bets/:betId", (req, res) => {
   try {
     const { betId } = req.params;
-    const { user_id } = req.body;
+    const { user_id, username } = req.body;
 
-    // Проверяем, что ставка принадлежит пользователю
-    const bet = db
-      .prepare("SELECT * FROM bets WHERE id = ? AND user_id = ?")
-      .get(betId, user_id);
+    // Проверяем, является ли пользователь админом
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+
+    // Проверяем, что ставка существует
+    const bet = db.prepare("SELECT * FROM bets WHERE id = ?").get(betId);
 
     if (!bet) {
+      return res.status(404).json({ error: "Ставка не найдена" });
+    }
+
+    // Если не админ - проверяем принадлежность ставки
+    if (!isAdmin && bet.user_id !== user_id) {
       return res.status(403).json({ error: "Эта ставка не принадлежит вам" });
+    }
+
+    // Проверяем статус матча - нельзя удалять ставки на начавшиеся/завершённые матчи (кроме админа)
+    if (!isAdmin) {
+      const match = db
+        .prepare("SELECT status FROM matches WHERE id = ?")
+        .get(bet.match_id);
+
+      if (
+        match &&
+        (match.status === "ongoing" || match.status === "finished")
+      ) {
+        return res.status(403).json({
+          error: "Нельзя удалить ставку — матч уже начался или завершён",
+        });
+      }
     }
 
     db.prepare("DELETE FROM bets WHERE id = ?").run(betId);
