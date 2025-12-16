@@ -1693,6 +1693,7 @@ async function submitCreateMatch(event) {
   const team2 = document.getElementById("matchTeam2").value.trim();
   const matchDate = document.getElementById("matchDate").value;
   const round = document.getElementById("matchRound").value.trim();
+  const copies = parseInt(document.getElementById("matchCopies").value) || 1;
 
   if (!team1 || !team2) {
     alert("Пожалуйста, введите обе команды");
@@ -1704,26 +1705,40 @@ async function submitCreateMatch(event) {
     return;
   }
 
+  // Ограничиваем количество копий
+  const copiesCount = Math.min(Math.max(copies, 1), 20);
+
   try {
-    const response = await fetch("/api/admin/matches", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: currentUser.username,
-        event_id: currentEventId,
-        team1,
-        team2,
-        match_date: matchDate || null,
-        round: round || null,
-      }),
-    });
+    let created = 0;
+    let lastError = null;
 
-    const result = await response.json();
+    for (let i = 0; i < copiesCount; i++) {
+      const response = await fetch("/api/admin/matches", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: currentUser.username,
+          event_id: currentEventId,
+          team1,
+          team2,
+          match_date: matchDate || null,
+          round: round || null,
+        }),
+      });
 
-    if (!response.ok) {
-      alert("Ошибка: " + result.error);
+      const result = await response.json();
+
+      if (!response.ok) {
+        lastError = result.error;
+      } else {
+        created++;
+      }
+    }
+
+    if (created === 0 && lastError) {
+      alert("Ошибка: " + lastError);
       return;
     }
 
