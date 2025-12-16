@@ -35,10 +35,12 @@
     .log-entry:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
     .log-entry.bet-placed { border-left-color: #4caf50; }
     .log-entry.bet-deleted { border-left-color: #f44336; }
+    .log-entry.settings-changed { border-left-color: #ff9800; }
     .log-time { color: #888; font-size: 0.85em; margin-bottom: 5px; }
     .log-action { font-weight: bold; margin-bottom: 8px; }
     .log-action.placed { color: #4caf50; }
     .log-action.deleted { color: #f44336; }
+    .log-action.settings { color: #ff9800; }
     .log-details {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -50,6 +52,7 @@
     .log-details .prediction { color: #ffb74d; }
     .log-details .match { color: #81c784; }
     .log-details .event { color: #ce93d8; }
+    .log-details .setting { color: #ffcc80; }
   </style>
 </head>
 <body>

@@ -61,8 +61,10 @@ async function notifyBetAction(action, data) {
 // Функция записи лога в HTML файл
 function writeBetLog(action, data) {
   try {
-    // Отправляем уведомление в Telegram
-    notifyBetAction(action, data);
+    // Отправляем уведомление в Telegram только для ставок (не для настроек)
+    if (action === "placed" || action === "deleted") {
+      notifyBetAction(action, data);
+    }
 
     // Проверяем размер файла
     if (fs.existsSync(LOG_FILE_PATH)) {
@@ -108,6 +110,18 @@ function writeBetLog(action, data) {
         <span class="prediction">🎯 ${data.prediction}</span>
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
+      </div>
+    </div>`;
+    } else if (action === "settings") {
+      logEntry = `
+    <div class="log-entry settings-changed">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action settings">⚙️ НАСТРОЙКИ ИЗМЕНЕНЫ</div>
+      <div class="log-details">
+        <span class="user">👤 ${data.username}</span>
+        <span class="setting">📝 ${data.setting}: ${
+        data.oldValue ? `${data.oldValue} → ` : ""
+      }${data.newValue || "удалено"}</span>
       </div>
     </div>`;
     }
@@ -165,10 +179,12 @@ function resetLogFile() {
     .log-entry:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
     .log-entry.bet-placed { border-left-color: #4caf50; }
     .log-entry.bet-deleted { border-left-color: #f44336; }
+    .log-entry.settings-changed { border-left-color: #ff9800; }
     .log-time { color: #888; font-size: 0.85em; margin-bottom: 5px; }
     .log-action { font-weight: bold; margin-bottom: 8px; }
     .log-action.placed { color: #4caf50; }
     .log-action.deleted { color: #f44336; }
+    .log-action.settings { color: #ff9800; }
     .log-details {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -180,6 +196,7 @@ function resetLogFile() {
     .log-details .prediction { color: #ffb74d; }
     .log-details .match { color: #81c784; }
     .log-details .event { color: #ce93d8; }
+    .log-details .setting { color: #ffcc80; }
   </style>
 </head>
 <body>
@@ -780,6 +797,14 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
           );
         }
       }
+
+      // Записываем в лог изменение настроек
+      writeBetLog("settings", {
+        username: user.username,
+        setting: "Telegram",
+        oldValue: oldTelegramUsername ? `@${oldTelegramUsername}` : null,
+        newValue: `@${telegram_username}`,
+      });
     }
 
     res.json({
@@ -840,6 +865,16 @@ app.delete("/api/user/:userId/telegram", async (req, res) => {
           console.error("❌ Ошибка отправки уведомления в Telegram:", err);
         }
       }
+    }
+
+    // Записываем в лог удаление настройки
+    if (oldTelegramUsername) {
+      writeBetLog("settings", {
+        username: user.username,
+        setting: "Telegram",
+        oldValue: `@${oldTelegramUsername}`,
+        newValue: null,
+      });
     }
 
     res.json({
