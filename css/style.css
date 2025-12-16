@@ -368,17 +368,18 @@ button:active {
 
 /* Стиль для выбранной ставки */
 .bet-btn.selected {
-  background: linear-gradient(135deg, #4caf50, #45a049) !important;
+  background: rgba(0, 31, 80, 0.3) !important;
   color: white !important;
   opacity: 1 !important;
-  cursor: default;
-  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-  transform: scale(1.02);
+  /* cursor: default; */
+  cursor: wait;
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.4);
+  transform: scale(0.97);
 }
 
-.bet-btn.selected::after {
+/* .bet-btn.selected::after {
   content: " ✓";
-}
+} */
 
 .my-bets-list {
   display: flex;
