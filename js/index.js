@@ -1821,11 +1821,17 @@ async function setMatchResult(matchId, result) {
       // Обновляем матч локально
       match.status = "finished";
       match.result = resultMap[result];
+      match.winner = result; // team1, draw, team2
 
       console.log(
         `✓ Матч ${match.team1_name} vs ${match.team2_name} завершен с результатом: ${result}`
       );
       displayMatches();
+
+      // Обновляем ставки чтобы показать новые цвета (с небольшой задержкой для синхронизации с БД)
+      setTimeout(() => {
+        loadMyBets();
+      }, 300);
     } else {
       console.error("Ошибка установки результата:", responseData.error);
       alert("Ошибка: " + responseData.error);
