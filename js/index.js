@@ -5,6 +5,8 @@ let events = [];
 let matches = [];
 let userBets = [];
 let ADMIN_USER = null;
+let matchUpdateInterval = null;
+let isMatchUpdatingEnabled = true;
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 
@@ -66,8 +68,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Запускаем обновление статусов матчей каждые 30 секунд
-  setInterval(() => {
-    if (matches.length > 0) {
+  matchUpdateInterval = setInterval(() => {
+    if (matches.length > 0 && isMatchUpdatingEnabled) {
       displayMatches();
     }
   }, 30000);
@@ -377,6 +379,11 @@ function displayMatches() {
     return;
   }
 
+  // Логируем для отладки
+  console.debug(
+    `🎯 displayMatches() вызвана. isMatchUpdatingEnabled: ${isMatchUpdatingEnabled}`
+  );
+
   matchesContainer.innerHTML = matches
     .map((match) => {
       // Определяем статус на основе даты
@@ -593,7 +600,9 @@ async function loadMyBets() {
     const bets = await response.json();
     userBets = bets; // Сохраняем в глобальную переменную
     displayMyBets(bets);
-    displayMatches(); // Перерисовываем матчи чтобы выделить с ставками
+    if (isMatchUpdatingEnabled) {
+      displayMatches(); // Перерисовываем матчи чтобы выделить с ставками
+    }
   } catch (error) {
     console.error("Ошибка при загрузке ставок:", error);
   }
@@ -694,7 +703,9 @@ function switchTab(tabName) {
     document.getElementById("allbets-content").style.display = "grid";
     document.querySelectorAll(".tab-btn")[0].classList.add("active");
     loadEvents();
-    loadMatches();
+    if (currentEventId) {
+      loadMatches(currentEventId);
+    }
     loadMyBets();
   } else if (tabName === "participants") {
     document.getElementById("participants-content").style.display = "flex";
@@ -1571,3 +1582,111 @@ async function deleteMatch(id) {
     alert("❌ Ошибка при удалении матча");
   }
 }
+
+// ===== УПРАВЛЕНИЕ ОБНОВЛЕНИЕМ МАТЧЕЙ (ДЛЯ КОНСОЛИ) =====
+
+/**
+ * Остановить автоматическое обновление матчей
+ * Использование: stopMatchUpdates()
+ */
+function stopMatchUpdates() {
+  isMatchUpdatingEnabled = false;
+  // Также очищаем интервал полностью
+  if (matchUpdateInterval) {
+    clearInterval(matchUpdateInterval);
+    matchUpdateInterval = null;
+  }
+  console.log("⏸️ Обновление матчей ПОЛНОСТЬЮ ОСТАНОВЛЕНО");
+  console.log(
+    "✓ Флаг isMatchUpdatingEnabled установлен в:",
+    isMatchUpdatingEnabled
+  );
+  console.log("✓ Интервал отменён");
+}
+
+/**
+ * Запустить автоматическое обновление матчей
+ * Использование: startMatchUpdates()
+ */
+function startMatchUpdates() {
+  isMatchUpdatingEnabled = true;
+
+  // Если интервала нет - создаём новый
+  if (!matchUpdateInterval) {
+    matchUpdateInterval = setInterval(() => {
+      if (matches.length > 0 && isMatchUpdatingEnabled) {
+        displayMatches();
+      }
+    }, 30000);
+  }
+
+  console.log("▶️ Обновление матчей ЗАПУЩЕНО");
+  console.log(
+    "✓ Флаг isMatchUpdatingEnabled установлен в:",
+    isMatchUpdatingEnabled
+  );
+  console.log("✓ Интервал перезапущен (30 сек)");
+}
+
+/**
+ * Переключить состояние обновления матчей
+ * Использование: toggleMatchUpdates()
+ */
+function toggleMatchUpdates() {
+  isMatchUpdatingEnabled = !isMatchUpdatingEnabled;
+  const status = isMatchUpdatingEnabled ? "▶️ ЗАПУЩЕНО" : "⏸️ ОСТАНОВЛЕНО";
+  console.log(`Обновление матчей: ${status}`);
+}
+
+/**
+ * Получить статус обновления матчей
+ * Использование: getMatchUpdateStatus()
+ */
+function getMatchUpdateStatus() {
+  const status = isMatchUpdatingEnabled ? "▶️ АКТИВНО" : "⏸️ ОСТАНОВЛЕНО";
+  console.log(`Статус обновления матчей: ${status}`);
+  return {
+    enabled: isMatchUpdatingEnabled,
+    status: status,
+    updateInterval: "30 секунд",
+  };
+}
+
+/**
+ * Обновить матчи прямо сейчас (принудительное обновление)
+ * Использование: forceUpdateMatches()
+ */
+function forceUpdateMatches() {
+  if (matches.length > 0) {
+    displayMatches();
+    console.log("🔄 Матчи обновлены принудительно");
+  } else {
+    console.log("ℹ️ Нет матчей для обновления");
+  }
+}
+
+// Вывод справки в консоль при загрузке
+console.log(
+  "%c🎯 1xBetLineBoom - Команды управления обновлением матчей:",
+  "color: #667eea; font-size: 14px; font-weight: bold;"
+);
+console.log(
+  "%c  stopMatchUpdates()       - ⏸️ Остановить обновление каждые 30 сек",
+  "color: #f44336; font-size: 12px;"
+);
+console.log(
+  "%c  startMatchUpdates()      - ▶️ Запустить обновление каждые 30 сек",
+  "color: #4caf50; font-size: 12px;"
+);
+console.log(
+  "%c  toggleMatchUpdates()     - 🔄 Переключить (вкл ↔ выкл)",
+  "color: #ff9800; font-size: 12px;"
+);
+console.log(
+  "%c  getMatchUpdateStatus()   - ℹ️ Показать текущий статус",
+  "color: #2196f3; font-size: 12px;"
+);
+console.log(
+  "%c  forceUpdateMatches()     - 🔄 Обновить матчи СЕЙЧАС (вне графика)",
+  "color: #9c27b0; font-size: 12px;"
+);
