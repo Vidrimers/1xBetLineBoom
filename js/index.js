@@ -759,6 +759,11 @@ async function deleteBet(betId) {
           myBetsList.innerHTML =
             '<div class="empty-message">У вас пока нет ставок</div>';
         }
+
+        // 🔄 Обновляем карточки матчей, чтобы убрать подсветку
+        if (currentEventId) {
+          loadMatches(currentEventId);
+        }
       }, 300);
     }
 
