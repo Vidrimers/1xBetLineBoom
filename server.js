@@ -212,9 +212,18 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE,
+    telegram_username TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
+
+// Миграция: добавляем telegram_username если его нет
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN telegram_username TEXT`);
+  console.log("✅ Колонка telegram_username добавлена в таблицу users");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
 
 // Таблица событий (Лиги, турниры)
 db.exec(`
@@ -635,6 +644,79 @@ app.get("/api/user/:userId/profile", (req, res) => {
     };
 
     res.json(profile);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/user/:userId/telegram - Получить Telegram username пользователя
+app.get("/api/user/:userId/telegram", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = db
+      .prepare("SELECT telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({ telegram_username: user.telegram_username || null });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/user/:userId/telegram - Сохранить/обновить Telegram username
+app.put("/api/user/:userId/telegram", (req, res) => {
+  try {
+    const { userId } = req.params;
+    let { telegram_username } = req.body;
+
+    // Убираем @ если пользователь его ввёл
+    if (telegram_username && telegram_username.startsWith("@")) {
+      telegram_username = telegram_username.substring(1);
+    }
+
+    // Проверяем существование пользователя
+    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(
+      telegram_username || null,
+      userId
+    );
+
+    res.json({
+      success: true,
+      message: "Telegram username сохранён",
+      telegram_username: telegram_username || null,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/user/:userId/telegram - Удалить Telegram username
+app.delete("/api/user/:userId/telegram", (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    db.prepare("UPDATE users SET telegram_username = NULL WHERE id = ?").run(
+      userId
+    );
+
+    res.json({
+      success: true,
+      message: "Telegram username удалён",
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

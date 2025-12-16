@@ -1540,9 +1540,107 @@ async function deleteUser(userId, username) {
 }
 
 // Загрузить настройки
-function loadSettings() {
-  // Заглушка для функции загрузки настроек
-  // Здесь можно добавить загрузку пользовательских настроек
+async function loadSettings() {
+  if (!currentUser) {
+    document.getElementById("settingsContainer").innerHTML =
+      '<div class="empty-message">Войдите в систему для доступа к настройкам</div>';
+    return;
+  }
+
+  try {
+    // Загружаем текущий Telegram username
+    const response = await fetch(`/api/user/${currentUser.id}/telegram`);
+    const data = await response.json();
+    const telegramUsername = data.telegram_username || "";
+
+    document.getElementById("settingsContainer").innerHTML = `
+      <!-- Telegram -->
+      <div class="setting-item">
+        <div class="setting-label">
+          <span>📱 Telegram</span>
+          ${
+            telegramUsername
+              ? `<a href="https://t.me/${telegramUsername}" target="_blank" class="setting-link">@${telegramUsername}</a>`
+              : ""
+          }
+        </div>
+        <p class="setting-hint">ТГ для уведомлений/напоминаний</p>
+        <div class="setting-control">
+          <input type="text" id="telegramUsernameInput" value="${telegramUsername}" placeholder="@username" onkeypress="if(event.key === 'Enter') saveTelegramUsername()">
+          <button onclick="saveTelegramUsername()" class="btn-save">💾</button>
+          ${
+            telegramUsername
+              ? `<button onclick="deleteTelegramUsername()" class="btn-delete">🗑️</button>`
+              : ""
+          }
+        </div>
+        <p class="setting-hint-small">Свой ТГ можно узнать в <a href="https://t.me/OnexBetLineBoomBot" target="_blank">боте</a> → Профиль или /profile</p>
+      </div>
+    `;
+  } catch (error) {
+    console.error("Ошибка при загрузке настроек:", error);
+    document.getElementById("settingsContainer").innerHTML =
+      '<div class="empty-message">Ошибка при загрузке настроек</div>';
+  }
+}
+
+// Сохранить Telegram username
+async function saveTelegramUsername() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  const input = document.getElementById("telegramUsernameInput");
+  const username = input.value.trim();
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/telegram`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegram_username: username }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      loadSettings(); // Перезагружаем настройки
+    } else {
+      alert("Ошибка: " + result.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении:", error);
+    alert("Ошибка при сохранении");
+  }
+}
+
+// Удалить Telegram username
+async function deleteTelegramUsername() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  if (!confirm("Вы уверены, что хотите удалить Telegram username?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/telegram`, {
+      method: "DELETE",
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      loadSettings(); // Перезагружаем настройки
+    } else {
+      alert("Ошибка: " + result.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при удалении:", error);
+    alert("Ошибка при удалении");
+  }
 }
 
 // ===== СОЗДАНИЕ МАТЧЕЙ =====

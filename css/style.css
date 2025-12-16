@@ -1030,3 +1030,119 @@ button.tab-btn:hover {
     flex: 1;
   }
 }
+
+/* ===== НАСТРОЙКИ ===== */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 350px;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  /* border-left: 3px solid #667eea; */
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: #333;
+  font-size: 1em;
+}
+
+.setting-link {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 0.9em;
+  /* margin-left: auto; */
+}
+
+.setting-link:hover {
+  text-decoration: underline;
+}
+
+.setting-hint {
+  color: #666;
+  font-size: 0.85em;
+  margin: 0;
+}
+
+.setting-hint-small {
+  color: #999;
+  font-size: 0.8em;
+  margin: 5px 0 0 0;
+}
+
+.setting-hint-small a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.setting-hint-small a:hover {
+  text-decoration: underline;
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.setting-control input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95em;
+  flex: 1;
+  transition: border-color 0.2s;
+  /* max-width: 150px; */
+}
+
+.setting-control input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.setting-control .btn-save {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save:hover {
+  background: #5a6fd6;
+}
+
+.setting-control .btn-delete {
+  background: transparent;
+  color: #f44336;
+  border: 1px solid #f44336;
+  padding: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete:hover {
+  background: #f44336;
+  color: white;
+}
+
+@media (max-width: 500px) {
+  .settings-container {
+    max-width: 100%;
+  }
+}
