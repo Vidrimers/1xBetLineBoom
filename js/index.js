@@ -8,6 +8,7 @@ let ADMIN_LOGIN = null;
 let ADMIN_DB_NAME = null;
 let matchUpdateInterval = null;
 let isMatchUpdatingEnabled = true;
+let currentRoundFilter = "all"; // Текущий фильтр по туру
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 
@@ -390,6 +391,7 @@ async function loadMatches(eventId) {
   try {
     const response = await fetch(`/api/events/${eventId}/matches`);
     matches = await response.json();
+    currentRoundFilter = "all"; // Сбрасываем фильтр при загрузке нового турнира
     displayMatches();
   } catch (error) {
     console.error("Ошибка при загрузке матчей:", error);
@@ -398,22 +400,72 @@ async function loadMatches(eventId) {
   }
 }
 
+// Фильтрация матчей по туру
+function filterByRound(round) {
+  currentRoundFilter = round;
+  displayMatches();
+}
+
 function displayMatches() {
   const matchesContainer = document.getElementById("matchesContainer");
+  const roundsFilterContainer = document.getElementById(
+    "roundsFilterContainer"
+  );
 
   if (matches.length === 0) {
     matchesContainer.innerHTML =
       '<div class="empty-message">Матчи не найдены</div>';
+    roundsFilterContainer.style.display = "none";
     return;
   }
 
-  // Логируем для отладки
-  console.debug(
-    `🎯 displayMatches() вызвана. isMatchUpdatingEnabled: ${isMatchUpdatingEnabled}`
-  );
+  // Собираем уникальные туры из матчей
+  const rounds = [
+    ...new Set(matches.map((m) => m.round).filter((r) => r && r.trim())),
+  ];
+
+  // Показываем фильтры только если есть хотя бы один тур
+  if (rounds.length > 0) {
+    // Если текущий фильтр "all" или не существует в списке туров, выбираем первый тур
+    if (currentRoundFilter === "all" || !rounds.includes(currentRoundFilter)) {
+      currentRoundFilter = rounds[0];
+    }
+
+    roundsFilterContainer.style.display = "block";
+    const filterButtons = roundsFilterContainer.querySelector("div");
+    filterButtons.innerHTML = `
+      ${rounds
+        .map(
+          (round) => `
+        <button class="round-filter-btn ${
+          currentRoundFilter === round ? "active" : ""
+        }" data-round="${round}" onclick="filterByRound('${round.replace(
+            /'/g,
+            "\\'"
+          )}')">${round}</button>
+      `
+        )
+        .join("")}
+    `;
+  } else {
+    roundsFilterContainer.style.display = "none";
+    currentRoundFilter = "all"; // Сбрасываем фильтр если туров нет
+  }
+
+  // Фильтруем матчи по выбранному туру
+  let filteredMatches = matches;
+  if (currentRoundFilter !== "all" && rounds.length > 0) {
+    filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
+  }
+
+  if (filteredMatches.length === 0) {
+    matchesContainer.innerHTML =
+      '<div class="empty-message">Нет матчей для выбранного тура</div>';
+    return;
+  }
 
   // Сортируем матчи: идущие сверху, потом ожидающие по дате, завершенные внизу
-  const sortedMatches = [...matches].sort((a, b) => {
+  const sortedMatches = [...filteredMatches].sort((a, b) => {
     const statusA = getMatchStatusByDate(a);
     const statusB = getMatchStatusByDate(b);
 

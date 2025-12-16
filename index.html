@@ -125,6 +125,32 @@
                 ➕ Добавить матч
               </button>
             </div>
+            <div
+              id="roundsFilterContainer"
+              style="
+                display: none;
+                margin-bottom: 15px;
+                padding: 10px 0;
+                border-bottom: 1px solid #e0e0e0;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 8px;
+                  align-items: center;
+                "
+              >
+                <button
+                  class="round-filter-btn active"
+                  data-round="all"
+                  onclick="filterByRound('all')"
+                >
+                  Все
+                </button>
+              </div>
+            </div>
             <div id="matchesContainer">
               <div class="empty-message">
                 Выберите событие для просмотра матчей

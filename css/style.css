@@ -1146,3 +1146,30 @@ button.tab-btn:hover {
     max-width: 100%;
   }
 }
+
+/* Кнопки фильтрации по турам */
+.round-filter-btn {
+  padding: 6px 12px;
+  font-size: 0.8em;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #555;
+}
+
+.round-filter-btn:hover {
+  background: #e0e0e0;
+  border-color: #ccc;
+}
+
+.round-filter-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.round-filter-btn.active:hover {
+  background: #5a6fd6;
+}
