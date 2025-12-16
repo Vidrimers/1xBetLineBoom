@@ -439,7 +439,7 @@ function displayMatches() {
       return `
         <div class="match-row ${betClass}" style="position: relative;">
             ${
-              ADMIN_USER
+              currentUser?.username === ADMIN_USER
                 ? `
               <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 10;">
                 <button onclick="setMatchResult(${match.id}, 'team1')"
