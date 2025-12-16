@@ -542,7 +542,7 @@ function displayMyBets(bets) {
                     <span>Ставка: <strong>${bet.prediction}</strong></span>
                 </div>
                 <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
-                    Событие: ${bet.event_name}
+                    Турнир: ${bet.event_name}
                 </div>
                 <button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>
             </div>
@@ -867,7 +867,6 @@ async function deleteEvent(eventId) {
       return;
     }
 
-    alert(result.message);
     loadEvents();
   } catch (error) {
     console.error("Ошибка при удалении турнира:", error);

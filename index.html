@@ -187,7 +187,7 @@
 
     <!-- Модальное окно для создания турнира -->
     <div id="createEventModal" class="modal" style="display: none">
-      <div class="modal-content">
+      <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
           <h2>➕ Создать новый турнир</h2>
           <button class="modal-close" onclick="closeCreateEventModal()">
@@ -203,6 +203,7 @@
                 id="eventName"
                 placeholder="Например: Чемпионат мира 2026"
                 required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
               />
             </div>
             <div class="form-group">
@@ -210,16 +211,41 @@
               <textarea
                 id="eventDescription"
                 placeholder="Описание турнира (опционально)"
-                rows="3"
+                rows="2"
+                style="width: 100%; padding: 8px; font-size: 0.95em"
               ></textarea>
             </div>
-            <div class="form-group">
-              <label for="eventDate">Дата начала</label>
-              <input type="date" id="eventDate" placeholder="YYYY-MM-DD" />
-            </div>
-            <div class="form-group">
-              <label for="eventEndDate">Дата конца</label>
-              <input type="date" id="eventEndDate" placeholder="YYYY-MM-DD" />
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+            >
+              <div class="form-group" style="margin: 0">
+                <label for="eventDate">Дата начала</label>
+                <input
+                  type="date"
+                  id="eventDate"
+                  style="
+                    width: 100%;
+                    padding: 6px;
+                    font-size: 0.85em;
+                    height: 30px;
+                    height: auto;
+                  "
+                />
+              </div>
+              <div class="form-group" style="margin: 0">
+                <label for="eventEndDate">Дата конца</label>
+                <input
+                  type="date"
+                  id="eventEndDate"
+                  style="
+                    width: 100%;
+                    padding: 6px;
+                    font-size: 0.85em;
+                    height: 30px;
+                    height: auto;
+                  "
+                />
+              </div>
             </div>
             <div class="form-actions">
               <button type="submit" class="form-btn-submit">✅ Создать</button>
@@ -238,7 +264,7 @@
 
     <!-- Модальное окно для создания матча -->
     <div id="createMatchModal" class="modal" style="display: none">
-      <div class="modal-content">
+      <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
           <h2>➕ Создать новый матч</h2>
           <button class="modal-close" onclick="closeCreateMatchModal()">
@@ -254,6 +280,7 @@
                 id="matchTeam1"
                 placeholder="Например: Manchester United"
                 required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
               />
             </div>
             <div class="form-group">
@@ -263,11 +290,24 @@
                 id="matchTeam2"
                 placeholder="Например: Liverpool FC"
                 required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
               />
             </div>
             <div class="form-group">
               <label for="matchDate">Дата и время матча</label>
-              <input type="datetime-local" id="matchDate" />
+              <input
+                type="datetime-local"
+                id="matchDate"
+                style="
+                  width: 40%;
+                  padding: 6px;
+                  font-size: 0.85em;
+                  padding: 12px 15px;
+                  border: 2px solid #e9ecef;
+                  border-radius: 5px;
+                  transition: all 0.3s ease;
+                "
+              />
             </div>
             <div class="form-actions">
               <button type="submit" class="form-btn-submit">✅ Создать</button>
@@ -323,7 +363,7 @@
 
     <!-- Модальное окно редактирования турнира -->
     <div id="editEventModal" class="modal" style="display: none">
-      <div class="modal-content">
+      <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
           <h2>✏️ Редактировать турнир</h2>
           <button class="modal-close" onclick="closeEditEventModal()">
@@ -339,6 +379,7 @@
                 id="editEventName"
                 placeholder="Введите название турнира"
                 required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
               />
             </div>
             <div class="form-group">
@@ -346,16 +387,41 @@
               <textarea
                 id="editEventDescription"
                 placeholder="Введите описание турнира (опционально)"
-                rows="3"
+                rows="2"
+                style="width: 100%; padding: 8px; font-size: 0.95em"
               ></textarea>
             </div>
-            <div class="form-group">
-              <label for="editEventStartDate">Дата начала</label>
-              <input type="date" id="editEventStartDate" />
-            </div>
-            <div class="form-group">
-              <label for="editEventEndDate">Дата конца</label>
-              <input type="date" id="editEventEndDate" />
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+            >
+              <div class="form-group" style="margin: 0">
+                <label for="editEventStartDate">Дата начала</label>
+                <input
+                  type="date"
+                  id="editEventStartDate"
+                  style="
+                    width: 100%;
+                    padding: 6px;
+                    font-size: 0.85em;
+                    height: 30px;
+                    height: auto;
+                  "
+                />
+              </div>
+              <div class="form-group" style="margin: 0">
+                <label for="editEventEndDate">Дата конца</label>
+                <input
+                  type="date"
+                  id="editEventEndDate"
+                  style="
+                    width: 100%;
+                    padding: 6px;
+                    font-size: 0.85em;
+                    height: 30px;
+                    height: auto;
+                  "
+                />
+              </div>
             </div>
             <div class="form-actions">
               <button type="submit" class="form-btn-submit">
