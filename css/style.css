@@ -130,7 +130,8 @@ input[type="text"]:focus {
 }
 
 button {
-  padding: 12px 25px;
+  /* padding: 12px 25px; */
+  padding: 5px 15px;
   background: linear-gradient(135deg, #0066cc 0%, #001f50 100%);
   color: white;
   border: none;

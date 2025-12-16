@@ -205,6 +205,8 @@ function displayEvents() {
 
   let html = "";
   let lastWasLocked = false;
+  let activeIndex = 1;
+  let completedIndex = 1;
 
   html += sortedEvents
     .map((event) => {
@@ -213,8 +215,17 @@ function displayEvents() {
       if (event.locked_reason && !lastWasLocked) {
         separator =
           '<div style="text-align: center; color: #ccc; font-size: 0.9em;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
+        completedIndex = 1; // Начинаем нумерацию завершенных с 1
       }
       lastWasLocked = !!event.locked_reason;
+
+      // Определяем номер позиции
+      const positionNumber = event.locked_reason ? completedIndex : activeIndex;
+      if (event.locked_reason) {
+        completedIndex++;
+      } else {
+        activeIndex++;
+      }
 
       // Если турнир заблокирован, показываем индикатор
       const lockedBadge = event.locked_reason
@@ -225,64 +236,67 @@ function displayEvents() {
         : "";
 
       return `${separator}
-        <div class="event-item ${event.locked_reason ? "locked" : ""} ${
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="font-size: 1em; font-weight: bold; color: #667eea; min-width: 30px; text-align: center; padding-top: 5px;">#${positionNumber}</div>
+          <div class="event-item ${event.locked_reason ? "locked" : ""} ${
         event.id === currentEventId ? "active" : ""
-      }">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div onclick="selectEvent(${event.id}, '${
+      }" style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div onclick="selectEvent(${event.id}, '${
         event.name
       }')" style="flex: 1; cursor: ${
         event.locked_reason ? "not-allowed" : "pointer"
       };">
-              <strong>${event.name}</strong>
-              <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
-                event.description || "Нет описания"
-              }</p>
+                <strong>${event.name}</strong>
+                <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
+                  event.description || "Нет описания"
+                }</p>
+                ${
+                  event.start_date || event.end_date
+                    ? `<p style="font-size: 0.85em; opacity: 0.6; margin-top: 3px;">
+                        ${
+                          event.start_date
+                            ? `📅 с ${new Date(
+                                event.start_date
+                              ).toLocaleDateString("ru-RU")}`
+                            : ""
+                        }
+                        ${
+                          event.end_date
+                            ? ` по ${new Date(
+                                event.end_date
+                              ).toLocaleDateString("ru-RU")}`
+                            : ""
+                        }
+                      </p>`
+                    : ""
+                }
+                ${lockedBadge}
+              </div>
               ${
-                event.start_date || event.end_date
-                  ? `<p style="font-size: 0.85em; opacity: 0.6; margin-top: 3px;">
-                      ${
-                        event.start_date
-                          ? `📅 с ${new Date(
-                              event.start_date
-                            ).toLocaleDateString("ru-RU")}`
-                          : ""
-                      }
-                      ${
-                        event.end_date
-                          ? ` по ${new Date(event.end_date).toLocaleDateString(
-                              "ru-RU"
-                            )}`
-                          : ""
-                      }
-                    </p>`
+                isAdmin()
+                  ? `<div style="display: flex; gap: 5px; margin-left: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                    <button onclick="openEditEventModal(${
+                      event.id
+                    }, '${event.name.replace(/'/g, "\\'")}', '${
+                      event.description
+                        ? event.description.replace(/'/g, "\\'")
+                        : ""
+                    }', '${event.start_date || ""}', '${
+                      event.end_date || ""
+                    }')" style="background: transparent; padding: 5px; font-size: 0.8em; border: 1px solid #2196f3; color: #2196f3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.1)'" onmouseout="this.style.background='transparent'">✏️</button>
+                    ${
+                      event.locked_reason
+                        ? `<button onclick="unlockEvent(${event.id})" style="background: transparent; padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #4caf50; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.1)'" onmouseout="this.style.background='transparent'">🔓</button>`
+                        : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px; font-size: 0.8em; border: 1px solid #ff9800; color: #ff9800; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.1)'" onmouseout="this.style.background='transparent'">🔒</button>`
+                    }
+                    <button class="event-delete-btn" onclick="deleteEvent(${
+                      event.id
+                    })" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #f44336; color: #f44336; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.1)'" onmouseout="this.style.background='transparent'">✕</button>
+                  </div>`
                   : ""
               }
-              ${lockedBadge}
             </div>
-            ${
-              isAdmin()
-                ? `<div style="display: flex; gap: 5px; margin-left: 10px; flex-wrap: wrap; justify-content: flex-end;">
-                  <button onclick="openEditEventModal(${
-                    event.id
-                  }, '${event.name.replace(/'/g, "\\'")}', '${
-                    event.description
-                      ? event.description.replace(/'/g, "\\'")
-                      : ""
-                  }', '${event.start_date || ""}', '${
-                    event.end_date || ""
-                  }')" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #2196f3; color: #2196f3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.1)'" onmouseout="this.style.background='transparent'">✏️</button>
-                  ${
-                    event.locked_reason
-                      ? `<button onclick="unlockEvent(${event.id})" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #4caf50; color: #4caf50; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.1)'" onmouseout="this.style.background='transparent'">🔓</button>`
-                      : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #ff9800; color: #ff9800; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.1)'" onmouseout="this.style.background='transparent'">🔒</button>`
-                  }
-                  <button class="event-delete-btn" onclick="deleteEvent(${
-                    event.id
-                  })" style="background: transparent; padding: 5px 10px; font-size: 0.8em; border: 1px solid #f44336; color: #f44336; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.1)'" onmouseout="this.style.background='transparent'">✕</button>
-                </div>`
-                : ""
-            }
           </div>
         </div>
     `;
