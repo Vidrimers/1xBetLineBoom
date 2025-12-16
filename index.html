@@ -682,6 +682,28 @@
       </p>
     </footer>
 
+    <!-- Модальное окно редактирования порядка туров -->
+    <div
+      id="roundsOrderModal"
+      class="rounds-order-modal"
+      onclick="closeRoundsOrderModal(event)"
+    >
+      <div class="rounds-order-content" onclick="event.stopPropagation()">
+        <h3>📋 Порядок туров</h3>
+        <ul id="roundsOrderList" class="rounds-order-list">
+          <!-- Туры будут добавлены динамически -->
+        </ul>
+        <div class="rounds-order-buttons">
+          <button class="cancel-btn" onclick="closeRoundsOrderModal()">
+            Отмена
+          </button>
+          <button class="save-btn" onclick="saveRoundsOrder()">
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="js/index.js"></script>
   </body>
 </html>

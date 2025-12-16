@@ -9,8 +9,153 @@ let ADMIN_DB_NAME = null;
 let matchUpdateInterval = null;
 let isMatchUpdatingEnabled = true;
 let currentRoundFilter = "all"; // Текущий фильтр по туру
+let roundsOrder = []; // Порядок туров из localStorage
+let tempRoundsOrder = []; // Временный порядок для редактирования
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
+
+// Загрузить порядок туров из localStorage
+function loadRoundsOrder() {
+  try {
+    const saved = localStorage.getItem("roundsOrder");
+    if (saved) {
+      roundsOrder = JSON.parse(saved);
+    }
+  } catch (e) {
+    roundsOrder = [];
+  }
+}
+
+// Сохранить порядок туров в localStorage
+function saveRoundsOrderToStorage() {
+  try {
+    localStorage.setItem("roundsOrder", JSON.stringify(roundsOrder));
+  } catch (e) {
+    console.error("Ошибка сохранения порядка туров:", e);
+  }
+}
+
+// Открыть модальное окно редактирования порядка туров
+function openRoundsOrderModal() {
+  const uniqueRounds = [
+    ...new Set(matches.map((m) => m.round).filter((r) => r && r.trim())),
+  ];
+
+  // Сортируем туры по сохраненному порядку
+  tempRoundsOrder = sortRoundsByOrder(uniqueRounds);
+
+  renderRoundsOrderList();
+  document.getElementById("roundsOrderModal").classList.add("active");
+}
+
+// Закрыть модальное окно
+function closeRoundsOrderModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById("roundsOrderModal").classList.remove("active");
+}
+
+// Отрисовать список туров в модальном окне
+function renderRoundsOrderList() {
+  const list = document.getElementById("roundsOrderList");
+  list.innerHTML = tempRoundsOrder
+    .map(
+      (round, index) => `
+      <li class="rounds-order-item" draggable="true" data-index="${index}">
+        <span class="drag-handle">☰</span>
+        <span class="round-name">${round}</span>
+      </li>
+    `
+    )
+    .join("");
+
+  // Добавляем обработчики drag-and-drop
+  const items = list.querySelectorAll(".rounds-order-item");
+  items.forEach((item) => {
+    item.addEventListener("dragstart", handleDragStart);
+    item.addEventListener("dragend", handleDragEnd);
+    item.addEventListener("dragover", handleDragOver);
+    item.addEventListener("drop", handleDrop);
+    item.addEventListener("dragenter", handleDragEnter);
+    item.addEventListener("dragleave", handleDragLeave);
+  });
+}
+
+// Drag-and-drop обработчики
+let draggedItem = null;
+
+function handleDragStart(e) {
+  draggedItem = this;
+  this.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+}
+
+function handleDragEnd(e) {
+  this.classList.remove("dragging");
+  document.querySelectorAll(".rounds-order-item").forEach((item) => {
+    item.classList.remove("drag-over");
+  });
+  draggedItem = null;
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+}
+
+function handleDragEnter(e) {
+  e.preventDefault();
+  if (this !== draggedItem) {
+    this.classList.add("drag-over");
+  }
+}
+
+function handleDragLeave(e) {
+  this.classList.remove("drag-over");
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  this.classList.remove("drag-over");
+
+  if (draggedItem && this !== draggedItem) {
+    const fromIndex = parseInt(draggedItem.dataset.index);
+    const toIndex = parseInt(this.dataset.index);
+
+    // Перемещаем элемент в массиве
+    const item = tempRoundsOrder.splice(fromIndex, 1)[0];
+    tempRoundsOrder.splice(toIndex, 0, item);
+
+    // Перерисовываем список
+    renderRoundsOrderList();
+  }
+}
+
+// Сохранить порядок туров
+function saveRoundsOrder() {
+  roundsOrder = [...tempRoundsOrder];
+  saveRoundsOrderToStorage();
+  closeRoundsOrderModal();
+  displayMatches();
+}
+
+// Сортировать туры по сохраненному порядку
+function sortRoundsByOrder(rounds) {
+  return rounds.sort((a, b) => {
+    const indexA = roundsOrder.indexOf(a);
+    const indexB = roundsOrder.indexOf(b);
+
+    // Если оба в сохраненном порядке - сортируем по индексу
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    // Если только a в порядке - a идет первым
+    if (indexA !== -1) return -1;
+    // Если только b в порядке - b идет первым
+    if (indexB !== -1) return 1;
+    // Если оба не в порядке - оставляем как есть
+    return 0;
+  });
+}
 
 // Загрузить конфигурацию сервера
 async function loadConfig() {
@@ -28,6 +173,9 @@ async function loadConfig() {
 document.addEventListener("DOMContentLoaded", async () => {
   // Загружаем конфиг сначала
   await loadConfig();
+
+  // Загружаем сохраненный порядок туров
+  loadRoundsOrder();
 
   // Проверяем, есть ли пользователь в localStorage
   const savedUser = localStorage.getItem("currentUser");
@@ -420,9 +568,12 @@ function displayMatches() {
   }
 
   // Собираем уникальные туры из матчей
-  const rounds = [
+  const uniqueRounds = [
     ...new Set(matches.map((m) => m.round).filter((r) => r && r.trim())),
   ];
+
+  // Сортируем туры по сохраненному порядку
+  const rounds = sortRoundsByOrder(uniqueRounds);
 
   // Показываем фильтры только если есть хотя бы один тур
   if (rounds.length > 0) {
@@ -446,6 +597,7 @@ function displayMatches() {
       `
         )
         .join("")}
+      <button class="edit-rounds-btn" onclick="openRoundsOrderModal()" title="Изменить порядок туров">✎</button>
     `;
   } else {
     roundsFilterContainer.style.display = "none";
