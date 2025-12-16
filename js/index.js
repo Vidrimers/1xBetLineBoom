@@ -445,6 +445,40 @@ function displayMatches() {
     `;
     })
     .join("");
+
+  // Добавляем обработчики для disabled кнопок
+  const disabledButtons = matchesContainer.querySelectorAll("button[disabled]");
+
+  disabledButtons.forEach((button) => {
+    // Полностью переопределяем onclick для disabled кнопок
+    const originalOnclick = button.onclick;
+    button.onclick = function (e) {
+      // Пытаемся получить информацию о матче из кнопки
+      const matchRow = button.closest(".match-row");
+      const teamsDiv = matchRow.querySelector(".match-vs");
+      const team1 = teamsDiv.querySelector(".team-left").textContent;
+      const team2 = teamsDiv.querySelector(".team-right").textContent;
+      const prediction = button.textContent.trim();
+
+      // Отправляем уведомление админу
+      fetch("/api/admin/notify-illegal-bet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentUser?.username || "неизвестный",
+          team1: team1,
+          team2: team2,
+          prediction: prediction,
+          matchStatus: "ongoing",
+        }),
+      }).catch((error) =>
+        console.error("Ошибка при отправке уведомления:", error)
+      );
+
+      alert("Ну, куда ты, малютка, матч уже начался");
+      return false;
+    };
+  });
 }
 
 // ===== СТАВКИ =====

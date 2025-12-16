@@ -946,10 +946,9 @@ app.post("/api/admin/notify-illegal-bet", async (req, res) => {
   });
   try {
     await notifyIllegalBet(username, team1, team2, prediction, matchStatus);
-    console.log("✅ Уведомление отправлено успешно");
     res.json({ success: true });
   } catch (error) {
-    console.error("❌ Ошибка при отправке уведомления:", error);
+    console.error("Ошибка при отправке уведомления:", error);
     res.status(500).json({ error: error.message });
   }
 });

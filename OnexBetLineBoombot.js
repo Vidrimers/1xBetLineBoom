@@ -136,14 +136,6 @@ export async function notifyIllegalBet(
   prediction,
   matchStatus
 ) {
-  console.log("🚨 Функция notifyIllegalBet вызвана с параметрами:", {
-    username,
-    team1,
-    team2,
-    prediction,
-    matchStatus,
-  });
-
   let statusText = "неизвестен";
   if (matchStatus === "ongoing") statusText = "идёт в данный момент ⚽";
   if (matchStatus === "finished") statusText = "уже завершился ✅";
@@ -155,7 +147,6 @@ export async function notifyIllegalBet(
     `🎯 Пытался ставить на: <b>${prediction}</b>\n` +
     `📊 Статус матча: ${statusText}`;
 
-  console.log("📨 Отправляем сообщение:", message);
   await sendAdminNotification(message);
 }
 
