@@ -324,6 +324,13 @@ try {
   // Колонка уже существует, это нормально
 }
 
+// Добавляем колонку round если её нет (для тура/группы/стадии)
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN round TEXT").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)
@@ -533,7 +540,7 @@ app.get("/api/user/:userId/bets", (req, res) => {
     const bets = db
       .prepare(
         `
-      SELECT b.*, m.team1_name, m.team2_name, m.winner, m.status as match_status, e.name as event_name
+      SELECT b.*, m.team1_name, m.team2_name, m.winner, m.status as match_status, m.round, e.name as event_name
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
@@ -1188,7 +1195,7 @@ app.post("/api/admin/events", (req, res) => {
 
 // POST /api/admin/matches - Создать новый матч (только для админа)
 app.post("/api/admin/matches", (req, res) => {
-  const { username, event_id, team1, team2, match_date } = req.body;
+  const { username, event_id, team1, team2, match_date, round } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
   // Проверяем, является ли пользователь админом
@@ -1207,11 +1214,11 @@ app.post("/api/admin/matches", (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO matches (event_id, team1_name, team2_name, match_date)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO matches (event_id, team1_name, team2_name, match_date, round)
+      VALUES (?, ?, ?, ?, ?)
     `
       )
-      .run(event_id, team1, team2, match_date || null);
+      .run(event_id, team1, team2, match_date || null, round || null);
 
     res.json({
       id: result.lastInsertRowid,
@@ -1219,6 +1226,7 @@ app.post("/api/admin/matches", (req, res) => {
       team1_name: team1,
       team2_name: team2,
       match_date: match_date || null,
+      round: round || null,
       message: "Матч успешно создан",
     });
   } catch (error) {
@@ -1229,8 +1237,15 @@ app.post("/api/admin/matches", (req, res) => {
 // PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (только для админа)
 app.put("/api/admin/matches/:matchId", (req, res) => {
   const { matchId } = req.params;
-  const { username, status, result, team1_name, team2_name, match_date } =
-    req.body;
+  const {
+    username,
+    status,
+    result,
+    team1_name,
+    team2_name,
+    match_date,
+    round,
+  } = req.body;
 
   console.log("🔵 PUT /api/admin/matches/:matchId", {
     matchId,
@@ -1287,12 +1302,17 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
       });
     }
 
-    // Если приходят названия команд и/или дата - обновляем их
-    if (team1_name || team2_name || match_date !== undefined) {
+    // Если приходят названия команд и/или дата и/или тур - обновляем их
+    if (
+      team1_name ||
+      team2_name ||
+      match_date !== undefined ||
+      round !== undefined
+    ) {
       // Получаем текущие значения матча
       const currentMatch = db
         .prepare(
-          "SELECT team1_name, team2_name, match_date FROM matches WHERE id = ?"
+          "SELECT team1_name, team2_name, match_date, round FROM matches WHERE id = ?"
         )
         .get(matchId);
 
@@ -1301,11 +1321,12 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
       }
 
       db.prepare(
-        "UPDATE matches SET team1_name = ?, team2_name = ?, match_date = ? WHERE id = ?"
+        "UPDATE matches SET team1_name = ?, team2_name = ?, match_date = ?, round = ? WHERE id = ?"
       ).run(
         team1_name || currentMatch.team1_name,
         team2_name || currentMatch.team2_name,
-        match_date || currentMatch.match_date,
+        match_date !== undefined ? match_date : currentMatch.match_date,
+        round !== undefined ? round : currentMatch.round,
         matchId
       );
 

@@ -487,7 +487,9 @@ function displayMatches() {
               <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10;">
                 <button onclick="openEditMatchModal(${match.id}, '${
                     match.team1_name
-                  }', '${match.team2_name}', '${match.match_date || ""}')"
+                  }', '${match.team2_name}', '${match.match_date || ""}', '${
+                    match.round || ""
+                  }')"
                   style="background: transparent; border: 1px solid #0066cc; color: #0066cc; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                   onmouseover="this.style.background='#0066cc'; this.style.color='white'"
                   onmouseout="this.style.background='transparent'; this.style.color='#0066cc'">
@@ -509,6 +511,11 @@ function displayMatches() {
                     <div class="vs-text">VS</div>
                     <div class="team team-right">${match.team2_name}</div>
                 </div>
+                ${
+                  match.round
+                    ? `<div style="text-align: center; font-size: 0.8em; color: #667eea; font-weight: 500; margin: 5px auto 0;">${match.round}</div>`
+                    : ""
+                }
                 ${
                   match.match_date
                     ? `<div style="text-align: center; font-size: 0.85em; color: #999; margin: 10px auto;">${new Date(
@@ -745,14 +752,18 @@ function displayMyBets(bets) {
       return `
             <div class="bet-item ${statusClass}" data-bet-id="${bet.id}">
                 <div class="bet-info">
-                    <span class="bet-match">${bet.team1_name} vs ${bet.team2_name}</span>
+                    <span class="bet-match">${bet.team1_name} vs ${
+        bet.team2_name
+      }</span>
                     <span class="bet-status ${statusClass}">${statusText}</span>
                 </div>
                 <div class="bet-info" style="font-size: 0.9em; color: #666;">
                     <span>Ставка: <strong>${bet.prediction}</strong></span>
                 </div>
                 <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
-                    Турнир: ${bet.event_name}
+                    Турнир: ${bet.event_name}${
+        bet.round ? ` • ${bet.round}` : ""
+      }
                 </div>
                 ${deleteBtn}
             </div>
@@ -1681,6 +1692,7 @@ async function submitCreateMatch(event) {
   const team1 = document.getElementById("matchTeam1").value.trim();
   const team2 = document.getElementById("matchTeam2").value.trim();
   const matchDate = document.getElementById("matchDate").value;
+  const round = document.getElementById("matchRound").value.trim();
 
   if (!team1 || !team2) {
     alert("Пожалуйста, введите обе команды");
@@ -1704,6 +1716,7 @@ async function submitCreateMatch(event) {
         team1,
         team2,
         match_date: matchDate || null,
+        round: round || null,
       }),
     });
 
@@ -1727,7 +1740,7 @@ async function submitCreateMatch(event) {
 
 // ===== РЕДАКТИРОВАНИЕ И УДАЛЕНИЕ МАТЧЕЙ =====
 
-function openEditMatchModal(id, team1, team2, date) {
+function openEditMatchModal(id, team1, team2, date, round) {
   if (!isAdmin()) {
     alert("❌ Только администратор может редактировать матчи");
     return;
@@ -1737,6 +1750,7 @@ function openEditMatchModal(id, team1, team2, date) {
   document.getElementById("editMatchTeam1").value = team1;
   document.getElementById("editMatchTeam2").value = team2;
   document.getElementById("editMatchDate").value = date || "";
+  document.getElementById("editMatchRound").value = round || "";
   document.getElementById("editMatchModal").style.display = "flex";
 }
 
@@ -1751,6 +1765,7 @@ async function submitEditMatch(event) {
   const team1 = document.getElementById("editMatchTeam1").value.trim();
   const team2 = document.getElementById("editMatchTeam2").value.trim();
   const date = document.getElementById("editMatchDate").value;
+  const round = document.getElementById("editMatchRound").value.trim();
 
   if (!team1 || !team2) {
     alert("❌ Заполните названия обеих команд");
@@ -1766,6 +1781,7 @@ async function submitEditMatch(event) {
         team1_name: team1,
         team2_name: team2,
         match_date: date,
+        round: round || null,
       }),
     });
 
