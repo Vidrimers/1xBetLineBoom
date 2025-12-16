@@ -668,7 +668,7 @@ app.get("/api/user/:userId/telegram", (req, res) => {
 });
 
 // PUT /api/user/:userId/telegram - Сохранить/обновить Telegram username
-app.put("/api/user/:userId/telegram", (req, res) => {
+app.put("/api/user/:userId/telegram", async (req, res) => {
   try {
     const { userId } = req.params;
     let { telegram_username } = req.body;
@@ -679,15 +679,52 @@ app.put("/api/user/:userId/telegram", (req, res) => {
     }
 
     // Проверяем существование пользователя
-    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
+
+    const oldTelegramUsername = user.telegram_username;
 
     db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(
       telegram_username || null,
       userId
     );
+
+    // Отправляем уведомление админу если telegram_username изменился
+    if (telegram_username && telegram_username !== oldTelegramUsername) {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const time = new Date().toLocaleString("ru-RU");
+        const action = oldTelegramUsername ? "изменил" : "добавил";
+        const message = `📱 TELEGRAM USERNAME
+
+👤 Пользователь: ${user.username}
+✏️ Действие: ${action} свой ТГ
+📲 Username: @${telegram_username}
+🕐 Время: ${time}`;
+
+        try {
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: message,
+              }),
+            }
+          );
+        } catch (err) {
+          console.error("❌ Ошибка отправки уведомления в Telegram:", err);
+        }
+      }
+    }
 
     res.json({
       success: true,
@@ -700,18 +737,54 @@ app.put("/api/user/:userId/telegram", (req, res) => {
 });
 
 // DELETE /api/user/:userId/telegram - Удалить Telegram username
-app.delete("/api/user/:userId/telegram", (req, res) => {
+app.delete("/api/user/:userId/telegram", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    const oldTelegramUsername = user.telegram_username;
+
     db.prepare("UPDATE users SET telegram_username = NULL WHERE id = ?").run(
       userId
     );
+
+    // Отправляем уведомление админу если telegram_username был удалён
+    if (oldTelegramUsername) {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const time = new Date().toLocaleString("ru-RU");
+        const message = `📱 TELEGRAM USERNAME
+
+👤 Пользователь: ${user.username}
+✏️ Действие: удалил свой ТГ
+📲 Был: @${oldTelegramUsername}
+🕐 Время: ${time}`;
+
+        try {
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: message,
+              }),
+            }
+          );
+        } catch (err) {
+          console.error("❌ Ошибка отправки уведомления в Telegram:", err);
+        }
+      }
+    }
 
     res.json({
       success: true,

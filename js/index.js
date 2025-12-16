@@ -1621,10 +1621,6 @@ async function deleteTelegramUsername() {
     return;
   }
 
-  if (!confirm("Вы уверены, что хотите удалить Telegram username?")) {
-    return;
-  }
-
   try {
     const response = await fetch(`/api/user/${currentUser.id}/telegram`, {
       method: "DELETE",
