@@ -645,10 +645,10 @@ app.post("/api/admin/matches", (req, res) => {
   }
 });
 
-// PUT /api/admin/matches/:matchId - Изменить статус матча (только для админа)
+// PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (только для админа)
 app.put("/api/admin/matches/:matchId", (req, res) => {
   const { matchId } = req.params;
-  const { username, status } = req.body;
+  const { username, status, team1_name, team2_name, match_date } = req.body;
   const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
@@ -656,25 +656,59 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
-  // Проверяем валидный статус
-  const validStatuses = ["pending", "ongoing", "finished"];
-  if (!status || !validStatuses.includes(status)) {
-    return res.status(400).json({
-      error: "Неверный статус. Допустимые значения: pending, ongoing, finished",
-    });
-  }
-
   try {
-    db.prepare("UPDATE matches SET status = ? WHERE id = ?").run(
-      status,
-      matchId
-    );
+    // Если приходит статус - обновляем только статус
+    if (status) {
+      const validStatuses = ["pending", "ongoing", "finished"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          error:
+            "Неверный статус. Допустимые значения: pending, ongoing, finished",
+        });
+      }
 
-    res.json({
-      message: "Статус матча успешно изменен",
-      matchId,
-      status,
-    });
+      db.prepare("UPDATE matches SET status = ? WHERE id = ?").run(
+        status,
+        matchId
+      );
+
+      return res.json({
+        message: "Статус матча успешно изменен",
+        matchId,
+        status,
+      });
+    }
+
+    // Если приходят названия команд и/или дата - обновляем их
+    if (team1_name || team2_name || match_date !== undefined) {
+      // Получаем текущие значения матча
+      const currentMatch = db
+        .prepare(
+          "SELECT team1_name, team2_name, match_date FROM matches WHERE id = ?"
+        )
+        .get(matchId);
+
+      if (!currentMatch) {
+        return res.status(404).json({ error: "Матч не найден" });
+      }
+
+      db.prepare(
+        "UPDATE matches SET team1_name = ?, team2_name = ?, match_date = ? WHERE id = ?"
+      ).run(
+        team1_name || currentMatch.team1_name,
+        team2_name || currentMatch.team2_name,
+        match_date || currentMatch.match_date,
+        matchId
+      );
+
+      return res.json({
+        success: true,
+        message: "Матч успешно обновлен",
+        matchId,
+      });
+    }
+
+    return res.status(400).json({ error: "Не указаны данные для обновления" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -949,6 +983,24 @@ app.post("/api/admin/notify-illegal-bet", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Ошибка при отправке уведомления:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/matches/:matchId - Удалить матч
+app.delete("/api/admin/matches/:matchId", (req, res) => {
+  const { matchId } = req.params;
+  const { username } = req.body;
+  const ADMIN_USER = process.env.ADMIN_USER_ID;
+
+  if (username !== ADMIN_USER) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
+    res.json({ success: true, message: "Матч успешно удален" });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

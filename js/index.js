@@ -397,7 +397,29 @@ function displayMatches() {
       }
 
       return `
-        <div class="match-row ${betClass}">
+        <div class="match-row ${betClass}" style="position: relative;">
+            ${
+              ADMIN_USER
+                ? `
+              <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 10;">
+                <button onclick="openEditMatchModal(${match.id}, '${
+                    match.team1_name
+                  }', '${match.team2_name}', '${match.match_date || ""}')"
+                  style="background: transparent; border: 1px solid #0066cc; color: #0066cc; padding: 5px 12px; border-radius: 3px; cursor: pointer; transition: all 0.2s;"
+                  onmouseover="this.style.background='#0066cc'; this.style.color='white'"
+                  onmouseout="this.style.background='transparent'; this.style.color='#0066cc'">
+                  ✏️
+                </button>
+                <button onclick="deleteMatch(${match.id})"
+                  style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px 12px; border-radius: 3px; cursor: pointer; transition: all 0.2s;"
+                  onmouseover="this.style.background='#f44336'; this.style.color='white'"
+                  onmouseout="this.style.background='transparent'; this.style.color='#f44336'">
+                  ✕
+                </button>
+              </div>
+            `
+                : ""
+            }
             <div class="match-teams">
                 <div class="match-vs">
                     <div class="team team-left">${match.team1_name}</div>
@@ -1459,5 +1481,93 @@ async function submitCreateMatch(event) {
   } catch (error) {
     console.error("Ошибка при создании матча:", error);
     alert("Ошибка при создании матча: " + error.message);
+  }
+}
+
+// ===== РЕДАКТИРОВАНИЕ И УДАЛЕНИЕ МАТЧЕЙ =====
+
+function openEditMatchModal(id, team1, team2, date) {
+  if (currentUser?.username !== ADMIN_USER) {
+    alert("❌ Только администратор может редактировать матчи");
+    return;
+  }
+
+  document.getElementById("editMatchId").value = id;
+  document.getElementById("editMatchTeam1").value = team1;
+  document.getElementById("editMatchTeam2").value = team2;
+  document.getElementById("editMatchDate").value = date || "";
+  document.getElementById("editMatchModal").style.display = "flex";
+}
+
+function closeEditMatchModal() {
+  document.getElementById("editMatchModal").style.display = "none";
+}
+
+async function submitEditMatch(event) {
+  event.preventDefault();
+
+  const id = document.getElementById("editMatchId").value;
+  const team1 = document.getElementById("editMatchTeam1").value.trim();
+  const team2 = document.getElementById("editMatchTeam2").value.trim();
+  const date = document.getElementById("editMatchDate").value;
+
+  if (!team1 || !team2) {
+    alert("❌ Заполните названия обеих команд");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/matches/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: currentUser.username,
+        team1_name: team1,
+        team2_name: team2,
+        match_date: date,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      closeEditMatchModal();
+      loadMatches(currentEventId);
+    } else {
+      alert(`❌ Ошибка: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при редактировании матча:", error);
+    alert("❌ Ошибка при редактировании матча");
+  }
+}
+
+async function deleteMatch(id) {
+  if (currentUser?.username !== ADMIN_USER) {
+    alert("❌ Только администратор может удалять матчи");
+    return;
+  }
+
+  if (!confirm("⚠️ Вы уверены, что хотите удалить этот матч?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/matches/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: currentUser.username }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      loadMatches(currentEventId);
+    } else {
+      alert(`❌ Ошибка: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при удалении матча:", error);
+    alert("❌ Ошибка при удалении матча");
   }
 }

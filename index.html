@@ -364,6 +364,66 @@
       </div>
     </div>
 
+    <!-- Модальное окно для редактирования матча -->
+    <div id="editMatchModal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 500px">
+        <div class="modal-header">
+          <h2>✏️ Редактировать матч</h2>
+          <button class="modal-close" onclick="closeEditMatchModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form onsubmit="submitEditMatch(event)">
+            <input type="hidden" id="editMatchId" />
+            <div class="form-group">
+              <label for="editMatchTeam1">Команда 1 *</label>
+              <input
+                type="text"
+                id="editMatchTeam1"
+                required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editMatchTeam2">Команда 2 *</label>
+              <input
+                type="text"
+                id="editMatchTeam2"
+                required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editMatchDate">Дата и время матча</label>
+              <input
+                type="datetime-local"
+                id="editMatchDate"
+                style="
+                  width: 40%;
+                  padding: 6px;
+                  font-size: 0.85em;
+                  height: 30px;
+                "
+              />
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="form-btn-submit">
+                ✅ Сохранить
+              </button>
+              <button
+                type="button"
+                class="form-btn-cancel"
+                onclick="closeEditMatchModal()"
+              >
+                ❌ Отмена
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <!-- Модальное окно для блокировки турнира -->
     <div id="lockEventModal" class="modal" style="display: none">
       <div class="modal-content">
