@@ -4,7 +4,8 @@ let currentEventId = null;
 let events = [];
 let matches = [];
 let userBets = [];
-let ADMIN_USER = null;
+let ADMIN_LOGIN = null;
+let ADMIN_DB_NAME = null;
 let matchUpdateInterval = null;
 let isMatchUpdatingEnabled = true;
 
@@ -15,7 +16,8 @@ async function loadConfig() {
   try {
     const response = await fetch("/api/config");
     const config = await response.json();
-    ADMIN_USER = config.ADMIN_USER;
+    ADMIN_LOGIN = config.ADMIN_LOGIN;
+    ADMIN_DB_NAME = config.ADMIN_DB_NAME;
   } catch (error) {
     console.error("❌ Ошибка при загрузке конфигурации:", error);
   }
@@ -55,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     authBtn.onclick = () => logoutUser();
 
     // Показываем админ-кнопки если это админ
-    if (user.username === ADMIN_USER) {
+    if (user.isAdmin) {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("adminUsersBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
@@ -88,8 +90,19 @@ async function initUser() {
   // Преобразуем первую букву в заглавную
   username = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
 
+  // Проверяем, пытается ли кто-то логиниться под ADMIN_DB_NAME
+  if (username === ADMIN_DB_NAME) {
+    alert("Ну, ты давай не охуевай совсем, малютка");
+    document.getElementById("username").value = "";
+    return;
+  }
+
+  // Если админ логинится под ADMIN_LOGIN, то отправляем ADMIN_DB_NAME на сервер
+  let usernameToSend = username === ADMIN_LOGIN ? ADMIN_DB_NAME : username;
+  let isAdminUser = username === ADMIN_LOGIN;
+
   // Обновляем input с правильным логином
-  document.getElementById("username").value = username;
+  document.getElementById("username").value = usernameToSend;
 
   try {
     const response = await fetch("/api/user", {
@@ -97,14 +110,15 @@ async function initUser() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ username: usernameToSend }),
     });
 
     const user = await response.json();
     currentUser = user;
+    currentUser.isAdmin = isAdminUser; // Устанавливаем флаг админа
 
     // Сохраняем пользователя в localStorage
-    localStorage.setItem("currentUser", JSON.stringify(user));
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
     // Обновляем классы контейнера для показа контента
     const container = document.querySelector(".container");
@@ -126,7 +140,7 @@ async function initUser() {
     authBtn.onclick = () => logoutUser();
 
     // Показываем админ-кнопки если это админ
-    if (currentUser.username === ADMIN_USER) {
+    if (currentUser.isAdmin) {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("adminUsersBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
@@ -439,7 +453,7 @@ function displayMatches() {
       return `
         <div class="match-row ${betClass}" style="position: relative;">
             ${
-              currentUser?.username === ADMIN_USER
+              isAdmin()
                 ? `
               <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 10;">
                 <button onclick="setMatchResult(${match.id}, 'team1')"
@@ -931,7 +945,7 @@ async function seedData() {
 
 // Проверить, является ли пользователь админом
 function isAdmin() {
-  return currentUser && currentUser.username === ADMIN_USER;
+  return currentUser && currentUser.isAdmin === true;
 }
 
 // Создать новое событие (только для админа)
@@ -1571,7 +1585,7 @@ async function submitCreateMatch(event) {
 // ===== РЕДАКТИРОВАНИЕ И УДАЛЕНИЕ МАТЧЕЙ =====
 
 function openEditMatchModal(id, team1, team2, date) {
-  if (currentUser?.username !== ADMIN_USER) {
+  if (!isAdmin()) {
     alert("❌ Только администратор может редактировать матчи");
     return;
   }
@@ -1627,7 +1641,7 @@ async function submitEditMatch(event) {
 }
 
 async function deleteMatch(id) {
-  if (currentUser?.username !== ADMIN_USER) {
+  if (!isAdmin()) {
     alert("❌ Только администратор может удалять матчи");
     return;
   }

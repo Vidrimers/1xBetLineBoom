@@ -107,11 +107,13 @@ try {
 
 // ===== API ENDPOINTS =====
 
-// 0. Получить конфигурацию (включая ADMIN_USER)
+// 0. Получить конфигурацию (включая ADMIN_LOGIN)
 app.get("/api/config", (req, res) => {
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
+  const ADMIN_LOGIN = process.env.ADMIN_LOGIN;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
   res.json({
-    ADMIN_USER: ADMIN_USER || null,
+    ADMIN_LOGIN: ADMIN_LOGIN || null,
+    ADMIN_DB_NAME: ADMIN_DB_NAME || null,
   });
 });
 
@@ -571,10 +573,10 @@ app.post("/api/football-data/sync-results", async (req, res) => {
 // POST /api/admin/events - Создать новое событие (только для админа)
 app.post("/api/admin/events", (req, res) => {
   const { username, name, description, start_date, end_date } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
   // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_USER) {
+  if (username !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -615,10 +617,10 @@ app.post("/api/admin/events", (req, res) => {
 // POST /api/admin/matches - Создать новый матч (только для админа)
 app.post("/api/admin/matches", (req, res) => {
   const { username, event_id, team1, team2, match_date } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
   // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_USER) {
+  if (username !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -657,19 +659,17 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
   const { matchId } = req.params;
   const { username, status, result, team1_name, team2_name, match_date } =
     req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   console.log("🔵 PUT /api/admin/matches/:matchId", {
     matchId,
     username,
     status,
     result,
-    ADMIN_USER,
   });
 
   // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_USER) {
-    console.log("❌ Пользователь не админ:", username, "!==", ADMIN_USER);
+  if (username !== process.env.ADMIN_DB_NAME) {
+    console.log("❌ Пользователь не админ:", username);
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -745,10 +745,9 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
 app.delete("/api/admin/events/:eventId", (req, res) => {
   const { eventId } = req.params;
   const username = req.body.username;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_USER) {
+  if (username !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -778,10 +777,9 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
 app.put("/api/admin/events/:eventId/lock", (req, res) => {
   const { eventId } = req.params;
   const { username, reason } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_USER) {
+  if (username !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -812,10 +810,9 @@ app.put("/api/admin/events/:eventId/lock", (req, res) => {
 app.put("/api/admin/events/:eventId/unlock", (req, res) => {
   const { eventId } = req.params;
   const { username } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_USER) {
+  if (username !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -841,10 +838,9 @@ app.put("/api/admin/events/:eventId/unlock", (req, res) => {
 app.put("/api/admin/events/:eventId", (req, res) => {
   const { eventId } = req.params;
   const { username, name, description, start_date, end_date } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователем админом
-  if (username !== ADMIN_USER) {
+  if (username !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -885,11 +881,10 @@ app.put("/api/admin/events/:eventId", (req, res) => {
 
 // GET /api/admin/users - Получить всех пользователей (только для админа)
 app.get("/api/admin/users", (req, res) => {
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
   const username = req.query.username;
 
   // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_USER) {
+  if (username !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -922,10 +917,9 @@ app.get("/api/admin/users", (req, res) => {
 app.put("/api/admin/users/:userId", (req, res) => {
   const { userId } = req.params;
   const { username: adminUsername, newUsername } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
-  if (adminUsername !== ADMIN_USER) {
+  if (adminUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -963,10 +957,9 @@ app.put("/api/admin/users/:userId", (req, res) => {
 app.delete("/api/admin/users/:userId", (req, res) => {
   const { userId } = req.params;
   const { username: adminUsername } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
-  if (adminUsername !== ADMIN_USER) {
+  if (adminUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -974,7 +967,7 @@ app.delete("/api/admin/users/:userId", (req, res) => {
   const userToDelete = db
     .prepare("SELECT username FROM users WHERE id = ?")
     .get(userId);
-  if (userToDelete && userToDelete.username === ADMIN_USER) {
+  if (userToDelete && userToDelete.username === process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Нельзя удалить админа" });
   }
 
@@ -1018,9 +1011,8 @@ app.post("/api/admin/notify-illegal-bet", async (req, res) => {
 app.delete("/api/admin/matches/:matchId", (req, res) => {
   const { matchId } = req.params;
   const { username } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER_ID;
 
-  if (username !== ADMIN_USER) {
+  if (username !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
