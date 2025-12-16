@@ -54,6 +54,7 @@ function writeBetLog(action, data) {
         <span class="user">👤 ${data.username}</span>
         <span class="prediction">🎯 ${data.prediction}</span>
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
       </div>
     </div>`;
     } else if (action === "deleted") {
@@ -65,6 +66,7 @@ function writeBetLog(action, data) {
         <span class="user">👤 ${data.username}</span>
         <span class="prediction">🎯 ${data.prediction}</span>
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
       </div>
     </div>`;
     }
@@ -136,6 +138,7 @@ function resetLogFile() {
     .log-details .user { color: #64b5f6; }
     .log-details .prediction { color: #ffb74d; }
     .log-details .match { color: #81c784; }
+    .log-details .event { color: #ce93d8; }
   </style>
 </head>
 <body>
@@ -355,7 +358,7 @@ app.post("/api/bets", async (req, res) => {
     // Проверяем матч и его дату
     const match = db
       .prepare(
-        "SELECT status, match_date, winner, team1_name, team2_name FROM matches WHERE id = ?"
+        "SELECT m.status, m.match_date, m.winner, m.team1_name, m.team2_name, m.event_id, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.id = ?"
       )
       .get(match_id);
 
@@ -429,6 +432,7 @@ app.post("/api/bets", async (req, res) => {
       prediction: prediction,
       team1: match.team1_name,
       team2: match.team2_name,
+      eventName: match.event_name,
     });
 
     res.json({
@@ -485,7 +489,7 @@ app.delete("/api/bets/:betId", (req, res) => {
     // Получаем информацию о матче и пользователе для лога
     const match = db
       .prepare(
-        "SELECT team1_name, team2_name, status FROM matches WHERE id = ?"
+        "SELECT m.team1_name, m.team2_name, m.status, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.id = ?"
       )
       .get(bet.match_id);
     const betUser = db
@@ -517,6 +521,7 @@ app.delete("/api/bets/:betId", (req, res) => {
       prediction: bet.prediction,
       team1: match?.team1_name || "?",
       team2: match?.team2_name || "?",
+      eventName: match?.event_name,
     });
 
     res.json({ message: "Ставка удалена" });
