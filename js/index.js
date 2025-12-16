@@ -59,7 +59,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Показываем админ-кнопки если это админ
     if (user.isAdmin) {
       document.getElementById("adminBtn").style.display = "inline-block";
-      document.getElementById("adminUsersBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
       document.getElementById("adminSettingsPanel").style.display = "block";
     }
@@ -150,7 +149,6 @@ async function initUser() {
     // Показываем админ-кнопки если это админ
     if (currentUser.isAdmin) {
       document.getElementById("adminBtn").style.display = "inline-block";
-      document.getElementById("adminUsersBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
       document.getElementById("adminSettingsPanel").style.display = "block";
     }
@@ -186,7 +184,6 @@ function logoutUser() {
 
   // Скрываем админ-кнопки
   document.getElementById("adminBtn").style.display = "none";
-  document.getElementById("adminUsersBtn").style.display = "none";
   document.getElementById("countingBtn").style.display = "none";
   document.getElementById("adminSettingsPanel").style.display = "none";
 
