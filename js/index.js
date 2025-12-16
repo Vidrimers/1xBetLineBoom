@@ -9,29 +9,41 @@ let ADMIN_DB_NAME = null;
 let matchUpdateInterval = null;
 let isMatchUpdatingEnabled = true;
 let currentRoundFilter = "all"; // Текущий фильтр по туру
-let roundsOrder = []; // Порядок туров из localStorage
+let roundsOrder = []; // Порядок туров из БД
 let tempRoundsOrder = []; // Временный порядок для редактирования
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 
-// Загрузить порядок туров из localStorage
-function loadRoundsOrder() {
+// Загрузить порядок туров из БД
+async function loadRoundsOrder() {
   try {
-    const saved = localStorage.getItem("roundsOrder");
-    if (saved) {
-      roundsOrder = JSON.parse(saved);
+    const response = await fetch("/api/rounds-order");
+    if (response.ok) {
+      roundsOrder = await response.json();
+    } else {
+      roundsOrder = [];
     }
   } catch (e) {
+    console.error("Ошибка загрузки порядка туров:", e);
     roundsOrder = [];
   }
 }
 
-// Сохранить порядок туров в localStorage
-function saveRoundsOrderToStorage() {
+// Сохранить порядок туров в БД (только админ)
+async function saveRoundsOrderToStorage() {
   try {
-    localStorage.setItem("roundsOrder", JSON.stringify(roundsOrder));
+    const response = await fetch("/api/admin/rounds-order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rounds: roundsOrder }),
+    });
+    
+    if (!response.ok) {
+      throw new Error("Ошибка сохранения");
+    }
   } catch (e) {
     console.error("Ошибка сохранения порядка туров:", e);
+    alert("Ошибка сохранения порядка туров");
   }
 }
 
@@ -131,9 +143,9 @@ function handleDrop(e) {
 }
 
 // Сохранить порядок туров
-function saveRoundsOrder() {
+async function saveRoundsOrder() {
   roundsOrder = [...tempRoundsOrder];
-  saveRoundsOrderToStorage();
+  await saveRoundsOrderToStorage();
   closeRoundsOrderModal();
   displayMatches();
 }
@@ -174,8 +186,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Загружаем конфиг сначала
   await loadConfig();
 
-  // Загружаем сохраненный порядок туров
-  loadRoundsOrder();
+  // Загружаем сохраненный порядок туров из БД
+  await loadRoundsOrder();
 
   // Проверяем, есть ли пользователь в localStorage
   const savedUser = localStorage.getItem("currentUser");
@@ -584,6 +596,10 @@ function displayMatches() {
 
     roundsFilterContainer.style.display = "block";
     const filterButtons = roundsFilterContainer.querySelector("div");
+    
+    // Проверяем, является ли текущий пользователь админом
+    const isAdmin = currentUser && currentUser.username === ADMIN_LOGIN;
+    
     filterButtons.innerHTML = `
       ${rounds
         .map(
@@ -597,7 +613,7 @@ function displayMatches() {
       `
         )
         .join("")}
-      <button class="edit-rounds-btn" onclick="openRoundsOrderModal()" title="Изменить порядок туров">✎</button>
+      ${isAdmin ? '<button class="edit-rounds-btn" onclick="openRoundsOrderModal()" title="Изменить порядок туров">✎</button>' : ''}
     `;
   } else {
     roundsFilterContainer.style.display = "none";

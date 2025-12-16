@@ -331,6 +331,15 @@ try {
   // Колонка уже существует, это нормально
 }
 
+// Таблица настроек сайта
+db.exec(`
+  CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)
@@ -377,6 +386,46 @@ app.post("/api/notify-admin-login-attempt", async (req, res) => {
   } catch (error) {
     console.error("❌ Ошибка отправки уведомления:", error);
     res.json({ success: false, error: error.message });
+  }
+});
+
+// Получить порядок туров (для всех пользователей)
+app.get("/api/rounds-order", (req, res) => {
+  try {
+    const setting = db
+      .prepare("SELECT value FROM site_settings WHERE key = 'rounds_order'")
+      .get();
+    
+    if (setting && setting.value) {
+      res.json(JSON.parse(setting.value));
+    } else {
+      res.json([]);
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Сохранить порядок туров (только для админа)
+app.put("/api/admin/rounds-order", (req, res) => {
+  try {
+    const { rounds } = req.body;
+    
+    if (!Array.isArray(rounds)) {
+      return res.status(400).json({ error: "rounds должен быть массивом" });
+    }
+    
+    const value = JSON.stringify(rounds);
+    
+    db.prepare(`
+      INSERT INTO site_settings (key, value, updated_at) 
+      VALUES ('rounds_order', ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+    `).run(value, value);
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
