@@ -384,7 +384,24 @@ function displayMatches() {
     `🎯 displayMatches() вызвана. isMatchUpdatingEnabled: ${isMatchUpdatingEnabled}`
   );
 
-  matchesContainer.innerHTML = matches
+  // Сортируем матчи: идущие сверху, потом по дате
+  const sortedMatches = [...matches].sort((a, b) => {
+    const statusA = getMatchStatusByDate(a);
+    const statusB = getMatchStatusByDate(b);
+
+    // Матчи со статусом "ongoing" идут в начало
+    if (statusA === "ongoing" && statusB !== "ongoing") return -1;
+    if (statusA !== "ongoing" && statusB === "ongoing") return 1;
+
+    // Если оба в одинаковом статусе - сортируем по дате
+    if (a.match_date && b.match_date) {
+      return new Date(a.match_date) - new Date(b.match_date);
+    }
+
+    return 0;
+  });
+
+  matchesContainer.innerHTML = sortedMatches
     .map((match) => {
       // Определяем статус на основе даты
       const effectiveStatus = getMatchStatusByDate(match);
