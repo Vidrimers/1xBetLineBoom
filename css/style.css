@@ -401,10 +401,12 @@ button:active {
 }
 
 .bet-item.won {
+  background: rgba(182, 215, 168, 0.9);
   border-left-color: #4caf50;
 }
 
 .bet-item.lost {
+  background: rgba(221, 126, 107, 0.3);
   border-left-color: #f44336;
 }
 

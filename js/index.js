@@ -715,7 +715,19 @@ function displayMyBets(bets) {
       let statusText = "⏳ В ожидании";
 
       if (bet.winner) {
-        if (bet.winner === bet.prediction) {
+        // Маппинг winner (из БД) в prediction format
+        // winner: "team1" | "team2" | "draw"
+        // prediction: team1_name | team2_name | "Ничья"
+        let winnerPrediction;
+        if (bet.winner === "team1") {
+          winnerPrediction = bet.team1_name;
+        } else if (bet.winner === "team2") {
+          winnerPrediction = bet.team2_name;
+        } else if (bet.winner === "draw") {
+          winnerPrediction = "Ничья";
+        }
+
+        if (winnerPrediction === bet.prediction) {
           statusClass = "won";
           statusText = "✅ Выиграла";
         } else {

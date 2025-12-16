@@ -950,17 +950,27 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
         });
       }
 
+      // Определяем winner на основе result
+      let winner = null;
+      if (result) {
+        const winnerMap = {
+          team1_win: "team1",
+          draw: "draw",
+          team2_win: "team2",
+        };
+        winner = winnerMap[result] || null;
+      }
+
       console.log("✓ Обновляем матч:", {
         matchId,
         status,
         result: result || null,
+        winner,
       });
 
-      db.prepare("UPDATE matches SET status = ?, result = ? WHERE id = ?").run(
-        status,
-        result || null,
-        matchId
-      );
+      db.prepare(
+        "UPDATE matches SET status = ?, result = ?, winner = ? WHERE id = ?"
+      ).run(status, result || null, winner, matchId);
 
       return res.json({
         message: "Статус матча успешно изменен",
