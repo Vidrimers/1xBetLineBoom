@@ -212,7 +212,7 @@ function displayEvents() {
       let separator = "";
       if (event.locked_reason && !lastWasLocked) {
         separator =
-          '<div style="margin: 15px 0; text-align: center; color: #ccc; font-size: 0.9em;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
+          '<div style="text-align: center; color: #ccc; font-size: 0.9em;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
       }
       lastWasLocked = !!event.locked_reason;
 

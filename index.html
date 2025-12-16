@@ -70,10 +70,17 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 15px;
+                margin-bottom: 10px;
+
+                position: sticky;
+                background: rgb(255, 255, 255);
+                z-index: 2;
+                top: 0;
+                left: 0;
+                padding-top: 10px;
               "
             >
-              <h2 style="margin: 0">📅 Турниры</h2>
+              <h2 style="margin: 0; padding-bottom: 10px">📅 Турниры</h2>
               <button
                 id="adminBtn"
                 onclick="openCreateEventModal()"
@@ -94,10 +101,17 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 15px;
+                margin-bottom: 10px;
+
+                position: sticky;
+                background: rgb(255, 255, 255);
+                z-index: 2;
+                top: 0;
+                left: 0;
+                padding-top: 10px;
               "
             >
-              <h2 style="margin: 0">⚽ Матчи</h2>
+              <h2 style="margin: 0; padding-bottom: 10px">⚽ Матчи</h2>
               <button
                 id="addMatchBtn"
                 onclick="openCreateMatchModal()"
@@ -117,7 +131,7 @@
         <!-- Правая колонка: Мои ставки -->
         <div>
           <div class="section">
-            <h2>💰 Мои ставки</h2>
+            <h2 class="my-bets-title">💰 Мои ставки</h2>
             <div class="my-bets-list" id="myBetsList">
               <div class="empty-message">У вас пока нет ставок</div>
             </div>
