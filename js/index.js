@@ -408,17 +408,17 @@ function displayMatches() {
             ${
               ADMIN_USER
                 ? `
-              <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 10;">
+              <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10;">
                 <button onclick="openEditMatchModal(${match.id}, '${
                     match.team1_name
                   }', '${match.team2_name}', '${match.match_date || ""}')"
-                  style="background: transparent; border: 1px solid #0066cc; color: #0066cc; padding: 5px 12px; border-radius: 3px; cursor: pointer; transition: all 0.2s;"
+                  style="background: transparent; border: 1px solid #0066cc; color: #0066cc; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                   onmouseover="this.style.background='#0066cc'; this.style.color='white'"
                   onmouseout="this.style.background='transparent'; this.style.color='#0066cc'">
                   ✏️
                 </button>
                 <button onclick="deleteMatch(${match.id})"
-                  style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px 12px; border-radius: 3px; cursor: pointer; transition: all 0.2s;"
+                  style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                   onmouseover="this.style.background='#f44336'; this.style.color='white'"
                   onmouseout="this.style.background='transparent'; this.style.color='#f44336'">
                   ✕
