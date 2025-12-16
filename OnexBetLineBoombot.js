@@ -88,7 +88,7 @@ export async function notifyNewTournament(tournament) {
     `<b>${tournament.name}</b>\n` +
     `<i>${tournament.description || "Описание отсутствует"}</i>\n\n` +
     `📅 Начало: ${tournament.start_date || "Дата не указана"}\n\n` +
-    `🔗 <a href="http://144.124.237.222:3000">Открыть приложение</a>`;
+    `🔗 <a href="http://144.124.237.222:3000">Открыть сайт</a>`;
 
   await sendAdminNotification(message);
 }
@@ -100,7 +100,7 @@ export async function notifyNewMatch(match, tournament) {
     `<b>${match.team1_name}</b> vs <b>${match.team2_name}</b>\n` +
     `📅 Турнир: ${tournament.name}\n` +
     `⏰ Дата: ${match.match_date || "Дата не указана"}\n\n` +
-    `🔗 <a href="http://144.124.237.222:3000">Открыть приложение</a>`;
+    `🔗 <a href="http://144.124.237.222:3000">Открыть сайт</a>`;
 
   await sendAdminNotification(message);
 }
@@ -123,7 +123,7 @@ export async function notifyMatchFinished(match, winner) {
     `✅ <b>Матч завершён!</b>\n\n` +
     `⚽ ${match.team1_name} vs ${match.team2_name}\n` +
     `🏆 Результат: <b>${winner}</b>\n\n` +
-    `🔗 <a href="http://144.124.237.222:3000">Открыть приложение</a>`;
+    `🔗 <a href="http://144.124.237.222:3000">Открыть сайт</a>`;
 
   await sendAdminNotification(message);
 }
@@ -157,6 +157,20 @@ export function startBot() {
 
   console.log("✅ Telegram бот запущен");
 
+  // ===== ГЛАВНОЕ МЕНЮ (КНОПКИ) =====
+  const mainMenuKeyboard = {
+    reply_markup: {
+      keyboard: [
+        ["📊 Статус", "📅 Турниры"],
+        ["💰 Мои ставки", "👤 Профиль"],
+        ["📈 Статистика", "⚽ Ближайший матч"],
+        ["🌐 Открыть сайт"],
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: false,
+    },
+  };
+
   // ===== ОБРАБОТЧИКИ КОМАНД =====
 
   // Команда /start
@@ -168,14 +182,11 @@ export function startBot() {
       chatId,
       `👋 Привет, ${firstName}!\n\n` +
         `🎯 Я бот для 1xBetLineBoom - приложения для ставок на матчи.\n\n` +
-        `📋 Доступные команды:\n` +
-        `/help - показать справку\n` +
-        `/status - статус приложения\n` +
-        `/tournaments - список турниров\n` +
-        `/my_bets - мои ставки\n` +
-        `/profile - мой профиль`,
+        `Используй кнопки ниже или команды:\n` +
+        `/help - показать справку`,
       {
         parse_mode: "HTML",
+        ...mainMenuKeyboard,
       }
     );
   });
@@ -197,17 +208,16 @@ export function startBot() {
         `<b>/profile</b> - показать профиль\n`,
       {
         parse_mode: "HTML",
+        ...mainMenuKeyboard,
       }
     );
   });
 
-  // Команда /status
-  bot.onText(/\/status/, (msg) => {
-    const chatId = msg.chat.id;
-
+  // Команда /status и кнопка 📊 Статус
+  const handleStatus = (chatId) => {
     bot.sendMessage(
       chatId,
-      `✅ <b>Статус:</b> Приложение работает\n\n` +
+      `✅ <b>Статус:</b> Сайт работает\n\n` +
         `🌍 Сервер онлайн\n` +
         `📊 Все турниры доступны\n` +
         `⚡ Система ставок активна`,
@@ -215,40 +225,42 @@ export function startBot() {
         parse_mode: "HTML",
       }
     );
-  });
+  };
 
-  // Команда /tournaments
-  bot.onText(/\/tournaments/, (msg) => {
-    const chatId = msg.chat.id;
+  bot.onText(/\/status/, (msg) => handleStatus(msg.chat.id));
 
+  // Команда /tournaments и кнопка 📅 Турниры
+  const handleTournaments = (chatId) => {
     bot.sendMessage(
       chatId,
       `📅 <b>Турниры:</b>\n\n` +
         `<i>Загрузка турниров...</i>\n\n` +
-        `💡 Используйте приложение для просмотра полного списка турниров и матчей.`,
+        `💡 Используйте сайт для просмотра полного списка турниров и матчей.`,
       {
         parse_mode: "HTML",
       }
     );
-  });
+  };
 
-  // Команда /my_bets
-  bot.onText(/\/my_bets/, (msg) => {
-    const chatId = msg.chat.id;
+  bot.onText(/\/tournaments/, (msg) => handleTournaments(msg.chat.id));
 
+  // Команда /my_bets и кнопка 💰 Мои ставки
+  const handleMyBets = (chatId) => {
     bot.sendMessage(
       chatId,
       `💰 <b>Мои ставки:</b>\n\n` +
         `<i>Загрузка ставок...</i>\n\n` +
-        `💡 Используйте приложение для управления ставками.`,
+        `💡 Используйте сайт для управления ставками.`,
       {
         parse_mode: "HTML",
       }
     );
-  });
+  };
 
-  // Команда /profile
-  bot.onText(/\/profile/, (msg) => {
+  bot.onText(/\/my_bets/, (msg) => handleMyBets(msg.chat.id));
+
+  // Команда /profile и кнопка 👤 Профиль
+  const handleProfile = (msg) => {
     const chatId = msg.chat.id;
     const username = msg.from.username || "нет";
 
@@ -258,17 +270,17 @@ export function startBot() {
         `<b>Имя:</b> ${msg.from.first_name || "—"}\n` +
         `<b>Username:</b> @${username}\n` +
         `<b>ID:</b> ${msg.from.id}\n\n` +
-        `💡 Для просмотра полного профиля используйте приложение.`,
+        `💡 Для просмотра полного профиля используйте сайт.`,
       {
         parse_mode: "HTML",
       }
     );
-  });
+  };
 
-  // Команда /next_match - Ближайший матч
-  bot.onText(/\/next_match/, (msg) => {
-    const chatId = msg.chat.id;
+  bot.onText(/\/profile/, (msg) => handleProfile(msg));
 
+  // Команда /next_match и кнопка ⚽ Ближайший матч
+  const handleNextMatch = (chatId) => {
     bot.sendMessage(
       chatId,
       `⚽ <b>Ближайший матч:</b>\n\n` +
@@ -276,15 +288,17 @@ export function startBot() {
         `<b>Матч:</b> <i>Поиск в прогрессе</i>\n` +
         `<b>Турнир:</b> <i>—</i>\n` +
         `<b>Дата:</b> <i>—</i>\n\n` +
-        `💡 Используйте приложение для просмотра расписания всех матчей.`,
+        `💡 Используйте сайт для просмотра расписания всех матчей.`,
       {
         parse_mode: "HTML",
       }
     );
-  });
+  };
 
-  // Команда /stats - Моя статистика
-  bot.onText(/\/stats/, (msg) => {
+  bot.onText(/\/next_match/, (msg) => handleNextMatch(msg.chat.id));
+
+  // Команда /stats и кнопка 📈 Статистика
+  const handleStats = (msg) => {
     const chatId = msg.chat.id;
     const firstName = msg.from.first_name || "пользователь";
 
@@ -296,11 +310,53 @@ export function startBot() {
         `<b>❌ Проигрышей:</b> <i>загрузка...</i>\n` +
         `<b>⏳ В ожидании:</b> <i>загрузка...</i>\n\n` +
         `<b>Процент побед:</b> <i>загрузка...</i>\n\n` +
-        `💡 Детальная статистика доступна в приложении.`,
+        `💡 Детальная статистика доступна на сайте.`,
       {
         parse_mode: "HTML",
       }
     );
+  };
+
+  bot.onText(/\/stats/, (msg) => handleStats(msg));
+
+  // ===== ОБРАБОТКА КНОПОК =====
+  bot.on("message", (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
+
+    // Игнорируем команды (начинаются с /)
+    if (text && text.startsWith("/")) return;
+
+    switch (text) {
+      case "📊 Статус":
+        handleStatus(chatId);
+        break;
+      case "📅 Турниры":
+        handleTournaments(chatId);
+        break;
+      case "💰 Мои ставки":
+        handleMyBets(chatId);
+        break;
+      case "👤 Профиль":
+        handleProfile(msg);
+        break;
+      case "📈 Статистика":
+        handleStats(msg);
+        break;
+      case "⚽ Ближайший матч":
+        handleNextMatch(chatId);
+        break;
+      case "🌐 Открыть сайт":
+        bot.sendMessage(
+          chatId,
+          `🌐 <b>Открыть сайт:</b>\n\n` +
+            `<a href="http://144.124.237.222:3000">Нажмите здесь чтобы открыть</a>`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        break;
+    }
   });
 
   // Обработчик ошибок
