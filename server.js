@@ -98,6 +98,13 @@ try {
   // Колонка уже существует, это нормально
 }
 
+// Добавляем колонку result если её нет (для результата матча)
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN result TEXT").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_USER)
@@ -648,7 +655,8 @@ app.post("/api/admin/matches", (req, res) => {
 // PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (только для админа)
 app.put("/api/admin/matches/:matchId", (req, res) => {
   const { matchId } = req.params;
-  const { username, status, team1_name, team2_name, match_date } = req.body;
+  const { username, status, result, team1_name, team2_name, match_date } =
+    req.body;
   const ADMIN_USER = process.env.ADMIN_USER_ID;
 
   // Проверяем, является ли пользователь админом
@@ -657,7 +665,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
   }
 
   try {
-    // Если приходит статус - обновляем только статус
+    // Если приходит статус - обновляем статус и результат
     if (status) {
       const validStatuses = ["pending", "ongoing", "finished"];
       if (!validStatuses.includes(status)) {
@@ -667,8 +675,9 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
         });
       }
 
-      db.prepare("UPDATE matches SET status = ? WHERE id = ?").run(
+      db.prepare("UPDATE matches SET status = ?, result = ? WHERE id = ?").run(
         status,
+        result || null,
         matchId
       );
 
@@ -676,6 +685,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
         message: "Статус матча успешно изменен",
         matchId,
         status,
+        result: result || null,
       });
     }
 

@@ -425,6 +425,26 @@ function displayMatches() {
             ${
               ADMIN_USER
                 ? `
+              <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 10;">
+                <button onclick="setMatchResult(${match.id}, 'team1')"
+                  style="background: #1976d2; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                  onmouseover="this.style.background='#1565c0'"
+                  onmouseout="this.style.background='#1976d2'">
+                  1
+                </button>
+                <button onclick="setMatchResult(${match.id}, 'draw')"
+                  style="background: #f57c00; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                  onmouseover="this.style.background='#e65100'"
+                  onmouseout="this.style.background='#f57c00'">
+                  X
+                </button>
+                <button onclick="setMatchResult(${match.id}, 'team2')"
+                  style="background: #388e3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                  onmouseover="this.style.background='#2e7d32'"
+                  onmouseout="this.style.background='#388e3c'">
+                  2
+                </button>
+              </div>
               <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10;">
                 <button onclick="openEditMatchModal(${match.id}, '${
                     match.team1_name
@@ -1676,6 +1696,52 @@ function stopMatchUpdates() {
     isMatchUpdatingEnabled
   );
   console.log("✓ Интервал отменён");
+}
+
+/**
+ * Установить результат матча (завершить матч)
+ * result: 'team1' | 'draw' | 'team2'
+ * Использование: setMatchResult(matchId, 'team1')
+ */
+async function setMatchResult(matchId, result) {
+  const match = matches.find((m) => m.id === matchId);
+  if (!match) return;
+
+  const resultMap = {
+    team1: "team1_win",
+    draw: "draw",
+    team2: "team2_win",
+  };
+
+  try {
+    const response = await fetch(`/api/admin/matches/${matchId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: currentUser?.username,
+        status: "finished",
+        result: resultMap[result],
+      }),
+    });
+
+    if (response.ok) {
+      // Обновляем матч локально
+      match.status = "finished";
+      match.result = resultMap[result];
+
+      console.log(
+        `✓ Матч ${match.team1_name} vs ${match.team2_name} завершен с результатом: ${result}`
+      );
+      displayMatches();
+    } else {
+      const error = await response.json();
+      console.error("Ошибка установки результата:", error.error);
+      alert("Ошибка: " + error.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при установке результата:", error);
+    alert("Ошибка при установке результата матча");
+  }
 }
 
 /**
