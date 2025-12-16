@@ -225,6 +225,17 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// Таблица для связки telegram username → chat_id (для отправки личных сообщений)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS telegram_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    telegram_username TEXT UNIQUE NOT NULL,
+    chat_id INTEGER NOT NULL,
+    first_name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 // Таблица событий (Лиги, турниры)
 db.exec(`
   CREATE TABLE IF NOT EXISTS events (
@@ -693,7 +704,7 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
       userId
     );
 
-    // Отправляем уведомление админу если telegram_username изменился
+    // Отправляем уведомление админу и личное сообщение пользователю
     if (telegram_username && telegram_username !== oldTelegramUsername) {
       const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
       const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
@@ -701,7 +712,9 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
         const time = new Date().toLocaleString("ru-RU");
         const action = oldTelegramUsername ? "изменил" : "добавил";
-        const message = `📱 TELEGRAM USERNAME
+
+        // Уведомление админу
+        const adminMessage = `📱 TELEGRAM USERNAME
 
 👤 Пользователь: ${user.username}
 ✏️ Действие: ${action} свой ТГ
@@ -716,12 +729,55 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: TELEGRAM_ADMIN_ID,
-                text: message,
+                text: adminMessage,
               }),
             }
           );
         } catch (err) {
-          console.error("❌ Ошибка отправки уведомления в Telegram:", err);
+          console.error("❌ Ошибка отправки уведомления админу:", err);
+        }
+
+        // Личное сообщение пользователю
+        const cleanUsername = telegram_username.toLowerCase();
+        const telegramUser = db
+          .prepare(
+            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+          )
+          .get(cleanUsername);
+
+        if (telegramUser && telegramUser.chat_id) {
+          const personalMessage = `🎉 <b>Добро пожаловать в 1xBetLineBoom!</b>
+
+✅ Твой Telegram успешно привязан к аккаунту <b>${user.username}</b>
+
+📊 Теперь ты будешь получать:
+• Уведомления о результатах матчей
+• Напоминания о предстоящих играх
+• Результаты твоих ставок
+
+Удачных ставок, малютка! 🍀`;
+
+          try {
+            await fetch(
+              `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: telegramUser.chat_id,
+                  text: personalMessage,
+                  parse_mode: "HTML",
+                }),
+              }
+            );
+            console.log(`✅ Личное сообщение отправлено @${telegram_username}`);
+          } catch (err) {
+            console.error("❌ Ошибка отправки личного сообщения:", err);
+          }
+        } else {
+          console.log(
+            `⚠️ Пользователь @${telegram_username} не писал боту, личное сообщение не отправлено`
+          );
         }
       }
     }
@@ -789,6 +845,67 @@ app.delete("/api/user/:userId/telegram", async (req, res) => {
     res.json({
       success: true,
       message: "Telegram username удалён",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/telegram/register - Регистрация telegram пользователя (для связки username → chat_id)
+app.post("/api/telegram/register", (req, res) => {
+  try {
+    const { telegram_username, chat_id, first_name } = req.body;
+
+    if (!telegram_username || !chat_id) {
+      return res
+        .status(400)
+        .json({ error: "telegram_username и chat_id обязательны" });
+    }
+
+    // Убираем @ если есть
+    const cleanUsername = telegram_username.replace("@", "").toLowerCase();
+
+    // Сохраняем или обновляем связку
+    db.prepare(
+      `
+      INSERT INTO telegram_users (telegram_username, chat_id, first_name)
+      VALUES (?, ?, ?)
+      ON CONFLICT(telegram_username) DO UPDATE SET
+        chat_id = excluded.chat_id,
+        first_name = excluded.first_name
+    `
+    ).run(cleanUsername, chat_id, first_name || null);
+
+    console.log(`📱 Зарегистрирован telegram: @${cleanUsername} → ${chat_id}`);
+
+    res.json({ success: true, telegram_username: cleanUsername, chat_id });
+  } catch (error) {
+    console.error("Ошибка регистрации telegram:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/telegram/chat-id/:username - Получить chat_id по telegram username
+app.get("/api/telegram/chat-id/:username", (req, res) => {
+  try {
+    const username = req.params.username.replace("@", "").toLowerCase();
+
+    const user = db
+      .prepare(
+        "SELECT chat_id, first_name FROM telegram_users WHERE LOWER(telegram_username) = ?"
+      )
+      .get(username);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ error: "Пользователь не найден", found: false });
+    }
+
+    res.json({
+      found: true,
+      chat_id: user.chat_id,
+      first_name: user.first_name,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -7,6 +7,7 @@ dotenv.config();
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const SERVER_URL = process.env.SERVER_URL || "http://localhost:3000";
 
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
   console.error(
@@ -17,6 +18,30 @@ if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
 
 // Создаём экземпляр бота (будет инициализирован в startBot)
 let bot = null;
+
+// ===== ФУНКЦИЯ РЕГИСТРАЦИИ TELEGRAM ПОЛЬЗОВАТЕЛЯ =====
+async function registerTelegramUser(msg) {
+  const telegramUsername = msg.from?.username;
+  const chatId = msg.chat.id;
+  const firstName = msg.from?.first_name;
+
+  if (!telegramUsername) return; // Если нет username - пропускаем
+
+  try {
+    await fetch(`${SERVER_URL}/api/telegram/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        telegram_username: telegramUsername,
+        chat_id: chatId,
+        first_name: firstName,
+      }),
+    });
+    console.log(`📱 Зарегистрирован: @${telegramUsername} → ${chatId}`);
+  } catch (error) {
+    console.error("Ошибка регистрации telegram пользователя:", error.message);
+  }
+}
 
 // ===== ЭКСПОРТИРУЕМЫЕ ФУНКЦИИ (УТИЛИТЫ) =====
 
@@ -323,6 +348,9 @@ export function startBot() {
   bot.on("message", (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
+
+    // Регистрируем telegram пользователя (сохраняем связку username → chat_id)
+    registerTelegramUser(msg);
 
     // Игнорируем команды (начинаются с /)
     if (text && text.startsWith("/")) return;
