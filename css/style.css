@@ -162,11 +162,14 @@ button:active {
 .section {
   /* background: rgba(255, 255, 255, 0.95); */
   background: rgb(255, 255, 255);
-  /* padding: 15px; */
-  padding: 0px 10px 10px 10px;
+  padding: 10px;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.6s ease;
+}
+
+.section.bet-section {
+  padding: 0px 10px 10px 10px;
   max-height: 60vh;
   overflow: auto;
   scrollbar-width: none;
@@ -178,7 +181,7 @@ button:active {
   margin-bottom: 10px;
   font-size: 1.3em;
   border-bottom: 2px solid #0066cc;
-  /* padding-bottom: 10px; */
+  padding-bottom: 10px;
 }
 
 .my-bets-title {
@@ -191,7 +194,6 @@ button:active {
 }
 .my-bets-list {
   z-index: 1;
-  /* margin-top: 50px; */
 }
 
 .events-list {
