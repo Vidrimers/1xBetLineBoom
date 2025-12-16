@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import { startBot } from "./OnexBetLineBoombot.js";
 
 dotenv.config();
 
@@ -900,6 +901,9 @@ app.delete("/api/admin/users/:userId", (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Запуск Telegram бота
+startBot();
 
 // Запуск сервера
 app.listen(PORT, () => {
