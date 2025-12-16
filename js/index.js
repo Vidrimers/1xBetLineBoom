@@ -528,24 +528,40 @@ function displayMatches() {
                     : ""
                 }
                 <div class="bet-buttons-three">
-                    <button class="bet-btn team1" onclick="placeBet(${
-                      match.id
-                    }, '${match.team1_name}', '${match.team1_name}')" ${
-        effectiveStatus !== "pending" ? "disabled" : ""
+                    <button class="bet-btn team1 ${
+                      userBetOnMatch?.prediction === match.team1_name
+                        ? "selected"
+                        : ""
+                    }" onclick="placeBet(${match.id}, '${match.team1_name}', '${
+        match.team1_name
+      }')" ${
+        effectiveStatus !== "pending" ||
+        userBetOnMatch?.prediction === match.team1_name
+          ? "disabled"
+          : ""
       }>
                         ${match.team1_name}
                     </button>
-                    <button class="bet-btn draw" onclick="placeBet(${
-                      match.id
-                    }, 'Ничья', 'Ничья')" ${
-        effectiveStatus !== "pending" ? "disabled" : ""
+                    <button class="bet-btn draw ${
+                      userBetOnMatch?.prediction === "Ничья" ? "selected" : ""
+                    }" onclick="placeBet(${match.id}, 'Ничья', 'Ничья')" ${
+        effectiveStatus !== "pending" || userBetOnMatch?.prediction === "Ничья"
+          ? "disabled"
+          : ""
       }>
                         Ничья
                     </button>
-                    <button class="bet-btn team2" onclick="placeBet(${
-                      match.id
-                    }, '${match.team2_name}', '${match.team2_name}')" ${
-        effectiveStatus !== "pending" ? "disabled" : ""
+                    <button class="bet-btn team2 ${
+                      userBetOnMatch?.prediction === match.team2_name
+                        ? "selected"
+                        : ""
+                    }" onclick="placeBet(${match.id}, '${match.team2_name}', '${
+        match.team2_name
+      }')" ${
+        effectiveStatus !== "pending" ||
+        userBetOnMatch?.prediction === match.team2_name
+          ? "disabled"
+          : ""
       }>
                         ${match.team2_name}
                     </button>
