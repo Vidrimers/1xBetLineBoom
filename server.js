@@ -117,6 +117,43 @@ app.get("/api/config", (req, res) => {
   });
 });
 
+// Отправить уведомление админу о попытке входа под админским именем
+app.post("/api/notify-admin-login-attempt", async (req, res) => {
+  const { attemptedUsername } = req.body;
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+    console.log("⚠️ Telegram не настроен, уведомление не отправлено");
+    return res.json({ success: false, reason: "Telegram не настроен" });
+  }
+
+  try {
+    const message = `⚠️ Попытка входа под именем "${attemptedUsername}"!\n\n🕐 Время: ${new Date().toLocaleString(
+      "ru-RU"
+    )}`;
+
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: message,
+        }),
+      }
+    );
+
+    const result = await response.json();
+    console.log("📨 Уведомление админу отправлено:", result.ok);
+    res.json({ success: result.ok });
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления:", error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
 // 1. Получить все турниры
 app.get("/api/events", (req, res) => {
   try {

@@ -92,6 +92,13 @@ async function initUser() {
 
   // Проверяем, пытается ли кто-то логиниться под ADMIN_DB_NAME
   if (username === ADMIN_DB_NAME) {
+    // Отправляем уведомление админу в Telegram
+    fetch("/api/notify-admin-login-attempt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ attemptedUsername: username }),
+    }).catch((err) => console.error("Ошибка отправки уведомления:", err));
+
     alert("Ну, ты давай не охуевай совсем, малютка");
     document.getElementById("username").value = "";
     return;
