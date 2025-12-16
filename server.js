@@ -1,6 +1,7 @@
 import express from "express";
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { startBot, notifyIllegalBet } from "./OnexBetLineBoombot.js";
@@ -14,6 +15,143 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const FD_API_TOKEN = process.env.FD_API_TOKEN;
 const FD_API_BASE = "https://api.football-data.org/v4";
+
+// Путь к файлу логов
+const LOG_FILE_PATH = path.join(__dirname, "log.html");
+const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10 MB
+
+// Функция записи лога в HTML файл
+function writeBetLog(action, data) {
+  try {
+    // Проверяем размер файла
+    if (fs.existsSync(LOG_FILE_PATH)) {
+      const stats = fs.statSync(LOG_FILE_PATH);
+      if (stats.size >= MAX_LOG_SIZE) {
+        // Очищаем файл, оставляя только шаблон
+        resetLogFile();
+      }
+    } else {
+      // Создаем файл если не существует
+      resetLogFile();
+    }
+
+    const time = new Date().toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    let logEntry = "";
+    if (action === "placed") {
+      logEntry = `
+    <div class="log-entry bet-placed">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+      <div class="log-details">
+        <span class="user">👤 ${data.username}</span>
+        <span class="prediction">🎯 ${data.prediction}</span>
+        <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+      </div>
+    </div>`;
+    } else if (action === "deleted") {
+      logEntry = `
+    <div class="log-entry bet-deleted">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+      <div class="log-details">
+        <span class="user">👤 ${data.username}</span>
+        <span class="prediction">🎯 ${data.prediction}</span>
+        <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+      </div>
+    </div>`;
+    }
+
+    // Читаем файл и вставляем новый лог после <!-- LOGS_START -->
+    let content = fs.readFileSync(LOG_FILE_PATH, "utf-8");
+    content = content.replace(
+      "<!-- LOGS_START -->",
+      `<!-- LOGS_START -->${logEntry}`
+    );
+    fs.writeFileSync(LOG_FILE_PATH, content, "utf-8");
+
+    console.log(`📝 Лог записан: ${action} - ${data.username}`);
+  } catch (error) {
+    console.error("❌ Ошибка записи лога:", error);
+  }
+}
+
+// Сброс файла логов
+function resetLogFile() {
+  const template = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Логи ставок - 1xBetLineBoom</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .header h1 { color: #667eea; font-size: 2em; margin-bottom: 10px; }
+    .header p { color: #888; font-size: 0.9em; }
+    .logs-container { max-width: 1200px; margin: 0 auto; }
+    .log-entry {
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 4px solid #667eea;
+      padding: 15px 20px;
+      margin-bottom: 10px;
+      border-radius: 0 8px 8px 0;
+      transition: all 0.3s ease;
+    }
+    .log-entry:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
+    .log-entry.bet-placed { border-left-color: #4caf50; }
+    .log-entry.bet-deleted { border-left-color: #f44336; }
+    .log-time { color: #888; font-size: 0.85em; margin-bottom: 5px; }
+    .log-action { font-weight: bold; margin-bottom: 8px; }
+    .log-action.placed { color: #4caf50; }
+    .log-action.deleted { color: #f44336; }
+    .log-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      font-size: 0.9em;
+    }
+    .log-details span { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+    .log-details .user { color: #64b5f6; }
+    .log-details .prediction { color: #ffb74d; }
+    .log-details .match { color: #81c784; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📋 Логи ставок</h1>
+    <p>История всех ставок и удалений</p>
+  </div>
+  <div class="logs-container">
+<!-- LOGS_START -->
+<!-- LOGS_END -->
+  </div>
+</body>
+</html>`;
+  fs.writeFileSync(LOG_FILE_PATH, template, "utf-8");
+  console.log("🔄 Файл логов очищен/создан");
+}
 
 // Инициализируем базу данных
 const db = new Database("1xBetLineBoom.db");
@@ -285,6 +423,14 @@ app.post("/api/bets", async (req, res) => {
       )
       .run(user_id, match_id, prediction, amount);
 
+    // Записываем лог ставки
+    writeBetLog("placed", {
+      username: user?.username || "неизвестный",
+      prediction: prediction,
+      team1: match.team1_name,
+      team2: match.team2_name,
+    });
+
     res.json({
       id: result.lastInsertRowid,
       user_id,
@@ -336,6 +482,16 @@ app.delete("/api/bets/:betId", (req, res) => {
       return res.status(404).json({ error: "Ставка не найдена" });
     }
 
+    // Получаем информацию о матче и пользователе для лога
+    const match = db
+      .prepare(
+        "SELECT team1_name, team2_name, status FROM matches WHERE id = ?"
+      )
+      .get(bet.match_id);
+    const betUser = db
+      .prepare("SELECT username FROM users WHERE id = ?")
+      .get(bet.user_id);
+
     // Если не админ - проверяем принадлежность ставки
     if (!isAdmin && bet.user_id !== user_id) {
       return res.status(403).json({ error: "Эта ставка не принадлежит вам" });
@@ -343,10 +499,6 @@ app.delete("/api/bets/:betId", (req, res) => {
 
     // Проверяем статус матча - нельзя удалять ставки на начавшиеся/завершённые матчи (кроме админа)
     if (!isAdmin) {
-      const match = db
-        .prepare("SELECT status FROM matches WHERE id = ?")
-        .get(bet.match_id);
-
       if (
         match &&
         (match.status === "ongoing" || match.status === "finished")
@@ -358,6 +510,14 @@ app.delete("/api/bets/:betId", (req, res) => {
     }
 
     db.prepare("DELETE FROM bets WHERE id = ?").run(betId);
+
+    // Записываем лог удаления ставки
+    writeBetLog("deleted", {
+      username: betUser?.username || "неизвестный",
+      prediction: bet.prediction,
+      team1: match?.team1_name || "?",
+      team2: match?.team2_name || "?",
+    });
 
     res.json({ message: "Ставка удалена" });
   } catch (error) {
