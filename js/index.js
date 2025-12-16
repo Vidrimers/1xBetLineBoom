@@ -633,7 +633,7 @@ function displayMyBets(bets) {
       }
 
       return `
-            <div class="bet-item ${statusClass}">
+            <div class="bet-item ${statusClass}" data-bet-id="${bet.id}">
                 <div class="bet-info">
                     <span class="bet-match">${bet.team1_name} vs ${bet.team2_name}</span>
                     <span class="bet-status ${statusClass}">${statusText}</span>
@@ -676,7 +676,27 @@ async function deleteBet(betId) {
       return;
     }
 
-    loadMyBets();
+    // ✨ Удаляем ставку из DOM плавной анимацией без перезагрузки
+    const betElement = document.querySelector(`[data-bet-id="${betId}"]`);
+    if (betElement) {
+      betElement.style.opacity = "0.5";
+      betElement.style.transform = "scale(0.95)";
+      betElement.style.transition = "all 0.3s ease";
+
+      setTimeout(() => {
+        betElement.remove();
+
+        // Если ставок больше нет - показываем пустое сообщение
+        const myBetsList = document.getElementById("myBetsList");
+        if (myBetsList.children.length === 0) {
+          myBetsList.innerHTML =
+            '<div class="empty-message">У вас пока нет ставок</div>';
+        }
+      }, 300);
+    }
+
+    // Обновляем локальный массив ставок
+    userBets = userBets.filter((bet) => bet.id !== betId);
   } catch (error) {
     console.error("Ошибка при удалении ставки:", error);
     alert("Ошибка при удалении ставки");
@@ -1573,7 +1593,44 @@ async function deleteMatch(id) {
     const result = await response.json();
 
     if (response.ok) {
-      loadMatches(currentEventId);
+      // Находим матч который удаляем
+      const deletedMatch = matches.find((m) => m.id === id);
+
+      if (deletedMatch) {
+        // Удаляем ставки этого матча из DOM плавной анимацией
+        const deletedBetIds = userBets
+          .filter((bet) => bet.match_id === id)
+          .map((bet) => bet.id);
+
+        deletedBetIds.forEach((betId) => {
+          const betElement = document.querySelector(`[data-bet-id="${betId}"]`);
+          if (betElement) {
+            betElement.style.opacity = "0.5";
+            betElement.style.transform = "scale(0.95)";
+            betElement.style.transition = "all 0.3s ease";
+
+            setTimeout(() => {
+              betElement.remove();
+
+              // Если ставок больше нет - показываем пустое сообщение
+              const myBetsList = document.getElementById("myBetsList");
+              if (myBetsList.children.length === 0) {
+                myBetsList.innerHTML =
+                  '<div class="empty-message">У вас пока нет ставок</div>';
+              }
+            }, 300);
+          }
+        });
+
+        // Обновляем локальный массив ставок
+        userBets = userBets.filter((bet) => bet.match_id !== id);
+
+        // Удаляем матч из массива
+        matches = matches.filter((m) => m.id !== id);
+
+        // Перерисовываем матчи БЕЗ полной перезагрузки
+        displayMatches();
+      }
     } else {
       alert(`❌ Ошибка: ${result.error}`);
     }
