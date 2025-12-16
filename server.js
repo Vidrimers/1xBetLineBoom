@@ -20,9 +20,50 @@ const FD_API_BASE = "https://api.football-data.org/v4";
 const LOG_FILE_PATH = path.join(__dirname, "log.html");
 const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10 MB
 
+// Функция отправки уведомления о ставке админу в Telegram
+async function notifyBetAction(action, data) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+    return;
+  }
+
+  try {
+    const time = new Date().toLocaleString("ru-RU");
+    let emoji = action === "placed" ? "✅" : "❌";
+    let actionText = action === "placed" ? "СТАВКА СДЕЛАНА" : "СТАВКА УДАЛЕНА";
+
+    const message = `${emoji} ${actionText}
+
+👤 Пользователь: ${data.username}
+🎯 Ставка: ${data.prediction}
+⚽ Матч: ${data.team1} vs ${data.team2}
+🏆 Турнир: ${data.eventName || "Неизвестный"}
+🕐 Время: ${time}`;
+
+    await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: message,
+        }),
+      }
+    );
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления в Telegram:", error);
+  }
+}
+
 // Функция записи лога в HTML файл
 function writeBetLog(action, data) {
   try {
+    // Отправляем уведомление в Telegram
+    notifyBetAction(action, data);
+
     // Проверяем размер файла
     if (fs.existsSync(LOG_FILE_PATH)) {
       const stats = fs.statSync(LOG_FILE_PATH);
@@ -1248,6 +1289,24 @@ app.delete("/api/admin/matches/:matchId", (req, res) => {
     db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
 
     res.json({ success: true, message: "Матч успешно удален" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/clear-logs - Очистить файл логов (только для админа)
+app.post("/api/admin/clear-logs", (req, res) => {
+  const { username } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    resetLogFile();
+    console.log("🗑️ Логи очищены админом:", username);
+    res.json({ message: "Логи успешно очищены" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

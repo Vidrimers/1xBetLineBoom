@@ -61,6 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("adminUsersBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
+      document.getElementById("adminSettingsPanel").style.display = "block";
     }
 
     loadEvents();
@@ -151,6 +152,7 @@ async function initUser() {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("adminUsersBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
+      document.getElementById("adminSettingsPanel").style.display = "block";
     }
 
     // Загружаем ставки пользователя
@@ -186,6 +188,7 @@ function logoutUser() {
   document.getElementById("adminBtn").style.display = "none";
   document.getElementById("adminUsersBtn").style.display = "none";
   document.getElementById("countingBtn").style.display = "none";
+  document.getElementById("adminSettingsPanel").style.display = "none";
 
   // Меняем кнопку обратно на "Начать"
   const authBtn = document.getElementById("authBtn");
@@ -1899,3 +1902,34 @@ console.log(
   "%c  forceUpdateMatches()     - 🔄 Обновить матчи СЕЙЧАС (вне графика)",
   "color: #9c27b0; font-size: 12px;"
 );
+
+// ===== ОЧИСТКА ЛОГОВ =====
+async function clearLogs() {
+  if (!isAdmin()) {
+    alert("Недостаточно прав");
+    return;
+  }
+
+  if (!confirm("Вы уверены, что хотите очистить все логи ставок?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/clear-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: currentUser.username }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert("✅ Логи успешно очищены!");
+    } else {
+      alert("Ошибка: " + result.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при очистке логов:", error);
+    alert("Ошибка при очистке логов");
+  }
+}

@@ -190,6 +190,47 @@
           <div class="settings-container" id="settingsContainer">
             <div class="empty-message">Здесь будут настройки приложения</div>
           </div>
+
+          <!-- Админ-панель в настройках -->
+          <div id="adminSettingsPanel" style="display: none; margin-top: 20px">
+            <h3 style="margin-bottom: 15px; color: #667eea">🔧 Админ-панель</h3>
+            <button
+              onclick="clearLogs()"
+              style="
+                background: linear-gradient(135deg, #f44336, #e91e63);
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1em;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              🗑️ Очистить логи
+            </button>
+            <a
+              href="/log.html"
+              target="_blank"
+              style="
+                display: inline-block;
+                margin-left: 10px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                text-decoration: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 1em;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              📋 Открыть логи
+            </a>
+          </div>
         </div>
       </div>
 
