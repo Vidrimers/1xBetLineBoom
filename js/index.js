@@ -336,6 +336,11 @@ async function selectEvent(eventId, eventName) {
 
 // Определяем статус матча на основе даты
 function getMatchStatusByDate(match) {
+  // Сначала проверяем явный статус finished
+  if (match.status === "finished") {
+    return "finished";
+  }
+
   if (!match.match_date) {
     // Если даты нет, возвращаем статус из БД
     return match.status || "pending";
@@ -384,14 +389,25 @@ function displayMatches() {
     `🎯 displayMatches() вызвана. isMatchUpdatingEnabled: ${isMatchUpdatingEnabled}`
   );
 
-  // Сортируем матчи: идущие сверху, потом по дате
+  // Сортируем матчи: идущие сверху, потом ожидающие по дате, завершенные внизу
   const sortedMatches = [...matches].sort((a, b) => {
     const statusA = getMatchStatusByDate(a);
     const statusB = getMatchStatusByDate(b);
 
-    // Матчи со статусом "ongoing" идут в начало
-    if (statusA === "ongoing" && statusB !== "ongoing") return -1;
-    if (statusA !== "ongoing" && statusB === "ongoing") return 1;
+    // Приоритет статусов: ongoing > pending > finished
+    const statusPriority = {
+      ongoing: 0,
+      pending: 1,
+      finished: 2,
+    };
+
+    const priorityA = statusPriority[statusA] || 99;
+    const priorityB = statusPriority[statusB] || 99;
+
+    // Сначала сортируем по приоритету статуса
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
 
     // Если оба в одинаковом статусе - сортируем по дате
     if (a.match_date && b.match_date) {
@@ -1705,7 +1721,10 @@ function stopMatchUpdates() {
  */
 async function setMatchResult(matchId, result) {
   const match = matches.find((m) => m.id === matchId);
-  if (!match) return;
+  if (!match) {
+    console.error("Матч не найден:", matchId);
+    return;
+  }
 
   const resultMap = {
     team1: "team1_win",
@@ -1714,15 +1733,26 @@ async function setMatchResult(matchId, result) {
   };
 
   try {
+    const requestBody = {
+      username: currentUser?.username,
+      status: "finished",
+      result: resultMap[result],
+    };
+
+    console.log("📤 Отправляем запрос завершения матча:", {
+      matchId,
+      result,
+      requestBody,
+    });
+
     const response = await fetch(`/api/admin/matches/${matchId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: currentUser?.username,
-        status: "finished",
-        result: resultMap[result],
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    const responseData = await response.json();
+    console.log("📥 Ответ сервера:", responseData, "статус:", response.status);
 
     if (response.ok) {
       // Обновляем матч локально
@@ -1734,9 +1764,8 @@ async function setMatchResult(matchId, result) {
       );
       displayMatches();
     } else {
-      const error = await response.json();
-      console.error("Ошибка установки результата:", error.error);
-      alert("Ошибка: " + error.error);
+      console.error("Ошибка установки результата:", responseData.error);
+      alert("Ошибка: " + responseData.error);
     }
   } catch (error) {
     console.error("Ошибка при установке результата:", error);

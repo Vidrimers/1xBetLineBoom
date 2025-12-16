@@ -659,8 +659,17 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
     req.body;
   const ADMIN_USER = process.env.ADMIN_USER_ID;
 
+  console.log("🔵 PUT /api/admin/matches/:matchId", {
+    matchId,
+    username,
+    status,
+    result,
+    ADMIN_USER,
+  });
+
   // Проверяем, является ли пользователь админом
   if (username !== ADMIN_USER) {
+    console.log("❌ Пользователь не админ:", username, "!==", ADMIN_USER);
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -669,11 +678,18 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
     if (status) {
       const validStatuses = ["pending", "ongoing", "finished"];
       if (!validStatuses.includes(status)) {
+        console.log("❌ Неверный статус:", status);
         return res.status(400).json({
           error:
             "Неверный статус. Допустимые значения: pending, ongoing, finished",
         });
       }
+
+      console.log("✓ Обновляем матч:", {
+        matchId,
+        status,
+        result: result || null,
+      });
 
       db.prepare("UPDATE matches SET status = ?, result = ? WHERE id = ?").run(
         status,
@@ -720,6 +736,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
 
     return res.status(400).json({ error: "Не указаны данные для обновления" });
   } catch (error) {
+    console.error("❌ Ошибка на сервере:", error);
     res.status(500).json({ error: error.message });
   }
 });
