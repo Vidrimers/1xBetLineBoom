@@ -998,7 +998,12 @@ app.delete("/api/admin/matches/:matchId", (req, res) => {
   }
 
   try {
+    // Сначала удаляем все ставки, связанные с матчем
+    db.prepare("DELETE FROM bets WHERE match_id = ?").run(matchId);
+
+    // Затем удаляем сам матч
     db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
+
     res.json({ success: true, message: "Матч успешно удален" });
   } catch (error) {
     res.status(500).json({ error: error.message });
