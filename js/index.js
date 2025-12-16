@@ -461,6 +461,24 @@ async function placeBet(matchId, teamName, prediction) {
     const effectiveStatus = getMatchStatusByDate(match);
     if (effectiveStatus !== "pending") {
       alert("Ну, куда ты, малютка, матч уже начался");
+
+      // Отправляем уведомление админу о попытке запретной ставки
+      try {
+        await fetch("/api/admin/notify-illegal-bet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: currentUser.username,
+            team1: match.team1_name,
+            team2: match.team2_name,
+            prediction: prediction || teamName,
+            matchStatus: effectiveStatus,
+          }),
+        });
+      } catch (error) {
+        console.error("Ошибка при отправке уведомления:", error);
+      }
+
       return;
     }
   }

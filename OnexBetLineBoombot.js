@@ -23,6 +23,10 @@ let bot = null;
 // Функция для отправки уведомления только админу
 export async function sendAdminNotification(message) {
   try {
+    if (!bot) {
+      console.error("❌ Бот еще не инициализирован!");
+      return;
+    }
     await bot.sendMessage(TELEGRAM_ADMIN_ID, message, {
       parse_mode: "HTML",
     });
@@ -35,6 +39,10 @@ export async function sendAdminNotification(message) {
 // Функция для отправки сообщения в группы
 export async function sendGroupNotification(message) {
   try {
+    if (!bot) {
+      console.error("❌ Бот еще не инициализирован!");
+      return;
+    }
     const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
     for (const chatId of chatIds) {
       try {
@@ -57,6 +65,10 @@ export async function sendGroupNotification(message) {
 // Функция для отправки сообщения пользователю
 export async function sendUserMessage(userId, message) {
   try {
+    if (!bot) {
+      console.error("❌ Бот еще не инициализирован!");
+      return;
+    }
     await bot.sendMessage(userId, message, {
       parse_mode: "HTML",
     });
@@ -124,6 +136,14 @@ export async function notifyIllegalBet(
   prediction,
   matchStatus
 ) {
+  console.log("🚨 Функция notifyIllegalBet вызвана с параметрами:", {
+    username,
+    team1,
+    team2,
+    prediction,
+    matchStatus,
+  });
+
   let statusText = "неизвестен";
   if (matchStatus === "ongoing") statusText = "идёт в данный момент ⚽";
   if (matchStatus === "finished") statusText = "уже завершился ✅";
@@ -135,6 +155,7 @@ export async function notifyIllegalBet(
     `🎯 Пытался ставить на: <b>${prediction}</b>\n` +
     `📊 Статус матча: ${statusText}`;
 
+  console.log("📨 Отправляем сообщение:", message);
   await sendAdminNotification(message);
 }
 

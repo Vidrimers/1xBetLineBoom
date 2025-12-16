@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { startBot } from "./OnexBetLineBoombot.js";
+import { startBot, notifyIllegalBet } from "./OnexBetLineBoombot.js";
 
 dotenv.config();
 
@@ -159,13 +159,20 @@ app.post("/api/user", (req, res) => {
 });
 
 // 4. Создать ставку
-app.post("/api/bets", (req, res) => {
+app.post("/api/bets", async (req, res) => {
   try {
     const { user_id, match_id, prediction, amount } = req.body;
 
+    // Получаем информацию о пользователе и матче
+    const user = db
+      .prepare("SELECT username FROM users WHERE id = ?")
+      .get(user_id);
+
     // Проверяем матч и его дату
     const match = db
-      .prepare("SELECT status, match_date, winner FROM matches WHERE id = ?")
+      .prepare(
+        "SELECT status, match_date, winner, team1_name, team2_name FROM matches WHERE id = ?"
+      )
       .get(match_id);
 
     if (!match) {
@@ -179,6 +186,14 @@ app.post("/api/bets", (req, res) => {
     // Если матч в прошлом (началась дата) - ставка невозможна
     if (matchDate && matchDate <= now && !match.winner) {
       // Матч начался, но нет результата - это ongoing
+      // Отправляем уведомление админу
+      await notifyIllegalBet(
+        user?.username || "неизвестный",
+        match.team1_name,
+        match.team2_name,
+        prediction,
+        "ongoing"
+      );
       return res
         .status(400)
         .json({ error: "Ну, куда ты, малютка, матч уже начался" });
@@ -186,6 +201,14 @@ app.post("/api/bets", (req, res) => {
 
     // Если есть результат - матч завершён
     if (match.winner) {
+      // Отправляем уведомление админу
+      await notifyIllegalBet(
+        user?.username || "неизвестный",
+        match.team1_name,
+        match.team2_name,
+        prediction,
+        "finished"
+      );
       return res
         .status(400)
         .json({ error: "Ну, куда ты, малютка, матч уже начался" });
@@ -193,6 +216,15 @@ app.post("/api/bets", (req, res) => {
 
     // Дополнительная проверка статуса из БД (если админ установил вручную)
     if (match.status && match.status !== "pending") {
+      // Отправляем уведомление админу
+      let statusText = match.status;
+      await notifyIllegalBet(
+        user?.username || "неизвестный",
+        match.team1_name,
+        match.team2_name,
+        prediction,
+        statusText
+      );
       return res
         .status(400)
         .json({ error: "Ну, куда ты, малютка, матч уже начался" });
@@ -898,6 +930,26 @@ app.delete("/api/admin/users/:userId", (req, res) => {
 
     res.json({ message: "Пользователь успешно удален" });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/notify-illegal-bet - уведомление админу о попытке запретной ставки
+app.post("/api/admin/notify-illegal-bet", async (req, res) => {
+  const { username, team1, team2, prediction, matchStatus } = req.body;
+  console.log("📨 Получен запрос на уведомление о запретной ставке:", {
+    username,
+    team1,
+    team2,
+    prediction,
+    matchStatus,
+  });
+  try {
+    await notifyIllegalBet(username, team1, team2, prediction, matchStatus);
+    console.log("✅ Уведомление отправлено успешно");
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка при отправке уведомления:", error);
     res.status(500).json({ error: error.message });
   }
 });
