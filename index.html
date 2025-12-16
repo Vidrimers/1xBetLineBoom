@@ -45,6 +45,13 @@
           >
             👥 Пользователи
           </button>
+          <button
+            id="countingBtn"
+            onclick="switchTab('counting')"
+            style="display: none; background: transparent"
+          >
+            📊 Подсчет
+          </button>
         </div>
         <p
           id="userStatus"
@@ -177,6 +184,20 @@
           <h2>⚙️ Настройки</h2>
           <div class="settings-container" id="settingsContainer">
             <div class="empty-message">Здесь будут настройки приложения</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Содержимое вкладки Подсчет -->
+      <div
+        class="content"
+        id="counting-content"
+        style="display: none; margin-top: -5px"
+      >
+        <div class="section">
+          <h2>📊 Подсчет результатов</h2>
+          <div class="counting-container" id="countingContainer">
+            <div class="empty-message">Функция в разработке</div>
           </div>
         </div>
       </div>

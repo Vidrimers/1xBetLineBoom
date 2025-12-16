@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (user.username === ADMIN_USER) {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("adminUsersBtn").style.display = "inline-block";
+      document.getElementById("countingBtn").style.display = "inline-block";
     }
 
     loadEvents();
@@ -126,6 +127,7 @@ async function initUser() {
     if (currentUser.username === ADMIN_USER) {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("adminUsersBtn").style.display = "inline-block";
+      document.getElementById("countingBtn").style.display = "inline-block";
     }
 
     // Загружаем ставки пользователя
@@ -160,6 +162,7 @@ function logoutUser() {
   // Скрываем админ-кнопки
   document.getElementById("adminBtn").style.display = "none";
   document.getElementById("adminUsersBtn").style.display = "none";
+  document.getElementById("countingBtn").style.display = "none";
 
   // Меняем кнопку обратно на "Начать"
   const authBtn = document.getElementById("authBtn");
@@ -605,6 +608,7 @@ function switchTab(tabName) {
   document.getElementById("participants-content").style.display = "none";
   document.getElementById("profile-content").style.display = "none";
   document.getElementById("settings-content").style.display = "none";
+  document.getElementById("counting-content").style.display = "none";
 
   // Удаляем активный класс со всех кнопок вкладок
   document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -630,6 +634,10 @@ function switchTab(tabName) {
     document.getElementById("settings-content").style.display = "flex";
     document.querySelectorAll(".tab-btn")[3].classList.add("active");
     loadSettings();
+  } else if (tabName === "counting") {
+    document.getElementById("counting-content").style.display = "flex";
+    // Отмечаем кнопку подсчета как активную (не табуляцию, так как это отдельная кнопка)
+    loadCounting();
   }
 }
 // Загрузить всех участников с их ставками
@@ -1115,6 +1123,19 @@ async function loadAdminUsers() {
 // Закрыть модальное окно
 function closeAdminModal() {
   document.getElementById("adminModal").style.display = "none";
+}
+
+// Загрузить подсчет результатов
+function loadCounting() {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  // Здесь будет функционал для подсчета
+  const countingContainer = document.getElementById("countingContainer");
+  countingContainer.innerHTML =
+    '<div class="empty-message">Функция в разработке</div>';
 }
 
 // Закрыть модальное окно при клике вне его
