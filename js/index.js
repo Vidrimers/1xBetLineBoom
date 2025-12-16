@@ -364,8 +364,8 @@ async function selectEvent(eventId, eventName) {
 
 // Определяем статус матча на основе даты
 function getMatchStatusByDate(match) {
-  // Сначала проверяем явный статус finished
-  if (match.status === "finished") {
+  // Сначала проверяем явный статус finished (только если есть победитель)
+  if (match.status === "finished" || match.winner) {
     return "finished";
   }
 
@@ -382,13 +382,8 @@ function getMatchStatusByDate(match) {
     return "pending";
   }
 
-  // Если матч начался (в прошлом) - ongoing (пока не установлен результат)
-  if (!match.winner) {
-    return "ongoing";
-  }
-
-  // Если установлен результат - finished
-  return "finished";
+  // Если матч начался (дата в прошлом) и нет результата - ongoing
+  return "ongoing";
 }
 
 async function loadMatches(eventId) {
@@ -429,8 +424,8 @@ function displayMatches() {
       finished: 2,
     };
 
-    const priorityA = statusPriority[statusA] || 99;
-    const priorityB = statusPriority[statusB] || 99;
+    const priorityA = statusPriority[statusA] ?? 99;
+    const priorityB = statusPriority[statusB] ?? 99;
 
     // Сначала сортируем по приоритету статуса
     if (priorityA !== priorityB) {
