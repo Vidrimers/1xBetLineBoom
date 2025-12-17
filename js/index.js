@@ -729,6 +729,19 @@ function displayMatches() {
                 </button>
               </div>
               <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10;">
+                ${
+                  effectiveStatus === "finished"
+                    ? `
+                <button onclick="unlockMatch(${match.id})"
+                  style="background: transparent; border: 1px solid #f57c00; color: #f57c00; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
+                  onmouseover="this.style.background='#f57c00'; this.style.color='white'"
+                  onmouseout="this.style.background='transparent'; this.style.color='#f57c00'"
+                  title="Разблокировать матч">
+                  🔓
+                </button>
+                `
+                    : ""
+                }
                 <button onclick="openEditMatchModal(${match.id}, '${
                     match.team1_name
                   }', '${match.team2_name}', '${match.match_date || ""}', '${
@@ -2208,6 +2221,64 @@ async function setMatchResult(matchId, result) {
   } catch (error) {
     console.error("Ошибка при установке результата:", error);
     alert("Ошибка при установке результата матча");
+  }
+}
+
+/**
+ * Разблокировать завершённый матч (сбросить результат)
+ * Использование: unlockMatch(matchId)
+ */
+async function unlockMatch(matchId) {
+  const match = matches.find((m) => m.id === matchId);
+  if (!match) {
+    console.error("Матч не найден:", matchId);
+    return;
+  }
+
+  if (
+    !confirm(
+      `Разблокировать матч "${match.team1_name} vs ${match.team2_name}"?\n\nРезультат будет сброшен и ставки снова станут активными.`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/matches/${matchId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: currentUser?.username,
+        status: "pending",
+        result: null,
+        winner: null,
+      }),
+    });
+
+    const responseData = await response.json();
+
+    if (response.ok) {
+      // Обновляем матч локально
+      match.status = "pending";
+      match.result = null;
+      match.winner = null;
+
+      console.log(
+        `🔓 Матч ${match.team1_name} vs ${match.team2_name} разблокирован`
+      );
+      displayMatches();
+
+      // Обновляем ставки
+      setTimeout(() => {
+        loadMyBets();
+      }, 300);
+    } else {
+      console.error("Ошибка разблокировки матча:", responseData.error);
+      alert("Ошибка: " + responseData.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при разблокировке матча:", error);
+    alert("Ошибка при разблокировке матча");
   }
 }
 
