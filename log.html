@@ -1,288 +1,68 @@
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Логи ставок - 1xBetLineBoom</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        color: #e0e0e0;
-        min-height: 100vh;
-        padding: 20px;
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 30px;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      .header h1 {
-        color: #5a9fd4;
-        font-size: 2em;
-        margin-bottom: 10px;
-      }
-      .header p {
-        color: #b0b8c8;
-        font-size: 0.9em;
-      }
-      .logs-container {
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-      .log-entry {
-        background: rgba(44, 50, 63, 0.7);
-        border-left: 4px solid #3a7bd5;
-        padding: 15px 20px;
-        margin-bottom: 10px;
-        border-radius: 0 8px 8px 0;
-        transition: all 0.3s ease;
-      }
-      .log-entry:hover {
-        background: rgba(58, 123, 213, 0.5);
-        transform: translateX(5px);
-      }
-      .log-entry.bet-placed {
-        border-left-color: #4caf50;
-      }
-      .log-entry.bet-deleted {
-        border-left-color: #f44336;
-      }
-      .log-entry.settings-changed {
-        border-left-color: #ff9800;
-      }
-      .log-time {
-        color: #b0b8c8;
-        font-size: 0.85em;
-        margin-bottom: 5px;
-      }
-      .log-action {
-        font-weight: bold;
-        margin-bottom: 8px;
-      }
-      .log-action.placed {
-        color: #4caf50;
-      }
-      .log-action.deleted {
-        color: #f44336;
-      }
-      .log-action.settings {
-        color: #ff9800;
-      }
-      .log-details {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 10px;
-        font-size: 0.9em;
-      }
-      .log-details span {
-        padding: 5px 10px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-      }
-      .log-details .user {
-        color: #64b5f6;
-      }
-      .log-details .prediction {
-        color: #ffb74d;
-      }
-      .log-details .match {
-        color: #81c784;
-      }
-      .log-details .event {
-        color: #ce93d8;
-      }
-      .log-details .setting {
-        color: #ffcc80;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h1>📋 Логи ставок</h1>
-      <p>История всех ставок и удалений</p>
-    </div>
-    <div class="logs-container">
-      <!-- LOGS_START -->
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 17.12.2025, 23:26:56</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Ничья</span>
-        <span class="match">⚽ Тест9 vs Тест10</span>
-        <span class="event">🏆 Чемпионат мира 2077</span>
-      </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 17.12.2025, 23:26:55</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Тест7</span>
-        <span class="match">⚽ Тест7 vs Тест8</span>
-        <span class="event">🏆 Чемпионат мира 2077</span>
-      </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 17.12.2025, 23:26:43</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Ничья</span>
-        <span class="match">⚽ Тест5 vs Тест6</span>
-        <span class="event">🏆 Чемпионат мира 2077</span>
-      </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 17.12.2025, 23:26:43</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Ничья</span>
-        <span class="match">⚽ Тест3 vs Тест4</span>
-        <span class="event">🏆 Чемпионат мира 2077</span>
-      </div>
-    </div>
-      <div class="log-entry bet-deleted">
-        <div class="log-time">🕐 17.12.2025, 23:20:56</div>
-        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-        <div class="log-details">
-          <span class="user">👤 Мемослав</span>
-          <span class="prediction">🎯 Тест1</span>
-          <span class="match">⚽ Тест1 vs Тест2</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-placed">
-        <div class="log-time">🕐 17.12.2025, 23:03:30</div>
-        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Тест3</span>
-          <span class="match">⚽ Тест3 vs Тест4</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-deleted">
-        <div class="log-time">🕐 17.12.2025, 23:03:30</div>
-        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Тест4</span>
-          <span class="match">⚽ Тест3 vs Тест4</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-placed">
-        <div class="log-time">🕐 17.12.2025, 23:03:28</div>
-        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Тест4</span>
-          <span class="match">⚽ Тест3 vs Тест4</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-deleted">
-        <div class="log-time">🕐 17.12.2025, 23:03:28</div>
-        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Ничья</span>
-          <span class="match">⚽ Тест3 vs Тест4</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-placed">
-        <div class="log-time">🕐 17.12.2025, 23:03:21</div>
-        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Ничья</span>
-          <span class="match">⚽ Тест3 vs Тест4</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-deleted">
-        <div class="log-time">🕐 17.12.2025, 22:59:11</div>
-        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Ничья</span>
-          <span class="match">⚽ Тест5 vs Тест6</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-deleted">
-        <div class="log-time">🕐 17.12.2025, 22:59:10</div>
-        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Тест3</span>
-          <span class="match">⚽ Тест3 vs Тест4</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-placed">
-        <div class="log-time">🕐 17.12.2025, 22:58:16</div>
-        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Ничья</span>
-          <span class="match">⚽ Тест5 vs Тест6</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-placed">
-        <div class="log-time">🕐 17.12.2025, 22:58:15</div>
-        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-        <div class="log-details">
-          <span class="user">👤 Тест</span>
-          <span class="prediction">🎯 Тест3</span>
-          <span class="match">⚽ Тест3 vs Тест4</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-placed">
-        <div class="log-time">🕐 17.12.2025, 22:48:42</div>
-        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-        <div class="log-details">
-          <span class="user">👤 Мемослав</span>
-          <span class="prediction">🎯 Тест1</span>
-          <span class="match">⚽ Тест1 vs Тест2</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-deleted">
-        <div class="log-time">🕐 17.12.2025, 22:39:02</div>
-        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-        <div class="log-details">
-          <span class="user">👤 Мемослав</span>
-          <span class="prediction">🎯 Ничья</span>
-          <span class="match">⚽ Манчестер vs Хуестер</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <div class="log-entry bet-deleted">
-        <div class="log-time">🕐 17.12.2025, 22:38:52</div>
-        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-        <div class="log-details">
-          <span class="user">👤 Мемослав</span>
-          <span class="prediction">🎯 Барса</span>
-          <span class="match">⚽ Барса vs Хуярса</span>
-          <span class="event">🏆 Чемпионат мира 2077</span>
-        </div>
-      </div>
-      <!-- LOGS_END -->
-    </div>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Логи ставок - 1xBetLineBoom</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .header h1 { color: #5a9fd4; font-size: 2em; margin-bottom: 10px; }
+    .header p { color: #b0b8c8; font-size: 0.9em; }
+    .logs-container { max-width: 1200px; margin: 0 auto; }
+    .log-entry {
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 4px solid #5a9fd4;
+      padding: 15px 20px;
+      margin-bottom: 10px;
+      border-radius: 0 8px 8px 0;
+      transition: all 0.3s ease;
+    }
+    .log-entry:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
+    .log-entry.bet-placed { border-left-color: #4caf50; }
+    .log-entry.bet-deleted { border-left-color: #f44336; }
+    .log-entry.settings-changed { border-left-color: #ff9800; }
+    .log-time { color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px; }
+    .log-action { font-weight: bold; margin-bottom: 8px; }
+    .log-action.placed { color: #4caf50; }
+    .log-action.deleted { color: #f44336; }
+    .log-action.settings { color: #ff9800; }
+    .log-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      font-size: 0.9em;
+    }
+    .log-details span { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+    .log-details .user { color: #64b5f6; }
+    .log-details .prediction { color: #ffb74d; }
+    .log-details .match { color: #81c784; }
+    .log-details .event { color: #ce93d8; }
+    .log-details .setting { color: #ffcc80; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📋 Логи ставок</h1>
+    <p>История всех ставок и удалений</p>
+  </div>
+  <div class="logs-container">
+<!-- LOGS_START -->
+<!-- LOGS_END -->
+  </div>
+</body>
 </html>

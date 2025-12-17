@@ -1038,14 +1038,14 @@ function displayMyBets(bets) {
       if (bet.winner) {
         // Маппинг winner (из БД) в prediction format
         // winner: "team1" | "team2" | "draw"
-        // prediction: team1_name | team2_name | "Ничья"
+        // prediction: team1_name | team2_name | "draw"
         let winnerPrediction;
         if (bet.winner === "team1") {
           winnerPrediction = bet.team1_name;
         } else if (bet.winner === "team2") {
           winnerPrediction = bet.team2_name;
         } else if (bet.winner === "draw") {
-          winnerPrediction = "Ничья";
+          winnerPrediction = "draw";
         }
 
         if (winnerPrediction === bet.prediction) {
