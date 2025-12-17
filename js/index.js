@@ -587,11 +587,29 @@ function displayMatches() {
   // Сортируем туры по сохраненному порядку
   const rounds = sortRoundsByOrder(uniqueRounds);
 
+  // Проверяем, завершены ли все матчи в каждом туре
+  function isRoundFinished(round) {
+    const roundMatches = matches.filter((m) => m.round === round);
+    if (roundMatches.length === 0) return false;
+    return roundMatches.every((m) => getMatchStatusByDate(m) === "finished");
+  }
+
+  // Находим первый незавершённый тур
+  function getFirstUnfinishedRound() {
+    for (const round of rounds) {
+      if (!isRoundFinished(round)) {
+        return round;
+      }
+    }
+    // Если все туры завершены, возвращаем первый
+    return rounds[0];
+  }
+
   // Показываем фильтры только если есть хотя бы один тур
   if (rounds.length > 0) {
-    // Если текущий фильтр "all" или не существует в списке туров, выбираем первый тур
+    // Если текущий фильтр "all" или не существует в списке туров, выбираем первый незавершённый тур
     if (currentRoundFilter === "all" || !rounds.includes(currentRoundFilter)) {
-      currentRoundFilter = rounds[0];
+      currentRoundFilter = getFirstUnfinishedRound();
     }
 
     roundsFilterContainer.style.display = "block";
@@ -606,7 +624,9 @@ function displayMatches() {
           (round) => `
         <button class="round-filter-btn ${
           currentRoundFilter === round ? "active" : ""
-        }" data-round="${round}" onclick="filterByRound('${round.replace(
+        } ${
+            isRoundFinished(round) ? "finished" : ""
+          }" data-round="${round}" onclick="filterByRound('${round.replace(
             /'/g,
             "\\'"
           )}')">${round}</button>

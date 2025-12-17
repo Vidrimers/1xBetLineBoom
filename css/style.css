@@ -1174,6 +1174,28 @@ button.tab-btn:hover {
   background: #5a6fd6;
 }
 
+/* Кнопка завершённого тура (все матчи завершены) */
+.round-filter-btn.finished {
+  background: #f57c00;
+  border-color: #f57c00;
+  color: white;
+}
+
+.round-filter-btn.finished:hover {
+  background: #c9721c;
+  border-color: #c9721c;
+}
+
+.round-filter-btn.finished.active {
+  background: #f57c00;
+  border-color: #f57c00;
+}
+
+.round-filter-btn.finished.active:hover {
+  background: #c9721c;
+  border-color: #c9721c;
+}
+
 /* Кнопка редактирования порядка туров */
 .edit-rounds-btn {
   padding: 4px 8px;
