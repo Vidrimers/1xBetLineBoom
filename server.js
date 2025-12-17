@@ -34,10 +34,13 @@ async function notifyBetAction(action, data) {
     let emoji = action === "placed" ? "✅" : "❌";
     let actionText = action === "placed" ? "СТАВКА СДЕЛАНА" : "СТАВКА УДАЛЕНА";
 
+    // Преобразуем draw -> Ничья для сообщений
+    const predictionText =
+      data.prediction === "draw" ? "Ничья" : data.prediction;
     const message = `${emoji} ${actionText}
 
 👤 Пользователь: ${data.username}
-🎯 Ставка: ${data.prediction}
+🎯 Ставка: ${predictionText}
 ⚽ Матч: ${data.team1} vs ${data.team2}
 🏆 Турнир: ${data.eventName || "Неизвестный"}
 🕐 Время: ${time}`;
@@ -89,25 +92,31 @@ function writeBetLog(action, data) {
 
     let logEntry = "";
     if (action === "placed") {
+      // Преобразуем draw -> Ничья для логов
+      const predictionText =
+        data.prediction === "draw" ? "Ничья" : data.prediction;
       logEntry = `
     <div class="log-entry bet-placed">
       <div class="log-time">🕐 ${time}</div>
       <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
       <div class="log-details">
         <span class="user">👤 ${data.username}</span>
-        <span class="prediction">🎯 ${data.prediction}</span>
+        <span class="prediction">🎯 ${predictionText}</span>
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
       </div>
     </div>`;
     } else if (action === "deleted") {
+      // Преобразуем draw -> Ничья для логов
+      const predictionText =
+        data.prediction === "draw" ? "Ничья" : data.prediction;
       logEntry = `
     <div class="log-entry bet-deleted">
       <div class="log-time">🕐 ${time}</div>
       <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
       <div class="log-details">
         <span class="user">👤 ${data.username}</span>
-        <span class="prediction">🎯 ${data.prediction}</span>
+        <span class="prediction">🎯 ${predictionText}</span>
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
       </div>
