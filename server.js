@@ -4,7 +4,13 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { startBot, notifyIllegalBet } from "./OnexBetLineBoombot.js";
+import {
+  startBot,
+  notifyIllegalBet,
+  getNotificationQueue,
+  flushQueueNow,
+  writeNotificationQueue,
+} from "./OnexBetLineBoombot.js";
 
 dotenv.config();
 
@@ -148,6 +154,158 @@ function writeBetLog(action, data) {
     console.error("❌ Ошибка записи лога:", error);
   }
 }
+
+// --- Admin endpoints for notification queue ---
+// Simple protection: require ADMIN_LOGIN as query param (?admin=ADMIN_LOGIN)
+function checkAdminAuth(req, res) {
+  const admin = req.query.admin || req.headers["x-admin-token"];
+  if (!process.env.ADMIN_LOGIN) return false;
+  return admin && admin === process.env.ADMIN_LOGIN;
+}
+
+app.get("/admin/notifications/queue", (req, res) => {
+  if (!checkAdminAuth(req, res)) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+  try {
+    const q = getNotificationQueue();
+    return res.json({ ok: true, queue: q });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post("/admin/notifications/queue/flush", async (req, res) => {
+  if (!checkAdminAuth(req, res)) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+  try {
+    const result = await flushQueueNow();
+    return res.json({ ok: true, result });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post("/admin/notifications/queue/clear", (req, res) => {
+  if (!checkAdminAuth(req, res)) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+  try {
+    writeNotificationQueue([]);
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Simple admin HTML page to view/manage notification queue
+app.get("/admin/notifications", (req, res) => {
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Notification Queue - Admin</title>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;margin:20px}
+      .controls{margin-bottom:10px}
+      table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #ddd;padding:8px;text-align:left}
+      th{background:#f4f4f4}
+      pre{white-space:pre-wrap;word-break:break-word}
+      .small{font-size:0.9em;color:#666}
+      button{margin-right:8px}
+    </style>
+  </head>
+  <body>
+    <h2>Notifications queue</h2>
+    <div class="controls">
+      <label>Admin token: <input id="adminToken" style="width:300px" placeholder="Enter admin token"></label>
+      <button id="saveToken">Save</button>
+      <button id="refresh">Refresh</button>
+      <button id="resendAll">Resend all</button>
+      <button id="clearAll">Clear all</button>
+      <span id="status" class="small"></span>
+    </div>
+    <div id="queueContainer"></div>
+
+    <script>
+      const tokenInput = document.getElementById('adminToken');
+      const saved = localStorage.getItem('admin_token');
+      if (saved) tokenInput.value = saved;
+      document.getElementById('saveToken').addEventListener('click', ()=>{
+        localStorage.setItem('admin_token', tokenInput.value.trim());
+        setStatus('Saved token');
+      });
+
+      document.getElementById('refresh').addEventListener('click', ()=> fetchQueue());
+      document.getElementById('resendAll').addEventListener('click', ()=> flushQueue());
+      document.getElementById('clearAll').addEventListener('click', ()=> clearQueue());
+
+      function setStatus(txt){ document.getElementById('status').textContent = txt; }
+
+      async function fetchQueue(){
+        const t = (tokenInput.value||localStorage.getItem('admin_token')||'').trim();
+        if (!t) return setStatus('Provide admin token then Save');
+        setStatus('Loading...');
+        try{
+          const r = await fetch('/admin/notifications/queue?admin='+encodeURIComponent(t));
+          const json = await r.json();
+          if (!json.ok) { setStatus('Error: '+(json.error||'unknown')); return; }
+          renderQueue(json.queue || []);
+          setStatus('Loaded '+(json.queue?json.queue.length:0)+' items');
+        }catch(e){ setStatus('Fetch error: '+e.message); }
+      }
+
+      function renderQueue(queue){
+        const c = document.getElementById('queueContainer');
+        if (!queue.length) { c.innerHTML = '<p class="small">Queue is empty</p>'; return; }
+        const rows = queue.map(function(q){
+          return '<tr>'+
+            '<td>'+ (q.id) +'</td>'+
+            '<td>'+ (q.timestamp) +'</td>'+
+            '<td>'+ (q.attempts||0) +'</td>'+
+            '<td>'+ (new Date(q.nextAttemptAt).toLocaleString()) +'</td>'+
+            '<td><pre>' + ((q.payload && (q.payload.message||JSON.stringify(q.payload)))||'') + '</pre></td>'+
+          '</tr>';
+        }).join('');
+        c.innerHTML = '<table><thead><tr><th>id</th><th>timestamp</th><th>attempts</th><th>nextAttemptAt</th><th>payload</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      }
+
+      async function flushQueue(){
+        const t = (tokenInput.value||localStorage.getItem('admin_token')||'').trim();
+        if (!t) return setStatus('Provide admin token');
+        setStatus('Flushing...');
+        try{
+          const r = await fetch('/admin/notifications/queue/flush?admin='+encodeURIComponent(t), { method:'POST' });
+          const j = await r.json();
+          if (!j.ok) return setStatus('Error: '+(j.error||'unknown'));
+          setStatus('Flush result: sent='+j.result.sent+' / total='+j.result.total);
+          fetchQueue();
+        }catch(e){ setStatus('Flush error: '+e.message); }
+      }
+
+      async function clearQueue(){
+        const t = (tokenInput.value||localStorage.getItem('admin_token')||'').trim();
+        if (!t) return setStatus('Provide admin token');
+        if (!confirm('Clear all queued notifications?')) return;
+        setStatus('Clearing...');
+        try{
+          const r = await fetch('/admin/notifications/queue/clear?admin='+encodeURIComponent(t), { method:'POST' });
+          const j = await r.json();
+          if (!j.ok) return setStatus('Error: '+(j.error||'unknown'));
+          setStatus('Queue cleared');
+          fetchQueue();
+        }catch(e){ setStatus('Clear error: '+e.message); }
+      }
+
+      // auto-load
+      fetchQueue();
+    </script>
+  </body>
+</html>`;
+  res.type("html").send(html);
+});
 
 // Сброс файла логов
 function resetLogFile() {

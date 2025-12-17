@@ -1,5 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
@@ -18,6 +20,24 @@ if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
 
 // Создаём экземпляр бота (будет инициализирован в startBot)
 let bot = null;
+
+// Файл очереди для неотправленных уведомлений (JSONL)
+const NOTIF_QUEUE_FILE = path.join(
+  process.cwd(),
+  "pending_notifications.jsonl"
+);
+let notifWorkerInterval = null;
+
+// Читаем параметры retry из env (с запасными значениями)
+const NOTIF_WORKER_INTERVAL_MS = parseInt(
+  process.env.NOTIF_WORKER_INTERVAL_MS || "30000",
+  10
+);
+const NOTIF_BACKOFF_BASE_MS = parseInt(
+  process.env.NOTIF_BACKOFF_BASE_MS || "5000",
+  10
+);
+const NOTIF_MAX_ATTEMPTS = parseInt(process.env.NOTIF_MAX_ATTEMPTS || "6", 10);
 
 // ===== ФУНКЦИЯ РЕГИСТРАЦИИ TELEGRAM ПОЛЬЗОВАТЕЛЯ =====
 async function registerTelegramUser(msg) {
@@ -52,12 +72,192 @@ export async function sendAdminNotification(message) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    await bot.sendMessage(TELEGRAM_ADMIN_ID, message, {
-      parse_mode: "HTML",
-    });
-    console.log("✅ Уведомление отправлено админу");
+    await bot.sendMessage(TELEGRAM_ADMIN_ID, message, { parse_mode: "HTML" });
+    console.log(new Date().toISOString(), "✅ Уведомление отправлено админу");
   } catch (error) {
-    console.error("❌ Ошибка при отправке уведомления админу:", error.message);
+    console.error(
+      new Date().toISOString(),
+      "❌ Ошибка при отправке уведомления админу:",
+      error && error.message ? error.message : error
+    );
+    // Сохраняем уведомление в локальную очередь для повторной отправки
+    try {
+      enqueueNotification({
+        to: TELEGRAM_ADMIN_ID,
+        message,
+        error: error && error.message,
+      });
+    } catch (e) {
+      console.error("Не удалось записать уведомление в локальную очередь:", e);
+    }
+  }
+}
+
+// Добавляет уведомление в файл-очередь (JSONL). Каждая запись содержит время, payload и attempts.
+function enqueueNotification(item) {
+  const record = {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    timestamp: new Date().toISOString(),
+    attempts: 0,
+    nextAttemptAt: Date.now(),
+    payload: item,
+  };
+  fs.appendFileSync(NOTIF_QUEUE_FILE, JSON.stringify(record) + "\n", "utf8");
+  console.log(
+    new Date().toISOString(),
+    "➕ Добавлено уведомление в очередь (id=",
+    record.id,
+    ")"
+  );
+}
+
+// Считывает очередь из файла (без удаления)
+function readQueue() {
+  if (!fs.existsSync(NOTIF_QUEUE_FILE)) return [];
+  const data = fs.readFileSync(NOTIF_QUEUE_FILE, "utf8").trim();
+  if (!data) return [];
+  return data
+    .split(/\n+/)
+    .map((l) => {
+      try {
+        return JSON.parse(l);
+      } catch (e) {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+// Перезаписывает очередь (полностью)
+function writeQueue(records) {
+  const content =
+    records.map((r) => JSON.stringify(r)).join("\n") +
+    (records.length ? "\n" : "");
+  fs.writeFileSync(NOTIF_QUEUE_FILE, content, "utf8");
+}
+
+// Функция попытки отправки одного уведомления (использует bot если есть, иначе fetch)
+async function trySendRecord(record) {
+  const { payload } = record;
+  try {
+    if (bot) {
+      await bot.sendMessage(payload.to, payload.message, {
+        parse_mode: "HTML",
+      });
+    } else {
+      await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: payload.to,
+            text: payload.message,
+            parse_mode: "HTML",
+          }),
+        }
+      );
+    }
+    console.log(
+      new Date().toISOString(),
+      "✅ Повторно отправлено уведомление (id=",
+      record.id,
+      ")"
+    );
+    return true;
+  } catch (e) {
+    console.warn(
+      new Date().toISOString(),
+      "⚠️ Попытка отправки уведомления не удалась (id=",
+      record.id,
+      "):",
+      e && e.message ? e.message : e
+    );
+    return false;
+  }
+}
+
+// Позволяет немедленно попытаться отправить все уведомления (используется внешним endpoint)
+export async function flushQueueNow() {
+  const records = readQueue();
+  if (!records.length) return { sent: 0, total: 0 };
+  let sent = 0;
+  for (const rec of records) {
+    const ok = await trySendRecord(rec);
+    if (ok) sent++;
+    rec.attempts = (rec.attempts || 0) + 1;
+    rec.nextAttemptAt =
+      Date.now() + NOTIF_BACKOFF_BASE_MS * Math.pow(2, rec.attempts - 1);
+    if (ok) rec._sent = true;
+  }
+  const remaining = records.filter(
+    (r) =>
+      !r._sent &&
+      (!r.maxAttempts || r.attempts < (r.maxAttempts || NOTIF_MAX_ATTEMPTS))
+  );
+  writeQueue(remaining);
+  return { sent, total: records.length };
+}
+
+// Экспорт утилит управления очередью
+export {
+  readQueue as getNotificationQueue,
+  writeQueue as writeNotificationQueue,
+  enqueueNotification,
+};
+
+// Фоновая задача: пытается отправлять уведомления из файла по расписанию
+function startNotifWorker() {
+  if (notifWorkerInterval) return;
+  notifWorkerInterval = setInterval(async () => {
+    try {
+      const records = readQueue();
+      if (!records.length) return;
+      const now = Date.now();
+      let changed = false;
+      for (const rec of records) {
+        if (rec.nextAttemptAt && rec.nextAttemptAt > now) continue;
+        // Пытаемся отправить
+        const ok = await trySendRecord(rec);
+        rec.attempts = (rec.attempts || 0) + 1;
+        // экспоненциальный backoff: NOTIF_BACKOFF_BASE_MS * 2^(attempts-1)
+        rec.nextAttemptAt =
+          Date.now() + NOTIF_BACKOFF_BASE_MS * Math.pow(2, rec.attempts - 1);
+        if (ok) {
+          // пометим для удаления
+          rec._sent = true;
+        }
+        changed = true;
+      }
+      if (changed) {
+        // оставляем только неотправленные
+        const remaining = records.filter(
+          (r) =>
+            !r._sent &&
+            (!r.maxAttempts ||
+              r.attempts < (r.maxAttempts || NOTIF_MAX_ATTEMPTS))
+        );
+        writeQueue(remaining);
+      }
+    } catch (e) {
+      console.error(
+        new Date().toISOString(),
+        "Ошибка в задаче повторной отправки уведомлений:",
+        e
+      );
+    }
+  }, NOTIF_WORKER_INTERVAL_MS);
+  console.log(
+    new Date().toISOString(),
+    `🔁 Фоновая задача повторной отправки уведомлений запущена (interval=${NOTIF_WORKER_INTERVAL_MS}ms, backoffBase=${NOTIF_BACKOFF_BASE_MS}ms, maxAttempts=${NOTIF_MAX_ATTEMPTS})`
+  );
+}
+
+// Останавливает воркер (при завершении процесса)
+function stopNotifWorker() {
+  if (notifWorkerInterval) {
+    clearInterval(notifWorkerInterval);
+    notifWorkerInterval = null;
   }
 }
 
@@ -181,6 +381,22 @@ export function startBot() {
   bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
   console.log("✅ Telegram бот запущен");
+
+  // Запускаем background worker для повторной отправки уведомлений
+  startNotifWorker();
+
+  // При завершении процесса корректно останавливаем воркер
+  process.on("exit", () => {
+    stopNotifWorker();
+  });
+  process.on("SIGINT", () => {
+    stopNotifWorker();
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    stopNotifWorker();
+    process.exit(0);
+  });
 
   // ===== ГЛАВНОЕ МЕНЮ (КНОПКИ) =====
   const mainMenuKeyboard = {
@@ -387,9 +603,100 @@ export function startBot() {
     }
   });
 
-  // Обработчик ошибок
-  bot.on("polling_error", (error) => {
-    console.error("❌ Ошибка polling:", error.code);
+  // Обработчик ошибок polling — логируем подробно и при EFATAL пытаемся восстановить соединение
+  // перед окончательным выходом. Это помогает отличать временные разрывы (socket hang up)
+  // от постоянных проблем (например, DNS или отсутствие интернета).
+  bot.on("polling_error", async (error) => {
+    try {
+      console.error(
+        "❌ Ошибка polling:",
+        error && error.code ? error.code : error
+      );
+      console.error("Full polling error:", error);
+
+      // Если EFATAL — это фатальная ошибка polling, часто связана с сетевыми разрывами
+      if (error && error.code === "EFATAL") {
+        // Вспомогательные функции
+        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+        async function testTelegramConnectivity() {
+          try {
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`;
+            const resp = await fetch(url, { method: "GET", timeout: 5000 });
+            // Если ответ пришёл — считаем соединение рабочим
+            return resp && resp.ok;
+          } catch (e) {
+            // Логируем причину неудачи (например ENOTFOUND)
+            console.warn(
+              "Проверка доступности api.telegram.org не удалась:",
+              e && e.message ? e.message : e
+            );
+            return false;
+          }
+        }
+
+        // Попробуем несколько раз с экспоненциальной задержкой — чтобы пережить временные разрывы
+        const maxAttempts = 3;
+        let attempt = 0;
+        let healthy = false;
+        while (attempt < maxAttempts) {
+          attempt++;
+          console.log(
+            `Проверка доступности Telegram API (попытка ${attempt}/${maxAttempts})...`
+          );
+          healthy = await testTelegramConnectivity();
+          if (healthy) break;
+          // экспоненциальный backoff: 3s, 6s, 12s
+          const backoff = 3000 * Math.pow(2, attempt - 1);
+          console.log(
+            `Соединение не восстановлено, ждём ${backoff}ms перед повтором...`
+          );
+          // eslint-disable-next-line no-await-in-loop
+          await sleep(backoff);
+        }
+
+        if (healthy) {
+          console.log(
+            "Соединение с Telegram API восстановлено — продолжаем работу."
+          );
+          return; // не выходим, позволяем polling продолжиться
+        }
+
+        // Если не удалось восстановить соединение — пробуем уведомить админа и затем выходим
+        const errMsg = `❌ <b>Фатальная ошибка polling (EFATAL)</b>\n\n<pre>${
+          (error && error.message) || JSON.stringify(error)
+        }</pre>`;
+        try {
+          if (bot) {
+            await bot.sendMessage(TELEGRAM_ADMIN_ID, errMsg, {
+              parse_mode: "HTML",
+            });
+          } else {
+            await fetch(
+              `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: TELEGRAM_ADMIN_ID,
+                  text: errMsg,
+                  parse_mode: "HTML",
+                }),
+              }
+            );
+          }
+        } catch (sendErr) {
+          console.error("Не удалось уведомить админа о EFATAL:", sendErr);
+        }
+
+        console.error(
+          "EFATAL не ушёл после повторных попыток — выходим, чтобы менеджер процессов перезапустил бота."
+        );
+        process.exit(1);
+      }
+    } catch (e) {
+      console.error("Ошибка в обработчике polling_error:", e);
+    }
   });
 
   console.log("✅ Все обработчики бота зарегистрированы");

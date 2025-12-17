@@ -548,9 +548,13 @@ async function selectEvent(eventId, eventName) {
   // Проверяем, заблокирован ли турнир
   const event = events.find((e) => e.id === eventId);
 
+  // Если турнир заблокирован — разрешаем выбор, но можно показать подсказку (не блокируя действие)
   if (event && event.locked_reason) {
-    alert(`Этот турнир заблокирован.\nПричина: ${event.locked_reason}`);
-    return;
+    // Не прерываем выполнение: карточки останутся стилизованы как locked, но будут кликабельны.
+    // Опционально: показать короткое уведомление (необязательно). Сейчас оставляем без alert, чтобы не мешать UX.
+    console.info(
+      `Выбрана завершённая/заблокированная карточка турнира (id=${eventId}). Причина: ${event.locked_reason}`
+    );
   }
 
   currentEventId = eventId;
