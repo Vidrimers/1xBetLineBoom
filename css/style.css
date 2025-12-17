@@ -1,3 +1,21 @@
+/* Кнопка "Мне повезет" */
+.lucky-btn {
+  padding: 6px 14px;
+  font-size: 0.85em;
+  background: #fffbe6;
+  color: #f57c00;
+  border: 1.5px solid #f57c00;
+  border-radius: 15px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(245, 124, 0, 0.08);
+}
+.lucky-btn:hover {
+  background: #ffe0b2;
+  color: #fff;
+  border-color: #c9721c;
+}
 * {
   margin: 0;
   padding: 0;

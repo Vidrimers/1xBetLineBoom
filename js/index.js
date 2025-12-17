@@ -1,3 +1,47 @@
+// Случайная ставка по всем матчам выбранного тура
+async function luckyBetForCurrentRound() {
+  if (!currentUser) {
+    alert("Сначала войдите в аккаунт");
+    return;
+  }
+  if (!currentRoundFilter || currentRoundFilter === "all") {
+    alert("Сначала выберите тур");
+    return;
+  }
+  // Находим все матчи выбранного тура, которые еще не завершены и на которые пользователь не ставил
+  const matchesToBet = matches.filter(
+    (m) =>
+      m.round === currentRoundFilter &&
+      getMatchStatusByDate(m) !== "finished" &&
+      !userBets.some((b) => b.match_id === m.id)
+  );
+  if (matchesToBet.length === 0) {
+    alert("Нет доступных матчей для случайной ставки в этом туре");
+    return;
+  }
+  // Для каждого такого матча делаем случайную ставку
+  for (const match of matchesToBet) {
+    const options = [match.team1_name, "draw", match.team2_name];
+    const random = Math.floor(Math.random() * options.length);
+    const prediction = options[random];
+    try {
+      await fetch("/api/bets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          match_id: match.id,
+          prediction: prediction,
+          amount: 0,
+        }),
+      });
+    } catch (e) {
+      console.error("Ошибка при отправке случайной ставки:", e);
+    }
+  }
+  await loadMyBets();
+  displayMatches();
+}
 // Глобальные переменные
 let currentUser = null;
 let currentEventId = null;
@@ -704,7 +748,9 @@ function displayMatches() {
       }
 
       return `
-        <div class="match-row ${betClass}" style="position: relative;">
+        <div class="match-row ${betClass}" data-match-id="${
+        match.id
+      }" style="position: relative;">
             ${
               isAdmin()
                 ? `
@@ -802,14 +848,14 @@ function displayMatches() {
                         ${match.team1_name}
                     </button>
                     <button class="bet-btn draw ${
-                      userBetOnMatch?.prediction === "Ничья" ? "selected" : ""
-                    }" onclick="placeBet(${match.id}, 'Ничья', 'Ничья')" ${
-        effectiveStatus !== "pending" || userBetOnMatch?.prediction === "Ничья"
+                      userBetOnMatch?.prediction === "draw" ? "selected" : ""
+                    }" onclick="placeBet(${match.id}, 'draw', 'draw')" ${
+        effectiveStatus !== "pending" || userBetOnMatch?.prediction === "draw"
           ? "disabled"
           : ""
       }>
-                        Ничья
-                    </button>
+                          Ничья
+                      </button>
                     <button class="bet-btn team2 ${
                       userBetOnMatch?.prediction === match.team2_name
                         ? "selected"
@@ -872,6 +918,13 @@ async function placeBet(matchId, teamName, prediction) {
   if (!currentUser) {
     alert("Сначала введите ваше имя");
     return;
+  }
+
+  // Сразу делаем кнопку disabled и курсор wait
+  const button = event.target;
+  if (button) {
+    button.disabled = true;
+    button.style.cursor = "wait";
   }
 
   // Проверяем статус матча на основе даты
@@ -1015,7 +1068,9 @@ function displayMyBets(bets) {
                     <span class="bet-status ${statusClass}">${statusText}</span>
                 </div>
                 <div class="bet-info" style="font-size: 0.9em; color: #666;">
-                    <span>Ставка: <strong>${bet.prediction}</strong></span>
+                    <span>Ставка: <strong>${
+                      bet.prediction === "draw" ? "Ничья" : bet.prediction
+                    }</strong></span>
                 </div>
                 <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
                     Турнир: ${bet.event_name}${

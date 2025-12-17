@@ -117,13 +117,22 @@
               "
             >
               <h2 style="margin: 0; padding-bottom: 10px">⚽ Матчи</h2>
-              <button
-                id="addMatchBtn"
-                onclick="openCreateMatchModal()"
-                style="display: none; padding: 8px 15px; font-size: 0.9em"
-              >
-                ➕ Добавить матч
-              </button>
+              <div style="display: flex; gap: 8px; align-items: center">
+                <button
+                  class="lucky-btn"
+                  onclick="luckyBetForCurrentRound()"
+                  title="Сделать случайную ставку по всем матчам выбранного тура"
+                >
+                  🎲 Мне повезет
+                </button>
+                <button
+                  id="addMatchBtn"
+                  onclick="openCreateMatchModal()"
+                  style="display: none; padding: 8px 15px; font-size: 0.9em"
+                >
+                  ➕ Добавить матч
+                </button>
+              </div>
             </div>
             <div
               id="roundsFilterContainer"
