@@ -213,7 +213,7 @@ app.get("/admin/notifications", (req, res) => {
       th,td{border:1px solid #ddd;padding:8px;text-align:left}
       th{background:#f4f4f4}
       pre{white-space:pre-wrap;word-break:break-word}
-      .small{font-size:0.9em;color:#666}
+      .small{font-size:0.9em;color:#b0b8c8}
       button{margin-right:8px}
     </style>
   </head>
@@ -332,12 +332,12 @@ function resetLogFile() {
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .header h1 { color: #667eea; font-size: 2em; margin-bottom: 10px; }
-    .header p { color: #888; font-size: 0.9em; }
+    .header h1 { color: #5a9fd4; font-size: 2em; margin-bottom: 10px; }
+    .header p { color: #b0b8c8; font-size: 0.9em; }
     .logs-container { max-width: 1200px; margin: 0 auto; }
     .log-entry {
       background: rgba(255, 255, 255, 0.03);
-      border-left: 4px solid #667eea;
+      border-left: 4px solid #5a9fd4;
       padding: 15px 20px;
       margin-bottom: 10px;
       border-radius: 0 8px 8px 0;
@@ -347,7 +347,7 @@ function resetLogFile() {
     .log-entry.bet-placed { border-left-color: #4caf50; }
     .log-entry.bet-deleted { border-left-color: #f44336; }
     .log-entry.settings-changed { border-left-color: #ff9800; }
-    .log-time { color: #888; font-size: 0.85em; margin-bottom: 5px; }
+    .log-time { color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px; }
     .log-action { font-weight: bold; margin-bottom: 8px; }
     .log-action.placed { color: #4caf50; }
     .log-action.deleted { color: #f44336; }
