@@ -395,7 +395,7 @@ app.get("/api/rounds-order", (req, res) => {
     const setting = db
       .prepare("SELECT value FROM site_settings WHERE key = 'rounds_order'")
       .get();
-    
+
     if (setting && setting.value) {
       res.json(JSON.parse(setting.value));
     } else {
@@ -410,19 +410,21 @@ app.get("/api/rounds-order", (req, res) => {
 app.put("/api/admin/rounds-order", (req, res) => {
   try {
     const { rounds } = req.body;
-    
+
     if (!Array.isArray(rounds)) {
       return res.status(400).json({ error: "rounds должен быть массивом" });
     }
-    
+
     const value = JSON.stringify(rounds);
-    
-    db.prepare(`
+
+    db.prepare(
+      `
       INSERT INTO site_settings (key, value, updated_at) 
       VALUES ('rounds_order', ?, CURRENT_TIMESTAMP)
       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
-    `).run(value, value);
-    
+    `
+    ).run(value, value);
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

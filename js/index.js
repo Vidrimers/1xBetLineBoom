@@ -37,7 +37,7 @@ async function saveRoundsOrderToStorage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rounds: roundsOrder }),
     });
-    
+
     if (!response.ok) {
       throw new Error("Ошибка сохранения");
     }
@@ -596,10 +596,10 @@ function displayMatches() {
 
     roundsFilterContainer.style.display = "block";
     const filterButtons = roundsFilterContainer.querySelector("div");
-    
+
     // Проверяем, является ли текущий пользователь админом
     const isAdmin = currentUser && currentUser.username === ADMIN_LOGIN;
-    
+
     filterButtons.innerHTML = `
       ${rounds
         .map(
@@ -613,7 +613,11 @@ function displayMatches() {
       `
         )
         .join("")}
-      ${isAdmin ? '<button class="edit-rounds-btn" onclick="openRoundsOrderModal()" title="Изменить порядок туров">✎</button>' : ''}
+      ${
+        isAdmin
+          ? '<button class="edit-rounds-btn" onclick="openRoundsOrderModal()" title="Изменить порядок туров">✎</button>'
+          : ""
+      }
     `;
   } else {
     roundsFilterContainer.style.display = "none";
