@@ -758,7 +758,7 @@ function displayMatches() {
             ${
               isAdmin()
                 ? `
-              <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 10;">
+              <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 1;">
                 <button onclick="setMatchResult(${match.id}, 'team1')"
                   style="background: #1976d2; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
                   onmouseover="this.style.background='#1565c0'"
@@ -778,7 +778,7 @@ function displayMatches() {
                   2
                 </button>
               </div>
-              <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10;">
+              <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 1;">
                 ${
                   effectiveStatus === "finished"
                     ? `

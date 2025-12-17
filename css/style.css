@@ -13,7 +13,7 @@
 }
 .lucky-btn:hover {
   background: #ffe0b2;
-  color: #fff;
+  /* color: #fff; */
   border-color: #c9721c;
 }
 * {
