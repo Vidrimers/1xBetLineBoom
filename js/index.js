@@ -598,7 +598,7 @@ function displayMatches() {
     const filterButtons = roundsFilterContainer.querySelector("div");
 
     // Проверяем, является ли текущий пользователь админом
-    const isAdmin = currentUser && currentUser.username === ADMIN_LOGIN;
+    const isAdmin = currentUser && currentUser.isAdmin;
 
     filterButtons.innerHTML = `
       ${rounds
