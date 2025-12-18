@@ -1147,7 +1147,6 @@ async function deleteBet(betId) {
 }
 
 // ===== ВКЛАДКИ =====
-
 function switchTab(tabName) {
   // Скрываем все содержимое вкладок
   document.getElementById("allbets-content").style.display = "none";

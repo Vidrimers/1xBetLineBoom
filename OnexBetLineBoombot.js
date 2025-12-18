@@ -57,13 +57,41 @@ async function registerTelegramUser(msg) {
         first_name: firstName,
       }),
     });
-    console.log(`📱 Зарегистрирован: @${telegramUsername} → ${chatId}`);
   } catch (error) {
     console.error("Ошибка регистрации telegram пользователя:", error.message);
   }
 }
 
 // ===== ЭКСПОРТИРУЕМЫЕ ФУНКЦИИ (УТИЛИТЫ) =====
+
+// Функция для логирования действий пользователя админу
+async function logUserAction(msg, action) {
+  try {
+    const userId = msg.from?.id || "Unknown";
+
+    // Не логируем действия админа
+    if (userId == TELEGRAM_ADMIN_ID) {
+      return;
+    }
+
+    const username = msg.from?.username || msg.from?.first_name || "Unknown";
+    const chatId = msg.chat?.id || "Unknown";
+
+    const logMessage =
+      `ℹ️ <b>Действие пользователя:</b>\n` +
+      `👤 <b>Пользователь:</b> @${username} (ID: ${userId})\n` +
+      `📝 <b>Действие:</b> ${action}\n` +
+      `🕐 <b>Время:</b> ${new Date().toLocaleString("ru-RU")}\n` +
+      `🆔 <b>Chat ID:</b> ${chatId}`;
+
+    await sendAdminNotification(logMessage);
+  } catch (error) {
+    console.error(
+      "Ошибка при логировании действия пользователя:",
+      error.message
+    );
+  }
+}
 
 // Функция для отправки уведомления только админу
 export async function sendAdminNotification(message) {
@@ -419,6 +447,9 @@ export function startBot() {
     const chatId = msg.chat.id;
     const firstName = msg.from.first_name || "пользователь";
 
+    // Логируем действие
+    logUserAction(msg, "Нажата команда /start");
+
     bot.sendMessage(
       chatId,
       `👋 Привет, ${firstName}!\n\n` +
@@ -435,6 +466,9 @@ export function startBot() {
   // Команда /help
   bot.onText(/\/help/, (msg) => {
     const chatId = msg.chat.id;
+
+    // Логируем действие
+    logUserAction(msg, "Нажата команда /help");
 
     bot.sendMessage(
       chatId,
@@ -455,7 +489,9 @@ export function startBot() {
   });
 
   // Команда /status и кнопка 📊 Статус
-  const handleStatus = (chatId) => {
+  const handleStatus = (chatId, msg = null) => {
+    if (msg) logUserAction(msg, "Нажата кнопка/команда: Статус");
+
     bot.sendMessage(
       chatId,
       `✅ <b>Статус:</b> Сайт работает\n\n` +
@@ -468,10 +504,12 @@ export function startBot() {
     );
   };
 
-  bot.onText(/\/status/, (msg) => handleStatus(msg.chat.id));
+  bot.onText(/\/status/, (msg) => handleStatus(msg.chat.id, msg));
 
   // Команда /tournaments и кнопка 📅 Турниры
-  const handleTournaments = (chatId) => {
+  const handleTournaments = (chatId, msg = null) => {
+    if (msg) logUserAction(msg, "Нажата кнопка/команда: Турниры");
+
     bot.sendMessage(
       chatId,
       `📅 <b>Турниры:</b>\n\n` +
@@ -483,10 +521,12 @@ export function startBot() {
     );
   };
 
-  bot.onText(/\/tournaments/, (msg) => handleTournaments(msg.chat.id));
+  bot.onText(/\/tournaments/, (msg) => handleTournaments(msg.chat.id, msg));
 
   // Команда /my_bets и кнопка 💰 Мои ставки
-  const handleMyBets = (chatId) => {
+  const handleMyBets = (chatId, msg = null) => {
+    if (msg) logUserAction(msg, "Нажата кнопка/команда: Мои ставки");
+
     bot.sendMessage(
       chatId,
       `💰 <b>Мои ставки:</b>\n\n` +
@@ -498,12 +538,14 @@ export function startBot() {
     );
   };
 
-  bot.onText(/\/my_bets/, (msg) => handleMyBets(msg.chat.id));
+  bot.onText(/\/my_bets/, (msg) => handleMyBets(msg.chat.id, msg));
 
   // Команда /profile и кнопка 👤 Профиль
   const handleProfile = (msg) => {
     const chatId = msg.chat.id;
     const username = msg.from.username || "нет";
+
+    logUserAction(msg, "Нажата кнопка/команда: Профиль");
 
     bot.sendMessage(
       chatId,
@@ -521,7 +563,9 @@ export function startBot() {
   bot.onText(/\/profile/, (msg) => handleProfile(msg));
 
   // Команда /next_match и кнопка ⚽ Ближайший матч
-  const handleNextMatch = (chatId) => {
+  const handleNextMatch = (chatId, msg = null) => {
+    if (msg) logUserAction(msg, "Нажата кнопка/команда: Ближайший матч");
+
     bot.sendMessage(
       chatId,
       `⚽ <b>Ближайший матч:</b>\n\n` +
@@ -536,11 +580,13 @@ export function startBot() {
     );
   };
 
-  bot.onText(/\/next_match/, (msg) => handleNextMatch(msg.chat.id));
+  bot.onText(/\/next_match/, (msg) => handleNextMatch(msg.chat.id, msg));
 
   // Команда /stats и кнопка 📈 Статистика
   const handleStats = (msg) => {
     const chatId = msg.chat.id;
+
+    logUserAction(msg, "Нажата кнопка/команда: Статистика");
     const firstName = msg.from.first_name || "пользователь";
 
     bot.sendMessage(
@@ -573,13 +619,13 @@ export function startBot() {
 
     switch (text) {
       case "📊 Статус":
-        handleStatus(chatId);
+        handleStatus(chatId, msg);
         break;
       case "📅 Турниры":
-        handleTournaments(chatId);
+        handleTournaments(chatId, msg);
         break;
       case "💰 Мои ставки":
-        handleMyBets(chatId);
+        handleMyBets(chatId, msg);
         break;
       case "👤 Профиль":
         handleProfile(msg);
@@ -588,9 +634,10 @@ export function startBot() {
         handleStats(msg);
         break;
       case "⚽ Ближайший матч":
-        handleNextMatch(chatId);
+        handleNextMatch(chatId, msg);
         break;
       case "🌐 Открыть сайт":
+        logUserAction(msg, "Нажата кнопка: Открыть сайт");
         bot.sendMessage(
           chatId,
           `🌐 <b>Открыть сайт:</b>\n\n` +
