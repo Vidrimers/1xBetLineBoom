@@ -1263,11 +1263,19 @@ function displayTournaments(events) {
   eventsGrid.innerHTML = events
     .map(
       (event) => `
-    <div class="event-card" onclick="loadTournamentParticipants(${
-      event.id
-    }, '${event.name.replace(/'/g, "\\'")}')">
+    <div class="event-card ${
+      event.locked_reason ? "locked" : ""
+    }" onclick="loadTournamentParticipants(${event.id}, '${event.name.replace(
+        /'/g,
+        "\\'"
+      )}')">
       <div class="event-card-title">🏆 ${event.name}</div>
       <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
+      ${
+        event.locked_reason
+          ? `<div class="event-card-locked">🔒 ${event.locked_reason}</div>`
+          : ""
+      }
     </div>
   `
     )
