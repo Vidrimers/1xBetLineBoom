@@ -633,6 +633,68 @@ button.tab-btn:hover {
   font-size: 0.9em;
 }
 
+/* Сетка событий (турниров) */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.event-card {
+  background: linear-gradient(
+    135deg,
+    rgba(58, 123, 213, 0.6) 0%,
+    rgba(44, 50, 63, 0.8) 100%
+  );
+  border: 1px solid rgba(58, 123, 213, 0.5);
+  border-radius: 10px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  color: #e0e6f0;
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+  background: linear-gradient(
+    135deg,
+    rgba(58, 123, 213, 0.8) 0%,
+    rgba(44, 50, 63, 1) 100%
+  );
+  box-shadow: 0 8px 20px rgba(58, 123, 213, 0.4);
+  border-color: rgba(58, 123, 213, 0.8);
+}
+
+.event-card-title {
+  font-weight: 600;
+  font-size: 1.1em;
+  margin-bottom: 10px;
+}
+
+.event-card-count {
+  font-size: 0.9em;
+  opacity: 0.8;
+  color: #b0b8c8;
+}
+
+.btn-back {
+  background: rgba(58, 123, 213, 0.7);
+  color: #e0e6f0;
+  border: 1px solid rgba(58, 123, 213, 0.8);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: all 0.3s;
+}
+
+.btn-back:hover {
+  background: rgba(58, 123, 213, 0.9);
+  box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+}
+
 /* Стили для профиля */
 .profile-container {
   display: flex;

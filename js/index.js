@@ -268,10 +268,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("adminSettingsPanel").style.display = "block";
     }
 
-    loadEvents();
+    loadEventsList();
     loadMyBets();
   } else {
-    loadEvents();
+    loadEventsList();
   }
 
   // Запускаем обновление статусов матчей каждые 30 секунд
@@ -358,7 +358,8 @@ async function initUser() {
       document.getElementById("adminSettingsPanel").style.display = "block";
     }
 
-    // Загружаем ставки пользователя
+    // Загружаем турниры, матчи и ставки пользователя
+    loadEventsList();
     loadMyBets();
   } catch (error) {
     console.error("Ошибка при входе:", error);
@@ -406,7 +407,7 @@ function logoutUser() {
 
 // ===== ТУРНИРЫ =====
 
-async function loadEvents() {
+async function loadEventsList() {
   try {
     const response = await fetch("/api/events");
     events = await response.json();
@@ -1166,7 +1167,7 @@ function switchTab(tabName) {
   if (tabName === "allbets") {
     document.getElementById("allbets-content").style.display = "grid";
     document.querySelectorAll(".tab-btn")[0].classList.add("active");
-    loadEvents();
+    loadEventsList();
     if (currentEventId) {
       loadMatches(currentEventId);
     }
@@ -1174,7 +1175,7 @@ function switchTab(tabName) {
   } else if (tabName === "participants") {
     document.getElementById("participants-content").style.display = "flex";
     document.querySelectorAll(".tab-btn")[1].classList.add("active");
-    loadParticipants();
+    loadTournamentsList();
   } else if (tabName === "profile") {
     document.getElementById("profile-content").style.display = "flex";
     document.querySelectorAll(".tab-btn")[2].classList.add("active");
@@ -1231,6 +1232,109 @@ function displayParticipants(participants) {
   `
     )
     .join("");
+}
+
+// ===== ТУРНИРЫ =====
+
+async function loadTournamentsList() {
+  try {
+    const response = await fetch("/api/events");
+    const events = await response.json();
+    displayTournaments(events);
+
+    // Загружаем участников за всё время
+    await loadParticipants();
+  } catch (error) {
+    console.error("Ошибка при загрузке турниров:", error);
+    document.getElementById("eventsGrid").innerHTML =
+      '<div class="empty-message">Ошибка при загрузке турниров</div>';
+  }
+}
+
+function displayTournaments(events) {
+  const eventsGrid = document.getElementById("eventsGrid");
+
+  if (events.length === 0) {
+    eventsGrid.innerHTML =
+      '<div class="empty-message">Турниры не найдены</div>';
+    return;
+  }
+
+  eventsGrid.innerHTML = events
+    .map(
+      (event) => `
+    <div class="event-card" onclick="loadTournamentParticipants(${
+      event.id
+    }, '${event.name.replace(/'/g, "\\'")}')">
+      <div class="event-card-title">🏆 ${event.name}</div>
+      <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
+    </div>
+  `
+    )
+    .join("");
+}
+
+async function loadTournamentParticipants(eventId, eventName) {
+  try {
+    const response = await fetch(
+      `/api/events/${eventId}/tournament-participants`
+    );
+    const participants = await response.json();
+
+    // Скрываем сетку турниров и показываем участников турнира
+    document.getElementById("eventsGrid").style.display = "none";
+    document.getElementById("tournamentTitle").style.display = "block";
+    document.getElementById(
+      "tournamentTitle"
+    ).innerText = `📋 Участники турнира: ${eventName}`;
+    document.getElementById("tournamentParticipantsList").style.display =
+      "flex";
+    document.getElementById("backToTournaments").style.display = "block";
+
+    displayTournamentParticipants(participants);
+  } catch (error) {
+    console.error("Ошибка при загрузке участников турнира:", error);
+    document.getElementById("tournamentParticipantsList").innerHTML =
+      '<div class="empty-message">Ошибка при загрузке участников турнира</div>';
+  }
+}
+
+function displayTournamentParticipants(participants) {
+  const tournamentParticipantsList = document.getElementById(
+    "tournamentParticipantsList"
+  );
+
+  if (participants.length === 0) {
+    tournamentParticipantsList.innerHTML =
+      '<div class="empty-message">Участники не найдены</div>';
+    return;
+  }
+
+  tournamentParticipantsList.innerHTML = participants
+    .map(
+      (participant) => `
+    <div class="participant-item">
+      <div class="participant-info">
+        <div class="participant-name">${participant.username}</div>
+        <div class="participant-stats">
+          Ставок в турнире: ${participant.event_bets || 0} | 
+          Угаданных: ${participant.event_won || 0} | 
+          Неугаданных: ${participant.event_lost || 0} | 
+          В ожидании: ${participant.event_pending || 0}
+        </div>
+      </div>
+      <div class="participant-bets-count">${participant.event_won || 0}</div>
+    </div>
+  `
+    )
+    .join("");
+}
+
+function backToTournaments() {
+  document.getElementById("eventsGrid").style.display = "grid";
+  document.getElementById("tournamentTitle").style.display = "none";
+  document.getElementById("tournamentParticipantsList").style.display = "none";
+  document.getElementById("backToTournaments").style.display = "none";
 }
 
 // ===== ПРОФИЛЬ =====
@@ -1312,7 +1416,7 @@ async function seedData() {
 
     const result = await response.json();
     alert(result.message);
-    loadEvents();
+    loadEventsList();
   } catch (error) {
     console.error("Ошибка при загрузке демо-данных:", error);
     alert("Ошибка при загрузке демо-данных");
@@ -1394,7 +1498,7 @@ async function submitCreateEvent(event) {
     closeCreateEventModal();
 
     // Перезагружаем турниры
-    loadEvents();
+    loadEventsList();
   } catch (error) {
     console.error("Ошибка при создании турнира:", error);
     alert("Ошибка при создании турнира");
@@ -1439,7 +1543,7 @@ async function deleteEvent(eventId) {
       return;
     }
 
-    loadEvents();
+    loadEventsList();
   } catch (error) {
     console.error("Ошибка при удалении турнира:", error);
     alert("Ошибка при удалении турнира");
@@ -1509,7 +1613,7 @@ async function submitLockEvent(event) {
     closeLockEventModal();
 
     // Перезагружаем турниры
-    loadEvents();
+    loadEventsList();
   } catch (error) {
     console.error("Ошибка при блокировке турнира:", error);
     alert("Ошибка при блокировке турнира");
@@ -1546,7 +1650,7 @@ async function unlockEvent(eventId) {
     }
 
     // Перезагружаем турниры
-    loadEvents();
+    loadEventsList();
   } catch (error) {
     console.error("Ошибка при разблокировке турнира:", error);
     alert("Ошибка при разблокировке турнира");
@@ -1639,7 +1743,7 @@ async function submitEditEvent(event) {
     closeEditEventModal();
 
     // Перезагружаем турниры
-    loadEvents();
+    loadEventsList();
   } catch (error) {
     console.error("Ошибка при редактировании турнира:", error);
     alert("Ошибка при редактировании турнира");

@@ -602,7 +602,13 @@ app.put("/api/admin/rounds-order", (req, res) => {
 app.get("/api/events", (req, res) => {
   try {
     const events = db
-      .prepare("SELECT * FROM events WHERE status = 'active'")
+      .prepare(
+        `SELECT e.*, COUNT(m.id) as match_count 
+         FROM events e 
+         LEFT JOIN matches m ON e.id = m.event_id 
+         WHERE e.status = 'active' 
+         GROUP BY e.id`
+      )
       .all();
     res.json(events);
   } catch (error) {
@@ -610,7 +616,57 @@ app.get("/api/events", (req, res) => {
   }
 });
 
-// 2. Получить матчи по событию
+// 2. Получить участников турнира (по event_id)
+app.get("/api/events/:eventId/tournament-participants", (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const participants = db
+      .prepare(
+        `
+      SELECT 
+        u.id,
+        u.username,
+        COUNT(DISTINCT b.id) as event_bets,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN 
+            CASE 
+              WHEN (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') THEN 1 
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as event_won,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN 
+            CASE 
+              WHEN NOT ((b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw')) THEN 1 
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as event_lost,
+        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as event_pending
+      FROM users u
+      INNER JOIN bets b ON u.id = b.user_id
+      INNER JOIN matches m ON b.match_id = m.id
+      WHERE m.event_id = ?
+      GROUP BY u.id, u.username
+      HAVING COUNT(DISTINCT b.id) > 0
+      ORDER BY event_won DESC, event_bets DESC
+    `
+      )
+      .all(eventId);
+
+    res.json(participants);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 4. Получить матчи по событию
 app.get("/api/events/:eventId/matches", (req, res) => {
   try {
     const { eventId } = req.params;
@@ -625,7 +681,7 @@ app.get("/api/events/:eventId/matches", (req, res) => {
   }
 });
 
-// 3. Получить или создать пользователя
+// 5. Получить или создать пользователя
 app.post("/api/user", (req, res) => {
   try {
     const { username } = req.body;
@@ -648,7 +704,7 @@ app.post("/api/user", (req, res) => {
   }
 });
 
-// 4. Создать ставку
+// 6. Создать ставку
 app.post("/api/bets", async (req, res) => {
   try {
     const { user_id, match_id, prediction, amount } = req.body;
@@ -751,7 +807,7 @@ app.post("/api/bets", async (req, res) => {
   }
 });
 
-// 5. Получить ставки пользователя
+// 7. Получить ставки пользователя
 app.get("/api/user/:userId/bets", (req, res) => {
   try {
     const { userId } = req.params;
@@ -833,7 +889,7 @@ app.delete("/api/bets/:betId", (req, res) => {
   }
 });
 
-// 6. Получить всех участников с количеством ставок
+// 8. Получить всех участников с количеством ставок
 app.get("/api/participants", (req, res) => {
   try {
     const participants = db
@@ -879,7 +935,7 @@ app.get("/api/participants", (req, res) => {
   }
 });
 
-// 7. Получить профиль пользователя
+// 9. Получить профиль пользователя
 app.get("/api/user/:userId/profile", (req, res) => {
   try {
     const { userId } = req.params;
@@ -1210,7 +1266,7 @@ app.get("/api/telegram/chat-id/:username", (req, res) => {
   }
 });
 
-// 8. Добавить демо-данные (если база пустая)
+// 10. Добавить демо-данные (если база пустая)
 app.post("/api/seed-data", (req, res) => {
   try {
     // Проверяем, есть ли уже турниры
