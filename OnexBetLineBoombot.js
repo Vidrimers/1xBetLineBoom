@@ -9,7 +9,9 @@ dotenv.config();
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:3000";
+const SERVER_IP = process.env.SERVER_IP || "localhost";
+const SERVER_PORT = process.env.PORT || "3000";
+const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
   console.error(
@@ -341,7 +343,7 @@ export async function notifyNewTournament(tournament) {
     `<b>${tournament.name}</b>\n` +
     `<i>${tournament.description || "Описание отсутствует"}</i>\n\n` +
     `📅 Начало: ${tournament.start_date || "Дата не указана"}\n\n` +
-    `🔗 <a href="http://144.124.237.222:3000">Открыть сайт</a>`;
+    `🔗 <a href="${SERVER_URL}">Открыть сайт</a>`;
 
   await sendAdminNotification(message);
 }
@@ -353,7 +355,7 @@ export async function notifyNewMatch(match, tournament) {
     `<b>${match.team1_name}</b> vs <b>${match.team2_name}</b>\n` +
     `📅 Турнир: ${tournament.name}\n` +
     `⏰ Дата: ${match.match_date || "Дата не указана"}\n\n` +
-    `🔗 <a href="http://144.124.237.222:3000">Открыть сайт</a>`;
+    `🔗 <a href="${SERVER_URL}">Открыть сайт</a>`;
 
   await sendAdminNotification(message);
 }
@@ -376,7 +378,7 @@ export async function notifyMatchFinished(match, winner) {
     `✅ <b>Матч завершён!</b>\n\n` +
     `⚽ ${match.team1_name} vs ${match.team2_name}\n` +
     `🏆 Результат: <b>${winner}</b>\n\n` +
-    `🔗 <a href="http://144.124.237.222:3000">Открыть сайт</a>`;
+    `🔗 <a href="${SERVER_URL}">Открыть сайт</a>`;
 
   await sendAdminNotification(message);
 }
@@ -641,7 +643,7 @@ export function startBot() {
         bot.sendMessage(
           chatId,
           `🌐 <b>Открыть сайт:</b>\n\n` +
-            `<a href="http://144.124.237.222:3000">Нажмите здесь чтобы открыть</a>`,
+            `<a href="${SERVER_URL}">Нажмите здесь чтобы открыть</a>`,
           {
             parse_mode: "HTML",
           }
