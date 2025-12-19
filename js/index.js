@@ -1281,15 +1281,10 @@ async function loadTournamentParticipants(eventId, eventName) {
     );
     const participants = await response.json();
 
-    // Скрываем сетку турниров и показываем участников турнира
-    document.getElementById("eventsGrid").style.display = "none";
-    document.getElementById("tournamentTitle").style.display = "block";
-    document.getElementById(
-      "tournamentTitle"
-    ).innerText = `📋 Участники турнира: ${eventName}`;
-    document.getElementById("tournamentParticipantsList").style.display =
-      "flex";
-    document.getElementById("backToTournaments").style.display = "block";
+    // Скрываем section с сеткой турниров и показываем участников турнира
+    document.getElementById("tournamentsSection").style.display = "none";
+    document.getElementById("tournamentSection").style.display = "block";
+    document.getElementById("tournamentTitle").innerText = `📋 ${eventName}`;
 
     displayTournamentParticipants(participants);
   } catch (error) {
@@ -1331,10 +1326,8 @@ function displayTournamentParticipants(participants) {
 }
 
 function backToTournaments() {
-  document.getElementById("eventsGrid").style.display = "grid";
-  document.getElementById("tournamentTitle").style.display = "none";
-  document.getElementById("tournamentParticipantsList").style.display = "none";
-  document.getElementById("backToTournaments").style.display = "none";
+  document.getElementById("tournamentsSection").style.display = "block";
+  document.getElementById("tournamentSection").style.display = "none";
 }
 
 // ===== ПРОФИЛЬ =====
