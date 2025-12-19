@@ -1397,19 +1397,18 @@ function displayTournamentParticipants(participants) {
   });
 
   tournamentParticipantsList.innerHTML = sortedParticipants
-    .map(
-      (participant, index) => {
-        const place = index + 1;
-        const totalParticipants = sortedParticipants.length;
-        let emoji = '😐'; // нейтральное для середины
+    .map((participant, index) => {
+      const place = index + 1;
+      const totalParticipants = sortedParticipants.length;
+      let emoji = "😐"; // нейтральное для середины
 
-        if (place === 1) {
-          emoji = '😎'; // первое место
-        } else if (place === totalParticipants && totalParticipants > 1) {
-          emoji = '💩'; // последнее место
-        }
+      if (place === 1) {
+        emoji = "😎"; // первое место
+      } else if (place === totalParticipants && totalParticipants > 1) {
+        emoji = "💩"; // последнее место
+      }
 
-        return `
+      return `
     <div class="participant-item">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
       <div class="participant-info">
@@ -1424,8 +1423,7 @@ function displayTournamentParticipants(participants) {
       <div class="participant-bets-count">${participant.event_won || 0}</div>
     </div>
   `;
-      }
-    )
+    })
     .join("");
 }
 
