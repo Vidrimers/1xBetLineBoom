@@ -13,6 +13,10 @@ const SERVER_IP = process.env.SERVER_IP || "localhost";
 const SERVER_PORT = process.env.PORT || "3000";
 const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 
+console.log(
+  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}`
+);
+
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
   console.error(
     "❌ Ошибка: TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_ID и TELEGRAM_CHAT_ID должны быть установлены в .env"
@@ -50,7 +54,8 @@ async function registerTelegramUser(msg) {
   if (!telegramUsername) return; // Если нет username - пропускаем
 
   try {
-    await fetch(`${SERVER_URL}/api/telegram/register`, {
+    const url = `${SERVER_URL}/api/telegram/register`;
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -59,8 +64,18 @@ async function registerTelegramUser(msg) {
         first_name: firstName,
       }),
     });
+
+    if (!response.ok) {
+      console.warn(
+        `⚠️ Ошибка регистрации telegram пользователя (HTTP ${response.status}): @${telegramUsername} (URL: ${url})`
+      );
+    }
   } catch (error) {
-    console.error("Ошибка регистрации telegram пользователя:", error.message);
+    console.error(
+      `❌ Ошибка регистрации telegram пользователя (@${telegramUsername}):`,
+      error.code || error.message,
+      `(URL: ${SERVER_URL}/api/telegram/register)`
+    );
   }
 }
 

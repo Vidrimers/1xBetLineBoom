@@ -1872,8 +1872,8 @@ app.post("/api/admin/clear-logs", (req, res) => {
 startBot();
 
 // Запуск сервера
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `\n🎯 1xBetLineBoom сервер запущен на http://localhost:${PORT}\n`
+    `\n🎯 1xBetLineBoom сервер запущен на http://0.0.0.0:${PORT} (доступен на http://144.124.237.222:${PORT})\n`
   );
 });
