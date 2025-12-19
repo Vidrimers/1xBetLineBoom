@@ -665,6 +665,49 @@ button.tab-btn:hover {
   text-align: center;
 }
 
+/* Победитель в заблокированном турнире */
+.participant-item.winner {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 215, 0, 0.5) 0%,
+    rgba(218, 165, 32, 0.5) 50%,
+    rgba(255, 215, 0, 0.5) 100%
+  );
+  background-size: 200% 200%;
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  animation: goldenShimmer 3s ease-in-out infinite;
+}
+
+.participant-item.winner:hover {
+  animation: goldenShimmerHover 0.6s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6),
+    inset 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+@keyframes goldenShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes goldenShimmerHover {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Сетка событий (турниров) */
 .events-grid {
   display: grid;

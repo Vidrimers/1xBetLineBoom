@@ -1359,6 +1359,14 @@ async function displayTournaments(events) {
 
 async function loadTournamentParticipants(eventId, eventName) {
   try {
+    // Получаем информацию о событии, чтобы узнать, заблокировано ли оно
+    const eventsResponse = await fetch("/api/events");
+    const events = await eventsResponse.json();
+    const currentEvent = events.find((e) => e.id === eventId);
+    const isLocked =
+      currentEvent?.locked_reason !== null &&
+      currentEvent?.locked_reason !== undefined;
+
     const response = await fetch(
       `/api/events/${eventId}/tournament-participants`
     );
@@ -1369,7 +1377,7 @@ async function loadTournamentParticipants(eventId, eventName) {
     document.getElementById("tournamentSection").style.display = "block";
     document.getElementById("tournamentTitle").innerText = `📋 ${eventName}`;
 
-    displayTournamentParticipants(participants);
+    displayTournamentParticipants(participants, isLocked);
   } catch (error) {
     console.error("Ошибка при загрузке участников турнира:", error);
     document.getElementById("tournamentParticipantsList").innerHTML =
@@ -1377,7 +1385,7 @@ async function loadTournamentParticipants(eventId, eventName) {
   }
 }
 
-function displayTournamentParticipants(participants) {
+function displayTournamentParticipants(participants, isLocked = false) {
   const tournamentParticipantsList = document.getElementById(
     "tournamentParticipantsList"
   );
@@ -1408,8 +1416,11 @@ function displayTournamentParticipants(participants) {
         emoji = "💩"; // последнее место
       }
 
+      // Добавляем класс 'winner' если это заблокированный турнир и первое место
+      const winnerClass = isLocked && place === 1 ? "winner" : "";
+
       return `
-    <div class="participant-item">
+    <div class="participant-item ${winnerClass}">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
