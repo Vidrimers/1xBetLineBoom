@@ -894,12 +894,31 @@ app.get("/api/user/:userId/profile", (req, res) => {
       .prepare(
         `
       SELECT 
-        COUNT(id) as total_bets,
-        SUM(CASE WHEN status = 'won' THEN 1 ELSE 0 END) as won_bets,
-        SUM(CASE WHEN status = 'lost' THEN 1 ELSE 0 END) as lost_bets,
-        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_bets
-      FROM bets
-      WHERE user_id = ?
+        COUNT(b.id) as total_bets,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN 
+            CASE 
+              WHEN (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') THEN 1 
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as won_bets,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN 
+            CASE 
+              WHEN NOT ((b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw')) THEN 1 
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as lost_bets,
+        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as pending_bets
+      FROM bets b
+      LEFT JOIN matches m ON b.match_id = m.id
+      WHERE b.user_id = ?
     `
       )
       .get(userId);
