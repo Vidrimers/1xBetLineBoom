@@ -1251,7 +1251,7 @@ async function loadTournamentsList() {
   }
 }
 
-function displayTournaments(events) {
+async function displayTournaments(events) {
   const eventsGrid = document.getElementById("eventsGrid");
 
   if (events.length === 0) {
@@ -1260,9 +1260,32 @@ function displayTournaments(events) {
     return;
   }
 
-  eventsGrid.innerHTML = events
-    .map(
-      (event) => `
+  // Для каждого события загружаем дополнительные данные если оно заблокировано
+  const eventCards = await Promise.all(
+    events.map(async (event) => {
+      let winnerInfo = "";
+
+      // Если турнир заблокирован, загружаем победителя
+      if (event.locked_reason) {
+        try {
+          const response = await fetch(
+            `/api/events/${event.id}/tournament-participants`
+          );
+          const participants = await response.json();
+
+          if (participants.length > 0) {
+            // Сортируем по выигранным ставкам
+            const winner = participants.sort(
+              (a, b) => (b.event_won || 0) - (a.event_won || 0)
+            )[0];
+            winnerInfo = `<div class="event-card-winner">👑 Победитель: <strong>${winner.username}</strong></div>`;
+          }
+        } catch (error) {
+          console.error("Ошибка при загрузке участников турнира:", error);
+        }
+      }
+
+      return `
     <div class="event-card ${
       event.locked_reason ? "locked" : ""
     }" onclick="loadTournamentParticipants(${event.id}, '${event.name.replace(
@@ -1273,13 +1296,15 @@ function displayTournaments(events) {
       <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
       ${
         event.locked_reason
-          ? `<div class="event-card-locked">🔒 ${event.locked_reason}</div>`
+          ? `<div class="event-card-locked">🔒 ${event.locked_reason}</div>${winnerInfo}`
           : ""
       }
     </div>
-  `
-    )
-    .join("");
+  `;
+    })
+  );
+
+  eventsGrid.innerHTML = eventCards.join("");
 }
 
 async function loadTournamentParticipants(eventId, eventName) {

@@ -693,6 +693,17 @@ button.tab-btn:hover {
   border-radius: 4px;
 }
 
+.event-card-winner {
+  font-size: 0.9em;
+  color: #ffd700;
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(255, 215, 0, 0.15);
+  border-radius: 4px;
+  border-left: 3px solid #ffd700;
+  font-weight: 500;
+}
+
 .event-card.locked {
   background: linear-gradient(
     135deg,
