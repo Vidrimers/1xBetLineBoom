@@ -929,7 +929,84 @@ app.get("/api/participants", (req, res) => {
       )
       .all();
 
-    res.json(participants);
+    // Для каждого участника подсчитываем победы в турнирах (заблокированных событиях)
+    const result = participants.map((participant) => {
+      // Получаем все завершенные турниры (с locked_reason)
+      const tournaments = db
+        .prepare(
+          `
+        SELECT DISTINCT e.id, e.name
+        FROM events e
+        WHERE e.locked_reason IS NOT NULL
+      `
+        )
+        .all();
+
+      let tournament_wins = 0;
+
+      // Для каждого завершенного турнира проверяем, выиграл ли участник
+      tournaments.forEach((tournament) => {
+        // Подсчитываем выигрыши участника в этом турнире
+        const userWinsInTournament =
+          db
+            .prepare(
+              `
+          SELECT COUNT(*) as wins
+          FROM bets b
+          JOIN matches m ON b.match_id = m.id
+          WHERE b.user_id = ?
+          AND m.event_id = ?
+          AND m.winner IS NOT NULL
+          AND (
+            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+            (b.prediction = m.team2_name AND m.winner = 'team2') OR
+            (b.prediction = 'draw' AND m.winner = 'draw')
+          )
+        `
+            )
+            .get(participant.id, tournament.id)?.wins || 0;
+
+        // Подсчитываем максимальные выигрыши в этом турнире (кто первый)
+        const maxWinsInTournament =
+          db
+            .prepare(
+              `
+          SELECT MAX(wins) as max_wins
+          FROM (
+            SELECT 
+              b.user_id,
+              COUNT(*) as wins
+            FROM bets b
+            JOIN matches m ON b.match_id = m.id
+            WHERE m.event_id = ?
+            AND m.winner IS NOT NULL
+            AND (
+              (b.prediction = m.team1_name AND m.winner = 'team1') OR
+              (b.prediction = m.team2_name AND m.winner = 'team2') OR
+              (b.prediction = 'draw' AND m.winner = 'draw')
+            )
+            GROUP BY b.user_id
+          )
+        `
+            )
+            .get(tournament.id)?.max_wins || 0;
+
+        // Если участник имеет максимальные выигрыши в турнире — он победитель
+        if (
+          userWinsInTournament > 0 &&
+          userWinsInTournament === maxWinsInTournament
+        ) {
+          tournament_wins++;
+        }
+      });
+
+      return {
+        ...participant,
+        tournament_wins,
+      };
+    });
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

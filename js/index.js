@@ -1224,12 +1224,26 @@ function displayParticipants(participants) {
   });
 
   participantsList.innerHTML = sortedParticipants
-    .map(
-      (participant, index) => `
+    .map((participant, index) => {
+      // Формируем трофеи
+      const wins = participant.tournament_wins || 0;
+      let trophies = "";
+      if (wins <= 5) {
+        trophies = "🏆".repeat(wins);
+      } else {
+        trophies = "🏆x" + wins;
+      }
+
+      return `
     <div class="participant-item">
       <div class="participant-rank">#${index + 1}</div>
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
+        ${
+          wins > 0
+            ? `<div class="participant-tournaments">Побед в турнирах: ${trophies}</div>`
+            : ""
+        }
         <div class="participant-stats">
           Ставок за всё время: ${participant.total_bets || 0} | 
           Угаданных ставок за всё время: ${participant.won_bets || 0} | 
@@ -1239,8 +1253,8 @@ function displayParticipants(participants) {
       </div>
       <div class="participant-bets-count">${participant.won_bets || 0}</div>
     </div>
-`
-    )
+`;
+    })
     .join("");
 }
 
