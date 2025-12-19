@@ -646,7 +646,22 @@ button.tab-btn:hover {
   margin-bottom: 30px;
 }
 
+.tournaments-section-divider {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #ffd700;
+  /* padding: 20px 0 10px 0; */
+  /* margin-top: 10px; */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .event-card {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
   background: linear-gradient(
     135deg,
     rgba(58, 123, 213, 0.6) 0%,

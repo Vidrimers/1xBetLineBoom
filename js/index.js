@@ -1260,51 +1260,77 @@ async function displayTournaments(events) {
     return;
   }
 
+  // Сортируем события: активные в начале, заблокированные в конце
+  const sortedEvents = events.sort((a, b) => {
+    const aLocked = a.locked_reason ? 1 : 0;
+    const bLocked = b.locked_reason ? 1 : 0;
+    return aLocked - bLocked;
+  });
+
+  // Разделяем события на активные и заблокированные
+  const activeEvents = sortedEvents.filter((e) => !e.locked_reason);
+  const lockedEvents = sortedEvents.filter((e) => e.locked_reason);
+
   // Для каждого события загружаем дополнительные данные если оно заблокировано
-  const eventCards = await Promise.all(
-    events.map(async (event) => {
-      let winnerInfo = "";
-
-      // Если турнир заблокирован, загружаем победителя
-      if (event.locked_reason) {
-        try {
-          const response = await fetch(
-            `/api/events/${event.id}/tournament-participants`
-          );
-          const participants = await response.json();
-
-          if (participants.length > 0) {
-            // Сортируем по выигранным ставкам
-            const winner = participants.sort(
-              (a, b) => (b.event_won || 0) - (a.event_won || 0)
-            )[0];
-            winnerInfo = `<div class="event-card-winner">👑 Победитель: <strong>${winner.username}</strong></div>`;
-          }
-        } catch (error) {
-          console.error("Ошибка при загрузке участников турнира:", error);
-        }
-      }
-
+  const activeCards = await Promise.all(
+    activeEvents.map(async (event) => {
       return `
-    <div class="event-card ${
-      event.locked_reason ? "locked" : ""
-    }" onclick="loadTournamentParticipants(${event.id}, '${event.name.replace(
-        /'/g,
-        "\\'"
-      )}')">
+    <div class="event-card" onclick="loadTournamentParticipants(${
+      event.id
+    }, '${event.name.replace(/'/g, "\\'")}')">
       <div class="event-card-title">🏆 ${event.name}</div>
       <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
-      ${
-        event.locked_reason
-          ? `<div class="event-card-locked">🔒 ${event.locked_reason}</div>${winnerInfo}`
-          : ""
-      }
     </div>
   `;
     })
   );
 
-  eventsGrid.innerHTML = eventCards.join("");
+  const lockedCards = await Promise.all(
+    lockedEvents.map(async (event) => {
+      let winnerInfo = "";
+
+      // Загружаем победителя
+      try {
+        const response = await fetch(
+          `/api/events/${event.id}/tournament-participants`
+        );
+        const participants = await response.json();
+
+        if (participants.length > 0) {
+          // Сортируем по выигранным ставкам
+          const winner = participants.sort(
+            (a, b) => (b.event_won || 0) - (a.event_won || 0)
+          )[0];
+          winnerInfo = `<div class="event-card-winner">👑 Победитель: <strong>${winner.username}</strong></div>`;
+        }
+      } catch (error) {
+        console.error("Ошибка при загрузке участников турнира:", error);
+      }
+
+      return `
+    <div class="event-card locked" onclick="loadTournamentParticipants(${
+      event.id
+    }, '${event.name.replace(/'/g, "\\'")}')">
+      <div class="event-card-title">🏆 ${event.name}</div>
+      <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
+      <div class="event-card-locked">🔒 ${
+        event.locked_reason
+      }</div>${winnerInfo}
+    </div>
+  `;
+    })
+  );
+
+  // Формируем итоговый HTML с разделителем
+  let html = activeCards.join("");
+
+  if (lockedCards.length > 0) {
+    html +=
+      '<div class="tournaments-section-divider">ЗАВЕРШЕННЫЕ ТУРНИРЫ</div>';
+    html += lockedCards.join("");
+  }
+
+  eventsGrid.innerHTML = html;
 }
 
 async function loadTournamentParticipants(eventId, eventName) {
