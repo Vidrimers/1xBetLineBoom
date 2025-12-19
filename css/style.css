@@ -605,6 +605,7 @@ button.tab-btn:hover {
   justify-content: space-between;
   align-items: center;
   color: #e0e6f0;
+  gap: 15px;
 }
 
 .participant-item:hover {
@@ -612,6 +613,18 @@ button.tab-btn:hover {
   background: rgba(58, 123, 213, 0.7);
   color: #fff;
   box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+}
+
+.participant-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  width: 40px;
+  height: 40px;
+  font-weight: 700;
+  font-size: 1.1em;
+  color: #b0b8c8;
 }
 
 .participant-info {
@@ -636,6 +649,8 @@ button.tab-btn:hover {
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.9em;
+  min-width: 50px;
+  text-align: center;
 }
 
 /* Сетка событий (турниров) */

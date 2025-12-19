@@ -1214,10 +1214,20 @@ function displayParticipants(participants) {
     return;
   }
 
-  participantsList.innerHTML = participants
+  // Сортируем по выигранным ставкам в убывающем порядке
+  // При одинаковых won_bets сортируем по меньшему количеству проигрышей
+  const sortedParticipants = [...participants].sort((a, b) => {
+    if ((b.won_bets || 0) !== (a.won_bets || 0)) {
+      return (b.won_bets || 0) - (a.won_bets || 0); // Выигрыши: больше → выше
+    }
+    return (a.lost_bets || 0) - (b.lost_bets || 0); // Проигрыши: меньше → выше
+  });
+
+  participantsList.innerHTML = sortedParticipants
     .map(
-      (participant) => `
+      (participant, index) => `
     <div class="participant-item">
+      <div class="participant-rank">#${index + 1}</div>
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
         <div class="participant-stats">
@@ -1229,7 +1239,7 @@ function displayParticipants(participants) {
       </div>
       <div class="participant-bets-count">${participant.won_bets || 0}</div>
     </div>
-  `
+`
     )
     .join("");
 }
