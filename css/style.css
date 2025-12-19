@@ -627,6 +627,10 @@ button.tab-btn:hover {
   color: #b0b8c8;
 }
 
+.participant-rank.participant-rank-events {
+  width: 60px;
+}
+
 .participant-info {
   flex: 1;
 }
