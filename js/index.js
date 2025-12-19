@@ -1012,6 +1012,7 @@ async function loadMyBets() {
     const response = await fetch(`/api/user/${currentUser.id}/bets`);
     const bets = await response.json();
     userBets = bets; // Сохраняем в глобальную переменную
+    console.log("💰 Мои ставки:", bets);
     displayMyBets(bets);
     if (isMatchUpdatingEnabled) {
       displayMatches(); // Перерисовываем матчи чтобы выделить с ставками
@@ -1035,6 +1036,7 @@ function displayMyBets(bets) {
       let statusClass = "pending";
       let statusText = "⏳ В ожидании";
 
+      // Проверяем, есть ли результат матча
       if (bet.winner) {
         // Маппинг winner (из БД) в prediction format
         // winner: "team1" | "team2" | "draw"
@@ -1192,6 +1194,7 @@ async function loadParticipants() {
   try {
     const response = await fetch("/api/participants");
     const participants = await response.json();
+    console.log("📊 Загруженные участники:", participants);
     displayParticipants(participants);
   } catch (error) {
     console.error("Ошибка при загрузке участников:", error);
@@ -1217,13 +1220,13 @@ function displayParticipants(participants) {
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
         <div class="participant-stats">
-          Всего ставок: ${participant.total_bets} | 
-          Выигрышей: ${participant.won_bets} | 
-          Проигрышей: ${participant.lost_bets} | 
-          В ожидании: ${participant.pending_bets}
+          Ставок за всё время: ${participant.total_bets || 0} | 
+          Угаданных ставок за всё время: ${participant.won_bets || 0} | 
+          Неугаданных ставок за всё время: ${participant.lost_bets || 0} | 
+          В ожидании: ${participant.pending_bets || 0}
         </div>
       </div>
-      <div class="participant-bets-count">${participant.total_bets}</div>
+      <div class="participant-bets-count">${participant.won_bets || 0}</div>
     </div>
   `
     )
@@ -1269,15 +1272,15 @@ function displayProfile(profile) {
 
     <div class="profile-stats-grid">
       <div class="stat-card">
-        <div class="stat-label">Всего ставок</div>
+        <div class="stat-label">Ставок за всё время</div>
         <div class="stat-value">${profile.total_bets}</div>
       </div>
       <div class="stat-card won">
-        <div class="stat-label">✅ Угаданных ставок всего</div>
+        <div class="stat-label">✅ Угаданных ставок за всё время</div>
         <div class="stat-value">${profile.won_bets}</div>
       </div>
       <div class="stat-card lost">
-        <div class="stat-label">❌ Неугаданных ставок всего</div>
+        <div class="stat-label">❌ Неугаданных ставок за всё время</div>
         <div class="stat-value">${profile.lost_bets}</div>
       </div>
       <div class="stat-card pending">

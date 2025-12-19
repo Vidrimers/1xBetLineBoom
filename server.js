@@ -843,11 +843,30 @@ app.get("/api/participants", (req, res) => {
         u.id,
         u.username,
         COUNT(b.id) as total_bets,
-        SUM(CASE WHEN b.status = 'won' THEN 1 ELSE 0 END) as won_bets,
-        SUM(CASE WHEN b.status = 'lost' THEN 1 ELSE 0 END) as lost_bets,
-        SUM(CASE WHEN b.status = 'pending' THEN 1 ELSE 0 END) as pending_bets
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN 
+            CASE 
+              WHEN (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') THEN 1 
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as won_bets,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN 
+            CASE 
+              WHEN NOT ((b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw')) THEN 1 
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as lost_bets,
+        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as pending_bets
       FROM users u
       LEFT JOIN bets b ON u.id = b.user_id
+      LEFT JOIN matches m ON b.match_id = m.id
       GROUP BY u.id, u.username
       ORDER BY COUNT(b.id) DESC
     `
