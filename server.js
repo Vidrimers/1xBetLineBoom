@@ -67,6 +67,68 @@ async function notifyBetAction(action, data) {
   }
 }
 
+// Функция отправки уведомления о завершении турнира в группу
+async function sendTournamentWinnerNotification(
+  tournamentName,
+  winnerUsername
+) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return;
+  }
+
+  try {
+    // Получаем telegram ID пользователя по его username если он зарегистрирован
+    const cleanUsername = winnerUsername.replace("@", "").toLowerCase();
+    const telegramUser = db
+      .prepare("SELECT chat_id FROM telegram_users WHERE telegram_username = ?")
+      .get(cleanUsername);
+
+    let messageText = `🎉 <b>Турнир закончен!</b>\n\n`;
+    messageText += `🏆 <b>${tournamentName}</b>\n`;
+    messageText += `👑 <b>Победитель:</b> ${winnerUsername}`;
+
+    // Если пользователь зарегистрирован в боте, упоминаем его
+    if (telegramUser && telegramUser.chat_id) {
+      messageText += `\n<a href="tg://user?id=${telegramUser.chat_id}">@${cleanUsername}</a>`;
+    }
+
+    const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
+
+    for (const chatId of chatIds) {
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: messageText,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+        console.log(
+          `✅ Уведомление о завершении турнира отправлено в группу ${chatId}`
+        );
+      } catch (err) {
+        console.error(
+          `❌ Ошибка при отправке уведомления о турнире в группу ${chatId}:`,
+          err.message
+        );
+      }
+    }
+  } catch (error) {
+    console.error(
+      "❌ Ошибка отправки уведомления о завершении турнира:",
+      error
+    );
+  }
+}
+
 // Функция записи лога в HTML файл
 function writeBetLog(action, data) {
   try {
@@ -1780,6 +1842,16 @@ app.put("/api/admin/events/:eventId/lock", (req, res) => {
   }
 
   try {
+    // Получаем информацию о турнире
+    const event = db
+      .prepare("SELECT id, name FROM events WHERE id = ?")
+      .get(eventId);
+
+    if (!event) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    // Блокируем турнир
     const result = db
       .prepare("UPDATE events SET locked_reason = ? WHERE id = ?")
       .run(reason.trim(), eventId);
@@ -1788,10 +1860,38 @@ app.put("/api/admin/events/:eventId/lock", (req, res) => {
       return res.status(404).json({ error: "Событие не найдено" });
     }
 
+    // Получаем победителя турнира (участника с максимальным количеством побед)
+    const winner = db
+      .prepare(
+        `
+        SELECT u.id, u.username, COUNT(b.id) as wins
+        FROM users u
+        LEFT JOIN bets b ON u.id = b.user_id
+        LEFT JOIN matches m ON b.match_id = m.id
+        WHERE m.event_id = ?
+        AND m.winner IS NOT NULL
+        AND (
+          (b.prediction = m.team1_name AND m.winner = 'team1') OR
+          (b.prediction = m.team2_name AND m.winner = 'team2') OR
+          (b.prediction = 'draw' AND m.winner = 'draw')
+        )
+        GROUP BY u.id, u.username
+        ORDER BY wins DESC
+        LIMIT 1
+      `
+      )
+      .get(eventId);
+
+    // Если есть победитель, отправляем уведомление в Telegram
+    if (winner) {
+      sendTournamentWinnerNotification(event.name, winner.username);
+    }
+
     res.json({
       message: "Турнир заблокирован",
       eventId,
       reason: reason.trim(),
+      winner: winner ? { username: winner.username, wins: winner.wins } : null,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
