@@ -135,6 +135,20 @@
                 >
                   ➕ Добавить матч
                 </button>
+                <button
+                  id="importMatchesBtn"
+                  onclick="openImportMatchesModal()"
+                  style="
+                    display: none;
+                    padding: 8px 15px;
+                    font-size: 0.9em;
+                    /* background: rgba(76, 175, 80, 0.7); */
+                    background: transparent;
+                    border: 1px solid #4caf50;
+                  "
+                >
+                  📥импорт
+                </button>
               </div>
             </div>
             <!-- Фильтры по турам -->
@@ -524,6 +538,87 @@
                 type="button"
                 class="form-btn-cancel"
                 onclick="closeCreateMatchModal()"
+              >
+                ❌ Отмена
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для импорта матчей -->
+    <div id="importMatchesModal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>📥 Импорт матчей</h2>
+          <button class="modal-close" onclick="closeImportMatchesModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="importMatchesForm" onsubmit="submitImportMatches(event)">
+            <div class="form-group">
+              <label>Формат данных:</label>
+              <textarea
+                id="importMatchesData"
+                placeholder="Вставьте матчи в формате:&#10;Команда1 vs Команда2 | Дата (ДД.ММ.YYYY ЧЧ:MM) | Тур&#10;&#10;Пример:&#10;Manchester vs Liverpool | 20.12.2025 18:00 | Тур 1&#10;Real Madrid vs Barcelona | 21.12.2025 20:00 | Тур 1"
+                rows="10"
+                required
+                style="
+                  width: 100%;
+                  padding: 8px;
+                  font-size: 0.9em;
+                  font-family: monospace;
+                  background: rgba(0, 0, 0, 0.3);
+                  border: 1px solid #3a7bd5;
+                  color: #e0e6f0;
+                  border-radius: 4px;
+                "
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="importEventId">Выберите турнир *</label>
+              <select
+                id="importEventId"
+                required
+                style="
+                  width: 100%;
+                  padding: 8px;
+                  font-size: 0.95em;
+                  background: rgba(0, 0, 0, 0.3);
+                  border: 1px solid #3a7bd5;
+                  color: #e0e6f0;
+                  border-radius: 4px;
+                "
+              >
+                <option value="">-- Выберите турнир --</option>
+              </select>
+            </div>
+            <div class="form-group" style="color: #b0b8c8; font-size: 0.85em">
+              <p>
+                <strong>📋 Инструкция:</strong>
+              </p>
+              <ul style="margin: 5px 0; padding-left: 20px">
+                <li>Скопируйте матчи из Google Docs</li>
+                <li>
+                  Каждый матч на новой строке в формате: <br />
+                  <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 5px"
+                    >Команда1 vs Команда2 | Дата | Тур</code
+                  >
+                </li>
+                <li>Дата в формате: ДД.ММ.YYYY ЧЧ:MM</li>
+                <li>Если даты нет, оставьте пусто после |</li>
+              </ul>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="form-btn-submit">
+                ✅ Импортировать
+              </button>
+              <button
+                type="button"
+                class="form-btn-cancel"
+                onclick="closeImportMatchesModal()"
               >
                 ❌ Отмена
               </button>

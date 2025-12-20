@@ -1802,6 +1802,59 @@ app.post("/api/admin/matches", (req, res) => {
   }
 });
 
+// POST /api/matches/bulk-create - Bulk импорт матчей (для админа)
+app.post("/api/matches/bulk-create", (req, res) => {
+  const { matches } = req.body;
+
+  if (!Array.isArray(matches) || matches.length === 0) {
+    return res.status(400).json({ message: "Укажите массив матчей" });
+  }
+
+  try {
+    const createdMatches = [];
+
+    matches.forEach((match) => {
+      const { team1_name, team2_name, match_date, round, event_id } = match;
+
+      if (!team1_name || !team2_name || !event_id) {
+        throw new Error(
+          "Отсутствуют обязательные поля: team1_name, team2_name, event_id"
+        );
+      }
+
+      const result = db
+        .prepare(
+          `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(
+          event_id,
+          team1_name,
+          team2_name,
+          match_date || null,
+          round || null
+        );
+
+      createdMatches.push({
+        id: result.lastInsertRowid,
+        event_id,
+        team1_name,
+        team2_name,
+        match_date,
+        round,
+      });
+    });
+
+    res.json({
+      message: `Успешно создано ${createdMatches.length} матчей`,
+      matches: createdMatches,
+    });
+  } catch (error) {
+    console.error("Ошибка при импорте матчей:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (только для админа)
 app.put("/api/admin/matches/:matchId", (req, res) => {
   const { matchId } = req.params;

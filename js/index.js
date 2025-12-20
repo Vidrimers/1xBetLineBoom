@@ -567,6 +567,12 @@ async function selectEvent(eventId, eventName) {
     addMatchBtn.style.display = "inline-block";
   }
 
+  // Показываем кнопку импорта матчей для админа
+  const importMatchesBtn = document.getElementById("importMatchesBtn");
+  if (importMatchesBtn && isAdmin()) {
+    importMatchesBtn.style.display = "inline-block";
+  }
+
   loadMatches(eventId);
 }
 
@@ -2668,5 +2674,140 @@ async function clearLogs() {
   } catch (error) {
     console.error("Ошибка при очистке логов:", error);
     alert("Ошибка при очистке логов");
+  }
+}
+
+// ===== ИМПОРТ МАТЧЕЙ =====
+
+// Открыть модальное окно импорта матчей
+function openImportMatchesModal() {
+  const importEventSelect = document.getElementById("importEventId");
+  importEventSelect.innerHTML =
+    '<option value="">-- Выберите турнир --</option>';
+
+  // Загрузить список событий
+  events.forEach((event) => {
+    const option = document.createElement("option");
+    option.value = event.id;
+    option.textContent = event.name;
+    importEventSelect.appendChild(option);
+  });
+
+  document.getElementById("importMatchesModal").style.display = "flex";
+}
+
+function closeImportMatchesModal() {
+  document.getElementById("importMatchesModal").style.display = "none";
+  document.getElementById("importMatchesData").value = "";
+  document.getElementById("importEventId").value = "";
+}
+
+async function submitImportMatches(event) {
+  event.preventDefault();
+
+  const importData = document.getElementById("importMatchesData").value.trim();
+  const eventId = document.getElementById("importEventId").value;
+
+  if (!eventId) {
+    alert("❌ Выберите турнир");
+    return;
+  }
+
+  if (!importData) {
+    alert("❌ Введите данные матчей");
+    return;
+  }
+
+  const lines = importData.split("\n").filter((line) => line.trim());
+  const matches = [];
+  const errors = [];
+
+  lines.forEach((line, index) => {
+    const parts = line.split("|").map((p) => p.trim());
+
+    if (parts.length < 1 || !parts[0]) {
+      errors.push(`Строка ${index + 1}: Не указаны команды`);
+      return;
+    }
+
+    const teamsPart = parts[0];
+    const datePart = parts[1] || "";
+    const roundPart = parts[2] || "";
+
+    // Парсим команды (ищем " vs ")
+    const teamsMatch = teamsPart.match(/^(.+?)\s+vs\s+(.+)$/i);
+    if (!teamsMatch) {
+      errors.push(
+        `Строка ${index + 1}: Неправильный формат команд (используйте "vs")`
+      );
+      return;
+    }
+
+    const team1 = teamsMatch[1].trim();
+    const team2 = teamsMatch[2].trim();
+
+    // Парсим дату
+    let matchDate = null;
+    if (datePart) {
+      const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/;
+      const dateMatch = datePart.match(dateRegex);
+
+      if (dateMatch) {
+        const [, day, month, year, hour, minute] = dateMatch;
+        matchDate = `${year}-${month}-${day}T${hour}:${minute}`;
+      } else {
+        errors.push(
+          `Строка ${
+            index + 1
+          }: Неправильный формат даты (используйте ДД.ММ.YYYY ЧЧ:MM)`
+        );
+        return;
+      }
+    }
+
+    matches.push({
+      team1_name: team1,
+      team2_name: team2,
+      match_date: matchDate,
+      round: roundPart || null,
+      event_id: parseInt(eventId),
+    });
+  });
+
+  if (errors.length > 0) {
+    alert("❌ Ошибки при импорте:\n\n" + errors.join("\n"));
+    return;
+  }
+
+  if (matches.length === 0) {
+    alert("❌ Не найдено ни одного матча для импорта");
+    return;
+  }
+
+  try {
+    // Отправляем матчи на сервер
+    const response = await fetch(`/api/matches/bulk-create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ matches }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Ошибка при импорте");
+    }
+
+    alert(`✅ Успешно импортировано ${matches.length} матчей`);
+    closeImportMatchesModal();
+
+    // Перезагружаем матчи
+    if (currentEventId) {
+      loadMatches(currentEventId);
+    }
+  } catch (error) {
+    console.error("Ошибка при импорте матчей:", error);
+    alert(`❌ Ошибка при импорте: ${error.message}`);
   }
 }
