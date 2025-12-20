@@ -163,19 +163,19 @@ async function sendTournamentWinnerNotification(
 
     // Добавляем информацию о побед первого места
     if (topParticipants.length > 0) {
-      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[0].wins}`;
+      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[0].wins}\n`;
     }
 
     // Добавляем второе место
     if (topParticipants.length > 1) {
       messageText += `\n\n🥈 <b>Второе место:</b> ${topParticipants[1].username}`;
-      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[1].wins}`;
+      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[1].wins}\n`;
     }
 
     // Добавляем третье место
     if (topParticipants.length > 2) {
       messageText += `\n\n🥉 <b>Третье место:</b> ${topParticipants[2].username}`;
-      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[2].wins}`;
+      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[2].wins}\n`;
     }
 
     // Добавляем мотивирующее сообщение
