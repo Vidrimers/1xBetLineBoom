@@ -635,23 +635,60 @@ export function startBot() {
   bot.onText(/\/my_bets/, (msg) => handleMyBets(msg.chat.id, msg));
 
   // Команда /profile и кнопка 👤 Профиль
-  const handleProfile = (msg) => {
+  const handleProfile = async (msg) => {
     const chatId = msg.chat.id;
-    const username = msg.from.username || "нет";
+    const telegramUsername = msg.from.username || "нет";
+    const firstName = msg.from.first_name || "—";
 
     logUserAction(msg, "Нажата кнопка/команда: Профиль");
 
-    bot.sendMessage(
-      chatId,
-      `👤 <b>Профиль:</b>\n\n` +
-        `<b>Имя:</b> ${msg.from.first_name || "—"}\n` +
-        `<b>Username:</b> @${username}\n` +
-        `<b>ID:</b> ${msg.from.id}\n\n` +
-        `💡 Для просмотра полного профиля используйте сайт.`,
-      {
-        parse_mode: "HTML",
+    try {
+      // Получаем данные пользователя с сайта
+      const response = await fetch(`${SERVER_URL}/api/participants`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch participants");
       }
-    );
+      const participants = await response.json();
+
+      // Ищем пользователя по telegram_username
+      const user = participants.find(
+        (p) =>
+          (p.telegram_username &&
+            p.telegram_username.toLowerCase() ===
+              telegramUsername.toLowerCase()) ||
+          (msg.from.first_name &&
+            p.username &&
+            p.username.toLowerCase() === msg.from.first_name.toLowerCase())
+      );
+
+      const siteUsername = user ? user.username : "не привязан";
+
+      bot.sendMessage(
+        chatId,
+        `👤 <b>Профиль:</b>\n\n` +
+          `<b>Имя в тг:</b> ${firstName}\n` +
+          `<b>Юзернейм в тг:</b> @${telegramUsername}\n` +
+          `<b>Имя на сайте:</b> ${siteUsername}\n` +
+          `<b>ID:</b> ${msg.from.id}\n\n` +
+          `💡 Для просмотра полного профиля используйте сайт.`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    } catch (error) {
+      console.error("Error in handleProfile:", error);
+      bot.sendMessage(
+        chatId,
+        `👤 <b>Профиль:</b>\n\n` +
+          `<b>Имя в тг:</b> ${firstName}\n` +
+          `<b>Username в тг:</b> @${telegramUsername}\n` +
+          `<b>ID:</b> ${msg.from.id}\n\n` +
+          `💡 Для просмотра полного профиля используйте сайт.`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    }
   };
 
   bot.onText(/\/profile/, (msg) => handleProfile(msg));
