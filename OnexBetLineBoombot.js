@@ -580,21 +580,197 @@ export function startBot() {
   bot.onText(/\/profile/, (msg) => handleProfile(msg));
 
   // Команда /next_match и кнопка ⚽ Ближайший матч
-  const handleNextMatch = (chatId, msg = null) => {
+  const handleNextMatch = async (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Ближайший матч");
 
-    bot.sendMessage(
-      chatId,
-      `⚽ <b>Ближайший матч:</b>\n\n` +
-        `<i>Загрузка информации о матче...</i>\n\n` +
-        `<b>Матч:</b> <i>Поиск в прогрессе</i>\n` +
-        `<b>Турнир:</b> <i>—</i>\n` +
-        `<b>Дата:</b> <i>—</i>\n\n` +
-        `💡 Используйте сайт для просмотра расписания всех матчей.`,
-      {
-        parse_mode: "HTML",
+    try {
+      // Загружаем все турниры с их матчами
+      const response = await fetch(`${SERVER_URL}/api/events`);
+
+      if (!response.ok) {
+        console.error(
+          `Ошибка при загрузке турниров (HTTP ${response.status}): ${SERVER_URL}/api/events`
+        );
+        bot.sendMessage(
+          chatId,
+          `⚽ <b>Ближайший матч:</b>\n\n` +
+            `<i>⚠️ Ошибка при загрузке данных с сервера</i>\n\n` +
+            `💡 Используйте сайт для просмотра расписания всех матчей.`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
       }
-    );
+
+      const events = await response.json();
+
+      if (!events || events.length === 0) {
+        bot.sendMessage(
+          chatId,
+          `⚽ <b>Ближайший матч:</b>\n\n` +
+            `<i>Турниров не найдено</i>\n\n` +
+            `💡 Используйте сайт для просмотра расписания всех матчей.`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Собираем все матчи из всех турниров
+      const allMatches = [];
+      for (const event of events) {
+        try {
+          const matchesResponse = await fetch(
+            `${SERVER_URL}/api/events/${event.id}/matches`
+          );
+          if (matchesResponse.ok) {
+            const matches = await matchesResponse.json();
+            if (matches && matches.length > 0) {
+              matches.forEach((match) => {
+                allMatches.push({
+                  ...match,
+                  event_name: event.name,
+                });
+              });
+            }
+          }
+        } catch (e) {
+          console.warn(
+            `Ошибка при загрузке матчей для турнира ${event.id}:`,
+            e.message
+          );
+        }
+      }
+
+      // Разделяем матчи на идущие (без результата и прошедшая дата) и будущие (без результата и будущая дата)
+      const now = new Date();
+      const ongoingMatches = [];
+      const futureMatches = [];
+
+      allMatches.forEach((match) => {
+        const matchDate = new Date(match.match_date);
+        if (!match.winner) {
+          if (matchDate <= now) {
+            ongoingMatches.push(match);
+          } else {
+            futureMatches.push(match);
+          }
+        }
+      });
+
+      // Сортируем оба массива по дате
+      ongoingMatches.sort(
+        (a, b) => new Date(b.match_date) - new Date(a.match_date)
+      );
+      futureMatches.sort(
+        (a, b) => new Date(a.match_date) - new Date(b.match_date)
+      );
+
+      // Если есть идущие матчи, показываем их
+      if (ongoingMatches.length > 0) {
+        const ongoingDate = new Date(
+          ongoingMatches[0].match_date
+        ).toDateString();
+        const matchesOnSameDay = ongoingMatches.filter(
+          (match) => new Date(match.match_date).toDateString() === ongoingDate
+        );
+
+        let messageText = `⚽ <b>Матч идёт прямо сейчас:</b>\n\n`;
+
+        matchesOnSameDay.forEach((match, index) => {
+          const matchDate = new Date(match.match_date);
+          const timeStr = matchDate.toLocaleTimeString("ru-RU", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          const dateStr = matchDate.toLocaleDateString("ru-RU");
+
+          messageText +=
+            `<b>${index + 1}. ${match.team1_name} vs ${
+              match.team2_name
+            }</b>\n` + `⏱️ <b>Начался:</b> ${dateStr} ${timeStr}\n`;
+
+          if (match.round) {
+            messageText += `📍 <b>Тур:</b> ${match.round}\n`;
+          }
+
+          messageText += `🏆 <b>Турнир:</b> ${match.event_name || "—"}\n\n`;
+        });
+
+        messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
+
+        bot.sendMessage(chatId, messageText, {
+          parse_mode: "HTML",
+        });
+        return;
+      }
+
+      // Если нет идущих матчей, показываем будущие
+      if (futureMatches.length === 0) {
+        bot.sendMessage(
+          chatId,
+          `⚽ <b>Ближайший матч:</b>\n\n` +
+            `<i>Предстоящих матчей не найдено</i>\n\n` +
+            `💡 Используйте сайт для просмотра расписания всех матчей.`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Получаем дату ближайшего будущего матча
+      const nearestDate = new Date(futureMatches[0].match_date).toDateString();
+
+      // Фильтруем матчи на ту же дату
+      const matchesOnSameDay = futureMatches.filter(
+        (match) => new Date(match.match_date).toDateString() === nearestDate
+      );
+
+      // Форматируем сообщение с матчами
+      let messageText = `⚽ <b>Ближайшие матчи:</b>\n\n`;
+
+      matchesOnSameDay.forEach((match, index) => {
+        const matchDate = new Date(match.match_date);
+        const timeStr = matchDate.toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const dateStr = matchDate.toLocaleDateString("ru-RU");
+
+        messageText +=
+          `<b>${index + 1}. ${match.team1_name} vs ${match.team2_name}</b>\n` +
+          `📅 <b>Дата:</b> ${dateStr} ${timeStr}\n`;
+
+        if (match.round) {
+          messageText += `📍 <b>Тур:</b> ${match.round}\n`;
+        }
+
+        messageText += `🏆 <b>Турнир:</b> ${match.event_name || "—"}\n\n`;
+      });
+
+      messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
+
+      bot.sendMessage(chatId, messageText, {
+        parse_mode: "HTML",
+      });
+    } catch (error) {
+      console.error(
+        "Ошибка при загрузке ближайших матчей:",
+        error && error.message ? error.message : error
+      );
+      bot.sendMessage(
+        chatId,
+        `⚽ <b>Ближайший матч:</b>\n\n` +
+          `<i>⚠️ Ошибка при загрузке данных</i>\n\n` +
+          `💡 Используйте сайт для просмотра расписания всех матчей.`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    }
   };
 
   bot.onText(/\/next_match/, (msg) => handleNextMatch(msg.chat.id, msg));
