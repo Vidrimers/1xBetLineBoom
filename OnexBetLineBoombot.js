@@ -853,25 +853,106 @@ export function startBot() {
   bot.onText(/\/next_match/, (msg) => handleNextMatch(msg.chat.id, msg));
 
   // Команда /stats и кнопка 📈 Статистика
-  const handleStats = (msg) => {
+  const handleStats = async (msg) => {
     const chatId = msg.chat.id;
 
     logUserAction(msg, "Нажата кнопка/команда: Статистика");
     const firstName = msg.from.first_name || "пользователь";
+    const telegramUsername = msg.from.username || "";
 
-    bot.sendMessage(
-      chatId,
-      `📊 <b>${firstName}:</b>\n\n` +
-        `<b>Ставок за всё время:</b> <i>загрузка...</i>\n` +
-        `<b>✅ Угаданных ставок за всё время:</b> <i>загрузка...</i>\n` +
-        `<b>❌ Неугаданных ставок за всё время:</b> <i>загрузка...</i>\n` +
-        `<b>⏳ В ожидании:</b> <i>загрузка...</i>\n\n` +
-        `<b>Процент побед:</b> <i>загрузка...</i>\n\n` +
-        `💡 Детальная статистика доступна на сайте.`,
-      {
-        parse_mode: "HTML",
+    try {
+      // Получаем данные всех участников
+      const response = await fetch(`${SERVER_URL}/api/participants`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch participants");
       }
-    );
+      const participants = await response.json();
+
+      console.log(
+        `[STATS] Searching for user. Telegram username: ${telegramUsername}, First name: ${firstName}`
+      );
+      console.log(
+        `[STATS] Available participants (username -> telegram_username): ${participants
+          .map((p) => `${p.username}(${p.telegram_username || "—"})`)
+          .join(", ")}`
+      );
+
+      // Ищем текущего пользователя по привязке telegram_username в профиле на сайте
+      // Это более надежный способ, чем искать по telegram username из API
+      const user = participants.find(
+        (p) =>
+          // Основной поиск: по telegram_username сохраненному в профиле на сайте
+          (p.telegram_username &&
+            p.telegram_username.toLowerCase() ===
+              telegramUsername.toLowerCase()) ||
+          // Fallback: если telegram_username не привязан, ищем по первому имени
+          (msg.from.first_name &&
+            p.username &&
+            p.username.toLowerCase() === msg.from.first_name.toLowerCase())
+      );
+
+      if (!user) {
+        console.log(
+          `[STATS] User not found. Looking for telegram_username: ${telegramUsername}`
+        );
+        bot.sendMessage(
+          chatId,
+          `📊 <b>${firstName}:</b>\n\n` +
+            `Ваш профиль не привязан к Telegram аккаунту. Привяжите его на сайте в разделе "👤 Профиль" и попробуйте снова.`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      console.log(
+        `[STATS] User found: ${user.username} (telegram: ${user.telegram_username})`
+      );
+
+      // Используем имя с сайта (display_name = username)
+      const displayName = user.username || firstName;
+
+      // Рассчитываем процент побед
+      // Общее количество ставок = выигранные + проигранные + в ожидании
+      const totalBets =
+        (user.won_bets || 0) + (user.lost_bets || 0) + (user.pending_bets || 0);
+      const winPercentage =
+        totalBets > 0
+          ? Math.round(((user.won_bets || 0) / totalBets) * 100)
+          : 0;
+
+      bot.sendMessage(
+        chatId,
+        `📊 <b>${displayName}:</b>\n\n` +
+          `<b>Ставок за всё время:</b> <i>${totalBets}</i>\n` +
+          `<b>✅ Угаданных ставок за всё время:</b> <i>${
+            user.won_bets || 0
+          }</i>\n` +
+          `<b>❌ Неугаданных ставок за всё время:</b> <i>${
+            user.lost_bets || 0
+          }</i>\n` +
+          `<b>⏳ В ожидании:</b> <i>${user.pending_bets || 0}</i>\n\n` +
+          `<b>🏆 Победы в турнирах:</b> <i>${
+            user.tournament_wins || 0
+          }</i>\n\n` +
+          `<b>Процент побед:</b> <i>${winPercentage}%</i>\n\n` +
+          `💡 Детальная статистика доступна на сайте.`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    } catch (error) {
+      console.error("Error in handleStats:", error);
+      bot.sendMessage(
+        chatId,
+        `📊 <b>${firstName}:</b>\n\n` +
+          `Ошибка при загрузке статистики. Пожалуйста, попробуйте позже.`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    }
   };
 
   bot.onText(/\/stats/, (msg) => handleStats(msg));

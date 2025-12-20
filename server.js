@@ -1076,6 +1076,7 @@ app.get("/api/participants", (req, res) => {
       SELECT 
         u.id,
         u.username,
+        u.telegram_username,
         COUNT(b.id) as total_bets,
         SUM(CASE 
           WHEN m.winner IS NOT NULL THEN 
