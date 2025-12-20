@@ -523,15 +523,15 @@ function displayEvents() {
                         : ""
                     }', '${event.start_date || ""}', '${
                       event.end_date || ""
-                    }')" style="background: rgba(33, 150, 243, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='rgba(33, 150, 243, 0.3)'">✏️</button>
+                    }')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
                     ${
                       event.locked_reason
                         ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
-                        : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: rgba(255, 152, 0, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='rgba(255, 152, 0, 0.3)'">🔒</button>`
+                        : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'">🔒</button>`
                     }
                     <button class="event-delete-btn" onclick="deleteEvent(${
                       event.id
-                    })" style="background: rgba(244, 67, 54, 0.3); padding: 5px 10px; font-size: 0.8em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='rgba(244, 67, 54, 0.3)'">✕</button>
+                    })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'">✕</button>
                   </div>`
                   : ""
               }
@@ -767,21 +767,21 @@ function displayMatches() {
                 ? `
               <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 1;">
                 <button onclick="setMatchResult(${match.id}, 'team1')"
-                  style="background: rgba(58, 123, 213, 0.7); color: #e0e6f0; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                  style="background: transparent; color: #e0e6f0; border: 1px solid rgba(58, 123, 213, 0.7); padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
                   onmouseover="this.style.background='rgba(58, 123, 213, 0.9)'"
-                  onmouseout="this.style.background='rgba(58, 123, 213, 0.7)'">
+                  onmouseout="this.style.background='transparent'">
                   1
                 </button>
                 <button onclick="setMatchResult(${match.id}, 'draw')"
-                  style="background: #f57c00; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                  style="background: transparent; color: white; border: 1px solid #f57c00; padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
                   onmouseover="this.style.background='#e65100'"
-                  onmouseout="this.style.background='#f57c00'">
+                  onmouseout="this.style.background='transparent'">
                   X
                 </button>
                 <button onclick="setMatchResult(${match.id}, 'team2')"
-                  style="background: rgba(76, 175, 80, 0.7); color: #a0d895; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                  style="background: transparent; color: #a0d895; border: 1px solid rgba(76, 175, 80, 0.7); padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
                   onmouseover="this.style.background='rgba(76, 175, 80, 0.9)'"
-                  onmouseout="this.style.background='rgba(76, 175, 80, 0.7)'">
+                  onmouseout="this.style.background='transparent'">
                   2
                 </button>
               </div>
@@ -790,9 +790,9 @@ function displayMatches() {
                   effectiveStatus === "finished"
                     ? `
                 <button onclick="unlockMatch(${match.id})"
-                  style="background: rgba(255, 152, 0, 0.3); border: 1px solid #f57c00; color: #ffe0b2; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
+                  style="background: transparent; border: 1px solid #f57c00; color: #ffe0b2; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                   onmouseover="this.style.background='rgba(255, 152, 0, 0.6)'; this.style.color='#fff'"
-                  onmouseout="this.style.background='rgba(255, 152, 0, 0.3)'; this.style.color='#ffe0b2'"
+                  onmouseout="this.style.background='transparent'; this.style.color='#ffe0b2'"
                   title="Разблокировать матч">
                   🔓
                 </button>
@@ -804,13 +804,13 @@ function displayMatches() {
                   }', '${match.team2_name}', '${match.match_date || ""}', '${
                     match.round || ""
                   }')"
-                  style="background: rgba(58, 123, 213, 0.3); border: 1px solid #3a7bd5; color: #7ab0e0; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
+                  style="background: transparent; border: 1px solid #3a7bd5; color: #7ab0e0; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                   onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
-                  onmouseout="this.style.background='rgba(58, 123, 213, 0.3)'; this.style.color='#7ab0e0'">
+                  onmouseout="this.style.background='transparent'; this.style.color='#7ab0e0'">
                   ✏️
                 </button>
                 <button onclick="deleteMatch(${match.id})"
-                  style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
+                  style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                   onmouseover="this.style.background='#f44336'; this.style.color='white'"
                   onmouseout="this.style.background='transparent'; this.style.color='#f44336'">
                   ✕
@@ -1146,12 +1146,47 @@ async function deleteBet(betId) {
     // ✨ Удаляем ставку из DOM плавной анимацией без перезагрузки
     const betElement = document.querySelector(`[data-bet-id="${betId}"]`);
     if (betElement) {
+      // Находим турнир (родительский div с разделителем выше)
+      let previousSibling = betElement.previousElementSibling;
+      let eventDivider = null;
+
+      // Ищем ближайший разделитель выше удаляемой ставки
+      while (previousSibling) {
+        if (previousSibling.textContent.includes("━━━")) {
+          eventDivider = previousSibling;
+          break;
+        }
+        previousSibling = previousSibling.previousElementSibling;
+      }
+
       betElement.style.opacity = "0.5";
       betElement.style.transform = "scale(0.95)";
       betElement.style.transition = "all 0.3s ease";
 
       setTimeout(() => {
         betElement.remove();
+
+        // Проверяем, есть ли еще ставки для этого турнира
+        let nextSibling = eventDivider?.nextElementSibling;
+        let hasMoreBets = false;
+
+        while (nextSibling) {
+          // Если встретили следующий разделитель - нет ставок в этом турнире
+          if (nextSibling.textContent.includes("━━━")) {
+            break;
+          }
+          // Если встретили ставку - есть ставки
+          if (nextSibling.classList.contains("bet-item")) {
+            hasMoreBets = true;
+            break;
+          }
+          nextSibling = nextSibling.nextElementSibling;
+        }
+
+        // Удаляем разделитель если ставок нет
+        if (!hasMoreBets && eventDivider) {
+          eventDivider.remove();
+        }
 
         // Если ставок больше нет - показываем пустое сообщение
         const myBetsList = document.getElementById("myBetsList");
