@@ -468,7 +468,7 @@ function displayEvents() {
 
       // Если турнир заблокирован, показываем индикатор
       const lockedBadge = event.locked_reason
-        ? `<div style="display: flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 8px; background: #ffe0e0; border-radius: 3px;">
+        ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; padding: 5px 8px; background: #ffe0e0; border-radius: 3px; font-size: 0.85em;color: #f44336;background: rgba(244, 67, 54, 0.2);">
               <span style="color: #f44336; font-weight: bold; font-size: 0.8em;">🔒</span>
               <span style="color: #b0b8c8; font-size: 0.85em;">${event.locked_reason}</span>
             </div>`
