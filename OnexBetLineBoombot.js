@@ -524,18 +524,95 @@ export function startBot() {
   bot.onText(/\/status/, (msg) => handleStatus(msg.chat.id, msg));
 
   // Команда /tournaments и кнопка 📅 Турниры
-  const handleTournaments = (chatId, msg = null) => {
+  const handleTournaments = async (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Турниры");
 
-    bot.sendMessage(
-      chatId,
-      `📅 <b>Турниры:</b>\n\n` +
-        `<i>Загрузка турниров...</i>\n\n` +
-        `💡 Используйте сайт для просмотра полного списка турниров и матчей.`,
-      {
-        parse_mode: "HTML",
+    try {
+      const response = await fetch(`${SERVER_URL}/api/events`);
+
+      if (!response.ok) {
+        console.error(
+          `Ошибка при загрузке турниров (HTTP ${response.status}): ${SERVER_URL}/api/events`
+        );
+        bot.sendMessage(
+          chatId,
+          `📅 <b>Турниры:</b>\n\n` +
+            `<i>⚠️ Ошибка при загрузке данных с сервера</i>`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
       }
-    );
+
+      const events = await response.json();
+
+      if (!events || events.length === 0) {
+        bot.sendMessage(
+          chatId,
+          `📅 <b>Турниры:</b>\n\n` + `<i>Турниров не найдено</i>`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Фильтруем только активные турниры (без locked_reason)
+      const activeTournaments = events.filter((e) => !e.locked_reason);
+
+      if (activeTournaments.length === 0) {
+        bot.sendMessage(
+          chatId,
+          `📅 <b>Турниры:</b>\n\n` + `<i>Активных турниров нет</i>`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Формируем сообщение со списком активных турниров
+      let messageText = `📅 <b>Активные турниры:</b>\n\n`;
+
+      activeTournaments.forEach((tournament, index) => {
+        messageText += `<b>${index + 1}. 🏆 ${tournament.name}</b>\n\n`;
+        if (tournament.description) {
+          messageText += `<i>${tournament.description}</i>\n\n`;
+        }
+        if (tournament.start_date) {
+          const startDateStr = new Date(
+            tournament.start_date
+          ).toLocaleDateString("ru-RU");
+          messageText += `📅 <b>Дата начала:</b> ${startDateStr}\n\n`;
+        }
+        if (tournament.end_date) {
+          const endDateStr = new Date(tournament.end_date).toLocaleDateString(
+            "ru-RU"
+          );
+          messageText += `📅 <b>Дата окончания:</b> ${endDateStr}\n\n`;
+        }
+        messageText += `\n\n`;
+      });
+
+      messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для просмотра всех деталей</a>`;
+
+      bot.sendMessage(chatId, messageText, {
+        parse_mode: "HTML",
+      });
+    } catch (error) {
+      console.error(
+        "Ошибка при загрузке турниров:",
+        error && error.message ? error.message : error
+      );
+      bot.sendMessage(
+        chatId,
+        `📅 <b>Турниры:</b>\n\n` + `<i>⚠️ Ошибка при загрузке данных</i>`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    }
   };
 
   bot.onText(/\/tournaments/, (msg) => handleTournaments(msg.chat.id, msg));
