@@ -1038,46 +1038,65 @@ function displayMyBets(bets) {
     return;
   }
 
-  myBetsList.innerHTML = bets
-    .map((bet) => {
-      let statusClass = "pending";
-      let statusText = "⏳ В ожидании";
+  // Группируем ставки по турнирам (event_name)
+  const betsByEvent = {};
+  bets.forEach((bet) => {
+    const eventName = bet.event_name || "Турнир не указан";
+    if (!betsByEvent[eventName]) {
+      betsByEvent[eventName] = [];
+    }
+    betsByEvent[eventName].push(bet);
+  });
 
-      // Проверяем, есть ли результат матча
-      if (bet.winner) {
-        // Маппинг winner (из БД) в prediction format
-        // winner: "team1" | "team2" | "draw"
-        // prediction: team1_name | team2_name | "draw"
-        let winnerPrediction;
-        if (bet.winner === "team1") {
-          winnerPrediction = bet.team1_name;
-        } else if (bet.winner === "team2") {
-          winnerPrediction = bet.team2_name;
-        } else if (bet.winner === "draw") {
-          winnerPrediction = "draw";
+  // Сортируем турниры по названию
+  const sortedEvents = Object.keys(betsByEvent).sort();
+
+  // Формируем HTML с разделителями по турнирам
+  let html = "";
+
+  sortedEvents.forEach((eventName) => {
+    html += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ${eventName} ━━━</div>`;
+
+    html += betsByEvent[eventName]
+      .map((bet) => {
+        let statusClass = "pending";
+        let statusText = "⏳ В ожидании";
+
+        // Проверяем, есть ли результат матча
+        if (bet.winner) {
+          // Маппинг winner (из БД) в prediction format
+          // winner: "team1" | "team2" | "draw"
+          // prediction: team1_name | team2_name | "draw"
+          let winnerPrediction;
+          if (bet.winner === "team1") {
+            winnerPrediction = bet.team1_name;
+          } else if (bet.winner === "team2") {
+            winnerPrediction = bet.team2_name;
+          } else if (bet.winner === "draw") {
+            winnerPrediction = "draw";
+          }
+
+          if (winnerPrediction === bet.prediction) {
+            statusClass = "won";
+            statusText = "✅ Выиграла";
+          } else {
+            statusClass = "lost";
+            statusText = "❌ Проиграла";
+          }
         }
 
-        if (winnerPrediction === bet.prediction) {
-          statusClass = "won";
-          statusText = "✅ Выиграла";
-        } else {
-          statusClass = "lost";
-          statusText = "❌ Проиграла";
-        }
-      }
+        // Показываем кнопку удаления: админу всегда, остальным только для матчей со статусом "pending"
+        const canDelete = isAdmin() || bet.match_status === "pending";
+        const deleteBtn = canDelete
+          ? `<button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>`
+          : "";
 
-      // Показываем кнопку удаления: админу всегда, остальным только для матчей со статусом "pending"
-      const canDelete = isAdmin() || bet.match_status === "pending";
-      const deleteBtn = canDelete
-        ? `<button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>`
-        : "";
-
-      return `
+        return `
             <div class="bet-item ${statusClass}" data-bet-id="${bet.id}">
                 <div class="bet-info">
                     <span class="bet-match">${bet.team1_name} vs ${
-        bet.team2_name
-      }</span>
+          bet.team2_name
+        }</span>
                     <span class="bet-status ${statusClass}">${statusText}</span>
                 </div>
                 <div class="bet-info" style="font-size: 0.9em; color: #b0b8c8;">
@@ -1086,15 +1105,16 @@ function displayMyBets(bets) {
                     }</strong></span>
                 </div>
                 <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
-                    Турнир: ${bet.event_name}${
-        bet.round ? ` • ${bet.round}` : ""
-      }
+                    ${bet.round ? `Тур: ${bet.round}` : ""}
                 </div>
                 ${deleteBtn}
             </div>
         `;
-    })
-    .join("");
+      })
+      .join("");
+  });
+
+  myBetsList.innerHTML = html;
 }
 
 // Удалить ставку
@@ -1351,8 +1371,14 @@ async function displayTournaments(events) {
     })
   );
 
-  // Формируем итоговый HTML с разделителем
-  let html = activeCards.join("");
+  // Формируем итоговый HTML с разделителями
+  let html = "";
+
+  if (activeCards.length > 0) {
+    html +=
+      '<div class="tournaments-section-divider">ДЕЙСТВУЮЩИЕ ТУРНИРЫ</div>';
+    html += activeCards.join("");
+  }
 
   if (lockedCards.length > 0) {
     html +=
