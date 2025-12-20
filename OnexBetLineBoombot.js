@@ -1150,7 +1150,7 @@ export function startBot() {
             inline_keyboard: [
               [
                 {
-                  text: "Нажмите здесь чтобы открыть",
+                  text: "Жмакни чтобы перейти",
                   url: SERVER_URL,
                 },
               ],
