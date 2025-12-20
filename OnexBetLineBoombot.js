@@ -1144,14 +1144,19 @@ export function startBot() {
         break;
       case "🌐 Открыть сайт":
         logUserAction(msg, "Нажата кнопка: Открыть сайт");
-        bot.sendMessage(
-          chatId,
-          `🌐 <b>Открыть сайт:</b>\n\n` +
-            `<a href="${SERVER_URL}">Нажмите здесь чтобы открыть</a>`,
-          {
-            parse_mode: "HTML",
-          }
-        );
+        bot.sendMessage(chatId, `🌐 Открыть сайт:`, {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Нажмите здесь чтобы открыть",
+                  url: SERVER_URL,
+                },
+              ],
+            ],
+          },
+        });
         break;
     }
   });
