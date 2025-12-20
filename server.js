@@ -80,19 +80,135 @@ async function sendTournamentWinnerNotification(
   }
 
   try {
-    // Получаем telegram ID пользователя по его username если он зарегистрирован
-    const cleanUsername = winnerUsername.replace("@", "").toLowerCase();
-    const telegramUser = db
-      .prepare("SELECT chat_id FROM telegram_users WHERE telegram_username = ?")
-      .get(cleanUsername);
+    // Получаем topsy-3 участников по количеству побед в этом турнире
+    const eventId = db
+      .prepare("SELECT id FROM events WHERE name = ?")
+      .get(tournamentName)?.id;
+
+    let topParticipants = [];
+    if (eventId) {
+      topParticipants = db
+        .prepare(
+          `
+          SELECT u.username, COUNT(b.id) as wins
+          FROM users u
+          LEFT JOIN bets b ON u.id = b.user_id
+          LEFT JOIN matches m ON b.match_id = m.id
+          WHERE m.event_id = ?
+          AND m.winner IS NOT NULL
+          AND (
+            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+            (b.prediction = m.team2_name AND m.winner = 'team2') OR
+            (b.prediction = 'draw' AND m.winner = 'draw')
+          )
+          GROUP BY u.id, u.username
+          ORDER BY wins DESC
+          LIMIT 3
+        `
+        )
+        .all(eventId);
+    }
+
+    // Сначала ищем пользователя по его display_name (username) в таблице users
+    const user = db
+      .prepare(
+        "SELECT id, username, telegram_username FROM users WHERE username = ?"
+      )
+      .get(winnerUsername);
+
+    let telegramUser = null;
+    let searchedUsername = winnerUsername;
+
+    if (user && user.telegram_username) {
+      // Если нашли в таблице users, ищем его telegram данные
+      searchedUsername = user.telegram_username;
+      telegramUser = db
+        .prepare(
+          "SELECT chat_id FROM telegram_users WHERE telegram_username = ?"
+        )
+        .get(searchedUsername);
+
+      console.log(
+        `🔍 Поиск telegram пользователя для @${searchedUsername}, результат:`,
+        telegramUser
+      );
+    } else {
+      // Если не нашли, ищем напрямую в telegram_users (может быть передано telegram имя)
+      const cleanUsername = winnerUsername.replace("@", "").toLowerCase();
+      telegramUser = db
+        .prepare(
+          "SELECT chat_id FROM telegram_users WHERE telegram_username = ?"
+        )
+        .get(cleanUsername);
+
+      console.log(
+        `🔍 Прямой поиск telegram пользователя: ${cleanUsername}, результат:`,
+        telegramUser
+      );
+    }
 
     let messageText = `🎉 <b>Турнир закончен!</b>\n\n`;
-    messageText += `🏆 <b>${tournamentName}</b>\n`;
-    messageText += `👑 <b>Победитель:</b> ${winnerUsername}`;
+    messageText += `🏆 <b>${tournamentName}</b>\n\n`;
+    messageText += `👑 <b>Первое место:</b> ${winnerUsername}`;
 
     // Если пользователь зарегистрирован в боте, упоминаем его
     if (telegramUser && telegramUser.chat_id) {
-      messageText += `\n<a href="tg://user?id=${telegramUser.chat_id}">@${cleanUsername}</a>`;
+      console.log(
+        `✅ Найден telegram пользователь: @${searchedUsername} (chat_id: ${telegramUser.chat_id})`
+      );
+      messageText += `\n<a href="tg://user?id=${telegramUser.chat_id}">@${searchedUsername}</a>`;
+    } else {
+      console.warn(`⚠️ Telegram пользователь для ${winnerUsername} не найден`);
+    }
+
+    // Добавляем информацию о побед первого места
+    if (topParticipants.length > 0) {
+      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[0].wins}`;
+    }
+
+    // Добавляем второе место
+    if (topParticipants.length > 1) {
+      messageText += `\n\n🥈 <b>Второе место:</b> ${topParticipants[1].username}`;
+      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[1].wins}`;
+    }
+
+    // Добавляем третье место
+    if (topParticipants.length > 2) {
+      messageText += `\n\n🥉 <b>Третье место:</b> ${topParticipants[2].username}`;
+      messageText += `\n📊 <b>Очков набрано:</b> ${topParticipants[2].wins}`;
+    }
+
+    // Добавляем мотивирующее сообщение
+    messageText += `\n\nНу, какие молодцы.`;
+
+    // Получаем участника с последним местом (наименьшим количеством побед, но участвовал)
+    const lastPlace = db
+      .prepare(
+        `
+        SELECT u.username, COUNT(b.id) as wins
+        FROM users u
+        LEFT JOIN bets b ON u.id = b.user_id
+        LEFT JOIN matches m ON b.match_id = m.id
+        WHERE m.event_id = ?
+        AND m.winner IS NOT NULL
+        AND (
+          (b.prediction = m.team1_name AND m.winner = 'team1') OR
+          (b.prediction = m.team2_name AND m.winner = 'team2') OR
+          (b.prediction = 'draw' AND m.winner = 'draw')
+        )
+        GROUP BY u.id, u.username
+        ORDER BY wins ASC
+        LIMIT 1
+      `
+      )
+      .get(eventId);
+
+    // Добавляем информацию о последнем месте
+    messageText += `\n\n\n\n\n👥 <b>Участвовал</b>\n🏁 <b>Последнее место:</b> ${
+      lastPlace ? lastPlace.username : "—"
+    }`;
+    if (lastPlace) {
+      messageText += `\n📊 <b>Очков набрано:</b> ${lastPlace.wins}`;
     }
 
     const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
