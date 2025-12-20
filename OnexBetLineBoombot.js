@@ -618,18 +618,136 @@ export function startBot() {
   bot.onText(/\/tournaments/, (msg) => handleTournaments(msg.chat.id, msg));
 
   // Команда /my_bets и кнопка 💰 Мои ставки
-  const handleMyBets = (chatId, msg = null) => {
+  const handleMyBets = async (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Мои ставки");
 
-    bot.sendMessage(
-      chatId,
-      `💰 <b>Мои ставки:</b>\n\n` +
-        `<i>Загрузка ставок...</i>\n\n` +
-        `💡 Используйте сайт для управления ставками.`,
-      {
-        parse_mode: "HTML",
+    try {
+      const telegramUsername = msg?.from?.username || "";
+      const firstName = msg?.from?.first_name || "пользователь";
+
+      // Получаем данные пользователя с сайта
+      const response = await fetch(`${SERVER_URL}/api/participants`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch participants");
       }
-    );
+      const participants = await response.json();
+
+      // Ищем пользователя по telegram_username
+      const user = participants.find(
+        (p) =>
+          (p.telegram_username &&
+            p.telegram_username.toLowerCase() ===
+              telegramUsername.toLowerCase()) ||
+          (msg?.from?.first_name &&
+            p.username &&
+            p.username.toLowerCase() === msg.from.first_name.toLowerCase())
+      );
+
+      if (!user) {
+        bot.sendMessage(
+          chatId,
+          `💰 <b>Мои ставки:</b>\n\n` +
+            `Профиль не привязан. Привяжите его на сайте в разделе "👤 Профиль".`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Получаем события (турниры) для сопоставления event_id
+      const eventsResponse = await fetch(`${SERVER_URL}/api/events`);
+      if (!eventsResponse.ok) {
+        throw new Error("Failed to fetch events");
+      }
+      const events = await eventsResponse.json();
+
+      // Создаем map для быстрого поиска названия турнира по event_id
+      const eventMap = {};
+      events.forEach((event) => {
+        eventMap[event.id] = event.name;
+      });
+
+      // Получаем ставки конкретного пользователя
+      const betsResponse = await fetch(
+        `${SERVER_URL}/api/user/${user.id}/bets`
+      );
+      if (!betsResponse.ok) {
+        throw new Error("Failed to fetch bets");
+      }
+      const userBets = await betsResponse.json();
+
+      // Фильтруем только ставки в ожидании (winner === null)
+      const userPendingBets = userBets.filter((bet) => !bet.winner);
+
+      if (userPendingBets.length === 0) {
+        bot.sendMessage(
+          chatId,
+          `💰 <b>Мои ставки:</b>\n\n` +
+            `<i>Активных ставок нет</i>\n\n` +
+            `💡 Сделайте ставку на сайте.`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Формируем сообщение со ставками
+      let messageText = `💰 <b>Мои активные ставки:</b>\n\n`;
+
+      userPendingBets.slice(0, 10).forEach((bet, index) => {
+        // Форматируем дату и время из match_date
+        let matchDate = "—";
+        let matchTime = "";
+
+        if (bet.match_date) {
+          const matchDateTime = new Date(bet.match_date);
+          if (!isNaN(matchDateTime.getTime())) {
+            matchDate = matchDateTime.toLocaleDateString("ru-RU", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+            matchTime = matchDateTime.toLocaleTimeString("ru-RU", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+          }
+        }
+
+        // Получаем название турнира по event_id
+        const tournamentName =
+          bet.event_id && eventMap[bet.event_id]
+            ? eventMap[bet.event_id]
+            : "Турнир не найден";
+
+        messageText +=
+          `<b>${index + 1}. ${bet.team1_name} vs ${bet.team2_name}</b>\n` +
+          `🎯 Прогноз: <b>${bet.prediction}</b>\n\n`;
+      });
+
+      if (userPendingBets.length > 10) {
+        messageText += `📌 Показано 10 из ${userPendingBets.length} ставок\n\n`;
+      }
+
+      messageText += `💡 Полный список на сайте.`;
+
+      bot.sendMessage(chatId, messageText, {
+        parse_mode: "HTML",
+      });
+    } catch (error) {
+      console.error("Error in handleMyBets:", error);
+      bot.sendMessage(
+        chatId,
+        `💰 <b>Мои ставки:</b>\n\n` +
+          `<i>⚠️ Ошибка при загрузке ставок</i>\n\n` +
+          `💡 Используйте сайт для управления ставками.`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    }
   };
 
   bot.onText(/\/my_bets/, (msg) => handleMyBets(msg.chat.id, msg));
