@@ -742,6 +742,21 @@ try {
   // Колонка уже существует
 }
 
+// Добавляем колонки для финальных ставок в таблицу bets
+try {
+  db.prepare(
+    "ALTER TABLE bets ADD COLUMN is_final_bet BOOLEAN DEFAULT 0"
+  ).run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE bets ADD COLUMN parameter_type TEXT").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
 // Таблица настроек сайта
 db.exec(`
   CREATE TABLE IF NOT EXISTS site_settings (
@@ -951,7 +966,14 @@ app.post("/api/user", (req, res) => {
 // 6. Создать ставку
 app.post("/api/bets", async (req, res) => {
   try {
-    const { user_id, match_id, prediction, amount } = req.body;
+    const {
+      user_id,
+      match_id,
+      prediction,
+      amount,
+      is_final_bet,
+      parameter_type,
+    } = req.body;
 
     // Получаем информацию о пользователе и матче
     const user = db
@@ -1023,11 +1045,18 @@ app.post("/api/bets", async (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO bets (user_id, match_id, prediction, amount)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO bets (user_id, match_id, prediction, amount, is_final_bet, parameter_type)
+      VALUES (?, ?, ?, ?, ?, ?)
     `
       )
-      .run(user_id, match_id, prediction, amount);
+      .run(
+        user_id,
+        match_id,
+        prediction,
+        amount,
+        is_final_bet ? 1 : 0,
+        parameter_type || null
+      );
 
     // Записываем лог ставки
     writeBetLog("placed", {
@@ -1907,12 +1936,10 @@ app.post("/api/admin/matches", (req, res) => {
   } catch (error) {
     console.error("❌ Ошибка при создании матча:", error.message);
     if (error.message.includes("FOREIGN KEY constraint failed")) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "❌ Ошибка: Указан несуществующий турнир. Сначала выберите турнир из списка.",
-        });
+      return res.status(400).json({
+        error:
+          "❌ Ошибка: Указан несуществующий турнир. Сначала выберите турнир из списка.",
+      });
     }
     res.status(500).json({ error: error.message });
   }
@@ -2146,12 +2173,10 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
   } catch (error) {
     console.error("❌ Ошибка при обновлении матча:", error.message);
     if (error.message.includes("FOREIGN KEY constraint failed")) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "❌ Ошибка: Указан несуществующий турнир. Выберите существующий турнир.",
-        });
+      return res.status(400).json({
+        error:
+          "❌ Ошибка: Указан несуществующий турнир. Выберите существующий турнир.",
+      });
     }
     res.status(500).json({ error: error.message });
   }
