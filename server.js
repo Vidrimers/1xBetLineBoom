@@ -562,6 +562,9 @@ function resetLogFile() {
 // Инициализируем базу данных
 const db = new Database("1xBetLineBoom.db");
 
+// Отключаем FOREIGN KEY constraints для упрощения операций удаления
+db.pragma("foreign_keys = OFF");
+
 // Middleware
 app.use(express.json());
 app.use(express.static(".")); // Раздаем статические файлы (HTML, CSS, JS)
@@ -674,6 +677,55 @@ try {
   db.prepare("ALTER TABLE matches ADD COLUMN round TEXT").run();
 } catch (error) {
   // Колонка уже существует, это нормально
+}
+
+// Добавляем колонки для финального матча
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN is_final BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN show_exact_score BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN show_yellow_cards BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN show_red_cards BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN show_corners BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN show_penalties_in_game BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN show_extra_time BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN show_penalties_at_end BOOLEAN DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует
 }
 
 // Таблица настроек сайта
@@ -992,7 +1044,7 @@ app.get("/api/user/:userId/bets", (req, res) => {
     const bets = db
       .prepare(
         `
-      SELECT b.*, m.team1_name, m.team2_name, m.winner, m.status as match_status, m.round, e.name as event_name
+      SELECT b.*, m.team1_name, m.team2_name, m.winner, m.status as match_status, m.round, m.is_final, e.name as event_name
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
@@ -1763,7 +1815,22 @@ app.post("/api/admin/events", (req, res) => {
 
 // POST /api/admin/matches - Создать новый матч (только для админа)
 app.post("/api/admin/matches", (req, res) => {
-  const { username, event_id, team1, team2, match_date, round } = req.body;
+  const { 
+    username, 
+    event_id, 
+    team1, 
+    team2, 
+    match_date, 
+    round,
+    is_final,
+    show_exact_score,
+    show_yellow_cards,
+    show_red_cards,
+    show_corners,
+    show_penalties_in_game,
+    show_extra_time,
+    show_penalties_at_end
+  } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
   // Проверяем, является ли пользователь админом
@@ -1782,11 +1849,29 @@ app.post("/api/admin/matches", (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO matches (event_id, team1_name, team2_name, match_date, round)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO matches (
+        event_id, team1_name, team2_name, match_date, round,
+        is_final, show_exact_score, show_yellow_cards, show_red_cards,
+        show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
       )
-      .run(event_id, team1, team2, match_date || null, round || null);
+      .run(
+        event_id, 
+        team1, 
+        team2, 
+        match_date || null, 
+        round || null,
+        is_final ? 1 : 0,
+        show_exact_score ? 1 : 0,
+        show_yellow_cards ? 1 : 0,
+        show_red_cards ? 1 : 0,
+        show_corners ? 1 : 0,
+        show_penalties_in_game ? 1 : 0,
+        show_extra_time ? 1 : 0,
+        show_penalties_at_end ? 1 : 0
+      );
 
     res.json({
       id: result.lastInsertRowid,
@@ -1795,9 +1880,21 @@ app.post("/api/admin/matches", (req, res) => {
       team2_name: team2,
       match_date: match_date || null,
       round: round || null,
+      is_final: is_final ? 1 : 0,
+      show_exact_score: show_exact_score ? 1 : 0,
+      show_yellow_cards: show_yellow_cards ? 1 : 0,
+      show_red_cards: show_red_cards ? 1 : 0,
+      show_corners: show_corners ? 1 : 0,
+      show_penalties_in_game: show_penalties_in_game ? 1 : 0,
+      show_extra_time: show_extra_time ? 1 : 0,
+      show_penalties_at_end: show_penalties_at_end ? 1 : 0,
       message: "Матч успешно создан",
     });
   } catch (error) {
+    console.error("❌ Ошибка при создании матча:", error.message);
+    if (error.message.includes("FOREIGN KEY constraint failed")) {
+      return res.status(400).json({ error: "❌ Ошибка: Указан несуществующий турнир. Сначала выберите турнир из списка." });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -1866,6 +1963,14 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
     team2_name,
     match_date,
     round,
+    is_final,
+    show_exact_score,
+    show_yellow_cards,
+    show_red_cards,
+    show_corners,
+    show_penalties_in_game,
+    show_extra_time,
+    show_penalties_at_end
   } = req.body;
 
   console.log("🔵 PUT /api/admin/matches/:matchId", {
@@ -1928,12 +2033,23 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
       team1_name ||
       team2_name ||
       match_date !== undefined ||
-      round !== undefined
+      round !== undefined ||
+      is_final !== undefined ||
+      show_exact_score !== undefined ||
+      show_yellow_cards !== undefined ||
+      show_red_cards !== undefined ||
+      show_corners !== undefined ||
+      show_penalties_in_game !== undefined ||
+      show_extra_time !== undefined ||
+      show_penalties_at_end !== undefined
     ) {
       // Получаем текущие значения матча
       const currentMatch = db
         .prepare(
-          "SELECT team1_name, team2_name, match_date, round FROM matches WHERE id = ?"
+          `SELECT team1_name, team2_name, match_date, round, 
+                   is_final, show_exact_score, show_yellow_cards, show_red_cards,
+                   show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end 
+           FROM matches WHERE id = ?`
         )
         .get(matchId);
 
@@ -1942,12 +2058,33 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
       }
 
       db.prepare(
-        "UPDATE matches SET team1_name = ?, team2_name = ?, match_date = ?, round = ? WHERE id = ?"
+        `UPDATE matches SET 
+          team1_name = ?, 
+          team2_name = ?, 
+          match_date = ?, 
+          round = ?,
+          is_final = ?,
+          show_exact_score = ?,
+          show_yellow_cards = ?,
+          show_red_cards = ?,
+          show_corners = ?,
+          show_penalties_in_game = ?,
+          show_extra_time = ?,
+          show_penalties_at_end = ?
+         WHERE id = ?`
       ).run(
         team1_name || currentMatch.team1_name,
         team2_name || currentMatch.team2_name,
         match_date !== undefined ? match_date : currentMatch.match_date,
         round !== undefined ? round : currentMatch.round,
+        is_final !== undefined ? (is_final ? 1 : 0) : currentMatch.is_final,
+        show_exact_score !== undefined ? (show_exact_score ? 1 : 0) : currentMatch.show_exact_score,
+        show_yellow_cards !== undefined ? (show_yellow_cards ? 1 : 0) : currentMatch.show_yellow_cards,
+        show_red_cards !== undefined ? (show_red_cards ? 1 : 0) : currentMatch.show_red_cards,
+        show_corners !== undefined ? (show_corners ? 1 : 0) : currentMatch.show_corners,
+        show_penalties_in_game !== undefined ? (show_penalties_in_game ? 1 : 0) : currentMatch.show_penalties_in_game,
+        show_extra_time !== undefined ? (show_extra_time ? 1 : 0) : currentMatch.show_extra_time,
+        show_penalties_at_end !== undefined ? (show_penalties_at_end ? 1 : 0) : currentMatch.show_penalties_at_end,
         matchId
       );
 
@@ -1960,7 +2097,10 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
 
     return res.status(400).json({ error: "Не указаны данные для обновления" });
   } catch (error) {
-    console.error("❌ Ошибка на сервере:", error);
+    console.error("❌ Ошибка при обновлении матча:", error.message);
+    if (error.message.includes("FOREIGN KEY constraint failed")) {
+      return res.status(400).json({ error: "❌ Ошибка: Указан несуществующий турнир. Выберите существующий турнир." });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -1980,6 +2120,15 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
     db.prepare(
       "DELETE FROM bets WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)"
     ).run(eventId);
+
+    // Также удаляем из final_bets если таблица существует
+    try {
+      db.prepare(
+        "DELETE FROM final_bets WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)"
+      ).run(eventId);
+    } catch (e) {
+      // Таблица final_bets не существует, это нормально
+    }
 
     // Удаляем связанные матчи
     db.prepare("DELETE FROM matches WHERE event_id = ?").run(eventId);
@@ -2279,14 +2428,22 @@ app.delete("/api/admin/matches/:matchId", (req, res) => {
   }
 
   try {
-    // Сначала удаляем все ставки, связанные с матчем
+    // Сначала удаляем все ставки, связанные с матчем (из таблицы bets)
     db.prepare("DELETE FROM bets WHERE match_id = ?").run(matchId);
+
+    // Также удаляем из final_bets если таблица существует
+    try {
+      db.prepare("DELETE FROM final_bets WHERE match_id = ?").run(matchId);
+    } catch (e) {
+      // Таблица final_bets не существует, это нормально
+    }
 
     // Затем удаляем сам матч
     db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
 
     res.json({ success: true, message: "Матч успешно удален" });
   } catch (error) {
+    console.error("❌ Ошибка при удалении матча:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

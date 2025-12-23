@@ -42,6 +42,29 @@ async function luckyBetForCurrentRound() {
   await loadMyBets();
   displayMatches();
 }
+
+// Переключатель для финального матча
+function toggleFinalMatch(modal) {
+  const prefix = modal === 'edit' ? 'edit' : '';
+  const isFinalCheckbox = document.getElementById(prefix ? 'editMatchIsFinal' : 'matchIsFinal');
+  const roundInput = document.getElementById(prefix ? 'editMatchRound' : 'matchRound');
+  const paramsDiv = document.getElementById(prefix ? 'finalMatchParamsEdit' : 'finalMatchParamsCreate');
+  
+  if (isFinalCheckbox.checked) {
+    // Финал включен
+    roundInput.disabled = true;
+    roundInput.value = '';
+    paramsDiv.style.display = 'block';
+  } else {
+    // Финал отключен
+    roundInput.disabled = false;
+    paramsDiv.style.display = 'none';
+    // Отключить все чекбоксы параметров
+    const checkboxes = paramsDiv.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+  }
+}
+
 // Глобальные переменные
 let currentUser = null;
 let currentEventId = null;
@@ -93,9 +116,21 @@ async function saveRoundsOrderToStorage() {
 
 // Открыть модальное окно редактирования порядка туров
 function openRoundsOrderModal() {
+  // Собираем все туры (включая финал если есть финальные матчи)
   const uniqueRounds = [
     ...new Set(matches.map((m) => m.round).filter((r) => r && r.trim())),
   ];
+
+  // Добавляем "🏆 Финал" если есть финальные матчи
+  const hasFinalMatches = matches.some(m => m.is_final === 1 || m.is_final === true);
+  if (hasFinalMatches && !uniqueRounds.includes("🏆 Финал")) {
+    uniqueRounds.push("🏆 Финал");
+  }
+
+  // Убедимся, что финал есть в roundsOrder если он есть в uniqueRounds
+  if (hasFinalMatches && !roundsOrder.includes("🏆 Финал")) {
+    roundsOrder.push("🏆 Финал");
+  }
 
   // Сортируем туры по сохраненному порядку
   tempRoundsOrder = sortRoundsByOrder(uniqueRounds);
@@ -651,6 +686,17 @@ function displayMatches() {
 
   // Находим первый незавершённый тур
   function getFirstUnfinishedRound() {
+    // Сначала проверяем финальные матчи
+    const hasFinalMatches = matches.some(m => m.is_final === 1 || m.is_final === true);
+    if (hasFinalMatches) {
+      const finalMatches = matches.filter(m => m.is_final === 1 || m.is_final === true);
+      const allFinalFinished = finalMatches.every(m => getMatchStatusByDate(m) === "finished");
+      if (!allFinalFinished) {
+        return "🏆 Финал";
+      }
+    }
+    
+    // Затем проверяем обычные туры
     for (const round of rounds) {
       if (!isRoundFinished(round)) {
         return round;
@@ -660,10 +706,17 @@ function displayMatches() {
     return rounds[0];
   }
 
-  // Показываем фильтры только если есть хотя бы один тур
-  if (rounds.length > 0) {
+  // Показываем фильтры только если есть хотя бы один тур или финальные матчи
+  const hasFinalMatches = matches.some(m => m.is_final === 1 || m.is_final === true);
+  
+  // Если есть финальные матчи и финала нет в roundsOrder, добавляем его
+  if (hasFinalMatches && !roundsOrder.includes("🏆 Финал")) {
+    roundsOrder.push("🏆 Финал");
+  }
+  
+  if (rounds.length > 0 || hasFinalMatches) {
     // Если текущий фильтр "all" или не существует в списке туров, выбираем первый незавершённый тур
-    if (currentRoundFilter === "all" || !rounds.includes(currentRoundFilter)) {
+    if (currentRoundFilter === "all" || (!rounds.includes(currentRoundFilter) && currentRoundFilter !== "🏆 Финал")) {
       currentRoundFilter = getFirstUnfinishedRound();
     }
 
@@ -672,8 +725,25 @@ function displayMatches() {
 
     // Проверяем, является ли текущий пользователь админом
     const isAdmin = currentUser && currentUser.isAdmin;
+    
+    // Проверяем, есть ли финальные матчи
+    const hasFinalMatches = matches.some(m => m.is_final === 1 || m.is_final === true);
+    
+    // Функция для проверки, завершены ли все финальные матчи
+    function isFinalFinished() {
+      const finalMatches = matches.filter(m => m.is_final === 1 || m.is_final === true);
+      if (finalMatches.length === 0) return false;
+      return finalMatches.every(m => getMatchStatusByDate(m) === "finished");
+    }
 
     filterButtons.innerHTML = `
+      ${hasFinalMatches ? `
+        <button class="round-filter-btn ${
+          currentRoundFilter === "🏆 Финал" ? "active" : ""
+        } ${
+          isFinalFinished() ? "finished" : ""
+        }" data-round="🏆 Финал" onclick="filterByRound('🏆 Финал')">🏆 Финал</button>
+      ` : ''}
       ${rounds
         .map(
           (round) => `
@@ -696,13 +766,19 @@ function displayMatches() {
     `;
   } else {
     roundsFilterContainer.style.display = "none";
-    currentRoundFilter = "all"; // Сбрасываем фильтр если туров нет
+    currentRoundFilter = "all"; // Сбрасываем фильтр если туров и финальных матчей нет
   }
 
   // Фильтруем матчи по выбранному туру
   let filteredMatches = matches;
-  if (currentRoundFilter !== "all" && rounds.length > 0) {
-    filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
+  if (currentRoundFilter !== "all") {
+    if (currentRoundFilter === "🏆 Финал") {
+      // Фильтр для финальных матчей
+      filteredMatches = matches.filter((m) => m.is_final === 1 || m.is_final === true);
+    } else if (rounds.length > 0) {
+      // Обычный фильтр по туру
+      filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
+    }
   }
 
   if (filteredMatches.length === 0) {
@@ -842,6 +918,22 @@ function displayMatches() {
                         day: "2-digit",
                       })}${statusBadge}</div>`
                     : ""
+                }
+                ${
+                  match.is_final ? `
+                <div style="background: rgba(58, 123, 213, 0.1); padding: 12px; border-radius: 4px; margin: 10px 0;">
+                  <div style="color: #7ab0e0; font-size: 0.85em; font-weight: 500; margin-bottom: 8px;">🏆 ФИНАЛЬНЫЕ ПАРАМЕТРЫ:</div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em;">
+                    ${match.show_exact_score ? `<div style="color: #4db8a8;">✓ 📊 Точный счет</div>` : ''}
+                    ${match.show_yellow_cards ? `<div style="color: #4db8a8;">✓ 🟨 Желтые</div>` : ''}
+                    ${match.show_red_cards ? `<div style="color: #4db8a8;">✓ 🟥 Красные</div>` : ''}
+                    ${match.show_corners ? `<div style="color: #4db8a8;">✓ ⚽ Угловые</div>` : ''}
+                    ${match.show_penalties_in_game ? `<div style="color: #4db8a8;">✓ ⚽ Пенальти в игре</div>` : ''}
+                    ${match.show_extra_time ? `<div style="color: #4db8a8;">✓ ⏱️ Доп. время</div>` : ''}
+                    ${match.show_penalties_at_end ? `<div style="color: #4db8a8;">✓ ⚽ Пенальти в конце</div>` : ''}
+                  </div>
+                </div>
+                ` : ''
                 }
                 <div class="bet-buttons-three">
                     <button class="bet-btn team1 ${
@@ -1105,7 +1197,7 @@ function displayMyBets(bets) {
                     }</strong></span>
                 </div>
                 <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
-                    ${bet.round ? `Тур: ${bet.round}` : ""}
+                    ${bet.is_final ? "🏆 ФИНАЛ" : (bet.round ? `${bet.round}` : "")}
                 </div>
                 ${deleteBtn}
             </div>
@@ -2264,6 +2356,20 @@ function openCreateMatchModal() {
     return;
   }
 
+  // Очищаем все поля
+  document.getElementById("createMatchForm").reset();
+  document.getElementById("matchIsFinal").checked = false;
+  document.getElementById("finalMatchParamsCreate").style.display = "none";
+  document.getElementById("matchRound").disabled = false;
+  // Очищаем все чекбоксы параметров
+  document.getElementById("showExactScore").checked = false;
+  document.getElementById("showYellowCards").checked = false;
+  document.getElementById("showRedCards").checked = false;
+  document.getElementById("showCorners").checked = false;
+  document.getElementById("showPenaltiesInGame").checked = false;
+  document.getElementById("showExtraTime").checked = false;
+  document.getElementById("showPenaltiesAtEnd").checked = false;
+
   // Открываем модальное окно
   const modal = document.getElementById("createMatchModal");
   if (modal) {
@@ -2278,6 +2384,9 @@ function closeCreateMatchModal() {
 
   // Очищаем форму
   document.getElementById("createMatchForm").reset();
+  document.getElementById("matchIsFinal").checked = false;
+  document.getElementById("finalMatchParamsCreate").style.display = "none";
+  document.getElementById("matchRound").disabled = false;
 }
 
 // Отправить форму создания матча
@@ -2289,6 +2398,15 @@ async function submitCreateMatch(event) {
   const matchDate = document.getElementById("matchDate").value;
   const round = document.getElementById("matchRound").value.trim();
   const copies = parseInt(document.getElementById("matchCopies").value) || 1;
+  
+  const isFinal = document.getElementById("matchIsFinal").checked;
+  const showExactScore = document.getElementById("showExactScore").checked;
+  const showYellowCards = document.getElementById("showYellowCards").checked;
+  const showRedCards = document.getElementById("showRedCards").checked;
+  const showCorners = document.getElementById("showCorners").checked;
+  const showPenaltiesInGame = document.getElementById("showPenaltiesInGame").checked;
+  const showExtraTime = document.getElementById("showExtraTime").checked;
+  const showPenaltiesAtEnd = document.getElementById("showPenaltiesAtEnd").checked;
 
   if (!team1 || !team2) {
     alert("Пожалуйста, введите обе команды");
@@ -2320,6 +2438,14 @@ async function submitCreateMatch(event) {
           team2,
           match_date: matchDate || null,
           round: round || null,
+          is_final: isFinal,
+          show_exact_score: showExactScore,
+          show_yellow_cards: showYellowCards,
+          show_red_cards: showRedCards,
+          show_corners: showCorners,
+          show_penalties_in_game: showPenaltiesInGame,
+          show_extra_time: showExtraTime,
+          show_penalties_at_end: showPenaltiesAtEnd,
         }),
       });
 
@@ -2356,16 +2482,40 @@ function openEditMatchModal(id, team1, team2, date, round) {
     return;
   }
 
+  // Найдем матч в массиве, чтобы получить все параметры
+  const match = matches.find(m => m.id === id);
+  
   document.getElementById("editMatchId").value = id;
   document.getElementById("editMatchTeam1").value = team1;
   document.getElementById("editMatchTeam2").value = team2;
   document.getElementById("editMatchDate").value = date || "";
   document.getElementById("editMatchRound").value = round || "";
+  
+  // Установим параметры финального матча
+  if (match) {
+    document.getElementById("editMatchIsFinal").checked = match.is_final || false;
+    document.getElementById("editShowExactScore").checked = match.show_exact_score || false;
+    document.getElementById("editShowYellowCards").checked = match.show_yellow_cards || false;
+    document.getElementById("editShowRedCards").checked = match.show_red_cards || false;
+    document.getElementById("editShowCorners").checked = match.show_corners || false;
+    document.getElementById("editShowPenaltiesInGame").checked = match.show_penalties_in_game || false;
+    document.getElementById("editShowExtraTime").checked = match.show_extra_time || false;
+    document.getElementById("editShowPenaltiesAtEnd").checked = match.show_penalties_at_end || false;
+    
+    // Обновим состояние тура и параметров в зависимости от is_final
+    toggleFinalMatch('edit');
+  }
+  
   document.getElementById("editMatchModal").style.display = "flex";
 }
 
 function closeEditMatchModal() {
   document.getElementById("editMatchModal").style.display = "none";
+  
+  // Очищаем параметры финального матча
+  document.getElementById("editMatchIsFinal").checked = false;
+  document.getElementById("finalMatchParamsEdit").style.display = "none";
+  document.getElementById("editMatchRound").disabled = false;
 }
 
 async function submitEditMatch(event) {
@@ -2376,6 +2526,15 @@ async function submitEditMatch(event) {
   const team2 = document.getElementById("editMatchTeam2").value.trim();
   const date = document.getElementById("editMatchDate").value;
   const round = document.getElementById("editMatchRound").value.trim();
+  
+  const isFinal = document.getElementById("editMatchIsFinal").checked;
+  const showExactScore = document.getElementById("editShowExactScore").checked;
+  const showYellowCards = document.getElementById("editShowYellowCards").checked;
+  const showRedCards = document.getElementById("editShowRedCards").checked;
+  const showCorners = document.getElementById("editShowCorners").checked;
+  const showPenaltiesInGame = document.getElementById("editShowPenaltiesInGame").checked;
+  const showExtraTime = document.getElementById("editShowExtraTime").checked;
+  const showPenaltiesAtEnd = document.getElementById("editShowPenaltiesAtEnd").checked;
 
   if (!team1 || !team2) {
     alert("❌ Заполните названия обеих команд");
@@ -2392,6 +2551,14 @@ async function submitEditMatch(event) {
         team2_name: team2,
         match_date: date,
         round: round || null,
+        is_final: isFinal,
+        show_exact_score: showExactScore,
+        show_yellow_cards: showYellowCards,
+        show_red_cards: showRedCards,
+        show_corners: showCorners,
+        show_penalties_in_game: showPenaltiesInGame,
+        show_extra_time: showExtraTime,
+        show_penalties_at_end: showPenaltiesAtEnd,
       }),
     });
 
