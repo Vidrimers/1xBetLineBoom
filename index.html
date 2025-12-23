@@ -90,7 +90,12 @@
               <button
                 id="adminBtn"
                 onclick="openCreateEventModal()"
-                style="display: none; padding: 3px 7px; font-size: 0.9em;background: transparent;"
+                style="
+                  display: none;
+                  padding: 3px 7px;
+                  font-size: 0.9em;
+                  background: transparent;
+                "
               >
                 ➕ Турнир
               </button>
@@ -131,7 +136,12 @@
                 <button
                   id="addMatchBtn"
                   onclick="openCreateMatchModal()"
-                  style="display: none; padding: 3px 7px; font-size: 0.9em; background: transparent;"
+                  style="
+                    display: none;
+                    padding: 3px 7px;
+                    font-size: 0.9em;
+                    background: transparent;
+                  "
                 >
                   ➕ Матч
                 </button>
@@ -559,10 +569,28 @@
         <div class="modal-body">
           <form id="importMatchesForm" onsubmit="submitImportMatches(event)">
             <div class="form-group">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  cursor: pointer;
+                "
+              >
+                <input
+                  type="checkbox"
+                  id="importIncludeDate"
+                  checked
+                  style="width: 18px; height: 18px; cursor: pointer"
+                />
+                <span>Включить дату при импорте</span>
+              </label>
+            </div>
+            <div class="form-group">
               <label>Формат данных:</label>
               <textarea
                 id="importMatchesData"
-                placeholder="Вставьте матчи в формате:&#10;Команда1 vs Команда2 | Дата (ДД.ММ.YYYY ЧЧ:MM) | Тур&#10;&#10;Пример:&#10;Manchester vs Liverpool | 20.12.2025 18:00 | Тур 1&#10;Real Madrid vs Barcelona | 21.12.2025 20:00 | Тур 1"
+                placeholder="Вставьте матчи в формате:&#10;Команда1 \ Команда2 | Дата (ДД.ММ.YYYY ЧЧ:MM) | Тур&#10;&#10;Пример:&#10;Manchester \ Liverpool | 20.12.2025 18:00 | Тур 1&#10;Real Madrid \ Barcelona | 21.12.2025 20:00 | Тур 1"
                 rows="10"
                 required
                 style="
@@ -604,11 +632,14 @@
                 <li>
                   Каждый матч на новой строке в формате: <br />
                   <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 5px"
-                    >Команда1 vs Команда2 | Дата | Тур</code
+                    >Команда1 \ Команда2 | Дата | Тур</code
                   >
                 </li>
-                <li>Дата в формате: ДД.ММ.YYYY ЧЧ:MM</li>
-                <li>Если даты нет, оставьте пусто после |</li>
+                <li>Разделитель команд: <strong>\</strong> (обратный слэш)</li>
+                <li>Дата в формате: ДД.ММ.YYYY ЧЧ:MM (если включен toggle)</li>
+                <li>
+                  Если даты нет или toggle отключен, оставьте пусто после |
+                </li>
               </ul>
             </div>
             <div class="form-actions">

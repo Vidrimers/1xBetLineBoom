@@ -2768,6 +2768,7 @@ async function submitImportMatches(event) {
 
   const importData = document.getElementById("importMatchesData").value.trim();
   const eventId = document.getElementById("importEventId").value;
+  const includeDates = document.getElementById("importIncludeDate").checked;
 
   if (!eventId) {
     alert("❌ Выберите турнир");
@@ -2792,24 +2793,32 @@ async function submitImportMatches(event) {
     }
 
     const teamsPart = parts[0];
-    const datePart = parts[1] || "";
-    const roundPart = parts[2] || "";
+    const datePart = includeDates ? parts[1] || "" : "";
+    const roundPart = includeDates ? parts[2] || "" : parts[1] || "";
 
-    // Парсим команды (ищем " vs ")
-    const teamsMatch = teamsPart.match(/^(.+?)\s+vs\s+(.+)$/i);
-    if (!teamsMatch) {
+    // Парсим команды (разделитель: \ с опциональными пробелами)
+    const teams = teamsPart.split(/\s*\\\s*/);
+    if (teams.length < 1 || !teams[0].trim()) {
+      errors.push(`Строка ${index + 1}: Не указана первая команда`);
+      return;
+    }
+
+    const team1 = teams[0].trim();
+    const team2 = teams.length > 1 ? teams[1].trim() : null;
+
+    // Если не указана вторая команда
+    if (!team2) {
       errors.push(
-        `Строка ${index + 1}: Неправильный формат команд (используйте "vs")`
+        `Строка ${
+          index + 1
+        }: Не указана вторая команда (или используйте только одну команду)`
       );
       return;
     }
 
-    const team1 = teamsMatch[1].trim();
-    const team2 = teamsMatch[2].trim();
-
-    // Парсим дату
+    // Парсим дату (если включена опция)
     let matchDate = null;
-    if (datePart) {
+    if (includeDates && datePart) {
       const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/;
       const dateMatch = datePart.match(dateRegex);
 
