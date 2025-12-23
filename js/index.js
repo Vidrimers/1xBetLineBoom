@@ -1273,7 +1273,7 @@ async function placeFinalBet(matchId, parameterType) {
 
   // Получаем значение из input'а в зависимости от типа параметра
   let betValue;
-  
+
   if (parameterType === "exact_score") {
     const team1Score = document.getElementById(`exactScore1_${matchId}`).value;
     const team2Score = document.getElementById(`exactScore2_${matchId}`).value;
@@ -1282,14 +1282,22 @@ async function placeFinalBet(matchId, parameterType) {
       return;
     }
     betValue = `${team1Score}:${team2Score}`;
-  } else if (parameterType === "yellow_cards" || parameterType === "red_cards" || parameterType === "corners") {
+  } else if (
+    parameterType === "yellow_cards" ||
+    parameterType === "red_cards" ||
+    parameterType === "corners"
+  ) {
     const inputField = document.getElementById(`${parameterType}_${matchId}`);
     betValue = inputField.value;
     if (!betValue) {
       alert("Введите значение");
       return;
     }
-  } else if (parameterType === "penalties_in_game" || parameterType === "extra_time" || parameterType === "penalties_at_end") {
+  } else if (
+    parameterType === "penalties_in_game" ||
+    parameterType === "extra_time" ||
+    parameterType === "penalties_at_end"
+  ) {
     const checkbox = document.getElementById(`${parameterType}_${matchId}`);
     betValue = checkbox.checked ? "ДА" : "НЕТ";
   }
@@ -1308,7 +1316,10 @@ async function placeFinalBet(matchId, parameterType) {
     const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
     const allBets = await checkResponse.json();
     const existingBet = allBets.find(
-      (bet) => bet.match_id === matchId && bet.parameter_type === parameterType && bet.is_final_bet === 1
+      (bet) =>
+        bet.match_id === matchId &&
+        bet.parameter_type === parameterType &&
+        bet.is_final_bet === 1
     );
 
     // Если уже есть ставка на этот параметр - удаляем её
