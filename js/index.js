@@ -964,44 +964,173 @@ function displayMatches() {
                   match.is_final
                     ? `
                 <div style="background: rgba(58, 123, 213, 0.1); padding: 12px; border-radius: 4px; margin: 10px 0;">
-                  <div style="color: #7ab0e0; font-size: 0.85em; font-weight: 500; margin-bottom: 8px;">🏆 ФИНАЛЬНЫЕ ПАРАМЕТРЫ:</div>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em;">
-                    ${
-                      match.show_exact_score
-                        ? `<div style="color: #4db8a8;">✓ 📊 Точный счет</div>`
-                        : ""
-                    }
-                    ${
-                      match.show_yellow_cards
-                        ? `<div style="color: #4db8a8;">✓ 🟨 Желтые</div>`
-                        : ""
-                    }
-                    ${
-                      match.show_red_cards
-                        ? `<div style="color: #4db8a8;">✓ 🟥 Красные</div>`
-                        : ""
-                    }
-                    ${
-                      match.show_corners
-                        ? `<div style="color: #4db8a8;">✓ ⚽ Угловые</div>`
-                        : ""
-                    }
-                    ${
-                      match.show_penalties_in_game
-                        ? `<div style="color: #4db8a8;">✓ ⚽ Пенальти в игре</div>`
-                        : ""
-                    }
-                    ${
-                      match.show_extra_time
-                        ? `<div style="color: #4db8a8;">✓ ⏱️ Доп. время</div>`
-                        : ""
-                    }
-                    ${
-                      match.show_penalties_at_end
-                        ? `<div style="color: #4db8a8;">✓ ⚽ Пенальти в конце</div>`
-                        : ""
-                    }
+                  <div style="color: #7ab0e0; font-size: 0.85em; font-weight: 500; margin-bottom: 12px;">🏆 ФИНАЛЬНЫЕ ПАРАМЕТРЫ:</div>
+                  
+                  ${
+                    match.show_exact_score
+                      ? `
+                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">📊 Точный счет</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <input type="number" id="exactScore1_${match.id}" min="0" style="width: 50px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;" placeholder="0">
+                      <span style="color: #7ab0e0;">vs</span>
+                      <input type="number" id="exactScore2_${match.id}" min="0" style="width: 50px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;" placeholder="0">
+                      <button onclick="placeFinalBet(${match.id}, 'exact_score')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                    </div>
                   </div>
+                  `
+                      : ""
+                  }
+                  
+                  ${
+                    match.show_yellow_cards
+                      ? `
+                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">🟨 Желтые карточки</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <input type="number" id="yellowCards_${match.id}" min="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;" placeholder="0">
+                      <button onclick="placeFinalBet(${match.id}, 'yellow_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+                  
+                  ${
+                    match.show_red_cards
+                      ? `
+                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">🟥 Красные карточки</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <input type="number" id="redCards_${match.id}" min="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;" placeholder="0">
+                      <button onclick="placeFinalBet(${match.id}, 'red_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+                  
+                  ${
+                    match.show_corners
+                      ? `
+                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⚽ Угловые</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <input type="number" id="corners_${match.id}" min="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;" placeholder="0">
+                      <button onclick="placeFinalBet(${match.id}, 'corners')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+                  
+                  ${
+                    match.show_penalties_in_game
+                      ? `
+                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⚽ Пенальти в игре</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #4db8a8; font-size: 0.85em; font-weight: 500;">ДА</span>
+                        <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                          <input type="checkbox" id="penaltiesInGame_${match.id}" style="opacity: 0; width: 0; height: 0;">
+                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: all 0.3s; display: flex; align-items: center; justify-content: flex-start; padding: 2px;">
+                            <span style="content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s;"></span>
+                          </span>
+                          <script>
+                            document.getElementById('penaltiesInGame_${match.id}').addEventListener('change', function() {
+                              const span = this.nextElementSibling;
+                              const circle = span.querySelector('span');
+                              if (this.checked) {
+                                span.style.backgroundColor = '#4db8a8';
+                                circle.style.left = 'calc(100% - 21px)';
+                              } else {
+                                span.style.backgroundColor = '#3a5f7a';
+                                circle.style.left = '3px';
+                              }
+                            });
+                          </script>
+                        </label>
+                        <span style="color: #b0b8c8; font-size: 0.85em;">НЕТ</span>
+                      </div>
+                      <button onclick="placeFinalBet(${match.id}, 'penalties_in_game')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+                  
+                  ${
+                    match.show_extra_time
+                      ? `
+                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⏱️ Дополнительное время</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #4db8a8; font-size: 0.85em; font-weight: 500;">ДА</span>
+                        <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                          <input type="checkbox" id="extraTime_${match.id}" style="opacity: 0; width: 0; height: 0;">
+                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: all 0.3s; display: flex; align-items: center; justify-content: flex-start; padding: 2px;">
+                            <span style="content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s;"></span>
+                          </span>
+                          <script>
+                            document.getElementById('extraTime_${match.id}').addEventListener('change', function() {
+                              const span = this.nextElementSibling;
+                              const circle = span.querySelector('span');
+                              if (this.checked) {
+                                span.style.backgroundColor = '#4db8a8';
+                                circle.style.left = 'calc(100% - 21px)';
+                              } else {
+                                span.style.backgroundColor = '#3a5f7a';
+                                circle.style.left = '3px';
+                              }
+                            });
+                          </script>
+                        </label>
+                        <span style="color: #b0b8c8; font-size: 0.85em;">НЕТ</span>
+                      </div>
+                      <button onclick="placeFinalBet(${match.id}, 'extra_time')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+                  
+                  ${
+                    match.show_penalties_at_end
+                      ? `
+                  <div style="margin-bottom: 0; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⚽ Пенальти в конце</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #4db8a8; font-size: 0.85em; font-weight: 500;">ДА</span>
+                        <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                          <input type="checkbox" id="penaltiesAtEnd_${match.id}" style="opacity: 0; width: 0; height: 0;">
+                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: all 0.3s; display: flex; align-items: center; justify-content: flex-start; padding: 2px;">
+                            <span style="content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s;"></span>
+                          </span>
+                          <script>
+                            document.getElementById('penaltiesAtEnd_${match.id}').addEventListener('change', function() {
+                              const span = this.nextElementSibling;
+                              const circle = span.querySelector('span');
+                              if (this.checked) {
+                                span.style.backgroundColor = '#4db8a8';
+                                circle.style.left = 'calc(100% - 21px)';
+                              } else {
+                                span.style.backgroundColor = '#3a5f7a';
+                                circle.style.left = '3px';
+                              }
+                            });
+                          </script>
+                        </label>
+                        <span style="color: #b0b8c8; font-size: 0.85em;">НЕТ</span>
+                      </div>
+                      <button onclick="placeFinalBet(${match.id}, 'penalties_at_end')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
                 </div>
                 `
                     : ""
@@ -1132,6 +1261,92 @@ async function placeBet(matchId, teamName, prediction) {
     }
   } catch (error) {
     console.error("Ошибка при размещении ставки:", error);
+    alert("Ошибка при размещении ставки");
+  }
+}
+
+async function placeFinalBet(matchId, parameterType) {
+  if (!currentUser) {
+    alert("Сначала введите ваше имя");
+    return;
+  }
+
+  // Получаем значение из input'а в зависимости от типа параметра
+  let betValue;
+  
+  if (parameterType === "exact_score") {
+    const team1Score = document.getElementById(`exactScore1_${matchId}`).value;
+    const team2Score = document.getElementById(`exactScore2_${matchId}`).value;
+    if (!team1Score || !team2Score) {
+      alert("Заполните оба счета");
+      return;
+    }
+    betValue = `${team1Score}:${team2Score}`;
+  } else if (parameterType === "yellow_cards" || parameterType === "red_cards" || parameterType === "corners") {
+    const inputField = document.getElementById(`${parameterType}_${matchId}`);
+    betValue = inputField.value;
+    if (!betValue) {
+      alert("Введите значение");
+      return;
+    }
+  } else if (parameterType === "penalties_in_game" || parameterType === "extra_time" || parameterType === "penalties_at_end") {
+    const checkbox = document.getElementById(`${parameterType}_${matchId}`);
+    betValue = checkbox.checked ? "ДА" : "НЕТ";
+  }
+
+  const match = matches.find((m) => m.id === matchId);
+  if (match) {
+    const effectiveStatus = getMatchStatusByDate(match);
+    if (effectiveStatus !== "pending") {
+      alert("Ну, куда ты, малютка, матч уже начался");
+      return;
+    }
+  }
+
+  try {
+    // Проверяем, есть ли уже ставка на этот параметр
+    const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
+    const allBets = await checkResponse.json();
+    const existingBet = allBets.find(
+      (bet) => bet.match_id === matchId && bet.parameter_type === parameterType && bet.is_final_bet === 1
+    );
+
+    // Если уже есть ставка на этот параметр - удаляем её
+    if (existingBet) {
+      await fetch(`/api/bets/${existingBet.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+        }),
+      });
+    }
+
+    // Создаём новую ставку на финальный параметр
+    const response = await fetch("/api/bets", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        match_id: matchId,
+        prediction: betValue,
+        amount: 1,
+        is_final_bet: 1,
+        parameter_type: parameterType,
+      }),
+    });
+
+    if (response.ok) {
+      loadMyBets();
+    } else {
+      alert("Ошибка при создании ставки");
+    }
+  } catch (error) {
+    console.error("Ошибка при размещении ставки на финальный параметр:", error);
     alert("Ошибка при размещении ставки");
   }
 }
