@@ -687,43 +687,57 @@ try {
 }
 
 try {
-  db.prepare("ALTER TABLE matches ADD COLUMN show_exact_score BOOLEAN DEFAULT 0").run();
+  db.prepare(
+    "ALTER TABLE matches ADD COLUMN show_exact_score BOOLEAN DEFAULT 0"
+  ).run();
 } catch (error) {
   // Колонка уже существует
 }
 
 try {
-  db.prepare("ALTER TABLE matches ADD COLUMN show_yellow_cards BOOLEAN DEFAULT 0").run();
+  db.prepare(
+    "ALTER TABLE matches ADD COLUMN show_yellow_cards BOOLEAN DEFAULT 0"
+  ).run();
 } catch (error) {
   // Колонка уже существует
 }
 
 try {
-  db.prepare("ALTER TABLE matches ADD COLUMN show_red_cards BOOLEAN DEFAULT 0").run();
+  db.prepare(
+    "ALTER TABLE matches ADD COLUMN show_red_cards BOOLEAN DEFAULT 0"
+  ).run();
 } catch (error) {
   // Колонка уже существует
 }
 
 try {
-  db.prepare("ALTER TABLE matches ADD COLUMN show_corners BOOLEAN DEFAULT 0").run();
+  db.prepare(
+    "ALTER TABLE matches ADD COLUMN show_corners BOOLEAN DEFAULT 0"
+  ).run();
 } catch (error) {
   // Колонка уже существует
 }
 
 try {
-  db.prepare("ALTER TABLE matches ADD COLUMN show_penalties_in_game BOOLEAN DEFAULT 0").run();
+  db.prepare(
+    "ALTER TABLE matches ADD COLUMN show_penalties_in_game BOOLEAN DEFAULT 0"
+  ).run();
 } catch (error) {
   // Колонка уже существует
 }
 
 try {
-  db.prepare("ALTER TABLE matches ADD COLUMN show_extra_time BOOLEAN DEFAULT 0").run();
+  db.prepare(
+    "ALTER TABLE matches ADD COLUMN show_extra_time BOOLEAN DEFAULT 0"
+  ).run();
 } catch (error) {
   // Колонка уже существует
 }
 
 try {
-  db.prepare("ALTER TABLE matches ADD COLUMN show_penalties_at_end BOOLEAN DEFAULT 0").run();
+  db.prepare(
+    "ALTER TABLE matches ADD COLUMN show_penalties_at_end BOOLEAN DEFAULT 0"
+  ).run();
 } catch (error) {
   // Колонка уже существует
 }
@@ -1815,12 +1829,12 @@ app.post("/api/admin/events", (req, res) => {
 
 // POST /api/admin/matches - Создать новый матч (только для админа)
 app.post("/api/admin/matches", (req, res) => {
-  const { 
-    username, 
-    event_id, 
-    team1, 
-    team2, 
-    match_date, 
+  const {
+    username,
+    event_id,
+    team1,
+    team2,
+    match_date,
     round,
     is_final,
     show_exact_score,
@@ -1829,7 +1843,7 @@ app.post("/api/admin/matches", (req, res) => {
     show_corners,
     show_penalties_in_game,
     show_extra_time,
-    show_penalties_at_end
+    show_penalties_at_end,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -1858,10 +1872,10 @@ app.post("/api/admin/matches", (req, res) => {
     `
       )
       .run(
-        event_id, 
-        team1, 
-        team2, 
-        match_date || null, 
+        event_id,
+        team1,
+        team2,
+        match_date || null,
         round || null,
         is_final ? 1 : 0,
         show_exact_score ? 1 : 0,
@@ -1893,7 +1907,12 @@ app.post("/api/admin/matches", (req, res) => {
   } catch (error) {
     console.error("❌ Ошибка при создании матча:", error.message);
     if (error.message.includes("FOREIGN KEY constraint failed")) {
-      return res.status(400).json({ error: "❌ Ошибка: Указан несуществующий турнир. Сначала выберите турнир из списка." });
+      return res
+        .status(400)
+        .json({
+          error:
+            "❌ Ошибка: Указан несуществующий турнир. Сначала выберите турнир из списка.",
+        });
     }
     res.status(500).json({ error: error.message });
   }
@@ -1970,7 +1989,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
     show_corners,
     show_penalties_in_game,
     show_extra_time,
-    show_penalties_at_end
+    show_penalties_at_end,
   } = req.body;
 
   console.log("🔵 PUT /api/admin/matches/:matchId", {
@@ -2078,13 +2097,41 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
         match_date !== undefined ? match_date : currentMatch.match_date,
         round !== undefined ? round : currentMatch.round,
         is_final !== undefined ? (is_final ? 1 : 0) : currentMatch.is_final,
-        show_exact_score !== undefined ? (show_exact_score ? 1 : 0) : currentMatch.show_exact_score,
-        show_yellow_cards !== undefined ? (show_yellow_cards ? 1 : 0) : currentMatch.show_yellow_cards,
-        show_red_cards !== undefined ? (show_red_cards ? 1 : 0) : currentMatch.show_red_cards,
-        show_corners !== undefined ? (show_corners ? 1 : 0) : currentMatch.show_corners,
-        show_penalties_in_game !== undefined ? (show_penalties_in_game ? 1 : 0) : currentMatch.show_penalties_in_game,
-        show_extra_time !== undefined ? (show_extra_time ? 1 : 0) : currentMatch.show_extra_time,
-        show_penalties_at_end !== undefined ? (show_penalties_at_end ? 1 : 0) : currentMatch.show_penalties_at_end,
+        show_exact_score !== undefined
+          ? show_exact_score
+            ? 1
+            : 0
+          : currentMatch.show_exact_score,
+        show_yellow_cards !== undefined
+          ? show_yellow_cards
+            ? 1
+            : 0
+          : currentMatch.show_yellow_cards,
+        show_red_cards !== undefined
+          ? show_red_cards
+            ? 1
+            : 0
+          : currentMatch.show_red_cards,
+        show_corners !== undefined
+          ? show_corners
+            ? 1
+            : 0
+          : currentMatch.show_corners,
+        show_penalties_in_game !== undefined
+          ? show_penalties_in_game
+            ? 1
+            : 0
+          : currentMatch.show_penalties_in_game,
+        show_extra_time !== undefined
+          ? show_extra_time
+            ? 1
+            : 0
+          : currentMatch.show_extra_time,
+        show_penalties_at_end !== undefined
+          ? show_penalties_at_end
+            ? 1
+            : 0
+          : currentMatch.show_penalties_at_end,
         matchId
       );
 
@@ -2099,7 +2146,12 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
   } catch (error) {
     console.error("❌ Ошибка при обновлении матча:", error.message);
     if (error.message.includes("FOREIGN KEY constraint failed")) {
-      return res.status(400).json({ error: "❌ Ошибка: Указан несуществующий турнир. Выберите существующий турнир." });
+      return res
+        .status(400)
+        .json({
+          error:
+            "❌ Ошибка: Указан несуществующий турнир. Выберите существующий турнир.",
+        });
     }
     res.status(500).json({ error: error.message });
   }

@@ -542,10 +542,10 @@
                 >Создать несколько одинаковых матчей</span
               >
             </div>
-            
+
             <!-- Чекбокс финального матча -->
             <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px">
                 <input
                   type="checkbox"
                   id="matchIsFinal"
@@ -554,40 +554,97 @@
                 />
                 <span>🏆 Финальный матч</span>
               </label>
-              <span style="color: #b0b8c8; font-size: 0.85em; margin-left: 26px; display: block; margin-top: 4px;">Отключить ввод тура и включить доп параметры</span>
+              <span
+                style="
+                  color: #b0b8c8;
+                  font-size: 0.85em;
+                  margin-left: 26px;
+                  display: block;
+                  margin-top: 4px;
+                "
+                >Отключить ввод тура и включить доп параметры</span
+              >
             </div>
-            
+
             <!-- Доп параметры для финального матча -->
-            <div id="finalMatchParamsCreate" style="display: none; background: rgba(58, 123, 213, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 10px;">
-              <p style="color: #7ab0e0; font-size: 0.9em; margin: 0 0 10px 0; font-weight: 500;">Включить доп параметры:</p>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="showExactScore" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">📊 Точный счет</span>
+            <div
+              id="finalMatchParamsCreate"
+              style="
+                display: none;
+                background: rgba(58, 123, 213, 0.1);
+                padding: 12px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+              "
+            >
+              <p
+                style="
+                  color: #7ab0e0;
+                  font-size: 0.9em;
+                  margin: 0 0 10px 0;
+                  font-weight: 500;
+                "
+              >
+                Включить доп параметры:
+              </p>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+              >
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="showExactScore"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">📊 Точный счет</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="showYellowCards" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">🟨 Желтые</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="showYellowCards"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">🟨 Желтые</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="showRedCards" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">🟥 Красные</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="showRedCards"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">🟥 Красные</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="showCorners" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⚽ Угловые</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="showCorners"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Угловые</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="showPenaltiesInGame" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⚽ Пенальти в игре</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="showPenaltiesInGame"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Пенальти в игре</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="showExtraTime" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⏱️ Доп. время</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="showExtraTime"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⏱️ Доп. время</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="showPenaltiesAtEnd" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⚽ Пенальти в конце</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="showPenaltiesAtEnd"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Пенальти в конце</span>
                 </label>
               </div>
             </div>
@@ -761,10 +818,10 @@
                 style="width: 100%; padding: 8px; font-size: 0.95em"
               />
             </div>
-            
+
             <!-- Чекбокс финального матча -->
             <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px">
                 <input
                   type="checkbox"
                   id="editMatchIsFinal"
@@ -773,40 +830,97 @@
                 />
                 <span>🏆 Финальный матч</span>
               </label>
-              <span style="color: #b0b8c8; font-size: 0.85em; margin-left: 26px; display: block; margin-top: 4px;">Отключить ввод тура и включить доп параметры</span>
+              <span
+                style="
+                  color: #b0b8c8;
+                  font-size: 0.85em;
+                  margin-left: 26px;
+                  display: block;
+                  margin-top: 4px;
+                "
+                >Отключить ввод тура и включить доп параметры</span
+              >
             </div>
-            
+
             <!-- Доп параметры для финального матча -->
-            <div id="finalMatchParamsEdit" style="display: none; background: rgba(58, 123, 213, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 10px;">
-              <p style="color: #7ab0e0; font-size: 0.9em; margin: 0 0 10px 0; font-weight: 500;">Включить доп параметры:</p>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="editShowExactScore" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">📊 Точный счет</span>
+            <div
+              id="finalMatchParamsEdit"
+              style="
+                display: none;
+                background: rgba(58, 123, 213, 0.1);
+                padding: 12px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+              "
+            >
+              <p
+                style="
+                  color: #7ab0e0;
+                  font-size: 0.9em;
+                  margin: 0 0 10px 0;
+                  font-weight: 500;
+                "
+              >
+                Включить доп параметры:
+              </p>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+              >
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowExactScore"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">📊 Точный счет</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="editShowYellowCards" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">🟨 Желтые</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowYellowCards"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">🟨 Желтые</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="editShowRedCards" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">🟥 Красные</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowRedCards"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">🟥 Красные</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="editShowCorners" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⚽ Угловые</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowCorners"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Угловые</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="editShowPenaltiesInGame" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⚽ Пенальти в игре</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowPenaltiesInGame"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Пенальти в игре</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="editShowExtraTime" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⏱️ Доп. время</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowExtraTime"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⏱️ Доп. время</span>
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px;">
-                  <input type="checkbox" id="editShowPenaltiesAtEnd" style="cursor: pointer; width: auto" />
-                  <span style="font-size: 0.9em;">⚽ Пенальти в конце</span>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowPenaltiesAtEnd"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Пенальти в конце</span>
                 </label>
               </div>
             </div>
