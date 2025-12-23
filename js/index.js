@@ -1222,12 +1222,16 @@ async function placeBet(matchId, teamName, prediction) {
   const betAmount = 1; // Фиксированная сумма ставки
 
   try {
-    // Сначала проверяем, есть ли уже ставка этого пользователя на этот матч
+    // Сначала проверяем, есть ли уже ОБЫЧНАЯ ставка этого пользователя на этот матч
     const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
     const allBets = await checkResponse.json();
-    const existingBet = allBets.find((bet) => bet.match_id === matchId);
+    const existingBet = allBets.find(
+      (bet) =>
+        bet.match_id === matchId &&
+        (!bet.is_final_bet || bet.is_final_bet === 0)
+    );
 
-    // Если уже есть ставка на этот матч - удаляем её
+    // Если уже есть обычная ставка на этот матч - удаляем её
     if (existingBet) {
       await fetch(`/api/bets/${existingBet.id}`, {
         method: "DELETE",
@@ -1349,7 +1353,13 @@ async function placeFinalBet(matchId, parameterType) {
     });
 
     if (response.ok) {
-      loadMyBets();
+      // Обновляем только список ставок, без перерисовки матчей
+      const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
+      const bets = await checkResponse.json();
+      userBets = bets;
+      console.log("💰 Мои ставки:", bets);
+      displayMyBets(bets);
+      // Не вызываем displayMatches() чтобы не потерять состояние кнопок
     } else {
       alert("Ошибка при создании ставки");
     }
