@@ -728,6 +728,10 @@ function displayMatches() {
   // Если есть финальные матчи и финала нет в roundsOrder, добавляем его
   if (hasFinalMatches && !roundsOrder.includes("🏆 Финал")) {
     roundsOrder.push("🏆 Финал");
+    // Сохраняем новый порядок в БД
+    saveRoundsOrderToStorage().catch((e) =>
+      console.error("Ошибка сохранения финала в порядок:", e)
+    );
   }
 
   if (rounds.length > 0 || hasFinalMatches) {
@@ -743,35 +747,10 @@ function displayMatches() {
     roundsFilterContainer.style.display = "block";
     const filterButtons = roundsFilterContainer.querySelector("div");
 
-    // Проверяем, является ли текущий пользователь админом
+    // Проверяем, является ли текущий пользователем админом
     const isAdmin = currentUser && currentUser.isAdmin;
 
-    // Проверяем, есть ли финальные матчи
-    const hasFinalMatches = matches.some(
-      (m) => m.is_final === 1 || m.is_final === true
-    );
-
-    // Функция для проверки, завершены ли все финальные матчи
-    function isFinalFinished() {
-      const finalMatches = matches.filter(
-        (m) => m.is_final === 1 || m.is_final === true
-      );
-      if (finalMatches.length === 0) return false;
-      return finalMatches.every((m) => getMatchStatusByDate(m) === "finished");
-    }
-
     filterButtons.innerHTML = `
-      ${
-        hasFinalMatches
-          ? `
-        <button class="round-filter-btn ${
-          currentRoundFilter === "🏆 Финал" ? "active" : ""
-        } ${
-              isFinalFinished() ? "finished" : ""
-            }" data-round="🏆 Финал" onclick="filterByRound('🏆 Финал')">🏆 Финал</button>
-      `
-          : ""
-      }
       ${rounds
         .map(
           (round) => `
@@ -800,15 +779,8 @@ function displayMatches() {
   // Фильтруем матчи по выбранному туру
   let filteredMatches = matches;
   if (currentRoundFilter !== "all") {
-    if (currentRoundFilter === "🏆 Финал") {
-      // Фильтр для финальных матчей
-      filteredMatches = matches.filter(
-        (m) => m.is_final === 1 || m.is_final === true
-      );
-    } else if (rounds.length > 0) {
-      // Обычный фильтр по туру
-      filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
-    }
+    // Обычный фильтр по туру (включая "🏆 Финал")
+    filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
   }
 
   if (filteredMatches.length === 0) {
@@ -2462,10 +2434,16 @@ async function submitCreateMatch(event) {
   const team1 = document.getElementById("matchTeam1").value.trim();
   const team2 = document.getElementById("matchTeam2").value.trim();
   const matchDate = document.getElementById("matchDate").value;
-  const round = document.getElementById("matchRound").value.trim();
+  let round = document.getElementById("matchRound").value.trim();
   const copies = parseInt(document.getElementById("matchCopies").value) || 1;
 
   const isFinal = document.getElementById("matchIsFinal").checked;
+
+  // Если это финальный матч, устанавливаем round = "🏆 Финал"
+  if (isFinal) {
+    round = "🏆 Финал";
+  }
+
   const showExactScore = document.getElementById("showExactScore").checked;
   const showYellowCards = document.getElementById("showYellowCards").checked;
   const showRedCards = document.getElementById("showRedCards").checked;
@@ -2602,9 +2580,14 @@ async function submitEditMatch(event) {
   const team1 = document.getElementById("editMatchTeam1").value.trim();
   const team2 = document.getElementById("editMatchTeam2").value.trim();
   const date = document.getElementById("editMatchDate").value;
-  const round = document.getElementById("editMatchRound").value.trim();
+  let round = document.getElementById("editMatchRound").value.trim();
 
   const isFinal = document.getElementById("editMatchIsFinal").checked;
+
+  // Если это финальный матч, устанавливаем round = "🏆 Финал"
+  if (isFinal) {
+    round = "🏆 Финал";
+  }
   const showExactScore = document.getElementById("editShowExactScore").checked;
   const showYellowCards = document.getElementById(
     "editShowYellowCards"
