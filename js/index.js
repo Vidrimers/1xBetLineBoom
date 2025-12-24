@@ -4284,9 +4284,19 @@ async function loadSettings() {
     const data = await response.json();
     const telegramUsername = data.telegram_username || "";
 
-    document.getElementById("settingsContainer").innerHTML = `
+    // Загружаем настройку уведомлений
+    const notifResponse = await fetch(
+      `/api/user/${currentUser.id}/notifications`
+    );
+    const notifData = await notifResponse.json();
+    const telegramNotificationsEnabled =
+      notifData.telegram_notifications_enabled ?? true;
+
+    // Вставляем Telegram username настройку ПЕРЕД чекбоксом уведомлений
+    const settingsContainer = document.getElementById("settingsContainer");
+    const telegramHTML = `
       <!-- Telegram -->
-      <div class="setting-item">
+      <div class="setting-item" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
         <div class="setting-label">
           <span>📱 Telegram</span>
           ${
@@ -4308,10 +4318,19 @@ async function loadSettings() {
         <p class="setting-hint-small">Свой ТГ можно узнать в <a href="https://t.me/OnexBetLineBoomBot" target="_blank">боте</a> → Профиль или /profile</p>
       </div>
     `;
+
+    // Вставляем Telegram настройку в начало контейнера
+    settingsContainer.insertAdjacentHTML("afterbegin", telegramHTML);
+
+    // Инициализируем чекбокс уведомлений (который уже в HTML)
+    const checkbox = document.getElementById("telegramNotificationsCheckbox");
+    if (checkbox) {
+      checkbox.checked = telegramNotificationsEnabled;
+    }
   } catch (error) {
     console.error("Ошибка при загрузке настроек:", error);
-    document.getElementById("settingsContainer").innerHTML =
-      '<div class="empty-message">Ошибка при загрузке настроек</div>';
+    // Не очищаем контейнер, чтобы статический HTML остался видимым
+    console.warn("Используем статические настройки из HTML");
   }
 }
 
@@ -4367,6 +4386,50 @@ async function deleteTelegramUsername() {
   } catch (error) {
     console.error("Ошибка при удалении:", error);
     alert("Ошибка при удалении");
+  }
+}
+
+// Сохранить настройку Telegram уведомлений
+async function saveTelegramNotificationSettings() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  try {
+    const checkbox = document.getElementById("telegramNotificationsCheckbox");
+    const isEnabled = checkbox.checked;
+    const btn = document.getElementById("saveTgNotificationsBtn");
+
+    // Добавляем визуальную обратную связь
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch(`/api/user/${currentUser.id}/notifications`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegram_notifications_enabled: isEnabled }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Показываем успешное сохранение
+      btn.textContent = "✅ Сохранено!";
+      setTimeout(() => {
+        btn.textContent = "Сохранить";
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      alert("Ошибка: " + result.error);
+      btn.textContent = "Сохранить";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении уведомлений:", error);
+    alert("Ошибка при сохранении");
+    btn.textContent = "Сохранить";
+    btn.disabled = false;
   }
 }
 

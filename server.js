@@ -14,6 +14,7 @@ import {
   getNotificationQueue,
   flushQueueNow,
   writeNotificationQueue,
+  sendUserMessage,
 } from "./OnexBetLineBoombot.js";
 
 dotenv.config();
@@ -731,6 +732,18 @@ try {
 try {
   db.exec(`ALTER TABLE users ADD COLUMN avatar LONGTEXT`);
   console.log("✅ Колонка avatar добавлена в таблицу users");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем telegram_notifications_enabled если её нет
+try {
+  db.exec(
+    `ALTER TABLE users ADD COLUMN telegram_notifications_enabled INTEGER DEFAULT 1`
+  );
+  console.log(
+    "✅ Колонка telegram_notifications_enabled добавлена в таблицу users"
+  );
 } catch (e) {
   // Колонка уже существует, игнорируем
 }
@@ -1817,7 +1830,9 @@ app.post("/api/bets", async (req, res) => {
 
     // Получаем информацию о пользователе и матче
     const user = db
-      .prepare("SELECT username FROM users WHERE id = ?")
+      .prepare(
+        "SELECT username, telegram_username, telegram_notifications_enabled FROM users WHERE id = ?"
+      )
       .get(user_id);
 
     // Проверяем матч и его дату
@@ -1911,6 +1926,48 @@ app.post("/api/bets", async (req, res) => {
       round: match.round,
     });
 
+    // Отправляем личное сообщение пользователю в Telegram если он привязал аккаунт и не отключил уведомления
+    if (user?.telegram_username && user?.telegram_notifications_enabled !== 0) {
+      try {
+        const cleanUsername = user.telegram_username.toLowerCase();
+        const tgUser = db
+          .prepare(
+            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+          )
+          .get(cleanUsername);
+
+        if (tgUser?.chat_id) {
+          let predictionText = prediction === "draw" ? "Ничья" : prediction;
+
+          // Если прогноз содержит название команды, используем его как есть
+          // Если это "team1" или "team2", преобразуем в названия команд
+          if (prediction === "team1" || prediction === match.team1_name) {
+            predictionText = match.team1_name;
+          } else if (
+            prediction === "team2" ||
+            prediction === match.team2_name
+          ) {
+            predictionText = match.team2_name;
+          }
+
+          const betMessage =
+            `💰 <b>НОВАЯ СТАВКА!</b>\n\n` +
+            `⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>\n` +
+            `🎯 Прогноз: <b>${predictionText}</b>\n` +
+            `🏆 Турнир: ${match.event_name || "Неизвестный"}\n` +
+            `⏰ ${new Date().toLocaleString("ru-RU")}`;
+
+          await sendUserMessage(tgUser.chat_id, betMessage);
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления пользователю в Telegram:",
+          err.message
+        );
+        // Не прерываем процесс создания ставки если ошибка в отправке уведомления
+      }
+    }
+
     res.json({
       id: result.lastInsertRowid,
       user_id,
@@ -1947,7 +2004,7 @@ app.get("/api/user/:userId/bets", (req, res) => {
 });
 
 // DELETE /api/bets/:betId - Удалить ставку пользователя
-app.delete("/api/bets/:betId", (req, res) => {
+app.delete("/api/bets/:betId", async (req, res) => {
   try {
     const { betId } = req.params;
     const { user_id, username } = req.body;
@@ -1969,7 +2026,9 @@ app.delete("/api/bets/:betId", (req, res) => {
       )
       .get(bet.match_id);
     const betUser = db
-      .prepare("SELECT username FROM users WHERE id = ?")
+      .prepare(
+        "SELECT username, telegram_username, telegram_notifications_enabled FROM users WHERE id = ?"
+      )
       .get(bet.user_id);
 
     // Если не админ - проверяем принадлежность ставки
@@ -2024,6 +2083,57 @@ app.delete("/api/bets/:betId", (req, res) => {
       is_final_match: match?.is_final,
       round: match?.round,
     });
+
+    // Отправляем личное сообщение пользователю в Telegram об удалении ставки если он не отключил уведомления
+    if (
+      betUser?.telegram_username &&
+      betUser?.telegram_notifications_enabled !== 0
+    ) {
+      try {
+        const cleanUsername = betUser.telegram_username.toLowerCase();
+        const tgUser = db
+          .prepare(
+            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+          )
+          .get(cleanUsername);
+
+        if (tgUser?.chat_id) {
+          let predictionText =
+            bet.prediction === "draw" ? "Ничья" : bet.prediction;
+
+          // Если прогноз содержит название команды, используем его как есть
+          // Если это "team1" или "team2", преобразуем в названия команд
+          if (
+            bet.prediction === "team1" ||
+            bet.prediction === match?.team1_name
+          ) {
+            predictionText = match?.team1_name || "?";
+          } else if (
+            bet.prediction === "team2" ||
+            bet.prediction === match?.team2_name
+          ) {
+            predictionText = match?.team2_name || "?";
+          }
+
+          const deleteMessage =
+            `❌ <b>СТАВКА УДАЛЕНА!</b>\n\n` +
+            `⚽ <b>${match?.team1_name || "?"}</b> vs <b>${
+              match?.team2_name || "?"
+            }</b>\n` +
+            `🎯 Прогноз: <b>${predictionText}</b>\n` +
+            `🏆 Турнир: ${match?.event_name || "Неизвестный"}\n\n` +
+            `⏰ ${new Date().toLocaleString("ru-RU")}`;
+
+          await sendUserMessage(tgUser.chat_id, deleteMessage);
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления об удалении ставки в Telegram:",
+          err.message
+        );
+        // Не прерываем процесс удаления ставки если ошибка в отправке уведомления
+      }
+    }
 
     res.json({ message: "Ставка удалена" });
   } catch (error) {
@@ -2793,6 +2903,143 @@ app.delete("/api/user/:userId/telegram", async (req, res) => {
     res.json({
       success: true,
       message: "Telegram username удалён",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/user/:userId/notifications - Управление настройками уведомлений
+app.put("/api/user/:userId/notifications", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { telegram_notifications_enabled } = req.body;
+
+    // Проверяем существование пользователя
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Сохраняем настройку (1 или 0)
+    const notificationEnabled = telegram_notifications_enabled ? 1 : 0;
+    db.prepare(
+      "UPDATE users SET telegram_notifications_enabled = ? WHERE id = ?"
+    ).run(notificationEnabled, userId);
+
+    // Отправляем сообщение в Telegram при изменении настройки уведомлений
+    if (user.telegram_username) {
+      try {
+        const cleanUsername = user.telegram_username.toLowerCase();
+        const tgUser = db
+          .prepare(
+            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+          )
+          .get(cleanUsername);
+
+        if (tgUser?.chat_id) {
+          let notificationMessage;
+
+          if (notificationEnabled === 0) {
+            // Отключение уведомлений
+            notificationMessage =
+              `🔕 <b>УВЕДОМЛЕНИЯ ОТКЛЮЧЕНЫ</b>\n\n` +
+              `Личные уведомления о ставках и результатах отключены.\n\n` +
+              `Вы можете включить их снова в настройках профиля.\n\n` +
+              `⏰ ${new Date().toLocaleString("ru-RU")}`;
+          } else {
+            // Включение уведомлений
+            notificationMessage =
+              `🔔 <b>УВЕДОМЛЕНИЯ ВКЛЮЧЕНЫ</b>\n\n` +
+              `Личные уведомления о ставках и результатах включены!\n\n` +
+              `Теперь ты будешь получать сообщения при создании и удалении ставок.\n\n` +
+              `⏰ ${new Date().toLocaleString("ru-RU")}`;
+          }
+
+          await sendUserMessage(tgUser.chat_id, notificationMessage);
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки сообщения об изменении уведомлений:",
+          err.message
+        );
+        // Не прерываем процесс сохранения если ошибка в отправке
+      }
+    }
+
+    // Записываем в лог изменение настройки
+    writeBetLog("settings", {
+      username: user.username,
+      setting: "Telegram Notifications",
+      oldValue: null,
+      newValue: notificationEnabled ? "Включены" : "Отключены",
+    });
+
+    // Отправляем уведомление админу об изменении настроек уведомлений
+    try {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const time = new Date().toLocaleString("ru-RU");
+        const action = notificationEnabled ? "ВКЛЮЧИЛ" : "ОТКЛЮЧИЛ";
+        const emoji = notificationEnabled ? "🔔" : "🔕";
+
+        const adminMessage = `${emoji} ИЗМЕНЕНИЕ УВЕДОМЛЕНИЙ
+
+👤 Пользователь: ${user.username}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Действие: ${action} уведомления
+🕐 Время: ${time}`;
+
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: adminMessage,
+            }),
+          }
+        );
+      }
+    } catch (err) {
+      console.error(
+        "⚠️ Ошибка отправки уведомления админу об уведомлениях:",
+        err.message
+      );
+      // Не прерываем процесс если ошибка в отправке админу
+    }
+
+    res.json({
+      success: true,
+      message: notificationEnabled
+        ? "Уведомления включены"
+        : "Уведомления отключены",
+      telegram_notifications_enabled: notificationEnabled,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/user/:userId/notifications - Получить настройку уведомлений
+app.get("/api/user/:userId/notifications", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = db
+      .prepare("SELECT telegram_notifications_enabled FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({
+      telegram_notifications_enabled: user.telegram_notifications_enabled === 1,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
