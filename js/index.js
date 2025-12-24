@@ -2200,7 +2200,7 @@ async function loadTournamentParticipants(eventId, eventName) {
     document.getElementById("tournamentSection").style.display = "block";
     document.getElementById("tournamentTitle").innerText = `📋 ${eventName}`;
 
-    displayTournamentParticipants(participants, isLocked);
+    displayTournamentParticipants(participants, isLocked, eventId);
   } catch (error) {
     console.error("Ошибка при загрузке участников турнира:", error);
     document.getElementById("tournamentParticipantsList").innerHTML =
@@ -2208,7 +2208,11 @@ async function loadTournamentParticipants(eventId, eventName) {
   }
 }
 
-function displayTournamentParticipants(participants, isLocked = false) {
+function displayTournamentParticipants(
+  participants,
+  isLocked = false,
+  eventId = null
+) {
   const tournamentParticipantsList = document.getElementById(
     "tournamentParticipantsList"
   );
@@ -2245,7 +2249,7 @@ function displayTournamentParticipants(participants, isLocked = false) {
       return `
     <div class="participant-item ${winnerClass}" onclick="showTournamentParticipantBets(${
         participant.id
-      }, '${participant.username.replace(/'/g, "\\'")}', ${currentEventId})">
+      }, '${participant.username.replace(/'/g, "\\'")}', ${eventId})">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
       <img src="${participant.avatar || "img/default-avatar.jpg"}" alt="${
         participant.username
