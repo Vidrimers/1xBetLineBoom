@@ -1376,12 +1376,14 @@ button.tab-btn:hover {
 /* ===== НАСТРОЙКИ ===== */
 .settings-container {
   display: flex;
-  /* flex-direction: column; */
+  flex-wrap: wrap;
   gap: 10px;
-  max-width: 350px;
+  max-width: 100%;
+  justify-content: space-around;
 }
 
-.setting-item {
+.setting-item,
+.settings-item {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1389,6 +1391,9 @@ button.tab-btn:hover {
   background: rgba(44, 50, 63, 0.7);
   border-radius: 10px;
   border-left: 3px solid #3a7bd5;
+  flex: 1 1 calc(50% - 5px);
+  min-width: 150px;
+  max-width: 350px;
 }
 
 .setting-label {
@@ -1488,7 +1493,12 @@ button.tab-btn:hover {
 
 @media (max-width: 500px) {
   .settings-container {
-    max-width: 100%;
+    flex-direction: column;
+  }
+
+  .setting-item {
+    min-width: 100%;
+    flex: 1 1 100%;
   }
 }
 
