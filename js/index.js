@@ -2192,6 +2192,9 @@ async function loadTournamentParticipants(eventId, eventName) {
     );
     const participants = await response.json();
 
+    // Сохраняем eventId для дальнейшего использования
+    window.currentEventId = eventId;
+
     // Скрываем section с сеткой турниров и показываем участников турнира
     document.getElementById("tournamentsSection").style.display = "none";
     document.getElementById("tournamentSection").style.display = "block";
@@ -2240,7 +2243,9 @@ function displayTournamentParticipants(participants, isLocked = false) {
       const winnerClass = isLocked && place === 1 ? "winner" : "";
 
       return `
-    <div class="participant-item ${winnerClass}">
+    <div class="participant-item ${winnerClass}" onclick="showTournamentParticipantBets(${
+        participant.id
+      }, '${participant.username.replace(/'/g, "\\'")}', ${currentEventId})">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
       <img src="${participant.avatar || "img/default-avatar.jpg"}" alt="${
         participant.username
@@ -2264,6 +2269,148 @@ function displayTournamentParticipants(participants, isLocked = false) {
 function backToTournaments() {
   document.getElementById("tournamentsSection").style.display = "block";
   document.getElementById("tournamentSection").style.display = "none";
+}
+
+// Показать ставки участника турнира
+async function showTournamentParticipantBets(userId, username, eventId) {
+  try {
+    console.log("Загружаем ставки для юзера:", userId, "в турнире:", eventId);
+
+    // Получаем ставки участника в турнире
+    const response = await fetch(
+      `/api/event/${eventId}/participant/${userId}/bets`
+    );
+
+    console.log("Статус ответа:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Ошибка ответа:", errorText);
+      alert("Не удалось загрузить ставки");
+      return;
+    }
+
+    const betsData = await response.json();
+    const { rounds, bets } = betsData;
+
+    // Устанавливаем заголовок
+    document.getElementById(
+      "tournamentParticipantBetsTitle"
+    ).textContent = `📊 Ставки ${username} в турнире`;
+
+    // Создаём кнопки туров
+    const roundsFilter = document.getElementById("tournamentRoundsFilter");
+    roundsFilter.innerHTML = rounds
+      .map(
+        (round) =>
+          `<button class="round-filter-btn active" data-round="${round}" 
+                onclick="filterTournamentParticipantBets('${round.replace(
+                  /'/g,
+                  "\\'"
+                )}')">
+          ${round}
+        </button>`
+      )
+      .join("");
+
+    // Сохраняем данные для фильтрации
+    window.currentTournamentBets = bets;
+    window.currentTournamentRounds = rounds;
+
+    // Отображаем все ставки
+    displayTournamentParticipantBets(bets);
+
+    // Открываем модальное окно
+    document.getElementById("tournamentParticipantBetsModal").style.display =
+      "flex";
+  } catch (error) {
+    console.error("Ошибка при загрузке ставок турнира:", error);
+    alert("Ошибка при загрузке ставок");
+  }
+}
+
+// Отображение ставок участника турнира
+function displayTournamentParticipantBets(bets) {
+  const betsList = document.getElementById("tournamentParticipantBetsList");
+
+  if (!bets || bets.length === 0) {
+    betsList.innerHTML =
+      '<div class="empty-message">Нет ставок в этом туре</div>';
+    return;
+  }
+
+  betsList.innerHTML = bets
+    .map(
+      (bet) => `
+    <div style="background: #1a1a2e; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid ${
+      bet.result === "won"
+        ? "#4caf50"
+        : bet.result === "lost"
+        ? "#f44336"
+        : "#ff9800"
+    };">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <strong style="color: #7ab0e0;">${bet.team1} vs ${bet.team2}</strong>
+        <span style="background: ${
+          bet.result === "won"
+            ? "#4caf50"
+            : bet.result === "lost"
+            ? "#f44336"
+            : "#ff9800"
+        }; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
+          ${
+            bet.result === "won"
+              ? "✅ Угадано"
+              : bet.result === "lost"
+              ? "❌ Неугадано"
+              : "⏳ В ожидании"
+          }
+        </span>
+      </div>
+      <div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+        Ставка: <strong>${bet.prediction}</strong>
+        ${
+          bet.result !== "pending"
+            ? ` | Результат: <strong>${bet.actual_result}</strong>`
+            : ""
+        }
+      </div>
+      ${
+        bet.round
+          ? `<div style="color: #666; font-size: 0.85em;">Тур: ${bet.round}</div>`
+          : ""
+      }
+    </div>
+  `
+    )
+    .join("");
+}
+
+// Фильтр ставок по туру
+function filterTournamentParticipantBets(round) {
+  const allBets = window.currentTournamentBets || [];
+  const filteredBets =
+    round === "all" ? allBets : allBets.filter((bet) => bet.round === round);
+
+  // Обновляем активную кнопку
+  document
+    .querySelectorAll("#tournamentRoundsFilter .round-filter-btn")
+    .forEach((btn) => {
+      btn.classList.remove("active");
+      if (btn.dataset.round === round) {
+        btn.classList.add("active");
+      }
+    });
+
+  displayTournamentParticipantBets(filteredBets);
+}
+
+// Закрыть модальное окно ставок турнира
+function closeTournamentParticipantBetsModal() {
+  document.getElementById("tournamentParticipantBetsModal").style.display =
+    "none";
+  window.currentTournamentBets = null;
+  window.currentTournamentRounds = null;
 }
 
 // ===== ПРОФИЛЬ =====

@@ -1100,6 +1100,73 @@ app.get("/api/events/:eventId/matches", (req, res) => {
   }
 });
 
+// Получить ставки участника в турнире
+app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
+  try {
+    const eventId = parseInt(req.params.eventId);
+    const userId = parseInt(req.params.userId);
+
+    // Получаем все туры для этого события (из таблицы matches)
+    const rounds = db
+      .prepare(
+        `
+        SELECT DISTINCT m.round
+        FROM matches m
+        WHERE m.event_id = ? AND m.round IS NOT NULL
+        ORDER BY m.round ASC
+      `
+      )
+      .all(eventId)
+      .map((r) => r.round)
+      .filter((r) => r);
+
+    // Получаем ставки участника в матчах этого события
+    const bets = db
+      .prepare(
+        `
+        SELECT 
+          b.id,
+          b.prediction,
+          m.team1_name as team1,
+          m.team2_name as team2,
+          m.winner,
+          m.round as round,
+          CASE 
+            WHEN m.winner IS NULL THEN 'pending'
+            WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                 (b.prediction = 'team2' AND m.winner = 'team2') OR
+                 (b.prediction = 'draw' AND m.winner = 'draw') OR
+                 (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                 (b.prediction = m.team2_name AND m.winner = 'team2') THEN 'won'
+            ELSE 'lost'
+          END as result,
+          CASE 
+            WHEN m.winner = 'team1' THEN m.team1_name
+            WHEN m.winner = 'team2' THEN m.team2_name
+            WHEN m.winner = 'draw' THEN 'Ничья'
+            ELSE NULL
+          END as actual_result
+        FROM bets b
+        JOIN matches m ON b.match_id = m.id
+        WHERE m.event_id = ? AND b.user_id = ?
+        ORDER BY m.id ASC
+      `
+      )
+      .all(eventId, userId);
+
+    res.json({
+      rounds: rounds.length > 0 ? rounds : [],
+      bets: bets,
+    });
+  } catch (error) {
+    console.error(
+      "Ошибка в /api/event/:eventId/participant/:userId/bets:",
+      error
+    );
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 5. Получить или создать пользователя
 app.post("/api/user", (req, res) => {
   try {
