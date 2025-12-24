@@ -587,6 +587,112 @@ ${mentions}
   }
 }
 
+// Функция для проверки и отправки уведомлений о начале матча
+async function checkAndNotifyMatchStart() {
+  try {
+    const now = new Date();
+    // Проверяем матчи, которые начались в течение последней минуты
+    const oneMinuteAgo = new Date(now.getTime() - 1 * 60 * 1000);
+
+    // Получаем матчи, у которых была ставка в очереди отправки
+    const recentlyStartedMatches = db
+      .prepare(
+        `
+      SELECT DISTINCT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.match_date > ? AND m.match_date <= ? AND m.winner IS NULL
+      ORDER BY m.match_date ASC
+    `
+      )
+      .all(oneMinuteAgo.toISOString(), now.toISOString());
+
+    if (recentlyStartedMatches.length === 0) {
+      return;
+    }
+
+    // Группируем матчи по времени начала
+    const matchesByTime = {};
+    for (const match of recentlyStartedMatches) {
+      // Проверяем, было ли уже отправлено уведомление о начале этого матча
+      const existingNotification = db
+        .prepare(
+          "SELECT id FROM sent_reminders WHERE match_id = ? AND sent_at > datetime('now', '-5 minutes')"
+        )
+        .get(match.id);
+
+      // Пропускаем, если уведомление уже было отправлено недавно
+      if (existingNotification) {
+        continue;
+      }
+
+      const timeKey = match.match_date; // Используем дату как ключ для группировки
+      if (!matchesByTime[timeKey]) {
+        matchesByTime[timeKey] = [];
+      }
+      matchesByTime[timeKey].push(match);
+    }
+
+    // Отправляем сообщение для каждой группы матчей (по времени начала)
+    for (const [timeKey, matches] of Object.entries(matchesByTime)) {
+      // Форматируем дату и время первого матча в группе
+      const matchDateTime = new Date(matches[0].match_date);
+      const matchDate = matchDateTime.toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const matchTime = matchDateTime.toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Формируем список всех матчей в этой группе
+      let matchesText = "";
+      matches.forEach((match, index) => {
+        matchesText += `${index + 1}. <b>${match.team1_name}</b> vs <b>${
+          match.team2_name
+        }</b> (${match.event_name})\n`;
+      });
+
+      // Составляем сообщение о начале матчей
+      const matchCount = matches.length;
+      const matchWord =
+        matchCount === 1
+          ? "МАТЧ"
+          : matchCount === 2 || matchCount === 3 || matchCount === 4
+          ? "МАТЧА"
+          : "МАТЧЕЙ";
+
+      const message = `⚽ <b>${matchCount} ${matchWord} НАЧАЛСЯ${
+        matchCount === 1 ? "" : "О"
+      }!</b>
+
+${matchesText}
+🕐 Время: ${matchDate} ${matchTime}
+
+⛔ Ставить больше нельзя!
+
+🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть результаты</a>`;
+
+      await sendGroupNotification(message);
+
+      // Записываем в БД, что уведомления были отправлены
+      for (const match of matches) {
+        db.prepare("INSERT INTO sent_reminders (match_id) VALUES (?)").run(
+          match.id
+        );
+      }
+
+      console.log(
+        `⚽ Уведомление о начале ${matchCount} матча(ей) отправлено в ${matchTime}`
+      );
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при проверке начала матчей:", error);
+  }
+}
+
 // --- Admin endpoints for notification queue ---
 // Simple protection: require ADMIN_LOGIN as query param (?admin=ADMIN_LOGIN)
 function checkAdminAuth(req, res) {
@@ -4417,6 +4523,12 @@ startBot();
 setInterval(checkAndRemindNonVoters, 5 * 60 * 1000);
 console.log(
   "🔔 Фоновая задача проверки непроголосовавших пользователей запущена (интервал: 5 минут)"
+);
+
+// Запуск фоновой задачи для уведомления о начале матча (каждую минуту)
+setInterval(checkAndNotifyMatchStart, 60 * 1000);
+console.log(
+  "⚽ Фоновая задача уведомления о начале матча запущена (интервал: 1 минута)"
 );
 
 // Запуск сервера
