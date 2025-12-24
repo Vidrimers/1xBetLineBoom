@@ -4315,7 +4315,8 @@ async function saveAvatar() {
     });
     console.log("✅ Canvas получен", canvas);
 
-    const avatarData = canvas.toDataURL("image/png");
+    // Сохраняем как PNG с оптимизацией
+    const avatarData = canvas.toDataURL("image/png", 0.8);
     console.log("✅ Avatar data получен, размер:", avatarData.length);
 
     console.log("Отправляю на сервер...");

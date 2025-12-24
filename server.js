@@ -660,7 +660,7 @@ const db = new Database("1xBetLineBoom.db");
 db.pragma("foreign_keys = OFF");
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); // Увеличиваем лимит для аватаров
 app.use(express.static(".")); // Раздаем статические файлы (HTML, CSS, JS)
 
 // ===== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ =====
