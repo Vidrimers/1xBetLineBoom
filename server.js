@@ -294,9 +294,17 @@ function writeBetLog(action, data) {
 
     let logEntry = "";
     if (action === "placed") {
-      // Преобразуем draw -> Ничья для логов
-      let predictionText =
-        data.prediction === "draw" ? "Ничья" : data.prediction;
+      // Преобразуем prediction в читаемый вид
+      let predictionText = data.prediction;
+
+      // Если это team1 или team2 - заменяем на названия команд
+      if (predictionText === "team1") {
+        predictionText = data.team1;
+      } else if (predictionText === "team2") {
+        predictionText = data.team2;
+      } else if (predictionText === "draw") {
+        predictionText = "Ничья";
+      }
 
       // Если это финальная ставка с параметром
       let finalBadge = "";
@@ -324,9 +332,17 @@ function writeBetLog(action, data) {
       </div>
     </div>`;
     } else if (action === "deleted") {
-      // Преобразуем draw -> Ничья для логов
-      let predictionText =
-        data.prediction === "draw" ? "Ничья" : data.prediction;
+      // Преобразуем prediction в читаемый вид
+      let predictionText = data.prediction;
+
+      // Если это team1 или team2 - заменяем на названия команд
+      if (predictionText === "team1") {
+        predictionText = data.team1;
+      } else if (predictionText === "team2") {
+        predictionText = data.team2;
+      } else if (predictionText === "draw") {
+        predictionText = "Ничья";
+      }
 
       // Если это финальная ставка с параметром
       let finalBadge = "";
