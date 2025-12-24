@@ -1360,6 +1360,7 @@ app.get("/api/participants", (req, res) => {
         u.id,
         u.username,
         u.telegram_username,
+        u.avatar,
         COUNT(b.id) as total_bets,
         SUM(CASE 
           WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
@@ -1429,7 +1430,7 @@ app.get("/api/participants", (req, res) => {
       LEFT JOIN bets b ON u.id = b.user_id
       LEFT JOIN matches m ON b.match_id = m.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
-      GROUP BY u.id, u.username
+      GROUP BY u.id, u.username, u.avatar
       ORDER BY COUNT(b.id) DESC
     `
       )
