@@ -1663,7 +1663,8 @@ app.get("/api/user/:userId/profile", (req, res) => {
 app.post("/api/user/:userId/avatar", (req, res) => {
   try {
     const { userId } = req.params;
-    const { avatarData, fileType, gifPositionX, gifPositionY } = req.body;
+    const { avatarData, fileType, gifPositionX, gifPositionY, gifZoom } =
+      req.body;
 
     if (!avatarData) {
       return res.status(400).json({ error: "Данные аватара не предоставлены" });
@@ -1713,14 +1714,23 @@ app.post("/api/user/:userId/avatar", (req, res) => {
       try {
         const posX = Math.max(0, parseInt(gifPositionX) || 0);
         const posY = Math.max(0, parseInt(gifPositionY) || 0);
+        const zoomFactor = parseFloat(gifZoom) || 1;
 
-        console.log(`📍 Обрезаю GIF по координатам: X=${posX}, Y=${posY}`);
+        // Применяем масштаб при расчете координат обрезания
+        const actualX = Math.round(posX * zoomFactor);
+        const actualY = Math.round(posY * zoomFactor);
+
+        console.log(
+          `📍 Обрезаю GIF по координатам: X=${actualX}, Y=${actualY} (zoom=${(
+            zoomFactor * 100
+          ).toFixed(0)}%)`
+        );
 
         const croppedFilepath = filepath + ".cropped.gif";
 
         // Используем ffmpeg для обрезания GIF с сохранением анимации
-        // crop=width:height:x:y (crop=200:200:posX:posY)
-        const command = `"${ffmpegStatic}" -i "${filepath}" -vf "crop=200:200:${posX}:${posY}" -c:v gif "${croppedFilepath}" 2>&1`;
+        // crop=width:height:x:y (crop=200:200:actualX:actualY)
+        const command = `"${ffmpegStatic}" -i "${filepath}" -vf "crop=200:200:${actualX}:${actualY}" -c:v gif "${croppedFilepath}" 2>&1`;
 
         try {
           execSync(command, { stdio: "pipe" });

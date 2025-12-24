@@ -1219,32 +1219,30 @@
           </div>
 
           <!-- Center Column: GIF Preview with Selection -->
-          <div id="gifPreviewColumn" style="flex: 1; display: none; overflow: auto; border: 1px solid #ddd; border-radius: 4px; position: relative">
-            <div style="display: flex; align-items: center; justify-content: center; height: 100%">
-              <div style="position: relative; display: inline-block">
-                <img
-                  id="gifFullPreview"
-                  src=""
-                  alt="Full GIF preview"
-                  style="max-width: 100%; max-height: 100%; display: block; object-fit: contain"
-                />
-                <!-- Selection overlay (200x200 квадрат) -->
-                <div
-                  id="gifSelectionBox"
-                  style="
-                    position: absolute;
-                    width: 200px;
-                    height: 200px;
-                    border: 3px solid #2196f3;
-                    box-shadow: 0 0 0 5000px rgba(0, 0, 0, 0.5);
-                    cursor: move;
-                    top: 0;
-                    left: 0;
-                    z-index: 10;
-                    user-select: none;
-                  "
-                ></div>
-              </div>
+          <div id="gifPreviewColumn" style="flex: 1; display: none; border: 1px solid #ddd; border-radius: 4px; position: relative; overflow: auto; background: #f9f9f9;">
+            <div style="position: relative; display: inline-block;">
+              <img
+                id="gifFullPreview"
+                src=""
+                alt="Full GIF preview"
+                style="display: block; max-width: 100%; height: auto;"
+              />
+              <!-- Selection overlay (200x200 квадрат) -->
+              <div
+                id="gifSelectionBox"
+                style="
+                  position: absolute;
+                  width: 200px;
+                  height: 200px;
+                  border: 3px solid #2196f3;
+                  box-shadow: 0 0 0 5000px rgba(0, 0, 0, 0.5);
+                  cursor: move;
+                  z-index: 10;
+                  user-select: none;
+                  top: 0;
+                  left: 0;
+                "
+              ></div>
             </div>
           </div>
 

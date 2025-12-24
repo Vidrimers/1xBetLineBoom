@@ -4266,6 +4266,7 @@ function initAvatarInput() {
           // Инициализируем контроли для выбора позиции
           window.gifPositionX = 0;
           window.gifPositionY = 0;
+          window.gifZoom = 1;
           window.gifBase64 = event.target.result;
 
           // Обновляем preview результата
@@ -4278,49 +4279,62 @@ function initAvatarInput() {
 
           // Добавляем drag функцию для квадрата
           const newBox = document.getElementById("gifSelectionBox");
+          const gifPreview = document.getElementById("gifFullPreview");
+          const gifPreviewColumn = document.getElementById("gifPreviewColumn");
           let isDragging = false;
-          let startX = 0;
-          let startY = 0;
+          let offsetX = 0;
+          let offsetY = 0;
 
           newBox.addEventListener("mousedown", (e) => {
             isDragging = true;
-            const gifPreview = document.getElementById("gifFullPreview");
-            startX =
-              e.clientX -
-              gifPreview.getBoundingClientRect().left -
-              window.gifPositionX;
-            startY =
-              e.clientY -
-              gifPreview.getBoundingClientRect().top -
-              window.gifPositionY;
+            // Запоминаем начальное смещение мыши от левого верхнего угла рамки
+            const boxRect = newBox.getBoundingClientRect();
+            offsetX = e.clientX - boxRect.left;
+            offsetY = e.clientY - boxRect.top;
             e.preventDefault();
           });
 
           const handleMouseMove = (e) => {
-            if (isDragging) {
-              const gifPreview = document.getElementById("gifFullPreview");
-              const previewParent = gifPreview.parentElement;
-              const rect = gifPreview.getBoundingClientRect();
-              const parentRect = previewParent.getBoundingClientRect();
+            if (!isDragging || !gifPreview.complete) return;
 
-              let newX = e.clientX - parentRect.left - startX;
-              let newY = e.clientY - parentRect.top - startY;
+            // Получаем координаты GIF на странице
+            const gifRect = gifPreview.getBoundingClientRect();
+            const columnRect = gifPreviewColumn.getBoundingClientRect();
 
-              // Ограничиваем координаты - учитываем реальный размер изображения
-              const maxX = gifPreview.naturalWidth - 200;
-              const maxY = gifPreview.naturalHeight - 200;
+            // Позиция мыши в системе координат контейнера
+            const mouseX = e.clientX - columnRect.left;
+            const mouseY = e.clientY - columnRect.top;
 
-              newX = Math.max(0, Math.min(newX, maxX));
-              newY = Math.max(0, Math.min(newY, maxY));
+            // Позиция GIF в системе координат контейнера
+            const gifX = gifRect.left - columnRect.left;
+            const gifY = gifRect.top - columnRect.top;
 
-              window.gifPositionX = newX;
-              window.gifPositionY = newY;
+            // Желаемая позиция рамки в системе координат контейнера
+            let boxX = mouseX - offsetX;
+            let boxY = mouseY - offsetY;
 
-              newBox.style.left = newX + "px";
-              newBox.style.top = newY + "px";
+            // Преобразуем в координаты внутри GIF (логические координаты)
+            let logicalX = (boxX - gifX) / window.gifZoom;
+            let logicalY = (boxY - gifY) / window.gifZoom;
 
-              updateGifResultPreview();
-            }
+            // Ограничиваем координаты
+            const maxX = gifPreview.naturalWidth - 200;
+            const maxY = gifPreview.naturalHeight - 200;
+
+            logicalX = Math.max(0, Math.min(logicalX, maxX));
+            logicalY = Math.max(0, Math.min(logicalY, maxY));
+
+            window.gifPositionX = logicalX;
+            window.gifPositionY = logicalY;
+
+            // Визуальная позиция рамки на экране
+            const visualX = gifX + logicalX * window.gifZoom;
+            const visualY = gifY + logicalY * window.gifZoom;
+
+            newBox.style.left = visualX + "px";
+            newBox.style.top = visualY + "px";
+
+            updateGifResultPreview();
           };
 
           const handleMouseUp = () => {
@@ -4333,6 +4347,40 @@ function initAvatarInput() {
           // Сохраняем обработчики для удаления позже
           window.gifMouseMoveHandler = handleMouseMove;
           window.gifMouseUpHandler = handleMouseUp;
+
+          // Добавляем zoom через скролл мыши
+          const handleWheel = (e) => {
+            if (!window.gifBase64) return;
+            e.preventDefault();
+
+            // Определяем направление скролла
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            window.gifZoom = Math.max(0.5, Math.min(window.gifZoom + delta, 3));
+
+            // Применяем масштаб к изображению
+            gifPreview.style.transform = `scale(${window.gifZoom})`;
+            gifPreview.style.transformOrigin = "top left";
+            console.log(`🔍 Zoom: ${(window.gifZoom * 100).toFixed(0)}%`);
+
+            // Обновляем позицию рамки при изменении zoom
+            const gifRect = gifPreview.getBoundingClientRect();
+            const columnRect = gifPreviewColumn.getBoundingClientRect();
+            const gifX = gifRect.left - columnRect.left;
+            const gifY = gifRect.top - columnRect.top;
+
+            const visualX = gifX + window.gifPositionX * window.gifZoom;
+            const visualY = gifY + window.gifPositionY * window.gifZoom;
+
+            newBox.style.left = visualX + "px";
+            newBox.style.top = visualY + "px";
+
+            updateGifResultPreview();
+          };
+
+          gifPreviewColumn.addEventListener("wheel", handleWheel, {
+            passive: false,
+          });
+          window.gifWheelHandler = handleWheel;
 
           // Сохраняем оригинальный файл как base64
           window.gifAvatarData = event.target.result;
@@ -4395,14 +4443,28 @@ function closeAvatarModal(event) {
   if (window.gifMouseUpHandler) {
     document.removeEventListener("mouseup", window.gifMouseUpHandler);
   }
+  if (window.gifWheelHandler) {
+    const gifPreviewColumn = document.getElementById("gifPreviewColumn");
+    if (gifPreviewColumn) {
+      gifPreviewColumn.removeEventListener("wheel", window.gifWheelHandler);
+    }
+  }
 
   // Очищаем сохраненные GIF данные
   window.gifAvatarData = null;
   window.gifBase64 = null;
   window.gifPositionX = 0;
   window.gifPositionY = 0;
+  window.gifZoom = 1;
   window.gifMouseMoveHandler = null;
   window.gifMouseUpHandler = null;
+  window.gifWheelHandler = null;
+
+  // Сбрасываем трансформацию GIF изображения
+  const gifPreview = document.getElementById("gifFullPreview");
+  if (gifPreview) {
+    gifPreview.style.transform = "scale(1)";
+  }
 
   document.getElementById("gifPreviewColumn").style.display = "none";
 }
@@ -4415,10 +4477,18 @@ function updateGifResultPreview() {
 
   // Показываем нужный участок GIF в окошке результата
   resultImg.src = window.gifBase64;
-  resultImg.style.objectPosition = `-${window.gifPositionX}px -${window.gifPositionY}px`;
+
+  // Учитываем zoom при расчете смещения
+  const zoomFactor = window.gifZoom || 1;
+  const offsetX = window.gifPositionX * zoomFactor;
+  const offsetY = window.gifPositionY * zoomFactor;
+
+  resultImg.style.objectPosition = `-${offsetX}px -${offsetY}px`;
 
   console.log(
-    `📍 Позиция GIF: X=${window.gifPositionX}, Y=${window.gifPositionY}`
+    `📍 Позиция GIF: X=${window.gifPositionX}, Y=${
+      window.gifPositionY
+    }, Zoom: ${(zoomFactor * 100).toFixed(0)}%`
   );
 }
 
@@ -4563,6 +4633,7 @@ async function saveGifAvatar() {
         fileType,
         gifPositionX: window.gifPositionX || 0,
         gifPositionY: window.gifPositionY || 0,
+        gifZoom: window.gifZoom || 1,
       }),
     });
 
