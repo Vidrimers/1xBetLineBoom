@@ -1205,6 +1205,27 @@ app.delete("/api/bets/:betId", (req, res) => {
 
     db.prepare("DELETE FROM bets WHERE id = ?").run(betId);
 
+    // Если это была финальная ставка - проверяем есть ли еще ставки на этот матч
+    if (bet.is_final_bet) {
+      const remainingBets = db
+        .prepare(
+          "SELECT COUNT(*) as cnt FROM bets WHERE match_id = ? AND is_final_bet = 1"
+        )
+        .get(bet.match_id);
+
+      // Если нет больше финальных ставок на этот матч - удаляем параметры финала
+      if (remainingBets.cnt === 0) {
+        try {
+          db.prepare(
+            "DELETE FROM final_parameters_results WHERE match_id = ?"
+          ).run(bet.match_id);
+          console.log(`🗑️ Удалены параметры финала для матча ${bet.match_id}`);
+        } catch (e) {
+          console.warn(`⚠️ Не удалось удалить параметры финала: ${e.message}`);
+        }
+      }
+    }
+
     // Записываем лог удаления ставки
     writeBetLog("deleted", {
       username: betUser?.username || "неизвестный",
@@ -2374,6 +2395,11 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
   }
 
   try {
+    // Получаем все матчи этого события чтобы удалить их параметры финала
+    const matchIds = db
+      .prepare("SELECT id FROM matches WHERE event_id = ?")
+      .all(eventId);
+
     // Удаляем связанные ставки
     db.prepare(
       "DELETE FROM bets WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)"
@@ -2387,6 +2413,17 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
     } catch (e) {
       // Таблица final_bets не существует, это нормально
     }
+
+    // Удаляем параметры финала для всех матчей этого события
+    matchIds.forEach((match) => {
+      try {
+        db.prepare(
+          "DELETE FROM final_parameters_results WHERE match_id = ?"
+        ).run(match.id);
+      } catch (e) {
+        console.warn(`⚠️ Не удалось удалить параметры финала: ${e.message}`);
+      }
+    });
 
     // Удаляем связанные матчи
     db.prepare("DELETE FROM matches WHERE event_id = ?").run(eventId);
@@ -2641,8 +2678,34 @@ app.delete("/api/admin/users/:userId", (req, res) => {
   }
 
   try {
+    // Получаем все финальные ставки пользователя чтобы потом удалить их параметры
+    const finalBets = db
+      .prepare(
+        "SELECT match_id FROM bets WHERE user_id = ? AND is_final_bet = 1"
+      )
+      .all(userId);
+
     // Удаляем все ставки пользователя
     db.prepare("DELETE FROM bets WHERE user_id = ?").run(userId);
+
+    // Удаляем параметры финала для матчей, где у этого пользователя больше нет ставок
+    finalBets.forEach((bet) => {
+      const remainingBets = db
+        .prepare(
+          "SELECT COUNT(*) as cnt FROM bets WHERE match_id = ? AND is_final_bet = 1"
+        )
+        .get(bet.match_id);
+
+      if (remainingBets.cnt === 0) {
+        try {
+          db.prepare(
+            "DELETE FROM final_parameters_results WHERE match_id = ?"
+          ).run(bet.match_id);
+        } catch (e) {
+          console.warn(`⚠️ Не удалось удалить параметры финала: ${e.message}`);
+        }
+      }
+    });
 
     // Удаляем самого пользователя
     const result = db.prepare("DELETE FROM users WHERE id = ?").run(userId);
@@ -2694,6 +2757,15 @@ app.delete("/api/admin/matches/:matchId", (req, res) => {
       db.prepare("DELETE FROM final_bets WHERE match_id = ?").run(matchId);
     } catch (e) {
       // Таблица final_bets не существует, это нормально
+    }
+
+    // Удаляем параметры финала для этого матча
+    try {
+      db.prepare("DELETE FROM final_parameters_results WHERE match_id = ?").run(
+        matchId
+      );
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить параметры финала: ${e.message}`);
     }
 
     // Затем удаляем сам матч

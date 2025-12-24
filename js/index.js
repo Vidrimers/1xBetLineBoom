@@ -1598,6 +1598,26 @@ async function placeFinalBet(matchId, parameterType) {
       const bets = await checkResponse.json();
       userBets = bets;
       console.log("💰 Мои ставки:", bets);
+
+      // Загружаем параметры финала для корректного отображения статуса
+      let finalParameters = {};
+      try {
+        const paramsResponse = await fetch("/api/final-parameters-results");
+        if (paramsResponse.ok) {
+          finalParameters = await paramsResponse.json();
+          console.log("📊 Загруженные параметры финала:", finalParameters);
+        }
+      } catch (paramError) {
+        console.warn("Не удалось загрузить параметры финала:", paramError);
+      }
+
+      // Прикрепляем параметры к ставкам
+      bets.forEach((bet) => {
+        if (bet.is_final_bet) {
+          bet.final_parameters = finalParameters[bet.match_id] || null;
+        }
+      });
+
       displayMyBets(bets);
 
       // Перерисовываем матчи чтобы кнопки команд обновились
@@ -1699,48 +1719,64 @@ function displayMyBets(bets) {
         if (bet.is_final_bet) {
           const params = bet.final_parameters;
 
-          // Если параметры еще не установлены админом
-          if (!params) {
+          // Проверяем, установлено ли конкретное поле параметра для этого типа ставки
+          let parameterIsSet = false;
+
+          if (params) {
+            if (bet.parameter_type === "yellow_cards") {
+              parameterIsSet =
+                params.yellow_cards !== null &&
+                params.yellow_cards !== undefined;
+            } else if (bet.parameter_type === "red_cards") {
+              parameterIsSet =
+                params.red_cards !== null && params.red_cards !== undefined;
+            } else if (bet.parameter_type === "corners") {
+              parameterIsSet =
+                params.corners !== null && params.corners !== undefined;
+            } else if (bet.parameter_type === "exact_score") {
+              parameterIsSet =
+                params.exact_score !== null &&
+                params.exact_score !== undefined &&
+                params.exact_score !== "";
+            } else if (bet.parameter_type === "penalties_in_game") {
+              parameterIsSet =
+                params.penalties_in_game !== null &&
+                params.penalties_in_game !== undefined &&
+                params.penalties_in_game !== "";
+            } else if (bet.parameter_type === "extra_time") {
+              parameterIsSet =
+                params.extra_time !== null &&
+                params.extra_time !== undefined &&
+                params.extra_time !== "";
+            } else if (bet.parameter_type === "penalties_at_end") {
+              parameterIsSet =
+                params.penalties_at_end !== null &&
+                params.penalties_at_end !== undefined &&
+                params.penalties_at_end !== "";
+            }
+          }
+
+          // Если параметр для этого типа ставки еще не установлен админом
+          if (!parameterIsSet) {
             statusClass = "pending";
-            statusText = "⏳ Ожидание параметров";
+            statusText = "⏳ В ожидании";
           } else {
-            // Параметры установлены - проверяем результат
+            // Параметр установлен - проверяем результат
             let isWon = false;
 
-            if (
-              bet.parameter_type === "yellow_cards" &&
-              params.yellow_cards !== null
-            ) {
+            if (bet.parameter_type === "yellow_cards") {
               isWon = parseInt(bet.prediction) === params.yellow_cards;
-            } else if (
-              bet.parameter_type === "red_cards" &&
-              params.red_cards !== null
-            ) {
+            } else if (bet.parameter_type === "red_cards") {
               isWon = parseInt(bet.prediction) === params.red_cards;
-            } else if (
-              bet.parameter_type === "corners" &&
-              params.corners !== null
-            ) {
+            } else if (bet.parameter_type === "corners") {
               isWon = parseInt(bet.prediction) === params.corners;
-            } else if (
-              bet.parameter_type === "exact_score" &&
-              params.exact_score
-            ) {
+            } else if (bet.parameter_type === "exact_score") {
               isWon = bet.prediction === params.exact_score;
-            } else if (
-              bet.parameter_type === "penalties_in_game" &&
-              params.penalties_in_game
-            ) {
+            } else if (bet.parameter_type === "penalties_in_game") {
               isWon = bet.prediction === params.penalties_in_game;
-            } else if (
-              bet.parameter_type === "extra_time" &&
-              params.extra_time
-            ) {
+            } else if (bet.parameter_type === "extra_time") {
               isWon = bet.prediction === params.extra_time;
-            } else if (
-              bet.parameter_type === "penalties_at_end" &&
-              params.penalties_at_end
-            ) {
+            } else if (bet.parameter_type === "penalties_at_end") {
               isWon = bet.prediction === params.penalties_at_end;
             }
 
@@ -1748,23 +1784,8 @@ function displayMyBets(bets) {
               statusClass = "won";
               statusText = "✅ Выиграла";
             } else {
-              // Если параметры установлены админом, но они не совпадают
-              if (
-                (bet.parameter_type === "yellow_cards" &&
-                  params.yellow_cards !== null) ||
-                (bet.parameter_type === "red_cards" &&
-                  params.red_cards !== null) ||
-                (bet.parameter_type === "corners" && params.corners !== null) ||
-                (bet.parameter_type === "exact_score" && params.exact_score) ||
-                (bet.parameter_type === "penalties_in_game" &&
-                  params.penalties_in_game) ||
-                (bet.parameter_type === "extra_time" && params.extra_time) ||
-                (bet.parameter_type === "penalties_at_end" &&
-                  params.penalties_at_end)
-              ) {
-                statusClass = "lost";
-                statusText = "❌ Проиграла";
-              }
+              statusClass = "lost";
+              statusText = "❌ Проиграла";
             }
           }
         } else if (!bet.is_final_bet) {
@@ -1915,75 +1936,21 @@ async function deleteBet(betId) {
       return;
     }
 
+    // Удаляем ставку из userBets массива
+    userBets = userBets.filter((b) => b.id !== betId);
+
     // Если это была final bet - разблокируем параметр
     if (isFinalBet && matchId && parameterType) {
       unlockFinalParameter(matchId, parameterType);
     }
 
-    // ✨ Удаляем ставку из DOM плавной анимацией без перезагрузки
-    const betElement = document.querySelector(`[data-bet-id="${betId}"]`);
-    if (betElement) {
-      // Находим турнир (родительский div с разделителем выше)
-      let previousSibling = betElement.previousElementSibling;
-      let eventDivider = null;
+    // 🔄 Полностью перезагружаем список ставок с БД
+    await loadMyBets();
 
-      // Ищем ближайший разделитель выше удаляемой ставки
-      while (previousSibling) {
-        if (previousSibling.textContent.includes("━━━")) {
-          eventDivider = previousSibling;
-          break;
-        }
-        previousSibling = previousSibling.previousElementSibling;
-      }
-
-      betElement.style.opacity = "0.5";
-      betElement.style.transform = "scale(0.95)";
-      betElement.style.transition = "all 0.3s ease";
-
-      setTimeout(() => {
-        betElement.remove();
-
-        // Проверяем, есть ли еще ставки для этого турнира
-        let nextSibling = eventDivider?.nextElementSibling;
-        let hasMoreBets = false;
-
-        while (nextSibling) {
-          // Если встретили следующий разделитель - нет ставок в этом турнире
-          if (nextSibling.textContent.includes("━━━")) {
-            break;
-          }
-          // Если встретили ставку - есть ставки
-          if (nextSibling.classList.contains("bet-item")) {
-            hasMoreBets = true;
-            break;
-          }
-          nextSibling = nextSibling.nextElementSibling;
-        }
-
-        // Удаляем разделитель если ставок нет
-        if (!hasMoreBets && eventDivider) {
-          eventDivider.remove();
-        }
-
-        // Если ставок больше нет - показываем пустое сообщение
-        const myBetsList = document.getElementById("myBetsList");
-        if (myBetsList.children.length === 0) {
-          myBetsList.innerHTML =
-            '<div class="empty-message">У вас пока нет ставок</div>';
-        }
-
-        // Удаляем ставку из userBets массива
-        userBets = userBets.filter((b) => b.id !== betId);
-
-        // 🔄 Обновляем карточки матчей, чтобы убрать подсветку
-        if (currentEventId) {
-          loadMatches(currentEventId);
-        }
-      }, 300);
+    // 🔄 Обновляем карточки матчей, чтобы убрать подсветку
+    if (currentEventId) {
+      displayMatches();
     }
-
-    // Обновляем локальный массив ставок
-    userBets = userBets.filter((bet) => bet.id !== betId);
   } catch (error) {
     console.error("Ошибка при удалении ставки:", error);
     alert("Ошибка при удалении ставки");
