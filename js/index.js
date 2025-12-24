@@ -895,8 +895,10 @@ function displayMatches() {
       // Определяем статус на основе даты
       const effectiveStatus = getMatchStatusByDate(match);
 
-      // Проверяем, есть ли ставка пользователя на этот матч
-      const userBetOnMatch = userBets.find((bet) => bet.match_id === match.id);
+      // Проверяем, есть ли ставка пользователя на команду этого матча (только команднные ставки, не финальные)
+      const userBetOnMatch = userBets.find(
+        (bet) => bet.match_id === match.id && !bet.is_final_bet
+      );
       const betClass = userBetOnMatch ? "has-user-bet" : "";
 
       // Определяем текст и цвет статуса
@@ -1002,8 +1004,9 @@ function displayMatches() {
                     }" onclick="placeBet(${match.id}, '${match.team1_name}', '${
         match.team1_name
       }')" ${
-        effectiveStatus !== "pending" ||
-        userBetOnMatch?.prediction === match.team1_name
+        effectiveStatus !== "pending"
+          ? "disabled"
+          : userBetOnMatch?.prediction === match.team1_name
           ? "disabled"
           : ""
       }>
@@ -1012,7 +1015,9 @@ function displayMatches() {
                     <button class="bet-btn draw ${
                       userBetOnMatch?.prediction === "draw" ? "selected" : ""
                     }" onclick="placeBet(${match.id}, 'draw', 'draw')" ${
-        effectiveStatus !== "pending" || userBetOnMatch?.prediction === "draw"
+        effectiveStatus !== "pending"
+          ? "disabled"
+          : userBetOnMatch?.prediction === "draw"
           ? "disabled"
           : ""
       }>
@@ -1025,8 +1030,9 @@ function displayMatches() {
                     }" onclick="placeBet(${match.id}, '${match.team2_name}', '${
         match.team2_name
       }')" ${
-        effectiveStatus !== "pending" ||
-        userBetOnMatch?.prediction === match.team2_name
+        effectiveStatus !== "pending"
+          ? "disabled"
+          : userBetOnMatch?.prediction === match.team2_name
           ? "disabled"
           : ""
       }>
@@ -1437,6 +1443,7 @@ function lockFinalParameter(matchId, parameterType) {
   const button = paramMainContainer.querySelector("button");
   if (button) {
     button.style.display = "none";
+    console.log(`🔒 Кнопка ✓ скрыта для параметра ${parameterType}`);
   }
 }
 
@@ -1562,16 +1569,21 @@ async function placeFinalBet(matchId, parameterType) {
     if (response.ok) {
       console.log(`✅ Ставка успешно создана`);
 
-      // Обновляем только список ставок, без перерисовки матчей
+      // Обновляем список ставок
       const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
       const bets = await checkResponse.json();
       userBets = bets;
       console.log("💰 Мои ставки:", bets);
       displayMyBets(bets);
 
+      // Перерисовываем матчи чтобы кнопки команд обновились
+      displayMatches();
+
+      // Восстанавливаем состояние всех тоглов (displayMatches их сбрасывает)
+      initToggleStates();
+
       // Блокируем параметр после успешного сохранения ставки
       lockFinalParameter(matchId, parameterType);
-      // Не вызываем displayMatches() чтобы не потерять состояние кнопок
     } else {
       alert("Ошибка при создании ставки");
     }
