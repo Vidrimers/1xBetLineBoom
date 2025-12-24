@@ -2043,7 +2043,9 @@ function displayParticipants(participants) {
       }
 
       return `
-    <div class="participant-item">
+    <div class="participant-item" onclick="showUserProfile(${
+      participant.id
+    }, '${participant.username.replace(/'/g, "\\'")}')">
       <div class="participant-rank">#${index + 1}</div>
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
@@ -4052,5 +4054,104 @@ async function submitImportMatches(event) {
   } catch (error) {
     console.error("Ошибка при импорте матчей:", error);
     alert(`❌ Ошибка при импорте: ${error.message}`);
+  }
+}
+
+// Показать профиль пользователя
+async function showUserProfile(userId, username) {
+  try {
+    const response = await fetch(`/api/user/${userId}/profile`);
+    const userData = await response.json();
+
+    if (!response.ok) {
+      alert("Не удалось загрузить профиль");
+      return;
+    }
+
+    // Формируем модальное окно
+    const profileHTML = `
+      <div style="background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
+        <h2 style="color: #7ab0e0; margin-bottom: 20px; text-align: center;">👤 ${username}</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+          <div style="background: #1a1a2e; padding: 15px; border-radius: 8px;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Всего ставок</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #7ab0e0;">${
+              userData.total_bets || 0
+            }</div>
+          </div>
+          <div style="background: #1a1a2e; padding: 15px; border-radius: 8px;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Угаданных</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #4caf50;">${
+              userData.won_bets || 0
+            }</div>
+          </div>
+          <div style="background: #1a1a2e; padding: 15px; border-radius: 8px;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Неугаданных</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #f44336;">${
+              userData.lost_bets || 0
+            }</div>
+          </div>
+          <div style="background: #1a1a2e; padding: 15px; border-radius: 8px;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">В ожидании</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #ff9800;">${
+              userData.pending_bets || 0
+            }</div>
+          </div>
+        </div>
+
+        ${
+          userData.total_bets > 0
+            ? `
+          <div style="background: #0a3a1a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Точность угадывания</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #4caf50;">${(
+              (userData.won_bets / userData.total_bets) *
+              100
+            ).toFixed(1)}%</div>
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          userData.tournament_wins > 0
+            ? `
+          <div style="background: #2a1a0a; padding: 15px; border-radius: 8px;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Побед в турнирах</div>
+            <div style="font-size: 1.4em; font-weight: bold; color: #ffc107;">
+              ${"🏆".repeat(Math.min(userData.tournament_wins, 5))}${
+                userData.tournament_wins > 5
+                  ? " (" + userData.tournament_wins + ")"
+                  : ""
+              }
+            </div>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `;
+
+    // Создаем простой overlay для модального окна
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+      "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;";
+    overlay.innerHTML = `
+      <div style="position: relative; background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%;">
+        <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #999; font-size: 24px; cursor: pointer;">×</button>
+        ${profileHTML.replace(
+          '<div style="background: #0a0e27;',
+          '<div style="background: transparent;'
+        )}
+      </div>
+    `;
+    overlay.onclick = (e) => {
+      if (e.target === overlay) overlay.remove();
+    };
+    document.body.appendChild(overlay);
+  } catch (error) {
+    console.error("Ошибка при загрузке профиля:", error);
+    alert("❌ Ошибка при загрузке профиля");
   }
 }
