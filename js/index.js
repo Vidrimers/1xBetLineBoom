@@ -1289,87 +1289,84 @@ function unlockFinalParameter(matchId, parameterType) {
     `🔓 Разблокируем параметр: matchId=${matchId}, parameterType=${parameterType}`
   );
 
-  // Находим контейнер с этим параметром
-  let paramContainer = null;
+  let element = null;
 
+  // Находим главный элемент параметра
   if (parameterType === "exact_score") {
-    const input1 = document.getElementById(`exactScore1_${matchId}`);
-    const input2 = document.getElementById(`exactScore2_${matchId}`);
-    if (input1) paramContainer = input1.closest('div[style*="flex"]');
+    element = document.getElementById(`exactScore1_${matchId}`);
   } else if (parameterType === "yellow_cards") {
-    const input = document.getElementById(`yellowCards_${matchId}`);
-    if (input) paramContainer = input.closest('div[style*="flex"]');
+    element = document.getElementById(`yellowCards_${matchId}`);
   } else if (parameterType === "red_cards") {
-    const input = document.getElementById(`redCards_${matchId}`);
-    if (input) paramContainer = input.closest('div[style*="flex"]');
+    element = document.getElementById(`redCards_${matchId}`);
   } else if (parameterType === "corners") {
-    const input = document.getElementById(`corners_${matchId}`);
-    if (input) paramContainer = input.closest('div[style*="flex"]');
+    element = document.getElementById(`corners_${matchId}`);
   } else if (parameterType === "penalties_in_game") {
-    const checkbox = document.getElementById(`penaltiesInGame_${matchId}`);
-    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+    element = document.getElementById(`penaltiesInGame_${matchId}`);
   } else if (parameterType === "extra_time") {
-    const checkbox = document.getElementById(`extraTime_${matchId}`);
-    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+    element = document.getElementById(`extraTime_${matchId}`);
   } else if (parameterType === "penalties_at_end") {
-    const checkbox = document.getElementById(`penaltiesAtEnd_${matchId}`);
-    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+    element = document.getElementById(`penaltiesAtEnd_${matchId}`);
   }
 
-  if (paramContainer) {
-    console.log(`✅ Найден контейнер параметра`);
-    // Находим все input'ы и toggle'ы в контейнере
-    const inputs = paramContainer.querySelectorAll('input[type="number"]');
-    const checkboxes = paramContainer.querySelectorAll(
-      'input[type="checkbox"]'
-    );
-    const button = paramContainer.querySelector("button");
-    const toggleSpans = paramContainer.querySelectorAll("span[onclick]");
+  if (!element) {
+    console.warn(`⚠️ Элемент параметра не найден`);
+    return;
+  }
 
-    // Разблокируем input'ы
-    inputs.forEach((input) => {
-      input.disabled = false;
-      input.style.opacity = "1";
-      input.style.cursor = "text";
-      console.log(`  - Разблокирован input: ${input.id}`);
-    });
+  // Находим родительский контейнер с margin-bottom: 12px (весь параметр целиком)
+  const paramMainContainer = element.closest(
+    'div[style*="margin-bottom: 12px"]'
+  );
+  if (!paramMainContainer) {
+    console.warn(`⚠️ Главный контейнер параметра не найден`);
+    return;
+  }
 
-    // Разблокируем toggle'ы
-    checkboxes.forEach((checkbox) => {
-      checkbox.disabled = false;
-      console.log(`  - Разблокирован checkbox: ${checkbox.id}`);
-    });
-    toggleSpans.forEach((span) => {
-      span.style.opacity = "1";
-      span.style.cursor = "pointer";
+  console.log(`✅ Найден главный контейнер параметра`);
 
-      // Восстанавливаем onclick обработчик для toggle'а
-      const checkboxId = span.previousElementSibling?.id;
-      if (checkboxId) {
-        span.onclick = function () {
-          const checkbox = document.getElementById(checkboxId);
-          checkbox.checked = !checkbox.checked;
-          const spanBg = checkbox.nextElementSibling;
-          const circle = spanBg?.querySelector("span");
-          if (checkbox.checked) {
-            spanBg.style.backgroundColor = "#4db8a8";
-            if (circle) circle.style.transform = "translateX(26px)";
-          } else {
-            spanBg.style.backgroundColor = "#3a5f7a";
-            if (circle) circle.style.transform = "translateX(0)";
-          }
-        };
-        console.log(`  - Разблокирован toggle span`);
-      }
-    });
+  // Разблокируем все input'ы числовые
+  const inputs = paramMainContainer.querySelectorAll('input[type="number"]');
+  inputs.forEach((input) => {
+    input.disabled = false;
+    input.style.opacity = "1";
+    input.style.cursor = "text";
+    console.log(`  - Разблокирован input: ${input.id}`);
+  });
 
-    // Показываем кнопку "✓"
-    if (button) {
-      button.style.display = "inline-block";
-      console.log(`  - Показана кнопка ✓`);
+  // Разблокируем toggle span'ы
+  const toggleSpans = paramMainContainer.querySelectorAll(
+    "span[style*='border-radius: 24px']"
+  );
+  toggleSpans.forEach((span) => {
+    span.style.opacity = "1";
+    span.style.cursor = "pointer";
+
+    // Восстанавливаем onclick обработчик
+    const checkbox = span.previousElementSibling;
+    if (checkbox && checkbox.id) {
+      const checkboxId = checkbox.id;
+      span.setAttribute(
+        "onclick",
+        `(function() { const checkbox = document.getElementById('${checkboxId}'); checkbox.checked = !checkbox.checked; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); if (checkbox.checked) { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(26px)'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(0)'; } })()`
+      );
+      console.log(`  - Восстановлен toggle: ${checkboxId}`);
     }
-  } else {
-    console.warn(`⚠️ Контейнер параметра не найден`);
+  });
+
+  // Разблокируем checkbox'ы
+  const checkboxes = paramMainContainer.querySelectorAll(
+    'input[type="checkbox"]'
+  );
+  checkboxes.forEach((checkbox) => {
+    checkbox.disabled = false;
+    console.log(`  - Разблокирован checkbox: ${checkbox.id}`);
+  });
+
+  // Показываем кнопку "✓"
+  const button = paramMainContainer.querySelector("button");
+  if (button) {
+    button.style.display = "inline-block";
+    console.log(`  - Показана кнопка ✓`);
   }
 }
 
@@ -1379,70 +1376,75 @@ function lockFinalParameter(matchId, parameterType) {
     `🔒 Блокируем параметр: matchId=${matchId}, parameterType=${parameterType}`
   );
 
-  // Находим контейнер с этим параметром
-  let paramContainer = null;
+  let element = null;
 
+  // Находим главный элемент параметра
   if (parameterType === "exact_score") {
-    const input1 = document.getElementById(`exactScore1_${matchId}`);
-    const input2 = document.getElementById(`exactScore2_${matchId}`);
-    if (input1) paramContainer = input1.closest('div[style*="flex"]');
+    element = document.getElementById(`exactScore1_${matchId}`);
   } else if (parameterType === "yellow_cards") {
-    const input = document.getElementById(`yellowCards_${matchId}`);
-    if (input) paramContainer = input.closest('div[style*="flex"]');
+    element = document.getElementById(`yellowCards_${matchId}`);
   } else if (parameterType === "red_cards") {
-    const input = document.getElementById(`redCards_${matchId}`);
-    if (input) paramContainer = input.closest('div[style*="flex"]');
+    element = document.getElementById(`redCards_${matchId}`);
   } else if (parameterType === "corners") {
-    const input = document.getElementById(`corners_${matchId}`);
-    if (input) paramContainer = input.closest('div[style*="flex"]');
+    element = document.getElementById(`corners_${matchId}`);
   } else if (parameterType === "penalties_in_game") {
-    const checkbox = document.getElementById(`penaltiesInGame_${matchId}`);
-    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+    element = document.getElementById(`penaltiesInGame_${matchId}`);
   } else if (parameterType === "extra_time") {
-    const checkbox = document.getElementById(`extraTime_${matchId}`);
-    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+    element = document.getElementById(`extraTime_${matchId}`);
   } else if (parameterType === "penalties_at_end") {
-    const checkbox = document.getElementById(`penaltiesAtEnd_${matchId}`);
-    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+    element = document.getElementById(`penaltiesAtEnd_${matchId}`);
   }
 
-  if (paramContainer) {
-    console.log(`✅ Найден контейнер параметра`);
-    // Находим все input'ы и toggle'ы в контейнере
-    const inputs = paramContainer.querySelectorAll('input[type="number"]');
-    const checkboxes = paramContainer.querySelectorAll(
-      'input[type="checkbox"]'
-    );
-    const button = paramContainer.querySelector("button");
-    const toggleSpans = paramContainer.querySelectorAll("span[onclick]");
+  if (!element) {
+    console.warn(`⚠️ Элемент параметра не найден`);
+    return;
+  }
 
-    // Блокируем input'ы
-    inputs.forEach((input) => {
-      input.disabled = true;
-      input.style.opacity = "0.6";
-      input.style.cursor = "not-allowed";
-      console.log(`  - Заблокирован input: ${input.id}`);
-    });
+  // Находим родительский контейнер с margin-bottom: 12px (весь параметр целиком)
+  const paramMainContainer = element.closest(
+    'div[style*="margin-bottom: 12px"]'
+  );
+  if (!paramMainContainer) {
+    console.warn(`⚠️ Главный контейнер параметра не найден`);
+    return;
+  }
 
-    // Блокируем toggle'ы
-    checkboxes.forEach((checkbox) => {
-      checkbox.disabled = true;
-      console.log(`  - Заблокирован checkbox: ${checkbox.id}`);
-    });
-    toggleSpans.forEach((span) => {
-      span.style.opacity = "0.6";
-      span.style.cursor = "not-allowed";
-      span.onclick = null; // Убираем обработчик клика
-      console.log(`  - Заблокирован toggle span`);
-    });
+  console.log(`✅ Найден главный контейнер параметра`);
 
-    // Скрываем кнопку "✓"
-    if (button) {
-      button.style.display = "none";
-      console.log(`  - Скрыта кнопка ✓`);
-    }
-  } else {
-    console.warn(`⚠️ Контейнер параметра не найден`);
+  // Блокируем все input'ы числовые
+  const inputs = paramMainContainer.querySelectorAll('input[type="number"]');
+  inputs.forEach((input) => {
+    input.disabled = true;
+    input.style.opacity = "0.6";
+    input.style.cursor = "not-allowed";
+    console.log(`  - Заблокирован input: ${input.id}`);
+  });
+
+  // Блокируем toggle span'ы
+  const toggleSpans = paramMainContainer.querySelectorAll(
+    "span[style*='border-radius: 24px']"
+  );
+  toggleSpans.forEach((span) => {
+    span.style.opacity = "0.6";
+    span.style.cursor = "not-allowed";
+    span.onclick = null; // Убираем обработчик клика
+    console.log(`  - Заблокирован toggle span`);
+  });
+
+  // Блокируем checkbox'ы
+  const checkboxes = paramMainContainer.querySelectorAll(
+    'input[type="checkbox"]'
+  );
+  checkboxes.forEach((checkbox) => {
+    checkbox.disabled = true;
+    console.log(`  - Заблокирован checkbox: ${checkbox.id}`);
+  });
+
+  // Скрываем кнопку "✓"
+  const button = paramMainContainer.querySelector("button");
+  if (button) {
+    button.style.display = "none";
+    console.log(`  - Скрыта кнопка ✓`);
   }
 }
 
