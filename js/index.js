@@ -4964,9 +4964,40 @@ async function showUserProfile(userId, username) {
       return;
     }
 
-    // Загружаем награды
+    // Загружаем награды за турниры (автоматические)
     const awardsResponse = await fetch(`/api/user/${userId}/awards`);
-    const awards = await awardsResponse.json();
+    const tournamentAwards = await awardsResponse.json();
+
+    // Загружаем пользовательские награды (выданные админом)
+    const customAwardsResponse = await fetch(
+      `/api/user/${userId}/custom-awards`
+    );
+    const customAwards = await customAwardsResponse.json();
+
+    // Объединяем обе массива
+    const allAwards = [...(tournamentAwards || []), ...(customAwards || [])];
+
+    // Функция для получения иконки награды
+    const getAwardIcon = (awardType) => {
+      const icons = {
+        participant: "👤",
+        winner: "🥇",
+        best_result: "⭐",
+        special: "🎖️",
+      };
+      return icons[awardType] || "🏆";
+    };
+
+    // Функция для получения текста типа награды
+    const getAwardTypeText = (awardType) => {
+      const text = {
+        participant: "Участник турнира",
+        winner: "Победитель",
+        best_result: "Лучший результат",
+        special: "Специальная награда",
+      };
+      return text[awardType] || awardType;
+    };
 
     // Формируем модальное окно
     const profileHTML = `
@@ -5044,24 +5075,49 @@ async function showUserProfile(userId, username) {
         }
 
         ${
-          awards && awards.length > 0
+          allAwards && allAwards.length > 0
             ? `
           <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
             <h3 style="color: #d4af37; margin-bottom: 15px; font-size: 1.1em;text-align: center;">🏆 НАГРАДЫ</h3>
             <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
-              ${awards
+              ${allAwards
                 .map((award) => {
+                  // Определяем тип награды и дату
+                  const isTournamentAward = award.awarded_at; // tournament_awards имеют awarded_at
                   const awardDate = new Date(
-                    award.awarded_at
+                    isTournamentAward ? award.awarded_at : award.created_at
                   ).toLocaleDateString("ru-RU");
-                  return `
-                <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;height: 200px;display: flex;flex-direction: column;justify-content: center;">
-                <div class="award-icon">🏆</div>
-                  <div style="color: #fff; font-weight: 600; margin-bottom: 4px; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);">${award.event_name}</div>
-                  <div style="color: #fff; font-size: 0.85em; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">Угадано: <strong>${award.won_bets}</strong> ставок</div>
-                  <div style="color: #ffe0b2; font-size: 0.75em; margin-top: 4px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">${awardDate}</div>
-                </div>
-              `;
+
+                  if (isTournamentAward) {
+                    // Это награда за победу в турнире
+                    return `
+                    <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;height: 200px;display: flex;flex-direction: column;justify-content: center;">
+                    <div class="award-icon">🏆</div>
+                      <div style="color: #fff; font-weight: 600; margin-bottom: 4px; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);">Победитель в турнире "${award.event_name}"</div>
+                      <div style="color: #fff; font-size: 0.85em; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">Угадано: <strong>${award.won_bets}</strong> ставок</div>
+                      <div style="color: #ffe0b2; font-size: 0.75em; margin-top: 4px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">${awardDate}</div>
+                    </div>
+                  `;
+                  } else {
+                    // Это пользовательская награда
+                    const icon = getAwardIcon(award.award_type);
+                    const typeText = getAwardTypeText(award.award_type);
+                    const eventText = award.event_name
+                      ? ` в турнире "${award.event_name}"`
+                      : "";
+                    const descText = award.description
+                      ? `<div style="color: #e0b0ff; font-size: 0.8em; margin-top: 4px; font-style: italic; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">"${award.description}"</div>`
+                      : "";
+
+                    return `
+                    <div style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.2) 100%); border: 2px solid rgba(255, 193, 7, 0.5); border-radius: 8px; padding: 12px; text-align: center;">
+                      <div style="font-size: 1.5em; margin-bottom: 4px;">${icon}</div>
+                      <div style="color: #fff; font-weight: 600; font-size: 0.95em; margin-bottom: 3px;">${typeText}${eventText}</div>
+                      ${descText}
+                      <div style="color: #ffb74d; font-size: 0.75em; margin-top: 4px;">${awardDate}</div>
+                    </div>
+                  `;
+                  }
                 })
                 .join("")}
             </div>
