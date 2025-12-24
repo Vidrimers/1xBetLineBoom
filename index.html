@@ -372,6 +372,24 @@
               Панель управления очередью уведомлений
             </a>
             <button
+              onclick="openModeratorsPanel()"
+              style="
+                margin-left: 10px;
+                background: rgba(156, 39, 176, 0.7);
+                color: #f0e6ff;
+                border: 1px solid #9c27b0;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1em;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              🛡️ Модераторы
+            </button>
+            <button
               id="adminUsersBtn"
               onclick="loadAdminUsers()"
               style="
@@ -1358,6 +1376,79 @@
           </div>
           <div id="tournamentParticipantBetsList" style="max-height: 500px; overflow-y: auto;">
             <div class="empty-message">Загружаем ставки...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Moderators Management -->
+    <div id="moderatorsModal" class="modal" style="display: none" onclick="if(event.target.id === 'moderatorsModal') closeModeratorsPanel()">
+      <div class="modal-content" style="max-width: 700px">
+        <div class="modal-header">
+          <h2>🛡️ Управление модераторами</h2>
+          <button class="modal-close" onclick="closeModeratorsPanel()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Список модераторов -->
+          <div style="margin-bottom: 30px">
+            <h3 style="color: #5a9fd4; margin-bottom: 15px">Текущие модераторы:</h3>
+            <div id="moderatorsList" style="max-height: 300px; overflow-y: auto;">
+              <div class="empty-message">Загружаем модераторов...</div>
+            </div>
+          </div>
+
+          <!-- Форма добавления модератора -->
+          <div style="border-top: 1px solid #444; padding-top: 20px">
+            <h3 style="color: #5a9fd4; margin-bottom: 15px">Назначить нового модератора:</h3>
+            <div style="margin-bottom: 15px">
+              <label style="display: block; margin-bottom: 8px; color: #e0e0e0">Выбрать пользователя:</label>
+              <select id="userSelectForModerator" style="width: 100%; padding: 10px; background: #333; color: #e0e0e0; border: 1px solid #555; border-radius: 4px">
+                <option value="">-- Выбрать пользователя --</option>
+              </select>
+            </div>
+
+            <div style="margin-bottom: 15px">
+              <label style="display: block; margin-bottom: 8px; color: #e0e0e0">Разрешения модератора:</label>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <label style="display: flex; align-items: center; cursor: pointer">
+                  <input type="checkbox" id="permManageMatches" style="margin-right: 8px; cursor: pointer" />
+                  <span>🏆 Управление матчами (создание, редактирование)</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer">
+                  <input type="checkbox" id="permManageResults" style="margin-right: 8px; cursor: pointer" />
+                  <span>📊 Установка результатов</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer">
+                  <input type="checkbox" id="permManageTournaments" style="margin-right: 8px; cursor: pointer" />
+                  <span>🎯 Управление турнирами</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer">
+                  <input type="checkbox" id="permViewLogs" style="margin-right: 8px; cursor: pointer" />
+                  <span>📋 Просмотр логов</span>
+                </label>
+              </div>
+            </div>
+
+            <button
+              onclick="assignModerator()"
+              style="
+                background: rgba(76, 175, 80, 0.7);
+                color: #c8e6c9;
+                border: 1px solid #4caf50;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1em;
+                transition: all 0.3s ease;
+                width: 100%;
+              "
+              onmouseover="this.style.transform='scale(1.02)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              ✅ Назначить модератора
+            </button>
           </div>
         </div>
       </div>

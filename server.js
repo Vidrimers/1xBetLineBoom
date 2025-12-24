@@ -912,6 +912,14 @@ db.exec(`
     penalties_at_end TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (match_id) REFERENCES matches(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS moderators (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    permissions TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
   )
 `);
 
@@ -1279,6 +1287,138 @@ app.post("/api/user", (req, res) => {
 
     res.json(user);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.1 Получить всех пользователей
+app.get("/api/users", (req, res) => {
+  try {
+    const users = db
+      .prepare("SELECT id, username FROM users ORDER BY username ASC")
+      .all();
+    res.json(users);
+  } catch (error) {
+    console.error("Ошибка при получении пользователей:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.2 Получить всех модераторов
+app.get("/api/moderators", (req, res) => {
+  try {
+    const moderators = db
+      .prepare(
+        `
+      SELECT m.id, u.id as user_id, u.username, m.permissions
+      FROM moderators m
+      JOIN users u ON m.user_id = u.id
+      ORDER BY u.username ASC
+    `
+      )
+      .all();
+
+    // Парсим JSON-массив разрешений
+    const result = moderators.map((mod) => ({
+      ...mod,
+      permissions: JSON.parse(mod.permissions || "[]"),
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error("Ошибка при получении модераторов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.3 Назначить нового модератора
+app.post("/api/moderators", (req, res) => {
+  try {
+    const { user_id, permissions } = req.body;
+
+    if (!user_id || !Array.isArray(permissions)) {
+      return res.status(400).json({ error: "Неверные параметры" });
+    }
+
+    // Проверяем существует ли пользователь
+    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(user_id);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем, не является ли уже модератором
+    const existingMod = db
+      .prepare("SELECT id FROM moderators WHERE user_id = ?")
+      .get(user_id);
+
+    if (existingMod) {
+      return res.status(400).json({ error: "Пользователь уже модератор" });
+    }
+
+    // Добавляем модератора
+    const result = db
+      .prepare("INSERT INTO moderators (user_id, permissions) VALUES (?, ?)")
+      .run(user_id, JSON.stringify(permissions));
+
+    res.json({
+      success: true,
+      message: "Модератор успешно назначен",
+      id: result.lastInsertRowid,
+    });
+  } catch (error) {
+    console.error("Ошибка при назначении модератора:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.4 Удалить модератора
+app.delete("/api/moderators/:moderatorId", (req, res) => {
+  try {
+    const { moderatorId } = req.params;
+
+    const result = db
+      .prepare("DELETE FROM moderators WHERE id = ?")
+      .run(moderatorId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Модератор не найден" });
+    }
+
+    res.json({
+      success: true,
+      message: "Модератор удален",
+    });
+  } catch (error) {
+    console.error("Ошибка при удалении модератора:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.5 Обновить разрешения модератора
+app.put("/api/moderators/:moderatorId/permissions", (req, res) => {
+  try {
+    const { moderatorId } = req.params;
+    const { permissions } = req.body;
+
+    if (!Array.isArray(permissions)) {
+      return res.status(400).json({ error: "Разрешения должны быть массивом" });
+    }
+
+    const result = db
+      .prepare("UPDATE moderators SET permissions = ? WHERE id = ?")
+      .run(JSON.stringify(permissions), moderatorId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Модератор не найден" });
+    }
+
+    res.json({
+      success: true,
+      message: "Разрешения обновлены",
+    });
+  } catch (error) {
+    console.error("Ошибка при обновлении разрешений:", error);
     res.status(500).json({ error: error.message });
   }
 });

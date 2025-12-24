@@ -2701,6 +2701,235 @@ async function backupDatabase() {
   }
 }
 
+// ========== УПРАВЛЕНИЕ МОДЕРАТОРАМИ ==========
+
+// Открыть панель управления модераторами
+async function openModeratorsPanel() {
+  if (!isAdmin()) {
+    alert("❌ У вас нет прав для управления модераторами");
+    return;
+  }
+
+  const modal = document.getElementById("moderatorsModal");
+  modal.style.display = "flex";
+
+  // Загружаем список модераторов
+  loadModeratorsList();
+
+  // Загружаем список пользователей
+  loadUsersList();
+}
+
+// Закрыть панель управления модераторами
+function closeModeratorsPanel() {
+  const modal = document.getElementById("moderatorsModal");
+  modal.style.display = "none";
+}
+
+// Загрузить список модераторов
+async function loadModeratorsList() {
+  try {
+    const response = await fetch("/api/moderators");
+    const moderators = await response.json();
+
+    const listContainer = document.getElementById("moderatorsList");
+
+    if (!Array.isArray(moderators) || moderators.length === 0) {
+      listContainer.innerHTML =
+        '<div class="empty-message">Модераторов нет</div>';
+      return;
+    }
+
+    listContainer.innerHTML = moderators
+      .map(
+        (mod) => `
+      <div style="
+        background: rgba(156, 39, 176, 0.2);
+        border: 1px solid #9c27b0;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      ">
+        <div>
+          <div style="color: #e0e0e0; font-weight: bold; margin-bottom: 5px">${
+            mod.username
+          }</div>
+          <div style="color: #b0b0b0; font-size: 0.9em">
+            Разрешения: ${getPermissionsText(mod.permissions || [])}
+          </div>
+        </div>
+        <button
+          onclick="removeModerator(${mod.id})"
+          style="
+            background: rgba(244, 67, 54, 0.7);
+            color: #ffb3b3;
+            border: 1px solid #f44336;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+          "
+          onmouseover="this.style.transform='scale(1.05)'"
+          onmouseout="this.style.transform='scale(1)'"
+        >
+          🗑️ Удалить
+        </button>
+      </div>
+    `
+      )
+      .join("");
+  } catch (error) {
+    console.error("Ошибка при загрузке модераторов:", error);
+    document.getElementById("moderatorsList").innerHTML =
+      '<div class="empty-message">Ошибка загрузки модераторов</div>';
+  }
+}
+
+// Загрузить список пользователей для выбора
+async function loadUsersList() {
+  try {
+    const response = await fetch("/api/users");
+    const users = await response.json();
+
+    // Получаем список модераторов
+    const modsResponse = await fetch("/api/moderators");
+    const moderators = await modsResponse.json();
+    const moderatorUserIds = new Set(moderators.map((mod) => mod.user_id));
+
+    const select = document.getElementById("userSelectForModerator");
+
+    // Очищаем текущие опции кроме первой
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    // Добавляем пользователей, исключая админа и существующих модераторов
+    users.forEach((user) => {
+      // Исключаем админа (его имя совпадает с ADMIN_LOGIN)
+      if (user.username === ADMIN_LOGIN) {
+        return; // Пропускаем админа
+      }
+
+      // Исключаем ADMIN_DB_NAME
+      if (user.username === ADMIN_DB_NAME) {
+        return; // Пропускаем ADMIN_DB_NAME
+      }
+
+      // Исключаем уже существующих модераторов
+      if (moderatorUserIds.has(user.id)) {
+        return; // Пропускаем если уже модератор
+      }
+
+      const option = document.createElement("option");
+      option.value = user.id;
+      option.textContent = user.username;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Ошибка при загрузке пользователей:", error);
+  }
+}
+
+// Получить текст разрешений
+function getPermissionsText(permissions) {
+  const permText = {
+    manage_matches: "матчи",
+    manage_results: "результаты",
+    manage_tournaments: "турниры",
+    view_logs: "логи",
+  };
+
+  if (permissions.length === 0) return "нет";
+
+  return permissions.map((p) => permText[p] || p).join(", ");
+}
+
+// Назначить нового модератора
+async function assignModerator() {
+  const userId = document.getElementById("userSelectForModerator").value;
+
+  if (!userId) {
+    alert("❌ Выберите пользователя");
+    return;
+  }
+
+  // Собираем разрешения
+  const permissions = [];
+  if (document.getElementById("permManageMatches").checked)
+    permissions.push("manage_matches");
+  if (document.getElementById("permManageResults").checked)
+    permissions.push("manage_results");
+  if (document.getElementById("permManageTournaments").checked)
+    permissions.push("manage_tournaments");
+  if (document.getElementById("permViewLogs").checked)
+    permissions.push("view_logs");
+
+  if (permissions.length === 0) {
+    alert("❌ Выберите хотя бы одно разрешение");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/moderators", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        permissions: permissions,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert("✅ Модератор успешно назначен");
+
+      // Очищаем форму
+      document.getElementById("userSelectForModerator").value = "";
+      document.getElementById("permManageMatches").checked = false;
+      document.getElementById("permManageResults").checked = false;
+      document.getElementById("permManageTournaments").checked = false;
+      document.getElementById("permViewLogs").checked = false;
+
+      // Перезагружаем список
+      loadModeratorsList();
+    } else {
+      alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при назначении модератора:", error);
+    alert(`❌ Ошибка при назначении модератора: ${error.message}`);
+  }
+}
+
+// Удалить модератора
+async function removeModerator(moderatorId) {
+  if (!confirm("⚠️ Вы уверены? Модератор будет удален из системы")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/moderators/${moderatorId}`, {
+      method: "DELETE",
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert("✅ Модератор удален");
+      loadModeratorsList();
+    } else {
+      alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при удалении модератора:", error);
+    alert(`❌ Ошибка при удалении модератора: ${error.message}`);
+  }
+}
+
 // Создать новое событие (только для админа)
 function openCreateEventModal() {
   if (!currentUser) {
