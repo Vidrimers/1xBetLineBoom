@@ -1469,7 +1469,6 @@ function lockFinalParameter(matchId, parameterType) {
   const button = paramMainContainer.querySelector("button");
   if (button) {
     button.style.display = "none";
-    console.log(`🔒 Кнопка ✓ скрыта для параметра ${parameterType}`);
   }
 }
 
@@ -1504,7 +1503,6 @@ async function placeFinalBet(matchId, parameterType) {
       return;
     }
     const value = inputField.value;
-    console.log(`📊 Получено значение для ${parameterType}: ${value}`);
     betValue = value;
   } else if (
     parameterType === "penalties_in_game" ||
@@ -1648,16 +1646,11 @@ async function loadMyBets() {
     // Прикрепляем параметры к ставкам
     bets.forEach((bet) => {
       if (bet.is_final_bet) {
-        console.log(
-          `Финальная ставка ${bet.id} (матч ${bet.match_id}, параметр ${bet.parameter_type})`
-        );
         // ВСЕГДА прикрепляем параметры для финальных ставок, даже если их нет (undefined)
         bet.final_parameters = finalParameters[bet.match_id] || null;
-        console.log(`✓ Параметры для ставки ${bet.id}:`, bet.final_parameters);
       }
     });
 
-    console.log("💰 Мои ставки:", bets);
     displayMyBets(bets);
     if (isMatchUpdatingEnabled) {
       displayMatches(); // Перерисовываем матчи чтобы выделить с ставками
@@ -1702,14 +1695,6 @@ function displayMyBets(bets) {
         let statusText = "⏳ В ожидании";
         let normalizedPrediction = bet.prediction; // Инициализируем ДО всех условий!
 
-        console.log(
-          `Обрабатываю ставку ${bet.id}: is_final_bet=${
-            bet.is_final_bet
-          }, parameter_type=${bet.parameter_type}, final_parameters=${
-            bet.final_parameters ? "ЕСТЬ" : "НЕТ"
-          }`
-        );
-
         // Если это финальная ставка на параметр матча (желтые карты, красные карты и т.д.)
         if (bet.is_final_bet) {
           const params = bet.final_parameters;
@@ -1721,11 +1706,6 @@ function displayMyBets(bets) {
           } else {
             // Параметры установлены - проверяем результат
             let isWon = false;
-
-            console.log(
-              `✓ ФИНАЛЬНАЯ СТАВКА ${bet.id}, параметр: ${bet.parameter_type}, значение: ${bet.prediction}, параметры:`,
-              params
-            );
 
             if (
               bet.parameter_type === "yellow_cards" &&
@@ -1816,10 +1796,6 @@ function displayMyBets(bets) {
             }
           }
 
-          console.log(
-            `Bet ${bet.id}: prediction="${bet.prediction}", normalized="${normalizedPrediction}", team1="${bet.team1_name}", team2="${bet.team2_name}"`
-          );
-
           // Проверяем, есть ли результат матча
           if (bet.winner) {
             // Маппинг winner (из БД) в prediction format
@@ -1832,10 +1808,6 @@ function displayMyBets(bets) {
             } else if (bet.winner === "draw") {
               winnerPrediction = "draw";
             }
-
-            console.log(
-              `Winner check: winner="${bet.winner}", winnerPrediction="${winnerPrediction}", normalized="${normalizedPrediction}"`
-            );
 
             if (winnerPrediction === normalizedPrediction) {
               statusClass = "won";
@@ -2814,9 +2786,11 @@ function displayAdminUsersModal() {
       <div class="admin-user-info">
         <div class="admin-user-name">${user.username}</div>
         <div class="admin-user-stats">
-          Ставок: ${user.total_bets || 0} | 
-          Выиграл: ${user.won_bets || 0} | 
-          Проиграл: ${user.lost_bets || 0}
+          Регистрация: ${
+            user.created_at
+              ? new Date(user.created_at).toLocaleDateString("ru-RU")
+              : "неизвестно"
+          }
         </div>
       </div>
       <div class="admin-user-actions">
