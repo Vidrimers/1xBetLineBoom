@@ -1546,6 +1546,45 @@ app.post("/api/awards", (req, res) => {
   }
 });
 
+// 5.8 Редактировать награду
+app.put("/api/awards/:awardId", (req, res) => {
+  try {
+    const { awardId } = req.params;
+    const { award_type, description } = req.body;
+
+    // Валидация
+    if (!award_type) {
+      return res.status(400).json({ error: "Тип награды не указан" });
+    }
+
+    const validTypes = ["participant", "winner", "best_result", "special"];
+    if (!validTypes.includes(award_type)) {
+      return res.status(400).json({ error: "Неверный тип награды" });
+    }
+
+    // Обновляем награду
+    const result = db
+      .prepare(
+        "UPDATE user_awards SET award_type = ?, description = ? WHERE id = ?"
+      )
+      .run(award_type, description || null, awardId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Награда не найдена" });
+    }
+
+    console.log(`✓ Награда обновлена: ${awardId}`);
+
+    res.json({
+      success: true,
+      message: "Награда успешно обновлена",
+    });
+  } catch (error) {
+    console.error("Ошибка при обновлении награды:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 5.9 Удалить награду
 app.delete("/api/awards/:awardId", (req, res) => {
   try {

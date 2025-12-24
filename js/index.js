@@ -3029,57 +3029,94 @@ async function loadAwardsList() {
       special: "🎖️ Специальная награда",
     };
 
-    listContainer.innerHTML = awards
-      .map(
-        (award) => `
+    listContainer.innerHTML = `
       <div style="
-        background: rgba(255, 193, 7, 0.15);
-        border: 1px solid #fbc02d;
-        padding: 12px;
-        margin-bottom: 10px;
-        border-radius: 6px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
       ">
-        <div>
-          <div style="color: #e0e0e0; font-weight: bold; margin-bottom: 3px">${
-            award.username
-          }</div>
-          <div style="color: #b0b0b0; font-size: 0.9em; margin-bottom: 3px">
-            ${awardTypeText[award.award_type] || award.award_type}
-          </div>
-          <div style="color: #888; font-size: 0.85em; margin-bottom: 3px">
-            ${award.event_name ? "🏆 " + award.event_name : "Общая награда"}
-          </div>
-          ${
-            award.description
-              ? `<div style="color: #888; font-size: 0.85em; font-style: italic">"${award.description}"</div>`
-              : ""
-          }
-        </div>
-        <button
-          onclick="removeAward(${award.id})"
-          style="
-            background: rgba(244, 67, 54, 0.7);
-            color: #ffb3b3;
-            border: 1px solid #f44336;
-            padding: 8px 16px;
-            border-radius: 4px;
+        ${awards
+          .map(
+            (award) => `
+          <div style="
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(251, 192, 45, 0.5);
+            padding: 10px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
             cursor: pointer;
-            font-size: 0.9em;
-            flex-shrink: 0;
-            margin-left: 10px;
+            position: relative;
           "
-          onmouseover="this.style.transform='scale(1.05)'"
-          onmouseout="this.style.transform='scale(1)'"
-        >
-          🗑️ Удалить
-        </button>
+          onmouseover="this.style.background='rgba(255, 193, 7, 0.2)'; this.style.borderColor='#fbc02d'"
+          onmouseout="this.style.background='rgba(255, 193, 7, 0.1)'; this.style.borderColor='rgba(251, 192, 45, 0.5)'"
+          >
+            <div style="margin-bottom: 8px; flex-grow: 1;">
+              <div style="color: #fbc02d; font-weight: bold; margin-bottom: 4px; font-size: 0.95em; word-break: break-word">${
+                award.username
+              }</div>
+              <div style="color: #b0b0b0; font-size: 0.8em; margin-bottom: 3px">
+                ${awardTypeText[award.award_type] || award.award_type}
+              </div>
+              <div style="color: #888; font-size: 0.75em; margin-bottom: 3px">
+                ${award.event_name ? "🏆 " + award.event_name : "Общая"}
+              </div>
+              ${
+                award.description
+                  ? `<div style="color: #888; font-size: 0.75em; font-style: italic; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">"${award.description}"</div>`
+                  : ""
+              }
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 8px;">
+              <button
+                onclick="openEditAwardModal(${award.id}, '${
+              award.username
+            }', '${award.award_type}', '${award.description || ""}', '${
+              award.event_name || ""
+            }')"
+                style="
+                  background: rgba(33, 150, 243, 0.7);
+                  color: #87ceeb;
+                  border: 1px solid #2196f3;
+                  padding: 6px 10px;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.8em;
+                  flex: 1;
+                  transition: all 0.2s;
+                "
+                onmouseover="this.style.background='rgba(33, 150, 243, 0.9)'"
+                onmouseout="this.style.background='rgba(33, 150, 243, 0.7)'"
+              >
+                ✏️ Редакт.
+              </button>
+              <button
+                onclick="removeAward(${award.id})"
+                style="
+                  background: rgba(244, 67, 54, 0.7);
+                  color: #ffb3b3;
+                  border: 1px solid #f44336;
+                  padding: 6px 10px;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.8em;
+                  flex: 1;
+                  transition: all 0.2s;
+                "
+                onmouseover="this.style.background='rgba(244, 67, 54, 0.9)'"
+                onmouseout="this.style.background='rgba(244, 67, 54, 0.7)'"
+              >
+                🗑️ Удал.
+              </button>
+            </div>
+          </div>
+        `
+          )
+          .join("")}
       </div>
-    `
-      )
-      .join("");
+    `;
   } catch (error) {
     console.error("Ошибка при загрузке наград:", error);
     document.getElementById("awardsList").innerHTML =
@@ -3224,6 +3261,218 @@ async function assignAward() {
 }
 
 // Удалить награду
+// Открыть модальное окно редактирования награды
+function openEditAwardModal(
+  awardId,
+  username,
+  awardType,
+  description,
+  eventName
+) {
+  // Создаем или обновляем модаль для редактирования
+  let editModal = document.getElementById("editAwardModal");
+
+  if (!editModal) {
+    // Создаем модаль если её нет
+    editModal = document.createElement("div");
+    editModal.id = "editAwardModal";
+    editModal.style.cssText = `
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    `;
+    document.body.appendChild(editModal);
+  }
+
+  // Сохраняем ID награды как data атрибут
+  editModal.dataset.awardId = awardId;
+
+  editModal.innerHTML = `
+    <div style="
+      background: #1a1e28;
+      border: 1px solid #444;
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    ">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="color: #5a9fd4; margin: 0;">✏️ Редактировать награду</h2>
+        <button onclick="closeEditAwardModal()" style="
+          background: none;
+          border: none;
+          color: #888;
+          font-size: 28px;
+          cursor: pointer;
+          padding: 0;
+        ">&times;</button>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">👤 Участник:</label>
+        <div style="
+          background: #2a2e3a;
+          padding: 10px;
+          border-radius: 4px;
+          color: #fbc02d;
+          border: 1px solid rgba(251, 192, 45, 0.5);
+        ">${username}</div>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">🏆 Турнир:</label>
+        <div style="
+          background: #2a2e3a;
+          padding: 10px;
+          border-radius: 4px;
+          color: #b0b0b0;
+          border: 1px solid #444;
+        ">${eventName || "Общая награда"}</div>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">📋 Тип награды:</label>
+        <select id="editAwardTypeSelect" style="
+          width: 100%;
+          padding: 10px;
+          background: #2a2e3a;
+          color: #e0e0e0;
+          border: 1px solid #444;
+          border-radius: 4px;
+        ">
+          <option value="participant" ${
+            awardType === "participant" ? "selected" : ""
+          }>👤 Участник турнира</option>
+          <option value="winner" ${
+            awardType === "winner" ? "selected" : ""
+          }>🥇 Победитель</option>
+          <option value="best_result" ${
+            awardType === "best_result" ? "selected" : ""
+          }>⭐ Лучший результат</option>
+          <option value="special" ${
+            awardType === "special" ? "selected" : ""
+          }>🎖️ Специальная награда</option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">📝 Описание (опционально):</label>
+        <textarea id="editAwardDescriptionInput" style="
+          width: 100%;
+          padding: 10px;
+          background: #2a2e3a;
+          color: #e0e0e0;
+          border: 1px solid #444;
+          border-radius: 4px;
+          min-height: 80px;
+          font-family: Arial, sans-serif;
+          resize: vertical;
+        ">${description || ""}</textarea>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button onclick="saveEditAward()" style="
+          flex: 1;
+          background: rgba(76, 175, 80, 0.7);
+          color: #a8d5a8;
+          border: 1px solid #4caf50;
+          padding: 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 1em;
+          font-weight: bold;
+          transition: all 0.2s;
+        "
+        onmouseover="this.style.background='rgba(76, 175, 80, 0.9)'"
+        onmouseout="this.style.background='rgba(76, 175, 80, 0.7)'"
+        >
+          ✅ Сохранить
+        </button>
+        <button onclick="closeEditAwardModal()" style="
+          flex: 1;
+          background: rgba(158, 158, 158, 0.5);
+          color: #d0d0d0;
+          border: 1px solid #999;
+          padding: 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 1em;
+          transition: all 0.2s;
+        "
+        onmouseover="this.style.background='rgba(158, 158, 158, 0.7)'"
+        onmouseout="this.style.background='rgba(158, 158, 158, 0.5)'"
+        >
+          ❌ Отмена
+        </button>
+      </div>
+    </div>
+  `;
+
+  editModal.style.display = "flex";
+}
+
+// Закрыть модаль редактирования
+function closeEditAwardModal() {
+  const editModal = document.getElementById("editAwardModal");
+  if (editModal) {
+    editModal.style.display = "none";
+  }
+}
+
+// Сохранить изменения награды
+async function saveEditAward() {
+  const editModal = document.getElementById("editAwardModal");
+  const awardId = editModal.dataset.awardId;
+  const newAwardType = document.getElementById("editAwardTypeSelect").value;
+  const newDescription = document.getElementById(
+    "editAwardDescriptionInput"
+  ).value;
+
+  try {
+    const response = await fetch(`/api/awards/${awardId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        award_type: newAwardType,
+        description: newDescription || null,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert("✅ Награда успешно обновлена");
+      closeEditAwardModal();
+      loadAwardsList();
+    } else {
+      alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при обновлении награды:", error);
+    alert(`❌ Ошибка при обновлении награды: ${error.message}`);
+  }
+}
+
+// Закрыть модаль при клике вне её
+document.addEventListener("click", function (event) {
+  const editModal = document.getElementById("editAwardModal");
+  if (editModal && event.target === editModal) {
+    closeEditAwardModal();
+  }
+});
+
 async function removeAward(awardId) {
   if (!confirm("⚠️ Вы уверены? Награда будет удалена")) {
     return;
