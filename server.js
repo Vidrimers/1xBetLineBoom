@@ -1612,7 +1612,10 @@ app.get("/api/user/:userId/profile", (req, res) => {
       .prepare(
         `
       SELECT 
-        COUNT(b.id) as total_bets,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 1
+          ELSE 0
+        END) as total_bets,
         SUM(CASE 
           WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
             CASE 
