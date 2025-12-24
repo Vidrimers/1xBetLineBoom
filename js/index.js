@@ -4235,6 +4235,10 @@ function initAvatarInput() {
       console.log("file:", file);
       if (!file) return;
 
+      const isGif =
+        file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
+      console.log("Это GIF?", isGif);
+
       const reader = new FileReader();
       reader.onload = (event) => {
         console.log("✅ Файл прочитан");
@@ -4245,9 +4249,20 @@ function initAvatarInput() {
         // Уничтожаем старый cropper если существует
         if (cropper) {
           cropper.destroy();
+          cropper = null;
         }
 
-        console.log("Создаю Cropper...");
+        // Для GIF - не используем cropper, просто сохраняем оригинал
+        if (isGif) {
+          console.log("✅ GIF выбран, не используем cropper");
+          document.getElementById("cropperContainer").style.display = "none";
+          document.getElementById("savAvatarBtn").style.display = "block";
+          // Сохраняем оригинальный файл как base64
+          window.gifAvatarData = event.target.result;
+          return;
+        }
+
+        console.log("Создаю Cropper для обычного изображения...");
         console.log("Cropper доступен:", typeof Cropper);
 
         // Создаем новый cropper
@@ -4293,10 +4308,19 @@ function closeAvatarModal(event) {
     cropper.destroy();
     cropper = null;
   }
+  // Очищаем сохраненные GIF данные
+  window.gifAvatarData = null;
 }
 
 async function saveAvatar() {
   console.log("saveAvatar вызвана");
+
+  // Проверяем если это GIF
+  if (window.gifAvatarData) {
+    console.log("Обнаружен GIF, вызываю saveGifAvatar");
+    return saveGifAvatar();
+  }
+
   console.log("cropper:", cropper);
 
   if (!cropper) {
@@ -4317,6 +4341,7 @@ async function saveAvatar() {
 
     // Сохраняем как PNG с оптимизацией
     const avatarData = canvas.toDataURL("image/png", 0.8);
+    const fileType = "image/png";
     console.log("✅ Avatar data получен, размер:", avatarData.length);
 
     console.log("Отправляю на сервер...");
@@ -4325,14 +4350,14 @@ async function saveAvatar() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ avatarData }),
+      body: JSON.stringify({ avatarData, fileType }),
     });
 
     const result = await response.json();
     console.log("Ответ сервера:", result);
 
     if (!response.ok) {
-      alert(
+      console.error(
         "❌ Ошибка при сохранении аватара: " +
           (result.error || "Неизвестная ошибка")
       );
@@ -4350,10 +4375,100 @@ async function saveAvatar() {
     // Закрываем модальное окно и перезагружаем профиль
     closeAvatarModal();
     loadProfile();
-    alert("✅ Аватар сохранен успешно");
   } catch (error) {
     console.error("❌ Ошибка при сохранении аватара:", error);
-    alert("❌ Ошибка при сохранении аватара: " + error.message);
+  }
+}
+
+async function saveGifAvatar() {
+  try {
+    // Используем сохраненный GIF base64
+    let avatarData = window.gifAvatarData;
+    const fileType = "image/gif";
+
+    if (!avatarData) {
+      console.error("❌ GIF не выбран");
+      return;
+    }
+
+    // Сжимаем GIF: переводим в canvas 200x200, затем обратно в base64
+    // Для GIF это потребует специальной библиотеки, пока просто проверяем размер
+    const gifSize = avatarData.length;
+    console.log(`📊 Размер GIF: ${(gifSize / 1024 / 1024).toFixed(2)} MB`);
+
+    // Если GIF больше 2MB, уменьшаем качество
+    if (gifSize > 2 * 1024 * 1024) {
+      console.warn("⚠️ GIF слишком большой, пытаюсь сжать...");
+
+      // Используем Canvas для уменьшения размера (теряет анимацию, но сжимает)
+      // ЛУЧШЕ: оставляем оригинальный GIF но показываем первый кадр
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "rgba(0, 0, 0, 0)";
+        ctx.fillRect(0, 0, 200, 200);
+        ctx.drawImage(img, 0, 0, 200, 200);
+
+        // Используем оригинальный GIF если возможно, иначе PNG
+        if (gifSize < 5 * 1024 * 1024) {
+          // GIF поместится в 5MB лимит
+          console.log("✅ GIF в пределах лимита, сохраняю оригинальный");
+        } else {
+          // GIF слишком большой
+          console.error(
+            "❌ GIF слишком большой (более 5MB). Рекомендуется использовать меньший файл."
+          );
+          return;
+        }
+      };
+      img.src = avatarData;
+
+      // Ждем загрузки картинки
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    console.log("Отправляю GIF на сервер...");
+    const response = await fetch(`/api/user/${currentUser.id}/avatar`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ avatarData, fileType }),
+    });
+
+    const result = await response.json();
+    console.log("Ответ сервера:", result);
+
+    if (!response.ok) {
+      console.error(
+        "❌ Ошибка при сохранении GIF: " +
+          (result.error || "Неизвестная ошибка")
+      );
+      return;
+    }
+
+    console.log("✅ GIF аватар сохранен на сервер");
+
+    // Показываем информацию о размере файла
+    if (result.fileSize) {
+      const sizeMB = (result.fileSize / 1024 / 1024).toFixed(2);
+      console.log(`📊 Финальный размер: ${sizeMB} MB`);
+    }
+
+    // Сохраняем в localStorage для быстрой загрузки
+    if (result.avatarPath) {
+      localStorage.setItem(`avatar_${currentUser.id}`, result.avatarPath);
+      console.log("✅ GIF аватар сохранен в localStorage");
+    }
+
+    // Закрываем модальное окно и перезагружаем профиль
+    closeAvatarModal();
+    loadProfile();
+  } catch (error) {
+    console.error("❌ Ошибка при сохранении GIF аватара:", error);
   }
 }
 
@@ -4372,7 +4487,7 @@ async function deleteAvatar() {
     console.log("Ответ сервера:", result);
 
     if (!response.ok) {
-      alert(
+      console.error(
         "❌ Ошибка при удалении аватара: " +
           (result.error || "Неизвестная ошибка")
       );
@@ -4388,9 +4503,7 @@ async function deleteAvatar() {
     // Закрываем модальное окно и перезагружаем профиль
     closeAvatarModal();
     loadProfile();
-    alert("✅ Аватар удален");
   } catch (error) {
     console.error("❌ Ошибка при удалении аватара:", error);
-    alert("❌ Ошибка при удалении аватара: " + error.message);
   }
 }

@@ -4,6 +4,8 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import gifsicle from "gifsicle";
+import { execSync } from "child_process";
 import {
   startBot,
   notifyIllegalBet,
@@ -1660,10 +1662,35 @@ app.get("/api/user/:userId/profile", (req, res) => {
 app.post("/api/user/:userId/avatar", (req, res) => {
   try {
     const { userId } = req.params;
-    const { avatarData } = req.body;
+    const { avatarData, fileType } = req.body;
 
     if (!avatarData) {
       return res.status(400).json({ error: "Данные аватара не предоставлены" });
+    }
+
+    // Определяем расширение файла на основе MIME type
+    let extension = "png"; // По умолчанию PNG
+    if (fileType === "image/gif") {
+      extension = "gif";
+    } else if (fileType === "image/jpeg" || fileType === "image/jpg") {
+      extension = "jpg";
+    }
+
+    // Удаляем старый аватар если существует
+    const user = db
+      .prepare("SELECT avatar FROM users WHERE id = ?")
+      .get(userId);
+    if (user && user.avatar && user.avatar.startsWith("/img/avatar/")) {
+      const oldFilename = user.avatar.split("/").pop();
+      const oldFilepath = path.join(__dirname, "img", "avatar", oldFilename);
+      try {
+        if (fs.existsSync(oldFilepath)) {
+          fs.unlinkSync(oldFilepath);
+          console.log(`🗑️ Старый файл аватара удален: ${oldFilepath}`);
+        }
+      } catch (fileErr) {
+        console.warn(`⚠️ Не удалось удалить старый файл: ${fileErr.message}`);
+      }
     }
 
     // Конвертируем base64 в буфер
@@ -1671,10 +1698,58 @@ app.post("/api/user/:userId/avatar", (req, res) => {
     const buffer = Buffer.from(base64Data, "base64");
 
     // Сохраняем файл в папку img/avatar/
-    const filename = `user_${userId}_avatar.png`;
+    const filename = `user_${userId}_avatar.${extension}`;
     const filepath = path.join(__dirname, "img", "avatar", filename);
 
     fs.writeFileSync(filepath, buffer);
+
+    // Оптимизируем GIF если это GIF файл
+    if (extension === "gif") {
+      try {
+        const originalSize = fs.statSync(filepath).size;
+        console.log(
+          `📊 Оригинальный размер GIF: ${(originalSize / 1024 / 1024).toFixed(
+            2
+          )} MB`
+        );
+
+        // Используем gifsicle для оптимизации GIF
+        // --optimize=3 это максимальное сжатие без потери анимации
+        const command = `gifsicle --optimize=3 "${filepath}" -o "${filepath}.optimized.gif" 2>&1`;
+
+        try {
+          execSync(command, { stdio: "pipe" });
+          const optimizedSize = fs.statSync(`${filepath}.optimized.gif`).size;
+          const compression = (
+            (1 - optimizedSize / originalSize) *
+            100
+          ).toFixed(1);
+
+          if (optimizedSize < originalSize) {
+            // Заменяем оригинальный файл на оптимизированный
+            fs.renameSync(`${filepath}.optimized.gif`, filepath);
+            console.log(
+              `✅ GIF оптимизирован: ${(originalSize / 1024).toFixed(1)}KB → ${(
+                optimizedSize / 1024
+              ).toFixed(1)}KB (сжато на ${compression}%)`
+            );
+          } else {
+            // Оптимизированный файл больше - удаляем его
+            fs.unlinkSync(`${filepath}.optimized.gif`);
+            console.log(
+              "ℹ️ GIF оптимизация не дала улучшения, используем оригинал"
+            );
+          }
+        } catch (gifsicleErr) {
+          console.warn(
+            `⚠️ Не удалось оптимизировать GIF: ${gifsicleErr.message}`
+          );
+          // Продолжаем с оригинальным файлом
+        }
+      } catch (err) {
+        console.warn(`⚠️ Ошибка при обработке GIF: ${err.message}`);
+      }
+    }
 
     // Сохраняем путь к файлу в БД
     const avatarPath = `/img/avatar/${filename}`;
@@ -1683,10 +1758,12 @@ app.post("/api/user/:userId/avatar", (req, res) => {
       userId
     );
 
+    const finalSize = fs.statSync(filepath).size;
     res.json({
       success: true,
       message: "Аватар сохранен",
       avatarPath: avatarPath,
+      fileSize: finalSize,
     });
   } catch (error) {
     console.error("Ошибка при сохранении аватара:", error);
