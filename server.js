@@ -84,9 +84,15 @@ async function notifyBetAction(action, data) {
     let emoji = action === "placed" ? "✅" : "❌";
     let actionText = action === "placed" ? "СТАВКА СДЕЛАНА" : "СТАВКА УДАЛЕНА";
 
-    // Преобразуем draw -> Ничья для сообщений
-    const predictionText =
-      data.prediction === "draw" ? "Ничья" : data.prediction;
+    // Преобразуем draw -> Ничья, team1/team2 -> названия команд для сообщений
+    let predictionText = data.prediction;
+    if (data.prediction === "team1") {
+      predictionText = data.team1;
+    } else if (data.prediction === "team2") {
+      predictionText = data.team2;
+    } else if (data.prediction === "draw") {
+      predictionText = "Ничья";
+    }
     const message = `${emoji} ${actionText}
 
 👤 Пользователь: ${data.username}

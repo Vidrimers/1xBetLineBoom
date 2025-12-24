@@ -449,8 +449,8 @@ export function startBot() {
       keyboard: [
         ["📊 Статус", "📅 Турниры"],
         ["💰 Мои ставки", "👤 Профиль"],
-        ["📈 Статистика", "⚽ Ближайший матч"],
-        ["🌐 Открыть сайт"],
+        ["🏆 Мои награды", "📈 Статистика"],
+        ["⚽ Ближайший матч", "🌐 Открыть сайт"],
       ],
       resize_keyboard: true,
       one_time_keyboard: false,
@@ -722,9 +722,19 @@ export function startBot() {
             ? eventMap[bet.event_id]
             : "Турнир не найден";
 
+        // Форматируем прогноз (преобразуем team1/team2/draw в названия команд или Ничья)
+        let predictionText = bet.prediction;
+        if (bet.prediction === "team1") {
+          predictionText = bet.team1_name;
+        } else if (bet.prediction === "team2") {
+          predictionText = bet.team2_name;
+        } else if (bet.prediction === "draw") {
+          predictionText = "Ничья";
+        }
+
         messageText +=
           `<b>${index + 1}. ${bet.team1_name} vs ${bet.team2_name}</b>\n` +
-          `🎯 Прогноз: <b>${bet.prediction}</b>\n\n`;
+          `🎯 Прогноз: <b>${predictionText}</b>\n\n`;
       });
 
       if (userPendingBets.length > 10) {
@@ -781,13 +791,33 @@ export function startBot() {
 
       const siteUsername = user ? user.username : "не привязан";
 
+      // Загружаем настройку уведомлений если пользователь найден
+      let notificationStatus = "—";
+      if (user && user.id) {
+        try {
+          const notifResponse = await fetch(
+            `${SERVER_URL}/api/user/${user.id}/notifications`
+          );
+          if (notifResponse.ok) {
+            const notifData = await notifResponse.json();
+            notificationStatus = notifData.telegram_notifications_enabled
+              ? "🔔 Включены"
+              : "🔕 Отключены";
+          }
+        } catch (err) {
+          console.warn("Ошибка при загрузке статуса уведомлений:", err.message);
+          notificationStatus = "—";
+        }
+      }
+
       bot.sendMessage(
         chatId,
         `👤 <b>Профиль:</b>\n\n` +
           `<b>Имя в тг:</b> ${firstName}\n` +
           `<b>Юзернейм в тг:</b> @${telegramUsername}\n` +
           `<b>Имя на сайте:</b> ${siteUsername}\n` +
-          `<b>ID:</b> ${msg.from.id}\n\n` +
+          `<b>ID:</b> ${msg.from.id}\n` +
+          `<b>Личные уведомления:</b> ${notificationStatus}\n\n` +
           `💡 Для просмотра полного профиля используйте сайт.`,
         {
           parse_mode: "HTML",
@@ -800,7 +830,8 @@ export function startBot() {
         `👤 <b>Профиль:</b>\n\n` +
           `<b>Имя в тг:</b> ${firstName}\n` +
           `<b>Username в тг:</b> @${telegramUsername}\n` +
-          `<b>ID:</b> ${msg.from.id}\n\n` +
+          `<b>ID:</b> ${msg.from.id}\n` +
+          `<b>Личные уведомления:</b> —\n\n` +
           `💡 Для просмотра полного профиля используйте сайт.`,
         {
           parse_mode: "HTML",
@@ -1112,6 +1143,114 @@ export function startBot() {
 
   bot.onText(/\/stats/, (msg) => handleStats(msg));
 
+  // Команда /my_awards и кнопка 🏆 Мои награды
+  const handleMyAwards = async (chatId, msg = null) => {
+    if (msg) logUserAction(msg, "Нажата кнопка/команда: Мои награды");
+
+    try {
+      const telegramUsername = msg?.from?.username || "";
+      const firstName = msg?.from?.first_name || "пользователь";
+
+      // Получаем данные пользователя с сайта
+      const response = await fetch(`${SERVER_URL}/api/participants`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch participants");
+      }
+      const participants = await response.json();
+
+      // Ищем пользователя по telegram_username
+      const user = participants.find(
+        (p) =>
+          (p.telegram_username &&
+            p.telegram_username.toLowerCase() ===
+              telegramUsername.toLowerCase()) ||
+          (msg?.from?.first_name &&
+            p.username &&
+            p.username.toLowerCase() === msg.from.first_name.toLowerCase())
+      );
+
+      if (!user) {
+        bot.sendMessage(
+          chatId,
+          `🏆 <b>Мои награды:</b>\n\n` +
+            `Профиль не привязан. Привяжите его на сайте в разделе "👤 Профиль".`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Получаем награды пользователя (tournament_awards)
+      const awardsResponse = await fetch(
+        `${SERVER_URL}/api/user/${user.id}/awards`
+      );
+      if (!awardsResponse.ok) {
+        throw new Error("Failed to fetch awards");
+      }
+      const awards = await awardsResponse.json();
+
+      if (!awards || awards.length === 0) {
+        bot.sendMessage(
+          chatId,
+          `🏆 <b>Мои награды:</b>\n\n` +
+            `<i>Наград пока нет</i>\n\n` +
+            `💡 Побеждайте в турнирах, чтобы получить награды!`,
+          {
+            parse_mode: "HTML",
+          }
+        );
+        return;
+      }
+
+      // Формируем сообщение с наградами
+      let messageText = `🏆 <b>Мои награды:</b>\n\n`;
+
+      awards.slice(0, 10).forEach((award, index) => {
+        // Форматируем дату получения награды
+        let awardDate = "—";
+        if (award.awarded_at) {
+          const awardDateTime = new Date(award.awarded_at);
+          if (!isNaN(awardDateTime.getTime())) {
+            awardDate = awardDateTime.toLocaleDateString("ru-RU", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+          }
+        }
+
+        messageText +=
+          `<b>${index + 1}. ${award.event_name}</b>\n` +
+          `🎯 Победных ставок: <b>${award.won_bets}</b>\n` +
+          `📅 Дата: <i>${awardDate}</i>\n\n`;
+      });
+
+      if (awards.length > 10) {
+        messageText += `📌 Показано 10 из ${awards.length} наград\n\n`;
+      }
+
+      messageText += `💡 Полный список на сайте.`;
+
+      bot.sendMessage(chatId, messageText, {
+        parse_mode: "HTML",
+      });
+    } catch (error) {
+      console.error("Error in handleMyAwards:", error);
+      bot.sendMessage(
+        chatId,
+        `🏆 <b>Мои награды:</b>\n\n` +
+          `<i>⚠️ Ошибка при загрузке наград</i>\n\n` +
+          `💡 Используйте сайт для просмотра наград.`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    }
+  };
+
+  bot.onText(/\/my_awards/, (msg) => handleMyAwards(msg.chat.id, msg));
+
   // ===== ОБРАБОТКА КНОПОК =====
   bot.on("message", (msg) => {
     const chatId = msg.chat.id;
@@ -1135,6 +1274,9 @@ export function startBot() {
         break;
       case "👤 Профиль":
         handleProfile(msg);
+        break;
+      case "🏆 Мои награды":
+        handleMyAwards(chatId, msg);
         break;
       case "📈 Статистика":
         handleStats(msg);
