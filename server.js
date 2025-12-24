@@ -1809,6 +1809,19 @@ app.get("/api/user/:userId/profile", (req, res) => {
       pending_bets: bets.pending_bets || 0,
     };
 
+    // Подсчитываем количество побед в турнирах
+    const tournamentWins = db
+      .prepare(
+        `
+        SELECT COUNT(*) as count
+        FROM tournament_awards
+        WHERE user_id = ?
+      `
+      )
+      .get(userId);
+
+    profile.tournament_wins = tournamentWins?.count || 0;
+
     res.json(profile);
   } catch (error) {
     res.status(500).json({ error: error.message });

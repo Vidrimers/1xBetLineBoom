@@ -2558,6 +2558,12 @@ function displayProfile(profile) {
         <div class="stat-label">⏳ В ожидании</div>
         <div class="stat-value">${profile.pending_bets}</div>
       </div>
+      <div class="stat-card" style="background: rgba(255, 152, 0, 0.15); border-left: 4px solid #ffc107;">
+        <div class="stat-label">🏆 Побед в турнирах</div>
+        <div class="stat-value" style="color: #ffc107;">${
+          profile.tournament_wins || 0
+        }</div>
+      </div>
     </div>
 
     <div class="profile-section">
@@ -4403,6 +4409,12 @@ async function showUserProfile(userId, username) {
             <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">В ожидании</div>
             <div style="font-size: 1.6em; font-weight: bold; color: #ff9800;">${
               userData.pending_bets || 0
+            }</div>
+          </div>
+          <div style="background: rgba(255, 152, 0, 0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">🏆 Побед в турнирах</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #ffc107;">${
+              userData.tournament_wins || 0
             }</div>
           </div>
         </div>
