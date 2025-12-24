@@ -4294,9 +4294,18 @@ async function loadSettings() {
 
     // Вставляем Telegram username настройку ПЕРЕД чекбоксом уведомлений
     const settingsContainer = document.getElementById("settingsContainer");
+
+    // Удаляем старый элемент Telegram если он существует
+    const oldTelegramElement = settingsContainer.querySelector(
+      '[id="telegramSettingsElement"]'
+    );
+    if (oldTelegramElement) {
+      oldTelegramElement.remove();
+    }
+
     const telegramHTML = `
       <!-- Telegram -->
-      <div class="setting-item" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+      <div id="telegramSettingsElement" class="setting-item" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
         <div class="setting-label">
           <span>📱 Telegram</span>
           ${
