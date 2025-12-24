@@ -2326,6 +2326,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     roundsSet.forEach((round) => {
       const roundBets = bets.filter((b) => b.round === round);
       // Тур завершён только если все ставки в нём имеют результат (нет pending)
+      // Проверяем: у каждой ставки result !== 'pending'
       if (
         roundBets.length > 0 &&
         roundBets.every((b) => b.result !== "pending")
@@ -2563,7 +2564,59 @@ function displayProfile(profile) {
         }%</p>
       </div>
     </div>
+
+    <div class="profile-section" id="awardsSection" style="display: none;">
+      <div class="profile-section-title">🏆 НАГРАДЫ</div>
+      <div class="profile-section-content" id="awardsContainer">
+        Загружаем награды...
+      </div>
+    </div>
   `;
+
+  // Загружаем награды после отображения профиля
+  loadUserAwards(profile.id);
+}
+
+async function loadUserAwards(userId) {
+  try {
+    console.log(`🏆 Загружаем награды для пользователя ${userId}`);
+    const response = await fetch(`/api/user/${userId}/awards`);
+    const awards = await response.json();
+
+    console.log("Полученные награды:", awards);
+
+    const awardsSection = document.getElementById("awardsSection");
+    const awardsContainer = document.getElementById("awardsContainer");
+
+    if (!awards || awards.length === 0) {
+      console.log("Нет наград для отображения");
+      awardsSection.style.display = "none";
+      return;
+    }
+
+    awardsSection.style.display = "block";
+
+    let awardsHTML = '<div class="awards-grid">';
+    awards.forEach((award) => {
+      const awardDate = new Date(award.awarded_at).toLocaleDateString("ru-RU");
+      awardsHTML += `
+        <div class="award-card">
+          <div class="award-icon">🏆</div>
+          <div class="award-title">${award.event_name}</div>
+          <div class="award-info">Угадано: <strong>${award.won_bets}</strong> ставок</div>
+          <div class="award-date">${awardDate}</div>
+        </div>
+      `;
+    });
+    awardsHTML += "</div>";
+
+    awardsContainer.innerHTML = awardsHTML;
+    console.log("✅ Награды успешно отображены");
+  } catch (error) {
+    console.error("Ошибка при загрузке наград:", error);
+    document.getElementById("awardsContainer").innerHTML =
+      "Ошибка при загрузке наград";
+  }
 }
 
 // ===== ДЕМО-ДАННЫЕ =====

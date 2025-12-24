@@ -947,6 +947,97 @@ button.tab-btn:hover {
   color: #b0b8c8;
 }
 
+.awards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.award-card {
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.15) 0%,
+    rgba(212, 175, 55, 0.08) 100%
+  );
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.award-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext x=%2250%22 y=%2250%22 font-size=%2280%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 opacity=%220.03%22%3E🏆%3C/text%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 150%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.award-card:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.25) 0%,
+    rgba(212, 175, 55, 0.15) 100%
+  );
+  border-color: rgba(212, 175, 55, 0.6);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.15);
+}
+
+.award-icon {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+  animation: bounce 0.6s ease-in-out;
+}
+
+.award-title {
+  font-weight: 600;
+  color: #d4af37;
+  margin-bottom: 8px;
+  font-size: 0.95em;
+  position: relative;
+  z-index: 1;
+  word-break: break-word;
+}
+
+.award-info {
+  font-size: 0.9em;
+  color: #b0b8c8;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.award-date {
+  font-size: 0.8em;
+  color: #7a8899;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;

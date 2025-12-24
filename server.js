@@ -784,6 +784,27 @@ try {
   // Колонка уже существует, это нормально
 }
 
+// Создаём таблицу наград если её нет
+try {
+  db.prepare(
+    `
+    CREATE TABLE IF NOT EXISTS tournament_awards (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      event_id INTEGER NOT NULL,
+      event_name TEXT NOT NULL,
+      won_bets INTEGER NOT NULL,
+      awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      FOREIGN KEY(event_id) REFERENCES events(id),
+      UNIQUE(user_id, event_id)
+    )
+  `
+  ).run();
+} catch (error) {
+  // Таблица уже существует
+}
+
 // Добавляем колонки для финального матча
 try {
   db.prepare("ALTER TABLE matches ADD COLUMN is_final BOOLEAN DEFAULT 0").run();
@@ -1120,7 +1141,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
       .map((r) => r.round)
       .filter((r) => r);
 
-    // Получаем ставки участника в матчах этого события
+    // Получаем обычные ставки участника в матчах этого события
     const bets = db
       .prepare(
         `
@@ -1131,6 +1152,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
           m.team2_name as team2,
           m.winner,
           m.round as round,
+          0 as is_final_bet,
           CASE 
             WHEN b.prediction = 'team1' THEN m.team1_name
             WHEN b.prediction = 'team2' THEN m.team2_name
@@ -1154,15 +1176,71 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
           END as actual_result
         FROM bets b
         JOIN matches m ON b.match_id = m.id
-        WHERE m.event_id = ? AND b.user_id = ?
+        WHERE m.event_id = ? AND b.user_id = ? AND b.is_final_bet = 0
         ORDER BY m.id ASC
       `
       )
       .all(eventId, userId);
 
+    // Получаем финальные ставки участника в матчах этого события
+    const finalBets = db
+      .prepare(
+        `
+        SELECT 
+          b.id,
+          b.prediction,
+          m.team1_name as team1,
+          m.team2_name as team2,
+          m.winner,
+          m.round as round,
+          1 as is_final_bet,
+          b.parameter_type,
+          CASE 
+            WHEN b.parameter_type = 'yellow_cards' THEN 'Жёлтые карточки: ' || b.prediction
+            WHEN b.parameter_type = 'red_cards' THEN 'Красные карточки: ' || b.prediction
+            WHEN b.parameter_type = 'corners' THEN 'Угловые: ' || b.prediction
+            WHEN b.parameter_type = 'exact_score' THEN 'Точный счёт: ' || b.prediction
+            WHEN b.parameter_type = 'penalties_in_game' THEN 'Пенальти в матче: ' || b.prediction
+            WHEN b.parameter_type = 'extra_time' THEN 'Доп. время: ' || b.prediction
+            WHEN b.parameter_type = 'penalties_at_end' THEN 'Пенальти в конце: ' || b.prediction
+            ELSE b.prediction
+          END as prediction_display,
+          CASE 
+            WHEN fpr.id IS NULL THEN 'pending'
+            WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 'won'
+            WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 'won'
+            WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 'won'
+            WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 'won'
+            WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 'won'
+            WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 'won'
+            WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 'won'
+            ELSE 'lost'
+          END as result,
+          CASE 
+            WHEN b.parameter_type = 'yellow_cards' THEN 'Жёлтых: ' || COALESCE(fpr.yellow_cards, '?')
+            WHEN b.parameter_type = 'red_cards' THEN 'Красных: ' || COALESCE(fpr.red_cards, '?')
+            WHEN b.parameter_type = 'corners' THEN 'Угловых: ' || COALESCE(fpr.corners, '?')
+            WHEN b.parameter_type = 'exact_score' THEN 'Счёт: ' || COALESCE(fpr.exact_score, '?')
+            WHEN b.parameter_type = 'penalties_in_game' THEN COALESCE(fpr.penalties_in_game, '?')
+            WHEN b.parameter_type = 'extra_time' THEN COALESCE(fpr.extra_time, '?')
+            WHEN b.parameter_type = 'penalties_at_end' THEN COALESCE(fpr.penalties_at_end, '?')
+            ELSE NULL
+          END as actual_result
+        FROM bets b
+        JOIN matches m ON b.match_id = m.id
+        LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id
+        WHERE m.event_id = ? AND b.user_id = ? AND b.is_final_bet = 1
+        ORDER BY m.id ASC
+      `
+      )
+      .all(eventId, userId);
+
+    // Объединяем обе таблицы
+    const allBets = [...bets, ...finalBets];
+
     res.json({
       rounds: rounds.length > 0 ? rounds : [],
-      bets: bets,
+      bets: allBets,
     });
   } catch (error) {
     console.error(
@@ -1733,6 +1811,31 @@ app.get("/api/user/:userId/profile", (req, res) => {
 
     res.json(profile);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 10. Получить награды пользователя
+app.get("/api/user/:userId/awards", (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const awards = db
+      .prepare(
+        `
+      SELECT id, event_name, won_bets, awarded_at
+      FROM tournament_awards
+      WHERE user_id = ?
+      ORDER BY awarded_at DESC
+    `
+      )
+      .all(userId);
+
+    console.log(`📦 Получены награды для пользователя ${userId}:`, awards);
+
+    res.json(awards || []);
+  } catch (error) {
+    console.error("Ошибка при получении наград:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2824,6 +2927,15 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
     // Удаляем связанные матчи
     db.prepare("DELETE FROM matches WHERE event_id = ?").run(eventId);
 
+    // Удаляем награды при удалении события
+    try {
+      db.prepare("DELETE FROM tournament_awards WHERE event_id = ?").run(
+        eventId
+      );
+    } catch (error) {
+      console.error("Ошибка при удалении наград:", error);
+    }
+
     // Удаляем само событие
     const result = db.prepare("DELETE FROM events WHERE id = ?").run(eventId);
 
@@ -2881,9 +2993,11 @@ app.put("/api/admin/events/:eventId/lock", (req, res) => {
         WHERE m.event_id = ?
         AND m.winner IS NOT NULL
         AND (
+          (b.prediction = 'team1' AND m.winner = 'team1') OR
+          (b.prediction = 'team2' AND m.winner = 'team2') OR
+          (b.prediction = 'draw' AND m.winner = 'draw') OR
           (b.prediction = m.team1_name AND m.winner = 'team1') OR
-          (b.prediction = m.team2_name AND m.winner = 'team2') OR
-          (b.prediction = 'draw' AND m.winner = 'draw')
+          (b.prediction = m.team2_name AND m.winner = 'team2')
         )
         GROUP BY u.id, u.username
         ORDER BY wins DESC
@@ -2892,8 +3006,23 @@ app.put("/api/admin/events/:eventId/lock", (req, res) => {
       )
       .get(eventId);
 
-    // Если есть победитель, отправляем уведомление в Telegram
+    // Если есть победитель, выдаём награду и отправляем уведомление в Telegram
     if (winner) {
+      // Выдаём награду победителю
+      try {
+        db.prepare(
+          `
+          INSERT INTO tournament_awards (user_id, event_id, event_name, won_bets)
+          VALUES (?, ?, ?, ?)
+        `
+        ).run(winner.id, eventId, event.name, winner.wins);
+        console.log(
+          `🏆 Награда выдана! user_id: ${winner.id}, event: "${event.name}", wins: ${winner.wins}`
+        );
+      } catch (error) {
+        console.error("Ошибка при выдаче награды:", error);
+      }
+
       sendTournamentWinnerNotification(event.name, winner.username);
     }
 
@@ -2925,6 +3054,15 @@ app.put("/api/admin/events/:eventId/unlock", (req, res) => {
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    // Удаляем награду при разблокировке турнира
+    try {
+      db.prepare("DELETE FROM tournament_awards WHERE event_id = ?").run(
+        eventId
+      );
+    } catch (error) {
+      console.error("Ошибка при удалении награды:", error);
     }
 
     res.json({
