@@ -3379,9 +3379,49 @@ function openFinalMatchResultModal(matchId) {
 
   const modal = document.getElementById("finalMatchResultModal");
   const container = document.getElementById("finalParametersContainer");
+  const buttonsContainer = document.getElementById(
+    "finalResultButtonsContainer"
+  );
 
-  // Очищаем контейнер параметров
+  if (!modal || !container || !buttonsContainer) {
+    console.error("Modal elements not found!");
+    return;
+  }
+
+  // Очищаем контейнеры
   container.innerHTML = "";
+  buttonsContainer.innerHTML = "";
+
+  console.log("Match object:", match);
+  console.log("Team1:", match.team1_name, "Team2:", match.team2_name);
+
+  // Создаем кнопки результатов с названиями команд
+  buttonsContainer.innerHTML = `
+    <button
+      id="finalResult_team1"
+      class="result-btn"
+      onclick="setFinalResult('team1')"
+      style="flex: 1"
+    >
+      ${match.team1_name || "Team 1"}
+    </button>
+    <button
+      id="finalResult_draw"
+      class="result-btn"
+      onclick="setFinalResult('draw')"
+      style="flex: 1"
+    >
+      Ничья
+    </button>
+    <button
+      id="finalResult_team2"
+      class="result-btn"
+      onclick="setFinalResult('team2')"
+      style="flex: 1"
+    >
+      ${match.team2_name || "Team 2"}
+    </button>
+  `;
 
   // Создаем поля для каждого параметра если матч - финал
   if (match.is_final) {
@@ -3485,9 +3525,13 @@ function closeFinalMatchResultModal(event) {
   currentFinalResult = null;
 
   // Сбрасываем кнопки результатов
-  document.getElementById("finalResult_team1").style.background = "transparent";
-  document.getElementById("finalResult_draw").style.background = "transparent";
-  document.getElementById("finalResult_team2").style.background = "transparent";
+  const btn1 = document.getElementById("finalResult_team1");
+  const btnDraw = document.getElementById("finalResult_draw");
+  const btn2 = document.getElementById("finalResult_team2");
+
+  if (btn1) btn1.style.background = "transparent";
+  if (btnDraw) btnDraw.style.background = "transparent";
+  if (btn2) btn2.style.background = "transparent";
 }
 
 /**
@@ -3497,12 +3541,19 @@ function setFinalResult(result) {
   currentFinalResult = result;
 
   // Обновляем визуальное отображение
-  document.getElementById("finalResult_team1").style.background =
-    result === "team1" ? "rgba(58, 123, 213, 0.6)" : "transparent";
-  document.getElementById("finalResult_draw").style.background =
-    result === "draw" ? "rgba(255, 152, 0, 0.6)" : "transparent";
-  document.getElementById("finalResult_team2").style.background =
-    result === "team2" ? "rgba(76, 175, 80, 0.6)" : "transparent";
+  const btn1 = document.getElementById("finalResult_team1");
+  const btnDraw = document.getElementById("finalResult_draw");
+  const btn2 = document.getElementById("finalResult_team2");
+
+  if (btn1)
+    btn1.style.background =
+      result === "team1" ? "rgba(58, 123, 213, 0.6)" : "transparent";
+  if (btnDraw)
+    btnDraw.style.background =
+      result === "draw" ? "rgba(255, 152, 0, 0.6)" : "transparent";
+  if (btn2)
+    btn2.style.background =
+      result === "team2" ? "rgba(76, 175, 80, 0.6)" : "transparent";
 }
 
 /**

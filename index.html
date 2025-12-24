@@ -1117,31 +1117,11 @@
 
         <div style="margin-bottom: 20px">
           <h4 style="margin-bottom: 10px; color: #7ab0e0">Результат матча</h4>
-          <div style="display: flex; gap: 10px">
-            <button
-              id="finalResult_team1"
-              class="result-btn"
-              onclick="setFinalResult('team1')"
-              style="flex: 1"
-            >
-              Team 1
-            </button>
-            <button
-              id="finalResult_draw"
-              class="result-btn"
-              onclick="setFinalResult('draw')"
-              style="flex: 1"
-            >
-              Draw
-            </button>
-            <button
-              id="finalResult_team2"
-              class="result-btn"
-              onclick="setFinalResult('team2')"
-              style="flex: 1"
-            >
-              Team 2
-            </button>
+          <div
+            id="finalResultButtonsContainer"
+            style="display: flex; gap: 10px"
+          >
+            <!-- Кнопки результатов будут добавлены динамически с названиями команд -->
           </div>
         </div>
 
