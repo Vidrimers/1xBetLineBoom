@@ -1012,15 +1012,13 @@ function displayMatches() {
                 }
                 <div class="bet-buttons-three">
                     <button class="bet-btn team1 ${
-                      userBetOnMatch?.prediction === match.team1_name
-                        ? "selected"
-                        : ""
-                    }" onclick="placeBet(${match.id}, '${match.team1_name}', '${
+                      userBetOnMatch?.prediction === "team1" ? "selected" : ""
+                    }" onclick="placeBet(${match.id}, '${
         match.team1_name
-      }')" ${
+      }', 'team1')" ${
         effectiveStatus !== "pending"
           ? "disabled"
-          : userBetOnMatch?.prediction === match.team1_name
+          : userBetOnMatch?.prediction === "team1"
           ? "disabled"
           : ""
       }>
@@ -1038,15 +1036,13 @@ function displayMatches() {
                           Ничья
                       </button>
                     <button class="bet-btn team2 ${
-                      userBetOnMatch?.prediction === match.team2_name
-                        ? "selected"
-                        : ""
-                    }" onclick="placeBet(${match.id}, '${match.team2_name}', '${
+                      userBetOnMatch?.prediction === "team2" ? "selected" : ""
+                    }" onclick="placeBet(${match.id}, '${
         match.team2_name
-      }')" ${
+      }', 'team2')" ${
         effectiveStatus !== "pending"
           ? "disabled"
-          : userBetOnMatch?.prediction === match.team2_name
+          : userBetOnMatch?.prediction === "team2"
           ? "disabled"
           : ""
       }>
@@ -1658,11 +1654,42 @@ function displayMyBets(bets) {
         let statusClass = "pending";
         let statusText = "⏳ В ожидании";
 
+        // Нормализуем prediction - преобразуем в актуальные названия команд
+        let normalizedPrediction = bet.prediction;
+
+        if (bet.prediction !== "draw") {
+          // prediction может быть: "team1", "team2", старое название команды
+          if (bet.prediction === "team1") {
+            normalizedPrediction = bet.team1_name;
+          } else if (bet.prediction === "team2") {
+            normalizedPrediction = bet.team2_name;
+          } else {
+            // Это старое название - проверяем совпадение с актуальными названиями
+            if (bet.prediction === bet.team1_name) {
+              normalizedPrediction = bet.team1_name;
+            } else if (bet.prediction === bet.team2_name) {
+              normalizedPrediction = bet.team2_name;
+            } else {
+              // Старое название больше не совпадает
+              // Это значит админ изменил названия команд после ставки
+              // Мы не можем точно знать, на какую команду была ставка
+              // Но в БД этот prediction - это скорее всего team1 (первая команда)
+              // Попытаемся быть умнее и использовать логику содержимого
+              // Но для простоты - используем team1_name как fallback
+              // (это не идеально, но лучше чем показывать несуществующее имя)
+              normalizedPrediction = bet.team1_name;
+            }
+          }
+        }
+
+        console.log(
+          `Bet ${bet.id}: prediction="${bet.prediction}", normalized="${normalizedPrediction}", team1="${bet.team1_name}", team2="${bet.team2_name}"`
+        );
+
         // Проверяем, есть ли результат матча
         if (bet.winner) {
           // Маппинг winner (из БД) в prediction format
           // winner: "team1" | "team2" | "draw"
-          // prediction: team1_name | team2_name | "draw"
           let winnerPrediction;
           if (bet.winner === "team1") {
             winnerPrediction = bet.team1_name;
@@ -1672,7 +1699,11 @@ function displayMyBets(bets) {
             winnerPrediction = "draw";
           }
 
-          if (winnerPrediction === bet.prediction) {
+          console.log(
+            `Winner check: winner="${bet.winner}", winnerPrediction="${winnerPrediction}", normalized="${normalizedPrediction}"`
+          );
+
+          if (winnerPrediction === normalizedPrediction) {
             statusClass = "won";
             statusText = "✅ Выиграла";
           } else {
@@ -1717,10 +1748,12 @@ function displayMyBets(bets) {
                           return `${paramName}: ${bet.prediction}`;
                         }
                       } else {
-                        // Обычная ставка
-                        return bet.prediction === "draw"
-                          ? "Ничья"
-                          : bet.prediction;
+                        // Обычная ставка - выводим нормализованное имя
+                        if (normalizedPrediction === "draw") {
+                          return "Ничья";
+                        } else {
+                          return normalizedPrediction;
+                        }
                       }
                     })()}</strong></span>
                 </div>
@@ -3142,7 +3175,30 @@ async function submitEditMatch(event) {
 
     if (response.ok) {
       closeEditMatchModal();
-      loadMatches(currentEventId);
+
+      // Обновляем локальные данные матча
+      const matchIndex = matches.findIndex((m) => m.id === parseInt(id));
+      if (matchIndex !== -1) {
+        matches[matchIndex] = {
+          ...matches[matchIndex],
+          team1_name: team1,
+          team2_name: team2,
+          match_date: date,
+          round: round,
+          is_final: isFinal,
+          show_exact_score: showExactScore,
+          show_yellow_cards: showYellowCards,
+          show_red_cards: showRedCards,
+          show_corners: showCorners,
+          show_penalties_in_game: showPenaltiesInGame,
+          show_extra_time: showExtraTime,
+          show_penalties_at_end: showPenaltiesAtEnd,
+        };
+      }
+
+      // Перезагружаем и отображаем ставки
+      await loadMyBets();
+      displayMatches();
     } else {
       alert(`❌ Ошибка: ${result.error}`);
     }

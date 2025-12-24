@@ -97,9 +97,11 @@ async function sendTournamentWinnerNotification(
           WHERE m.event_id = ?
           AND m.winner IS NOT NULL
           AND (
+            (b.prediction = 'team1' AND m.winner = 'team1') OR
+            (b.prediction = 'team2' AND m.winner = 'team2') OR
+            (b.prediction = 'draw' AND m.winner = 'draw') OR
             (b.prediction = m.team1_name AND m.winner = 'team1') OR
-            (b.prediction = m.team2_name AND m.winner = 'team2') OR
-            (b.prediction = 'draw' AND m.winner = 'draw')
+            (b.prediction = m.team2_name AND m.winner = 'team2')
           )
           GROUP BY u.id, u.username
           ORDER BY wins DESC
@@ -192,9 +194,11 @@ async function sendTournamentWinnerNotification(
         WHERE m.event_id = ?
         AND m.winner IS NOT NULL
         AND (
+          (b.prediction = 'team1' AND m.winner = 'team1') OR
+          (b.prediction = 'team2' AND m.winner = 'team2') OR
+          (b.prediction = 'draw' AND m.winner = 'draw') OR
           (b.prediction = m.team1_name AND m.winner = 'team1') OR
-          (b.prediction = m.team2_name AND m.winner = 'team2') OR
-          (b.prediction = 'draw' AND m.winner = 'draw')
+          (b.prediction = m.team2_name AND m.winner = 'team2')
         )
         GROUP BY u.id, u.username
         ORDER BY wins ASC
@@ -890,9 +894,11 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
         SUM(CASE 
           WHEN m.winner IS NOT NULL THEN 
             CASE 
-              WHEN (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') OR
-                   (b.prediction = 'draw' AND m.winner = 'draw') THEN 1 
+              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                   (b.prediction = 'team2' AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') OR
+                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1 
               ELSE 0 
             END 
           ELSE 0 
@@ -900,9 +906,11 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
         SUM(CASE 
           WHEN m.winner IS NOT NULL THEN 
             CASE 
-              WHEN NOT ((b.prediction = m.team1_name AND m.winner = 'team1') OR
-                        (b.prediction = m.team2_name AND m.winner = 'team2') OR
-                        (b.prediction = 'draw' AND m.winner = 'draw')) THEN 1 
+              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                        (b.prediction = 'team2' AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw') OR
+                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
               ELSE 0 
             END 
           ELSE 0 
@@ -1176,9 +1184,11 @@ app.get("/api/participants", (req, res) => {
         SUM(CASE 
           WHEN m.winner IS NOT NULL THEN 
             CASE 
-              WHEN (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') OR
-                   (b.prediction = 'draw' AND m.winner = 'draw') THEN 1 
+              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                   (b.prediction = 'team2' AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') OR
+                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1 
               ELSE 0 
             END 
           ELSE 0 
@@ -1186,9 +1196,11 @@ app.get("/api/participants", (req, res) => {
         SUM(CASE 
           WHEN m.winner IS NOT NULL THEN 
             CASE 
-              WHEN NOT ((b.prediction = m.team1_name AND m.winner = 'team1') OR
-                        (b.prediction = m.team2_name AND m.winner = 'team2') OR
-                        (b.prediction = 'draw' AND m.winner = 'draw')) THEN 1 
+              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                        (b.prediction = 'team2' AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw') OR
+                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
               ELSE 0 
             END 
           ELSE 0 
@@ -1232,9 +1244,11 @@ app.get("/api/participants", (req, res) => {
           AND m.event_id = ?
           AND m.winner IS NOT NULL
           AND (
+            (b.prediction = 'team1' AND m.winner = 'team1') OR
+            (b.prediction = 'team2' AND m.winner = 'team2') OR
+            (b.prediction = 'draw' AND m.winner = 'draw') OR
             (b.prediction = m.team1_name AND m.winner = 'team1') OR
-            (b.prediction = m.team2_name AND m.winner = 'team2') OR
-            (b.prediction = 'draw' AND m.winner = 'draw')
+            (b.prediction = m.team2_name AND m.winner = 'team2')
           )
         `
             )
@@ -1255,9 +1269,11 @@ app.get("/api/participants", (req, res) => {
             WHERE m.event_id = ?
             AND m.winner IS NOT NULL
             AND (
+              (b.prediction = 'team1' AND m.winner = 'team1') OR
+              (b.prediction = 'team2' AND m.winner = 'team2') OR
+              (b.prediction = 'draw' AND m.winner = 'draw') OR
               (b.prediction = m.team1_name AND m.winner = 'team1') OR
-              (b.prediction = m.team2_name AND m.winner = 'team2') OR
-              (b.prediction = 'draw' AND m.winner = 'draw')
+              (b.prediction = m.team2_name AND m.winner = 'team2')
             )
             GROUP BY b.user_id
           )
@@ -1305,9 +1321,11 @@ app.get("/api/user/:userId/profile", (req, res) => {
         SUM(CASE 
           WHEN m.winner IS NOT NULL THEN 
             CASE 
-              WHEN (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') OR
-                   (b.prediction = 'draw' AND m.winner = 'draw') THEN 1 
+              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                   (b.prediction = 'team2' AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') OR
+                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1 
               ELSE 0 
             END 
           ELSE 0 
@@ -1315,9 +1333,11 @@ app.get("/api/user/:userId/profile", (req, res) => {
         SUM(CASE 
           WHEN m.winner IS NOT NULL THEN 
             CASE 
-              WHEN NOT ((b.prediction = m.team1_name AND m.winner = 'team1') OR
-                        (b.prediction = m.team2_name AND m.winner = 'team2') OR
-                        (b.prediction = 'draw' AND m.winner = 'draw')) THEN 1 
+              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                        (b.prediction = 'team2' AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw') OR
+                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
               ELSE 0 
             END 
           ELSE 0 
