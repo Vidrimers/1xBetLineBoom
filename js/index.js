@@ -664,6 +664,56 @@ function filterByRound(round) {
   displayMatches();
 }
 
+// Инициализация состояния toggle'ов на основе сохраненных ставок
+function initToggleStates() {
+  if (!userBets || userBets.length === 0) return;
+
+  const toggleParameterMap = {
+    penalties_in_game: "penaltiesInGame_",
+    extra_time: "extraTime_",
+    penalties_at_end: "penaltiesAtEnd_",
+  };
+
+  userBets.forEach((bet) => {
+    if (bet.is_final_bet) {
+      // Инициализируем toggle'ы
+      if (toggleParameterMap[bet.parameter_type]) {
+        const paramType = bet.parameter_type;
+        const idPrefix = toggleParameterMap[paramType];
+        const checkboxId = idPrefix + bet.match_id;
+        const checkbox = document.getElementById(checkboxId);
+
+        if (checkbox) {
+          // Checkbox должен быть checked если значение "ДА"
+          const isChecked =
+            bet.prediction === "ДА" ||
+            bet.prediction === "1" ||
+            bet.prediction === 1 ||
+            bet.prediction === true;
+          checkbox.checked = isChecked;
+
+          // Обновляем визуальное состояние toggle'а
+          const span = checkbox.nextElementSibling;
+          const circle = span?.querySelector("span");
+
+          if (circle && span) {
+            if (isChecked) {
+              span.style.backgroundColor = "#4db8a8";
+              circle.style.transform = "translateX(26px)";
+            } else {
+              span.style.backgroundColor = "#3a5f7a";
+              circle.style.transform = "translateX(0)";
+            }
+          }
+        }
+      }
+
+      // Блокируем параметр если ставка уже существует
+      lockFinalParameter(bet.match_id, bet.parameter_type);
+    }
+  });
+}
+
 function displayMatches() {
   const matchesContainer = document.getElementById("matchesContainer");
   const roundsFilterContainer = document.getElementById(
@@ -1033,23 +1083,10 @@ function displayMatches() {
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="color: #4db8a8; font-size: 0.85em; font-weight: 500;">ДА</span>
                         <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
-                          <input type="checkbox" id="penaltiesInGame_${match.id}" style="opacity: 0; width: 0; height: 0;">
-                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: all 0.3s; display: flex; align-items: center; justify-content: flex-start; padding: 2px;">
-                            <span style="content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s;"></span>
+                          <input type="checkbox" id="penaltiesInGame_${match.id}" style="display: none;">
+                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('penaltiesInGame_${match.id}'); checkbox.checked = !checkbox.checked; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); if (checkbox.checked) { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(26px)'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(0)'; } })();">
+                            <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 3px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
                           </span>
-                          <script>
-                            document.getElementById('penaltiesInGame_${match.id}').addEventListener('change', function() {
-                              const span = this.nextElementSibling;
-                              const circle = span.querySelector('span');
-                              if (this.checked) {
-                                span.style.backgroundColor = '#4db8a8';
-                                circle.style.left = 'calc(100% - 21px)';
-                              } else {
-                                span.style.backgroundColor = '#3a5f7a';
-                                circle.style.left = '3px';
-                              }
-                            });
-                          </script>
                         </label>
                         <span style="color: #b0b8c8; font-size: 0.85em;">НЕТ</span>
                       </div>
@@ -1069,23 +1106,10 @@ function displayMatches() {
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="color: #4db8a8; font-size: 0.85em; font-weight: 500;">ДА</span>
                         <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
-                          <input type="checkbox" id="extraTime_${match.id}" style="opacity: 0; width: 0; height: 0;">
-                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: all 0.3s; display: flex; align-items: center; justify-content: flex-start; padding: 2px;">
-                            <span style="content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s;"></span>
+                          <input type="checkbox" id="extraTime_${match.id}" style="display: none;">
+                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('extraTime_${match.id}'); checkbox.checked = !checkbox.checked; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); if (checkbox.checked) { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(26px)'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(0)'; } })();">
+                            <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 3px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
                           </span>
-                          <script>
-                            document.getElementById('extraTime_${match.id}').addEventListener('change', function() {
-                              const span = this.nextElementSibling;
-                              const circle = span.querySelector('span');
-                              if (this.checked) {
-                                span.style.backgroundColor = '#4db8a8';
-                                circle.style.left = 'calc(100% - 21px)';
-                              } else {
-                                span.style.backgroundColor = '#3a5f7a';
-                                circle.style.left = '3px';
-                              }
-                            });
-                          </script>
                         </label>
                         <span style="color: #b0b8c8; font-size: 0.85em;">НЕТ</span>
                       </div>
@@ -1105,23 +1129,10 @@ function displayMatches() {
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="color: #4db8a8; font-size: 0.85em; font-weight: 500;">ДА</span>
                         <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
-                          <input type="checkbox" id="penaltiesAtEnd_${match.id}" style="opacity: 0; width: 0; height: 0;">
-                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: all 0.3s; display: flex; align-items: center; justify-content: flex-start; padding: 2px;">
-                            <span style="content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s;"></span>
+                          <input type="checkbox" id="penaltiesAtEnd_${match.id}" style="display: none;">
+                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a5f7a; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('penaltiesAtEnd_${match.id}'); checkbox.checked = !checkbox.checked; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); if (checkbox.checked) { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(26px)'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(0)'; } })();">
+                            <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 3px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
                           </span>
-                          <script>
-                            document.getElementById('penaltiesAtEnd_${match.id}').addEventListener('change', function() {
-                              const span = this.nextElementSibling;
-                              const circle = span.querySelector('span');
-                              if (this.checked) {
-                                span.style.backgroundColor = '#4db8a8';
-                                circle.style.left = 'calc(100% - 21px)';
-                              } else {
-                                span.style.backgroundColor = '#3a5f7a';
-                                circle.style.left = '3px';
-                              }
-                            });
-                          </script>
                         </label>
                         <span style="color: #b0b8c8; font-size: 0.85em;">НЕТ</span>
                       </div>
@@ -1174,6 +1185,9 @@ function displayMatches() {
       return false;
     };
   });
+
+  // Инициализируем состояние toggle'ов после добавления HTML в DOM
+  initToggleStates();
 }
 
 // ===== СТАВКИ =====
@@ -1269,7 +1283,174 @@ async function placeBet(matchId, teamName, prediction) {
   }
 }
 
+// Функция для разблокировки параметра при удалении ставки
+function unlockFinalParameter(matchId, parameterType) {
+  console.log(
+    `🔓 Разблокируем параметр: matchId=${matchId}, parameterType=${parameterType}`
+  );
+
+  // Находим контейнер с этим параметром
+  let paramContainer = null;
+
+  if (parameterType === "exact_score") {
+    const input1 = document.getElementById(`exactScore1_${matchId}`);
+    const input2 = document.getElementById(`exactScore2_${matchId}`);
+    if (input1) paramContainer = input1.closest('div[style*="flex"]');
+  } else if (parameterType === "yellow_cards") {
+    const input = document.getElementById(`yellowCards_${matchId}`);
+    if (input) paramContainer = input.closest('div[style*="flex"]');
+  } else if (parameterType === "red_cards") {
+    const input = document.getElementById(`redCards_${matchId}`);
+    if (input) paramContainer = input.closest('div[style*="flex"]');
+  } else if (parameterType === "corners") {
+    const input = document.getElementById(`corners_${matchId}`);
+    if (input) paramContainer = input.closest('div[style*="flex"]');
+  } else if (parameterType === "penalties_in_game") {
+    const checkbox = document.getElementById(`penaltiesInGame_${matchId}`);
+    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+  } else if (parameterType === "extra_time") {
+    const checkbox = document.getElementById(`extraTime_${matchId}`);
+    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+  } else if (parameterType === "penalties_at_end") {
+    const checkbox = document.getElementById(`penaltiesAtEnd_${matchId}`);
+    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+  }
+
+  if (paramContainer) {
+    console.log(`✅ Найден контейнер параметра`);
+    // Находим все input'ы и toggle'ы в контейнере
+    const inputs = paramContainer.querySelectorAll('input[type="number"]');
+    const checkboxes = paramContainer.querySelectorAll(
+      'input[type="checkbox"]'
+    );
+    const button = paramContainer.querySelector("button");
+    const toggleSpans = paramContainer.querySelectorAll("span[onclick]");
+
+    // Разблокируем input'ы
+    inputs.forEach((input) => {
+      input.disabled = false;
+      input.style.opacity = "1";
+      input.style.cursor = "text";
+      console.log(`  - Разблокирован input: ${input.id}`);
+    });
+
+    // Разблокируем toggle'ы
+    checkboxes.forEach((checkbox) => {
+      checkbox.disabled = false;
+      console.log(`  - Разблокирован checkbox: ${checkbox.id}`);
+    });
+    toggleSpans.forEach((span) => {
+      span.style.opacity = "1";
+      span.style.cursor = "pointer";
+
+      // Восстанавливаем onclick обработчик для toggle'а
+      const checkboxId = span.previousElementSibling?.id;
+      if (checkboxId) {
+        span.onclick = function () {
+          const checkbox = document.getElementById(checkboxId);
+          checkbox.checked = !checkbox.checked;
+          const spanBg = checkbox.nextElementSibling;
+          const circle = spanBg?.querySelector("span");
+          if (checkbox.checked) {
+            spanBg.style.backgroundColor = "#4db8a8";
+            if (circle) circle.style.transform = "translateX(26px)";
+          } else {
+            spanBg.style.backgroundColor = "#3a5f7a";
+            if (circle) circle.style.transform = "translateX(0)";
+          }
+        };
+        console.log(`  - Разблокирован toggle span`);
+      }
+    });
+
+    // Показываем кнопку "✓"
+    if (button) {
+      button.style.display = "inline-block";
+      console.log(`  - Показана кнопка ✓`);
+    }
+  } else {
+    console.warn(`⚠️ Контейнер параметра не найден`);
+  }
+}
+
+// Функция для блокировки параметра после сохранения ставки
+function lockFinalParameter(matchId, parameterType) {
+  console.log(
+    `🔒 Блокируем параметр: matchId=${matchId}, parameterType=${parameterType}`
+  );
+
+  // Находим контейнер с этим параметром
+  let paramContainer = null;
+
+  if (parameterType === "exact_score") {
+    const input1 = document.getElementById(`exactScore1_${matchId}`);
+    const input2 = document.getElementById(`exactScore2_${matchId}`);
+    if (input1) paramContainer = input1.closest('div[style*="flex"]');
+  } else if (parameterType === "yellow_cards") {
+    const input = document.getElementById(`yellowCards_${matchId}`);
+    if (input) paramContainer = input.closest('div[style*="flex"]');
+  } else if (parameterType === "red_cards") {
+    const input = document.getElementById(`redCards_${matchId}`);
+    if (input) paramContainer = input.closest('div[style*="flex"]');
+  } else if (parameterType === "corners") {
+    const input = document.getElementById(`corners_${matchId}`);
+    if (input) paramContainer = input.closest('div[style*="flex"]');
+  } else if (parameterType === "penalties_in_game") {
+    const checkbox = document.getElementById(`penaltiesInGame_${matchId}`);
+    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+  } else if (parameterType === "extra_time") {
+    const checkbox = document.getElementById(`extraTime_${matchId}`);
+    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+  } else if (parameterType === "penalties_at_end") {
+    const checkbox = document.getElementById(`penaltiesAtEnd_${matchId}`);
+    if (checkbox) paramContainer = checkbox.closest('div[style*="flex"]');
+  }
+
+  if (paramContainer) {
+    console.log(`✅ Найден контейнер параметра`);
+    // Находим все input'ы и toggle'ы в контейнере
+    const inputs = paramContainer.querySelectorAll('input[type="number"]');
+    const checkboxes = paramContainer.querySelectorAll(
+      'input[type="checkbox"]'
+    );
+    const button = paramContainer.querySelector("button");
+    const toggleSpans = paramContainer.querySelectorAll("span[onclick]");
+
+    // Блокируем input'ы
+    inputs.forEach((input) => {
+      input.disabled = true;
+      input.style.opacity = "0.6";
+      input.style.cursor = "not-allowed";
+      console.log(`  - Заблокирован input: ${input.id}`);
+    });
+
+    // Блокируем toggle'ы
+    checkboxes.forEach((checkbox) => {
+      checkbox.disabled = true;
+      console.log(`  - Заблокирован checkbox: ${checkbox.id}`);
+    });
+    toggleSpans.forEach((span) => {
+      span.style.opacity = "0.6";
+      span.style.cursor = "not-allowed";
+      span.onclick = null; // Убираем обработчик клика
+      console.log(`  - Заблокирован toggle span`);
+    });
+
+    // Скрываем кнопку "✓"
+    if (button) {
+      button.style.display = "none";
+      console.log(`  - Скрыта кнопка ✓`);
+    }
+  } else {
+    console.warn(`⚠️ Контейнер параметра не найден`);
+  }
+}
+
 async function placeFinalBet(matchId, parameterType) {
+  console.log(
+    `🎯 placeFinalBet вызвана: matchId=${matchId}, parameterType=${parameterType}`
+  );
+
   if (!currentUser) {
     alert("Сначала введите ваше имя");
     return;
@@ -1287,20 +1468,42 @@ async function placeFinalBet(matchId, parameterType) {
     parameterType === "red_cards" ||
     parameterType === "corners"
   ) {
-    const inputField = document.getElementById(`${parameterType}_${matchId}`);
-    const value = inputField.value;
-    if (value === "") {
-      alert("Введите значение");
+    // Преобразуем параметр в camelCase для ID
+    let fieldId;
+    if (parameterType === "yellow_cards") fieldId = `yellowCards_${matchId}`;
+    if (parameterType === "red_cards") fieldId = `redCards_${matchId}`;
+    if (parameterType === "corners") fieldId = `corners_${matchId}`;
+
+    const inputField = document.getElementById(fieldId);
+    if (!inputField) {
+      console.error(`❌ Input field not found: ${fieldId}`);
+      alert("Ошибка: поле ввода не найдено");
       return;
     }
+    const value = inputField.value;
+    console.log(`📊 Получено значение для ${parameterType}: ${value}`);
     betValue = value;
   } else if (
     parameterType === "penalties_in_game" ||
     parameterType === "extra_time" ||
     parameterType === "penalties_at_end"
   ) {
-    const checkbox = document.getElementById(`${parameterType}_${matchId}`);
+    // Преобразуем параметр в camelCase для ID
+    let fieldId;
+    if (parameterType === "penalties_in_game")
+      fieldId = `penaltiesInGame_${matchId}`;
+    if (parameterType === "extra_time") fieldId = `extraTime_${matchId}`;
+    if (parameterType === "penalties_at_end")
+      fieldId = `penaltiesAtEnd_${matchId}`;
+
+    const checkbox = document.getElementById(fieldId);
+    if (!checkbox) {
+      console.error(`❌ Checkbox field not found: ${fieldId}`);
+      alert("Ошибка: поле переключателя не найдено");
+      return;
+    }
     betValue = checkbox.checked ? "ДА" : "НЕТ";
+    console.log(`🔘 Получено значение для ${parameterType}: ${betValue}`);
   }
 
   const match = matches.find((m) => m.id === matchId);
@@ -1337,6 +1540,9 @@ async function placeFinalBet(matchId, parameterType) {
     }
 
     // Создаём новую ставку на финальный параметр
+    console.log(
+      `💾 Отправляю ставку: matchId=${matchId}, parameter=${parameterType}, value=${betValue}`
+    );
     const response = await fetch("/api/bets", {
       method: "POST",
       headers: {
@@ -1353,12 +1559,56 @@ async function placeFinalBet(matchId, parameterType) {
     });
 
     if (response.ok) {
+      console.log(`✅ Ставка успешно создана`);
+
+      // Для toggle'ов - переключаем их визуально
+      if (
+        parameterType === "penalties_in_game" ||
+        parameterType === "extra_time" ||
+        parameterType === "penalties_at_end"
+      ) {
+        let fieldId;
+        if (parameterType === "penalties_in_game")
+          fieldId = `penaltiesInGame_${matchId}`;
+        if (parameterType === "extra_time") fieldId = `extraTime_${matchId}`;
+        if (parameterType === "penalties_at_end")
+          fieldId = `penaltiesAtEnd_${matchId}`;
+
+        const checkbox = document.getElementById(fieldId);
+        if (checkbox) {
+          // Переключаем checkbox
+          checkbox.checked = !checkbox.checked;
+
+          // Обновляем стили toggle'а напрямую
+          const label = checkbox.parentElement;
+          const span = label.querySelector("span:not(input)");
+          if (span) {
+            const circle = span.querySelector("span");
+            if (checkbox.checked) {
+              span.style.backgroundColor = "#4db8a8";
+              if (circle) circle.style.transform = "translateX(26px)";
+            } else {
+              span.style.backgroundColor = "#3a5f7a";
+              if (circle) circle.style.transform = "translateX(0)";
+            }
+          }
+          console.log(
+            `🔘 Toggle переключен: ${fieldId} -> ${
+              checkbox.checked ? "ДА" : "НЕТ"
+            }`
+          );
+        }
+      }
+
       // Обновляем только список ставок, без перерисовки матчей
       const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
       const bets = await checkResponse.json();
       userBets = bets;
       console.log("💰 Мои ставки:", bets);
       displayMyBets(bets);
+
+      // Блокируем параметр после успешного сохранения ставки
+      lockFinalParameter(matchId, parameterType);
       // Не вызываем displayMatches() чтобы не потерять состояние кнопок
     } else {
       alert("Ошибка при создании ставки");
@@ -1380,6 +1630,7 @@ async function loadMyBets() {
     displayMyBets(bets);
     if (isMatchUpdatingEnabled) {
       displayMatches(); // Перерисовываем матчи чтобы выделить с ставками
+      // initToggleStates вызовется в конце displayMatches
     }
   } catch (error) {
     console.error("Ошибка при загрузке ставок:", error);
@@ -1512,6 +1763,12 @@ async function deleteBet(betId) {
   }
 
   try {
+    // Находим информацию о ставке перед удалением
+    const bet = userBets.find((b) => b.id === betId);
+    const matchId = bet?.match_id;
+    const parameterType = bet?.parameter_type;
+    const isFinalBet = bet?.is_final_bet;
+
     const response = await fetch(`/api/bets/${betId}`, {
       method: "DELETE",
       headers: {
@@ -1528,6 +1785,11 @@ async function deleteBet(betId) {
     if (!response.ok) {
       alert("Ошибка: " + result.error);
       return;
+    }
+
+    // Если это была final bet - разблокируем параметр
+    if (isFinalBet && matchId && parameterType) {
+      unlockFinalParameter(matchId, parameterType);
     }
 
     // ✨ Удаляем ставку из DOM плавной анимацией без перезагрузки
@@ -1581,6 +1843,9 @@ async function deleteBet(betId) {
           myBetsList.innerHTML =
             '<div class="empty-message">У вас пока нет ставок</div>';
         }
+
+        // Удаляем ставку из userBets массива
+        userBets = userBets.filter((b) => b.id !== betId);
 
         // 🔄 Обновляем карточки матчей, чтобы убрать подсветку
         if (currentEventId) {
