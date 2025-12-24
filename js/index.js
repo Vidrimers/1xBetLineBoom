@@ -3036,11 +3036,47 @@ async function loadAwardsList() {
         gap: 12px;
       ">
         ${awards
-          .map(
-            (award) => `
+          .map((award) => {
+            // Подготавливаем стили для фона с картинкой и прозрачностью
+            const awardColor = award.award_color || "#fbc02d";
+            const awardEmoji = award.award_emoji || "🏆";
+            let bgStyle = `rgba(255, 193, 7, 0.1)`;
+            let bgHoverStyle = `rgba(255, 193, 7, 0.2)`;
+            let borderColor = `rgba(251, 192, 45, 0.5)`;
+            let textColor = `#fbc02d`;
+
+            // Если указан пользовательский цвет
+            if (awardColor && awardColor !== "#fbc02d") {
+              // Преобразуем hex в rgba для фона
+              const rgb = parseInt(awardColor.slice(1), 16);
+              const r = (rgb >> 16) & 255;
+              const g = (rgb >> 8) & 255;
+              const b = rgb & 255;
+              bgStyle = `rgba(${r}, ${g}, ${b}, 0.1)`;
+              bgHoverStyle = `rgba(${r}, ${g}, ${b}, 0.2)`;
+              borderColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
+              textColor = awardColor;
+            }
+
+            if (award.image_url) {
+              const opacity =
+                award.background_opacity !== undefined
+                  ? award.background_opacity
+                  : 1;
+              bgStyle = `linear-gradient(rgba(0, 0, 0, ${
+                1 - opacity
+              }), rgba(0, 0, 0, ${1 - opacity})), url('${award.image_url}')`;
+              bgStyle += `; background-size: cover; background-position: center;`;
+              bgHoverStyle = `linear-gradient(rgba(0, 0, 0, ${
+                0.8 - opacity
+              }), rgba(0, 0, 0, ${0.8 - opacity})), url('${award.image_url}')`;
+              bgHoverStyle += `; background-size: cover; background-position: center;`;
+            }
+
+            return `
           <div style="
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid rgba(251, 192, 45, 0.5);
+            background: ${bgStyle};
+            border: 1px solid ${borderColor};
             padding: 10px;
             border-radius: 6px;
             display: flex;
@@ -3050,22 +3086,22 @@ async function loadAwardsList() {
             cursor: pointer;
             position: relative;
           "
-          onmouseover="this.style.background='rgba(255, 193, 7, 0.2)'; this.style.borderColor='#fbc02d'"
-          onmouseout="this.style.background='rgba(255, 193, 7, 0.1)'; this.style.borderColor='rgba(251, 192, 45, 0.5)'"
+          onmouseover="this.style.background='${bgHoverStyle}'; this.style.borderColor='${borderColor}'"
+          onmouseout="this.style.background='${bgStyle}'; this.style.borderColor='${borderColor}'"
           >
             <div style="margin-bottom: 8px; flex-grow: 1;">
-              <div style="color: #fbc02d; font-weight: bold; margin-bottom: 4px; font-size: 0.95em; word-break: break-word">${
-                award.username
-              }</div>
-              <div style="color: #b0b0b0; font-size: 0.8em; margin-bottom: 3px">
+              <div style="color: ${textColor}; font-weight: bold; margin-bottom: 4px; font-size: 0.95em; word-break: break-word; text-shadow: 1px 1px 2px rgba(0,0,0,0.5)">${awardEmoji} ${
+              award.username
+            }</div>
+              <div style="color: #b0b0b0; font-size: 0.8em; margin-bottom: 3px; text-shadow: 1px 1px 1px rgba(0,0,0,0.5)">
                 ${awardTypeText[award.award_type] || award.award_type}
               </div>
-              <div style="color: #888; font-size: 0.75em; margin-bottom: 3px">
+              <div style="color: #888; font-size: 0.75em; margin-bottom: 3px; text-shadow: 1px 1px 1px rgba(0,0,0,0.5)">
                 ${award.event_name ? "🏆 " + award.event_name : "Общая"}
               </div>
               ${
                 award.description
-                  ? `<div style="color: #888; font-size: 0.75em; font-style: italic; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">"${award.description}"</div>`
+                  ? `<div style="color: #ddd; font-size: 0.75em; font-style: italic; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-shadow: 1px 1px 1px rgba(0,0,0,0.5)">"${award.description}"</div>`
                   : ""
               }
             </div>
@@ -3112,8 +3148,8 @@ async function loadAwardsList() {
               </button>
             </div>
           </div>
-        `
-          )
+        `;
+          })
           .join("")}
       </div>
     `;
@@ -3197,12 +3233,62 @@ async function loadTournamentParticipantsForAward(eventId) {
   }
 }
 
+async function uploadAwardImageFile(file) {
+  if (!file) {
+    return null;
+  }
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const response = await fetch("/api/awards/upload-image", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      const errorMessage = data.error || "Не удалось загрузить изображение";
+      throw new Error(errorMessage);
+    }
+
+    return data.url;
+  } catch (error) {
+    console.error("Ошибка при загрузке изображения:", error);
+    alert(`❌ Не удалось загрузить изображение: ${error.message}`);
+    throw error;
+  }
+}
+
 // Выдать новую награду
 async function assignAward() {
   const eventId = document.getElementById("eventSelectForAward").value;
   const userIdStr = document.getElementById("participantSelectForAward").value;
   const awardType = document.getElementById("awardTypeSelect").value;
   const description = document.getElementById("awardDescriptionInput").value;
+  const awardColor =
+    document.getElementById("awardColorInput").value || "#fbc02d";
+  const awardEmoji = document.getElementById("awardEmojiInput").value || "🏆";
+  const imageUrl = document.getElementById("awardImageUrlInput").value;
+  const opacity = parseFloat(
+    document.getElementById("awardOpacityInput").value
+  );
+
+  const imageFileInput = document.getElementById("awardImageFileInput");
+  let uploadedImageUrl = null;
+
+  if (imageFileInput && imageFileInput.files.length > 0) {
+    try {
+      uploadedImageUrl = await uploadAwardImageFile(imageFileInput.files[0]);
+      document.getElementById("awardImageUrlInput").value = uploadedImageUrl;
+    } catch (uploadError) {
+      return;
+    }
+  }
+
+  const finalImageUrl = uploadedImageUrl || (imageUrl ? imageUrl.trim() : null);
 
   console.log("=== assignAward Debug ===");
   console.log("eventId:", eventId);
@@ -3234,6 +3320,10 @@ async function assignAward() {
         event_id: eventId || null,
         award_type: awardType,
         description: description || null,
+        image_url: finalImageUrl || null,
+        background_opacity: opacity,
+        award_color: awardColor,
+        award_emoji: awardEmoji,
       }),
     });
 
@@ -3248,6 +3338,15 @@ async function assignAward() {
         '<option value="">-- Выбрать участника --</option>';
       document.getElementById("awardTypeSelect").value = "";
       document.getElementById("awardDescriptionInput").value = "";
+      document.getElementById("awardColorInput").value = "#fbc02d";
+      document.getElementById("awardColorTextInput").value = "#fbc02d";
+      document.getElementById("awardEmojiInput").value = "🏆";
+      document.getElementById("awardImageUrlInput").value = "";
+      if (imageFileInput) {
+        imageFileInput.value = "";
+      }
+      document.getElementById("awardOpacityInput").value = "1";
+      document.getElementById("awardOpacityValue").textContent = "1";
 
       // Перезагружаем список
       loadAwardsList();
@@ -3262,39 +3361,51 @@ async function assignAward() {
 
 // Удалить награду
 // Открыть модальное окно редактирования награды
-function openEditAwardModal(
+async function openEditAwardModal(
   awardId,
   username,
   awardType,
   description,
   eventName
 ) {
-  // Создаем или обновляем модаль для редактирования
-  let editModal = document.getElementById("editAwardModal");
+  // Загружаем текущие данные награды
+  try {
+    const response = await fetch(`/api/awards/${awardId}`);
+    const awardData = await response.json();
 
-  if (!editModal) {
-    // Создаем модаль если её нет
-    editModal = document.createElement("div");
-    editModal.id = "editAwardModal";
-    editModal.style.cssText = `
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    `;
-    document.body.appendChild(editModal);
-  }
+    // Используем данные с сервера если они есть
+    const imageUrl = awardData.image_url || "";
+    const opacity =
+      awardData.background_opacity !== undefined
+        ? awardData.background_opacity
+        : 1;
 
-  // Сохраняем ID награды как data атрибут
-  editModal.dataset.awardId = awardId;
+    // Создаем или обновляем модаль для редактирования
+    let editModal = document.getElementById("editAwardModal");
 
-  editModal.innerHTML = `
+    if (!editModal) {
+      // Создаем модаль если её нет
+      editModal = document.createElement("div");
+      editModal.id = "editAwardModal";
+      editModal.style.cssText = `
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      `;
+      document.body.appendChild(editModal);
+    }
+
+    // Сохраняем ID награды как data атрибут
+    editModal.dataset.awardId = awardId;
+
+    editModal.innerHTML = `
     <div style="
       background: #1a1e28;
       border: 1px solid #444;
@@ -3379,6 +3490,66 @@ function openEditAwardModal(
           resize: vertical;
         ">${description || ""}</textarea>
       </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">🎨 Цвет награды:</label>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="color" id="editAwardColorInput" style="width: 60px; height: 40px; cursor: pointer; border: 1px solid #555; border-radius: 4px;" />
+          <input type="text" id="editAwardColorTextInput" style="flex: 1; padding: 8px; background: #2a2e3a; color: #e0e0e0; border: 1px solid #444; border-radius: 4px;" />
+        </div>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">😊 Эмодзи награды:</label>
+        <input type="text" id="editAwardEmojiInput" maxlength="2" style="
+          width: 100%;
+          padding: 10px;
+          background: #2a2e3a;
+          color: #e0e0e0;
+          border: 1px solid #444;
+          border-radius: 4px;
+          font-size: 1.2em;
+        " />
+        <small style="color: #999;">Выберите эмодзи для награды (максимум 1 символ)</small>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">🖼️ Фоновое изображение (URL, опционально):</label>
+        <input type="text" id="editAwardImageUrl" placeholder="https://example.com/image.jpg" style="
+          width: 100%;
+          padding: 10px;
+          background: #2a2e3a;
+          color: #e0e0e0;
+          border: 1px solid #444;
+          border-radius: 4px;
+          font-family: Arial, sans-serif;
+        " />
+        <small style="color: #999; display: block; margin-top: 4px;">Укажите URL картинки для фона награды</small>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">📁 Загрузить изображение с устройства:</label>
+        <input type="file" id="editAwardImageFileInput" accept="image/*" style="
+          width: 100%;
+          padding: 6px;
+          background: #2a2e3a;
+          color: #e0e0e0;
+          border: 1px solid #444;
+          border-radius: 4px;
+        " />
+        <small style="color: #999; display: block; margin-top: 4px;">Выберите файл, чтобы загрузить новое изображение</small>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: #e0e0e0; font-weight: bold;">
+          🌓 Прозрачность фона: <span id="opacityValue" style="color: #fbc02d;">1</span>
+        </label>
+        <input type="range" id="editAwardOpacity" min="0" max="1" step="0.1" value="1" style="
+          width: 100%;
+          cursor: pointer;
+        " onchange="document.getElementById('opacityValue').textContent = this.value" />
+        <small style="color: #999;">0 = полностью прозрачный, 1 = полностью видимый</small>
+      </div>
       
       <div style="display: flex; gap: 10px;">
         <button onclick="saveEditAward()" style="
@@ -3418,12 +3589,42 @@ function openEditAwardModal(
     </div>
   `;
 
-  editModal.style.display = "flex";
+    // Устанавливаем текущие значения
+    setTimeout(() => {
+      const imageInput = document.getElementById("editAwardImageUrl");
+      const opacityInput = document.getElementById("editAwardOpacity");
+      const colorInput = document.getElementById("editAwardColorInput");
+      const colorText = document.getElementById("editAwardColorTextInput");
+      const emojiInput = document.getElementById("editAwardEmojiInput");
+
+      if (imageInput) imageInput.value = imageUrl;
+      if (opacityInput) {
+        opacityInput.value = opacity;
+        document.getElementById("opacityValue").textContent = opacity;
+      }
+
+      const awardColor = awardData.award_color || "#fbc02d";
+      const awardEmoji = awardData.award_emoji || "🏆";
+
+      if (colorInput) colorInput.value = awardColor;
+      if (colorText) colorText.value = awardColor;
+      if (emojiInput) emojiInput.value = awardEmoji;
+    }, 0);
+
+    editModal.style.display = "flex";
+  } catch (error) {
+    console.error("Ошибка при загрузке данных награды:", error);
+    alert("❌ Ошибка при загрузке данных награды");
+  }
 }
 
 // Закрыть модаль редактирования
 function closeEditAwardModal() {
   const editModal = document.getElementById("editAwardModal");
+  const editFileInput = document.getElementById("editAwardImageFileInput");
+  if (editFileInput) {
+    editFileInput.value = "";
+  }
   if (editModal) {
     editModal.style.display = "none";
   }
@@ -3437,6 +3638,31 @@ async function saveEditAward() {
   const newDescription = document.getElementById(
     "editAwardDescriptionInput"
   ).value;
+  const newImageUrl = document.getElementById("editAwardImageUrl").value;
+  const newOpacity = parseFloat(
+    document.getElementById("editAwardOpacity").value
+  );
+  const newAwardColor =
+    document.getElementById("editAwardColorInput").value || "#fbc02d";
+  const newAwardEmoji =
+    document.getElementById("editAwardEmojiInput").value || "🏆";
+
+  const editImageFileInput = document.getElementById("editAwardImageFileInput");
+  let uploadedEditImageUrl = null;
+
+  if (editImageFileInput && editImageFileInput.files.length > 0) {
+    try {
+      uploadedEditImageUrl = await uploadAwardImageFile(
+        editImageFileInput.files[0]
+      );
+      document.getElementById("editAwardImageUrl").value = uploadedEditImageUrl;
+    } catch (uploadError) {
+      return;
+    }
+  }
+
+  const finalEditImageUrl =
+    uploadedEditImageUrl || (newImageUrl ? newImageUrl.trim() : null);
 
   try {
     const response = await fetch(`/api/awards/${awardId}`, {
@@ -3447,6 +3673,10 @@ async function saveEditAward() {
       body: JSON.stringify({
         award_type: newAwardType,
         description: newDescription || null,
+        image_url: finalEditImageUrl || null,
+        background_opacity: newOpacity,
+        award_color: newAwardColor,
+        award_emoji: newAwardEmoji,
       }),
     });
 
@@ -3454,6 +3684,9 @@ async function saveEditAward() {
 
     if (data.success) {
       alert("✅ Награда успешно обновлена");
+      if (editImageFileInput) {
+        editImageFileInput.value = "";
+      }
       closeEditAwardModal();
       loadAwardsList();
     } else {

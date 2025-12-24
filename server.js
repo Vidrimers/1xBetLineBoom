@@ -2,6 +2,7 @@ import express from "express";
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import multer from "multer";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import gifsicle from "gifsicle";
@@ -24,6 +25,36 @@ const app = express();
 const PORT = process.env.PORT || 1984;
 const FD_API_TOKEN = process.env.FD_API_TOKEN;
 const FD_API_BASE = "https://api.football-data.org/v4";
+const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
+
+if (!fs.existsSync(AWARD_IMAGE_UPLOAD_DIR)) {
+  fs.mkdirSync(AWARD_IMAGE_UPLOAD_DIR, { recursive: true });
+}
+
+const awardImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, AWARD_IMAGE_UPLOAD_DIR);
+  },
+  filename: (req, file, cb) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    const name = `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}${extension}`;
+    cb(null, name);
+  },
+});
+
+const awardImageUpload = multer({
+  storage: awardImageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Только изображения разрешены"));
+    }
+  },
+});
 
 // Путь к файлу логов
 const LOG_FILE_PATH = path.join(__dirname, "log.html");
@@ -928,11 +959,53 @@ db.exec(`
     event_id INTEGER,
     award_type TEXT NOT NULL,
     description TEXT,
+    image_url TEXT,
+    background_opacity REAL DEFAULT 1,
+    award_color TEXT DEFAULT '#fbc02d',
+    award_emoji TEXT DEFAULT '🏆',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (event_id) REFERENCES events(id)
   )
 `);
+
+// Миграция: добавляем image_url если её нет
+try {
+  db.prepare("ALTER TABLE user_awards ADD COLUMN image_url TEXT").run();
+  console.log("✅ Колонка image_url добавлена в таблицу user_awards");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем background_opacity если её нет
+try {
+  db.prepare(
+    "ALTER TABLE user_awards ADD COLUMN background_opacity REAL DEFAULT 1"
+  ).run();
+  console.log("✅ Колонка background_opacity добавлена в таблицу user_awards");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем award_color если её нет
+try {
+  db.prepare(
+    "ALTER TABLE user_awards ADD COLUMN award_color TEXT DEFAULT '#fbc02d'"
+  ).run();
+  console.log("✅ Колонка award_color добавлена в таблицу user_awards");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем award_emoji если её нет
+try {
+  db.prepare(
+    "ALTER TABLE user_awards ADD COLUMN award_emoji TEXT DEFAULT '🏆'"
+  ).run();
+  console.log("✅ Колонка award_emoji добавлена в таблицу user_awards");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
 
 // ===== API ENDPOINTS =====
 
@@ -943,6 +1016,23 @@ app.get("/api/config", (req, res) => {
   res.json({
     ADMIN_LOGIN: ADMIN_LOGIN || null,
     ADMIN_DB_NAME: ADMIN_DB_NAME || null,
+  });
+});
+
+app.post("/api/awards/upload-image", (req, res) => {
+  awardImageUpload.single("image")(req, res, (error) => {
+    if (error) {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Файл не был получен" });
+    }
+
+    const relativePath = `/uploads/award-images/${req.file.filename}`;
+    res.json({ success: true, url: relativePath });
   });
 });
 
@@ -1468,7 +1558,8 @@ app.get("/api/awards", (req, res) => {
       .prepare(
         `
       SELECT ua.id, ua.user_id, u.username, ua.event_id, e.name as event_name,
-             ua.award_type, ua.description, ua.created_at
+             ua.award_type, ua.description, ua.image_url, ua.background_opacity,
+             ua.award_color, ua.award_emoji, ua.created_at
       FROM user_awards ua
       JOIN users u ON ua.user_id = u.id
       LEFT JOIN events e ON ua.event_id = e.id
@@ -1487,7 +1578,16 @@ app.get("/api/awards", (req, res) => {
 // 5.8 Выдать новую награду
 app.post("/api/awards", (req, res) => {
   try {
-    let { user_id, event_id, award_type, description } = req.body;
+    let {
+      user_id,
+      event_id,
+      award_type,
+      description,
+      image_url,
+      background_opacity,
+      award_color,
+      award_emoji,
+    } = req.body;
 
     // Преобразуем в числа
     user_id = user_id ? parseInt(user_id, 10) : null;
@@ -1526,12 +1626,46 @@ app.post("/api/awards", (req, res) => {
       event_id = null;
     }
 
+    // Валидируем прозрачность
+    const opacity =
+      background_opacity !== undefined ? parseFloat(background_opacity) : 1;
+    if (opacity < 0 || opacity > 1) {
+      return res
+        .status(400)
+        .json({ error: "Прозрачность должна быть от 0 до 1" });
+    }
+
+    // Валидируем цвет (должен быть hex формат или пустой)
+    const color = award_color || "#fbc02d";
+    if (!color.match(/^#[0-9A-F]{6}$/i)) {
+      return res
+        .status(400)
+        .json({ error: "Цвет должен быть в формате #RRGGBB" });
+    }
+
+    // Валидируем эмодзи (не более 2 символов)
+    const emoji = award_emoji || "🏆";
+    if (emoji.length > 2) {
+      return res
+        .status(400)
+        .json({ error: "Эмодзи не может быть длиннее 2 символов" });
+    }
+
     // Добавляем награду
     const result = db
       .prepare(
-        "INSERT INTO user_awards (user_id, event_id, award_type, description) VALUES (?, ?, ?, ?)"
+        "INSERT INTO user_awards (user_id, event_id, award_type, description, image_url, background_opacity, award_color, award_emoji) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       )
-      .run(user_id, event_id || null, award_type, description || null);
+      .run(
+        user_id,
+        event_id || null,
+        award_type,
+        description || null,
+        image_url || null,
+        opacity,
+        color,
+        emoji
+      );
 
     console.log(`✓ Награда выдана пользователю ${user_id}: ${award_type}`);
 
@@ -1546,11 +1680,38 @@ app.post("/api/awards", (req, res) => {
   }
 });
 
+// 5.8 Получить данные награды
+app.get("/api/awards/:awardId", (req, res) => {
+  try {
+    const { awardId } = req.params;
+
+    const award = db
+      .prepare("SELECT * FROM user_awards WHERE id = ?")
+      .get(awardId);
+
+    if (!award) {
+      return res.status(404).json({ error: "Награда не найдена" });
+    }
+
+    res.json(award);
+  } catch (error) {
+    console.error("Ошибка при получении награды:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 5.8 Редактировать награду
 app.put("/api/awards/:awardId", (req, res) => {
   try {
     const { awardId } = req.params;
-    const { award_type, description } = req.body;
+    const {
+      award_type,
+      description,
+      image_url,
+      background_opacity,
+      award_color,
+      award_emoji,
+    } = req.body;
 
     // Валидация
     if (!award_type) {
@@ -1562,12 +1723,44 @@ app.put("/api/awards/:awardId", (req, res) => {
       return res.status(400).json({ error: "Неверный тип награды" });
     }
 
+    // Валидация прозрачности
+    const opacity = background_opacity !== undefined ? background_opacity : 1;
+    if (opacity < 0 || opacity > 1) {
+      return res
+        .status(400)
+        .json({ error: "Прозрачность должна быть от 0 до 1" });
+    }
+
+    // Валидируем цвет (должен быть hex формат или пустой)
+    const color = award_color || "#fbc02d";
+    if (!color.match(/^#[0-9A-F]{6}$/i)) {
+      return res
+        .status(400)
+        .json({ error: "Цвет должен быть в формате #RRGGBB" });
+    }
+
+    // Валидируем эмодзи (не более 2 символов)
+    const emoji = award_emoji || "🏆";
+    if (emoji.length > 2) {
+      return res
+        .status(400)
+        .json({ error: "Эмодзи не может быть длиннее 2 символов" });
+    }
+
     // Обновляем награду
     const result = db
       .prepare(
-        "UPDATE user_awards SET award_type = ?, description = ? WHERE id = ?"
+        "UPDATE user_awards SET award_type = ?, description = ?, image_url = ?, background_opacity = ?, award_color = ?, award_emoji = ? WHERE id = ?"
       )
-      .run(award_type, description || null, awardId);
+      .run(
+        award_type,
+        description || null,
+        image_url || null,
+        opacity,
+        color,
+        emoji,
+        awardId
+      );
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Награда не найдена" });
