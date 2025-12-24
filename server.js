@@ -1396,6 +1396,52 @@ app.put("/api/admin/rounds-order", (req, res) => {
   }
 });
 
+// Получить настройку показа победителя на завершённых турнирах
+app.get("/api/settings/show-tournament-winner", (req, res) => {
+  try {
+    const setting = db
+      .prepare(
+        "SELECT value FROM site_settings WHERE key = 'show_tournament_winner'"
+      )
+      .get();
+
+    // По умолчанию показываем победителя (true)
+    const showWinner = setting
+      ? setting.value === "1" || setting.value === "true"
+      : true;
+    res.json({ show_tournament_winner: showWinner });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Сохранить настройку показа победителя
+app.post("/api/settings/show-tournament-winner", (req, res) => {
+  try {
+    const { show_tournament_winner } = req.body;
+
+    if (typeof show_tournament_winner !== "boolean") {
+      return res
+        .status(400)
+        .json({ error: "show_tournament_winner должен быть boolean" });
+    }
+
+    const value = show_tournament_winner ? "1" : "0";
+
+    db.prepare(
+      `
+      INSERT INTO site_settings (key, value, updated_at) 
+      VALUES ('show_tournament_winner', ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+    `
+    ).run(value, value);
+
+    res.json({ success: true, show_tournament_winner });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 1. Получить все турниры
 app.get("/api/events", (req, res) => {
   try {

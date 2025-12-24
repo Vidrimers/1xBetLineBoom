@@ -363,6 +363,44 @@
                 </div>
               </div>
             </div>
+
+            <!-- Показ победителя на завершённых турнирах -->
+            <div class="settings-item" style="padding: 20px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 15px; border-left: 3px solid #ffc107;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 250px;">
+                  <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px;">
+                    🏆 Показ победителя на завершённых турнирах
+                  </h3>
+                  <p style="margin: 0; color: #aaa; font-size: 14px;">
+                    Включить/выключить отображение карточки победителя вместо матчей
+                  </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <label class="switch">
+                    <input type="checkbox" id="showTournamentWinnerCheckbox" checked>
+                    <span class="slider"></span>
+                  </label>
+                  <button 
+                    onclick="saveShowTournamentWinnerSettings()" 
+                    id="saveTournamentWinnerBtn"
+                    style="
+                      padding: 8px 16px;
+                      background: #ffc107;
+                      color: #222;
+                      border: none;
+                      border-radius: 4px;
+                      cursor: pointer;
+                      font-weight: 500;
+                      transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='#ffb300'"
+                    onmouseout="this.style.background='#ffc107'"
+                  >
+                    Сохранить
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Админ-панель в настройках -->

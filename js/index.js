@@ -669,13 +669,23 @@ async function loadMatches(eventId) {
     const eventsList = await eventResponse.json();
     const currentEvent = eventsList.find((e) => e.id === eventId);
 
-    // Если турнир завершён (заблокирован), показываем победителя вместо матчей
+    // Если турнир завершён (заблокирован), проверяем настройку показа победителя
     if (currentEvent && currentEvent.locked_reason) {
-      displayTournamentWinner(eventId);
-      return;
+      // Загружаем настройку показа победителя
+      const settingResponse = await fetch(
+        "/api/settings/show-tournament-winner"
+      );
+      const settingData = await settingResponse.json();
+
+      // Если показ победителя включён, отображаем победителя
+      if (settingData.show_tournament_winner) {
+        displayTournamentWinner(eventId);
+        return;
+      }
+      // Иначе показываем матчи как обычно
     }
 
-    // Иначе загружаем и отображаем матчи
+    // Загружаем и отображаем матчи
     const response = await fetch(`/api/events/${eventId}/matches`);
     matches = await response.json();
     currentRoundFilter = "all"; // Сбрасываем фильтр при загрузке нового турнира
@@ -4458,6 +4468,9 @@ async function loadSettings() {
     if (remindersCheckbox) {
       remindersCheckbox.checked = telegramGroupRemindersEnabled;
     }
+
+    // Загружаем настройку показа победителя
+    await loadShowTournamentWinnerSetting();
   } catch (error) {
     console.error("Ошибка при загрузке настроек:", error);
     // Не очищаем контейнер, чтобы статический HTML остался видимым
@@ -4605,6 +4618,63 @@ async function saveGroupRemindersSettings() {
     alert("Ошибка при сохранении");
     btn.textContent = "Сохранить";
     btn.disabled = false;
+  }
+}
+
+// Сохранить настройку показа победителя на завершённых турнирах
+async function saveShowTournamentWinnerSettings() {
+  try {
+    const checkbox = document.getElementById("showTournamentWinnerCheckbox");
+    const showWinner = checkbox.checked;
+    const btn = document.getElementById("saveTournamentWinnerBtn");
+
+    // Добавляем визуальную обратную связь
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch("/api/settings/show-tournament-winner", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ show_tournament_winner: showWinner }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Показываем успешное сохранение
+      btn.textContent = "✅ Сохранено!";
+      setTimeout(() => {
+        btn.textContent = "Сохранить";
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      alert("Ошибка: " + result.error);
+      btn.textContent = "Сохранить";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении настройки показа победителя:", error);
+    alert("Ошибка при сохранении");
+    btn.textContent = "Сохранить";
+    btn.disabled = false;
+  }
+}
+
+// Загрузить настройку показа победителя при загрузке вкладки настроек
+async function loadShowTournamentWinnerSetting() {
+  try {
+    const response = await fetch("/api/settings/show-tournament-winner");
+    const data = await response.json();
+
+    const checkbox = document.getElementById("showTournamentWinnerCheckbox");
+    if (checkbox) {
+      checkbox.checked = data.show_tournament_winner;
+      console.log(
+        `✅ Настройка показа победителя загружена: ${data.show_tournament_winner}`
+      );
+    }
+  } catch (error) {
+    console.error("Ошибка при загрузке настройки показа победителя:", error);
   }
 }
 
