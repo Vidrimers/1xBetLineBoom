@@ -4258,6 +4258,7 @@ function initAvatarInput() {
           document.getElementById("cropperContainer").style.display = "none";
           document.getElementById("gifPreviewColumn").style.display = "flex";
           document.getElementById("pngPreviewContainer").style.display = "none";
+          document.getElementById("gifResultPreview").style.display = "block";
           document.getElementById("savAvatarBtn").style.display = "block";
 
           // Показываем GIF в полном размере для выбора области
@@ -4390,6 +4391,40 @@ function initAvatarInput() {
         console.log("Создаю Cropper для обычного изображения...");
         console.log("Cropper доступен:", typeof Cropper);
 
+        // Скрываем GIF контейнер и показываем Cropper для PNG/JPG
+        document.getElementById("gifPreviewColumn").style.display = "none";
+        document.getElementById("cropperContainer").style.display = "block";
+        document.getElementById("pngPreviewContainer").style.display = "block";
+        document.getElementById("gifResultPreview").style.display = "none";
+        document.getElementById("savAvatarBtn").style.display = "block";
+
+        // Очищаем сохраненные GIF данные
+        window.gifAvatarData = null;
+        window.gifBase64 = null;
+        window.gifPositionX = 0;
+        window.gifPositionY = 0;
+        window.gifZoom = 1;
+
+        // Удаляем обработчики GIF если они были установлены
+        if (window.gifMouseMoveHandler) {
+          document.removeEventListener("mousemove", window.gifMouseMoveHandler);
+          window.gifMouseMoveHandler = null;
+        }
+        if (window.gifMouseUpHandler) {
+          document.removeEventListener("mouseup", window.gifMouseUpHandler);
+          window.gifMouseUpHandler = null;
+        }
+        if (window.gifWheelHandler) {
+          const gifPreviewColumn = document.getElementById("gifPreviewColumn");
+          if (gifPreviewColumn) {
+            gifPreviewColumn.removeEventListener(
+              "wheel",
+              window.gifWheelHandler
+            );
+          }
+          window.gifWheelHandler = null;
+        }
+
         // Создаем новый cropper
         try {
           cropper = new Cropper(img, {
@@ -4414,10 +4449,6 @@ function initAvatarInput() {
           return;
         }
 
-        document.getElementById("cropperContainer").style.display = "block";
-        document.getElementById("gifPreviewColumn").style.display = "none";
-        document.getElementById("pngPreviewContainer").style.display = "block";
-        document.getElementById("savAvatarBtn").style.display = "block";
         console.log("✅ Контейнер и кнопка показаны");
       };
       reader.readAsDataURL(file);
@@ -4464,9 +4495,21 @@ function closeAvatarModal(event) {
   const gifPreview = document.getElementById("gifFullPreview");
   if (gifPreview) {
     gifPreview.style.transform = "scale(1)";
+    gifPreview.src = "";
   }
 
+  // Очищаем результаты превью
+  const gifCropResult = document.getElementById("gifCropResult");
+  if (gifCropResult) {
+    gifCropResult.src = "";
+  }
+
+  // Скрываем контейнеры редактирования
   document.getElementById("gifPreviewColumn").style.display = "none";
+  document.getElementById("gifResultPreview").style.display = "block"; // Показываем по умолчанию для следующего раза
+  document.getElementById("pngPreviewContainer").style.display = "none";
+  document.getElementById("cropperContainer").style.display = "none";
+  document.getElementById("avatarImage").src = "";
 }
 
 function updateGifResultPreview() {
