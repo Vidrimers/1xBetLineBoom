@@ -2488,10 +2488,6 @@ async function submitCreateEvent(event) {
 
 // Удалить событие (только для админа)
 async function deleteEvent(eventId) {
-  console.log("deleteEvent вызвана для eventId:", eventId);
-  console.log("currentUser:", currentUser);
-  console.log("isAdmin():", isAdmin());
-
   if (!currentUser) {
     alert("Сначала войдите в систему");
     return;
@@ -3582,9 +3578,6 @@ function openFinalMatchResultModal(matchId) {
   // Очищаем контейнеры
   container.innerHTML = "";
   buttonsContainer.innerHTML = "";
-
-  console.log("Match object:", match);
-  console.log("Team1:", match.team1_name, "Team2:", match.team2_name);
 
   // Создаем кнопки результатов с названиями команд
   buttonsContainer.innerHTML = `

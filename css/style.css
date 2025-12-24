@@ -1578,6 +1578,19 @@ button.tab-btn:hover {
   border-color: #4db8a8;
 }
 
+.finalMatchResultWindow {
+  padding: 20px;
+}
+.finalMatchResultWindow h3 {
+  margin: 0 auto 10px;
+}
+.finalMatchResultWindow h4 {
+  text-align: center;
+}
+.finalMatchResultWindow button {
+  padding: 3px 10px !important;
+}
+
 #finalMatchResultModal {
   display: none;
 }
