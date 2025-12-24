@@ -1131,7 +1131,7 @@ app.post("/api/bets", async (req, res) => {
     // Проверяем матч и его дату
     const match = db
       .prepare(
-        "SELECT m.status, m.match_date, m.winner, m.team1_name, m.team2_name, m.event_id, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.id = ?"
+        "SELECT m.status, m.match_date, m.winner, m.team1_name, m.team2_name, m.event_id, m.is_final, m.round, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.id = ?"
       )
       .get(match_id);
 
@@ -1273,7 +1273,7 @@ app.delete("/api/bets/:betId", (req, res) => {
     // Получаем информацию о матче и пользователе для лога
     const match = db
       .prepare(
-        "SELECT m.team1_name, m.team2_name, m.status, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.id = ?"
+        "SELECT m.team1_name, m.team2_name, m.status, m.is_final, m.round, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.id = ?"
       )
       .get(bet.match_id);
     const betUser = db
