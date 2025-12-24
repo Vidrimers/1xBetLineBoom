@@ -4257,8 +4257,6 @@ function initAvatarInput() {
           console.log("✅ GIF выбран, не используем cropper");
           document.getElementById("cropperContainer").style.display = "none";
           document.getElementById("gifPreviewColumn").style.display = "flex";
-          document.getElementById("gifPositionControlsOnly").style.display =
-            "block";
           document.getElementById("pngPreviewContainer").style.display = "none";
           document.getElementById("savAvatarBtn").style.display = "block";
 
@@ -4370,8 +4368,6 @@ function initAvatarInput() {
 
         document.getElementById("cropperContainer").style.display = "block";
         document.getElementById("gifPreviewColumn").style.display = "none";
-        document.getElementById("gifPositionControlsOnly").style.display =
-          "none";
         document.getElementById("pngPreviewContainer").style.display = "block";
         document.getElementById("savAvatarBtn").style.display = "block";
         console.log("✅ Контейнер и кнопка показаны");
@@ -4409,25 +4405,6 @@ function closeAvatarModal(event) {
   window.gifMouseUpHandler = null;
 
   document.getElementById("gifPreviewColumn").style.display = "none";
-  document.getElementById("gifPositionControlsOnly").style.display = "none";
-}
-
-// Функции управления позицией GIF
-function moveGifSelection(dx, dy) {
-  if (!window.gifBase64) return;
-
-  const preview = document.getElementById("gifFullPreview");
-  const maxX = preview.naturalWidth - 200;
-  const maxY = preview.naturalHeight - 200;
-
-  window.gifPositionX = Math.max(0, Math.min(window.gifPositionX + dx, maxX));
-  window.gifPositionY = Math.max(0, Math.min(window.gifPositionY + dy, maxY));
-
-  const selectionBox = document.getElementById("gifSelectionBox");
-  selectionBox.style.left = window.gifPositionX + "px";
-  selectionBox.style.top = window.gifPositionY + "px";
-
-  updateGifResultPreview();
 }
 
 function updateGifResultPreview() {
@@ -4443,6 +4420,17 @@ function updateGifResultPreview() {
   console.log(
     `📍 Позиция GIF: X=${window.gifPositionX}, Y=${window.gifPositionY}`
   );
+}
+
+// Обновляем аватар в профиле без перезагрузки страницы
+function updateAvatarInProfile(avatarPath) {
+  const profileAvatar = document.querySelector(".profile-avatar img");
+  if (profileAvatar) {
+    // Добавляем параметр версии чтобы избежать кэша браузера
+    const timestamp = new Date().getTime();
+    profileAvatar.src = avatarPath + `?v=${timestamp}`;
+    console.log(`✅ Аватар обновлен в профиле: ${avatarPath}`);
+  }
 }
 
 async function saveAvatar() {
@@ -4504,10 +4492,11 @@ async function saveAvatar() {
       localStorage.setItem(`avatar_${currentUser.id}`, result.avatarPath);
       console.log("✅ Аватар сохранен в localStorage");
     }
-
-    // Закрываем модальное окно и перезагружаем профиль
+    // Закрываем модальное окно и обновляем аватар в профиле
     closeAvatarModal();
-    loadProfile();
+    if (result.avatarPath) {
+      updateAvatarInProfile(result.avatarPath);
+    }
   } catch (error) {
     console.error("❌ Ошибка при сохранении аватара:", error);
   }
@@ -4601,10 +4590,11 @@ async function saveGifAvatar() {
       localStorage.setItem(`avatar_${currentUser.id}`, result.avatarPath);
       console.log("✅ GIF аватар сохранен в localStorage");
     }
-
-    // Закрываем модальное окно и перезагружаем профиль
+    // Закрываем модальное окно и обновляем аватар в профиле
     closeAvatarModal();
-    loadProfile();
+    if (result.avatarPath) {
+      updateAvatarInProfile(result.avatarPath);
+    }
   } catch (error) {
     console.error("❌ Ошибка при сохранении GIF аватара:", error);
   }
@@ -4638,9 +4628,9 @@ async function deleteAvatar() {
     localStorage.removeItem(`avatar_${currentUser.id}`);
     console.log("✅ Аватар удален из localStorage");
 
-    // Закрываем модальное окно и перезагружаем профиль
+    // Закрываем модальное окно и обновляем аватар в профиле (возвращаем дефолтный)
     closeAvatarModal();
-    loadProfile();
+    updateAvatarInProfile("img/default-avatar.jpg");
   } catch (error) {
     console.error("❌ Ошибка при удалении аватара:", error);
   }
