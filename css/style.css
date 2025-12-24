@@ -956,11 +956,12 @@ button.tab-btn:hover {
 
 .award-card {
   background: linear-gradient(
-    135deg,
-    rgba(212, 175, 55, 0.15) 0%,
-    rgba(212, 175, 55, 0.08) 100%
-  );
-  border: 2px solid rgba(212, 175, 55, 0.4);
+      135deg,
+      rgba(212, 175, 55, 0.6) 0%,
+      rgba(212, 175, 55, 0.5) 100%
+    ),
+    url("../img/winner.jpg") center / cover no-repeat;
+  border: 2px solid rgba(212, 175, 55, 0.7);
   border-radius: 12px;
   padding: 15px;
   text-align: center;
@@ -986,13 +987,14 @@ button.tab-btn:hover {
 
 .award-card:hover {
   background: linear-gradient(
-    135deg,
-    rgba(212, 175, 55, 0.25) 0%,
-    rgba(212, 175, 55, 0.15) 100%
-  );
-  border-color: rgba(212, 175, 55, 0.6);
+      135deg,
+      rgba(212, 175, 55, 0.75) 0%,
+      rgba(212, 175, 55, 0.65) 100%
+    ),
+    url("../img/winner.jpg") center / cover no-repeat;
+  border-color: rgba(212, 175, 55, 0.9);
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.15);
+  box-shadow: 0 12px 30px rgba(212, 175, 55, 0.3);
 }
 
 .award-icon {
@@ -1001,31 +1003,35 @@ button.tab-btn:hover {
   position: relative;
   z-index: 1;
   animation: bounce 0.6s ease-in-out;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
 .award-title {
   font-weight: 600;
-  color: #d4af37;
+  color: #fff;
   margin-bottom: 8px;
   font-size: 0.95em;
   position: relative;
   z-index: 1;
   word-break: break-word;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
 }
 
 .award-info {
   font-size: 0.9em;
-  color: #b0b8c8;
+  color: #fff;
   margin-bottom: 8px;
   position: relative;
   z-index: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 .award-date {
   font-size: 0.8em;
-  color: #7a8899;
+  color: #ffe0b2;
   position: relative;
   z-index: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 @keyframes bounce {

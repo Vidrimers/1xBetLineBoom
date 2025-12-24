@@ -4436,7 +4436,7 @@ async function showUserProfile(userId, username) {
           awards && awards.length > 0
             ? `
           <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
-            <h3 style="color: #d4af37; margin-bottom: 15px; font-size: 1.1em;">🏆 НАГРАДЫ</h3>
+            <h3 style="color: #d4af37; margin-bottom: 15px; font-size: 1.1em;text-align: center;">🏆 НАГРАДЫ</h3>
             <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
               ${awards
                 .map((award) => {
@@ -4444,10 +4444,10 @@ async function showUserProfile(userId, username) {
                     award.awarded_at
                   ).toLocaleDateString("ru-RU");
                   return `
-                <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%); border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 10px; text-align: center;">
-                  <div style="color: #d4af37; font-weight: 600; margin-bottom: 4px; font-size: 0.9em;">${award.event_name}</div>
-                  <div style="color: #b0b8c8; font-size: 0.85em;">Угадано: <strong>${award.won_bets}</strong> ставок</div>
-                  <div style="color: #7a8899; font-size: 0.75em; margin-top: 4px;">${awardDate}</div>
+                <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;">
+                  <div style="color: #fff; font-weight: 600; margin-bottom: 4px; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);">${award.event_name}</div>
+                  <div style="color: #fff; font-size: 0.85em; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">Угадано: <strong>${award.won_bets}</strong> ставок</div>
+                  <div style="color: #ffe0b2; font-size: 0.75em; margin-top: 4px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">${awardDate}</div>
                 </div>
               `;
                 })
