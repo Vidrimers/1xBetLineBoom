@@ -2592,15 +2592,25 @@ function displayProfile(profile) {
 async function loadUserAwards(userId) {
   try {
     console.log(`🏆 Загружаем награды для пользователя ${userId}`);
-    const response = await fetch(`/api/user/${userId}/awards`);
-    const awards = await response.json();
 
-    console.log("Полученные награды:", awards);
+    // Загружаем награды за победу в турнирах (автоматические)
+    const response1 = await fetch(`/api/user/${userId}/awards`);
+    const tournamentAwards = await response1.json();
+
+    // Загружаем пользовательские награды (выданные админом)
+    const response2 = await fetch(`/api/user/${userId}/custom-awards`);
+    const customAwards = await response2.json();
+
+    console.log("Награды за турниры:", tournamentAwards);
+    console.log("Пользовательские награды:", customAwards);
 
     const awardsSection = document.getElementById("awardsSection");
     const awardsContainer = document.getElementById("awardsContainer");
 
-    if (!awards || awards.length === 0) {
+    // Объединяем обе массива
+    const allAwards = [...(tournamentAwards || []), ...(customAwards || [])];
+
+    if (!allAwards || allAwards.length === 0) {
       console.log("Нет наград для отображения");
       awardsSection.style.display = "none";
       return;
@@ -2609,17 +2619,49 @@ async function loadUserAwards(userId) {
     awardsSection.style.display = "block";
 
     let awardsHTML = '<div class="awards-grid">';
-    awards.forEach((award) => {
+
+    // Отображаем автоматические награды за турниры
+    tournamentAwards.forEach((award) => {
       const awardDate = new Date(award.awarded_at).toLocaleDateString("ru-RU");
       awardsHTML += `
         <div class="award-card">
           <div class="award-icon">🏆</div>
-          <div class="award-title">${award.event_name}</div>
+          <div class="award-title">Победитель в турнире "${award.event_name}"</div>
           <div class="award-info">Угадано: <strong>${award.won_bets}</strong> ставок</div>
           <div class="award-date">${awardDate}</div>
         </div>
       `;
     });
+
+    // Отображаем пользовательские награды
+    const awardTypeText = {
+      participant: "👤 Участник турнира",
+      winner: "🥇 Победитель",
+      best_result: "⭐ Лучший результат",
+      special: "🎖️ Специальная награда",
+    };
+
+    customAwards.forEach((award) => {
+      const awardDate = new Date(award.created_at).toLocaleDateString("ru-RU");
+      const eventText = award.event_name
+        ? ` в турнире "${award.event_name}"`
+        : "";
+      const descText = award.description
+        ? `<div class="award-info-small">${award.description}</div>`
+        : "";
+
+      awardsHTML += `
+        <div class="award-card" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.2));">
+          <div class="award-icon">${getAwardIcon(award.award_type)}</div>
+          <div class="award-title">${
+            awardTypeText[award.award_type] || award.award_type
+          }${eventText}</div>
+          ${descText}
+          <div class="award-date">${awardDate}</div>
+        </div>
+      `;
+    });
+
     awardsHTML += "</div>";
 
     awardsContainer.innerHTML = awardsHTML;
@@ -2629,6 +2671,17 @@ async function loadUserAwards(userId) {
     document.getElementById("awardsContainer").innerHTML =
       "Ошибка при загрузке наград";
   }
+}
+
+// Функция для получения иконки награды
+function getAwardIcon(awardType) {
+  const icons = {
+    participant: "👤",
+    winner: "🥇",
+    best_result: "⭐",
+    special: "🎖️",
+  };
+  return icons[awardType] || "🏆";
 }
 
 // ===== ДЕМО-ДАННЫЕ =====
@@ -2927,6 +2980,250 @@ async function removeModerator(moderatorId) {
   } catch (error) {
     console.error("Ошибка при удалении модератора:", error);
     alert(`❌ Ошибка при удалении модератора: ${error.message}`);
+  }
+}
+
+// ========== УПРАВЛЕНИЕ НАГРАДАМИ ==========
+
+// Открыть панель управления наградами
+async function openAwardsPanel() {
+  if (!isAdmin()) {
+    alert("❌ У вас нет прав для управления наградами");
+    return;
+  }
+
+  const modal = document.getElementById("awardsModal");
+  modal.style.display = "flex";
+
+  // Загружаем список наград
+  loadAwardsList();
+
+  // Загружаем список турниров
+  loadEventsForAwards();
+}
+
+// Закрыть панель управления наградами
+function closeAwardsPanel() {
+  const modal = document.getElementById("awardsModal");
+  modal.style.display = "none";
+}
+
+// Загрузить список выданных наград
+async function loadAwardsList() {
+  try {
+    const response = await fetch("/api/awards");
+    const awards = await response.json();
+
+    const listContainer = document.getElementById("awardsList");
+
+    if (!Array.isArray(awards) || awards.length === 0) {
+      listContainer.innerHTML =
+        '<div class="empty-message">Наград не найдено</div>';
+      return;
+    }
+
+    const awardTypeText = {
+      participant: "👤 Участник турнира",
+      winner: "🥇 Победитель",
+      best_result: "⭐ Лучший результат",
+      special: "🎖️ Специальная награда",
+    };
+
+    listContainer.innerHTML = awards
+      .map(
+        (award) => `
+      <div style="
+        background: rgba(255, 193, 7, 0.15);
+        border: 1px solid #fbc02d;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      ">
+        <div>
+          <div style="color: #e0e0e0; font-weight: bold; margin-bottom: 3px">${
+            award.username
+          }</div>
+          <div style="color: #b0b0b0; font-size: 0.9em; margin-bottom: 3px">
+            ${awardTypeText[award.award_type] || award.award_type}
+          </div>
+          <div style="color: #888; font-size: 0.85em; margin-bottom: 3px">
+            ${award.event_name ? "🏆 " + award.event_name : "Общая награда"}
+          </div>
+          ${
+            award.description
+              ? `<div style="color: #888; font-size: 0.85em; font-style: italic">"${award.description}"</div>`
+              : ""
+          }
+        </div>
+        <button
+          onclick="removeAward(${award.id})"
+          style="
+            background: rgba(244, 67, 54, 0.7);
+            color: #ffb3b3;
+            border: 1px solid #f44336;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            flex-shrink: 0;
+            margin-left: 10px;
+          "
+          onmouseover="this.style.transform='scale(1.05)'"
+          onmouseout="this.style.transform='scale(1)'"
+        >
+          🗑️ Удалить
+        </button>
+      </div>
+    `
+      )
+      .join("");
+  } catch (error) {
+    console.error("Ошибка при загрузке наград:", error);
+    document.getElementById("awardsList").innerHTML =
+      '<div class="empty-message">Ошибка загрузки наград</div>';
+  }
+}
+
+// Загрузить список турниров для выбора
+async function loadEventsForAwards() {
+  try {
+    const response = await fetch("/api/events");
+    const events = await response.json();
+
+    const select = document.getElementById("eventSelectForAward");
+
+    // Очищаем текущие опции кроме первой
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    // Добавляем события
+    events.forEach((event) => {
+      const option = document.createElement("option");
+      option.value = event.id;
+      option.textContent = event.name;
+      select.appendChild(option);
+    });
+
+    // Добавляем обработчик изменения турнира
+    select.onchange = () => {
+      if (select.value) {
+        loadTournamentParticipantsForAward(select.value);
+      } else {
+        document.getElementById("participantSelectForAward").innerHTML =
+          '<option value="">-- Выбрать участника --</option>';
+      }
+    };
+  } catch (error) {
+    console.error("Ошибка при загрузке турниров:", error);
+  }
+}
+
+// Загрузить участников турнира
+async function loadTournamentParticipantsForAward(eventId) {
+  try {
+    const response = await fetch(
+      `/api/events/${eventId}/tournament-participants`
+    );
+    const participants = await response.json();
+
+    const select = document.getElementById("participantSelectForAward");
+
+    // Очищаем текущие опции кроме первой
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    if (!Array.isArray(participants) || participants.length === 0) {
+      select.innerHTML =
+        '<option value="">-- Участников не найдено --</option>';
+      return;
+    }
+
+    // Добавляем участников
+    participants.forEach((participant) => {
+      const option = document.createElement("option");
+      option.value = participant.user_id;
+      option.textContent = participant.username;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Ошибка при загрузке участников:", error);
+  }
+}
+
+// Выдать новую награду
+async function assignAward() {
+  const eventId = document.getElementById("eventSelectForAward").value;
+  const userId = document.getElementById("participantSelectForAward").value;
+  const awardType = document.getElementById("awardTypeSelect").value;
+  const description = document.getElementById("awardDescriptionInput").value;
+
+  if (!userId || !awardType) {
+    alert("❌ Выберите участника и тип награды");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/awards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        event_id: eventId || null,
+        award_type: awardType,
+        description: description || null,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert("✅ Награда успешно выдана");
+
+      // Очищаем форму
+      document.getElementById("eventSelectForAward").value = "";
+      document.getElementById("participantSelectForAward").innerHTML =
+        '<option value="">-- Выбрать участника --</option>';
+      document.getElementById("awardTypeSelect").value = "";
+      document.getElementById("awardDescriptionInput").value = "";
+
+      // Перезагружаем список
+      loadAwardsList();
+    } else {
+      alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при выдачи награды:", error);
+    alert(`❌ Ошибка при выдачи награды: ${error.message}`);
+  }
+}
+
+// Удалить награду
+async function removeAward(awardId) {
+  if (!confirm("⚠️ Вы уверены? Награда будет удалена")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/awards/${awardId}`, {
+      method: "DELETE",
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert("✅ Награда удалена");
+      loadAwardsList();
+    } else {
+      alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при удалении награды:", error);
+    alert(`❌ Ошибка при удалении награды: ${error.message}`);
   }
 }
 

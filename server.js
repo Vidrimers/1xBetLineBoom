@@ -920,6 +920,17 @@ db.exec(`
     permissions TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS user_awards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    event_id INTEGER,
+    award_type TEXT NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (event_id) REFERENCES events(id)
   )
 `);
 
@@ -1419,6 +1430,130 @@ app.put("/api/moderators/:moderatorId/permissions", (req, res) => {
     });
   } catch (error) {
     console.error("Ошибка при обновлении разрешений:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== УПРАВЛЕНИЕ НАГРАДАМИ ==========
+
+// 5.6 Получить все награды пользователя
+app.get("/api/user/:userId/custom-awards", (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const awards = db
+      .prepare(
+        `
+      SELECT ua.id, ua.user_id, ua.event_id, e.name as event_name, 
+             ua.award_type, ua.description, ua.created_at
+      FROM user_awards ua
+      LEFT JOIN events e ON ua.event_id = e.id
+      WHERE ua.user_id = ?
+      ORDER BY ua.created_at DESC
+    `
+      )
+      .all(userId);
+
+    res.json(awards);
+  } catch (error) {
+    console.error("Ошибка при получении наград пользователя:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.7 Получить все награды (для админ-панели)
+app.get("/api/awards", (req, res) => {
+  try {
+    const awards = db
+      .prepare(
+        `
+      SELECT ua.id, ua.user_id, u.username, ua.event_id, e.name as event_name,
+             ua.award_type, ua.description, ua.created_at
+      FROM user_awards ua
+      JOIN users u ON ua.user_id = u.id
+      LEFT JOIN events e ON ua.event_id = e.id
+      ORDER BY ua.created_at DESC
+    `
+      )
+      .all();
+
+    res.json(awards);
+  } catch (error) {
+    console.error("Ошибка при получении наград:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.8 Выдать новую награду
+app.post("/api/awards", (req, res) => {
+  try {
+    const { user_id, event_id, award_type, description } = req.body;
+
+    if (!user_id || !award_type) {
+      return res
+        .status(400)
+        .json({ error: "user_id и award_type обязательны" });
+    }
+
+    // Проверяем существует ли пользователь
+    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(user_id);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Если указан event_id, проверяем существует ли событие
+    if (event_id) {
+      const event = db
+        .prepare("SELECT id FROM events WHERE id = ?")
+        .get(event_id);
+
+      if (!event) {
+        return res.status(404).json({ error: "Турнир не найден" });
+      }
+    }
+
+    // Добавляем награду
+    const result = db
+      .prepare(
+        "INSERT INTO user_awards (user_id, event_id, award_type, description) VALUES (?, ?, ?, ?)"
+      )
+      .run(user_id, event_id || null, award_type, description || null);
+
+    console.log(`✓ Награда выдана пользователю ${user_id}: ${award_type}`);
+
+    res.json({
+      success: true,
+      message: "Награда успешно выдана",
+      id: result.lastInsertRowid,
+    });
+  } catch (error) {
+    console.error("Ошибка при выдачи награды:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5.9 Удалить награду
+app.delete("/api/awards/:awardId", (req, res) => {
+  try {
+    const { awardId } = req.params;
+
+    const result = db
+      .prepare("DELETE FROM user_awards WHERE id = ?")
+      .run(awardId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Награда не найдена" });
+    }
+
+    console.log(`✓ Награда удалена: ${awardId}`);
+
+    res.json({
+      success: true,
+      message: "Награда удалена",
+    });
+  } catch (error) {
+    console.error("Ошибка при удалении награды:", error);
     res.status(500).json({ error: error.message });
   }
 });
