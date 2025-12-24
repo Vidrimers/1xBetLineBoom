@@ -675,6 +675,13 @@ button.tab-btn:hover {
   text-align: center;
 }
 
+.participant-points{
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 /* Победитель в заблокированном турнире */
 .participant-item.winner {
   background: linear-gradient(

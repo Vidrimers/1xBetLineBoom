@@ -2068,7 +2068,10 @@ function displayParticipants(participants) {
           В ожидании: ${participant.pending_bets || 0}
         </div>
       </div>
-      <div class="participant-bets-count">${participant.won_bets || 0}</div>
+      <div class="participant-points">очки
+      <div class="participant-bets-count">${
+        participant.won_bets || 0
+      }</div></div>
     </div>
 `;
     })
@@ -2265,8 +2268,11 @@ function displayTournamentParticipants(
           Неугаданных: ${participant.event_lost || 0} | 
           В ожидании: ${participant.event_pending || 0}
         </div>
-      </div>
-      <div class="participant-bets-count">${participant.event_won || 0}</div>
+        </div>
+        <div class="participant-points">очки
+      <div class="participant-bets-count">${
+        participant.event_won || 0
+      }</div></div>
     </div>
   `;
     })
@@ -4407,7 +4413,7 @@ async function showUserProfile(userId, username) {
           <div style="background: #0a3a1a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Точность угадывания</div>
             <div style="font-size: 1.6em; font-weight: bold; color: #4caf50;">${(
-              (userData.won_bets / userData.total_bets) *
+              (userData.won_count / userData.total_bets) *
               100
             ).toFixed(1)}%</div>
           </div>
@@ -4444,7 +4450,8 @@ async function showUserProfile(userId, username) {
                     award.awarded_at
                   ).toLocaleDateString("ru-RU");
                   return `
-                <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;">
+                <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;height: 200px;display: flex;flex-direction: column;justify-content: center;">
+                <div class="award-icon">🏆</div>
                   <div style="color: #fff; font-weight: 600; margin-bottom: 4px; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);">${award.event_name}</div>
                   <div style="color: #fff; font-size: 0.85em; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">Угадано: <strong>${award.won_bets}</strong> ставок</div>
                   <div style="color: #ffe0b2; font-size: 0.75em; margin-top: 4px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">${awardDate}</div>
