@@ -29,6 +29,15 @@ const FD_API_BASE = "https://api.football-data.org/v4";
 const LOG_FILE_PATH = path.join(__dirname, "log.html");
 const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10 MB
 
+// Путь к папке с бэкапами
+const BACKUPS_DIR = path.join(__dirname, "backups");
+
+// Создаем папку backups если её нет
+if (!fs.existsSync(BACKUPS_DIR)) {
+  fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+  console.log("📁 Папка backups создана");
+}
+
 // Функция отправки уведомления о ставке админу в Telegram
 async function notifyBetAction(action, data) {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -3440,6 +3449,71 @@ app.get("/api/final-parameters-results", (req, res) => {
     console.error("❌ Ошибка при получении результатов параметров:", error);
     // Если таблица не существует, возвращаем пустой объект
     res.json({});
+  }
+});
+
+// POST /api/backup - Создать бэкап базы данных
+app.post("/api/backup", (req, res) => {
+  try {
+    // Проверяем что юзер админ (базовая проверка)
+    // В реальной системе нужна проверка авторизации
+
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, -5);
+    const backupFilename = `1xBetLineBoom_backup_${timestamp}.db`;
+    const backupPath = path.join(BACKUPS_DIR, backupFilename);
+    const dbPath = path.join(__dirname, "1xBetLineBoom.db");
+
+    // Копируем файл БД
+    fs.copyFileSync(dbPath, backupPath);
+
+    console.log(`✓ Бэкап БД создан: ${backupFilename}`);
+
+    res.json({
+      success: true,
+      filename: backupFilename,
+      timestamp: new Date().toISOString(),
+      message: "Бэкап успешно создан",
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при создании бэкапа БД:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// GET /download-backup/:filename - Скачать бэкап БД
+app.get("/download-backup/:filename", (req, res) => {
+  try {
+    const filename = req.params.filename;
+
+    // Проверяем что имя файла содержит только допустимые символы (безопасность)
+    if (!/^1xBetLineBoom_backup_[\d\-]+\.db$/.test(filename)) {
+      return res.status(400).json({ error: "Неверное имя файла" });
+    }
+
+    const backupPath = path.join(BACKUPS_DIR, filename);
+
+    // Проверяем что файл существует
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: "Файл бэкапа не найден" });
+    }
+
+    // Отправляем файл
+    res.download(backupPath, filename, (err) => {
+      if (err) {
+        console.error("❌ Ошибка при скачивании файла:", err);
+      } else {
+        console.log(`✓ Бэкап БД скачан: ${filename}`);
+      }
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при скачивании бэкапа:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

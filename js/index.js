@@ -2655,6 +2655,52 @@ function isAdmin() {
   return currentUser && currentUser.isAdmin === true;
 }
 
+// Функция для создания бэкапа базы данных
+async function backupDatabase() {
+  if (!isAdmin()) {
+    alert("❌ У вас нет прав для создания бэкапа БД");
+    return;
+  }
+
+  try {
+    // Показываем индикатор загрузки
+    const backupBtn = document.querySelector('[onclick="backupDatabase()"]');
+    const originalText = backupBtn.textContent;
+    backupBtn.textContent = "⏳ Создание бэкапа...";
+    backupBtn.disabled = true;
+
+    const response = await fetch("/api/backup", {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.filename) {
+      alert(
+        `✅ Бэкап БД успешно создан:\n${data.filename}\n\nФайл сохранен в папке /backups/`
+      );
+    } else {
+      alert(
+        `❌ Ошибка при создании бэкапа: ${data.error || "Неизвестная ошибка"}`
+      );
+    }
+  } catch (error) {
+    console.error("Ошибка при создании бэкапа:", error);
+    alert(`❌ Ошибка при создании бэкапа БД:\n${error.message}`);
+  } finally {
+    // Восстанавливаем кнопку
+    const backupBtn = document.querySelector('[onclick="backupDatabase()"]');
+    if (backupBtn) {
+      backupBtn.textContent = "💾 Бэкап БД";
+      backupBtn.disabled = false;
+    }
+  }
+}
+
 // Создать новое событие (только для админа)
 function openCreateEventModal() {
   if (!currentUser) {
