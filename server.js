@@ -326,8 +326,8 @@ function writeBetLog(action, data) {
       <div class="log-details">
         <span class="user">👤 ${data.username}</span>
         <span class="prediction">🎯 ${predictionText}</span>
-        ${finalBadge}
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+        ${finalBadge}
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
       </div>
     </div>`;
@@ -364,8 +364,8 @@ function writeBetLog(action, data) {
       <div class="log-details">
         <span class="user">👤 ${data.username}</span>
         <span class="prediction">🎯 ${predictionText}</span>
-        ${finalBadge}
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+        ${finalBadge}
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
       </div>
     </div>`;
