@@ -628,6 +628,15 @@ button.tab-btn:hover {
   color: #b0b8c8;
 }
 
+.participant-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #3a7bd5;
+  flex-shrink: 0;
+}
+
 .participant-rank.participant-rank-events {
   width: 60px;
 }

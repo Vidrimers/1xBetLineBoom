@@ -2048,6 +2048,9 @@ function displayParticipants(participants) {
       participant.id
     }, '${participant.username.replace(/'/g, "\\'")}')">
       <div class="participant-rank">#${index + 1}</div>
+      <img src="${participant.avatar || "img/default-avatar.jpg"}" alt="${
+        participant.username
+      }" class="participant-avatar" />
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
         ${
@@ -4102,6 +4105,12 @@ async function showUserProfile(userId, username) {
     const profileHTML = `
       <div style="background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
         <h2 style="color: #7ab0e0; margin-bottom: 20px; text-align: center;">👤 ${username}</h2>
+        
+        <div style="text-align: center; margin-bottom: 25px;">
+          <img src="${
+            userData.avatar || "img/default-avatar.jpg"
+          }" alt="${username}" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #3a7bd5; object-fit: cover;" />
+        </div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
           <div style="background: #1a1a2e; padding: 15px; border-radius: 8px;">
