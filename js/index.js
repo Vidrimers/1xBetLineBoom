@@ -3130,6 +3130,8 @@ async function loadTournamentParticipantsForAward(eventId) {
     );
     const participants = await response.json();
 
+    console.log("Загруженные участники:", participants);
+
     const select = document.getElementById("participantSelectForAward");
 
     // Очищаем текущие опции кроме первой
@@ -3146,9 +3148,14 @@ async function loadTournamentParticipantsForAward(eventId) {
     // Добавляем участников
     participants.forEach((participant) => {
       const option = document.createElement("option");
-      option.value = participant.user_id;
+      // Используем id вместо user_id (так как API возвращает id)
+      const userId = participant.user_id || participant.id;
+      option.value = String(userId);
       option.textContent = participant.username;
       select.appendChild(option);
+      console.log(
+        `Добавлен участник: ${participant.username}, ID: ${userId}`
+      );
     });
   } catch (error) {
     console.error("Ошибка при загрузке участников:", error);
@@ -3158,12 +3165,28 @@ async function loadTournamentParticipantsForAward(eventId) {
 // Выдать новую награду
 async function assignAward() {
   const eventId = document.getElementById("eventSelectForAward").value;
-  const userId = document.getElementById("participantSelectForAward").value;
+  const userIdStr = document.getElementById("participantSelectForAward").value;
   const awardType = document.getElementById("awardTypeSelect").value;
   const description = document.getElementById("awardDescriptionInput").value;
 
-  if (!userId || !awardType) {
+  console.log("=== assignAward Debug ===");
+  console.log("eventId:", eventId);
+  console.log("userIdStr:", userIdStr);
+  console.log("awardType:", awardType);
+
+  if (!userIdStr || !awardType) {
     alert("❌ Выберите участника и тип награды");
+    return;
+  }
+
+  // Преобразуем userId в число
+  const userId = parseInt(userIdStr, 10);
+  console.log("userId после parseInt:", userId, "isNaN:", isNaN(userId));
+
+  if (isNaN(userId)) {
+    alert(
+      "❌ Ошибка: некорректный ID участника. Выбранное значение: " + userIdStr
+    );
     return;
   }
 

@@ -1487,12 +1487,23 @@ app.get("/api/awards", (req, res) => {
 // 5.8 Выдать новую награду
 app.post("/api/awards", (req, res) => {
   try {
-    const { user_id, event_id, award_type, description } = req.body;
+    let { user_id, event_id, award_type, description } = req.body;
 
-    if (!user_id || !award_type) {
+    // Преобразуем в числа
+    user_id = user_id ? parseInt(user_id, 10) : null;
+    event_id = event_id ? parseInt(event_id, 10) : null;
+
+    // Проверяем валидность ID
+    if (!user_id || isNaN(user_id)) {
       return res
         .status(400)
-        .json({ error: "user_id и award_type обязательны" });
+        .json({ error: "user_id обязателен и должен быть числом" });
+    }
+
+    if (!award_type || typeof award_type !== "string") {
+      return res
+        .status(400)
+        .json({ error: "award_type обязателен и должен быть строкой" });
     }
 
     // Проверяем существует ли пользователь
@@ -1503,7 +1514,7 @@ app.post("/api/awards", (req, res) => {
     }
 
     // Если указан event_id, проверяем существует ли событие
-    if (event_id) {
+    if (event_id && !isNaN(event_id)) {
       const event = db
         .prepare("SELECT id FROM events WHERE id = ?")
         .get(event_id);
@@ -1511,6 +1522,8 @@ app.post("/api/awards", (req, res) => {
       if (!event) {
         return res.status(404).json({ error: "Турнир не найден" });
       }
+    } else {
+      event_id = null;
     }
 
     // Добавляем награду
