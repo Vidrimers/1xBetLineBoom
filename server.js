@@ -510,9 +510,11 @@ async function checkAndRemindNonVoters() {
         continue;
       }
 
-      // Получаем всех пользователей
+      // Получаем пользователей, у которых включены напоминания в группе
       const allUsers = db
-        .prepare("SELECT id, username, telegram_username FROM users")
+        .prepare(
+          "SELECT id, username, telegram_username FROM users WHERE telegram_group_reminders_enabled = 1"
+        )
         .all();
 
       // Получаем пользователей, которые уже сделали ставку на этот матч
@@ -965,6 +967,18 @@ try {
   );
   console.log(
     "✅ Колонка telegram_notifications_enabled добавлена в таблицу users"
+  );
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем telegram_group_reminders_enabled если её нет
+try {
+  db.exec(
+    `ALTER TABLE users ADD COLUMN telegram_group_reminders_enabled INTEGER DEFAULT 1`
+  );
+  console.log(
+    "✅ Колонка telegram_group_reminders_enabled добавлена в таблицу users"
   );
 } catch (e) {
   // Колонка уже существует, игнорируем
@@ -3145,7 +3159,8 @@ app.delete("/api/user/:userId/telegram", async (req, res) => {
 app.put("/api/user/:userId/notifications", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { telegram_notifications_enabled } = req.body;
+    const { telegram_notifications_enabled, telegram_group_reminders_enabled } =
+      req.body;
 
     // Проверяем существование пользователя
     const user = db
@@ -3155,115 +3170,171 @@ app.put("/api/user/:userId/notifications", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    // Сохраняем настройку (1 или 0)
-    const notificationEnabled = telegram_notifications_enabled ? 1 : 0;
-    db.prepare(
-      "UPDATE users SET telegram_notifications_enabled = ? WHERE id = ?"
-    ).run(notificationEnabled, userId);
+    // Обновляем настройки (если они переданы)
+    if (telegram_notifications_enabled !== undefined) {
+      const notificationEnabled = telegram_notifications_enabled ? 1 : 0;
+      db.prepare(
+        "UPDATE users SET telegram_notifications_enabled = ? WHERE id = ?"
+      ).run(notificationEnabled, userId);
 
-    // Отправляем сообщение в Telegram при изменении настройки уведомлений
-    if (user.telegram_username) {
-      try {
-        const cleanUsername = user.telegram_username.toLowerCase();
-        const tgUser = db
-          .prepare(
-            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
-          )
-          .get(cleanUsername);
+      // Отправляем сообщение в Telegram при изменении настройки личных уведомлений
+      if (user.telegram_username) {
+        try {
+          const cleanUsername = user.telegram_username.toLowerCase();
+          const tgUser = db
+            .prepare(
+              "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+            )
+            .get(cleanUsername);
 
-        if (tgUser?.chat_id) {
-          let notificationMessage;
+          if (tgUser?.chat_id) {
+            let notificationMessage;
 
-          if (notificationEnabled === 0) {
-            // Отключение уведомлений
-            notificationMessage =
-              `🔕 <b>УВЕДОМЛЕНИЯ ОТКЛЮЧЕНЫ</b>\n\n` +
-              `Личные уведомления о ставках и результатах отключены.\n\n` +
-              `Вы можете включить их снова в настройках профиля.\n\n` +
-              `⏰ ${new Date().toLocaleString("ru-RU")}`;
-          } else {
-            // Включение уведомлений
-            notificationMessage =
-              `🔔 <b>УВЕДОМЛЕНИЯ ВКЛЮЧЕНЫ</b>\n\n` +
-              `Личные уведомления о ставках и результатах включены!\n\n` +
-              `Теперь ты будешь получать сообщения при создании и удалении ставок.\n\n` +
-              `⏰ ${new Date().toLocaleString("ru-RU")}`;
+            if (notificationEnabled === 0) {
+              // Отключение уведомлений
+              notificationMessage =
+                `🔕 <b>УВЕДОМЛЕНИЯ ОТКЛЮЧЕНЫ</b>\n\n` +
+                `Личные уведомления о ставках и результатах отключены.\n\n` +
+                `Вы можете включить их снова в настройках профиля.\n\n` +
+                `⏰ ${new Date().toLocaleString("ru-RU")}`;
+            } else {
+              // Включение уведомлений
+              notificationMessage =
+                `🔔 <b>УВЕДОМЛЕНИЯ ВКЛЮЧЕНЫ</b>\n\n` +
+                `Личные уведомления о ставках и результатах включены!\n\n` +
+                `Теперь ты будешь получать сообщения при создании и удалении ставок.\n\n` +
+                `⏰ ${new Date().toLocaleString("ru-RU")}`;
+            }
+
+            await sendUserMessage(tgUser.chat_id, notificationMessage);
           }
-
-          await sendUserMessage(tgUser.chat_id, notificationMessage);
+        } catch (err) {
+          console.error(
+            "⚠️ Ошибка отправки сообщения об изменении уведомлений:",
+            err.message
+          );
+          // Не прерываем процесс сохранения если ошибка в отправке
         }
-      } catch (err) {
-        console.error(
-          "⚠️ Ошибка отправки сообщения об изменении уведомлений:",
-          err.message
-        );
-        // Не прерываем процесс сохранения если ошибка в отправке
       }
-    }
 
-    // Записываем в лог изменение настройки
-    writeBetLog("settings", {
-      username: user.username,
-      setting: "Telegram Notifications",
-      oldValue: null,
-      newValue: notificationEnabled ? "Включены" : "Отключены",
-    });
+      // Записываем в лог изменение настройки
+      writeBetLog("settings", {
+        username: user.username,
+        setting: "Telegram Notifications",
+        oldValue: null,
+        newValue: notificationEnabled ? "Включены" : "Отключены",
+      });
 
-    // Отправляем уведомление админу об изменении настроек уведомлений
-    try {
-      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+      // Отправляем уведомление админу об изменении настроек уведомлений
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 
-      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
-        const time = new Date().toLocaleString("ru-RU");
-        const action = notificationEnabled ? "ВКЛЮЧИЛ" : "ОТКЛЮЧИЛ";
-        const emoji = notificationEnabled ? "🔔" : "🔕";
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+          const time = new Date().toLocaleString("ru-RU");
+          const action = notificationEnabled ? "ВКЛЮЧИЛ" : "ОТКЛЮЧИЛ";
+          const emoji = notificationEnabled ? "🔔" : "🔕";
 
-        const adminMessage = `${emoji} ИЗМЕНЕНИЕ УВЕДОМЛЕНИЙ
+          const adminMessage = `${emoji} ИЗМЕНЕНИЕ УВЕДОМЛЕНИЙ
 
 👤 Пользователь: ${user.username}
 ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
 ✏️ Действие: ${action} уведомления
 🕐 Время: ${time}`;
 
-        await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: TELEGRAM_ADMIN_ID,
-              text: adminMessage,
-            }),
-          }
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: adminMessage,
+              }),
+            }
+          );
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления админу об уведомлениях:",
+          err.message
         );
+        // Не прерываем процесс если ошибка в отправке админу
       }
-    } catch (err) {
-      console.error(
-        "⚠️ Ошибка отправки уведомления админу об уведомлениях:",
-        err.message
-      );
-      // Не прерываем процесс если ошибка в отправке админу
+    }
+
+    // Обновляем настройку напоминаний в группе
+    if (telegram_group_reminders_enabled !== undefined) {
+      const groupRemindersEnabled = telegram_group_reminders_enabled ? 1 : 0;
+      db.prepare(
+        "UPDATE users SET telegram_group_reminders_enabled = ? WHERE id = ?"
+      ).run(groupRemindersEnabled, userId);
+
+      // Записываем в лог изменение настройки
+      writeBetLog("settings", {
+        username: user.username,
+        setting: "Telegram Group Reminders",
+        oldValue: null,
+        newValue: groupRemindersEnabled ? "Включены" : "Отключены",
+      });
+
+      // Отправляем уведомление админу об изменении настроек напоминаний в группе
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+          const time = new Date().toLocaleString("ru-RU");
+          const action = groupRemindersEnabled ? "ВКЛЮЧИЛ" : "ОТКЛЮЧИЛ";
+          const emoji = groupRemindersEnabled ? "👥" : "🔇";
+
+          const adminMessage = `${emoji} ИЗМЕНЕНИЕ НАПОМИНАНИЙ В ГРУППЕ
+
+👤 Пользователь: ${user.username}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Действие: ${action} напоминания в группе
+🕐 Время: ${time}`;
+
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: adminMessage,
+              }),
+            }
+          );
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления админу о напоминаниях в группе:",
+          err.message
+        );
+        // Не прерываем процесс если ошибка в отправке админу
+      }
     }
 
     res.json({
       success: true,
-      message: notificationEnabled
-        ? "Уведомления включены"
-        : "Уведомления отключены",
-      telegram_notifications_enabled: notificationEnabled,
+      message: "Настройки сохранены",
+      telegram_notifications_enabled: telegram_notifications_enabled,
+      telegram_group_reminders_enabled: telegram_group_reminders_enabled,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET /api/user/:userId/notifications - Получить настройку уведомлений
+// GET /api/user/:userId/notifications - Получить настройки уведомлений
 app.get("/api/user/:userId/notifications", (req, res) => {
   try {
     const { userId } = req.params;
     const user = db
-      .prepare("SELECT telegram_notifications_enabled FROM users WHERE id = ?")
+      .prepare(
+        "SELECT telegram_notifications_enabled, telegram_group_reminders_enabled FROM users WHERE id = ?"
+      )
       .get(userId);
 
     if (!user) {
@@ -3272,6 +3343,8 @@ app.get("/api/user/:userId/notifications", (req, res) => {
 
     res.json({
       telegram_notifications_enabled: user.telegram_notifications_enabled === 1,
+      telegram_group_reminders_enabled:
+        user.telegram_group_reminders_enabled === 1,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

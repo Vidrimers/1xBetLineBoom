@@ -1376,8 +1376,8 @@ button.tab-btn:hover {
 /* ===== НАСТРОЙКИ ===== */
 .settings-container {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
+  /* flex-direction: column; */
+  gap: 10px;
   max-width: 350px;
 }
 

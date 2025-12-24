@@ -4284,13 +4284,15 @@ async function loadSettings() {
     const data = await response.json();
     const telegramUsername = data.telegram_username || "";
 
-    // Загружаем настройку уведомлений
+    // Загружаем все настройки уведомлений
     const notifResponse = await fetch(
       `/api/user/${currentUser.id}/notifications`
     );
     const notifData = await notifResponse.json();
     const telegramNotificationsEnabled =
       notifData.telegram_notifications_enabled ?? true;
+    const telegramGroupRemindersEnabled =
+      notifData.telegram_group_reminders_enabled ?? true;
 
     // Вставляем Telegram username настройку ПЕРЕД чекбоксом уведомлений
     const settingsContainer = document.getElementById("settingsContainer");
@@ -4331,10 +4333,17 @@ async function loadSettings() {
     // Вставляем Telegram настройку в начало контейнера
     settingsContainer.insertAdjacentHTML("afterbegin", telegramHTML);
 
-    // Инициализируем чекбокс уведомлений (который уже в HTML)
-    const checkbox = document.getElementById("telegramNotificationsCheckbox");
-    if (checkbox) {
-      checkbox.checked = telegramNotificationsEnabled;
+    // Инициализируем оба checkbox
+    const notifCheckbox = document.getElementById(
+      "telegramNotificationsCheckbox"
+    );
+    if (notifCheckbox) {
+      notifCheckbox.checked = telegramNotificationsEnabled;
+    }
+
+    const remindersCheckbox = document.getElementById("groupRemindersCheckbox");
+    if (remindersCheckbox) {
+      remindersCheckbox.checked = telegramGroupRemindersEnabled;
     }
   } catch (error) {
     console.error("Ошибка при загрузке настроек:", error);
@@ -4436,6 +4445,50 @@ async function saveTelegramNotificationSettings() {
     }
   } catch (error) {
     console.error("Ошибка при сохранении уведомлений:", error);
+    alert("Ошибка при сохранении");
+    btn.textContent = "Сохранить";
+    btn.disabled = false;
+  }
+}
+
+// Сохранить настройку напоминаний в группе
+async function saveGroupRemindersSettings() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  try {
+    const checkbox = document.getElementById("groupRemindersCheckbox");
+    const isEnabled = checkbox.checked;
+    const btn = document.getElementById("saveGroupRemindersBtn");
+
+    // Добавляем визуальную обратную связь
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch(`/api/user/${currentUser.id}/notifications`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegram_group_reminders_enabled: isEnabled }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Показываем успешное сохранение
+      btn.textContent = "✅ Сохранено!";
+      setTimeout(() => {
+        btn.textContent = "Сохранить";
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      alert("Ошибка: " + result.error);
+      btn.textContent = "Сохранить";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении напоминаний в группе:", error);
     alert("Ошибка при сохранении");
     btn.textContent = "Сохранить";
     btn.disabled = false;

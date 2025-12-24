@@ -295,7 +295,7 @@
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px;">
                     📱 Получение личных сообщений в ТГ
                   </h3>
-                  <p style="margin: 0; color: #aaa; font-size: 14px;">
+                  <p style="ma👥 Напоминания в группеrgin: 0; color: #aaa; font-size: 14px;">
                     Получайте уведомления о ставках и результатах прямо в ТГ
                   </p>
                 </div>
@@ -319,6 +319,44 @@
                     "
                     onmouseover="this.style.background='#0073b0'"
                     onmouseout="this.style.background='#0088cc'"
+                  >
+                    Сохранить
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Напоминания в группе -->
+            <div class="settings-item" style="padding: 20px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 15px; border-left: 3px solid #00b894;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 250px;">
+                  <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px;">
+                    👥 Напоминания в группе ТГ
+                  </h3>
+                  <p style="margin: 0; color: #aaa; font-size: 14px;">
+                    Разрешить боту упоминать вас в напоминаниях о голосовании в группе
+                  </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <label class="switch">
+                    <input type="checkbox" id="groupRemindersCheckbox">
+                    <span class="slider"></span>
+                  </label>
+                  <button 
+                    onclick="saveGroupRemindersSettings()" 
+                    id="saveGroupRemindersBtn"
+                    style="
+                      padding: 8px 16px;
+                      background: #00b894;
+                      color: white;
+                      border: none;
+                      border-radius: 4px;
+                      cursor: pointer;
+                      font-weight: 500;
+                      transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='#009a72'"
+                    onmouseout="this.style.background='#00b894'"
                   >
                     Сохранить
                   </button>
