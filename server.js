@@ -15,6 +15,7 @@ import {
   flushQueueNow,
   writeNotificationQueue,
   sendUserMessage,
+  sendGroupNotification,
 } from "./OnexBetLineBoombot.js";
 
 dotenv.config();
@@ -474,6 +475,112 @@ function writeBetLog(action, data) {
     console.log(`📝 Лог записан: ${action} - ${data.username}`);
   } catch (error) {
     console.error("❌ Ошибка записи лога:", error);
+  }
+}
+
+// Функция для проверки и отправки напоминаний непроголосовавших пользователей за 3 часа до матча
+async function checkAndRemindNonVoters() {
+  try {
+    const now = new Date();
+    const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+
+    // Получаем матчи, которые начнутся в течение 3 часов
+    const upcomingMatches = db
+      .prepare(
+        `
+      SELECT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.match_date > ? AND m.match_date <= ? AND m.winner IS NULL
+      ORDER BY m.match_date ASC
+    `
+      )
+      .all(now.toISOString(), threeHoursLater.toISOString());
+
+    // Для каждого матча проверяем непроголосовавших пользователей
+    for (const match of upcomingMatches) {
+      // Проверяем, было ли уже отправлено напоминание для этого матча
+      const existingReminder = db
+        .prepare("SELECT id FROM sent_reminders WHERE match_id = ?")
+        .get(match.id);
+
+      if (existingReminder) {
+        // Напоминание уже было отправлено, пропускаем
+        continue;
+      }
+
+      // Получаем всех пользователей
+      const allUsers = db
+        .prepare("SELECT id, username, telegram_username FROM users")
+        .all();
+
+      // Получаем пользователей, которые уже сделали ставку на этот матч
+      const usersWithBets = db
+        .prepare(
+          `
+        SELECT DISTINCT user_id FROM bets WHERE match_id = ?
+      `
+        )
+        .all(match.id)
+        .map((row) => row.user_id);
+
+      // Находим пользователей, которые НЕ сделали ставку
+      const nonVoters = allUsers.filter(
+        (user) => !usersWithBets.includes(user.id)
+      );
+
+      if (nonVoters.length > 0) {
+        // Форматируем дату и время матча
+        const matchDateTime = new Date(match.match_date);
+        const matchDate = matchDateTime.toLocaleDateString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+        const matchTime = matchDateTime.toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        // Создаём список упоминаний пользователей
+        const mentions = nonVoters
+          .map((user) =>
+            user.telegram_username
+              ? `@${user.telegram_username}`
+              : user.username
+          )
+          .join(", ");
+
+        // Составляем сообщение
+        const message = `⏰ <b>Напоминание о голосовании!</b>
+
+Матч начнётся <b>${matchDate} в ${matchTime}</b>
+
+⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>
+🏆 Турнир: ${match.event_name}
+
+👥 <b>Не проголосовали:</b>
+${mentions}
+
+💬 Не забудьте сделать прогноз! За 3 часа до матча уже нельзя будет голосовать.`;
+
+        await sendGroupNotification(message);
+
+        // Записываем в БД, что напоминание было отправлено
+        db.prepare("INSERT INTO sent_reminders (match_id) VALUES (?)").run(
+          match.id
+        );
+
+        console.log(
+          `📢 Напоминание отправлено для матча: ${match.team1_name} vs ${match.team2_name}`
+        );
+      }
+    }
+  } catch (error) {
+    console.error(
+      "❌ Ошибка при проверке непроголосовавших пользователей:",
+      error
+    );
   }
 }
 
@@ -985,6 +1092,16 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (event_id) REFERENCES events(id)
+  )
+`);
+
+// Таблица для отслеживания отправленных напоминаний о голосовании
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sent_reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (match_id) REFERENCES matches(id)
   )
 `);
 
@@ -4292,6 +4409,12 @@ app.get("/download-backup/:filename", (req, res) => {
 
 // Запуск Telegram бота
 startBot();
+
+// Запуск фоновой задачи для напоминания непроголосовавших пользователей (каждые 5 минут)
+setInterval(checkAndRemindNonVoters, 5 * 60 * 1000);
+console.log(
+  "🔔 Фоновая задача проверки непроголосовавших пользователей запущена (интервал: 5 минут)"
+);
 
 // Запуск сервера
 app.listen(PORT, "0.0.0.0", () => {
