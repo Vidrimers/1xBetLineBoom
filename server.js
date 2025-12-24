@@ -898,7 +898,8 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
                    (b.prediction = 'team2' AND m.winner = 'team2') OR
                    (b.prediction = 'draw' AND m.winner = 'draw') OR
                    (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1 
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                   CASE WHEN m.is_final = 1 AND b.is_final_bet = 0 THEN 3 ELSE 1 END
               ELSE 0 
             END 
           ELSE 0 
@@ -1188,7 +1189,8 @@ app.get("/api/participants", (req, res) => {
                    (b.prediction = 'team2' AND m.winner = 'team2') OR
                    (b.prediction = 'draw' AND m.winner = 'draw') OR
                    (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1 
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                   CASE WHEN m.is_final = 1 AND b.is_final_bet = 0 THEN 3 ELSE 1 END
               ELSE 0 
             END 
           ELSE 0 
@@ -1325,7 +1327,8 @@ app.get("/api/user/:userId/profile", (req, res) => {
                    (b.prediction = 'team2' AND m.winner = 'team2') OR
                    (b.prediction = 'draw' AND m.winner = 'draw') OR
                    (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1 
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                   CASE WHEN m.is_final = 1 AND b.is_final_bet = 0 THEN 3 ELSE 1 END
               ELSE 0 
             END 
           ELSE 0 
