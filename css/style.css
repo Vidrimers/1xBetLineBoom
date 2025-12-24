@@ -1759,3 +1759,168 @@ input:focus + .slider {
 input:checked + .slider:before {
   transform: translateX(22px);
 }
+
+/* ===== КАРТОЧКА ПОБЕДИТЕЛЯ ТУРНИРА ===== */
+
+.tournament-winner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* min-height: 600px; */
+  padding: 20px;
+}
+
+.tournament-winner-card {
+  width: 100%;
+  max-width: 500px;
+  max-height: 40vh;
+  background: linear-gradient(
+    135deg,
+    rgba(58, 123, 213, 0.15) 0%,
+    rgba(77, 184, 168, 0.1) 100%
+  );
+  border: 2px solid #5a9fd4;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.winner-header {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  word-break: break-word;
+}
+
+.winner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.winner-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #ffd700;
+  /* box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); */
+  flex-shrink: 0;
+}
+
+.winner-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.winner-info {
+  width: 100%;
+}
+
+.winner-name {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #e0e6f0;
+  margin-bottom: 10px;
+}
+
+.winner-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(44, 50, 63, 0.5);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9em;
+}
+
+.stat-label {
+  color: #a0a8b8;
+  font-size: 0.9em;
+  text-align: left;
+  flex: 1;
+}
+
+.stat-value {
+  color: #4db8a8;
+  font-size: 1em;
+  font-weight: bold;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.award-description {
+  color: #ffd700;
+  font-size: 1em;
+  max-width: 150px;
+  text-align: right;
+  word-break: break-word;
+}
+
+.no-winner-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  font-size: 1.8em;
+  color: #ff9800;
+  font-weight: bold;
+  text-align: center;
+  padding: 40px;
+  background: rgba(255, 152, 0, 0.1);
+  border-radius: 10px;
+  border: 2px dashed #ff9800;
+}
+
+@media (max-width: 600px) {
+  .tournament-winner-card {
+    padding: 25px;
+  }
+
+  .winner-header {
+    font-size: 1.2em;
+  }
+
+  .winner-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .winner-name {
+    font-size: 1.5em;
+  }
+
+  .stat-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stat-value {
+    text-align: left;
+  }
+
+  .award-description {
+    text-align: left;
+  }
+
+  .no-winner-message {
+    font-size: 1.5em;
+    min-height: 200px;
+    padding: 30px;
+  }
+}

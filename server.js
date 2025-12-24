@@ -984,6 +984,14 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// Миграция: добавляем avatar_path если её нет
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN avatar_path TEXT`);
+  console.log("✅ Колонка avatar_path добавлена в таблицу users");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
 // Таблица для связки telegram username → chat_id (для отправки личных сообщений)
 db.exec(`
   CREATE TABLE IF NOT EXISTS telegram_users (
@@ -1212,6 +1220,20 @@ db.exec(`
     background_opacity REAL DEFAULT 1,
     award_color TEXT DEFAULT '#fbc02d',
     award_emoji TEXT DEFAULT '🏆',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (event_id) REFERENCES events(id)
+  )
+`);
+
+// Таблица для автоматических наград за турниры
+db.exec(`
+  CREATE TABLE IF NOT EXISTS awards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    event_id INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    won_bets_count INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (event_id) REFERENCES events(id)
@@ -1494,6 +1516,188 @@ app.get("/api/events/:eventId/matches", (req, res) => {
       .all(eventId);
     res.json(matches);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Получить информацию о победителе турнира и его награде
+app.get("/api/events/:eventId/tournament-winner", (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    // Получаем информацию о турнире
+    const event = db
+      .prepare("SELECT id, name FROM events WHERE id = ?")
+      .get(eventId);
+
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+
+    // Получаем награду (хранится в таблице awards)
+    const award = db
+      .prepare(
+        `
+        SELECT a.id, a.user_id, a.event_id, a.description, a.created_at, u.username, u.avatar_path
+        FROM awards a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.event_id = ?
+        ORDER BY a.created_at ASC
+        LIMIT 1
+      `
+      )
+      .get(eventId);
+
+    console.log(`🏆 Найденная награда:`, award);
+
+    if (!award) {
+      // Если награда не найдена, пробуем без JOIN
+      const awardWithoutJoin = db
+        .prepare(
+          `
+          SELECT a.id, a.user_id, a.event_id, a.description, a.created_at
+          FROM awards a
+          WHERE a.event_id = ?
+          ORDER BY a.created_at ASC
+          LIMIT 1
+        `
+        )
+        .get(eventId);
+
+      if (!awardWithoutJoin) {
+        // Нет данных о победителе для этого турнира
+        return res.json({
+          tournament: event,
+          winner: null,
+          message: "Победитель отсутствует",
+        });
+      }
+
+      // Получаем данные пользователя отдельно
+      const user = db
+        .prepare("SELECT id, username, avatar_path FROM users WHERE id = ?")
+        .get(awardWithoutJoin.user_id);
+
+      if (!user) {
+        return res.status(404).json({ error: "Пользователь не найден" });
+      }
+
+      // Подсчитываем реальное количество правильных прогнозов в турнире
+      const wonBetsResult = db
+        .prepare(
+          `
+          SELECT COUNT(*) as won_count
+          FROM bets b
+          JOIN matches m ON b.match_id = m.id
+          WHERE b.user_id = ? AND m.event_id = ? AND m.winner IS NOT NULL
+          AND (
+            (b.prediction = 'team1' AND m.winner = 'team1') OR
+            (b.prediction = 'team2' AND m.winner = 'team2') OR
+            (b.prediction = 'draw' AND m.winner = 'draw') OR
+            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+            (b.prediction = m.team2_name AND m.winner = 'team2')
+          )
+        `
+        )
+        .get(awardWithoutJoin.user_id, eventId);
+
+      const winnerData = {
+        ...awardWithoutJoin,
+        username: user.username,
+        avatar_path: user.avatar_path,
+        won_bets_count: wonBetsResult?.won_count || 0,
+      };
+
+      return res.json({
+        tournament: event,
+        winner: winnerData,
+      });
+    }
+
+    // Подсчитываем реальное количество правильных прогнозов в турнире
+    const wonBetsResult = db
+      .prepare(
+        `
+        SELECT COUNT(*) as won_count
+        FROM bets b
+        JOIN matches m ON b.match_id = m.id
+        WHERE b.user_id = ? AND m.event_id = ? AND m.winner IS NOT NULL
+        AND (
+          (b.prediction = 'team1' AND m.winner = 'team1') OR
+          (b.prediction = 'team2' AND m.winner = 'team2') OR
+          (b.prediction = 'draw' AND m.winner = 'draw') OR
+          (b.prediction = m.team1_name AND m.winner = 'team1') OR
+          (b.prediction = m.team2_name AND m.winner = 'team2')
+        )
+      `
+      )
+      .get(award.user_id, eventId);
+
+    const winnerData = {
+      ...award,
+      won_bets_count: wonBetsResult?.won_count || 0,
+    };
+
+    res.json({
+      tournament: event,
+      winner: winnerData,
+    });
+  } catch (error) {
+    console.error("❌ Ошибка в endpoint tournament-winner:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/events/:eventId/award - Добавить награду за турнир (для админа)
+app.post("/api/events/:eventId/award", (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { user_id, description, won_bets_count } = req.body;
+
+    // Проверяем параметры
+    if (!user_id || !description) {
+      return res.status(400).json({
+        error: "Требуются: user_id, description",
+      });
+    }
+
+    // Проверяем, существует ли пользователь
+    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(user_id);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем, существует ли событие
+    const event = db.prepare("SELECT id FROM events WHERE id = ?").get(eventId);
+
+    if (!event) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    // Добавляем награду
+    const stmt = db.prepare(
+      `INSERT INTO awards (user_id, event_id, description, won_bets_count, created_at)
+       VALUES (?, ?, ?, ?, datetime('now'))`
+    );
+
+    const result = stmt.run(user_id, eventId, description, won_bets_count || 0);
+
+    // Логируем в систему
+    writeBetLog("settings", {
+      username: "Admin",
+      setting: "Tournament Award",
+      oldValue: null,
+      newValue: `${description} для пользователя ${user_id}`,
+    });
+
+    res.json({
+      success: true,
+      message: "Награда добавлена",
+      awardId: result.lastInsertRowid,
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при добавлении награды:", error);
     res.status(500).json({ error: error.message });
   }
 });

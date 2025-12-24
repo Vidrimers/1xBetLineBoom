@@ -664,6 +664,18 @@ function getMatchStatusByDate(match) {
 
 async function loadMatches(eventId) {
   try {
+    // Получаем информацию о турнире
+    const eventResponse = await fetch("/api/events");
+    const eventsList = await eventResponse.json();
+    const currentEvent = eventsList.find((e) => e.id === eventId);
+
+    // Если турнир завершён (заблокирован), показываем победителя вместо матчей
+    if (currentEvent && currentEvent.locked_reason) {
+      displayTournamentWinner(eventId);
+      return;
+    }
+
+    // Иначе загружаем и отображаем матчи
     const response = await fetch(`/api/events/${eventId}/matches`);
     matches = await response.json();
     currentRoundFilter = "all"; // Сбрасываем фильтр при загрузке нового турнира
@@ -752,6 +764,107 @@ function initToggleStates() {
       lockFinalParameter(bet.match_id, bet.parameter_type);
     }
   });
+}
+
+// Отображение карточки победителя завершённого турнира
+async function displayTournamentWinner(eventId) {
+  try {
+    const matchesContainer = document.getElementById("matchesContainer");
+    const roundsFilterContainer = document.getElementById(
+      "roundsFilterContainer"
+    );
+
+    // Скрываем фильтры туров
+    if (roundsFilterContainer) {
+      roundsFilterContainer.style.display = "none";
+    }
+
+    console.log(`🏆 Загрузка победителя для турнира ${eventId}`);
+
+    // Загружаем данные о победителе
+    const response = await fetch(`/api/events/${eventId}/tournament-winner`);
+    const data = await response.json();
+
+    console.log(`📡 Ответ сервера:`, data);
+    console.log(`🏆 Данные победителя:`, data.winner);
+
+    // Если победитель отсутствует
+    if (!data.winner) {
+      console.log(`⚠️ Победитель не найден для турнира ${eventId}`);
+      const noWinnerHTML = `
+        <div class="tournament-winner-container">
+          <div class="tournament-winner-card">
+            <div class="winner-header">
+              🏆 Турнир "${data.tournament.name}"
+            </div>
+            
+            <div class="winner-content">
+              <div class="no-winner-message">
+                ⚠️ Победитель отсутствует
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      matchesContainer.innerHTML = noWinnerHTML;
+      return;
+    }
+
+    const { tournament, winner } = data;
+    const avatarPath = winner.avatar_path
+      ? `./img/${winner.avatar_path}`
+      : "./img/default-avatar.jpg";
+
+    console.log(`✅ Отображение победителя:`, winner.username);
+
+    const winnerHTML = `
+      <div class="tournament-winner-container">
+        <div class="tournament-winner-card">
+          <div class="winner-header">
+            🏆 Победитель турнира "${tournament.name}"
+          </div>
+          
+          <div class="winner-content">
+            <div class="winner-avatar">
+              <img src="${avatarPath}" alt="${winner.username}" />
+            </div>
+            
+            <div class="winner-info">
+              <div class="winner-name">${winner.username}</div>
+              
+              <div class="winner-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Правильных прогнозов:</span>
+                  <span class="stat-value">${winner.won_bets_count}</span>
+                </div>
+                
+                <div class="stat-item">
+                  <span class="stat-label">Награда:</span>
+                  <span class="stat-value award-description">${
+                    winner.description
+                  }</span>
+                </div>
+                
+                <div class="stat-item">
+                  <span class="stat-label">Дата присуждения:</span>
+                  <span class="stat-value">${new Date(
+                    winner.created_at
+                  ).toLocaleDateString("ru-RU")}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    matchesContainer.innerHTML = winnerHTML;
+  } catch (error) {
+    console.error("❌ Ошибка при загрузке информации о победителе:", error);
+    document.getElementById(
+      "matchesContainer"
+    ).innerHTML = `<div class="empty-message">Ошибка при загрузке информации о победителе: ${error.message}</div>`;
+  }
 }
 
 function displayMatches() {
