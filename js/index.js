@@ -2300,18 +2300,23 @@ async function showTournamentParticipantBets(userId, username, eventId) {
 
     // Создаём кнопки туров
     const roundsFilter = document.getElementById("tournamentRoundsFilter");
-    roundsFilter.innerHTML = rounds
-      .map(
-        (round) =>
-          `<button class="round-filter-btn active" data-round="${round}" 
-                onclick="filterTournamentParticipantBets('${round.replace(
-                  /'/g,
-                  "\\'"
-                )}')">
-          ${round}
-        </button>`
-      )
-      .join("");
+    roundsFilter.innerHTML =
+      `<button class="round-filter-btn active" data-round="all" 
+              onclick="filterTournamentParticipantBets('all')">
+        Все туры
+      </button>` +
+      rounds
+        .map(
+          (round) =>
+            `<button class="round-filter-btn" data-round="${round}" 
+                  onclick="filterTournamentParticipantBets('${round.replace(
+                    /'/g,
+                    "\\'"
+                  )}')">
+            ${round}
+          </button>`
+        )
+        .join("");
 
     // Сохраняем данные для фильтрации
     window.currentTournamentBets = bets;
@@ -2368,7 +2373,7 @@ function displayTournamentParticipantBets(bets) {
         </span>
       </div>
       <div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
-        Ставка: <strong>${bet.prediction}</strong>
+        Ставка: <strong>${bet.prediction_display || bet.prediction}</strong>
         ${
           bet.result !== "pending"
             ? ` | Результат: <strong>${bet.actual_result}</strong>`

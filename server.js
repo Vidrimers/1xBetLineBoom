@@ -1132,6 +1132,12 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
           m.winner,
           m.round as round,
           CASE 
+            WHEN b.prediction = 'team1' THEN m.team1_name
+            WHEN b.prediction = 'team2' THEN m.team2_name
+            WHEN b.prediction = 'draw' THEN 'Ничья'
+            ELSE b.prediction
+          END as prediction_display,
+          CASE 
             WHEN m.winner IS NULL THEN 'pending'
             WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
                  (b.prediction = 'team2' AND m.winner = 'team2') OR
