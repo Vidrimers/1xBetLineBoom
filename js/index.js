@@ -78,6 +78,7 @@ let events = [];
 let matches = [];
 let userBets = [];
 let ADMIN_LOGIN = null;
+let cropper = null;
 let ADMIN_DB_NAME = null;
 let matchUpdateInterval = null;
 let isMatchUpdatingEnabled = true;
@@ -4176,19 +4177,102 @@ async function showUserProfile(userId, username) {
 
 // ===== ФУНКЦИИ РЕДАКТИРОВАНИЯ АВАТАРА =====
 
-let cropper = null;
-
 function openAvatarModal() {
-  document.getElementById("avatarModal").style.display = "flex";
-  document.getElementById("avatarInput").value = "";
-  document.getElementById("cropperContainer").style.display = "none";
-  document.getElementById("savAvatarBtn").style.display = "none";
+  console.log("openAvatarModal вызвана");
+  const modal = document.getElementById("avatarModal");
+  const input = document.getElementById("avatarInput");
+  const container = document.getElementById("cropperContainer");
+  const saveBtn = document.getElementById("savAvatarBtn");
+
+  console.log("modal:", modal);
+  console.log("input:", input);
+  console.log("container:", container);
+  console.log("saveBtn:", saveBtn);
+
+  if (!modal || !input || !container || !saveBtn) {
+    console.error("❌ Не найдены необходимые элементы");
+    alert("Ошибка: модальное окно не инициализировано корректно");
+    return;
+  }
+
+  modal.style.display = "flex";
+  input.value = "";
+  container.style.display = "none";
+  saveBtn.style.display = "none";
   if (cropper) {
     cropper.destroy();
     cropper = null;
   }
+
+  // Инициализируем обработчик выбора файла если еще не инициализирован
+  initAvatarInput();
 }
 
+function initAvatarInput() {
+  console.log("initAvatarInput вызвана");
+  console.log("Проверяю наличие Cropper:", typeof Cropper);
+
+  const avatarInput = document.getElementById("avatarInput");
+  console.log("avatarInput:", avatarInput);
+
+  if (avatarInput && !avatarInput.hasAttribute("data-initialized")) {
+    console.log("✅ Инициализирую обработчик change");
+    avatarInput.setAttribute("data-initialized", "true");
+    avatarInput.addEventListener("change", (e) => {
+      console.log("change событие сработало");
+      const file = e.target.files[0];
+      console.log("file:", file);
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        console.log("✅ Файл прочитан");
+        const img = document.getElementById("avatarImage");
+        console.log("img:", img);
+        img.src = event.target.result;
+
+        // Уничтожаем старый cropper если существует
+        if (cropper) {
+          cropper.destroy();
+        }
+
+        console.log("Создаю Cropper...");
+        console.log("Cropper доступен:", typeof Cropper);
+
+        // Создаем новый cropper
+        try {
+          cropper = new Cropper(img, {
+            aspectRatio: 1,
+            viewMode: 1,
+            autoCropArea: 1,
+            responsive: true,
+            restore: true,
+            guides: true,
+            center: true,
+            highlight: true,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: true,
+          });
+          console.log("✅ Cropper создан успешно");
+        } catch (err) {
+          console.error("❌ Ошибка при создании Cropper:", err);
+          alert(
+            "❌ Ошибка инициализации редактора изображений: " + err.message
+          );
+          return;
+        }
+
+        document.getElementById("cropperContainer").style.display = "block";
+        document.getElementById("savAvatarBtn").style.display = "block";
+        console.log("✅ Контейнер и кнопка показаны");
+      };
+      reader.readAsDataURL(file);
+    });
+  } else {
+    console.log("⚠️ avatarInput не найден или уже инициализирован");
+  }
+}
 function closeAvatarModal(event) {
   if (event && event.target.id !== "avatarModal") {
     return;
@@ -4200,53 +4284,17 @@ function closeAvatarModal(event) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const avatarInput = document.getElementById("avatarInput");
-  if (avatarInput) {
-    avatarInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = document.getElementById("avatarImage");
-        img.src = event.target.result;
-
-        // Уничтожаем старый cropper если существует
-        if (cropper) {
-          cropper.destroy();
-        }
-
-        // Создаем новый cropper
-        cropper = new Cropper(img, {
-          aspectRatio: 1,
-          viewMode: 1,
-          autoCropArea: 1,
-          responsive: true,
-          restore: true,
-          guides: true,
-          center: true,
-          highlight: true,
-          cropBoxMovable: true,
-          cropBoxResizable: true,
-          toggleDragModeOnDblclick: true,
-        });
-
-        document.getElementById("cropperContainer").style.display = "block";
-        document.getElementById("savAvatarBtn").style.display = "block";
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-});
-
 async function saveAvatar() {
+  console.log("saveAvatar вызвана");
+  console.log("cropper:", cropper);
+
   if (!cropper) {
     alert("Пожалуйста, выберите изображение");
     return;
   }
 
   try {
+    console.log("Получаю обрезанный canvas...");
     const canvas = cropper.getCroppedCanvas({
       maxWidth: 200,
       maxHeight: 200,
@@ -4254,9 +4302,12 @@ async function saveAvatar() {
       imageSmoothingEnabled: true,
       imageSmoothingQuality: "high",
     });
+    console.log("✅ Canvas получен", canvas);
 
     const avatarData = canvas.toDataURL("image/png");
+    console.log("✅ Avatar data получен, размер:", avatarData.length);
 
+    console.log("Отправляю на сервер...");
     const response = await fetch(`/api/user/${currentUser.id}/avatar`, {
       method: "POST",
       headers: {
@@ -4266,18 +4317,23 @@ async function saveAvatar() {
     });
 
     const result = await response.json();
+    console.log("Ответ сервера:", result);
 
     if (!response.ok) {
-      alert("❌ Ошибка при сохранении аватара");
+      alert(
+        "❌ Ошибка при сохранении аватара: " +
+          (result.error || "Неизвестная ошибка")
+      );
       return;
     }
 
+    console.log("✅ Аватар сохранен");
     // Закрываем модальное окно и перезагружаем профиль
     closeAvatarModal();
     loadProfile();
     alert("✅ Аватар сохранен успешно");
   } catch (error) {
-    console.error("Ошибка при сохранении аватара:", error);
-    alert("❌ Ошибка при сохранении аватара");
+    console.error("❌ Ошибка при сохранении аватара:", error);
+    alert("❌ Ошибка при сохранении аватара: " + error.message);
   }
 }
