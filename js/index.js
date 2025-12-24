@@ -2287,10 +2287,28 @@ function displayProfile(profile) {
     day: "numeric",
   });
 
+  const avatarSrc = profile.avatar || "img/default-avatar.jpg";
+
   profileContainer.innerHTML = `
     <div class="profile-header">
-      <div class="profile-avatar">
-      <img src="img/logo_nobg.png" style="width: 100px;">
+      <div class="profile-avatar" style="position: relative;">
+        <img src="${avatarSrc}" style="width: 100px; border-radius: 8px;border-radius: 30%;">
+        <button onclick="openAvatarModal()" style="
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: #3a7bd5;
+          border: 2px solid #0a0e27;
+          color: #fff;
+          cursor: pointer;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">📷</button>
       </div>
       <div class="profile-username">${profile.username}</div>
       <div class="profile-member-since">Участник с ${createdDate}</div>
@@ -4153,5 +4171,113 @@ async function showUserProfile(userId, username) {
   } catch (error) {
     console.error("Ошибка при загрузке профиля:", error);
     alert("❌ Ошибка при загрузке профиля");
+  }
+}
+
+// ===== ФУНКЦИИ РЕДАКТИРОВАНИЯ АВАТАРА =====
+
+let cropper = null;
+
+function openAvatarModal() {
+  document.getElementById("avatarModal").style.display = "flex";
+  document.getElementById("avatarInput").value = "";
+  document.getElementById("cropperContainer").style.display = "none";
+  document.getElementById("savAvatarBtn").style.display = "none";
+  if (cropper) {
+    cropper.destroy();
+    cropper = null;
+  }
+}
+
+function closeAvatarModal(event) {
+  if (event && event.target.id !== "avatarModal") {
+    return;
+  }
+  document.getElementById("avatarModal").style.display = "none";
+  if (cropper) {
+    cropper.destroy();
+    cropper = null;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const avatarInput = document.getElementById("avatarInput");
+  if (avatarInput) {
+    avatarInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = document.getElementById("avatarImage");
+        img.src = event.target.result;
+
+        // Уничтожаем старый cropper если существует
+        if (cropper) {
+          cropper.destroy();
+        }
+
+        // Создаем новый cropper
+        cropper = new Cropper(img, {
+          aspectRatio: 1,
+          viewMode: 1,
+          autoCropArea: 1,
+          responsive: true,
+          restore: true,
+          guides: true,
+          center: true,
+          highlight: true,
+          cropBoxMovable: true,
+          cropBoxResizable: true,
+          toggleDragModeOnDblclick: true,
+        });
+
+        document.getElementById("cropperContainer").style.display = "block";
+        document.getElementById("savAvatarBtn").style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+});
+
+async function saveAvatar() {
+  if (!cropper) {
+    alert("Пожалуйста, выберите изображение");
+    return;
+  }
+
+  try {
+    const canvas = cropper.getCroppedCanvas({
+      maxWidth: 200,
+      maxHeight: 200,
+      fillColor: "#fff",
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: "high",
+    });
+
+    const avatarData = canvas.toDataURL("image/png");
+
+    const response = await fetch(`/api/user/${currentUser.id}/avatar`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ avatarData }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("❌ Ошибка при сохранении аватара");
+      return;
+    }
+
+    // Закрываем модальное окно и перезагружаем профиль
+    closeAvatarModal();
+    loadProfile();
+    alert("✅ Аватар сохранен успешно");
+  } catch (error) {
+    console.error("Ошибка при сохранении аватара:", error);
+    alert("❌ Ошибка при сохранении аватара");
   }
 }

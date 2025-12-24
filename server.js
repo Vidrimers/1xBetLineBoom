@@ -684,6 +684,14 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// Миграция: добавляем avatar если его нет
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN avatar LONGTEXT`);
+  console.log("✅ Колонка avatar добавлена в таблицу users");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
 // Таблица для связки telegram username → chat_id (для отправки личных сообщений)
 db.exec(`
   CREATE TABLE IF NOT EXISTS telegram_users (
@@ -1634,6 +1642,7 @@ app.get("/api/user/:userId/profile", (req, res) => {
       username: user.username,
       email: user.email,
       created_at: user.created_at,
+      avatar: user.avatar || null,
       total_bets: bets.total_bets || 0,
       won_bets: bets.won_bets || 0,
       won_count: bets.won_count || 0,
@@ -1642,6 +1651,28 @@ app.get("/api/user/:userId/profile", (req, res) => {
     };
 
     res.json(profile);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/avatar - Сохранить аватар пользователя
+app.post("/api/user/:userId/avatar", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { avatarData } = req.body;
+
+    if (!avatarData) {
+      return res.status(400).json({ error: "Данные аватара не предоставлены" });
+    }
+
+    // Сохраняем base64 изображение в БД
+    db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(
+      avatarData,
+      userId
+    );
+
+    res.json({ success: true, message: "Аватар сохранен" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

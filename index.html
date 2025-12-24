@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>1xBetLineBoom</title>
     <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/cropperjs/dist/cropper.css"
+    />
   </head>
   <body>
     <div class="container not-logged-in">
@@ -1164,6 +1168,71 @@
       </div>
     </div>
 
+    <!-- Модальное окно редактирования аватара -->
+    <div
+      id="avatarModal"
+      class="modal"
+      style="display: none"
+      onclick="closeAvatarModal(event)"
+    >
+      <div
+        class="modal-content"
+        style="max-width: 600px"
+        onclick="event.stopPropagation()"
+      >
+        <div class="modal-header">
+          <h3>📸 Редактировать аватар</h3>
+          <button class="modal-close" onclick="closeAvatarModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 15px">
+            <label
+              for="avatarInput"
+              style="display: block; margin-bottom: 10px; font-weight: 600"
+            >
+              Выберите изображение:
+            </label>
+            <input
+              type="file"
+              id="avatarInput"
+              accept="image/*"
+              style="width: 100%"
+            />
+          </div>
+
+          <div id="cropperContainer" style="display: none; margin-bottom: 15px">
+            <div style="max-height: 400px; max-width: 100%; overflow: auto">
+              <img
+                id="avatarImage"
+                src=""
+                alt="Avatar preview"
+                style="max-width: 100%"
+              />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 15px">
+            <button
+              class="cancel-btn"
+              onclick="closeAvatarModal()"
+              style="flex: 1"
+            >
+              Отмена
+            </button>
+            <button
+              class="save-btn"
+              id="savAvatarBtn"
+              onclick="saveAvatar()"
+              style="flex: 1; display: none"
+            >
+              Сохранить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/cropperjs"></script>
     <script src="js/index.js"></script>
   </body>
 </html>
