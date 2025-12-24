@@ -4635,7 +4635,11 @@ async function saveShowTournamentWinnerSettings() {
     const response = await fetch("/api/settings/show-tournament-winner", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ show_tournament_winner: showWinner }),
+      body: JSON.stringify({
+        show_tournament_winner: showWinner,
+        username: currentUser?.username || "Unknown",
+        telegram_username: currentUser?.telegram_username || "Not set",
+      }),
     });
 
     const result = await response.json();

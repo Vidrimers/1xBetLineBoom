@@ -1416,9 +1416,13 @@ app.get("/api/settings/show-tournament-winner", (req, res) => {
 });
 
 // Сохранить настройку показа победителя
-app.post("/api/settings/show-tournament-winner", (req, res) => {
+app.post("/api/settings/show-tournament-winner", async (req, res) => {
   try {
-    const { show_tournament_winner } = req.body;
+    const {
+      show_tournament_winner,
+      username = "Unknown",
+      telegram_username = "Not set",
+    } = req.body;
 
     if (typeof show_tournament_winner !== "boolean") {
       return res
@@ -1435,6 +1439,42 @@ app.post("/api/settings/show-tournament-winner", (req, res) => {
       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
     `
     ).run(value, value);
+
+    // Отправляем уведомление админу
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      try {
+        const status = show_tournament_winner ? "✅ ВКЛЮЧЕН" : "❌ ВЫКЛЮЧЕН";
+        const emoji = show_tournament_winner ? "🎯" : "🔒";
+        const telegramDisplay =
+          telegram_username && telegram_username !== "Not set"
+            ? `@${telegram_username}`
+            : telegram_username;
+        const message = `${emoji} <b>Изменена настройка показа победителя</b>\n\n👤 Пользователь: ${username}\n📱 Telegram: ${telegramDisplay}\n\nПоказ победителя на завершённых турнирах: ${status}\n\n🕐 Время: ${new Date().toLocaleString(
+          "ru-RU"
+        )}`;
+
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+        console.log(
+          `📢 Уведомление админу отправлено: показ победителя ${status} (пользователь: ${username})`
+        );
+      } catch (err) {
+        console.error("❌ Ошибка при отправке уведомления админу:", err);
+      }
+    }
 
     res.json({ success: true, show_tournament_winner });
   } catch (error) {
