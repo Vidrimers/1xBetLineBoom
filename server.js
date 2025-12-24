@@ -25,6 +25,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 1984;
+const SERVER_IP = process.env.SERVER_IP || "localhost";
 const FD_API_TOKEN = process.env.FD_API_TOKEN;
 const FD_API_BASE = "https://api.football-data.org/v4";
 const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
@@ -562,7 +563,9 @@ async function checkAndRemindNonVoters() {
 👥 <b>Не проголосовали:</b>
 ${mentions}
 
-💬 Не забудьте сделать прогноз! За 3 часа до матча уже нельзя будет голосовать.`;
+💬 Не забудьте сделать прогноз!
+
+🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
 
         await sendGroupNotification(message);
 
