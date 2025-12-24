@@ -2242,6 +2242,9 @@ function displayTournamentParticipants(participants, isLocked = false) {
       return `
     <div class="participant-item ${winnerClass}">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
+      <img src="${participant.avatar || "img/default-avatar.jpg"}" alt="${
+        participant.username
+      }" class="participant-avatar" />
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
         <div class="participant-stats">

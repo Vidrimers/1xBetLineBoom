@@ -1005,6 +1005,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
       SELECT 
         u.id,
         u.username,
+        u.avatar,
         COUNT(DISTINCT b.id) as event_bets,
         SUM(CASE 
           WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
@@ -1071,7 +1072,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
       INNER JOIN matches m ON b.match_id = m.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       WHERE m.event_id = ?
-      GROUP BY u.id, u.username
+      GROUP BY u.id, u.username, u.avatar
       HAVING COUNT(DISTINCT b.id) > 0
       ORDER BY event_won DESC, event_bets DESC
     `
