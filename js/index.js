@@ -1511,6 +1511,9 @@ async function placeFinalBet(matchId, parameterType) {
       alert("Ну, куда ты, малютка, матч уже начался");
       return;
     }
+  } else {
+    alert("Матч не найден");
+    return;
   }
 
   try {
@@ -1558,40 +1561,6 @@ async function placeFinalBet(matchId, parameterType) {
 
     if (response.ok) {
       console.log(`✅ Ставка успешно создана`);
-
-      // Для toggle'ов - обновляем их визуально после фиксации
-      if (
-        parameterType === "penalties_in_game" ||
-        parameterType === "extra_time" ||
-        parameterType === "penalties_at_end"
-      ) {
-        let fieldId;
-        if (parameterType === "penalties_in_game")
-          fieldId = `penaltiesInGame_${matchId}`;
-        if (parameterType === "extra_time") fieldId = `extraTime_${matchId}`;
-        if (parameterType === "penalties_at_end")
-          fieldId = `penaltiesAtEnd_${matchId}`;
-
-        const checkbox = document.getElementById(fieldId);
-        if (checkbox) {
-          // Получаем текущее состояние из data-toggle-state (без изменения!)
-          const toggleState = checkbox.getAttribute("data-toggle-state");
-
-          // Обновляем стили toggle'а напрямую
-          const label = checkbox.parentElement;
-          const span = label.querySelector("span:not(input)");
-          if (span) {
-            const circle = span.querySelector("span");
-            if (toggleState === "true") {
-              span.style.backgroundColor = "#4db8a8";
-              if (circle) circle.style.transform = "translateX(17px)";
-            } else {
-              span.style.backgroundColor = "#3a5f7a";
-              if (circle) circle.style.transform = "translateX(-11px)";
-            }
-          }
-        }
-      }
 
       // Обновляем только список ставок, без перерисовки матчей
       const checkResponse = await fetch(`/api/user/${currentUser.id}/bets`);
