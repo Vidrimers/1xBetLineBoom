@@ -775,6 +775,9 @@ function displayMatches() {
   // Сортируем туры по сохраненному порядку
   const rounds = sortRoundsByOrder(uniqueRounds);
 
+  // Сохраняем отсортированные туры глобально для использования в модалке
+  window.sortedRounds = rounds;
+
   // Проверяем, завершены ли все матчи в каждом туре
   function isRoundFinished(round) {
     const roundMatches = matches.filter((m) => m.round === round);
@@ -2297,37 +2300,74 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     const betsData = await response.json();
     const { rounds, bets } = betsData;
 
+    // Применяем глобальный порядок туров если он есть
+    let sortedRounds = rounds;
+    if (window.sortedRounds && window.sortedRounds.length > 0) {
+      // Сортируем раунды по глобальному порядку
+      sortedRounds = rounds.sort((a, b) => {
+        const indexA = window.sortedRounds.indexOf(a);
+        const indexB = window.sortedRounds.indexOf(b);
+        return (
+          (indexA === -1 ? rounds.length : indexA) -
+          (indexB === -1 ? rounds.length : indexB)
+        );
+      });
+    }
+
     // Устанавливаем заголовок
     document.getElementById(
       "tournamentParticipantBetsTitle"
     ).textContent = `📊 Ставки ${username} в турнире`;
 
+    // Определяем завершённые туры (где все ставки имеют результат)
+    const completedRounds = new Set();
+    bets.forEach((bet) => {
+      if (bet.result !== "pending") {
+        // Проверяем есть ли в этом туре хоть одна завершённая ставка
+        const roundBets = bets.filter((b) => b.round === bet.round);
+        if (roundBets.some((b) => b.result !== "pending")) {
+          completedRounds.add(bet.round);
+        }
+      }
+    });
+
     // Создаём кнопки туров
     const roundsFilter = document.getElementById("tournamentRoundsFilter");
     roundsFilter.innerHTML =
-      `<button class="round-filter-btn active" data-round="all" 
+      `<button class="round-filter-btn" data-round="all" 
               onclick="filterTournamentParticipantBets('all')">
         Все туры
       </button>` +
-      rounds
-        .map(
-          (round) =>
-            `<button class="round-filter-btn" data-round="${round}" 
+      sortedRounds
+        .map((round) => {
+          const isCompleted = completedRounds.has(round);
+          const activeClass =
+            sortedRounds.length > 0 && round === sortedRounds[0]
+              ? "active"
+              : "";
+          const finishedClass = isCompleted ? "finished" : "";
+          return `<button class="round-filter-btn ${activeClass} ${finishedClass}" data-round="${round}" 
                   onclick="filterTournamentParticipantBets('${round.replace(
                     /'/g,
                     "\\'"
                   )}')">
             ${round}
-          </button>`
-        )
+          </button>`;
+        })
         .join("");
 
     // Сохраняем данные для фильтрации
     window.currentTournamentBets = bets;
-    window.currentTournamentRounds = rounds;
+    window.currentTournamentRounds = sortedRounds;
 
-    // Отображаем все ставки
-    displayTournamentParticipantBets(bets);
+    // Отображаем ставки первого тура (если есть туры) или все ставки
+    if (sortedRounds.length > 0) {
+      const firstRound = sortedRounds[0];
+      const filteredBets = bets.filter((bet) => bet.round === firstRound);
+      displayTournamentParticipantBets(filteredBets);
+    } else {
+      displayTournamentParticipantBets(bets);
+    }
 
     // Открываем модальное окно
     document.getElementById("tournamentParticipantBetsModal").style.display =
