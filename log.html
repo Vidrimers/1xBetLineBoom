@@ -1,354 +1,954 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Логи ставок - 1xBetLineBoom</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #e0e0e0;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .header h1 { color: #5a9fd4; font-size: 2em; margin-bottom: 10px; }
-    .header p { color: #b0b8c8; font-size: 0.9em; }
-    .logs-container { max-width: 1200px; margin: 0 auto; }
-    .log-entry {
-      background: rgba(255, 255, 255, 0.03);
-      border-left: 4px solid #5a9fd4;
-      padding: 15px 20px;
-      margin-bottom: 10px;
-      border-radius: 0 8px 8px 0;
-      transition: all 0.3s ease;
-    }
-    .log-entry:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
-    .log-entry.bet-placed { border-left-color: #4caf50; }
-    .log-entry.bet-deleted { border-left-color: #f44336; }
-    .log-entry.settings-changed { border-left-color: #ff9800; }
-    .log-time { color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px; }
-    .log-action { font-weight: bold; margin-bottom: 8px; }
-    .log-action.placed { color: #4caf50; }
-    .log-action.deleted { color: #f44336; }
-    .log-action.settings { color: #ff9800; }
-    .log-details {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 10px;
-      font-size: 0.9em;
-    }
-    .log-details span { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
-    .log-details .user { color: #64b5f6; }
-    .log-details .prediction { color: #ffb74d; }
-    .log-details .match { color: #81c784; }
-    .log-details .event { color: #ce93d8; }
-    .log-details .setting { color: #ffcc80; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>📋 Логи ставок</h1>
-    <p>История всех ставок и удалений</p>
-  </div>
-  <div class="logs-container">
-<!-- LOGS_START -->
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Логи ставок - 1xBetLineBoom</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #e0e0e0;
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .header h1 {
+        color: #5a9fd4;
+        font-size: 2em;
+        margin-bottom: 10px;
+      }
+      .header p {
+        color: #b0b8c8;
+        font-size: 0.9em;
+      }
+      .logs-container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .log-entry {
+        background: rgba(255, 255, 255, 0.03);
+        border-left: 4px solid #5a9fd4;
+        padding: 15px 20px;
+        margin-bottom: 10px;
+        border-radius: 0 8px 8px 0;
+        transition: all 0.3s ease;
+      }
+      .log-entry:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateX(5px);
+      }
+      .log-entry.bet-placed {
+        border-left-color: #4caf50;
+      }
+      .log-entry.bet-deleted {
+        border-left-color: #f44336;
+      }
+      .log-entry.settings-changed {
+        border-left-color: #ff9800;
+      }
+      .log-time {
+        color: #b0b8c8;
+        font-size: 0.85em;
+        margin-bottom: 5px;
+      }
+      .log-action {
+        font-weight: bold;
+        margin-bottom: 8px;
+      }
+      .log-action.placed {
+        color: #4caf50;
+      }
+      .log-action.deleted {
+        color: #f44336;
+      }
+      .log-action.settings {
+        color: #ff9800;
+      }
+      .log-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        font-size: 0.9em;
+      }
+      .log-details span {
+        padding: 5px 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+      }
+      .log-label {
+        font-size: 0.8em;
+        color: #999;
+        margin-bottom: 4px;
+        font-weight: 600;
+      }
+      .log-details .user {
+        color: #64b5f6;
+      }
+      .log-details .prediction {
+        color: #ffb74d;
+      }
+      .log-details .match {
+        color: #81c784;
+      }
+      .log-details .event {
+        color: #ce93d8;
+      }
+      .log-details .setting {
+        color: #ffcc80;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>📋 Логи ставок</h1>
+      <p>История всех ставок и удалений</p>
+    </div>
+    <div class="logs-container">
+      <!-- LOGS_START -->
     <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:45:46</div>
+      <div class="log-time">🕐 24.12.2025, 17:02:18</div>
       <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
       <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Красные карточки: 0</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Красные карточки: 0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        <span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-placed">
+      <div class="log-time">🕐 24.12.2025, 17:02:18</div>
+      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Желтые карточки: 0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        <span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-placed">
+      <div class="log-time">🕐 24.12.2025, 17:02:17</div>
+      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Точный счет: 0:0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        <span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-placed">
+      <div class="log-time">🕐 24.12.2025, 17:02:16</div>
+      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Команда2</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-deleted">
+      <div class="log-time">🕐 24.12.2025, 17:01:21</div>
+      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Команда2</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-deleted">
+      <div class="log-time">🕐 24.12.2025, 17:01:20</div>
+      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Точный счет: 0:0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        <span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-deleted">
+      <div class="log-time">🕐 24.12.2025, 17:01:20</div>
+      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Желтые карточки: 0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        <span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-deleted">
+      <div class="log-time">🕐 24.12.2025, 17:01:19</div>
+      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Красные карточки: 0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
+        <span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-deleted">
+      <div class="log-time">🕐 24.12.2025, 17:01:19</div>
+      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Турник1</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Турник1 vs турник2</span>
+        
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-placed">
+      <div class="log-time">🕐 24.12.2025, 16:59:44</div>
+      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Турник1</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Турник1 vs турник2</span>
+        
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
+      </div>
+    </div>
+    <div class="log-entry bet-placed">
+      <div class="log-time">🕐 24.12.2025, 16:59:37</div>
+      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Красные карточки: 0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
         <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="event">🏆 Евро 2024</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
       </div>
     </div>
     <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:45:45</div>
+      <div class="log-time">🕐 24.12.2025, 16:59:36</div>
       <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
       <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Желтые карточки: 0</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Желтые карточки: 0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
         <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="event">🏆 Евро 2024</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
       </div>
     </div>
     <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:45:44</div>
+      <div class="log-time">🕐 24.12.2025, 16:59:35</div>
       <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
       <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Точный счет: 0:0</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Точный счет: 0:0</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
         <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="event">🏆 Евро 2024</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
       </div>
     </div>
     <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:45:43</div>
+      <div class="log-time">🕐 24.12.2025, 16:59:32</div>
       <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
       <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
+        <span class="user"><div class="log-label">Пользователь</div>👤 Мемослав</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 Команда2</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ Команда1 vs Команда2</span>
         
-        <span class="event">🏆 Евро 2024</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 Евро 2024</span>
       </div>
     </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:45:41</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:56:54</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:43:37</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:56:53</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Желтые карточки: 0</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:43:33</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда1</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:56:53</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:19:08</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Точный счет: 0:0</span>
-        <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:56:52</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Турник1</span>
+          <span class="match">⚽ Турник1 vs турник2</span>
+
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:19:07</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда1</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:54:46</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-item">
+            <div class="log-label">Пользователь</div>
+            <span class="user">👤 Мемослав</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Ставка</div>
+            <span class="prediction">🎯 Турник1</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Матч</div>
+            <span class="match">⚽ Турник1 vs турник2</span>
+          </div>
+
+          <div class="log-item">
+            <div class="log-label">Турнир</div>
+            <span class="event">🏆 Евро 2024</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:19:07</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:54:44</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-item">
+            <div class="log-label">Пользователь</div>
+            <span class="user">👤 Мемослав</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Ставка</div>
+            <span class="prediction">🎯 Желтые карточки: 0</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Матч</div>
+            <span class="match">⚽ Команда1 vs Команда2</span>
+          </div>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <div class="log-item">
+            <div class="log-label">Турнир</div>
+            <span class="event">🏆 Евро 2024</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:19:05</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:54:44</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-item">
+            <div class="log-label">Пользователь</div>
+            <span class="user">👤 Мемослав</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Ставка</div>
+            <span class="prediction">🎯 Точный счет: 0:0</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Матч</div>
+            <span class="match">⚽ Команда1 vs Команда2</span>
+          </div>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <div class="log-item">
+            <div class="log-label">Турнир</div>
+            <span class="event">🏆 Евро 2024</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:19:03</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 турник2</span>
-        
-        <span class="match">⚽ Турник1 vs турник2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:54:35</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-item">
+            <div class="log-label">Пользователь</div>
+            <span class="user">👤 Мемослав</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Ставка</div>
+            <span class="prediction">🎯 Команда2</span>
+          </div>
+          <div class="log-item">
+            <div class="log-label">Матч</div>
+            <span class="match">⚽ Команда1 vs Команда2</span>
+          </div>
+
+          <div class="log-item">
+            <div class="log-label">Турнир</div>
+            <span class="event">🏆 Евро 2024</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:18:22</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Точный счет: 0:0</span>
-        <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:52:41</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Команда2</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:18:21</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:52:40</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: турник2</span>
+          <span class="match">⚽ Матч: Турник1 vs турник2</span>
+
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:18:21</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 турник2</span>
-        
-        <span class="match">⚽ Турник1 vs турник2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:52:39</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Точный счет: 0:0</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:17:40</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Точный счет: 0:0</span>
-        <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:52:39</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Желтые карточки: 0</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:17:38</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:51:25</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 Желтые карточки: 0</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:17:36</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 турник2</span>
-        
-        <span class="match">⚽ Турник1 vs турник2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:51:24</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:17:33</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Команда2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:51:20</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 турник2</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Турник1 vs турник2</span>
+
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:17:32</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Точный счет: 0:0</span>
-        <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:51:18</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 Команда2</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:17:31</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 турник2</span>
-        
-        <span class="match">⚽ Турник1 vs турник2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:51:16</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 Команда2</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:16:13</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 team2</span>
-        
-        <span class="match">⚽ Турник1 vs турник2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:51:15</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:11:21</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Точный счет: 0:0</span>
-        <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:51:14</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 Желтые карточки: 0</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-placed">
-      <div class="log-time">🕐 24.12.2025, 16:11:20</div>
-      <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 team2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:51:14</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <div class="log-label">Пользователь</div>
+          <span class="user">👤 Мемослав</span>
+          <div class="log-label">Ставка</div>
+          <span class="prediction">🎯 турник2</span>
+          <div class="log-label">Матч</div>
+          <span class="match">⚽ Турник1 vs турник2</span>
+
+          <div class="log-label">Турнир</div>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:11:17</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 Точный счет: 0:0</span>
-        <span class="final-badge">🏆 ФИНАЛ</span>
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:49:36</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: турник2</span>
+          <span class="match">⚽ Матч: Турник1 vs турник2</span>
+
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
       </div>
-    </div>
-    <div class="log-entry bet-deleted">
-      <div class="log-time">🕐 24.12.2025, 16:11:17</div>
-      <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
-      <div class="log-details">
-        <span class="user">👤 Мемослав</span>
-        <span class="prediction">🎯 team2</span>
-        
-        <span class="match">⚽ Команда1 vs Команда2</span>
-        <span class="event">🏆 Евро 2024</span>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:49:34</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Желтые карточки: 0</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
       </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:49:33</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Точный счет: 0:0</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:49:31</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Команда2</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:49:30</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Красные карточки: 0</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:49:29</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Желтые карточки: 0</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:49:29</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Точный счет: 0:0</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:49:28</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Пользователь: Мемослав</span>
+          <span class="prediction">🎯 Ставка: Команда2</span>
+          <span class="match">⚽ Матч: Команда1 vs Команда2</span>
+
+          <span class="event">🏆 Турнир: Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:45:46</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Красные карточки: 0</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:45:45</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Желтые карточки: 0</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:45:44</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:45:43</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:45:41</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:43:37</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:43:33</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда1</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:19:08</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:19:07</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда1</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:19:07</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:19:05</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:19:03</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 турник2</span>
+
+          <span class="match">⚽ Турник1 vs турник2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:18:22</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:18:21</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:18:21</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 турник2</span>
+
+          <span class="match">⚽ Турник1 vs турник2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:17:40</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:17:38</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:17:36</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 турник2</span>
+
+          <span class="match">⚽ Турник1 vs турник2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:17:33</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Команда2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:17:32</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:17:31</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 турник2</span>
+
+          <span class="match">⚽ Турник1 vs турник2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:16:13</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 team2</span>
+
+          <span class="match">⚽ Турник1 vs турник2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:11:21</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-placed">
+        <div class="log-time">🕐 24.12.2025, 16:11:20</div>
+        <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 team2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:11:17</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 Точный счет: 0:0</span>
+          <span class="final-badge">🏆 ФИНАЛ</span>
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <div class="log-entry bet-deleted">
+        <div class="log-time">🕐 24.12.2025, 16:11:17</div>
+        <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
+        <div class="log-details">
+          <span class="user">👤 Мемослав</span>
+          <span class="prediction">🎯 team2</span>
+
+          <span class="match">⚽ Команда1 vs Команда2</span>
+          <span class="event">🏆 Евро 2024</span>
+        </div>
+      </div>
+      <!-- LOGS_END -->
     </div>
-<!-- LOGS_END -->
-  </div>
-</body>
+  </body>
 </html>

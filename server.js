@@ -306,10 +306,14 @@ function writeBetLog(action, data) {
         predictionText = "Ничья";
       }
 
-      // Если это финальная ставка с параметром
+      // Если это финальная ставка или матч финальный
       let finalBadge = "";
-      if (data.is_final_bet) {
-        finalBadge = `<span class="final-badge">🏆 ФИНАЛ</span>`;
+      console.log(
+        `🔍 [PLACED] Checking finalBadge: is_final_bet=${data.is_final_bet}, is_final_match=${data.is_final_match}`
+      );
+      if (data.is_final_bet || data.is_final_match) {
+        console.log(`✅ [PLACED] Final badge should be added`);
+        finalBadge = `<span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>`;
 
         // Если есть параметр - переформатируем предсказание
         if (data.parameter_type) {
@@ -324,11 +328,17 @@ function writeBetLog(action, data) {
       <div class="log-time">🕐 ${time}</div>
       <div class="log-action placed">✅ СТАВКА СДЕЛАНА</div>
       <div class="log-details">
-        <span class="user">👤 ${data.username}</span>
-        <span class="prediction">🎯 ${predictionText}</span>
-        <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="user"><div class="log-label">Пользователь</div>👤 ${
+          data.username
+        }</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 ${predictionText}</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ ${
+          data.team1
+        } vs ${data.team2}</span>
         ${finalBadge}
-        <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 ${
+          data.eventName || "Неизвестный турнир"
+        }</span>
       </div>
     </div>`;
     } else if (action === "deleted") {
@@ -344,10 +354,14 @@ function writeBetLog(action, data) {
         predictionText = "Ничья";
       }
 
-      // Если это финальная ставка с параметром
+      // Если это финальная ставка или матч финальный
       let finalBadge = "";
-      if (data.is_final_bet) {
-        finalBadge = `<span class="final-badge">🏆 ФИНАЛ</span>`;
+      console.log(
+        `🔍 [DELETED] Checking finalBadge: is_final_bet=${data.is_final_bet}, is_final_match=${data.is_final_match}`
+      );
+      if (data.is_final_bet || data.is_final_match) {
+        console.log(`✅ [DELETED] Final badge should be added`);
+        finalBadge = `<span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>`;
 
         // Если есть параметр - переформатируем предсказание
         if (data.parameter_type) {
@@ -362,11 +376,17 @@ function writeBetLog(action, data) {
       <div class="log-time">🕐 ${time}</div>
       <div class="log-action deleted">❌ СТАВКА УДАЛЕНА</div>
       <div class="log-details">
-        <span class="user">👤 ${data.username}</span>
-        <span class="prediction">🎯 ${predictionText}</span>
-        <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="user"><div class="log-label">Пользователь</div>👤 ${
+          data.username
+        }</span>
+        <span class="prediction"><div class="log-label">Ставка</div>🎯 ${predictionText}</span>
+        <span class="match"><div class="log-label">Матч</div>⚽ ${
+          data.team1
+        } vs ${data.team2}</span>
         ${finalBadge}
-        <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
+        <span class="event"><div class="log-label">Турнир</div>🏆 ${
+          data.eventName || "Неизвестный турнир"
+        }</span>
       </div>
     </div>`;
     } else if (action === "settings") {
