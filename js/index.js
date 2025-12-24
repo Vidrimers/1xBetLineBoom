@@ -4359,6 +4359,10 @@ async function showUserProfile(userId, username) {
       return;
     }
 
+    // Загружаем награды
+    const awardsResponse = await fetch(`/api/user/${userId}/awards`);
+    const awards = await awardsResponse.json();
+
     // Формируем модальное окно
     const profileHTML = `
       <div style="background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
@@ -4427,6 +4431,32 @@ async function showUserProfile(userId, username) {
         `
             : ""
         }
+
+        ${
+          awards && awards.length > 0
+            ? `
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+            <h3 style="color: #d4af37; margin-bottom: 15px; font-size: 1.1em;">🏆 НАГРАДЫ</h3>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+              ${awards
+                .map((award) => {
+                  const awardDate = new Date(
+                    award.awarded_at
+                  ).toLocaleDateString("ru-RU");
+                  return `
+                <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%); border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 10px; text-align: center;">
+                  <div style="color: #d4af37; font-weight: 600; margin-bottom: 4px; font-size: 0.9em;">${award.event_name}</div>
+                  <div style="color: #b0b8c8; font-size: 0.85em;">Угадано: <strong>${award.won_bets}</strong> ставок</div>
+                  <div style="color: #7a8899; font-size: 0.75em; margin-top: 4px;">${awardDate}</div>
+                </div>
+              `;
+                })
+                .join("")}
+            </div>
+          </div>
+        `
+            : ""
+        }
       </div>
     `;
 
@@ -4435,7 +4465,7 @@ async function showUserProfile(userId, username) {
     overlay.style.cssText =
       "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;";
     overlay.innerHTML = `
-      <div style="position: relative; background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%;">
+      <div style="position: relative; background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
         <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #999; font-size: 24px; cursor: pointer;">×</button>
         ${profileHTML.replace(
           '<div style="background: #0a0e27;',
