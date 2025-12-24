@@ -3386,50 +3386,52 @@ function openFinalMatchResultModal(matchId) {
   // Создаем поля для каждого параметра если матч - финал
   if (match.is_final) {
     let parametersHTML =
-      '<h4 style="margin-bottom: 10px; color: #7ab0e0;">Результаты параметров</h4>';
+      '<h4 style="margin-bottom: 15px; color: #7ab0e0;">📊 Результаты параметров</h4>';
+    parametersHTML +=
+      '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
 
     if (match.show_exact_score) {
       parametersHTML += `
-        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          <label style="color: #b0b8c8; font-size: 0.9em;">📊 Точный счет (напр. 2:1)</label>
-          <input type="text" id="param_exact_score" placeholder="1:0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        <div style="padding: 10px; background: rgba(77, 184, 168, 0.1); border: 1px solid rgba(77, 184, 168, 0.3); border-radius: 6px;">
+          <label style="color: #4db8a8; font-size: 0.85em; display: block; margin-bottom: 6px;">📊 Точный счет</label>
+          <input type="text" id="param_exact_score" placeholder="2:1" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;">
         </div>
       `;
     }
 
     if (match.show_yellow_cards) {
       parametersHTML += `
-        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          <label style="color: #b0b8c8; font-size: 0.9em;">🟨 Желтые карточки</label>
-          <input type="number" id="param_yellow_cards" min="0" placeholder="0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        <div style="padding: 10px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 6px;">
+          <label style="color: #ffc107; font-size: 0.85em; display: block; margin-bottom: 6px;">🟨 Жёлтые</label>
+          <input type="number" id="param_yellow_cards" min="0" max="20" placeholder="5" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;">
         </div>
       `;
     }
 
     if (match.show_red_cards) {
       parametersHTML += `
-        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          <label style="color: #b0b8c8; font-size: 0.9em;">🟥 Красные карточки</label>
-          <input type="number" id="param_red_cards" min="0" placeholder="0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        <div style="padding: 10px; background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 6px;">
+          <label style="color: #f44336; font-size: 0.85em; display: block; margin-bottom: 6px;">🟥 Красные</label>
+          <input type="number" id="param_red_cards" min="0" max="10" placeholder="0" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;">
         </div>
       `;
     }
 
     if (match.show_corners) {
       parametersHTML += `
-        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          <label style="color: #b0b8c8; font-size: 0.9em;">⚽ Угловые</label>
-          <input type="number" id="param_corners" min="0" placeholder="0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        <div style="padding: 10px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px;">
+          <label style="color: #4caf50; font-size: 0.85em; display: block; margin-bottom: 6px;">⚽ Угловые</label>
+          <input type="number" id="param_corners" min="0" max="30" placeholder="8" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;">
         </div>
       `;
     }
 
     if (match.show_penalties_in_game) {
       parametersHTML += `
-        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          <label style="color: #b0b8c8; font-size: 0.9em;">⚽ Пенальти в игре</label>
-          <select id="param_penalties_in_game" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-            <option value="">-- Выберите --</option>
+        <div style="padding: 10px; background: rgba(156, 39, 176, 0.1); border: 1px solid rgba(156, 39, 176, 0.3); border-radius: 6px;">
+          <label style="color: #9c27b0; font-size: 0.85em; display: block; margin-bottom: 6px;">⚽ Пенальти в игре</label>
+          <select id="param_penalties_in_game" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;">
+            <option value="">-- Выбрать --</option>
             <option value="ДА">ДА</option>
             <option value="НЕТ">НЕТ</option>
           </select>
@@ -3439,10 +3441,10 @@ function openFinalMatchResultModal(matchId) {
 
     if (match.show_extra_time) {
       parametersHTML += `
-        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          <label style="color: #b0b8c8; font-size: 0.9em;">⏱️ Дополнительное время</label>
-          <select id="param_extra_time" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-            <option value="">-- Выберите --</option>
+        <div style="padding: 10px; background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 6px;">
+          <label style="color: #2196f3; font-size: 0.85em; display: block; margin-bottom: 6px;">⏱️ Доп. время</label>
+          <select id="param_extra_time" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;">
+            <option value="">-- Выбрать --</option>
             <option value="ДА">ДА</option>
             <option value="НЕТ">НЕТ</option>
           </select>
@@ -3452,16 +3454,18 @@ function openFinalMatchResultModal(matchId) {
 
     if (match.show_penalties_at_end) {
       parametersHTML += `
-        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-          <label style="color: #b0b8c8; font-size: 0.9em;">🎯 Пенальти в конце</label>
-          <select id="param_penalties_at_end" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-            <option value="">-- Выберите --</option>
+        <div style="padding: 10px; background: rgba(255, 87, 34, 0.1); border: 1px solid rgba(255, 87, 34, 0.3); border-radius: 6px;">
+          <label style="color: #ff5722; font-size: 0.85em; display: block; margin-bottom: 6px;">🎯 Пенальти в конце</label>
+          <select id="param_penalties_at_end" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;">
+            <option value="">-- Выбрать --</option>
             <option value="ДА">ДА</option>
             <option value="НЕТ">НЕТ</option>
           </select>
         </div>
       `;
     }
+
+    parametersHTML += "</div>"; // Закрываем grid
 
     container.innerHTML = parametersHTML;
   }
