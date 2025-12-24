@@ -927,7 +927,7 @@ function displayMatches() {
                   onmouseover="this.style.background='rgba(77, 184, 168, 0.2)'"
                   onmouseout="this.style.background='transparent'"
                   title="Установить результат финала и параметры">
-                  📝 Результат
+                  📝
                 </button>
                 `
                     : `
