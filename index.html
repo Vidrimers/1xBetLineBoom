@@ -1326,7 +1326,7 @@
     </div>
 
     <!-- Modal for Tournament Participant Bets -->
-    <div id="tournamentParticipantBetsModal" class="modal" style="display: none">
+    <div id="tournamentParticipantBetsModal" class="modal" style="display: none" onclick="if(event.target.id === 'tournamentParticipantBetsModal') closeTournamentParticipantBetsModal()">
       <div class="modal-content" style="max-width: 900px">
         <div class="modal-header">
           <h2 id="tournamentParticipantBetsTitle">📊 Ставки участника</h2>
