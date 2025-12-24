@@ -2288,7 +2288,16 @@ function displayProfile(profile) {
     day: "numeric",
   });
 
-  const avatarSrc = profile.avatar || "img/default-avatar.jpg";
+  // Проверяем localStorage сначала для быстрой загрузки
+  let avatarSrc = localStorage.getItem(`avatar_${profile.id}`);
+  if (!avatarSrc) {
+    // Если нет в localStorage, используем из профиля (с сервера)
+    avatarSrc = profile.avatar || "img/logo_nobg.png";
+    // И сохраняем в localStorage для следующего раза
+    if (profile.avatar) {
+      localStorage.setItem(`avatar_${profile.id}`, profile.avatar);
+    }
+  }
 
   profileContainer.innerHTML = `
     <div class="profile-header">
@@ -2301,8 +2310,8 @@ function displayProfile(profile) {
           width: 30px;
           height: 30px;
           border-radius: 50%;
-          background: #3a7bd5;
-          border: 2px solid #0a0e27;
+          background: transparent;
+          border: none;
           color: #fff;
           cursor: pointer;
           font-size: 16px;
@@ -4298,7 +4307,7 @@ async function saveAvatar() {
     const canvas = cropper.getCroppedCanvas({
       maxWidth: 200,
       maxHeight: 200,
-      fillColor: "#fff",
+      fillColor: "rgba(0, 0, 0, 0)", // Прозрачный фон
       imageSmoothingEnabled: true,
       imageSmoothingQuality: "high",
     });
@@ -4327,7 +4336,14 @@ async function saveAvatar() {
       return;
     }
 
-    console.log("✅ Аватар сохранен");
+    console.log("✅ Аватар сохранен на сервер");
+
+    // Сохраняем в localStorage для быстрой загрузки
+    if (result.avatarPath) {
+      localStorage.setItem(`avatar_${currentUser.id}`, result.avatarPath);
+      console.log("✅ Аватар сохранен в localStorage");
+    }
+
     // Закрываем модальное окно и перезагружаем профиль
     closeAvatarModal();
     loadProfile();

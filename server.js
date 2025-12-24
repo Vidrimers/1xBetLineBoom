@@ -1666,14 +1666,30 @@ app.post("/api/user/:userId/avatar", (req, res) => {
       return res.status(400).json({ error: "Данные аватара не предоставлены" });
     }
 
-    // Сохраняем base64 изображение в БД
+    // Конвертируем base64 в буфер
+    const base64Data = avatarData.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+
+    // Сохраняем файл в папку img/avatar/
+    const filename = `user_${userId}_avatar.png`;
+    const filepath = path.join(__dirname, "img", "avatar", filename);
+
+    fs.writeFileSync(filepath, buffer);
+
+    // Сохраняем путь к файлу в БД
+    const avatarPath = `/img/avatar/${filename}`;
     db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(
-      avatarData,
+      avatarPath,
       userId
     );
 
-    res.json({ success: true, message: "Аватар сохранен" });
+    res.json({
+      success: true,
+      message: "Аватар сохранен",
+      avatarPath: avatarPath,
+    });
   } catch (error) {
+    console.error("Ошибка при сохранении аватара:", error);
     res.status(500).json({ error: error.message });
   }
 });
