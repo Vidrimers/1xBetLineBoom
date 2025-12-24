@@ -4256,8 +4256,10 @@ function initAvatarInput() {
         if (isGif) {
           console.log("✅ GIF выбран, не используем cropper");
           document.getElementById("cropperContainer").style.display = "none";
-          document.getElementById("gifPositionContainer").style.display =
+          document.getElementById("gifPreviewColumn").style.display = "flex";
+          document.getElementById("gifPositionControlsOnly").style.display =
             "block";
+          document.getElementById("pngPreviewContainer").style.display = "none";
           document.getElementById("savAvatarBtn").style.display = "block";
 
           // Показываем GIF в полном размере для выбора области
@@ -4271,42 +4273,68 @@ function initAvatarInput() {
           // Обновляем preview результата
           updateGifResultPreview();
 
-          // Добавляем drag функцию для квадрата
+          // Удаляем старые обработчики события
           const selectionBox = document.getElementById("gifSelectionBox");
+          const newSelectionBox = selectionBox.cloneNode(true);
+          selectionBox.parentNode.replaceChild(newSelectionBox, selectionBox);
+
+          // Добавляем drag функцию для квадрата
+          const newBox = document.getElementById("gifSelectionBox");
           let isDragging = false;
           let startX = 0;
           let startY = 0;
 
-          selectionBox.addEventListener("mousedown", (e) => {
+          newBox.addEventListener("mousedown", (e) => {
             isDragging = true;
-            startX = e.clientX - window.gifPositionX;
-            startY = e.clientY - window.gifPositionY;
+            const gifPreview = document.getElementById("gifFullPreview");
+            startX =
+              e.clientX -
+              gifPreview.getBoundingClientRect().left -
+              window.gifPositionX;
+            startY =
+              e.clientY -
+              gifPreview.getBoundingClientRect().top -
+              window.gifPositionY;
+            e.preventDefault();
           });
 
-          document.addEventListener("mousemove", (e) => {
+          const handleMouseMove = (e) => {
             if (isDragging) {
-              const preview = document.getElementById("gifFullPreview");
-              const rect = preview.getBoundingClientRect();
-              let newX = e.clientX - rect.left - startX;
-              let newY = e.clientY - rect.top - startY;
+              const gifPreview = document.getElementById("gifFullPreview");
+              const previewParent = gifPreview.parentElement;
+              const rect = gifPreview.getBoundingClientRect();
+              const parentRect = previewParent.getBoundingClientRect();
 
-              // Ограничиваем координаты
-              newX = Math.max(0, Math.min(newX, preview.width - 200));
-              newY = Math.max(0, Math.min(newY, preview.height - 200));
+              let newX = e.clientX - parentRect.left - startX;
+              let newY = e.clientY - parentRect.top - startY;
+
+              // Ограничиваем координаты - учитываем реальный размер изображения
+              const maxX = gifPreview.naturalWidth - 200;
+              const maxY = gifPreview.naturalHeight - 200;
+
+              newX = Math.max(0, Math.min(newX, maxX));
+              newY = Math.max(0, Math.min(newY, maxY));
 
               window.gifPositionX = newX;
               window.gifPositionY = newY;
 
-              selectionBox.style.left = newX + "px";
-              selectionBox.style.top = newY + "px";
+              newBox.style.left = newX + "px";
+              newBox.style.top = newY + "px";
 
               updateGifResultPreview();
             }
-          });
+          };
 
-          document.addEventListener("mouseup", () => {
+          const handleMouseUp = () => {
             isDragging = false;
-          });
+          };
+
+          document.addEventListener("mousemove", handleMouseMove);
+          document.addEventListener("mouseup", handleMouseUp);
+
+          // Сохраняем обработчики для удаления позже
+          window.gifMouseMoveHandler = handleMouseMove;
+          window.gifMouseUpHandler = handleMouseUp;
 
           // Сохраняем оригинальный файл как base64
           window.gifAvatarData = event.target.result;
@@ -4341,6 +4369,10 @@ function initAvatarInput() {
         }
 
         document.getElementById("cropperContainer").style.display = "block";
+        document.getElementById("gifPreviewColumn").style.display = "none";
+        document.getElementById("gifPositionControlsOnly").style.display =
+          "none";
+        document.getElementById("pngPreviewContainer").style.display = "block";
         document.getElementById("savAvatarBtn").style.display = "block";
         console.log("✅ Контейнер и кнопка показаны");
       };
@@ -4359,12 +4391,25 @@ function closeAvatarModal(event) {
     cropper.destroy();
     cropper = null;
   }
+
+  // Удаляем обработчики GIF drag-and-drop
+  if (window.gifMouseMoveHandler) {
+    document.removeEventListener("mousemove", window.gifMouseMoveHandler);
+  }
+  if (window.gifMouseUpHandler) {
+    document.removeEventListener("mouseup", window.gifMouseUpHandler);
+  }
+
   // Очищаем сохраненные GIF данные
   window.gifAvatarData = null;
   window.gifBase64 = null;
   window.gifPositionX = 0;
   window.gifPositionY = 0;
-  document.getElementById("gifPositionContainer").style.display = "none";
+  window.gifMouseMoveHandler = null;
+  window.gifMouseUpHandler = null;
+
+  document.getElementById("gifPreviewColumn").style.display = "none";
+  document.getElementById("gifPositionControlsOnly").style.display = "none";
 }
 
 // Функции управления позицией GIF
@@ -4372,8 +4417,8 @@ function moveGifSelection(dx, dy) {
   if (!window.gifBase64) return;
 
   const preview = document.getElementById("gifFullPreview");
-  const maxX = preview.width - 200;
-  const maxY = preview.height - 200;
+  const maxX = preview.naturalWidth - 200;
+  const maxY = preview.naturalHeight - 200;
 
   window.gifPositionX = Math.max(0, Math.min(window.gifPositionX + dx, maxX));
   window.gifPositionY = Math.max(0, Math.min(window.gifPositionY + dy, maxY));
