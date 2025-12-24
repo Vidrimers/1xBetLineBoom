@@ -4107,7 +4107,7 @@ async function showUserProfile(userId, username) {
     // Формируем модальное окно
     const profileHTML = `
       <div style="background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
-        <h2 style="color: #7ab0e0; margin-bottom: 20px; text-align: center;">👤 ${username}</h2>
+        <h2 style="color: #7ab0e0; margin-bottom: 20px; text-align: center;">${username}</h2>
         
         <div style="text-align: center; margin-bottom: 25px;">
           <img src="${
