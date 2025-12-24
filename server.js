@@ -318,9 +318,9 @@ function writeBetLog(action, data) {
       <div class="log-details">
         <span class="user">👤 ${data.username}</span>
         <span class="prediction">🎯 ${predictionText}</span>
+        ${finalBadge}
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
-        ${finalBadge}
       </div>
     </div>`;
     } else if (action === "deleted") {
@@ -348,9 +348,9 @@ function writeBetLog(action, data) {
       <div class="log-details">
         <span class="user">👤 ${data.username}</span>
         <span class="prediction">🎯 ${predictionText}</span>
+        ${finalBadge}
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
-        ${finalBadge}
       </div>
     </div>`;
     } else if (action === "settings") {
