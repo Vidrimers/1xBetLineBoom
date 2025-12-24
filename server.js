@@ -308,11 +308,10 @@ function writeBetLog(action, data) {
 
       // Если это финальная ставка или матч финальный
       let finalBadge = "";
-      console.log(
-        `🔍 [PLACED] Checking finalBadge: is_final_bet=${data.is_final_bet}, is_final_match=${data.is_final_match}`
-      );
-      if (data.is_final_bet || data.is_final_match) {
-        console.log(`✅ [PLACED] Final badge should be added`);
+      let isFinalbet = data.is_final_bet || data.is_final_match;
+      let roundSpan = "";
+
+      if (isFinalbet) {
         finalBadge = `<span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>`;
 
         // Если есть параметр - переформатируем предсказание
@@ -321,6 +320,11 @@ function writeBetLog(action, data) {
             data.prediction
           }`;
         }
+      } else {
+        // Для обычных ставок - показываем тур
+        roundSpan = `<span class="round"><div class="log-label">Тур</div>📅 ${
+          data.round || "??"
+        }</span>`;
       }
 
       logEntry = `
@@ -335,6 +339,7 @@ function writeBetLog(action, data) {
         <span class="match"><div class="log-label">Матч</div>⚽ ${
           data.team1
         } vs ${data.team2}</span>
+        ${roundSpan}
         ${finalBadge}
         <span class="event"><div class="log-label">Турнир</div>🏆 ${
           data.eventName || "Неизвестный турнир"
@@ -356,11 +361,10 @@ function writeBetLog(action, data) {
 
       // Если это финальная ставка или матч финальный
       let finalBadge = "";
-      console.log(
-        `🔍 [DELETED] Checking finalBadge: is_final_bet=${data.is_final_bet}, is_final_match=${data.is_final_match}`
-      );
-      if (data.is_final_bet || data.is_final_match) {
-        console.log(`✅ [DELETED] Final badge should be added`);
+      let isFinalbet = data.is_final_bet || data.is_final_match;
+      let roundSpan = "";
+
+      if (isFinalbet) {
         finalBadge = `<span class="final-badge"><div class="log-label">Тур</div>🏆 ФИНАЛ</span>`;
 
         // Если есть параметр - переформатируем предсказание
@@ -369,6 +373,11 @@ function writeBetLog(action, data) {
             data.prediction
           }`;
         }
+      } else {
+        // Для обычных ставок - показываем тур
+        roundSpan = `<span class="round"><div class="log-label">Тур</div>📅 ${
+          data.round || "??"
+        }</span>`;
       }
 
       logEntry = `
@@ -383,6 +392,7 @@ function writeBetLog(action, data) {
         <span class="match"><div class="log-label">Матч</div>⚽ ${
           data.team1
         } vs ${data.team2}</span>
+        ${roundSpan}
         ${finalBadge}
         <span class="event"><div class="log-label">Турнир</div>🏆 ${
           data.eventName || "Неизвестный турнир"
@@ -1205,6 +1215,8 @@ app.post("/api/bets", async (req, res) => {
       eventName: match.event_name,
       is_final_bet: is_final_bet,
       parameter_type: parameter_type,
+      is_final_match: match.is_final,
+      round: match.round,
     });
 
     res.json({
@@ -1317,6 +1329,8 @@ app.delete("/api/bets/:betId", (req, res) => {
       eventName: match?.event_name,
       is_final_bet: bet.is_final_bet,
       parameter_type: bet.parameter_type,
+      is_final_match: match?.is_final,
+      round: match?.round,
     });
 
     res.json({ message: "Ставка удалена" });
