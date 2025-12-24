@@ -1405,16 +1405,6 @@ button.tab-btn:hover {
   border-color: #5a9fd4;
 }
 
-.round-filter-btn.active {
-  background: rgba(58, 123, 213, 0.8);
-  border-color: #3a7bd5;
-  color: #e0e6f0;
-}
-
-.round-filter-btn.active:hover {
-  background: rgba(58, 123, 213, 0.95);
-}
-
 /* Кнопка завершённого тура (все матчи завершены) */
 .round-filter-btn.finished {
   background: rgba(255, 152, 0, 0.6);
@@ -1427,14 +1417,15 @@ button.tab-btn:hover {
   border-color: #c9721c;
 }
 
-.round-filter-btn.finished.active {
-  background: rgba(255, 152, 0, 0.8);
-  border-color: #f57c00;
+/* Активная кнопка тура (приоритет ВЫШЕ finished) */
+.round-filter-btn.active {
+  background: rgba(58, 123, 213, 0.8);
+  border-color: #3a7bd5;
+  color: #e0e6f0;
 }
 
-.round-filter-btn.finished.active:hover {
-  background: rgba(255, 152, 0, 0.95);
-  border-color: #c9721c;
+.round-filter-btn.active:hover {
+  background: rgba(58, 123, 213, 0.95);
 }
 
 /* Кнопка редактирования порядка туров */

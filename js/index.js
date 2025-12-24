@@ -2319,15 +2319,18 @@ async function showTournamentParticipantBets(userId, username, eventId) {
       "tournamentParticipantBetsTitle"
     ).textContent = `📊 Ставки ${username} в турнире`;
 
-    // Определяем завершённые туры (где все ставки имеют результат)
+    // Определяем завершённые туры (где ВСЕ ставки имеют результат, нет pending)
     const completedRounds = new Set();
-    bets.forEach((bet) => {
-      if (bet.result !== "pending") {
-        // Проверяем есть ли в этом туре хоть одна завершённая ставка
-        const roundBets = bets.filter((b) => b.round === bet.round);
-        if (roundBets.some((b) => b.result !== "pending")) {
-          completedRounds.add(bet.round);
-        }
+    const roundsSet = new Set(sortedRounds);
+
+    roundsSet.forEach((round) => {
+      const roundBets = bets.filter((b) => b.round === round);
+      // Тур завершён только если все ставки в нём имеют результат (нет pending)
+      if (
+        roundBets.length > 0 &&
+        roundBets.every((b) => b.result !== "pending")
+      ) {
+        completedRounds.add(round);
       }
     });
 
@@ -2341,12 +2344,11 @@ async function showTournamentParticipantBets(userId, username, eventId) {
       sortedRounds
         .map((round) => {
           const isCompleted = completedRounds.has(round);
-          const activeClass =
-            sortedRounds.length > 0 && round === sortedRounds[0]
-              ? "active"
-              : "";
+          const isActive = sortedRounds.length > 0 && round === sortedRounds[0];
+          const activeClass = isActive ? "active" : "";
+          // Finished класс добавляется для всех завершённых туров
           const finishedClass = isCompleted ? "finished" : "";
-          return `<button class="round-filter-btn ${activeClass} ${finishedClass}" data-round="${round}" 
+          return `<button class="round-filter-btn ${finishedClass} ${activeClass}" data-round="${round}" 
                   onclick="filterTournamentParticipantBets('${round.replace(
                     /'/g,
                     "\\'"
@@ -2359,6 +2361,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     // Сохраняем данные для фильтрации
     window.currentTournamentBets = bets;
     window.currentTournamentRounds = sortedRounds;
+    window.completedTournamentRounds = completedRounds;
 
     // Отображаем ставки первого тура (если есть туры) или все ставки
     if (sortedRounds.length > 0) {
@@ -2426,7 +2429,7 @@ function displayTournamentParticipantBets(bets) {
       </div>
       ${
         bet.round
-          ? `<div style="color: #666; font-size: 0.85em;">Тур: ${bet.round}</div>`
+          ? `<div style="color: #666; font-size: 0.85em;">${bet.round}</div>`
           : ""
       }
     </div>
@@ -2441,12 +2444,15 @@ function filterTournamentParticipantBets(round) {
   const filteredBets =
     round === "all" ? allBets : allBets.filter((bet) => bet.round === round);
 
+  const completedRounds = window.completedTournamentRounds || new Set();
+
   // Обновляем активную кнопку
   document
     .querySelectorAll("#tournamentRoundsFilter .round-filter-btn")
     .forEach((btn) => {
       btn.classList.remove("active");
-      if (btn.dataset.round === round) {
+      // Добавляем active только если это кнопка "Все туры" или незавершённый тур
+      if (btn.dataset.round === round && !completedRounds.has(round)) {
         btn.classList.add("active");
       }
     });
