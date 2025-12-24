@@ -3153,9 +3153,7 @@ async function loadTournamentParticipantsForAward(eventId) {
       option.value = String(userId);
       option.textContent = participant.username;
       select.appendChild(option);
-      console.log(
-        `Добавлен участник: ${participant.username}, ID: ${userId}`
-      );
+      console.log(`Добавлен участник: ${participant.username}, ID: ${userId}`);
     });
   } catch (error) {
     console.error("Ошибка при загрузке участников:", error);
