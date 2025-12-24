@@ -278,11 +278,39 @@ function writeBetLog(action, data) {
       second: "2-digit",
     });
 
+    // Функция преобразования параметра в читаемый вид
+    function formatParameterType(paramType) {
+      const paramMap = {
+        exact_score: "Точный счет",
+        yellow_cards: "Желтые карточки",
+        red_cards: "Красные карточки",
+        corners: "Угловые",
+        penalties_in_game: "Пенальти в игре",
+        extra_time: "Доп. время",
+        penalties_at_end: "Пенальти в конце",
+      };
+      return paramMap[paramType] || paramType;
+    }
+
     let logEntry = "";
     if (action === "placed") {
       // Преобразуем draw -> Ничья для логов
-      const predictionText =
+      let predictionText =
         data.prediction === "draw" ? "Ничья" : data.prediction;
+
+      // Если это финальная ставка с параметром
+      let finalBadge = "";
+      if (data.is_final_bet) {
+        finalBadge = `<span class="final-badge">🏆 ФИНАЛ</span>`;
+
+        // Если есть параметр - переформатируем предсказание
+        if (data.parameter_type) {
+          predictionText = `${formatParameterType(data.parameter_type)}: ${
+            data.prediction
+          }`;
+        }
+      }
+
       logEntry = `
     <div class="log-entry bet-placed">
       <div class="log-time">🕐 ${time}</div>
@@ -292,12 +320,27 @@ function writeBetLog(action, data) {
         <span class="prediction">🎯 ${predictionText}</span>
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
+        ${finalBadge}
       </div>
     </div>`;
     } else if (action === "deleted") {
       // Преобразуем draw -> Ничья для логов
-      const predictionText =
+      let predictionText =
         data.prediction === "draw" ? "Ничья" : data.prediction;
+
+      // Если это финальная ставка с параметром
+      let finalBadge = "";
+      if (data.is_final_bet) {
+        finalBadge = `<span class="final-badge">🏆 ФИНАЛ</span>`;
+
+        // Если есть параметр - переформатируем предсказание
+        if (data.parameter_type) {
+          predictionText = `${formatParameterType(data.parameter_type)}: ${
+            data.prediction
+          }`;
+        }
+      }
+
       logEntry = `
     <div class="log-entry bet-deleted">
       <div class="log-time">🕐 ${time}</div>
@@ -307,6 +350,7 @@ function writeBetLog(action, data) {
         <span class="prediction">🎯 ${predictionText}</span>
         <span class="match">⚽ ${data.team1} vs ${data.team2}</span>
         <span class="event">🏆 ${data.eventName || "Неизвестный турнир"}</span>
+        ${finalBadge}
       </div>
     </div>`;
     } else if (action === "settings") {
@@ -1123,6 +1167,8 @@ app.post("/api/bets", async (req, res) => {
       team1: match.team1_name,
       team2: match.team2_name,
       eventName: match.event_name,
+      is_final_bet: is_final_bet,
+      parameter_type: parameter_type,
     });
 
     res.json({
@@ -1233,6 +1279,8 @@ app.delete("/api/bets/:betId", (req, res) => {
       team1: match?.team1_name || "?",
       team2: match?.team2_name || "?",
       eventName: match?.event_name,
+      is_final_bet: bet.is_final_bet,
+      parameter_type: bet.parameter_type,
     });
 
     res.json({ message: "Ставка удалена" });
