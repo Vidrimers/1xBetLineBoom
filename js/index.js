@@ -2292,7 +2292,7 @@ function displayProfile(profile) {
   let avatarSrc = localStorage.getItem(`avatar_${profile.id}`);
   if (!avatarSrc) {
     // Если нет в localStorage, используем из профиля (с сервера)
-    avatarSrc = profile.avatar || "img/logo_nobg.png";
+    avatarSrc = profile.avatar || "img/default-avatar.jpg";
     // И сохраняем в localStorage для следующего раза
     if (profile.avatar) {
       localStorage.setItem(`avatar_${profile.id}`, profile.avatar);
@@ -2301,23 +2301,25 @@ function displayProfile(profile) {
 
   profileContainer.innerHTML = `
     <div class="profile-header">
-      <div class="profile-avatar" style="position: relative;">
-        <img src="${avatarSrc}" style="width: 100px; border-radius: 8px;border-radius: 30%;">
-        <button onclick="openAvatarModal()" style="
+      <div class="profile-avatar" style="position: relative;" onmouseover="document.getElementById('avatarEditBtn').style.opacity='1'" onmouseout="document.getElementById('avatarEditBtn').style.opacity='0'">
+        <img src="${avatarSrc}" style="width: 100px; border-radius: 30%;">
+        <button id="avatarEditBtn" onclick="openAvatarModal()" style="
           position: absolute;
           bottom: 0;
           right: 0;
-          width: 30px;
-          height: 30px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           background: transparent;
           border: none;
           color: #fff;
           cursor: pointer;
-          font-size: 16px;
+          font-size: 18px;
           display: flex;
           align-items: center;
           justify-content: center;
+          opacity: 0;
+          transition: opacity 0.3s ease;
         ">📷</button>
       </div>
       <div class="profile-username">${profile.username}</div>
@@ -4351,5 +4353,43 @@ async function saveAvatar() {
   } catch (error) {
     console.error("❌ Ошибка при сохранении аватара:", error);
     alert("❌ Ошибка при сохранении аватара: " + error.message);
+  }
+}
+
+async function deleteAvatar() {
+  if (!confirm("Вы уверены, что хотите удалить аватар?")) {
+    return;
+  }
+
+  try {
+    console.log("Удаляю аватар...");
+    const response = await fetch(`/api/user/${currentUser.id}/avatar`, {
+      method: "DELETE",
+    });
+
+    const result = await response.json();
+    console.log("Ответ сервера:", result);
+
+    if (!response.ok) {
+      alert(
+        "❌ Ошибка при удалении аватара: " +
+          (result.error || "Неизвестная ошибка")
+      );
+      return;
+    }
+
+    console.log("✅ Аватар удален");
+
+    // Удаляем из localStorage
+    localStorage.removeItem(`avatar_${currentUser.id}`);
+    console.log("✅ Аватар удален из localStorage");
+
+    // Закрываем модальное окно и перезагружаем профиль
+    closeAvatarModal();
+    loadProfile();
+    alert("✅ Аватар удален");
+  } catch (error) {
+    console.error("❌ Ошибка при удалении аватара:", error);
+    alert("❌ Ошибка при удалении аватара: " + error.message);
   }
 }

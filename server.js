@@ -1694,6 +1694,45 @@ app.post("/api/user/:userId/avatar", (req, res) => {
   }
 });
 
+// DELETE /api/user/:userId/avatar - Удалить аватар пользователя
+app.delete("/api/user/:userId/avatar", (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Получаем текущий путь аватара
+    const user = db
+      .prepare("SELECT avatar FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Если есть аватар - удаляем файл
+    if (user.avatar && user.avatar.startsWith("/img/avatar/")) {
+      const filename = user.avatar.split("/").pop();
+      const filepath = path.join(__dirname, "img", "avatar", filename);
+
+      try {
+        if (fs.existsSync(filepath)) {
+          fs.unlinkSync(filepath);
+          console.log(`🗑️ Файл аватара удален: ${filepath}`);
+        }
+      } catch (fileErr) {
+        console.warn(`⚠️ Не удалось удалить файл: ${fileErr.message}`);
+      }
+    }
+
+    // Очищаем поле avatar в БД (устанавливаем NULL)
+    db.prepare("UPDATE users SET avatar = NULL WHERE id = ?").run(userId);
+
+    res.json({ success: true, message: "Аватар удален" });
+  } catch (error) {
+    console.error("Ошибка при удалении аватара:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/user/:userId/telegram - Получить Telegram username пользователя
 app.get("/api/user/:userId/telegram", (req, res) => {
   try {
