@@ -295,6 +295,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Меняем логотип с анимированного на обычный
     document.getElementById("headerLogo").src = "img/logo_nobg.png";
 
+    // Показываем ссылку на Google Sheets когда залогинен
+    document.getElementById("headerLogoLink").style.display = "block";
+    document.getElementById("headerLogoDefault").style.display = "none";
+
     // Показываем информацию о пользователе
     document.getElementById("userStatus").style.display = "block";
     document.getElementById("usernameBold").textContent = user.username;
@@ -387,6 +391,10 @@ async function initUser() {
     // Меняем логотип с анимированного на обычный
     document.getElementById("headerLogo").src = "img/logo_nobg.png";
 
+    // Показываем ссылку на Google Sheets когда залогинен
+    document.getElementById("headerLogoLink").style.display = "block";
+    document.getElementById("headerLogoDefault").style.display = "none";
+
     // Показываем информацию о пользователе
     document.getElementById("userStatus").style.display = "block";
     document.getElementById("usernameBold").textContent = user.username;
@@ -429,6 +437,10 @@ function logoutUser() {
 
   // Меняем логотип обратно на анимированный
   document.getElementById("headerLogo").src = "img/logo_anim.gif";
+
+  // Скрываем ссылку на Google Sheets когда вышли
+  document.getElementById("headerLogoLink").style.display = "none";
+  document.getElementById("headerLogoDefault").style.display = "block";
 
   // Скрываем информацию о пользователе
   document.getElementById("userStatus").style.display = "none";
