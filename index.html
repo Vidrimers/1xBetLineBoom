@@ -1106,6 +1106,68 @@
       </div>
     </div>
 
+    <!-- Модальное окно для установки результата финала и параметров -->
+    <div
+      id="finalMatchResultModal"
+      class="modal"
+      onclick="closeFinalMatchResultModal(event)"
+    >
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <h3>📝 Результат 🏆 ФИНАЛА</h3>
+
+        <div style="margin-bottom: 20px">
+          <h4 style="margin-bottom: 10px; color: #7ab0e0">Результат матча</h4>
+          <div style="display: flex; gap: 10px">
+            <button
+              id="finalResult_team1"
+              class="result-btn"
+              onclick="setFinalResult('team1')"
+              style="flex: 1"
+            >
+              Team 1
+            </button>
+            <button
+              id="finalResult_draw"
+              class="result-btn"
+              onclick="setFinalResult('draw')"
+              style="flex: 1"
+            >
+              Draw
+            </button>
+            <button
+              id="finalResult_team2"
+              class="result-btn"
+              onclick="setFinalResult('team2')"
+              style="flex: 1"
+            >
+              Team 2
+            </button>
+          </div>
+        </div>
+
+        <div id="finalParametersContainer" style="margin-bottom: 20px">
+          <!-- Параметры будут добавлены динамически -->
+        </div>
+
+        <div style="display: flex; gap: 10px">
+          <button
+            class="cancel-btn"
+            onclick="closeFinalMatchResultModal()"
+            style="flex: 1"
+          >
+            Отмена
+          </button>
+          <button
+            class="save-btn"
+            onclick="saveFinalMatchResult()"
+            style="flex: 1"
+          >
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="js/index.js"></script>
   </body>
 </html>

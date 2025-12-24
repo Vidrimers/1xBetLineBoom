@@ -919,6 +919,18 @@ function displayMatches() {
               isAdmin()
                 ? `
               <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 1;">
+                ${
+                  match.is_final
+                    ? `
+                <button onclick="openFinalMatchResultModal(${match.id})"
+                  style="background: transparent; color: #4db8a8; border: 1px solid #4db8a8; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.85em; font-weight: bold;"
+                  onmouseover="this.style.background='rgba(77, 184, 168, 0.2)'"
+                  onmouseout="this.style.background='transparent'"
+                  title="Установить результат финала и параметры">
+                  📝 Результат
+                </button>
+                `
+                    : `
                 <button onclick="setMatchResult(${match.id}, 'team1')"
                   style="background: transparent; color: #e0e6f0; border: 1px solid rgba(58, 123, 213, 0.7); padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
                   onmouseover="this.style.background='rgba(58, 123, 213, 0.9)'"
@@ -937,6 +949,8 @@ function displayMatches() {
                   onmouseout="this.style.background='transparent'">
                   2
                 </button>
+                `
+                }
               </div>
               <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 1;">
                 ${
@@ -3346,6 +3360,256 @@ async function unlockMatch(matchId) {
   } catch (error) {
     console.error("Ошибка при разблокировке матча:", error);
     alert("Ошибка при разблокировке матча");
+  }
+}
+
+// Глобальная переменная для хранения ID матча в модале
+let currentFinalMatchId = null;
+let currentFinalResult = null;
+
+/**
+ * Открыть модальное окно для установления результата финала и параметров
+ */
+function openFinalMatchResultModal(matchId) {
+  currentFinalMatchId = matchId;
+  currentFinalResult = null;
+
+  const match = matches.find((m) => m.id === matchId);
+  if (!match) return;
+
+  const modal = document.getElementById("finalMatchResultModal");
+  const container = document.getElementById("finalParametersContainer");
+
+  // Очищаем контейнер параметров
+  container.innerHTML = "";
+
+  // Создаем поля для каждого параметра если матч - финал
+  if (match.is_final) {
+    let parametersHTML =
+      '<h4 style="margin-bottom: 10px; color: #7ab0e0;">Результаты параметров</h4>';
+
+    if (match.show_exact_score) {
+      parametersHTML += `
+        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <label style="color: #b0b8c8; font-size: 0.9em;">📊 Точный счет (напр. 2:1)</label>
+          <input type="text" id="param_exact_score" placeholder="1:0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        </div>
+      `;
+    }
+
+    if (match.show_yellow_cards) {
+      parametersHTML += `
+        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <label style="color: #b0b8c8; font-size: 0.9em;">🟨 Желтые карточки</label>
+          <input type="number" id="param_yellow_cards" min="0" placeholder="0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        </div>
+      `;
+    }
+
+    if (match.show_red_cards) {
+      parametersHTML += `
+        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <label style="color: #b0b8c8; font-size: 0.9em;">🟥 Красные карточки</label>
+          <input type="number" id="param_red_cards" min="0" placeholder="0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        </div>
+      `;
+    }
+
+    if (match.show_corners) {
+      parametersHTML += `
+        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <label style="color: #b0b8c8; font-size: 0.9em;">⚽ Угловые</label>
+          <input type="number" id="param_corners" min="0" placeholder="0" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+        </div>
+      `;
+    }
+
+    if (match.show_penalties_in_game) {
+      parametersHTML += `
+        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <label style="color: #b0b8c8; font-size: 0.9em;">⚽ Пенальти в игре</label>
+          <select id="param_penalties_in_game" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+            <option value="">-- Выберите --</option>
+            <option value="ДА">ДА</option>
+            <option value="НЕТ">НЕТ</option>
+          </select>
+        </div>
+      `;
+    }
+
+    if (match.show_extra_time) {
+      parametersHTML += `
+        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <label style="color: #b0b8c8; font-size: 0.9em;">⏱️ Дополнительное время</label>
+          <select id="param_extra_time" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+            <option value="">-- Выберите --</option>
+            <option value="ДА">ДА</option>
+            <option value="НЕТ">НЕТ</option>
+          </select>
+        </div>
+      `;
+    }
+
+    if (match.show_penalties_at_end) {
+      parametersHTML += `
+        <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+          <label style="color: #b0b8c8; font-size: 0.9em;">🎯 Пенальти в конце</label>
+          <select id="param_penalties_at_end" style="width: 100%; padding: 6px; margin-top: 5px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
+            <option value="">-- Выберите --</option>
+            <option value="ДА">ДА</option>
+            <option value="НЕТ">НЕТ</option>
+          </select>
+        </div>
+      `;
+    }
+
+    container.innerHTML = parametersHTML;
+  }
+
+  modal.style.display = "flex";
+}
+
+/**
+ * Закрыть модальное окно результата финала
+ */
+function closeFinalMatchResultModal(event) {
+  if (event && event.target.id !== "finalMatchResultModal") return;
+
+  const modal = document.getElementById("finalMatchResultModal");
+  modal.style.display = "none";
+  currentFinalMatchId = null;
+  currentFinalResult = null;
+
+  // Сбрасываем кнопки результатов
+  document.getElementById("finalResult_team1").style.background = "transparent";
+  document.getElementById("finalResult_draw").style.background = "transparent";
+  document.getElementById("finalResult_team2").style.background = "transparent";
+}
+
+/**
+ * Установить результат матча в модале
+ */
+function setFinalResult(result) {
+  currentFinalResult = result;
+
+  // Обновляем визуальное отображение
+  document.getElementById("finalResult_team1").style.background =
+    result === "team1" ? "rgba(58, 123, 213, 0.6)" : "transparent";
+  document.getElementById("finalResult_draw").style.background =
+    result === "draw" ? "rgba(255, 152, 0, 0.6)" : "transparent";
+  document.getElementById("finalResult_team2").style.background =
+    result === "team2" ? "rgba(76, 175, 80, 0.6)" : "transparent";
+}
+
+/**
+ * Сохранить результат финала и параметры
+ */
+async function saveFinalMatchResult() {
+  if (!currentFinalMatchId || !currentFinalResult) {
+    alert("Выберите результат матча");
+    return;
+  }
+
+  const match = matches.find((m) => m.id === currentFinalMatchId);
+  if (!match) return;
+
+  try {
+    // Сначала устанавливаем результат матча
+    const resultMap = {
+      team1: "team1_win",
+      draw: "draw",
+      team2: "team2_win",
+    };
+
+    const matchResponse = await fetch(
+      `/api/admin/matches/${currentFinalMatchId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentUser?.username,
+          status: "finished",
+          result: resultMap[currentFinalResult],
+        }),
+      }
+    );
+
+    if (!matchResponse.ok) {
+      const error = await matchResponse.json();
+      alert("Ошибка при установке результата матча: " + error.error);
+      return;
+    }
+
+    // Обновляем матч локально
+    match.status = "finished";
+    match.result = resultMap[currentFinalResult];
+    match.winner = currentFinalResult;
+
+    // Теперь устанавливаем параметры (если есть)
+    const parametersData = {
+      matchId: currentFinalMatchId,
+      username: currentUser?.username,
+    };
+
+    if (match.show_exact_score) {
+      const exactScore = document.getElementById("param_exact_score").value;
+      if (exactScore) parametersData.exact_score = exactScore;
+    }
+
+    if (match.show_yellow_cards) {
+      const value = document.getElementById("param_yellow_cards").value;
+      if (value) parametersData.yellow_cards = parseInt(value);
+    }
+
+    if (match.show_red_cards) {
+      const value = document.getElementById("param_red_cards").value;
+      if (value) parametersData.red_cards = parseInt(value);
+    }
+
+    if (match.show_corners) {
+      const value = document.getElementById("param_corners").value;
+      if (value) parametersData.corners = parseInt(value);
+    }
+
+    if (match.show_penalties_in_game) {
+      const value = document.getElementById("param_penalties_in_game").value;
+      if (value) parametersData.penalties_in_game = value;
+    }
+
+    if (match.show_extra_time) {
+      const value = document.getElementById("param_extra_time").value;
+      if (value) parametersData.extra_time = value;
+    }
+
+    if (match.show_penalties_at_end) {
+      const value = document.getElementById("param_penalties_at_end").value;
+      if (value) parametersData.penalties_at_end = value;
+    }
+
+    // Отправляем параметры на сервер
+    const paramsResponse = await fetch("/api/admin/final-parameters-results", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parametersData),
+    });
+
+    if (!paramsResponse.ok) {
+      console.error(
+        "Ошибка при установке параметров (параметры всё равно сохранены, но результат не учтён)"
+      );
+    }
+
+    console.log("✓ Результат финала и параметры успешно установлены");
+    closeFinalMatchResultModal();
+    displayMatches();
+
+    // Обновляем ставки
+    setTimeout(() => {
+      loadMyBets();
+    }, 300);
+  } catch (error) {
+    console.error("Ошибка при сохранении результата:", error);
+    alert("Ошибка при сохранении результата");
   }
 }
 

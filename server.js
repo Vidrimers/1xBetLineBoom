@@ -2543,6 +2543,83 @@ app.post("/api/admin/clear-logs", (req, res) => {
   }
 });
 
+// POST /api/admin/final-parameters-results - Установить результаты финальных параметров
+app.post("/api/admin/final-parameters-results", (req, res) => {
+  const {
+    matchId,
+    exact_score,
+    yellow_cards,
+    red_cards,
+    corners,
+    penalties_in_game,
+    extra_time,
+    penalties_at_end,
+    username,
+  } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Создаём таблицу если её ещё нет
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS final_parameters_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        match_id INTEGER NOT NULL UNIQUE,
+        exact_score TEXT,
+        yellow_cards INTEGER,
+        red_cards INTEGER,
+        corners INTEGER,
+        penalties_in_game TEXT,
+        extra_time TEXT,
+        penalties_at_end TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (match_id) REFERENCES matches(id)
+      )
+    `);
+
+    // Вставляем или обновляем результаты
+    db.prepare(
+      `
+      INSERT INTO final_parameters_results 
+      (match_id, exact_score, yellow_cards, red_cards, corners, penalties_in_game, extra_time, penalties_at_end)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(match_id) DO UPDATE SET
+        exact_score = excluded.exact_score,
+        yellow_cards = excluded.yellow_cards,
+        red_cards = excluded.red_cards,
+        corners = excluded.corners,
+        penalties_in_game = excluded.penalties_in_game,
+        extra_time = excluded.extra_time,
+        penalties_at_end = excluded.penalties_at_end
+    `
+    ).run(
+      matchId,
+      exact_score || null,
+      yellow_cards !== undefined ? yellow_cards : null,
+      red_cards !== undefined ? red_cards : null,
+      corners !== undefined ? corners : null,
+      penalties_in_game || null,
+      extra_time || null,
+      penalties_at_end || null
+    );
+
+    console.log(
+      `✓ Результаты финальных параметров установлены для матча ${matchId}`
+    );
+
+    res.json({
+      message: "Результаты финальных параметров успешно установлены",
+      matchId,
+    });
+  } catch (error) {
+    console.error("Ошибка при установке результатов параметров:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Запуск Telegram бота
 startBot();
 
