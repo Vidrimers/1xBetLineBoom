@@ -767,6 +767,20 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS final_parameters_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL UNIQUE,
+    exact_score TEXT,
+    yellow_cards INTEGER,
+    red_cards INTEGER,
+    corners INTEGER,
+    penalties_in_game TEXT,
+    extra_time TEXT,
+    penalties_at_end TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (match_id) REFERENCES matches(id)
   )
 `);
 
@@ -892,34 +906,69 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
         u.username,
         COUNT(DISTINCT b.id) as event_bets,
         SUM(CASE 
-          WHEN m.winner IS NOT NULL THEN 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
             CASE 
-              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
-                   (b.prediction = 'team2' AND m.winner = 'team2') OR
-                   (b.prediction = 'draw' AND m.winner = 'draw') OR
-                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN
-                   CASE WHEN m.is_final = 1 AND b.is_final_bet = 0 THEN 3 ELSE 1 END
-              ELSE 0 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END
+                  ELSE 0 
+                END
+              -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0
             END 
           ELSE 0 
         END) as event_won,
         SUM(CASE 
-          WHEN m.winner IS NOT NULL THEN 
+          WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
             CASE 
-              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
-                        (b.prediction = 'team2' AND m.winner = 'team2') OR
-                        (b.prediction = 'draw' AND m.winner = 'draw') OR
-                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                            (b.prediction = 'team2' AND m.winner = 'team2') OR
+                            (b.prediction = 'draw' AND m.winner = 'draw') OR
+                            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                            (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+                  ELSE 0 
+                END
+              -- Финальные параметры
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
               ELSE 0 
             END 
           ELSE 0 
         END) as event_lost,
-        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as event_pending
+        SUM(CASE WHEN m.winner IS NULL AND fpr.id IS NULL THEN 1 ELSE 0 END) as event_pending
       FROM users u
       INNER JOIN bets b ON u.id = b.user_id
       INNER JOIN matches m ON b.match_id = m.id
+      LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       WHERE m.event_id = ?
       GROUP BY u.id, u.username
       HAVING COUNT(DISTINCT b.id) > 0
@@ -1183,34 +1232,69 @@ app.get("/api/participants", (req, res) => {
         u.telegram_username,
         COUNT(b.id) as total_bets,
         SUM(CASE 
-          WHEN m.winner IS NOT NULL THEN 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
             CASE 
-              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
-                   (b.prediction = 'team2' AND m.winner = 'team2') OR
-                   (b.prediction = 'draw' AND m.winner = 'draw') OR
-                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN
-                   CASE WHEN m.is_final = 1 AND b.is_final_bet = 0 THEN 3 ELSE 1 END
-              ELSE 0 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END
+                  ELSE 0 
+                END
+              -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0
             END 
           ELSE 0 
         END) as won_bets,
         SUM(CASE 
-          WHEN m.winner IS NOT NULL THEN 
+          WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
             CASE 
-              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
-                        (b.prediction = 'team2' AND m.winner = 'team2') OR
-                        (b.prediction = 'draw' AND m.winner = 'draw') OR
-                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                            (b.prediction = 'team2' AND m.winner = 'team2') OR
+                            (b.prediction = 'draw' AND m.winner = 'draw') OR
+                            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                            (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+                  ELSE 0 
+                END
+              -- Финальные параметры
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
               ELSE 0 
             END 
           ELSE 0 
         END) as lost_bets,
-        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as pending_bets
+        SUM(CASE WHEN m.winner IS NULL AND fpr.id IS NULL THEN 1 ELSE 0 END) as pending_bets
       FROM users u
       LEFT JOIN bets b ON u.id = b.user_id
       LEFT JOIN matches m ON b.match_id = m.id
+      LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       GROUP BY u.id, u.username
       ORDER BY COUNT(b.id) DESC
     `
@@ -1321,33 +1405,68 @@ app.get("/api/user/:userId/profile", (req, res) => {
       SELECT 
         COUNT(b.id) as total_bets,
         SUM(CASE 
-          WHEN m.winner IS NOT NULL THEN 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
             CASE 
-              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
-                   (b.prediction = 'team2' AND m.winner = 'team2') OR
-                   (b.prediction = 'draw' AND m.winner = 'draw') OR
-                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN
-                   CASE WHEN m.is_final = 1 AND b.is_final_bet = 0 THEN 3 ELSE 1 END
-              ELSE 0 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END
+                  ELSE 0 
+                END
+              -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0
             END 
           ELSE 0 
         END) as won_bets,
         SUM(CASE 
-          WHEN m.winner IS NOT NULL THEN 
+          WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
             CASE 
-              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
-                        (b.prediction = 'team2' AND m.winner = 'team2') OR
-                        (b.prediction = 'draw' AND m.winner = 'draw') OR
-                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
-                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                            (b.prediction = 'team2' AND m.winner = 'team2') OR
+                            (b.prediction = 'draw' AND m.winner = 'draw') OR
+                            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                            (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+                  ELSE 0 
+                END
+              -- Финальные параметры
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
               ELSE 0 
             END 
           ELSE 0 
         END) as lost_bets,
-        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as pending_bets
+        SUM(CASE WHEN m.winner IS NULL AND fpr.id IS NULL THEN 1 ELSE 0 END) as pending_bets
       FROM bets b
       LEFT JOIN matches m ON b.match_id = m.id
+      LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       WHERE b.user_id = ?
     `
       )
@@ -2640,6 +2759,29 @@ app.post("/api/admin/final-parameters-results", (req, res) => {
   } catch (error) {
     console.error("Ошибка при установке результатов параметров:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/final-parameters-results - Получить результаты финальных параметров
+app.get("/api/final-parameters-results", (req, res) => {
+  console.log("🔵 GET /api/final-parameters-results был вызван");
+  try {
+    const results = db.prepare("SELECT * FROM final_parameters_results").all();
+
+    console.log("✓ Найдено параметров:", results.length);
+
+    // Преобразуем в объект с ключом match_id для удобства
+    const resultsMap = {};
+    results.forEach((result) => {
+      resultsMap[result.match_id] = result;
+    });
+
+    console.log("✓ Отправляю результат");
+    res.json(resultsMap);
+  } catch (error) {
+    console.error("❌ Ошибка при получении результатов параметров:", error);
+    // Если таблица не существует, возвращаем пустой объект
+    res.json({});
   }
 });
 

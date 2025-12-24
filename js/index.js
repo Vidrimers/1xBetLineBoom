@@ -270,6 +270,8 @@ async function loadConfig() {
 
 // Загрузить турниры при загрузке страницы
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🔄 DOMContentLoaded - начало загрузки");
+
   // Загружаем конфиг сначала
   await loadConfig();
 
@@ -278,10 +280,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Проверяем, есть ли пользователь в localStorage
   const savedUser = localStorage.getItem("currentUser");
+  console.log("💾 savedUser из localStorage:", savedUser);
 
   if (savedUser) {
     const user = JSON.parse(savedUser);
     currentUser = user;
+    console.log("✅ currentUser установлен:", currentUser);
 
     // Обновляем классы контейнера для показа контента
     const container = document.querySelector(".container");
@@ -312,7 +316,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     loadEventsList();
-    loadMyBets();
+    await loadMyBets();
   } else {
     loadEventsList();
   }
@@ -1604,12 +1608,43 @@ async function placeFinalBet(matchId, parameterType) {
 }
 
 async function loadMyBets() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    console.log("❌ loadMyBets: currentUser не установлен");
+    return;
+  }
 
   try {
     const response = await fetch(`/api/user/${currentUser.id}/bets`);
     const bets = await response.json();
+    console.log(
+      `📥 Загружено ${bets.length} ставок для пользователя ${currentUser.id}`
+    );
     userBets = bets; // Сохраняем в глобальную переменную
+
+    // Загружаем параметры финала для проверки ставок
+    let finalParameters = {};
+    try {
+      const paramsResponse = await fetch("/api/final-parameters-results");
+      if (paramsResponse.ok) {
+        finalParameters = await paramsResponse.json();
+        console.log("📊 Загруженные параметры финала:", finalParameters);
+      }
+    } catch (paramError) {
+      console.warn("Не удалось загрузить параметры финала:", paramError);
+    }
+
+    // Прикрепляем параметры к ставкам
+    bets.forEach((bet) => {
+      if (bet.is_final_bet) {
+        console.log(
+          `Финальная ставка ${bet.id} (матч ${bet.match_id}, параметр ${bet.parameter_type})`
+        );
+        // ВСЕГДА прикрепляем параметры для финальных ставок, даже если их нет (undefined)
+        bet.final_parameters = finalParameters[bet.match_id] || null;
+        console.log(`✓ Параметры для ставки ${bet.id}:`, bet.final_parameters);
+      }
+    });
+
     console.log("💰 Мои ставки:", bets);
     displayMyBets(bets);
     if (isMatchUpdatingEnabled) {
@@ -1653,62 +1688,150 @@ function displayMyBets(bets) {
       .map((bet) => {
         let statusClass = "pending";
         let statusText = "⏳ В ожидании";
-
-        // Нормализуем prediction - преобразуем в актуальные названия команд
-        let normalizedPrediction = bet.prediction;
-
-        if (bet.prediction !== "draw") {
-          // prediction может быть: "team1", "team2", старое название команды
-          if (bet.prediction === "team1") {
-            normalizedPrediction = bet.team1_name;
-          } else if (bet.prediction === "team2") {
-            normalizedPrediction = bet.team2_name;
-          } else {
-            // Это старое название - проверяем совпадение с актуальными названиями
-            if (bet.prediction === bet.team1_name) {
-              normalizedPrediction = bet.team1_name;
-            } else if (bet.prediction === bet.team2_name) {
-              normalizedPrediction = bet.team2_name;
-            } else {
-              // Старое название больше не совпадает
-              // Это значит админ изменил названия команд после ставки
-              // Мы не можем точно знать, на какую команду была ставка
-              // Но в БД этот prediction - это скорее всего team1 (первая команда)
-              // Попытаемся быть умнее и использовать логику содержимого
-              // Но для простоты - используем team1_name как fallback
-              // (это не идеально, но лучше чем показывать несуществующее имя)
-              normalizedPrediction = bet.team1_name;
-            }
-          }
-        }
+        let normalizedPrediction = bet.prediction; // Инициализируем ДО всех условий!
 
         console.log(
-          `Bet ${bet.id}: prediction="${bet.prediction}", normalized="${normalizedPrediction}", team1="${bet.team1_name}", team2="${bet.team2_name}"`
+          `Обрабатываю ставку ${bet.id}: is_final_bet=${
+            bet.is_final_bet
+          }, parameter_type=${bet.parameter_type}, final_parameters=${
+            bet.final_parameters ? "ЕСТЬ" : "НЕТ"
+          }`
         );
 
-        // Проверяем, есть ли результат матча
-        if (bet.winner) {
-          // Маппинг winner (из БД) в prediction format
-          // winner: "team1" | "team2" | "draw"
-          let winnerPrediction;
-          if (bet.winner === "team1") {
-            winnerPrediction = bet.team1_name;
-          } else if (bet.winner === "team2") {
-            winnerPrediction = bet.team2_name;
-          } else if (bet.winner === "draw") {
-            winnerPrediction = "draw";
+        // Если это финальная ставка на параметр матча (желтые карты, красные карты и т.д.)
+        if (bet.is_final_bet) {
+          const params = bet.final_parameters;
+
+          // Если параметры еще не установлены админом
+          if (!params) {
+            statusClass = "pending";
+            statusText = "⏳ Ожидание параметров";
+          } else {
+            // Параметры установлены - проверяем результат
+            let isWon = false;
+
+            console.log(
+              `✓ ФИНАЛЬНАЯ СТАВКА ${bet.id}, параметр: ${bet.parameter_type}, значение: ${bet.prediction}, параметры:`,
+              params
+            );
+
+            if (
+              bet.parameter_type === "yellow_cards" &&
+              params.yellow_cards !== null
+            ) {
+              isWon = parseInt(bet.prediction) === params.yellow_cards;
+            } else if (
+              bet.parameter_type === "red_cards" &&
+              params.red_cards !== null
+            ) {
+              isWon = parseInt(bet.prediction) === params.red_cards;
+            } else if (
+              bet.parameter_type === "corners" &&
+              params.corners !== null
+            ) {
+              isWon = parseInt(bet.prediction) === params.corners;
+            } else if (
+              bet.parameter_type === "exact_score" &&
+              params.exact_score
+            ) {
+              isWon = bet.prediction === params.exact_score;
+            } else if (
+              bet.parameter_type === "penalties_in_game" &&
+              params.penalties_in_game
+            ) {
+              isWon = bet.prediction === params.penalties_in_game;
+            } else if (
+              bet.parameter_type === "extra_time" &&
+              params.extra_time
+            ) {
+              isWon = bet.prediction === params.extra_time;
+            } else if (
+              bet.parameter_type === "penalties_at_end" &&
+              params.penalties_at_end
+            ) {
+              isWon = bet.prediction === params.penalties_at_end;
+            }
+
+            if (isWon) {
+              statusClass = "won";
+              statusText = "✅ Выиграла";
+            } else {
+              // Если параметры установлены админом, но они не совпадают
+              if (
+                (bet.parameter_type === "yellow_cards" &&
+                  params.yellow_cards !== null) ||
+                (bet.parameter_type === "red_cards" &&
+                  params.red_cards !== null) ||
+                (bet.parameter_type === "corners" && params.corners !== null) ||
+                (bet.parameter_type === "exact_score" && params.exact_score) ||
+                (bet.parameter_type === "penalties_in_game" &&
+                  params.penalties_in_game) ||
+                (bet.parameter_type === "extra_time" && params.extra_time) ||
+                (bet.parameter_type === "penalties_at_end" &&
+                  params.penalties_at_end)
+              ) {
+                statusClass = "lost";
+                statusText = "❌ Проиграла";
+              }
+            }
+          }
+        } else if (!bet.is_final_bet) {
+          // Это обычная ставка на результат матча (не финальный параметр)
+          // Нормализуем prediction - преобразуем в актуальные названия команд
+
+          if (bet.prediction !== "draw") {
+            // prediction может быть: "team1", "team2", старое название команды
+            if (bet.prediction === "team1") {
+              normalizedPrediction = bet.team1_name;
+            } else if (bet.prediction === "team2") {
+              normalizedPrediction = bet.team2_name;
+            } else {
+              // Это старое название - проверяем совпадение с актуальными названиями
+              if (bet.prediction === bet.team1_name) {
+                normalizedPrediction = bet.team1_name;
+              } else if (bet.prediction === bet.team2_name) {
+                normalizedPrediction = bet.team2_name;
+              } else {
+                // Старое название больше не совпадает
+                // Это значит админ изменил названия команд после ставки
+                // Мы не можем точно знать, на какую команду была ставка
+                // Но в БД этот prediction - это скорее всего team1 (первая команда)
+                // Попытаемся быть умнее и использовать логику содержимого
+                // Но для простоты - используем team1_name как fallback
+                // (это не идеально, но лучше чем показывать несуществующее имя)
+                normalizedPrediction = bet.team1_name;
+              }
+            }
           }
 
           console.log(
-            `Winner check: winner="${bet.winner}", winnerPrediction="${winnerPrediction}", normalized="${normalizedPrediction}"`
+            `Bet ${bet.id}: prediction="${bet.prediction}", normalized="${normalizedPrediction}", team1="${bet.team1_name}", team2="${bet.team2_name}"`
           );
 
-          if (winnerPrediction === normalizedPrediction) {
-            statusClass = "won";
-            statusText = "✅ Выиграла";
-          } else {
-            statusClass = "lost";
-            statusText = "❌ Проиграла";
+          // Проверяем, есть ли результат матча
+          if (bet.winner) {
+            // Маппинг winner (из БД) в prediction format
+            // winner: "team1" | "team2" | "draw"
+            let winnerPrediction;
+            if (bet.winner === "team1") {
+              winnerPrediction = bet.team1_name;
+            } else if (bet.winner === "team2") {
+              winnerPrediction = bet.team2_name;
+            } else if (bet.winner === "draw") {
+              winnerPrediction = "draw";
+            }
+
+            console.log(
+              `Winner check: winner="${bet.winner}", winnerPrediction="${winnerPrediction}", normalized="${normalizedPrediction}"`
+            );
+
+            if (winnerPrediction === normalizedPrediction) {
+              statusClass = "won";
+              statusText = "✅ Выиграла";
+            } else {
+              statusClass = "lost";
+              statusText = "❌ Проиграла";
+            }
           }
         }
 
