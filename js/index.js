@@ -2367,7 +2367,7 @@ function displayProfile(profile) {
       <div class="profile-section-content">
         <p><strong>Процент побед:</strong> ${
           profile.total_bets > 0
-            ? ((profile.won_bets / profile.total_bets) * 100).toFixed(1)
+            ? ((profile.won_count / profile.total_bets) * 100).toFixed(1)
             : 0
         }%</p>
       </div>
