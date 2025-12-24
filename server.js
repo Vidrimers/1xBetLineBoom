@@ -5,7 +5,8 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import gifsicle from "gifsicle";
-import { execSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
+import ffmpegStatic from "ffmpeg-static";
 import {
   startBot,
   notifyIllegalBet,
@@ -1662,7 +1663,7 @@ app.get("/api/user/:userId/profile", (req, res) => {
 app.post("/api/user/:userId/avatar", (req, res) => {
   try {
     const { userId } = req.params;
-    const { avatarData, fileType } = req.body;
+    const { avatarData, fileType, gifPositionX, gifPositionY } = req.body;
 
     if (!avatarData) {
       return res.status(400).json({ error: "Данные аватара не предоставлены" });
@@ -1702,6 +1703,52 @@ app.post("/api/user/:userId/avatar", (req, res) => {
     const filepath = path.join(__dirname, "img", "avatar", filename);
 
     fs.writeFileSync(filepath, buffer);
+
+    // Обрезаем GIF по координатам если это GIF файл с указанными координатами
+    if (
+      extension === "gif" &&
+      gifPositionX !== undefined &&
+      gifPositionY !== undefined
+    ) {
+      try {
+        const posX = Math.max(0, parseInt(gifPositionX) || 0);
+        const posY = Math.max(0, parseInt(gifPositionY) || 0);
+
+        console.log(`📍 Обрезаю GIF по координатам: X=${posX}, Y=${posY}`);
+
+        const croppedFilepath = filepath + ".cropped.gif";
+
+        // Используем ffmpeg для обрезания GIF с сохранением анимации
+        // crop=width:height:x:y (crop=200:200:posX:posY)
+        const command = `"${ffmpegStatic}" -i "${filepath}" -vf "crop=200:200:${posX}:${posY}" -c:v gif "${croppedFilepath}" 2>&1`;
+
+        try {
+          execSync(command, { stdio: "pipe" });
+
+          // Проверяем что файл создан и заменяем оригинал
+          if (fs.existsSync(croppedFilepath)) {
+            const originalSize = fs.statSync(filepath).size;
+            const croppedSize = fs.statSync(croppedFilepath).size;
+
+            fs.unlinkSync(filepath);
+            fs.renameSync(croppedFilepath, filepath);
+
+            console.log(
+              `✅ GIF обрезан: ${(originalSize / 1024).toFixed(1)}KB → ${(
+                croppedSize / 1024
+              ).toFixed(1)}KB`
+            );
+          }
+        } catch (ffmpegErr) {
+          console.warn(
+            `⚠️ Не удалось обрезать GIF ffmpeg: ${ffmpegErr.message}`
+          );
+          // Продолжаем с оригинальным файлом
+        }
+      } catch (cropErr) {
+        console.warn(`⚠️ Ошибка при обрезании GIF: ${cropErr.message}`);
+      }
+    }
 
     // Оптимизируем GIF если это GIF файл
     if (extension === "gif") {

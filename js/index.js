@@ -4256,7 +4256,58 @@ function initAvatarInput() {
         if (isGif) {
           console.log("✅ GIF выбран, не используем cropper");
           document.getElementById("cropperContainer").style.display = "none";
+          document.getElementById("gifPositionContainer").style.display =
+            "block";
           document.getElementById("savAvatarBtn").style.display = "block";
+
+          // Показываем GIF в полном размере для выбора области
+          document.getElementById("gifFullPreview").src = event.target.result;
+
+          // Инициализируем контроли для выбора позиции
+          window.gifPositionX = 0;
+          window.gifPositionY = 0;
+          window.gifBase64 = event.target.result;
+
+          // Обновляем preview результата
+          updateGifResultPreview();
+
+          // Добавляем drag функцию для квадрата
+          const selectionBox = document.getElementById("gifSelectionBox");
+          let isDragging = false;
+          let startX = 0;
+          let startY = 0;
+
+          selectionBox.addEventListener("mousedown", (e) => {
+            isDragging = true;
+            startX = e.clientX - window.gifPositionX;
+            startY = e.clientY - window.gifPositionY;
+          });
+
+          document.addEventListener("mousemove", (e) => {
+            if (isDragging) {
+              const preview = document.getElementById("gifFullPreview");
+              const rect = preview.getBoundingClientRect();
+              let newX = e.clientX - rect.left - startX;
+              let newY = e.clientY - rect.top - startY;
+
+              // Ограничиваем координаты
+              newX = Math.max(0, Math.min(newX, preview.width - 200));
+              newY = Math.max(0, Math.min(newY, preview.height - 200));
+
+              window.gifPositionX = newX;
+              window.gifPositionY = newY;
+
+              selectionBox.style.left = newX + "px";
+              selectionBox.style.top = newY + "px";
+
+              updateGifResultPreview();
+            }
+          });
+
+          document.addEventListener("mouseup", () => {
+            isDragging = false;
+          });
+
           // Сохраняем оригинальный файл как base64
           window.gifAvatarData = event.target.result;
           return;
@@ -4310,6 +4361,43 @@ function closeAvatarModal(event) {
   }
   // Очищаем сохраненные GIF данные
   window.gifAvatarData = null;
+  window.gifBase64 = null;
+  window.gifPositionX = 0;
+  window.gifPositionY = 0;
+  document.getElementById("gifPositionContainer").style.display = "none";
+}
+
+// Функции управления позицией GIF
+function moveGifSelection(dx, dy) {
+  if (!window.gifBase64) return;
+
+  const preview = document.getElementById("gifFullPreview");
+  const maxX = preview.width - 200;
+  const maxY = preview.height - 200;
+
+  window.gifPositionX = Math.max(0, Math.min(window.gifPositionX + dx, maxX));
+  window.gifPositionY = Math.max(0, Math.min(window.gifPositionY + dy, maxY));
+
+  const selectionBox = document.getElementById("gifSelectionBox");
+  selectionBox.style.left = window.gifPositionX + "px";
+  selectionBox.style.top = window.gifPositionY + "px";
+
+  updateGifResultPreview();
+}
+
+function updateGifResultPreview() {
+  const preview = document.getElementById("gifFullPreview");
+  const resultImg = document.getElementById("gifCropResult");
+
+  if (!preview.src || !window.gifBase64) return;
+
+  // Показываем нужный участок GIF в окошке результата
+  resultImg.src = window.gifBase64;
+  resultImg.style.objectPosition = `-${window.gifPositionX}px -${window.gifPositionY}px`;
+
+  console.log(
+    `📍 Позиция GIF: X=${window.gifPositionX}, Y=${window.gifPositionY}`
+  );
 }
 
 async function saveAvatar() {
@@ -4436,7 +4524,12 @@ async function saveGifAvatar() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ avatarData, fileType }),
+      body: JSON.stringify({
+        avatarData,
+        fileType,
+        gifPositionX: window.gifPositionX || 0,
+        gifPositionY: window.gifPositionY || 0,
+      }),
     });
 
     const result = await response.json();
