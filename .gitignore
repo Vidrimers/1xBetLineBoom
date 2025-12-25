@@ -14,5 +14,6 @@ replacements.txt
 * copy*.db
 *.db
 reset-db.js
+log.html
 
 DISCORD_OAUTH_SETUP.md
