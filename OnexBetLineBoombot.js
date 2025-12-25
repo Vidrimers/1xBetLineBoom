@@ -7,8 +7,8 @@ dotenv.config();
 
 // Инициализируем переменные окружения
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const TELEGRAM_ADMIN_ID = parseInt(process.env.TELEGRAM_ADMIN_ID, 10);
+const TELEGRAM_CHAT_ID = parseInt(process.env.TELEGRAM_CHAT_ID, 10);
 const THREAD_ID = process.env.THREAD_ID
   ? parseInt(process.env.THREAD_ID, 10)
   : null;
@@ -99,6 +99,11 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   // Если это основной чат с потоком, добавляем message_thread_id
   if (chatId == TELEGRAM_CHAT_ID && THREAD_ID) {
     messageOptions.message_thread_id = THREAD_ID;
+    console.log(
+      `📨 Отправка сообщения в поток ${THREAD_ID} группы ${TELEGRAM_CHAT_ID}`
+    );
+  } else {
+    console.log(`📨 Отправка сообщения пользователю ${chatId} (без потока)`);
   }
 
   return await bot.sendMessage(chatId, text, messageOptions);
@@ -348,7 +353,9 @@ export async function sendGroupNotification(message) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
+    const chatIds = process.env.TELEGRAM_CHAT_ID.split(",").map((id) =>
+      parseInt(id.trim(), 10)
+    );
     for (const chatId of chatIds) {
       try {
         await sendMessageWithThread(chatId, message);
