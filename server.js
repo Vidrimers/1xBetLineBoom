@@ -4308,6 +4308,15 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
       }
     });
 
+    // Удаляем напоминания о матчах этого события
+    try {
+      db.prepare(
+        "DELETE FROM sent_reminders WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)"
+      ).run(eventId);
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить напоминания: ${e.message}`);
+    }
+
     // Удаляем связанные матчи
     db.prepare("DELETE FROM matches WHERE event_id = ?").run(eventId);
 
@@ -4893,6 +4902,192 @@ setInterval(checkAndNotifyMatchStart, 60 * 1000);
 console.log(
   "⚽ Фоновая задача уведомления о начале матча запущена (интервал: 1 минута)"
 );
+
+// GET /api/admin/orphaned-data - Проверить orphaned данные (только для админа)
+app.get("/api/admin/orphaned-data", (req, res) => {
+  const username = req.query.username;
+
+  console.log(`🔍 Запрос orphaned-data от пользователя: "${username}"`);
+  console.log(`🔐 ADMIN_DB_NAME: "${process.env.ADMIN_DB_NAME}"`);
+
+  // Проверяем, является ли пользователь админом
+  if (username !== process.env.ADMIN_DB_NAME) {
+    console.log(
+      `❌ Доступ запрещён: "${username}" !== "${process.env.ADMIN_DB_NAME}"`
+    );
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Матчи, чьи события удалены
+    const orphanedMatches = db
+      .prepare(
+        `SELECT m.id, m.team1_name, m.team2_name, m.match_date, m.event_id 
+         FROM matches m 
+         LEFT JOIN events e ON m.event_id = e.id 
+         WHERE e.id IS NULL`
+      )
+      .all();
+
+    // Ставки, чьи матчи удалены
+    const orphanedBets = db
+      .prepare(
+        `SELECT b.id, b.user_id, b.match_id, b.prediction 
+         FROM bets b 
+         LEFT JOIN matches m ON b.match_id = m.id 
+         WHERE m.id IS NULL`
+      )
+      .all();
+
+    // Финальные ставки, чьи матчи удалены
+    let orphanedFinalBets = [];
+    try {
+      orphanedFinalBets = db
+        .prepare(
+          `SELECT fb.id, fb.user_id, fb.match_id 
+           FROM final_bets fb 
+           LEFT JOIN matches m ON fb.match_id = m.id 
+           WHERE m.id IS NULL`
+        )
+        .all();
+    } catch (e) {
+      // Таблица не существует
+    }
+
+    // Напоминания, чьи матчи удалены
+    const orphanedReminders = db
+      .prepare(
+        `SELECT sr.id, sr.match_id, sr.sent_at 
+         FROM sent_reminders sr 
+         LEFT JOIN matches m ON sr.match_id = m.id 
+         WHERE m.id IS NULL`
+      )
+      .all();
+
+    // Награды, чьи события удалены
+    const orphanedAwards = db
+      .prepare(
+        `SELECT ta.id, ta.event_id, ta.user_id 
+         FROM tournament_awards ta 
+         LEFT JOIN events e ON ta.event_id = e.id 
+         WHERE e.id IS NULL`
+      )
+      .all();
+
+    // Параметры финала, чьи матчи удалены
+    const orphanedFinalParams = db
+      .prepare(
+        `SELECT fp.id, fp.match_id 
+         FROM final_parameters_results fp 
+         LEFT JOIN matches m ON fp.match_id = m.id 
+         WHERE m.id IS NULL`
+      )
+      .all();
+
+    const summary = {
+      total_orphaned: {
+        matches: orphanedMatches.length,
+        bets: orphanedBets.length,
+        final_bets: orphanedFinalBets.length,
+        reminders: orphanedReminders.length,
+        awards: orphanedAwards.length,
+        final_parameters: orphanedFinalParams.length,
+      },
+      orphaned_matches: orphanedMatches,
+      orphaned_bets: orphanedBets,
+      orphaned_final_bets: orphanedFinalBets,
+      orphaned_reminders: orphanedReminders,
+      orphaned_awards: orphanedAwards,
+      orphaned_final_parameters: orphanedFinalParams,
+    };
+
+    res.json(summary);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/cleanup-orphaned-data - Удалить orphaned данные (только для админа)
+app.post("/api/admin/cleanup-orphaned-data", (req, res) => {
+  const { username, dataType } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    const deletedCounts = {};
+
+    // Если dataType не указан или равен "all", удаляем всё
+    const deleteAll = !dataType || dataType === "all";
+
+    if (deleteAll || dataType === "final_parameters") {
+      // Удаляем orphaned параметры финала
+      const result1 = db.exec(
+        `DELETE FROM final_parameters_results 
+         WHERE match_id NOT IN (SELECT id FROM matches)`
+      );
+      deletedCounts.final_parameters = result1.changes || 0;
+    }
+
+    if (deleteAll || dataType === "final_bets") {
+      // Удаляем orphaned финальные ставки
+      try {
+        const result2 = db.exec(
+          `DELETE FROM final_bets 
+           WHERE match_id NOT IN (SELECT id FROM matches)`
+        );
+        deletedCounts.final_bets = result2.changes || 0;
+      } catch (e) {
+        // Таблица не существует
+      }
+    }
+
+    if (deleteAll || dataType === "reminders") {
+      // Удаляем orphaned напоминания
+      const result3 = db.exec(
+        `DELETE FROM sent_reminders 
+         WHERE match_id NOT IN (SELECT id FROM matches)`
+      );
+      deletedCounts.reminders = result3.changes || 0;
+    }
+
+    if (deleteAll || dataType === "bets") {
+      // Удаляем orphaned ставки
+      const result4 = db.exec(
+        `DELETE FROM bets 
+         WHERE match_id NOT IN (SELECT id FROM matches)`
+      );
+      deletedCounts.bets = result4.changes || 0;
+    }
+
+    if (deleteAll || dataType === "awards") {
+      // Удаляем orphaned награды
+      const result5 = db.exec(
+        `DELETE FROM tournament_awards 
+         WHERE event_id NOT IN (SELECT id FROM events)`
+      );
+      deletedCounts.awards = result5.changes || 0;
+    }
+
+    if (deleteAll || dataType === "matches") {
+      // Удаляем orphaned матчи
+      const result6 = db.exec(
+        `DELETE FROM matches 
+         WHERE event_id NOT IN (SELECT id FROM events)`
+      );
+      deletedCounts.matches = result6.changes || 0;
+    }
+
+    res.json({
+      message: "✅ Orphaned данные успешно удалены",
+      deleted: deletedCounts,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Запуск сервера
 app.listen(PORT, "0.0.0.0", () => {

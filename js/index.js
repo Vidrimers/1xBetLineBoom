@@ -2877,6 +2877,125 @@ async function backupDatabase() {
   }
 }
 
+// Проверить orphaned данные в БД
+async function checkOrphanedData() {
+  if (!isAdmin()) {
+    alert("❌ У вас нет прав для проверки orphaned данных");
+    return;
+  }
+
+  try {
+    const btn = document.querySelector('[onclick="checkOrphanedData()"]');
+    const originalText = btn.textContent;
+    btn.textContent = "⏳ Проверка...";
+    btn.disabled = true;
+
+    // Используем currentUser.username - сервер проверит права
+    const response = await fetch(
+      `/api/admin/orphaned-data?username=${encodeURIComponent(
+        currentUser.username
+      )}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const totalOrphaned = data.total_orphaned;
+    const totalCount =
+      totalOrphaned.matches +
+      totalOrphaned.bets +
+      totalOrphaned.final_bets +
+      totalOrphaned.reminders +
+      totalOrphaned.awards +
+      totalOrphaned.final_parameters;
+
+    let message = `📊 ORPHANED ДАННЫЕ В БД:\n\n`;
+    message += `🔴 Матчи без события: ${totalOrphaned.matches}\n`;
+    message += `🔴 Ставки на удалённые матчи: ${totalOrphaned.bets}\n`;
+    message += `🔴 Финальные ставки: ${totalOrphaned.final_bets}\n`;
+    message += `🔴 Напоминания: ${totalOrphaned.reminders}\n`;
+    message += `🔴 Награды: ${totalOrphaned.awards}\n`;
+    message += `🔴 Параметры финала: ${totalOrphaned.final_parameters}\n\n`;
+
+    if (totalCount === 0) {
+      message += `✅ БД ЧИСТАЯ! Orphaned данных не найдено.`;
+      alert(message);
+    } else {
+      message += `⚠️ Найдено ${totalCount} orphaned записей.\n\n`;
+      message += `Очистить orphaned данные?\n`;
+      message += `(Это удалит все найденные orphaned данные из БД)`;
+
+      if (confirm(message)) {
+        cleanupOrphanedData();
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка при проверке orphaned данных:", error);
+    alert(`❌ Ошибка при проверке orphaned данных:\n${error.message}`);
+  } finally {
+    const btn = document.querySelector('[onclick="checkOrphanedData()"]');
+    if (btn) {
+      btn.textContent = "🔍 Проверить orphaned";
+      btn.disabled = false;
+    }
+  }
+}
+
+// Очистить orphaned данные в БД
+async function cleanupOrphanedData() {
+  if (!isAdmin()) {
+    alert("❌ У вас нет прав для очистки orphaned данных");
+    return;
+  }
+
+  try {
+    const btn = document.querySelector('[onclick="checkOrphanedData()"]');
+    btn.textContent = "⏳ Очистка...";
+    btn.disabled = true;
+
+    const response = await fetch("/api/admin/cleanup-orphaned-data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    let message = `✅ ORPHANED ДАННЫЕ УДАЛЕНЫ:\n\n`;
+    message += `🗑️  Матчи: ${data.deleted.matches || 0}\n`;
+    message += `🗑️  Ставки: ${data.deleted.bets || 0}\n`;
+    message += `🗑️  Финальные ставки: ${data.deleted.final_bets || 0}\n`;
+    message += `🗑️  Напоминания: ${data.deleted.reminders || 0}\n`;
+    message += `🗑️  Награды: ${data.deleted.awards || 0}\n`;
+    message += `🗑️  Параметры финала: ${
+      data.deleted.final_parameters || 0
+    }\n\n`;
+    message += `БД успешно очищена!`;
+
+    alert(message);
+  } catch (error) {
+    console.error("Ошибка при очистке orphaned данных:", error);
+    alert(`❌ Ошибка при очистке orphaned данных:\n${error.message}`);
+  } finally {
+    const btn = document.querySelector('[onclick="checkOrphanedData()"]');
+    if (btn) {
+      btn.textContent = "🔍 Проверить orphaned";
+      btn.disabled = false;
+    }
+  }
+}
+
 // ========== УПРАВЛЕНИЕ МОДЕРАТОРАМИ ==========
 
 // Открыть панель управления модераторами
