@@ -16,6 +16,7 @@ import {
   writeNotificationQueue,
   sendUserMessage,
   sendGroupNotification,
+  notifyTelegramLinked,
 } from "./OnexBetLineBoombot.js";
 
 dotenv.config();
@@ -3323,37 +3324,21 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
           .get(cleanUsername);
 
         if (telegramUser && telegramUser.chat_id) {
-          const personalMessage = `🎉 <b>Добро пожаловать в 1xBetLineBoom!</b>
-
-✅ Твой Telegram успешно привязан к аккаунту <b>${user.username}</b>
-
-📊 Теперь ты будешь получать:
-• Уведомления о результатах матчей
-• Напоминания о предстоящих играх
-• Результаты твоих ставок
-
-Удачных ставок, малютка! 🍀`;
-
-          try {
-            await fetch(
-              `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: telegramUser.chat_id,
-                  text: personalMessage,
-                  parse_mode: "HTML",
-                }),
-              }
-            );
-            console.log(`✅ Личное сообщение отправлено @${telegram_username}`);
-          } catch (err) {
-            console.error("❌ Ошибка отправки личного сообщения:", err);
-          }
-        } else {
+          // Пользователь уже писал боту - отправляем личное сообщение напрямую
+          notifyTelegramLinked(
+            user.username,
+            telegram_username,
+            telegramUser.chat_id
+          );
           console.log(
-            `⚠️ Пользователь @${telegram_username} не писал боту, личное сообщение не отправлено`
+            `✅ Уведомление о привязке отправлено @${telegram_username} (${telegramUser.chat_id})`
+          );
+        } else {
+          // Если пользователь ещё не писал боту, добавляем уведомление в очередь
+          // чтобы отправить как только пользователь напишет боту
+          notifyTelegramLinked(user.username, telegram_username);
+          console.log(
+            `📱 Уведомление о привязке добавлено в очередь для @${telegram_username}`
           );
         }
       }

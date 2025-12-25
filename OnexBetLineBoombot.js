@@ -72,12 +72,64 @@ async function registerTelegramUser(msg) {
       console.warn(
         `⚠️ Ошибка регистрации telegram пользователя (HTTP ${response.status}): @${telegramUsername} (URL: ${url})`
       );
+      return;
     }
+
+    // После успешной регистрации пользователя, проверяем есть ли уведомления в очереди для него
+    // Это нужно для отправки сообщений о привязке Telegram, которые добавились в очередь
+    // когда пользователь привязывал свой ТГ через сайт, но ещё не писал боту
+    processPendingNotificationsForUser(telegramUsername, chatId);
   } catch (error) {
     console.error(
       `❌ Ошибка регистрации telegram пользователя (@${telegramUsername}):`,
       error.code || error.message,
       `(URL: ${SERVER_URL}/api/telegram/register)`
+    );
+  }
+}
+
+// Обработка ожидающих уведомлений для только что зарегистрированного пользователя
+async function processPendingNotificationsForUser(telegramUsername, chatId) {
+  try {
+    const cleanUsername = telegramUsername.toLowerCase();
+    const records = readQueue();
+    let found = false;
+
+    for (const record of records) {
+      // Ищем уведомления для этого пользователя
+      if (
+        record.type === "telegram_linked" &&
+        record.telegram_username &&
+        record.telegram_username.toLowerCase() === cleanUsername
+      ) {
+        try {
+          // Отправляем уведомление о привязке
+          await sendMessageWithThread(chatId, record.payload.message, {
+            parse_mode: "HTML",
+          });
+          console.log(
+            `✅ Уведомление о привязке отправлено @${telegramUsername} (${chatId})`
+          );
+          record._sent = true;
+          found = true;
+        } catch (err) {
+          console.error(
+            `❌ Ошибка отправки уведомления о привязке для @${telegramUsername}:`,
+            err.message
+          );
+        }
+      }
+    }
+
+    // Если нашли и отправили какие-то уведомления, обновляем очередь
+    if (found) {
+      const remaining = records.filter((r) => !r._sent);
+      writeQueue(remaining);
+    }
+  } catch (error) {
+    console.error(
+      `❌ Ошибка обработки ожидающих уведомлений для @${telegramUsername}:`,
+      error.message
     );
   }
 }
@@ -268,8 +320,21 @@ function writeQueue(records) {
 
 // Функция попытки отправки одного уведомления (использует bot если есть, иначе fetch)
 async function trySendRecord(record) {
-  const { payload } = record;
   try {
+    // Пропускаем уведомления о привязке Telegram - они обрабатываются при регистрации пользователя
+    if (record.type === "telegram_linked") {
+      return false; // Оставляем в очереди на случай если пользователь переустановит бота
+    }
+
+    // Обработка обычных уведомлений (с payload.to и payload.message)
+    const { payload } = record;
+    if (!payload || !payload.to || !payload.message) {
+      console.warn(
+        `⚠️ Некорректная структура уведомления в очереди (id=${record.id})`
+      );
+      return false;
+    }
+
     if (bot) {
       const options = { parse_mode: "HTML" };
 
@@ -518,6 +583,64 @@ export async function notifyIllegalBet(
   await sendAdminNotification(message);
 }
 
+// Функция для отправки уведомления о привязке Telegram к профилю
+export function notifyTelegramLinked(
+  username,
+  telegramUsername,
+  chatId = null
+) {
+  const message =
+    `🎉 <b>Добро пожаловать в 1xBetLineBoom!</b>\n\n` +
+    `✅ Твой Telegram успешно привязан к аккаунту <b>${username}</b>\n\n` +
+    `📊 Теперь ты будешь получать:\n` +
+    `• Уведомления о результатах матчей\n` +
+    `• Напоминания о предстоящих играх\n` +
+    `• Результаты твоих ставок\n\n` +
+    `Удачных ставок, малютка! 🍀`;
+
+  try {
+    // Если у нас есть chat_id, пытаемся отправить напрямую
+    if (chatId && bot) {
+      sendMessageWithThread(chatId, message, { parse_mode: "HTML" }).catch(
+        (err) => {
+          console.error(
+            `❌ Ошибка отправки уведомления о привязке для @${telegramUsername} (${chatId}):`,
+            err.message
+          );
+        }
+      );
+      console.log(
+        `📱 Уведомление о привязке Telegram отправлено @${telegramUsername} (${chatId})`
+      );
+      return;
+    }
+
+    // Если chat_id не найден, добавляем в очередь для отправки позже
+    const record = {
+      id: Date.now().toString(),
+      type: "telegram_linked",
+      telegram_username: telegramUsername,
+      payload: {
+        message: message,
+        parse_mode: "HTML",
+      },
+      timestamp: new Date().toISOString(),
+      attempts: 0,
+    };
+
+    fs.appendFileSync(NOTIF_QUEUE_FILE, JSON.stringify(record) + "\n", "utf8");
+
+    console.log(
+      `📱 Уведомление о привязке Telegram добавлено в очередь для @${telegramUsername} (chat_id не найден, будет отправлено когда пользователь напишет боту)`
+    );
+  } catch (error) {
+    console.error(
+      "❌ Ошибка при отправке уведомления о привязке Telegram:",
+      error.message
+    );
+  }
+}
+
 // ===== ИНИЦИАЛИЗАЦИЯ И ЗАПУСК БОТА =====
 
 export function startBot() {
@@ -646,7 +769,7 @@ export function startBot() {
         console.error(
           `Ошибка при загрузке турниров (HTTP ${response.status}): ${SERVER_URL}/api/events`
         );
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` +
             `<i>⚠️ Ошибка при загрузке данных с сервера</i>`,
@@ -660,7 +783,7 @@ export function startBot() {
       const events = await response.json();
 
       if (!events || events.length === 0) {
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` + `<i>Турниров не найдено</i>`,
           opts("empty", {
@@ -674,7 +797,7 @@ export function startBot() {
       const activeTournaments = events.filter((e) => !e.locked_reason);
 
       if (activeTournaments.length === 0) {
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` + `<i>Активных турниров нет</i>`,
           opts("noActive", {
@@ -709,7 +832,7 @@ export function startBot() {
 
       messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для просмотра всех деталей</a>`;
 
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         messageText,
         opts("list", {
@@ -721,7 +844,7 @@ export function startBot() {
         "Ошибка при загрузке турниров:",
         error && error.message ? error.message : error
       );
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         `📅 <b>Турниры:</b>\n\n` + `<i>⚠️ Ошибка при загрузке данных</i>`,
         opts("catch", {
@@ -771,7 +894,7 @@ export function startBot() {
       );
 
       if (!user) {
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `💰 <b>Мои ставки:</b>\n\n` +
             `Профиль не привязан. Привяжите его на сайте в разделе "⚙️ Настройки".`,
@@ -808,7 +931,7 @@ export function startBot() {
       const userPendingBets = userBets.filter((bet) => !bet.winner);
 
       if (userPendingBets.length === 0) {
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `💰 <b>Мои ставки:</b>\n\n` +
             `<i>Активных ставок нет</i>\n\n` +
@@ -870,7 +993,7 @@ export function startBot() {
 
       messageText += `💡 Полный список на сайте.`;
 
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         messageText,
         opts("list", {
@@ -879,7 +1002,7 @@ export function startBot() {
       );
     } catch (error) {
       console.error("Error in handleMyBets:", error);
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         `💰 <b>Мои ставки:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке ставок</i>\n\n` +
@@ -945,7 +1068,7 @@ export function startBot() {
         }
       }
 
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         `👤 <b>Профиль:</b>\n\n` +
           `<b>Имя в тг:</b> ${firstName}\n` +
@@ -960,7 +1083,7 @@ export function startBot() {
       );
     } catch (error) {
       console.error("Error in handleProfile:", error);
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         `👤 <b>Профиль:</b>\n\n` +
           `<b>Имя в тг:</b> ${firstName}\n` +
@@ -979,12 +1102,23 @@ export function startBot() {
 
   // Команда /next_match и кнопка ⚽ Ближайший матч
   const handleNextMatch = async (chatIdOrMsg, legacyMsg = null) => {
+    console.log(
+      `📍 handleNextMatch вызвана, chatIdOrMsg type: ${typeof chatIdOrMsg}, chatIdOrMsg:`,
+      chatIdOrMsg
+    );
+
     // Поддерживаем оба способа вызова для совместимости
     const msg =
       chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
         ? chatIdOrMsg
         : legacyMsg;
     const chatId = msg ? msg.chat.id : chatIdOrMsg;
+
+    console.log(
+      `📍 msg:`,
+      msg ? `${msg.chat.id}` : "null",
+      `chatId: ${chatId}`
+    );
 
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Ближайший матч");
 
@@ -993,6 +1127,7 @@ export function startBot() {
       msg ? { ...baseOpts, __msg: msg } : baseOpts;
 
     try {
+      console.log(`📍 Начинаем загрузку турниров с ${SERVER_URL}/api/events`);
       // Загружаем все турниры с их матчами
       const response = await fetch(`${SERVER_URL}/api/events`);
 
@@ -1000,7 +1135,10 @@ export function startBot() {
         console.error(
           `Ошибка при загрузке турниров (HTTP ${response.status}): ${SERVER_URL}/api/events`
         );
-        sendMessageWithThread(
+        console.log(
+          "[handleNextMatch] Sending error message about server failure"
+        );
+        await sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>⚠️ Ошибка при загрузке данных с сервера</i>\n\n` +
@@ -1009,13 +1147,17 @@ export function startBot() {
             parse_mode: "HTML",
           })
         );
+        console.log("[handleNextMatch] Error message sent successfully");
         return;
       }
 
       const events = await response.json();
 
       if (!events || events.length === 0) {
-        sendMessageWithThread(
+        console.log(
+          "[handleNextMatch] No events found, sending 'no events' message"
+        );
+        await sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>Турниров не найдено</i>\n\n` +
@@ -1024,18 +1166,28 @@ export function startBot() {
             parse_mode: "HTML",
           })
         );
+        console.log("[handleNextMatch] 'No events' message sent successfully");
         return;
       }
 
       // Собираем все матчи из всех турниров
+      console.log(`📍 Загружаем матчи из ${events.length} турниров`);
       const allMatches = [];
       for (const event of events) {
         try {
+          console.log(
+            `📍 Загружаем матчи для турнира ${event.id} (${event.name})`
+          );
           const matchesResponse = await fetch(
             `${SERVER_URL}/api/events/${event.id}/matches`
           );
           if (matchesResponse.ok) {
             const matches = await matchesResponse.json();
+            console.log(
+              `📍 Получено ${matches?.length || 0} матчей для турнира ${
+                event.id
+              }`
+            );
             if (matches && matches.length > 0) {
               matches.forEach((match) => {
                 allMatches.push({
@@ -1052,6 +1204,8 @@ export function startBot() {
           );
         }
       }
+
+      console.log(`📍 Всего загружено ${allMatches.length} матчей`);
 
       // Разделяем матчи на идущие (без результата и прошедшая дата) и будущие (без результата и будущая дата)
       const now = new Date();
@@ -1110,7 +1264,7 @@ export function startBot() {
 
         messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
 
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           messageText,
           opts("list", {
@@ -1122,7 +1276,8 @@ export function startBot() {
 
       // Если нет идущих матчей, показываем будущие
       if (futureMatches.length === 0) {
-        sendMessageWithThread(
+        console.log(`📍 Нет предстоящих матчей, отправляем уведомление`);
+        await sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>Предстоящих матчей не найдено</i>\n\n` +
@@ -1131,6 +1286,7 @@ export function startBot() {
             parse_mode: "HTML",
           })
         );
+        console.log(`📍 Уведомление о отсутствии матчей отправлено`);
         return;
       }
 
@@ -1166,19 +1322,24 @@ export function startBot() {
 
       messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
 
-      sendMessageWithThread(
+      console.log(
+        `📍 Отправляем сообщение о будущих матчах (${matchesOnSameDay.length} матчей)`
+      );
+      await sendMessageWithThread(
         chatId,
         messageText,
         opts("future", {
           parse_mode: "HTML",
         })
       );
+      console.log(`📍 Сообщение о будущих матчах отправлено`);
     } catch (error) {
-      console.error(
+      console.log(
         "Ошибка при загрузке ближайших матчей:",
         error && error.message ? error.message : error
       );
-      sendMessageWithThread(
+      console.log(`📍 Отправляем сообщение об ошибке в чат ${chatId}`);
+      await sendMessageWithThread(
         chatId,
         `⚽ <b>Ближайший матч:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке данных</i>\n\n` +
@@ -1188,6 +1349,7 @@ export function startBot() {
         })
       );
     }
+    console.log(`📍 handleNextMatch завершена`);
   };
 
   bot.onText(/\/next_match/, (msg) => handleNextMatch(msg.chat.id, msg));
@@ -1240,7 +1402,7 @@ export function startBot() {
         console.log(
           `[STATS] User not found. Looking for telegram_username: ${telegramUsername}`
         );
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `📊 <b>${firstName}:</b>\n\n` +
             `Ваш профиль не привязан к Telegram аккаунту. Привяжите его на сайте в разделе "⚙️ Настройки" и попробуйте снова.`,
@@ -1267,7 +1429,7 @@ export function startBot() {
           ? Math.round(((user.won_bets || 0) / totalBets) * 100)
           : 0;
 
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         `📊 <b>${displayName}:</b>\n\n` +
           `<b>Ставок за всё время:</b> <i>${totalBets}</i>\n` +
@@ -1289,7 +1451,7 @@ export function startBot() {
       );
     } catch (error) {
       console.error("Error in handleStats:", error);
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         `📊 <b>${firstName}:</b>\n\n` +
           `Ошибка при загрузке статистики. Пожалуйста, попробуйте позже.`,
@@ -1340,7 +1502,7 @@ export function startBot() {
       );
 
       if (!user) {
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `🏆 <b>Мои награды:</b>\n\n` +
             `Профиль не привязан. Привяжите его на сайте в разделе "⚙️ Настройки".`,
@@ -1361,7 +1523,7 @@ export function startBot() {
       const awards = await awardsResponse.json();
 
       if (!awards || awards.length === 0) {
-        sendMessageWithThread(
+        await sendMessageWithThread(
           chatId,
           `🏆 <b>Мои награды:</b>\n\n` +
             `<i>Наград пока нет</i>\n\n` +
@@ -1402,7 +1564,7 @@ export function startBot() {
 
       messageText += `💡 Полный список на сайте.`;
 
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         messageText,
         opts("awards", {
@@ -1411,7 +1573,7 @@ export function startBot() {
       );
     } catch (error) {
       console.error("Error in handleMyAwards:", error);
-      sendMessageWithThread(
+      await sendMessageWithThread(
         chatId,
         `🏆 <b>Мои награды:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке наград</i>\n\n` +
