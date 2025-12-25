@@ -17,7 +17,7 @@ const SERVER_PORT = process.env.PORT || "3000";
 const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 
 console.log(
-  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}`
+  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
 );
 
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
@@ -91,22 +91,79 @@ async function sendMessageWithThread(chatId, text, options = {}) {
     return;
   }
 
+  // Убеждаемся что chatId - число для правильного сравнения
+  const chatIdNum = typeof chatId === "string" ? parseInt(chatId, 10) : chatId;
+
+  // Извлекаем msg из опций если он там есть
+  const msg = options.__msg || null;
+  delete options.__msg; // Удаляем из опций перед отправкой
+
   const messageOptions = {
     ...options,
     parse_mode: "HTML",
   };
 
-  // Если это основной чат с потоком, добавляем message_thread_id
-  if (chatId == TELEGRAM_CHAT_ID && THREAD_ID) {
+  // Если сообщение было в потоке, отвечаем в тот же поток
+  if (msg && msg.message_thread_id) {
+    messageOptions.message_thread_id = msg.message_thread_id;
+    console.log(
+      `� Ответ в поток ${msg.message_thread_id} (от сообщения в группе)`
+    );
+  }
+  // Иначе, если это основной чат с потоком, добавляем default message_thread_id
+  else if (chatIdNum === TELEGRAM_CHAT_ID && THREAD_ID) {
     messageOptions.message_thread_id = THREAD_ID;
     console.log(
       `📨 Отправка сообщения в поток ${THREAD_ID} группы ${TELEGRAM_CHAT_ID}`
     );
+    console.log(`📋 messageOptions:`, JSON.stringify(messageOptions, null, 2));
   } else {
-    console.log(`📨 Отправка сообщения пользователю ${chatId} (без потока)`);
+    console.log(`📨 Отправка сообщения в ${chatIdNum} (без потока)`);
   }
 
-  return await bot.sendMessage(chatId, text, messageOptions);
+  return await bot.sendMessage(chatIdNum, text, messageOptions);
+}
+
+// Специальная функция для ответа на сообщение в потоке (сохраняет поток)
+export async function replyInThread(msg, text, options = {}) {
+  try {
+    if (!bot) {
+      console.error("❌ Бот еще не инициализирован!");
+      return;
+    }
+
+    const chatId = msg.chat.id;
+    const messageOptions = {
+      ...options,
+      parse_mode: "HTML",
+    };
+
+    // Если сообщение было в потоке, отвечаем в тот же поток
+    if (msg.message_thread_id) {
+      messageOptions.message_thread_id = msg.message_thread_id;
+      console.log(`📨 Ответ в поток ${msg.message_thread_id}`);
+    }
+
+    return await bot.sendMessage(chatId, text, messageOptions);
+  } catch (error) {
+    console.error("Ошибка при отправке ответа в потоке:", error.message);
+  }
+}
+
+// Умная функция для отправки сообщения - если есть msg, отправляет в его поток, иначе обычным способом
+async function smartSendMessage(chatIdOrMsg, text, options = {}) {
+  // Если первый параметр это msg объект (имеет свойство message_thread_id или chat.id)
+  if (
+    chatIdOrMsg &&
+    typeof chatIdOrMsg === "object" &&
+    chatIdOrMsg.chat &&
+    chatIdOrMsg.from
+  ) {
+    return await replyInThread(chatIdOrMsg, text, options);
+  } else {
+    // Иначе это просто chatId
+    return await sendMessageWithThread(chatIdOrMsg, text, options);
+  }
 }
 
 // Функция для логирования действий пользователя админу
@@ -353,9 +410,12 @@ export async function sendGroupNotification(message) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    const chatIds = process.env.TELEGRAM_CHAT_ID.split(",").map((id) =>
-      parseInt(id.trim(), 10)
-    );
+    // Если TELEGRAM_CHAT_ID содержит несколько чатов, разделяем их
+    const chatIds = process.env.TELEGRAM_CHAT_ID.includes(",")
+      ? process.env.TELEGRAM_CHAT_ID.split(",").map((id) =>
+          parseInt(id.trim(), 10)
+        )
+      : [TELEGRAM_CHAT_ID]; // Используем уже спарсённую переменную
     for (const chatId of chatIds) {
       try {
         await sendMessageWithThread(chatId, message);
@@ -505,8 +565,8 @@ export function startBot() {
     // Логируем действие
     logUserAction(msg, "Нажата команда /start");
 
-    sendMessageWithThread(
-      chatId,
+    replyInThread(
+      msg,
       `👋 Привет, ${firstName}!\n\n` +
         `🎯 Я бот для 1xBetLineBoom - сайта для ставок на матчи.\n\n` +
         `Используй кнопки ниже или команды:\n` +
@@ -522,8 +582,8 @@ export function startBot() {
     // Логируем действие
     logUserAction(msg, "Нажата команда /help");
 
-    sendMessageWithThread(
-      chatId,
+    replyInThread(
+      msg,
       `<b>📖 Справка по командам:</b>\n\n` +
         `<b>/start</b> - начало работы\n` +
         `<b>/help</b> - эта справка\n` +
@@ -538,8 +598,19 @@ export function startBot() {
   });
 
   // Команда /status и кнопка 📊 Статус
-  const handleStatus = (chatId, msg = null) => {
+  const handleStatus = (msgOrChatId, legacyMsg = null) => {
+    // Поддерживаем оба способа вызова для совместимости
+    const msg =
+      msgOrChatId && typeof msgOrChatId === "object" && msgOrChatId.chat
+        ? msgOrChatId
+        : null;
+    const chatId = msg ? msg.chat.id : msgOrChatId;
+
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Статус");
+
+    const opts = msg
+      ? { parse_mode: "HTML", __msg: msg }
+      : { parse_mode: "HTML" };
 
     sendMessageWithThread(
       chatId,
@@ -547,17 +618,19 @@ export function startBot() {
         `🌍 Сервер онлайн\n` +
         `📊 Все турниры доступны\n` +
         `⚡ Система ставок активна`,
-      {
-        parse_mode: "HTML",
-      }
+      opts
     );
   };
 
-  bot.onText(/\/status/, (msg) => handleStatus(msg.chat.id, msg));
+  bot.onText(/\/status/, (msg) => handleStatus(msg));
 
   // Команда /tournaments и кнопка 📅 Турниры
   const handleTournaments = async (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Турниры");
+
+    // Если есть msg, добавляем его во все опции для sendMessageWithThread
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
 
     try {
       const response = await fetch(`${SERVER_URL}/api/events`);
@@ -570,9 +643,9 @@ export function startBot() {
           chatId,
           `📅 <b>Турниры:</b>\n\n` +
             `<i>⚠️ Ошибка при загрузке данных с сервера</i>`,
-          {
+          opts("error", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -583,9 +656,9 @@ export function startBot() {
         sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` + `<i>Турниров не найдено</i>`,
-          {
+          opts("empty", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -597,9 +670,9 @@ export function startBot() {
         sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` + `<i>Активных турниров нет</i>`,
-          {
+          opts("noActive", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
