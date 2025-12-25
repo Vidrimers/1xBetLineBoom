@@ -902,6 +902,29 @@
               </label>
             </div>
             <div class="form-group">
+              <label for="importSeparator">
+                Разделитель команд: 
+                <span id="separatorPreview" style="color: #ffc107; font-weight: bold">\</span>
+                <span id="separatorDescription">(обратный слэш)</span>
+              </label>
+              <select
+                id="importSeparator"
+                style="
+                  width: 100%;
+                  padding: 8px;
+                  font-size: 0.95em;
+                  background: rgba(0, 0, 0, 0.3);
+                  border: 1px solid #3a7bd5;
+                  color: #e0e6f0;
+                  border-radius: 4px;
+                "
+              >
+                <option value="\\" data-description="обратный слэш">\ (обратный слэш)</option>
+                <option value="-" data-description="дефис">- (дефис)</option>
+                <option value="vs" data-description="текст">vs (текст)</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>Формат данных:</label>
               <textarea
                 id="importMatchesData"
@@ -946,11 +969,11 @@
                 <li>Скопируйте матчи из Google Docs</li>
                 <li>
                   Каждый матч на новой строке в формате: <br />
-                  <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 5px"
+                  <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 5px" id="instructionFormat"
                     >Команда1 \ Команда2 | Дата | Тур</code
                   >
                 </li>
-                <li>Разделитель команд: <strong>\</strong> (обратный слэш)</li>
+                <li id="instructionSeparatorText">Разделитель команд: <strong>\</strong> (обратный слэш)</li>
                 <li>Дата в формате: ДД.ММ.YYYY ЧЧ:MM (если включен toggle)</li>
                 <li>
                   Если даты нет или toggle отключен, оставьте пусто после |

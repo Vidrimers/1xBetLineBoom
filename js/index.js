@@ -5619,6 +5619,9 @@ function openImportMatchesModal() {
     importEventSelect.appendChild(option);
   });
 
+  // Инициализируем превью разделителя при открытии модального окна
+  updateImportSeparatorPreview();
+
   document.getElementById("importMatchesModal").style.display = "flex";
 }
 
@@ -5628,12 +5631,84 @@ function closeImportMatchesModal() {
   document.getElementById("importEventId").value = "";
 }
 
+// Обновляем плейсхолдер и инструкции при изменении разделителя
+function updateImportSeparatorPreview() {
+  const separatorSelect = document.getElementById("importSeparator");
+  const separator = separatorSelect.value;
+  const selectedOption = separatorSelect.options[separatorSelect.selectedIndex];
+  const separatorDescription =
+    selectedOption.getAttribute("data-description") || "обратный слэш";
+
+  const textarea = document.getElementById("importMatchesData");
+  const separatorPreview = document.getElementById("separatorPreview");
+  const instructionFormat = document.getElementById("instructionFormat");
+
+  let separatorLabel = "\\";
+  let separatorDisplay = "\\";
+  let example1 = "Manchester \\ Liverpool | 20.12.2025 18:00 | Тур 1";
+  let example2 = "Real Madrid \\ Barcelona | 21.12.2025 20:00 | Тур 1";
+  let formatExample = "Команда1 \\ Команда2 | Дата | Тур";
+
+  if (separator === "-") {
+    separatorLabel = "-";
+    separatorDisplay = "-";
+    example1 = "Manchester - Liverpool | 20.12.2025 18:00 | Тур 1";
+    example2 = "Real Madrid - Barcelona | 21.12.2025 20:00 | Тур 1";
+    formatExample = "Команда1 - Команда2 | Дата | Тур";
+  } else if (separator === "vs") {
+    separatorLabel = "vs";
+    separatorDisplay = "vs";
+    example1 = "Manchester vs Liverpool | 20.12.2025 18:00 | Тур 1";
+    example2 = "Real Madrid vs Barcelona | 21.12.2025 20:00 | Тур 1";
+    formatExample = "Команда1 vs Команда2 | Дата | Тур";
+  }
+
+  // Обновляем плейсхолдер в textarea
+  textarea.placeholder = `Вставьте матчи в формате:\nКоманда1 ${separatorLabel} Команда2 | Дата (ДД.ММ.YYYY ЧЧ:MM) | Тур\n\nПример:\n${example1}\n${example2}`;
+
+  // Обновляем превью разделителя рядом с лейблом
+  if (separatorPreview) {
+    separatorPreview.textContent = separatorDisplay;
+  }
+
+  // Обновляем описание разделителя рядом с селектом (берём из data-атрибута)
+  const separatorDescriptionLabel = document.getElementById(
+    "separatorDescription"
+  );
+  if (separatorDescriptionLabel) {
+    separatorDescriptionLabel.textContent = `(${separatorDescription})`;
+  }
+
+  // Обновляем формат в инструкциях
+  if (instructionFormat) {
+    instructionFormat.textContent = formatExample;
+  }
+
+  // Обновляем описание разделителя в инструкциях (весь текст li)
+  const instructionSeparatorText = document.getElementById(
+    "instructionSeparatorText"
+  );
+  if (instructionSeparatorText) {
+    instructionSeparatorText.innerHTML = `Разделитель команд: <strong>${separatorDisplay}</strong> (${separatorDescription})`;
+  }
+}
+
+// Добавляем слушатель при загрузке страницы
+document.addEventListener("DOMContentLoaded", function () {
+  const separatorSelect = document.getElementById("importSeparator");
+  if (separatorSelect) {
+    separatorSelect.addEventListener("change", updateImportSeparatorPreview);
+  }
+});
+
 async function submitImportMatches(event) {
   event.preventDefault();
 
   const importData = document.getElementById("importMatchesData").value.trim();
   const eventId = document.getElementById("importEventId").value;
+
   const includeDates = document.getElementById("importIncludeDate").checked;
+  const separator = document.getElementById("importSeparator").value;
 
   if (!eventId) {
     alert("❌ Выберите турнир");
@@ -5661,8 +5736,18 @@ async function submitImportMatches(event) {
     const datePart = includeDates ? parts[1] || "" : "";
     const roundPart = includeDates ? parts[2] || "" : parts[1] || "";
 
-    // Парсим команды (разделитель: \ с опциональными пробелами)
-    const teams = teamsPart.split(/\s*\\\s*/);
+    // Парсим команды (разделитель выбирается из селекта)
+    let teams;
+    if (separator === "\\") {
+      teams = teamsPart.split(/\s*\\\s*/);
+    } else if (separator === "-") {
+      teams = teamsPart.split(/\s*-\s*/);
+    } else if (separator === "vs") {
+      teams = teamsPart.split(/\s+vs\s+/i);
+    } else {
+      teams = teamsPart.split(/\s*\\\s*/); // по умолчанию
+    }
+
     if (teams.length < 1 || !teams[0].trim()) {
       errors.push(`Строка ${index + 1}: Не указана первая команда`);
       return;
