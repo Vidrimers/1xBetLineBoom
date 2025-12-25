@@ -1491,7 +1491,8 @@ app.get("/api/events", (req, res) => {
          FROM events e 
          LEFT JOIN matches m ON e.id = m.event_id 
          WHERE e.status = 'active' 
-         GROUP BY e.id`
+         GROUP BY e.id
+         ORDER BY e.start_date ASC, e.created_at ASC`
       )
       .all();
     res.json(events);
