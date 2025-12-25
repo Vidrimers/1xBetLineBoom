@@ -1441,22 +1441,66 @@ export function startBot() {
         handleStatus(msg);
         break;
       case "📅 Турниры":
-        handleTournaments(msg.chat.id, msg);
+        handleTournaments(msg.chat.id, msg).catch((err) => {
+          console.error("Ошибка в handleTournaments:", err);
+          sendMessageWithThread(
+            msg.chat.id,
+            "⚠️ Ошибка при загрузке турниров",
+            {
+              __msg: msg,
+              parse_mode: "HTML",
+            }
+          );
+        });
         break;
       case "💰 Мои ставки":
-        handleMyBets(msg.chat.id, msg);
+        handleMyBets(msg.chat.id, msg).catch((err) => {
+          console.error("Ошибка в handleMyBets:", err);
+          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке ставок", {
+            __msg: msg,
+            parse_mode: "HTML",
+          });
+        });
         break;
       case "👤 Профиль":
-        handleProfile(msg);
+        handleProfile(msg).catch((err) => {
+          console.error("Ошибка в handleProfile:", err);
+          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке профиля", {
+            __msg: msg,
+            parse_mode: "HTML",
+          });
+        });
         break;
       case "🏆 Мои награды":
-        handleMyAwards(msg.chat.id, msg);
+        handleMyAwards(msg.chat.id, msg).catch((err) => {
+          console.error("Ошибка в handleMyAwards:", err);
+          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке наград", {
+            __msg: msg,
+            parse_mode: "HTML",
+          });
+        });
         break;
       case "📈 Статистика":
-        handleStats(msg);
+        handleStats(msg).catch((err) => {
+          console.error("Ошибка в handleStats:", err);
+          sendMessageWithThread(
+            msg.chat.id,
+            "⚠️ Ошибка при загрузке статистики",
+            {
+              __msg: msg,
+              parse_mode: "HTML",
+            }
+          );
+        });
         break;
       case "⚽ Ближайший матч":
-        handleNextMatch(msg.chat.id, msg);
+        handleNextMatch(msg.chat.id, msg).catch((err) => {
+          console.error("Ошибка в handleNextMatch:", err);
+          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке матчей", {
+            __msg: msg,
+            parse_mode: "HTML",
+          });
+        });
         break;
       case "🌐 Открыть сайт":
         logUserAction(msg, "Нажата кнопка: Открыть сайт");
