@@ -6880,3 +6880,180 @@ async function deleteAvatar() {
     console.error("❌ Ошибка при удалении аватара:", error);
   }
 }
+
+// ===== DRAG-TO-SCROLL ФУНКЦИОНАЛЬНОСТЬ =====
+// Позволяет перетаскивать sticky divs для скролла страницы
+
+class DragToScroll {
+  constructor() {
+    this.isDragging = false;
+    this.startY = 0;
+    this.scrollTop = 0;
+    this.draggedElement = null;
+
+    this.onMouseDown = this.onMouseDown.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
+    this.onTouchStart = this.onTouchStart.bind(this);
+    this.onTouchMove = this.onTouchMove.bind(this);
+    this.onTouchEnd = this.onTouchEnd.bind(this);
+  }
+
+  initElement(element) {
+    if (!element) return;
+
+    // Указываем, что элемент можно перетаскивать
+    element.style.cursor = "grab";
+    element.style.userSelect = "none";
+    element.style.webkitUserSelect = "none";
+    element.style.touchAction = "manipulation";
+
+    // Mouse events
+    element.addEventListener("mousedown", this.onMouseDown);
+
+    // Touch events
+    element.addEventListener("touchstart", this.onTouchStart, {
+      passive: true,
+    });
+  }
+
+  onMouseDown(e) {
+    if (e.button !== 0) return; // Только левая кнопка мыши
+
+    // Если клик был на интерактивном элементе (кнопка, ссылка, инпут и т.д.), игнорируем
+    const target = e.target;
+    if (
+      target.tagName === "BUTTON" ||
+      target.tagName === "A" ||
+      target.tagName === "INPUT" ||
+      target.closest("button") ||
+      target.closest("a") ||
+      target.closest("input")
+    ) {
+      return;
+    }
+
+    // Предотвращаем выделение текста и другие стандартные действия
+    e.preventDefault();
+
+    this.isDragging = true;
+    this.draggedElement = e.currentTarget;
+    this.startY = e.clientY;
+    this.scrollTop = window.scrollY;
+
+    this.draggedElement.style.cursor = "grabbing";
+
+    document.addEventListener("mousemove", this.onMouseMove);
+    document.addEventListener("mouseup", this.onMouseUp);
+  }
+
+  onMouseMove = (e) => {
+    if (!this.isDragging) return;
+
+    e.preventDefault();
+
+    const delta = e.clientY - this.startY;
+    window.scrollTo(0, this.scrollTop - delta);
+  };
+
+  onMouseUp = (e) => {
+    if (!this.isDragging) return;
+
+    e.preventDefault();
+
+    this.isDragging = false;
+    if (this.draggedElement) {
+      this.draggedElement.style.cursor = "grab";
+    }
+
+    document.removeEventListener("mousemove", this.onMouseMove);
+    document.removeEventListener("mouseup", this.onMouseUp);
+  };
+
+  onTouchStart(e) {
+    if (e.touches.length !== 1) return;
+
+    // Если touch был на интерактивном элементе, игнорируем
+    const target = e.target;
+    if (
+      target.tagName === "BUTTON" ||
+      target.tagName === "A" ||
+      target.tagName === "INPUT" ||
+      target.closest("button") ||
+      target.closest("a") ||
+      target.closest("input")
+    ) {
+      return;
+    }
+
+    // Предотвращаем стандартное поведение для touch
+    e.preventDefault();
+
+    this.isDragging = true;
+    this.draggedElement = e.currentTarget;
+    this.startY = e.touches[0].clientY;
+    this.scrollTop = window.scrollY;
+
+    document.addEventListener("touchmove", this.onTouchMove, {
+      passive: false,
+    });
+    document.addEventListener("touchend", this.onTouchEnd);
+  }
+
+  onTouchMove = (e) => {
+    if (!this.isDragging) return;
+
+    e.preventDefault();
+
+    const delta = e.touches[0].clientY - this.startY;
+    window.scrollTo(0, this.scrollTop - delta);
+  };
+
+  onTouchEnd = (e) => {
+    if (!this.isDragging) return;
+
+    e.preventDefault();
+
+    this.isDragging = false;
+
+    document.removeEventListener("touchmove", this.onTouchMove);
+    document.removeEventListener("touchend", this.onTouchEnd);
+  };
+}
+
+// Инициализируем drag-to-scroll при загрузке страницы
+const dragToScroll = new DragToScroll();
+
+// Инициализация элементов для перетаскивания
+function initDragToScroll() {
+  // Ищем все sticky заголовки
+  const stickyHeaders = document.querySelectorAll(
+    '[style*="position: sticky"]'
+  );
+  stickyHeaders.forEach((header) => {
+    dragToScroll.initElement(header);
+  });
+
+  // Также инициализируем roundsFilterContainer
+  const roundsFilterContainer = document.getElementById(
+    "roundsFilterContainer"
+  );
+  if (roundsFilterContainer) {
+    dragToScroll.initElement(roundsFilterContainer);
+  }
+}
+
+// Вызываем инициализацию при загрузке DOM
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDragToScroll);
+} else {
+  initDragToScroll();
+}
+
+// Также инициализируем при каждом обновлении контента
+const originalDisplayMatches = displayMatches;
+displayMatches = function (...args) {
+  const result = originalDisplayMatches.apply(this, args);
+  setTimeout(initDragToScroll, 100);
+  return result;
+};

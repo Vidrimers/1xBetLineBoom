@@ -224,8 +224,19 @@ button:active {
   top: 0;
   left: 0;
   padding-top: 10px;
-  touch-action: auto;
+  touch-action: manipulation;
   -webkit-touch-callout: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.sticky-header:active {
+  cursor: grabbing;
+  background: rgba(50, 55, 70, 1);
 }
 
 .my-bets-title {
@@ -236,11 +247,18 @@ button:active {
   top: 0;
   left: 0;
   padding: 10px 0;
-  touch-action: auto;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  cursor: grab;
+  transition: background-color 0.2s ease;
+}
+
+.my-bets-title:active {
+  cursor: grabbing;
+  background: rgba(50, 55, 70, 1);
 }
 .my-bets-list {
   z-index: 1;
