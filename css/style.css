@@ -1508,7 +1508,8 @@ button.tab-btn:hover {
 
 /* Кнопки фильтрации по турам */
 .round-filter-btn {
-  padding: 6px 12px;
+  /* padding: 6px 12px; */
+  padding: 4px 7px;
   font-size: 0.8em;
   background: rgba(50, 55, 70, 0.7);
   border: 1px solid #3a7bd5;
