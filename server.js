@@ -482,25 +482,75 @@ function writeBetLog(action, data) {
 
 // Функция для проверки и отправки напоминаний непроголосовавших пользователей за 3 часа до матча
 async function checkAndRemindNonVoters() {
+  console.log(
+    `\n========== ⏰ checkAndRemindNonVoters ВЫЗВАНА В ${new Date().toISOString()} ==========`
+  );
   try {
     const now = new Date();
     const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000);
 
-    // Получаем матчи, которые начнутся в течение 3 часов
-    const upcomingMatches = db
+    console.log(
+      `⏰ checkAndRemindNonVoters: Ищем матчи от ${now.toISOString()} (${now.getTime()}) до ${threeHoursLater.toISOString()} (${threeHoursLater.getTime()})`
+    );
+
+    // Получаем только матчи БЕЗ победителя И С датой для проверки
+    const allMatches = db
       .prepare(
         `
       SELECT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name
       FROM matches m
       JOIN events e ON m.event_id = e.id
-      WHERE m.match_date > ? AND m.match_date <= ? AND m.winner IS NULL
+      WHERE m.winner IS NULL AND m.match_date IS NOT NULL
       ORDER BY m.match_date ASC
+      LIMIT 20
     `
       )
-      .all(now.toISOString(), threeHoursLater.toISOString());
+      .all();
+
+    console.log(`⏰ Матчей без победителя и с датой: ${allMatches.length}`);
+
+    // Логируем структуру матчей для отладки
+    allMatches.forEach((match) => {
+      const matchTime = new Date(match.match_date);
+      const diffMs = matchTime.getTime() - now.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      console.log(
+        `⏰ Матч: ${match.team1_name} vs ${match.team2_name}, дата: ${
+          match.match_date
+        }, через ${diffHours.toFixed(2)} часов`
+      );
+    });
+
+    // Получаем матчи, которые начнутся в течение 3 часов
+    const upcomingMatches = allMatches.filter((match) => {
+      const matchTime = new Date(match.match_date);
+      const inWindow = matchTime > now && matchTime <= threeHoursLater;
+      if (!inWindow) {
+        const diffMs = matchTime.getTime() - now.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        console.log(
+          `⏰   ${match.team1_name} vs ${match.team2_name}: дата ${
+            match.match_date
+          }, через ${diffHours.toFixed(2)} часов - ИСКЛЮЧЕН`
+        );
+      }
+      return inWindow;
+    });
+
+    console.log(
+      `⏰ Найдено ${upcomingMatches.length} матчей в течение 3 часов`
+    );
+
+    if (upcomingMatches.length === 0) {
+      console.log(`⏰ Нет матчей для проверки напоминаний`);
+    }
 
     // Для каждого матча проверяем непроголосовавших пользователей
     for (const match of upcomingMatches) {
+      console.log(
+        `⏰ Проверяем матч: ${match.team1_name} vs ${match.team2_name} (${match.match_date})`
+      );
+
       // Проверяем, было ли уже отправлено напоминание для этого матча
       const existingReminder = db
         .prepare("SELECT id FROM sent_reminders WHERE match_id = ?")
@@ -508,6 +558,7 @@ async function checkAndRemindNonVoters() {
 
       if (existingReminder) {
         // Напоминание уже было отправлено, пропускаем
+        console.log(`⏰ Напоминание уже было отправлено для матча ${match.id}`);
         continue;
       }
 
@@ -517,6 +568,14 @@ async function checkAndRemindNonVoters() {
           "SELECT id, username, telegram_username FROM users WHERE telegram_group_reminders_enabled = 1"
         )
         .all();
+
+      console.log(
+        `⏰ Всего пользователей с включёнными напоминаниями: ${allUsers.length}`
+      );
+
+      if (allUsers.length === 0) {
+        console.log(`⏰ ⚠️ НЕТ ПОЛЬЗОВАТЕЛЕЙ С ВКЛЮЧЕННЫМИ НАПОМИНАНИЯМИ!`);
+      }
 
       // Получаем пользователей, которые уже сделали ставку на этот матч
       const usersWithBets = db
@@ -528,12 +587,20 @@ async function checkAndRemindNonVoters() {
         .all(match.id)
         .map((row) => row.user_id);
 
+      console.log(
+        `⏰ Пользователей с ставками на этот матч: ${usersWithBets.length}`
+      );
+
       // Находим пользователей, которые НЕ сделали ставку
       const nonVoters = allUsers.filter(
         (user) => !usersWithBets.includes(user.id)
       );
 
       if (nonVoters.length > 0) {
+        console.log(
+          `⏰ Найдено ${nonVoters.length} непроголосовавших пользователей для матча ${match.id}`
+        );
+
         // Форматируем дату и время матча
         const matchDateTime = new Date(match.match_date);
         const matchDate = matchDateTime.toLocaleDateString("ru-RU", {
@@ -570,15 +637,33 @@ ${mentions}
 
 🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
 
-        await sendGroupNotification(message);
+        console.log(`⏰ Отправляем напоминание в группу для матча ${match.id}`);
+        console.log(`📝 Сообщение: ${message.substring(0, 100)}...`);
+
+        try {
+          await sendGroupNotification(message);
+          console.log(`✅ sendGroupNotification выполнена успешно`);
+        } catch (err) {
+          console.error(
+            `❌ ОШИБКА при отправке sendGroupNotification: ${err.message}`
+          );
+          console.error(`   ${err.stack}`);
+        }
 
         // Записываем в БД, что напоминание было отправлено
-        db.prepare("INSERT INTO sent_reminders (match_id) VALUES (?)").run(
-          match.id
-        );
-
+        try {
+          db.prepare("INSERT INTO sent_reminders (match_id) VALUES (?)").run(
+            match.id
+          );
+          console.log(
+            `📢 Запись в БД добавлена для матча: ${match.team1_name} vs ${match.team2_name}`
+          );
+        } catch (err) {
+          console.error(`❌ ОШИБКА при добавлении в БД: ${err.message}`);
+        }
+      } else {
         console.log(
-          `📢 Напоминание отправлено для матча: ${match.team1_name} vs ${match.team2_name}`
+          `⏰ Нет непроголосовавших пользователей для матча ${match.id} (все сделали ставку)`
         );
       }
     }
@@ -594,21 +679,30 @@ ${mentions}
 async function checkAndNotifyMatchStart() {
   try {
     const now = new Date();
-    // Проверяем матчи, которые начались в течение последней минуты
-    const oneMinuteAgo = new Date(now.getTime() - 1 * 60 * 1000);
+    // Проверяем матчи, которые начались в течение последних 30 минут
+    // (может быть задержка в уведомлении, поэтому берем больше времени)
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
 
-    // Получаем матчи, у которых была ставка в очереди отправки
+    console.log(
+      `⚽ checkAndNotifyMatchStart: Ищем матчи от ${thirtyMinutesAgo.toISOString()} до ${now.toISOString()}`
+    );
+
+    // Получаем матчи, которые начались в этом диапазоне
     const recentlyStartedMatches = db
       .prepare(
         `
       SELECT DISTINCT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name
       FROM matches m
       JOIN events e ON m.event_id = e.id
-      WHERE m.match_date > ? AND m.match_date <= ? AND m.winner IS NULL
+      WHERE m.match_date > ? AND m.match_date <= ? AND m.winner IS NULL AND m.match_date IS NOT NULL
       ORDER BY m.match_date ASC
     `
       )
-      .all(oneMinuteAgo.toISOString(), now.toISOString());
+      .all(thirtyMinutesAgo.toISOString(), now.toISOString());
+
+    console.log(
+      `⚽ Найдено ${recentlyStartedMatches.length} матчей которые начались недавно`
+    );
 
     if (recentlyStartedMatches.length === 0) {
       return;
@@ -619,13 +713,12 @@ async function checkAndNotifyMatchStart() {
     for (const match of recentlyStartedMatches) {
       // Проверяем, было ли уже отправлено уведомление о начале этого матча
       const existingNotification = db
-        .prepare(
-          "SELECT id FROM sent_reminders WHERE match_id = ? AND sent_at > datetime('now', '-5 minutes')"
-        )
+        .prepare("SELECT id FROM sent_reminders WHERE match_id = ?")
         .get(match.id);
 
-      // Пропускаем, если уведомление уже было отправлено недавно
+      // Пропускаем, если уведомление уже было отправлено
       if (existingNotification) {
+        console.log(`⚽ Уведомление для матча ${match.id} уже было отправлено`);
         continue;
       }
 
@@ -688,7 +781,9 @@ ${matchesText}
       }
 
       console.log(
-        `⚽ Уведомление о начале ${matchCount} матча(ей) отправлено в ${matchTime}`
+        `✅ Уведомление о начале ${matchCount} матча(ей) отправлено: ${matches
+          .map((m) => `${m.team1_name} vs ${m.team2_name}`)
+          .join(", ")}`
       );
     }
   } catch (error) {
@@ -3959,6 +4054,22 @@ app.post("/api/admin/matches", (req, res) => {
       .json({ error: "Турнир, команда 1 и команда 2 обязательны" });
   }
 
+  // Проверяем дату матча
+  if (!match_date) {
+    return res.status(400).json({
+      error: "Дата матча обязательна",
+    });
+  }
+
+  // Проверяем что дата валидная
+  const dateObj = new Date(match_date);
+  if (isNaN(dateObj.getTime())) {
+    return res.status(400).json({
+      error:
+        "Неверный формат даты. Используйте ISO формат (YYYY-MM-DDTHH:mm:ss)",
+    });
+  }
+
   try {
     const result = db
       .prepare(
@@ -4172,6 +4283,23 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
 
       if (!currentMatch) {
         return res.status(404).json({ error: "Матч не найден" });
+      }
+
+      // Проверяем была ли изменена дата матча
+      const dateChanged =
+        match_date !== undefined && match_date !== currentMatch.match_date;
+
+      if (dateChanged) {
+        console.log(
+          `⏰ Дата матча изменена! Удаляем отправленные напоминания для матча ${matchId}`
+        );
+        // Удаляем все напоминания для этого матча, чтобы они отправились заново с новой датой
+        db.prepare("DELETE FROM sent_reminders WHERE match_id = ?").run(
+          matchId
+        );
+        console.log(
+          `✅ Напоминания удалены. При новой дате напоминание отправится заново.`
+        );
       }
 
       db.prepare(

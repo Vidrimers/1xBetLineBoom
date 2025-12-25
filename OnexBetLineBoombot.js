@@ -138,13 +138,25 @@ async function processPendingNotificationsForUser(telegramUsername, chatId) {
 
 // Вспомогательная функция для отправки сообщения с поддержкой THREAD_ID
 async function sendMessageWithThread(chatId, text, options = {}) {
+  console.log(`📨 sendMessageWithThread: START`);
+
   if (!bot) {
     console.error("❌ Бот еще не инициализирован!");
     return;
   }
+  console.log(`✅ Бот инициализирован`);
 
   // Убеждаемся что chatId - число для правильного сравнения
   const chatIdNum = typeof chatId === "string" ? parseInt(chatId, 10) : chatId;
+
+  // DEBUG логирование
+  console.log(
+    `🔍 sendMessageWithThread: chatId=${chatId}, chatIdNum=${chatIdNum}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, equals=${
+      chatIdNum === TELEGRAM_CHAT_ID
+    }`
+  );
+
+  console.log(`📨 Текст (первые 50 символов): ${text.substring(0, 50)}...`);
 
   // Извлекаем msg из опций если он там есть
   const msg = options.__msg || null;
@@ -159,7 +171,7 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   if (msg && msg.message_thread_id) {
     messageOptions.message_thread_id = msg.message_thread_id;
     console.log(
-      `� Ответ в поток ${msg.message_thread_id} (от сообщения в группе)`
+      `📨 Ответ в поток ${msg.message_thread_id} (от сообщения в группе)`
     );
   }
   // Иначе, если это основной чат с потоком, добавляем default message_thread_id
@@ -173,7 +185,20 @@ async function sendMessageWithThread(chatId, text, options = {}) {
     console.log(`📨 Отправка сообщения в ${chatIdNum} (без потока)`);
   }
 
-  return await bot.sendMessage(chatIdNum, text, messageOptions);
+  console.log(`📨 Вызываем bot.sendMessage с параметрами:`);
+  console.log(`   chatIdNum: ${chatIdNum}`);
+  console.log(`   messageOptions: ${JSON.stringify(messageOptions)}`);
+
+  try {
+    const result = await bot.sendMessage(chatIdNum, text, messageOptions);
+    console.log(
+      `✅ bot.sendMessage завершилась успешно, message_id: ${result.message_id}`
+    );
+    return result;
+  } catch (err) {
+    console.error(`❌ bot.sendMessage вызвала ошибку: ${err.message}`);
+    throw err;
+  }
 }
 
 // Специальная функция для ответа на сообщение в потоке (сохраняет поток)
@@ -471,18 +496,29 @@ function stopNotifWorker() {
 // Функция для отправки сообщения в группы
 export async function sendGroupNotification(message) {
   try {
+    console.log(`🔔 sendGroupNotification: Начало отправки сообщения`);
+    console.log(`   Длина сообщения: ${message.length} символов`);
+
     if (!bot) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
+    console.log(`✅ Бот инициализирован`);
+
     // Если TELEGRAM_CHAT_ID содержит несколько чатов, разделяем их
     const chatIds = process.env.TELEGRAM_CHAT_ID.includes(",")
       ? process.env.TELEGRAM_CHAT_ID.split(",").map((id) =>
           parseInt(id.trim(), 10)
         )
       : [TELEGRAM_CHAT_ID]; // Используем уже спарсённую переменную
+
+    console.log(
+      `🔔 sendGroupNotification: Чатов для отправки: ${chatIds.length}`
+    );
+
     for (const chatId of chatIds) {
       try {
+        console.log(`🔔 sendGroupNotification: Отправляем в чат ${chatId}...`);
         await sendMessageWithThread(chatId, message);
         console.log(`✅ Сообщение отправлено в группу ${chatId}`);
       } catch (err) {
@@ -1201,14 +1237,39 @@ export function startBot() {
                 JSON.stringify(matches[0], null, 2)
               );
               matches.forEach((match) => {
-                // Фильтруем матчи - берём только те что не старше 5 дней от текущего момента
                 const matchDate = new Date(match.match_date);
-                if (matchDate >= fiveDaysAgo) {
-                  allMatches.push({
-                    ...match,
-                    event_name: event.name,
-                  });
+
+                // Не показываем матчи которые не имеют даты
+                if (!match.match_date) {
+                  console.log(
+                    `📍 Пропускаем матч ${match.team1_name} vs ${match.team2_name} - нет даты`
+                  );
+                  return;
                 }
+
+                // Показываем только матчи БЕЗ результата (future/ongoing)
+                if (match.winner) {
+                  console.log(
+                    `📍 Пропускаем матч ${match.team1_name} vs ${match.team2_name} - есть результат`
+                  );
+                  return;
+                }
+
+                // Не показываем очень старые матчи (больше 30 дней в прошлом)
+                const thirtyDaysAgo = new Date(
+                  now.getTime() - 30 * 24 * 60 * 60 * 1000
+                );
+                if (matchDate < thirtyDaysAgo) {
+                  console.log(
+                    `📍 Пропускаем матч ${match.team1_name} vs ${match.team2_name} - слишком старый`
+                  );
+                  return;
+                }
+
+                allMatches.push({
+                  ...match,
+                  event_name: event.name,
+                });
               });
             }
           }
@@ -1224,26 +1285,51 @@ export function startBot() {
         `📍 Всего загружено ${allMatches.length} матчей (из них после фильтра по 5 дням)`
       );
 
-      // Разделяем матчи на идущие (без результата и прошедшая дата) и будущие (без результата и будущая дата)
+      // Разделяем матчи на идущие и будущие
+      // Показываем только матчи БЕЗ результата И С датой (ongoing и future)
       const ongoingMatches = [];
       const futureMatches = [];
 
       console.log(`📍 Начинаем разделение матчей... Текущее время: ${now}`);
       allMatches.forEach((match) => {
+        // Пропускаем матчи которые не имеют даты
+        if (!match.match_date) {
+          console.log(
+            `📍 Пропускаем матч: ${match.team1_name} vs ${match.team2_name} - нет даты (null)`
+          );
+          return;
+        }
+
+        // Пропускаем матчи с результатом (завершенные)
+        if (match.winner) {
+          console.log(
+            `📍 Пропускаем матч: ${match.team1_name} vs ${match.team2_name} - есть результат`
+          );
+          return;
+        }
+
         const matchDate = new Date(match.match_date);
+
+        // Пропускаем если дата невалидна (это происходит когда match_date = null)
+        if (isNaN(matchDate.getTime())) {
+          console.log(
+            `📍 Пропускаем матч: ${match.team1_name} vs ${match.team2_name} - невалидная дата`
+          );
+          return;
+        }
+
         console.log(
-          `📍 Проверяем матч: ${match.team1_name} vs ${match.team2_name}, дата: ${matchDate}, winner: ${match.winner}`
+          `📍 Проверяем матч: ${match.team1_name} vs ${match.team2_name}, дата: ${matchDate}`
         );
-        if (!match.winner) {
-          if (matchDate <= now) {
-            ongoingMatches.push(match);
-            console.log(`  → Добавлен в ongoing`);
-          } else {
-            futureMatches.push(match);
-            console.log(`  → Добавлен в future`);
-          }
+
+        // Матчи которые в прошлом - это "идущие" матчи (ongoing)
+        // Матчи которые в будущем - это "будущие" матчи (future)
+        if (matchDate <= now) {
+          ongoingMatches.push(match);
+          console.log(`  → Добавлен в ongoing (идет прямо сейчас)`);
         } else {
-          console.log(`  → Пропущен (есть winner)`);
+          futureMatches.push(match);
+          console.log(`  → Добавлен в future (будущий матч)`);
         }
       });
 
