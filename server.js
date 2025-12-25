@@ -1530,13 +1530,13 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
               -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
               WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
                 CASE 
-                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
-                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
-                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
-                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
-                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
-                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
-                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 2
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
                   ELSE 0
                 END
               ELSE 0
@@ -1559,13 +1559,13 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
               -- Финальные параметры
               WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
                 CASE 
-                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
-                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
-                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
-                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
-                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
-                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
-                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 2
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 2
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 2
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 2
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 2
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 2
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 2
                   ELSE 0
                 END
               ELSE 0 
@@ -2735,13 +2735,13 @@ app.get("/api/participants", (req, res) => {
               -- Финальные параметры
               WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
                 CASE 
-                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
-                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
-                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
-                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
-                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
-                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
-                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 2
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 2
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 2
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 2
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 2
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 2
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 2
                   ELSE 0
                 END
               ELSE 0 
@@ -2945,13 +2945,13 @@ app.get("/api/user/:userId/profile", (req, res) => {
               -- Финальные параметры
               WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
                 CASE 
-                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
-                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
-                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
-                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
-                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
-                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
-                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 2
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 2
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 2
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 2
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 2
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 2
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 2
                   ELSE 0
                 END
               ELSE 0 
