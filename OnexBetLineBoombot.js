@@ -9,6 +9,9 @@ dotenv.config();
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const THREAD_ID = process.env.THREAD_ID
+  ? parseInt(process.env.THREAD_ID, 10)
+  : null;
 const SERVER_IP = process.env.SERVER_IP || "localhost";
 const SERVER_PORT = process.env.PORT || "3000";
 const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
@@ -81,6 +84,26 @@ async function registerTelegramUser(msg) {
 
 // ===== ЭКСПОРТИРУЕМЫЕ ФУНКЦИИ (УТИЛИТЫ) =====
 
+// Вспомогательная функция для отправки сообщения с поддержкой THREAD_ID
+async function sendMessageWithThread(chatId, text, options = {}) {
+  if (!bot) {
+    console.error("❌ Бот еще не инициализирован!");
+    return;
+  }
+
+  const messageOptions = {
+    ...options,
+    parse_mode: "HTML",
+  };
+
+  // Если это основной чат с потоком, добавляем message_thread_id
+  if (chatId == TELEGRAM_CHAT_ID && THREAD_ID) {
+    messageOptions.message_thread_id = THREAD_ID;
+  }
+
+  return await sendMessageWithThread(chatId, text, messageOptions);
+}
+
 // Функция для логирования действий пользователя админу
 async function logUserAction(msg, action) {
   try {
@@ -117,7 +140,7 @@ export async function sendAdminNotification(message) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    await bot.sendMessage(TELEGRAM_ADMIN_ID, message, { parse_mode: "HTML" });
+    await sendMessageWithThread(TELEGRAM_ADMIN_ID, message);
     console.log(new Date().toISOString(), "✅ Уведомление отправлено админу");
   } catch (error) {
     console.error(
@@ -186,20 +209,32 @@ async function trySendRecord(record) {
   const { payload } = record;
   try {
     if (bot) {
-      await bot.sendMessage(payload.to, payload.message, {
-        parse_mode: "HTML",
-      });
+      const options = { parse_mode: "HTML" };
+
+      // Если отправляем в основной чат с потоком, добавляем message_thread_id
+      if (payload.to == TELEGRAM_CHAT_ID && THREAD_ID) {
+        options.message_thread_id = THREAD_ID;
+      }
+
+      await sendMessageWithThread(payload.to, payload.message, options);
     } else {
+      const body = {
+        chat_id: payload.to,
+        text: payload.message,
+        parse_mode: "HTML",
+      };
+
+      // Если отправляем в основной чат с потоком, добавляем message_thread_id
+      if (payload.to == TELEGRAM_CHAT_ID && THREAD_ID) {
+        body.message_thread_id = THREAD_ID;
+      }
+
       await fetch(
         `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: payload.to,
-            text: payload.message,
-            parse_mode: "HTML",
-          }),
+          body: JSON.stringify(body),
         }
       );
     }
@@ -316,9 +351,7 @@ export async function sendGroupNotification(message) {
     const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
     for (const chatId of chatIds) {
       try {
-        await bot.sendMessage(chatId, message, {
-          parse_mode: "HTML",
-        });
+        await sendMessageWithThread(chatId, message);
         console.log(`✅ Сообщение отправлено в группу ${chatId}`);
       } catch (err) {
         console.error(
@@ -339,9 +372,7 @@ export async function sendUserMessage(userId, message) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    await bot.sendMessage(userId, message, {
-      parse_mode: "HTML",
-    });
+    await sendMessageWithThread(userId, message);
     console.log(`✅ Сообщение отправлено пользователю ${userId}`);
   } catch (error) {
     console.error(
@@ -467,16 +498,13 @@ export function startBot() {
     // Логируем действие
     logUserAction(msg, "Нажата команда /start");
 
-    bot.sendMessage(
+    sendMessageWithThread(
       chatId,
       `👋 Привет, ${firstName}!\n\n` +
         `🎯 Я бот для 1xBetLineBoom - сайта для ставок на матчи.\n\n` +
         `Используй кнопки ниже или команды:\n` +
         `/help - показать справку`,
-      {
-        parse_mode: "HTML",
-        ...mainMenuKeyboard,
-      }
+      mainMenuKeyboard
     );
   });
 
@@ -487,7 +515,7 @@ export function startBot() {
     // Логируем действие
     logUserAction(msg, "Нажата команда /help");
 
-    bot.sendMessage(
+    sendMessageWithThread(
       chatId,
       `<b>📖 Справка по командам:</b>\n\n` +
         `<b>/start</b> - начало работы\n` +
@@ -498,10 +526,7 @@ export function startBot() {
         `<b>/next_match</b> - ближайший матч\n` +
         `<b>/stats</b> - моя статистика\n` +
         `<b>/profile</b> - показать профиль\n`,
-      {
-        parse_mode: "HTML",
-        ...mainMenuKeyboard,
-      }
+      mainMenuKeyboard
     );
   });
 
@@ -509,7 +534,7 @@ export function startBot() {
   const handleStatus = (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Статус");
 
-    bot.sendMessage(
+    sendMessageWithThread(
       chatId,
       `✅ <b>Статус:</b> Сайт работает\n\n` +
         `🌍 Сервер онлайн\n` +
@@ -534,7 +559,7 @@ export function startBot() {
         console.error(
           `Ошибка при загрузке турниров (HTTP ${response.status}): ${SERVER_URL}/api/events`
         );
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` +
             `<i>⚠️ Ошибка при загрузке данных с сервера</i>`,
@@ -548,7 +573,7 @@ export function startBot() {
       const events = await response.json();
 
       if (!events || events.length === 0) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` + `<i>Турниров не найдено</i>`,
           {
@@ -562,7 +587,7 @@ export function startBot() {
       const activeTournaments = events.filter((e) => !e.locked_reason);
 
       if (activeTournaments.length === 0) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `📅 <b>Турниры:</b>\n\n` + `<i>Активных турниров нет</i>`,
           {
@@ -597,7 +622,7 @@ export function startBot() {
 
       messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для просмотра всех деталей</a>`;
 
-      bot.sendMessage(chatId, messageText, {
+      sendMessageWithThread(chatId, messageText, {
         parse_mode: "HTML",
       });
     } catch (error) {
@@ -605,7 +630,7 @@ export function startBot() {
         "Ошибка при загрузке турниров:",
         error && error.message ? error.message : error
       );
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `📅 <b>Турниры:</b>\n\n` + `<i>⚠️ Ошибка при загрузке данных</i>`,
         {
@@ -644,7 +669,7 @@ export function startBot() {
       );
 
       if (!user) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `💰 <b>Мои ставки:</b>\n\n` +
             `Профиль не привязан. Привяжите его на сайте в разделе "👤 Профиль".`,
@@ -681,7 +706,7 @@ export function startBot() {
       const userPendingBets = userBets.filter((bet) => !bet.winner);
 
       if (userPendingBets.length === 0) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `💰 <b>Мои ставки:</b>\n\n` +
             `<i>Активных ставок нет</i>\n\n` +
@@ -743,12 +768,12 @@ export function startBot() {
 
       messageText += `💡 Полный список на сайте.`;
 
-      bot.sendMessage(chatId, messageText, {
+      sendMessageWithThread(chatId, messageText, {
         parse_mode: "HTML",
       });
     } catch (error) {
       console.error("Error in handleMyBets:", error);
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `💰 <b>Мои ставки:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке ставок</i>\n\n` +
@@ -810,7 +835,7 @@ export function startBot() {
         }
       }
 
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `👤 <b>Профиль:</b>\n\n` +
           `<b>Имя в тг:</b> ${firstName}\n` +
@@ -825,7 +850,7 @@ export function startBot() {
       );
     } catch (error) {
       console.error("Error in handleProfile:", error);
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `👤 <b>Профиль:</b>\n\n` +
           `<b>Имя в тг:</b> ${firstName}\n` +
@@ -854,7 +879,7 @@ export function startBot() {
         console.error(
           `Ошибка при загрузке турниров (HTTP ${response.status}): ${SERVER_URL}/api/events`
         );
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>⚠️ Ошибка при загрузке данных с сервера</i>\n\n` +
@@ -869,7 +894,7 @@ export function startBot() {
       const events = await response.json();
 
       if (!events || events.length === 0) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>Турниров не найдено</i>\n\n` +
@@ -964,7 +989,7 @@ export function startBot() {
 
         messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
 
-        bot.sendMessage(chatId, messageText, {
+        sendMessageWithThread(chatId, messageText, {
           parse_mode: "HTML",
         });
         return;
@@ -972,7 +997,7 @@ export function startBot() {
 
       // Если нет идущих матчей, показываем будущие
       if (futureMatches.length === 0) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>Предстоящих матчей не найдено</i>\n\n` +
@@ -1016,7 +1041,7 @@ export function startBot() {
 
       messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
 
-      bot.sendMessage(chatId, messageText, {
+      sendMessageWithThread(chatId, messageText, {
         parse_mode: "HTML",
       });
     } catch (error) {
@@ -1024,7 +1049,7 @@ export function startBot() {
         "Ошибка при загрузке ближайших матчей:",
         error && error.message ? error.message : error
       );
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `⚽ <b>Ближайший матч:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке данных</i>\n\n` +
@@ -1081,7 +1106,7 @@ export function startBot() {
         console.log(
           `[STATS] User not found. Looking for telegram_username: ${telegramUsername}`
         );
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `📊 <b>${firstName}:</b>\n\n` +
             `Ваш профиль не привязан к Telegram аккаунту. Привяжите его на сайте в разделе "👤 Профиль" и попробуйте снова.`,
@@ -1108,7 +1133,7 @@ export function startBot() {
           ? Math.round(((user.won_bets || 0) / totalBets) * 100)
           : 0;
 
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `📊 <b>${displayName}:</b>\n\n` +
           `<b>Ставок за всё время:</b> <i>${totalBets}</i>\n` +
@@ -1130,7 +1155,7 @@ export function startBot() {
       );
     } catch (error) {
       console.error("Error in handleStats:", error);
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `📊 <b>${firstName}:</b>\n\n` +
           `Ошибка при загрузке статистики. Пожалуйста, попробуйте позже.`,
@@ -1170,7 +1195,7 @@ export function startBot() {
       );
 
       if (!user) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `🏆 <b>Мои награды:</b>\n\n` +
             `Профиль не привязан. Привяжите его на сайте в разделе "👤 Профиль".`,
@@ -1191,7 +1216,7 @@ export function startBot() {
       const awards = await awardsResponse.json();
 
       if (!awards || awards.length === 0) {
-        bot.sendMessage(
+        sendMessageWithThread(
           chatId,
           `🏆 <b>Мои награды:</b>\n\n` +
             `<i>Наград пока нет</i>\n\n` +
@@ -1232,12 +1257,12 @@ export function startBot() {
 
       messageText += `💡 Полный список на сайте.`;
 
-      bot.sendMessage(chatId, messageText, {
+      sendMessageWithThread(chatId, messageText, {
         parse_mode: "HTML",
       });
     } catch (error) {
       console.error("Error in handleMyAwards:", error);
-      bot.sendMessage(
+      sendMessageWithThread(
         chatId,
         `🏆 <b>Мои награды:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке наград</i>\n\n` +
@@ -1286,7 +1311,7 @@ export function startBot() {
         break;
       case "🌐 Открыть сайт":
         logUserAction(msg, "Нажата кнопка: Открыть сайт");
-        bot.sendMessage(chatId, `🌐 Открыть сайт:`, {
+        sendMessageWithThread(chatId, `🌐 Открыть сайт:`, {
           parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
@@ -1368,7 +1393,7 @@ export function startBot() {
         }</pre>`;
         try {
           if (bot) {
-            await bot.sendMessage(TELEGRAM_ADMIN_ID, errMsg, {
+            await sendMessageWithThread(TELEGRAM_ADMIN_ID, errMsg, {
               parse_mode: "HTML",
             });
           } else {
