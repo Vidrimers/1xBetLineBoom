@@ -202,6 +202,8 @@ button:active {
 
 #matchesSection {
   max-height: 80vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .section h2 {
@@ -1556,6 +1558,8 @@ button.tab-btn:hover {
   cursor: pointer;
   transition: all 0.2s ease;
   color: #b0b8c8;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .round-filter-btn:hover {
@@ -1602,7 +1606,38 @@ button.tab-btn:hover {
 .edit-rounds-btn:hover {
   background: rgba(50, 55, 70, 0.95);
   border-color: #5a9fd4;
-  color: #e0e6f0;
+}
+#roundsFilterContainer {
+  cursor: grab;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+#roundsFilterContainer:active {
+  cursor: grabbing;
+}
+
+/* Скрытие скроллбара для WebKit браузеров (Chrome, Safari, Edge) */
+#roundsFilterContainer > div::-webkit-scrollbar {
+  display: none;
+}
+
+#roundsFilterScroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Контейнер с кнопками туров для горизонтального скролла */
+#roundsFilterScroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 7px;
+  align-items: center;
+  padding: 8px 10px;
+  height: 100%;
+  /* Ключевое свойство - содержимое займет столько ширины сколько нужно */
+  width: max-content;
 }
 
 /* Модальное окно сортировки туров */

@@ -627,6 +627,12 @@ async function selectEvent(eventId, eventName) {
     addMatchBtn.style.display = "inline-block";
   }
 
+  // Показываем кнопку редактирования туров для админа
+  const editRoundsBtn = document.getElementById("editRoundsBtn");
+  if (editRoundsBtn && isAdmin()) {
+    editRoundsBtn.style.display = "inline-block";
+  }
+
   // Показываем кнопку импорта матчей для админа
   const importMatchesBtn = document.getElementById("importMatchesBtn");
   if (importMatchesBtn && isAdmin()) {
@@ -961,7 +967,7 @@ function displayMatches() {
     }
 
     roundsFilterContainer.style.display = "block";
-    const filterButtons = roundsFilterContainer.querySelector("div");
+    const filterButtons = document.getElementById("roundsFilterScroll");
 
     // Проверяем, является ли текущий пользователем админом
     const isAdmin = currentUser && currentUser.isAdmin;
@@ -981,11 +987,6 @@ function displayMatches() {
       `
         )
         .join("")}
-      ${
-        isAdmin
-          ? '<button class="edit-rounds-btn" onclick="openRoundsOrderModal()" title="Изменить порядок туров">✎</button>'
-          : ""
-      }
     `;
   } else {
     roundsFilterContainer.style.display = "none";
@@ -7043,17 +7044,109 @@ function initDragToScroll() {
   }
 }
 
+// Класс для горизонтального drag-to-scroll (для туров)
+class HorizontalDragScroll {
+  constructor() {
+    this.isDragging = false;
+    this.startX = 0;
+    this.scrollLeft = 0;
+    this.draggedElement = null;
+
+    this.onMouseDown = this.onMouseDown.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
+    this.onTouchStart = this.onTouchStart.bind(this);
+    this.onTouchMove = this.onTouchMove.bind(this);
+    this.onTouchEnd = this.onTouchEnd.bind(this);
+  }
+
+  initElement(element) {
+    if (!element) return;
+
+    element.style.cursor = "grab";
+    element.style.userSelect = "none";
+    element.style.webkitUserSelect = "none";
+    element.style.touchAction = "manipulation";
+
+    element.addEventListener("mousedown", this.onMouseDown);
+    element.addEventListener("touchstart", this.onTouchStart, {
+      passive: true,
+    });
+  }
+
+  onMouseDown(e) {
+    // НЕ игнорируем клики на кнопках - это важно!
+    // Мы хотим перетаскивать ЗА кнопки
+
+    this.isDragging = true;
+    this.draggedElement = e.currentTarget;
+    this.startX = e.clientX;
+    this.scrollLeft = this.draggedElement.scrollLeft;
+
+    this.draggedElement.style.cursor = "grabbing";
+
+    document.addEventListener("mousemove", this.onMouseMove);
+    document.addEventListener("mouseup", this.onMouseUp);
+  }
+
+  onMouseMove = (e) => {
+    if (!this.isDragging) return;
+
+    e.preventDefault();
+
+    const delta = e.clientX - this.startX;
+    this.draggedElement.scrollLeft = this.scrollLeft - delta;
+  };
+
+  onMouseUp = (e) => {
+    if (!this.isDragging) return;
+
+    this.isDragging = false;
+    this.draggedElement.style.cursor = "grab";
+
+    document.removeEventListener("mousemove", this.onMouseMove);
+    document.removeEventListener("mouseup", this.onMouseUp);
+  };
+
+  onTouchStart(e) {
+    this.isDragging = true;
+    this.draggedElement = e.currentTarget;
+    this.startX = e.touches[0].clientX;
+    this.scrollLeft = this.draggedElement.scrollLeft;
+  }
+
+  onTouchMove = (e) => {
+    if (!this.isDragging) return;
+
+    const delta = e.touches[0].clientX - this.startX;
+    this.draggedElement.scrollLeft = this.scrollLeft - delta;
+  };
+
+  onTouchEnd = (e) => {
+    this.isDragging = false;
+  };
+}
+
+// Инициализация горизонтального drag-to-scroll для туров
+function initHorizontalDragScroll() {
+  const horizontalDragScroll = new HorizontalDragScroll();
+  const roundsContainer = document.getElementById("roundsFilterContainer");
+  if (roundsContainer) {
+    horizontalDragScroll.initElement(roundsContainer);
+  }
+}
+
 // Вызываем инициализацию при загрузке DOM
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initDragToScroll);
+  document.addEventListener("DOMContentLoaded", initHorizontalDragScroll);
 } else {
-  initDragToScroll();
+  initHorizontalDragScroll();
 }
 
 // Также инициализируем при каждом обновлении контента
 const originalDisplayMatches = displayMatches;
 displayMatches = function (...args) {
   const result = originalDisplayMatches.apply(this, args);
-  setTimeout(initDragToScroll, 100);
+  setTimeout(initHorizontalDragScroll, 100);
   return result;
 };
