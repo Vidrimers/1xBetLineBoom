@@ -210,6 +210,22 @@ button:active {
   font-size: 1.3em;
   border-bottom: 2px solid #5a9fd4;
   padding-bottom: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Sticky заголовки для мобильного скролла */
+.sticky-header {
+  position: sticky;
+  background: rgba(40, 44, 54, 1);
+  z-index: 2;
+  top: 0;
+  left: 0;
+  padding-top: 10px;
+  touch-action: auto;
+  -webkit-touch-callout: none;
 }
 
 .my-bets-title {
@@ -220,6 +236,11 @@ button:active {
   top: 0;
   left: 0;
   padding: 10px 0;
+  touch-action: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 .my-bets-list {
   z-index: 1;
