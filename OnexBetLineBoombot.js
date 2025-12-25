@@ -702,9 +702,13 @@ export function startBot() {
 
       messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для просмотра всех деталей</a>`;
 
-      sendMessageWithThread(chatId, messageText, {
-        parse_mode: "HTML",
-      });
+      sendMessageWithThread(
+        chatId,
+        messageText,
+        opts("list", {
+          parse_mode: "HTML",
+        })
+      );
     } catch (error) {
       console.error(
         "Ошибка при загрузке турниров:",
@@ -713,9 +717,9 @@ export function startBot() {
       sendMessageWithThread(
         chatId,
         `📅 <b>Турниры:</b>\n\n` + `<i>⚠️ Ошибка при загрузке данных</i>`,
-        {
+        opts("catch", {
           parse_mode: "HTML",
-        }
+        })
       );
     }
   };
@@ -725,6 +729,10 @@ export function startBot() {
   // Команда /my_bets и кнопка 💰 Мои ставки
   const handleMyBets = async (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Мои ставки");
+
+    // Если есть msg, добавляем его во все опции для sendMessageWithThread
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
 
     try {
       const telegramUsername = msg?.from?.username || "";
@@ -752,10 +760,10 @@ export function startBot() {
         sendMessageWithThread(
           chatId,
           `💰 <b>Мои ставки:</b>\n\n` +
-            `Профиль не привязан. Привяжите его на сайте в разделе "👤 Профиль".`,
-          {
+            `Профиль не привязан. Привяжите его на сайте в разделе "⚙️ Настройки".`,
+          opts("noProfile", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -791,9 +799,9 @@ export function startBot() {
           `💰 <b>Мои ставки:</b>\n\n` +
             `<i>Активных ставок нет</i>\n\n` +
             `💡 Сделайте ставку на сайте.`,
-          {
+          opts("noBets", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -848,9 +856,13 @@ export function startBot() {
 
       messageText += `💡 Полный список на сайте.`;
 
-      sendMessageWithThread(chatId, messageText, {
-        parse_mode: "HTML",
-      });
+      sendMessageWithThread(
+        chatId,
+        messageText,
+        opts("list", {
+          parse_mode: "HTML",
+        })
+      );
     } catch (error) {
       console.error("Error in handleMyBets:", error);
       sendMessageWithThread(
@@ -858,9 +870,9 @@ export function startBot() {
         `💰 <b>Мои ставки:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке ставок</i>\n\n` +
           `💡 Используйте сайт для управления ставками.`,
-        {
+        opts("error", {
           parse_mode: "HTML",
-        }
+        })
       );
     }
   };
@@ -874,6 +886,10 @@ export function startBot() {
     const firstName = msg.from.first_name || "—";
 
     logUserAction(msg, "Нажата кнопка/команда: Профиль");
+
+    // Если есть msg, добавляем его во все опции для sendMessageWithThread
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
 
     try {
       // Получаем данные пользователя с сайта
@@ -924,9 +940,9 @@ export function startBot() {
           `<b>ID:</b> ${msg.from.id}\n` +
           `<b>Личные уведомления:</b> ${notificationStatus}\n\n` +
           `💡 Для просмотра полного профиля используйте сайт.`,
-        {
+        opts("success", {
           parse_mode: "HTML",
-        }
+        })
       );
     } catch (error) {
       console.error("Error in handleProfile:", error);
@@ -938,9 +954,9 @@ export function startBot() {
           `<b>ID:</b> ${msg.from.id}\n` +
           `<b>Личные уведомления:</b> —\n\n` +
           `💡 Для просмотра полного профиля используйте сайт.`,
-        {
+        opts("error", {
           parse_mode: "HTML",
-        }
+        })
       );
     }
   };
@@ -950,6 +966,10 @@ export function startBot() {
   // Команда /next_match и кнопка ⚽ Ближайший матч
   const handleNextMatch = async (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Ближайший матч");
+
+    // Если есть msg, добавляем его во все опции для sendMessageWithThread
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
 
     try {
       // Загружаем все турниры с их матчами
@@ -964,9 +984,9 @@ export function startBot() {
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>⚠️ Ошибка при загрузке данных с сервера</i>\n\n` +
             `💡 Используйте сайт для просмотра расписания всех матчей.`,
-          {
+          opts("error", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -979,9 +999,9 @@ export function startBot() {
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>Турниров не найдено</i>\n\n` +
             `💡 Используйте сайт для просмотра расписания всех матчей.`,
-          {
+          opts("noEvents", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -1069,9 +1089,13 @@ export function startBot() {
 
         messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
 
-        sendMessageWithThread(chatId, messageText, {
-          parse_mode: "HTML",
-        });
+        sendMessageWithThread(
+          chatId,
+          messageText,
+          opts("list", {
+            parse_mode: "HTML",
+          })
+        );
         return;
       }
 
@@ -1082,9 +1106,9 @@ export function startBot() {
           `⚽ <b>Ближайший матч:</b>\n\n` +
             `<i>Предстоящих матчей не найдено</i>\n\n` +
             `💡 Используйте сайт для просмотра расписания всех матчей.`,
-          {
+          opts("noFuture", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -1121,9 +1145,13 @@ export function startBot() {
 
       messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
 
-      sendMessageWithThread(chatId, messageText, {
-        parse_mode: "HTML",
-      });
+      sendMessageWithThread(
+        chatId,
+        messageText,
+        opts("future", {
+          parse_mode: "HTML",
+        })
+      );
     } catch (error) {
       console.error(
         "Ошибка при загрузке ближайших матчей:",
@@ -1134,9 +1162,9 @@ export function startBot() {
         `⚽ <b>Ближайший матч:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке данных</i>\n\n` +
           `💡 Используйте сайт для просмотра расписания всех матчей.`,
-        {
+        opts("error", {
           parse_mode: "HTML",
-        }
+        })
       );
     }
   };
@@ -1148,6 +1176,11 @@ export function startBot() {
     const chatId = msg.chat.id;
 
     logUserAction(msg, "Нажата кнопка/команда: Статистика");
+
+    // Если есть msg, добавляем его во все опции для sendMessageWithThread
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
+
     const firstName = msg.from.first_name || "пользователь";
     const telegramUsername = msg.from.username || "";
 
@@ -1189,10 +1222,10 @@ export function startBot() {
         sendMessageWithThread(
           chatId,
           `📊 <b>${firstName}:</b>\n\n` +
-            `Ваш профиль не привязан к Telegram аккаунту. Привяжите его на сайте в разделе "👤 Профиль" и попробуйте снова.`,
-          {
+            `Ваш профиль не привязан к Telegram аккаунту. Привяжите его на сайте в разделе "⚙️ Настройки" и попробуйте снова.`,
+          opts("noProfile", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -1229,9 +1262,9 @@ export function startBot() {
           }</i>\n\n` +
           `<b>Процент побед:</b> <i>${winPercentage}%</i>\n\n` +
           `💡 Детальная статистика доступна на сайте.`,
-        {
+        opts("stats", {
           parse_mode: "HTML",
-        }
+        })
       );
     } catch (error) {
       console.error("Error in handleStats:", error);
@@ -1239,9 +1272,9 @@ export function startBot() {
         chatId,
         `📊 <b>${firstName}:</b>\n\n` +
           `Ошибка при загрузке статистики. Пожалуйста, попробуйте позже.`,
-        {
+        opts("error", {
           parse_mode: "HTML",
-        }
+        })
       );
     }
   };
@@ -1251,6 +1284,10 @@ export function startBot() {
   // Команда /my_awards и кнопка 🏆 Мои награды
   const handleMyAwards = async (chatId, msg = null) => {
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Мои награды");
+
+    // Если есть msg, добавляем его во все опции для sendMessageWithThread
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
 
     try {
       const telegramUsername = msg?.from?.username || "";
@@ -1278,10 +1315,10 @@ export function startBot() {
         sendMessageWithThread(
           chatId,
           `🏆 <b>Мои награды:</b>\n\n` +
-            `Профиль не привязан. Привяжите его на сайте в разделе "👤 Профиль".`,
-          {
+            `Профиль не привязан. Привяжите его на сайте в разделе "⚙️ Настройки".`,
+          opts("noProfile", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -1301,9 +1338,9 @@ export function startBot() {
           `🏆 <b>Мои награды:</b>\n\n` +
             `<i>Наград пока нет</i>\n\n` +
             `💡 Побеждайте в турнирах, чтобы получить награды!`,
-          {
+          opts("noAwards", {
             parse_mode: "HTML",
-          }
+          })
         );
         return;
       }
@@ -1337,9 +1374,13 @@ export function startBot() {
 
       messageText += `💡 Полный список на сайте.`;
 
-      sendMessageWithThread(chatId, messageText, {
-        parse_mode: "HTML",
-      });
+      sendMessageWithThread(
+        chatId,
+        messageText,
+        opts("awards", {
+          parse_mode: "HTML",
+        })
+      );
     } catch (error) {
       console.error("Error in handleMyAwards:", error);
       sendMessageWithThread(
@@ -1347,9 +1388,9 @@ export function startBot() {
         `🏆 <b>Мои награды:</b>\n\n` +
           `<i>⚠️ Ошибка при загрузке наград</i>\n\n` +
           `💡 Используйте сайт для просмотра наград.`,
-        {
+        opts("error", {
           parse_mode: "HTML",
-        }
+        })
       );
     }
   };
