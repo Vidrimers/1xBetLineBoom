@@ -1578,6 +1578,66 @@ app.post("/api/settings/show-tournament-winner", async (req, res) => {
   }
 });
 
+// Получить часовой пояс пользователя
+app.get("/api/user/timezone", (req, res) => {
+  try {
+    const username = req.headers["x-username"] || req.query.username;
+
+    if (!username) {
+      return res.status(400).json({ error: "Не указано имя пользователя" });
+    }
+
+    const user = db
+      .prepare("SELECT timezone FROM users WHERE username = ?")
+      .get(username);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({ timezone: user.timezone || "Europe/Moscow" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Сохранить часовой пояс пользователя
+app.post("/api/user/timezone", (req, res) => {
+  try {
+    const { username, timezone } = req.body;
+
+    if (!username || !timezone) {
+      return res
+        .status(400)
+        .json({ error: "Не указаны username или timezone" });
+    }
+
+    // Проверяем что это корректный часовой пояс
+    const validTimezones = Intl.supportedValuesOf("timeZone");
+    if (!validTimezones.includes(timezone)) {
+      return res
+        .status(400)
+        .json({ error: `Неверный часовой пояс: ${timezone}` });
+    }
+
+    const result = db
+      .prepare("UPDATE users SET timezone = ? WHERE username = ?")
+      .run(timezone, username);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    console.log(
+      `🕐 Часовой пояс пользователя ${username} изменен на ${timezone}`
+    );
+
+    res.json({ success: true, timezone });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 1. Получить все турниры
 app.get("/api/events", (req, res) => {
   try {

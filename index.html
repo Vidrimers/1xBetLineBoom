@@ -499,16 +499,45 @@
                 border-left: 3px solid #00bcd4;
               "
             >
-              <div style="text-align: center">
+              <div>
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
                   🕐 Часовой пояс
                 </h3>
-                <p
-                  style="margin: 0; color: #aaa; font-size: 14px; padding: 15px"
-                >
-                  🚧 Настройка часового пояса находится в разработке. Скоро
-                  сможете выбрать свой часовой пояс!
+                <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
+                  Выберите ваш часовой пояс для корректного отображения времени
+                  матчей
                 </p>
+                <select
+                  id="timezoneSelect"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid #00bcd4;
+                    border-radius: 5px;
+                    color: #aaa;
+                    font-size: 14px;
+                    cursor: pointer;
+                    margin-bottom: 12px;
+                  "
+                >
+                  <option value="">⏳ Загрузка...</option>
+                </select>
+                <button
+                  onclick="saveTimezoneSettings()"
+                  style="
+                    padding: 10px 20px;
+                    background: #00bcd4;
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    width: 100%;
+                  "
+                >
+                  💾 Сохранить часовой пояс
+                </button>
               </div>
             </div>
           </div>

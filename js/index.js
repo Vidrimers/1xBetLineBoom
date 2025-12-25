@@ -1142,15 +1142,9 @@ function displayMatches() {
                 }
                 ${
                   match.match_date
-                    ? `<div style="text-align: center; font-size: 0.85em; color: #b0b8c8; margin: 10px auto;">${new Date(
+                    ? `<div style="text-align: center; font-size: 0.85em; color: #b0b8c8; margin: 10px auto;">${formatMatchTime(
                         match.match_date
-                      ).toLocaleString("ru-RU", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                      })}${statusBadge}</div>`
+                      )}${statusBadge}</div>`
                     : ""
                 }
                 <div class="bet-buttons-three">
@@ -4590,6 +4584,9 @@ async function loadSettings() {
 
     // Загружаем настройку показа победителя
     await loadShowTournamentWinnerSetting();
+
+    // Инициализируем часовые поясы
+    await initTimezoneSettings();
   } catch (error) {
     console.error("Ошибка при загрузке настроек:", error);
     // Не очищаем контейнер, чтобы статический HTML остался видимым
@@ -4798,6 +4795,177 @@ async function loadShowTournamentWinnerSetting() {
     }
   } catch (error) {
     console.error("Ошибка при загрузке настройки показа победителя:", error);
+  }
+}
+
+// ===== ЧАСОВОЙ ПОЯС =====
+
+// Инициализация списка часовых поясов
+async function initTimezoneSettings() {
+  try {
+    const select = document.getElementById("timezoneSelect");
+    if (!select) return;
+
+    // Получаем список поддерживаемых часовых поясов
+    const timezones = Intl.supportedValuesOf("timeZone");
+
+    // Сортируем и добавляем в select
+    timezones.sort().forEach((tz) => {
+      const option = document.createElement("option");
+      option.value = tz;
+
+      // Форматируем название для лучшей читаемости
+      const offset = new Date()
+        .toLocaleString("en-CA", {
+          timeZone: tz,
+          timeZoneName: "short",
+        })
+        .split(" ")
+        .pop();
+
+      option.textContent = `${tz} (${offset})`;
+      select.appendChild(option);
+    });
+
+    // Загружаем текущий часовой пояс пользователя
+    await loadUserTimezone();
+  } catch (error) {
+    console.error("Ошибка при инициализации часовых поясов:", error);
+  }
+}
+
+// Загрузить текущий часовой пояс пользователя
+async function loadUserTimezone() {
+  try {
+    if (!currentUser) return;
+
+    const response = await fetch(
+      `/api/user/timezone?username=${encodeURIComponent(currentUser.username)}`
+    );
+    const data = await response.json();
+
+    if (response.ok) {
+      const select = document.getElementById("timezoneSelect");
+      if (select) {
+        select.value = data.timezone || "Europe/Moscow";
+        console.log(`✅ Часовой пояс загружен: ${data.timezone}`);
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка при загрузке часового пояса:", error);
+  }
+}
+
+// Сохранить часовой пояс пользователя
+async function saveTimezoneSettings() {
+  try {
+    if (!currentUser) {
+      alert("Сначала войдите в систему");
+      return;
+    }
+
+    const select = document.getElementById("timezoneSelect");
+    const timezone = select.value;
+
+    if (!timezone) {
+      alert("Выберите часовой пояс");
+      return;
+    }
+
+    const btn = event.target;
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch("/api/user/timezone", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: currentUser.username,
+        timezone: timezone,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Обновляем часовой пояс в currentUser
+      currentUser.timezone = timezone;
+
+      console.log(`🕐 Часовой пояс обновлен: ${timezone}`);
+      console.log(`🕐 currentUser.timezone = ${currentUser.timezone}`);
+
+      btn.textContent = "✅ Сохранено!";
+      console.log(`✅ Часовой пояс сохранен: ${timezone}`);
+
+      // Добавляем небольшую задержку перед перезагрузкой матчей
+      setTimeout(() => {
+        console.log(`🔄 Перезагружаем матчи...`);
+        displayMatches();
+        console.log(`✅ Матчи перезагружены`);
+      }, 300);
+
+      setTimeout(() => {
+        btn.textContent = "💾 Сохранить часовой пояс";
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      alert("Ошибка: " + result.error);
+      btn.textContent = "💾 Сохранить часовой пояс";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении часового пояса:", error);
+    alert("Ошибка при сохранении");
+    btn.textContent = "💾 Сохранить часовой пояс";
+    btn.disabled = false;
+  }
+}
+
+// Форматировать время матча в часовом поясе пользователя
+function formatMatchTime(matchDate) {
+  try {
+    const date = new Date(matchDate);
+
+    // Получаем часовой пояс пользователя из профиля или используем по умолчанию
+    const userTimezone = currentUser?.timezone || "Europe/Moscow";
+
+    // Форматируем дату и время в часовом поясе пользователя БЕЗ СЕКУНД
+    const formatter = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: userTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return formatter.format(date);
+  } catch (error) {
+    console.error("Ошибка при форматировании времени:", error);
+    // Если ошибка, используем стандартное форматирование
+    return new Date(matchDate).toLocaleString("ru-RU");
+  }
+}
+
+// Получить только время матча в часовом поясе пользователя (для отображения без даты)
+function formatMatchTimeOnly(matchDate) {
+  try {
+    const date = new Date(matchDate);
+    const userTimezone = currentUser?.timezone || "Europe/Moscow";
+
+    const formatter = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: userTimezone,
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return formatter.format(date);
+  } catch (error) {
+    console.error("Ошибка при форматировании времени:", error);
+    return date.toLocaleTimeString("ru-RU", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 }
 
