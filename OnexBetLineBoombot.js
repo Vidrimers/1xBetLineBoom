@@ -625,7 +625,14 @@ export function startBot() {
   bot.onText(/\/status/, (msg) => handleStatus(msg));
 
   // Команда /tournaments и кнопка 📅 Турниры
-  const handleTournaments = async (chatId, msg = null) => {
+  const handleTournaments = async (chatIdOrMsg, legacyMsg = null) => {
+    // Поддерживаем оба способа вызова для совместимости
+    const msg =
+      chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
+        ? chatIdOrMsg
+        : legacyMsg;
+    const chatId = msg ? msg.chat.id : chatIdOrMsg;
+
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Турниры");
 
     // Если есть msg, добавляем его во все опции для sendMessageWithThread
@@ -727,7 +734,14 @@ export function startBot() {
   bot.onText(/\/tournaments/, (msg) => handleTournaments(msg.chat.id, msg));
 
   // Команда /my_bets и кнопка 💰 Мои ставки
-  const handleMyBets = async (chatId, msg = null) => {
+  const handleMyBets = async (chatIdOrMsg, legacyMsg = null) => {
+    // Поддерживаем оба способа вызова для совместимости
+    const msg =
+      chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
+        ? chatIdOrMsg
+        : legacyMsg;
+    const chatId = msg ? msg.chat.id : chatIdOrMsg;
+
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Мои ставки");
 
     // Если есть msg, добавляем его во все опции для sendMessageWithThread
@@ -964,7 +978,14 @@ export function startBot() {
   bot.onText(/\/profile/, (msg) => handleProfile(msg));
 
   // Команда /next_match и кнопка ⚽ Ближайший матч
-  const handleNextMatch = async (chatId, msg = null) => {
+  const handleNextMatch = async (chatIdOrMsg, legacyMsg = null) => {
+    // Поддерживаем оба способа вызова для совместимости
+    const msg =
+      chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
+        ? chatIdOrMsg
+        : legacyMsg;
+    const chatId = msg ? msg.chat.id : chatIdOrMsg;
+
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Ближайший матч");
 
     // Если есть msg, добавляем его во все опции для sendMessageWithThread
@@ -1282,7 +1303,14 @@ export function startBot() {
   bot.onText(/\/stats/, (msg) => handleStats(msg));
 
   // Команда /my_awards и кнопка 🏆 Мои награды
-  const handleMyAwards = async (chatId, msg = null) => {
+  const handleMyAwards = async (chatIdOrMsg, legacyMsg = null) => {
+    // Поддерживаем оба способа вызова для совместимости
+    const msg =
+      chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
+        ? chatIdOrMsg
+        : legacyMsg;
+    const chatId = msg ? msg.chat.id : chatIdOrMsg;
+
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Мои награды");
 
     // Если есть msg, добавляем его во все опции для sendMessageWithThread
@@ -1410,30 +1438,31 @@ export function startBot() {
 
     switch (text) {
       case "📊 Статус":
-        handleStatus(chatId, msg);
+        handleStatus(msg);
         break;
       case "📅 Турниры":
-        handleTournaments(chatId, msg);
+        handleTournaments(msg.chat.id, msg);
         break;
       case "💰 Мои ставки":
-        handleMyBets(chatId, msg);
+        handleMyBets(msg.chat.id, msg);
         break;
       case "👤 Профиль":
         handleProfile(msg);
         break;
       case "🏆 Мои награды":
-        handleMyAwards(chatId, msg);
+        handleMyAwards(msg.chat.id, msg);
         break;
       case "📈 Статистика":
         handleStats(msg);
         break;
       case "⚽ Ближайший матч":
-        handleNextMatch(chatId, msg);
+        handleNextMatch(msg.chat.id, msg);
         break;
       case "🌐 Открыть сайт":
         logUserAction(msg, "Нажата кнопка: Открыть сайт");
         sendMessageWithThread(chatId, `🌐 Открыть сайт:`, {
           parse_mode: "HTML",
+          __msg: msg,
           reply_markup: {
             inline_keyboard: [
               [
