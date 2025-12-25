@@ -101,7 +101,7 @@ async function sendMessageWithThread(chatId, text, options = {}) {
     messageOptions.message_thread_id = THREAD_ID;
   }
 
-  return await sendMessageWithThread(chatId, text, messageOptions);
+  return await bot.sendMessage(chatId, text, messageOptions);
 }
 
 // Функция для логирования действий пользователя админу
