@@ -6929,7 +6929,10 @@ class DragToScroll {
       target.tagName === "INPUT" ||
       target.closest("button") ||
       target.closest("a") ||
-      target.closest("input")
+      target.closest("input") ||
+      target.closest(".match-row") ||
+      target.closest(".event") ||
+      target.closest(".my-bets-item")
     ) {
       return;
     }
@@ -7027,20 +7030,18 @@ const dragToScroll = new DragToScroll();
 
 // Инициализация элементов для перетаскивания
 function initDragToScroll() {
-  // Ищем все sticky заголовки
+  // Ищем все sticky заголовки (но исключаем roundsFilterContainer)
   const stickyHeaders = document.querySelectorAll(
-    '[style*="position: sticky"]'
+    'div[style*="position: sticky"]:not(#roundsFilterContainer)'
   );
   stickyHeaders.forEach((header) => {
     dragToScroll.initElement(header);
   });
 
-  // Также инициализируем roundsFilterContainer
-  const roundsFilterContainer = document.getElementById(
-    "roundsFilterContainer"
-  );
-  if (roundsFilterContainer) {
-    dragToScroll.initElement(roundsFilterContainer);
+  // Инициализируем drag-to-scroll для левой колонки
+  const leftColumn = document.getElementById("leftColumn");
+  if (leftColumn) {
+    dragToScroll.initElement(leftColumn);
   }
 }
 
