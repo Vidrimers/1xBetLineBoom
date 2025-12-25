@@ -200,6 +200,10 @@ button:active {
   position: relative;
 }
 
+#matchesSection {
+  max-height: 80vh;
+}
+
 .section h2 {
   color: #5a9fd4;
   margin-bottom: 10px;
