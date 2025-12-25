@@ -1,0 +1,1923 @@
+/* ===== RESPONSIVE DESIGN (Desktop First) ===== */
+
+/* ===== TABLET: 1200px и ниже ===== */
+@media (max-width: 1200px) {
+  .container {
+    max-width: 95%;
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  #allbets-content {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .awards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  header h1 {
+    font-size: 1.6em;
+  }
+}
+
+/* ===== TABLET: 992px и ниже ===== */
+@media (max-width: 992px) {
+  .container {
+    max-width: 90%;
+  }
+
+  .tabs {
+    padding: 0 15px;
+    gap: 8px;
+  }
+
+  .tab-btn {
+    padding: 8px 16px;
+    font-size: 0.9em;
+  }
+
+  .settings-container {
+    gap: 8px;
+  }
+
+  .setting-item,
+  .settings-item {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 140px;
+  }
+
+  header img {
+    width: 80px;
+  }
+
+  header h1 {
+    font-size: 1.4em;
+  }
+
+  .match-row {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .bet-buttons {
+    gap: 6px;
+  }
+
+  .bet-btn {
+    padding: 6px 10px;
+    font-size: 0.85em;
+  }
+}
+
+/* ===== SMALL TABLET/LARGE PHONE: 768px и ниже ===== */
+@media (max-width: 768px) {
+  .container {
+    max-width: 95%;
+    padding: 10px;
+  }
+
+  body {
+    padding: 10px;
+  }
+
+  header {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  header img {
+    width: 70px;
+  }
+
+  header h1 {
+    font-size: 1.2em;
+  }
+
+  .user-section {
+    max-width: 100%;
+    padding: 8px;
+  }
+
+  .user-input {
+    gap: 8px;
+  }
+
+  .user-input #username {
+    max-width: 130px;
+  }
+
+  .content {
+    gap: 15px;
+  }
+
+  .section {
+    padding: 8px;
+  }
+
+  .section h2 {
+    font-size: 1.1em;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  .event-card {
+    padding: 15px;
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .event-item {
+    padding: 12px;
+    font-size: 0.9em;
+  }
+
+  .match-row {
+    padding: 10px;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .match-vs {
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .team {
+    padding: 6px;
+    font-size: 0.85em;
+  }
+
+  .bet-buttons {
+    gap: 5px;
+  }
+
+  .bet-btn {
+    padding: 6px 8px;
+    font-size: 0.75em;
+  }
+
+  .bet-buttons-three {
+    gap: 5px;
+  }
+
+  .lucky-btn {
+    padding: 5px 10px;
+    font-size: 0.75em;
+  }
+
+  .participant-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .participant-avatar {
+    width: 45px;
+    height: 45px;
+  }
+
+  .participant-name {
+    font-size: 1em;
+  }
+
+  .participant-bets-count {
+    padding: 4px 10px;
+    font-size: 0.8em;
+    min-width: 45px;
+  }
+
+  .tabs {
+    padding: 0 10px;
+    gap: 5px;
+  }
+
+  .tab-btn {
+    padding: 7px 12px;
+    font-size: 0.8em;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2em;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .admin-user-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .admin-user-actions {
+    width: 100%;
+  }
+
+  .admin-btn {
+    flex: 1;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-actions {
+    gap: 8px;
+  }
+
+  .form-btn-submit,
+  .form-btn-cancel {
+    padding: 7px 15px;
+    font-size: 0.85em;
+  }
+
+  .settings-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .setting-item,
+  .settings-item {
+    min-width: 100%;
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .setting-control {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .setting-control input {
+    width: 100%;
+  }
+
+  .setting-control .btn-save,
+  .setting-control .btn-delete {
+    width: 100%;
+  }
+
+  .tournament-winner-card {
+    padding: 15px;
+    max-height: 50vh;
+  }
+
+  .winner-header {
+    font-size: 1em;
+    margin-bottom: 10px;
+  }
+
+  .winner-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .winner-name {
+    font-size: 1.1em;
+  }
+
+  .stat-item {
+    font-size: 0.85em;
+  }
+
+  .profile-header {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .profile-avatar {
+    width: 70px;
+    height: 70px;
+  }
+
+  .profile-username {
+    font-size: 1.2em;
+  }
+
+  .profile-member-since {
+    font-size: 0.8em;
+  }
+
+  .profile-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-label {
+    font-size: 0.8em;
+  }
+
+  .stat-value {
+    font-size: 1.5em;
+  }
+
+  .award-card {
+    padding: 12px;
+  }
+
+  .award-icon {
+    font-size: 2em;
+    margin-bottom: 8px;
+  }
+
+  .award-title {
+    font-size: 0.85em;
+    margin-bottom: 5px;
+  }
+
+  .award-info {
+    font-size: 0.8em;
+    margin-bottom: 5px;
+  }
+
+  .award-date {
+    font-size: 0.75em;
+  }
+
+  .bet-item {
+    padding: 10px;
+    padding-right: 35px;
+  }
+
+  .bet-delete-btn {
+    top: 5px;
+    right: 5px;
+    font-size: 1em;
+    padding: 3px 5px;
+  }
+
+  .bet-info {
+    margin-bottom: 3px;
+  }
+
+  .bet-match {
+    font-size: 0.9em;
+  }
+
+  .bet-prediction {
+    padding: 2px 6px;
+    font-size: 0.8em;
+  }
+
+  .bet-status {
+    padding: 2px 6px;
+    font-size: 0.8em;
+  }
+
+  .empty-message {
+    padding: 20px;
+    font-size: 1em;
+  }
+
+  .round-filter-btn {
+    padding: 3px 6px;
+    font-size: 0.75em;
+  }
+
+  .edit-rounds-btn {
+    padding: 3px 6px;
+    font-size: 0.7em;
+    margin-left: 3px;
+  }
+
+  #matchesSection {
+    max-height: 70vh;
+  }
+
+  .section.bet-section {
+    max-height: 55vh;
+  }
+}
+
+/* ===== PHONE: 600px и ниже ===== */
+@media (max-width: 600px) {
+  body {
+    padding: 8px;
+  }
+
+  .container {
+    max-width: 98%;
+    padding: 5px;
+  }
+
+  header {
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  header img {
+    width: 60px;
+  }
+
+  header h1 {
+    font-size: 1.1em;
+  }
+
+  .user-section {
+    max-width: 100%;
+    padding: 6px;
+    margin-bottom: 8px;
+  }
+
+  .user-input {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .user-input #username {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  input[type="text"] {
+    padding: 10px 12px;
+    font-size: 0.95em;
+  }
+
+  button {
+    padding: 8px 12px;
+    font-size: 0.9em;
+  }
+
+  .content {
+    gap: 12px;
+  }
+
+  .section {
+    padding: 6px;
+  }
+
+  .section h2 {
+    font-size: 1em;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+  }
+
+  .event-card {
+    padding: 12px;
+    font-size: 0.85em;
+  }
+
+  .event-card-title {
+    font-size: 0.95em;
+    margin-bottom: 8px;
+  }
+
+  .event-card-count {
+    font-size: 0.8em;
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .event-item {
+    padding: 10px;
+    font-size: 0.85em;
+  }
+
+  .matches-table {
+    font-size: 0.9em;
+  }
+
+  .matches-table th,
+  .matches-table td {
+    padding: 8px;
+  }
+
+  .match-row {
+    padding: 8px;
+    margin-bottom: 10px;
+    flex-direction: column;
+  }
+
+  .match-teams {
+    width: 100%;
+  }
+
+  .match-vs {
+    gap: 8px;
+  }
+
+  .team {
+    padding: 5px;
+    font-size: 0.8em;
+  }
+
+  .vs-text {
+    font-size: 0.8em;
+  }
+
+  .bet-buttons {
+    width: 100%;
+    gap: 4px;
+  }
+
+  .bet-btn {
+    padding: 5px 6px;
+    font-size: 0.7em;
+  }
+
+  .bet-buttons-three {
+    gap: 4px;
+  }
+
+  .lucky-btn {
+    padding: 4px 8px;
+    font-size: 0.7em;
+  }
+
+  .tabs {
+    padding: 0 8px;
+    gap: 4px;
+    margin-bottom: 15px;
+  }
+
+  .tab-btn {
+    padding: 6px 10px;
+    font-size: 0.75em;
+    font-weight: 600;
+  }
+
+  .participant-item {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .participant-rank {
+    min-width: 35px;
+    width: 35px;
+    height: 35px;
+    font-size: 0.95em;
+  }
+
+  .participant-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .participant-name {
+    font-size: 0.9em;
+  }
+
+  .participant-tournaments {
+    font-size: 0.8em;
+    margin-bottom: 3px;
+  }
+
+  .participant-stats {
+    font-size: 0.8em;
+  }
+
+  .participant-bets-count {
+    padding: 3px 8px;
+    font-size: 0.75em;
+    min-width: 40px;
+  }
+
+  .participant-points {
+    gap: 3px;
+  }
+
+  .modal {
+    padding: 10px;
+  }
+
+  .modal-content {
+    width: 98%;
+    max-height: 90vh;
+  }
+
+  .modal-header {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1em;
+  }
+
+  .modal-close {
+    width: 35px;
+    height: 35px;
+    font-size: 24px;
+  }
+
+  .modal-body {
+    padding: 12px;
+    font-size: 0.9em;
+  }
+
+  .admin-user-item {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .admin-user-name {
+    font-size: 0.95em;
+  }
+
+  .admin-user-stats {
+    font-size: 0.8em;
+  }
+
+  .admin-user-actions {
+    gap: 5px;
+  }
+
+  .admin-btn {
+    padding: 5px 10px;
+    font-size: 0.7em;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-group label {
+    font-size: 0.9em;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 10px 12px;
+    font-size: 0.9em;
+  }
+
+  .form-group textarea {
+    min-height: 70px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-btn-submit,
+  .form-btn-cancel {
+    padding: 8px 12px;
+    font-size: 0.85em;
+    flex: 1;
+  }
+
+  .settings-container {
+    gap: 6px;
+  }
+
+  .setting-item,
+  .settings-item {
+    min-width: 100%;
+    padding: 12px;
+  }
+
+  .setting-label {
+    font-size: 0.9em;
+    gap: 8px;
+  }
+
+  .setting-hint {
+    font-size: 0.8em;
+  }
+
+  .setting-hint-small {
+    font-size: 0.75em;
+  }
+
+  .setting-control {
+    gap: 6px;
+  }
+
+  .setting-control input {
+    padding: 8px 10px;
+    font-size: 0.9em;
+  }
+
+  .tournament-winner-card {
+    padding: 12px;
+    max-height: 55vh;
+    max-width: 95%;
+  }
+
+  .winner-header {
+    font-size: 0.95em;
+  }
+
+  .winner-content {
+    gap: 10px;
+  }
+
+  .winner-avatar {
+    width: 70px;
+    height: 70px;
+  }
+
+  .winner-name {
+    font-size: 1em;
+  }
+
+  .winner-stats {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .stat-item {
+    font-size: 0.8em;
+  }
+
+  .stat-label {
+    font-size: 0.8em;
+  }
+
+  .stat-value {
+    font-size: 0.9em;
+  }
+
+  .award-description {
+    font-size: 0.8em;
+    max-width: 120px;
+  }
+
+  .no-winner-message {
+    font-size: 1.2em;
+    min-height: 180px;
+    padding: 20px;
+  }
+
+  .profile-header {
+    padding: 6px;
+  }
+
+  .profile-avatar {
+    width: 65px;
+    height: 65px;
+  }
+
+  .profile-username {
+    font-size: 1.1em;
+  }
+
+  .profile-member-since {
+    font-size: 0.75em;
+  }
+
+  .profile-stats-grid {
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 10px;
+  }
+
+  .stat-label {
+    font-size: 0.75em;
+  }
+
+  .stat-value {
+    font-size: 1.3em;
+  }
+
+  .profile-section {
+    padding: 10px;
+  }
+
+  .profile-section-title {
+    font-size: 0.95em;
+  }
+
+  .profile-section-content {
+    font-size: 0.85em;
+  }
+
+  .awards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .award-card {
+    padding: 10px;
+  }
+
+  .award-icon {
+    font-size: 1.8em;
+    margin-bottom: 6px;
+  }
+
+  .award-title {
+    font-size: 0.8em;
+  }
+
+  .award-info {
+    font-size: 0.75em;
+  }
+
+  .award-date {
+    font-size: 0.7em;
+  }
+
+  .bet-item {
+    padding: 8px;
+    padding-right: 32px;
+  }
+
+  .bet-delete-btn {
+    top: 4px;
+    right: 4px;
+    font-size: 0.9em;
+  }
+
+  .bet-match {
+    font-size: 0.85em;
+  }
+
+  .bet-prediction {
+    padding: 2px 5px;
+    font-size: 0.75em;
+  }
+
+  .bet-status {
+    padding: 2px 5px;
+    font-size: 0.75em;
+  }
+
+  .my-bets-list {
+    gap: 8px;
+  }
+
+  .empty-message {
+    padding: 15px;
+    font-size: 0.9em;
+  }
+
+  #matchesSection {
+    max-height: 65vh;
+  }
+
+  .section.bet-section {
+    max-height: 50vh;
+  }
+
+  .round-filter-btn {
+    padding: 3px 5px;
+    font-size: 0.65em;
+  }
+
+  .edit-rounds-btn {
+    padding: 2px 5px;
+    font-size: 0.65em;
+    margin-left: 2px;
+  }
+
+  .rounds-order-content {
+    max-width: 90%;
+    padding: 15px;
+  }
+
+  .rounds-order-content h3 {
+    font-size: 1em;
+  }
+
+  .rounds-order-item {
+    padding: 8px;
+    margin-bottom: 6px;
+  }
+
+  .rounds-order-item .round-name {
+    font-size: 0.85em;
+  }
+
+  .rounds-order-buttons {
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .rounds-order-buttons button {
+    padding: 6px 12px;
+    font-size: 0.8em;
+  }
+}
+
+/* ===== SMALL PHONE: 480px и ниже ===== */
+@media (max-width: 480px) {
+  body {
+    padding: 6px;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  header {
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  header img {
+    width: 50px;
+  }
+
+  header h1 {
+    font-size: 1em;
+  }
+
+  .user-section {
+    padding: 5px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+  }
+
+  .user-input {
+    gap: 5px;
+  }
+
+  .user-input #username {
+    max-width: 100%;
+  }
+
+  input[type="text"] {
+    padding: 8px 10px;
+    font-size: 0.9em;
+  }
+
+  button {
+    padding: 6px 10px;
+    font-size: 0.85em;
+  }
+
+  .content {
+    gap: 10px;
+  }
+
+  .section {
+    padding: 5px;
+    border-radius: 8px;
+  }
+
+  .section h2 {
+    font-size: 0.95em;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+  }
+
+  .event-card {
+    padding: 10px;
+    font-size: 0.8em;
+    border-radius: 8px;
+  }
+
+  .event-card-title {
+    font-size: 0.9em;
+    margin-bottom: 6px;
+  }
+
+  .event-card-count {
+    font-size: 0.75em;
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .event-item {
+    padding: 8px;
+    font-size: 0.8em;
+    border-radius: 6px;
+  }
+
+  .match-row {
+    padding: 6px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+  }
+
+  .match-teams {
+    width: 100%;
+  }
+
+  .match-vs {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .team {
+    padding: 4px;
+    font-size: 0.75em;
+    border-radius: 4px;
+  }
+
+  .vs-text {
+    font-size: 0.75em;
+  }
+
+  .bet-buttons {
+    gap: 3px;
+  }
+
+  .bet-btn {
+    padding: 4px 4px;
+    font-size: 0.65em;
+  }
+
+  .bet-buttons-three {
+    gap: 3px;
+  }
+
+  .lucky-btn {
+    padding: 3px 6px;
+    font-size: 0.65em;
+    border-radius: 12px;
+  }
+
+  .tabs {
+    padding: 0 5px;
+    gap: 3px;
+    margin-bottom: 12px;
+  }
+
+  .tab-btn {
+    padding: 5px 8px;
+    font-size: 0.7em;
+  }
+
+  .participant-item {
+    padding: 6px;
+    gap: 6px;
+    border-radius: 6px;
+  }
+
+  .participant-rank {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    font-size: 0.85em;
+  }
+
+  .participant-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .participant-name {
+    font-size: 0.85em;
+  }
+
+  .participant-tournaments {
+    font-size: 0.75em;
+    margin-bottom: 2px;
+  }
+
+  .participant-stats {
+    font-size: 0.75em;
+  }
+
+  .participant-bets-count {
+    padding: 2px 6px;
+    font-size: 0.7em;
+    min-width: 36px;
+  }
+
+  .modal {
+    padding: 8px;
+  }
+
+  .modal-content {
+    width: 99%;
+    border-radius: 8px;
+  }
+
+  .modal-header {
+    padding: 10px;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .modal-header h2 {
+    font-size: 1em;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+
+  .modal-body {
+    padding: 10px;
+    font-size: 0.85em;
+  }
+
+  .admin-user-item {
+    padding: 8px;
+  }
+
+  .admin-user-name {
+    font-size: 0.9em;
+  }
+
+  .admin-user-stats {
+    font-size: 0.75em;
+  }
+
+  .admin-btn {
+    padding: 4px 8px;
+    font-size: 0.65em;
+  }
+
+  .form-group {
+    margin-bottom: 10px;
+  }
+
+  .form-group label {
+    font-size: 0.85em;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 8px 10px;
+    font-size: 0.85em;
+  }
+
+  .form-group textarea {
+    min-height: 60px;
+  }
+
+  .form-btn-submit,
+  .form-btn-cancel {
+    padding: 6px 10px;
+    font-size: 0.8em;
+  }
+
+  .setting-item,
+  .settings-item {
+    padding: 10px;
+  }
+
+  .setting-label {
+    font-size: 0.85em;
+  }
+
+  .setting-hint {
+    font-size: 0.75em;
+  }
+
+  .tournament-winner-card {
+    padding: 10px;
+    max-height: 60vh;
+  }
+
+  .winner-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .winner-name {
+    font-size: 0.95em;
+  }
+
+  .winner-stats {
+    padding: 8px;
+  }
+
+  .stat-item {
+    font-size: 0.75em;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .profile-username {
+    font-size: 1em;
+  }
+
+  .profile-member-since {
+    font-size: 0.7em;
+  }
+
+  .awards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+  }
+
+  .award-card {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .award-icon {
+    font-size: 1.5em;
+    margin-bottom: 4px;
+  }
+
+  .award-title {
+    font-size: 0.75em;
+  }
+
+  .award-info {
+    font-size: 0.7em;
+  }
+
+  .award-date {
+    font-size: 0.65em;
+  }
+
+  .bet-item {
+    padding: 6px;
+    padding-right: 28px;
+  }
+
+  .bet-delete-btn {
+    font-size: 0.8em;
+    padding: 2px 4px;
+  }
+
+  .bet-match {
+    font-size: 0.8em;
+  }
+
+  .bet-prediction {
+    padding: 1px 4px;
+    font-size: 0.7em;
+  }
+
+  #matchesSection {
+    max-height: 60vh;
+  }
+
+  .section.bet-section {
+    max-height: 45vh;
+  }
+
+  .round-filter-btn {
+    padding: 2px 4px;
+    font-size: 0.6em;
+  }
+
+  .edit-rounds-btn {
+    padding: 2px 4px;
+    font-size: 0.6em;
+    margin-left: 2px;
+  }
+}
+
+/* ===== EXTRA SMALL PHONE: 400px и ниже ===== */
+@media (max-width: 400px) {
+  body {
+    padding: 4px;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  header {
+    gap: 3px;
+    margin-bottom: 3px;
+    flex-direction: column;
+  }
+
+  header img {
+    width: 45px;
+    height: auto;
+  }
+
+  header h1 {
+    font-size: 0.95em;
+    margin: 0;
+  }
+
+  .user-section {
+    max-width: 100%;
+    padding: 4px;
+    margin: 0 auto 5px;
+    border-radius: 6px;
+  }
+
+  .user-input {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .user-input #username {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.9em;
+  }
+
+  input[type="text"] {
+    max-width: 100%;
+    padding: 8px 10px;
+    font-size: 0.9em;
+    border-radius: 4px;
+  }
+
+  button {
+    padding: 6px 10px;
+    font-size: 0.8em;
+    border-radius: 4px;
+  }
+
+  .content {
+    gap: 8px;
+  }
+
+  .section {
+    padding: 4px;
+    border-radius: 6px;
+  }
+
+  .section h2 {
+    font-size: 0.9em;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+
+  .event-card {
+    padding: 8px;
+    font-size: 0.75em;
+    border-radius: 6px;
+  }
+
+  .event-card-title {
+    font-size: 0.85em;
+    margin-bottom: 5px;
+  }
+
+  .event-card-count {
+    font-size: 0.7em;
+  }
+
+  .event-card-locked {
+    font-size: 0.7em;
+    padding: 4px 6px;
+    margin-top: 6px;
+  }
+
+  .event-card-winner {
+    font-size: 0.75em;
+    padding: 6px;
+    margin-top: 6px;
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .event-item {
+    padding: 6px;
+    font-size: 0.75em;
+    border-radius: 4px;
+  }
+
+  .match-row {
+    padding: 5px;
+    margin-bottom: 6px;
+    border-radius: 5px;
+    border-left: 3px solid #3a7bd5;
+  }
+
+  .match-teams {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+
+  .match-vs {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 5px;
+  }
+
+  .team {
+    padding: 3px;
+    font-size: 0.7em;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+
+  .vs-text {
+    font-size: 0.65em;
+  }
+
+  .bet-buttons {
+    width: 100%;
+    gap: 2px;
+  }
+
+  .bet-btn {
+    padding: 3px 3px;
+    font-size: 0.6em;
+    border-radius: 3px;
+  }
+
+  .bet-buttons-three {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+  }
+
+  .lucky-btn {
+    padding: 3px 5px;
+    font-size: 0.6em;
+    border-radius: 10px;
+  }
+
+  .tabs {
+    padding: 0 4px;
+    gap: 2px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tab-btn {
+    padding: 4px 6px;
+    font-size: 0.65em;
+    font-weight: 500;
+  }
+
+  .participant-item {
+    padding: 5px;
+    gap: 5px;
+    border-radius: 5px;
+    border-left: 3px solid #3a7bd5;
+  }
+
+  .participant-rank {
+    min-width: 28px;
+    width: 28px;
+    height: 28px;
+    font-size: 0.75em;
+    flex-shrink: 0;
+  }
+
+  .participant-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .participant-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .participant-name {
+    font-size: 0.8em;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .participant-tournaments {
+    font-size: 0.7em;
+    margin-bottom: 1px;
+  }
+
+  .participant-stats {
+    font-size: 0.7em;
+  }
+
+  .participant-bets-count {
+    padding: 2px 4px;
+    font-size: 0.65em;
+    min-width: 32px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .participant-points {
+    text-align: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .modal {
+    padding: 4px;
+  }
+
+  .modal-content {
+    width: 99%;
+    border-radius: 6px;
+  }
+
+  .modal-header {
+    padding: 8px;
+    border-radius: 6px 6px 0 0;
+    gap: 6px;
+  }
+
+  .modal-header h2 {
+    font-size: 0.95em;
+    margin: 0;
+  }
+
+  .modal-close {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+
+  .modal-body {
+    padding: 8px;
+    font-size: 0.8em;
+  }
+
+  .admin-user-item {
+    padding: 6px;
+    gap: 5px;
+    border-radius: 5px;
+  }
+
+  .admin-user-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-user-name {
+    font-size: 0.85em;
+    margin-bottom: 2px;
+  }
+
+  .admin-user-stats {
+    font-size: 0.7em;
+  }
+
+  .admin-user-actions {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .admin-btn {
+    padding: 3px 6px;
+    font-size: 0.6em;
+    border-radius: 3px;
+    flex: 0 1 auto;
+  }
+
+  .form-group {
+    margin-bottom: 8px;
+  }
+
+  .form-group label {
+    font-size: 0.8em;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 6px 8px;
+    font-size: 0.8em;
+    border-radius: 4px;
+  }
+
+  .form-group textarea {
+    min-height: 50px;
+    resize: none;
+  }
+
+  .form-actions {
+    gap: 4px;
+    margin-top: 10px;
+  }
+
+  .form-btn-submit,
+  .form-btn-cancel {
+    padding: 5px 8px;
+    font-size: 0.75em;
+    flex: 1;
+    border-radius: 4px;
+  }
+
+  .setting-item,
+  .settings-item {
+    padding: 8px;
+    border-radius: 6px;
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .setting-label {
+    font-size: 0.8em;
+    gap: 6px;
+  }
+
+  .setting-hint {
+    font-size: 0.7em;
+  }
+
+  .setting-hint-small {
+    font-size: 0.65em;
+    margin-top: 3px;
+  }
+
+  .setting-control {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .setting-control input {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 0.8em;
+  }
+
+  .setting-control .btn-save,
+  .setting-control .btn-delete {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 0.65em;
+  }
+
+  .tournament-winner-card {
+    padding: 8px;
+    max-height: 55vh;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .winner-header {
+    font-size: 0.9em;
+    margin-bottom: 6px;
+    word-break: break-word;
+  }
+
+  .winner-content {
+    gap: 6px;
+  }
+
+  .winner-avatar {
+    width: 55px;
+    height: 55px;
+    border: 3px solid #ffd700;
+    flex-shrink: 0;
+  }
+
+  .winner-name {
+    font-size: 0.9em;
+    margin-bottom: 6px;
+  }
+
+  .winner-stats {
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .stat-item {
+    font-size: 0.7em;
+  }
+
+  .stat-label {
+    font-size: 0.7em;
+  }
+
+  .stat-value {
+    font-size: 0.85em;
+  }
+
+  .award-description {
+    font-size: 0.7em;
+    max-width: 100px;
+  }
+
+  .no-winner-message {
+    font-size: 1em;
+    min-height: 150px;
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .profile-header {
+    padding: 5px;
+    border-radius: 6px;
+    margin-bottom: 5px;
+  }
+
+  .profile-avatar {
+    width: 55px;
+    height: 55px;
+  }
+
+  .profile-username {
+    font-size: 0.95em;
+    margin-bottom: 4px;
+  }
+
+  .profile-member-since {
+    font-size: 0.65em;
+  }
+
+  .profile-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .stat-card {
+    padding: 8px;
+    border-radius: 5px;
+  }
+
+  .stat-label {
+    font-size: 0.7em;
+  }
+
+  .stat-value {
+    font-size: 1.2em;
+  }
+
+  .profile-section {
+    padding: 8px;
+    border-radius: 5px;
+  }
+
+  .profile-section-title {
+    font-size: 0.9em;
+    margin-bottom: 6px;
+  }
+
+  .profile-section-content {
+    font-size: 0.8em;
+    line-height: 1.4;
+  }
+
+  .awards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .award-card {
+    padding: 6px;
+    border-radius: 5px;
+    border: 2px solid rgba(212, 175, 55, 0.7);
+  }
+
+  .award-icon {
+    font-size: 1.2em;
+    margin-bottom: 3px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  .award-title {
+    font-size: 0.7em;
+    margin-bottom: 3px;
+  }
+
+  .award-info {
+    font-size: 0.65em;
+  }
+
+  .award-date {
+    font-size: 0.6em;
+  }
+
+  .bet-item {
+    padding: 5px;
+    padding-right: 25px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+
+  .bet-delete-btn {
+    top: 3px;
+    right: 3px;
+    font-size: 0.75em;
+    padding: 2px 3px;
+    border-radius: 3px;
+  }
+
+  .bet-info {
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 2px;
+    align-items: flex-start;
+  }
+
+  .bet-match {
+    font-size: 0.75em;
+  }
+
+  .bet-prediction {
+    padding: 1px 3px;
+    font-size: 0.65em;
+    border-radius: 3px;
+  }
+
+  .bet-status {
+    padding: 1px 3px;
+    font-size: 0.65em;
+    border-radius: 3px;
+  }
+
+  .my-bets-list {
+    gap: 4px;
+  }
+
+  .empty-message {
+    padding: 10px;
+    font-size: 0.85em;
+  }
+
+  #matchesSection {
+    max-height: 55vh;
+  }
+
+  .section.bet-section {
+    padding: 0 4px 4px 4px;
+    max-height: 40vh;
+  }
+
+  .round-filter-btn {
+    padding: 2px 3px;
+    font-size: 0.55em;
+    border-radius: 12px;
+  }
+
+  .edit-rounds-btn {
+    padding: 1px 3px;
+    font-size: 0.55em;
+    margin-left: 1px;
+  }
+
+  .rounds-order-content {
+    max-width: 95%;
+    padding: 10px;
+    border-radius: 6px;
+  }
+
+  .rounds-order-content h3 {
+    font-size: 0.9em;
+    margin: 0 0 10px 0;
+  }
+
+  .rounds-order-list {
+    margin: 0 0 10px 0;
+  }
+
+  .rounds-order-item {
+    padding: 6px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+  }
+
+  .rounds-order-item .drag-handle {
+    margin-right: 6px;
+    font-size: 0.9em;
+  }
+
+  .rounds-order-item .round-name {
+    font-size: 0.8em;
+  }
+
+  .rounds-order-buttons {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .rounds-order-buttons button {
+    padding: 4px 8px;
+    font-size: 0.75em;
+    border-radius: 4px;
+  }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+  }
+
+  .loading {
+    padding: 15px;
+    font-size: 0.85em;
+  }
+}
