@@ -205,12 +205,11 @@ button:active {
   overflow-x: hidden;
   overflow-y: auto;
 }
-.matches-header{
+.matches-header {
   flex-direction: column;
   gap: 5px;
 }
-.matches-container{
-  
+.matches-container {
 }
 
 .section h2 {
@@ -2009,4 +2008,12 @@ input:checked + .slider:before {
     min-height: 200px;
     padding: 30px;
   }
+}
+
+/* Контейнер с матчами - расположение в одну строку с space-between */
+.matches-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
