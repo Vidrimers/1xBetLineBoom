@@ -206,6 +206,10 @@ button:active {
   overflow-y: auto;
 }
 .matches-header{
+  flex-direction: column;
+  gap: 5px;
+}
+.matches-container{
   
 }
 

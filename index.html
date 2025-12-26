@@ -161,94 +161,98 @@
                 user-select: none;
               "
             >
-              <h2 style="margin: 0; padding-bottom: 10px">⚽ Матчи</h2>
-              <div style="display: flex; gap: 8px; align-items: center">
-                <button
-                  class="lucky-btn"
-                  onclick="luckyBetForCurrentRound()"
-                  title="Сделать случайную ставку по всем матчам выбранного тура"
-                >
-                  🎲 Мне повезет
-                </button>
-                <button
-                  id="addMatchBtn"
-                  onclick="openCreateMatchModal()"
-                  style="
-                    display: none;
-                    padding: 3px 7px;
-                    font-size: 0.9em;
-                    background: transparent;
-                  "
-                >
-                  ➕ Матч
-                </button>
-                <button
-                  id="editRoundsBtn"
-                  onclick="openRoundsOrderModal()"
-                  style="
-                    display: none;
-                    padding: 3px 7px;
-                    font-size: 0.9em;
-                    background: transparent;
-                  "
-                  title="Изменить порядок туров"
-                >
-                  ✎ Туры
-                </button>
-                <button
-                  id="importMatchesBtn"
-                  onclick="openImportMatchesModal()"
-                  style="
-                    display: none;
-                    padding: 3px 7px;
-                    font-size: 0.9em;
-                    /* background: rgba(76, 175, 80, 0.7); */
-                    background: transparent;
-                    border: 1px solid #4caf50;
-                  "
-                >
-                  📥импорт
-                </button>
+              <div class="matches-container">
+                <h2 style="margin: 0; padding-bottom: 10px">⚽ Матчи</h2>
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <button
+                    class="lucky-btn"
+                    onclick="luckyBetForCurrentRound()"
+                    title="Сделать случайную ставку по всем матчам выбранного тура"
+                  >
+                    🎲 Мне повезет
+                  </button>
+                  <button
+                    id="addMatchBtn"
+                    onclick="openCreateMatchModal()"
+                    style="
+                      display: none;
+                      padding: 3px 7px;
+                      font-size: 0.9em;
+                      background: transparent;
+                    "
+                  >
+                    ➕ Матч
+                  </button>
+                  <button
+                    id="editRoundsBtn"
+                    onclick="openRoundsOrderModal()"
+                    style="
+                      display: none;
+                      padding: 3px 7px;
+                      font-size: 0.9em;
+                      background: transparent;
+                    "
+                    title="Изменить порядок туров"
+                  >
+                    ✎ Туры
+                  </button>
+                  <button
+                    id="importMatchesBtn"
+                    onclick="openImportMatchesModal()"
+                    style="
+                      display: none;
+                      padding: 3px 7px;
+                      font-size: 0.9em;
+                      /* background: rgba(76, 175, 80, 0.7); */
+                      background: transparent;
+                      border: 1px solid #4caf50;
+                    "
+                  >
+                    📥импорт
+                  </button>
+                </div>
               </div>
-            </div>
-            <!-- Фильтры по турам с горизонтальным скроллом -->
-            <div
-              id="roundsFilterContainer"
-              style="
-                display: none;
-                margin-bottom: 10px;
-                /* border-bottom: 1px solid rgba(90, 159, 212, 0.3); */
-                /* height: 48px; */
-                overflow-x: auto;
-                overflow-y: hidden;
-                scrollbar-width: none;
-                max-width: 100%;
-                position: sticky;
-                top: 55px;
-                z-index: 10;
-                background: rgba(40, 44, 54, 1);
-              "
-            >
-              <div
-                id="roundsFilterScroll"
-                style="
-                  display: flex;
-                  flex-wrap: nowrap;
-                  gap: 7px;
-                  align-items: center;
-                  padding: 8px 10px;
-                  height: 100%;
-                "
-              >
-                <button
-                  class="round-filter-btn active"
-                  data-round="all"
-                  onclick="filterByRound('all')"
+
+                <!-- Фильтры по турам с горизонтальным скроллом -->
+                <div
+                  id="roundsFilterContainer"
+                  style="
+                    display: none;
+                    margin-bottom: 10px;
+                    /* border-bottom: 1px solid rgba(90, 159, 212, 0.3); */
+                    /* height: 48px; */
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    scrollbar-width: none;
+                    max-width: 100%;
+                    position: sticky;
+                    top: 55px;
+                    z-index: 10;
+                    background: rgba(40, 44, 54, 1);
+                  "
                 >
-                  Все
-                </button>
-              </div>
+                  <div
+                    id="roundsFilterScroll"
+                    style="
+                      display: flex;
+                      flex-wrap: nowrap;
+                      gap: 7px;
+                      align-items: center;
+                      padding: 8px 10px;
+                      height: 100%;
+                    "
+                  >
+                    <button
+                      class="round-filter-btn active"
+                      data-round="all"
+                      onclick="filterByRound('all')"
+                    >
+                      Все
+                    </button>
+                  </div>
+                </div>
             </div>
+
             <!-- Контейнер с матчами -->
             <div id="matchesContainer">
               <div class="empty-message">
