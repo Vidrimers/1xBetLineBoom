@@ -167,22 +167,14 @@ async function sendMessageWithThread(chatId, text, options = {}) {
     parse_mode: "HTML",
   };
 
-  // Если сообщение было в потоке, отвечаем в тот же поток
-  if (msg && msg.message_thread_id) {
-    messageOptions.message_thread_id = msg.message_thread_id;
-    console.log(
-      `📨 Ответ в поток ${msg.message_thread_id} (от сообщения в группе)`
-    );
-  }
-  // Иначе, если это основной чат с потоком, добавляем default message_thread_id
-  else if (chatIdNum === TELEGRAM_CHAT_ID && THREAD_ID) {
+  // Всегда используем основной THREAD_ID если это основной чат, игнорируем старые потоки
+  if (chatIdNum === TELEGRAM_CHAT_ID && THREAD_ID) {
     messageOptions.message_thread_id = THREAD_ID;
     console.log(
       `📨 Отправка сообщения в поток ${THREAD_ID} группы ${TELEGRAM_CHAT_ID}`
     );
-    console.log(`📋 messageOptions:`, JSON.stringify(messageOptions, null, 2));
-  } else {
-    console.log(`📨 Отправка сообщения в ${chatIdNum} (без потока)`);
+  } else if (chatIdNum !== TELEGRAM_CHAT_ID) {
+    console.log(`📨 Отправка сообщения в личный чат ${chatIdNum}`);
   }
 
   console.log(`📨 Вызываем bot.sendMessage с параметрами:`);
@@ -196,7 +188,7 @@ async function sendMessageWithThread(chatId, text, options = {}) {
     );
     return result;
   } catch (err) {
-    console.error(`❌ bot.sendMessage вызвала ошибку: ${err.message}`);
+    console.error(`❌ bot.sendMessage вызвала ошибка: ${err.message}`);
     throw err;
   }
 }
