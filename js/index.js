@@ -2655,7 +2655,19 @@ function displayProfile(profile) {
           transition: opacity 0.3s ease;
         ">📷</button>
       </div>
-      <div class="profile-username">${profile.username}</div>
+      <div class="profile-username" onmouseover="document.getElementById('editUsernameBtn').style.display='inline'" onmouseout="document.getElementById('editUsernameBtn').style.display='none'">
+        <span id="usernameDisplay">${profile.username}</span>
+        <button id="editUsernameBtn" onclick="editUsername()" style="
+          background: transparent;
+          color: #0088cc;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          font-size: .5em;
+          transition: all 0.3s ease;
+          display: none;
+        " title="Изменить имя">✏️</button>
+      </div>
       <div class="profile-member-since">Участник с ${createdDate}</div>
     </div>
 
@@ -6879,6 +6891,59 @@ async function deleteAvatar() {
     updateAvatarInProfile("img/default-avatar.jpg");
   } catch (error) {
     console.error("❌ Ошибка при удалении аватара:", error);
+  }
+}
+
+// Редактирование имени пользователя
+function editUsername() {
+  const currentUsername =
+    document.getElementById("usernameDisplay").textContent;
+  const newUsername = prompt(
+    "Введите новое имя пользователя:",
+    currentUsername
+  );
+
+  if (!newUsername) return;
+  if (newUsername === currentUsername) return;
+  if (newUsername.trim().length === 0) {
+    alert("Имя не может быть пустым");
+    return;
+  }
+  if (newUsername.length > 30) {
+    alert("Имя не может быть длиннее 30 символов");
+    return;
+  }
+
+  saveUsername(newUsername);
+}
+
+// Сохранить новое имя пользователя
+async function saveUsername(newUsername) {
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/username`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newUsername }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert(`❌ Ошибка: ${result.error || "Не удалось изменить имя"}`);
+      return;
+    }
+
+    // Обновляем в памяти
+    currentUser.username = newUsername;
+
+    // Обновляем на странице
+    document.getElementById("usernameDisplay").textContent = newUsername;
+
+    // Обновляем в локал сторе
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+  } catch (error) {
+    console.error("❌ Ошибка при изменении имени:", error);
+    alert("❌ Ошибка при изменении имени");
   }
 }
 

@@ -3471,6 +3471,57 @@ app.delete("/api/user/:userId/avatar", (req, res) => {
   }
 });
 
+// PUT /api/user/:userId/username - Изменить username пользователя
+app.put("/api/user/:userId/username", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { username } = req.body;
+
+    // Валидация
+    if (!username || username.trim().length === 0) {
+      return res.status(400).json({ error: "Имя не может быть пустым" });
+    }
+    if (username.length > 30) {
+      return res
+        .status(400)
+        .json({ error: "Имя слишком длинное (макс 30 символов)" });
+    }
+
+    // Проверяем есть ли пользователь
+    const user = db
+      .prepare("SELECT id, username FROM users WHERE id = ?")
+      .get(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем не используется ли это имя другим пользователем
+    const existingUser = db
+      .prepare("SELECT id FROM users WHERE username = ? AND id != ?")
+      .get(username, userId);
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Это имя уже используется" });
+    }
+
+    // Обновляем имя
+    db.prepare("UPDATE users SET username = ? WHERE id = ?").run(
+      username,
+      userId
+    );
+
+    // Логируем
+    console.log(
+      `✅ Username изменён для пользователя ${userId}: "${user.username}" → "${username}"`
+    );
+
+    res.json({ success: true, username, message: "Имя успешно изменено" });
+  } catch (error) {
+    console.error("Ошибка при изменении username:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/user/:userId/telegram - Получить Telegram username пользователя
 app.get("/api/user/:userId/telegram", (req, res) => {
   try {
