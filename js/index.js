@@ -21,7 +21,7 @@ async function luckyBetForCurrentRound() {
   }
   // Для каждого такого матча делаем случайную ставку
   for (const match of matchesToBet) {
-    const options = [match.team1_name, "draw", match.team2_name];
+    const options = ["team1", "draw", "team2"];
     const random = Math.floor(Math.random() * options.length);
     const prediction = options[random];
     try {
@@ -40,7 +40,6 @@ async function luckyBetForCurrentRound() {
     }
   }
   await loadMyBets();
-  displayMatches();
 }
 
 // Переключатель для финального матча
