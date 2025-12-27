@@ -279,7 +279,15 @@ export async function sendAdminNotification(message) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    await sendMessageWithThread(TELEGRAM_ADMIN_ID, message);
+    console.log(
+      `📤 Отправляю сообщение админу (ID: ${TELEGRAM_ADMIN_ID}): ${message.substring(
+        0,
+        50
+      )}...`
+    );
+    await sendMessageWithThread(TELEGRAM_ADMIN_ID, message, {
+      parse_mode: "HTML",
+    });
     console.log(new Date().toISOString(), "✅ Уведомление отправлено админу");
   } catch (error) {
     console.error(
@@ -625,7 +633,7 @@ export function notifyTelegramLinked(
   telegramUsername,
   chatId = null
 ) {
-  const message =
+  const personalMessage =
     `🎉 <b>Добро пожаловать в 1xBetLineBoom!</b>\n\n` +
     `✅ Твой Telegram успешно привязан к аккаунту <b>${username}</b>\n\n` +
     `📊 Теперь ты будешь получать:\n` +
@@ -634,40 +642,36 @@ export function notifyTelegramLinked(
     `• Результаты твоих ставок\n\n` +
     `Удачных ставок, малютка! 🍀`;
 
+  const groupMessage =
+    `🎉 <b>Новый участник!</b>\n\n` +
+    `✅ <b>${username}</b> (@${telegramUsername}) успешно привязал Telegram!\n\n` +
+    `Добро пожаловать в 1xBetLineBoom! 🍀`;
+
   try {
-    // Если у нас есть chat_id, пытаемся отправить напрямую
+    // Отправляем личное сообщение пользователю
     if (chatId && bot) {
-      sendMessageWithThread(chatId, message, { parse_mode: "HTML" }).catch(
-        (err) => {
-          console.error(
-            `❌ Ошибка отправки уведомления о привязке для @${telegramUsername} (${chatId}):`,
-            err.message
-          );
-        }
-      );
+      sendMessageWithThread(chatId, personalMessage, {
+        parse_mode: "HTML",
+      }).catch((err) => {
+        console.error(
+          `❌ Ошибка отправки личного сообщения для @${telegramUsername} (${chatId}):`,
+          err.message
+        );
+      });
       console.log(
-        `📱 Уведомление о привязке Telegram отправлено @${telegramUsername} (${chatId})`
+        `📱 Личное сообщение о привязке отправлено @${telegramUsername} (${chatId})`
       );
-      return;
     }
 
-    // Если chat_id не найден, добавляем в очередь для отправки позже
-    const record = {
-      id: Date.now().toString(),
-      type: "telegram_linked",
-      telegram_username: telegramUsername,
-      payload: {
-        message: message,
-        parse_mode: "HTML",
-      },
-      timestamp: new Date().toISOString(),
-      attempts: 0,
-    };
-
-    fs.appendFileSync(NOTIF_QUEUE_FILE, JSON.stringify(record) + "\n", "utf8");
-
+    // Отправляем сообщение в группу
+    sendAdminNotification(groupMessage).catch((err) => {
+      console.error(
+        `❌ Ошибка отправки группового сообщения о регистрации @${telegramUsername}:`,
+        err.message
+      );
+    });
     console.log(
-      `📱 Уведомление о привязке Telegram добавлено в очередь для @${telegramUsername} (chat_id не найден, будет отправлено когда пользователь напишет боту)`
+      `� Сообщение о регистрации отправлено в группу для @${telegramUsername}`
     );
   } catch (error) {
     console.error(
@@ -1108,7 +1112,7 @@ export function startBot() {
         chatId,
         `👤 <b>Профиль:</b>\n\n` +
           `<b>Имя в тг:</b> ${firstName}\n` +
-          `<b>Юзернейм в тг:</b> @${telegramUsername}\n` +
+          `<b>Юзернейм в тг:</b> <code>@${telegramUsername}</code>\n` +
           `<b>Имя на сайте:</b> ${siteUsername}\n` +
           `<b>ID:</b> ${msg.from.id}\n` +
           `<b>Личные уведомления:</b> ${notificationStatus}\n\n` +
