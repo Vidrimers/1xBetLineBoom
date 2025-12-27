@@ -2082,11 +2082,21 @@ async function deleteBet(betId) {
 // ===== ВКЛАДКИ =====
 function switchTab(tabName) {
   // Скрываем все содержимое вкладок
-  document.getElementById("allbets-content").style.display = "none";
-  document.getElementById("participants-content").style.display = "none";
-  document.getElementById("profile-content").style.display = "none";
-  document.getElementById("settings-content").style.display = "none";
-  document.getElementById("counting-content").style.display = "none";
+  document
+    .getElementById("allbets-content")
+    .style.setProperty("display", "none", "important");
+  document
+    .getElementById("participants-content")
+    .style.setProperty("display", "none", "important");
+  document
+    .getElementById("profile-content")
+    .style.setProperty("display", "none", "important");
+  document
+    .getElementById("settings-content")
+    .style.setProperty("display", "none", "important");
+  document
+    .getElementById("counting-content")
+    .style.setProperty("display", "none", "important");
 
   // Удаляем активный класс со всех кнопок вкладок
   document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -2095,7 +2105,9 @@ function switchTab(tabName) {
 
   // Показываем нужное содержимое и отмечаем кнопку как активную
   if (tabName === "allbets") {
-    document.getElementById("allbets-content").style.display = "grid";
+    document
+      .getElementById("allbets-content")
+      .style.setProperty("display", "grid", "important");
     document.querySelectorAll(".tab-btn")[0].classList.add("active");
     loadEventsList();
     if (currentEventId) {
@@ -2103,20 +2115,27 @@ function switchTab(tabName) {
     }
     loadMyBets();
   } else if (tabName === "participants") {
-    document.getElementById("participants-content").style.display = "flex";
+    document
+      .getElementById("participants-content")
+      .style.setProperty("display", "flex", "important");
     document.querySelectorAll(".tab-btn")[1].classList.add("active");
     loadTournamentsList();
   } else if (tabName === "profile") {
-    document.getElementById("profile-content").style.display = "flex";
+    document
+      .getElementById("profile-content")
+      .style.setProperty("display", "flex", "important");
     document.querySelectorAll(".tab-btn")[2].classList.add("active");
     loadProfile();
   } else if (tabName === "settings") {
-    document.getElementById("settings-content").style.display = "flex";
+    document
+      .getElementById("settings-content")
+      .style.setProperty("display", "flex", "important");
     document.querySelectorAll(".tab-btn")[3].classList.add("active");
     loadSettings();
   } else if (tabName === "counting") {
-    document.getElementById("counting-content").style.display = "flex";
-    // Отмечаем кнопку подсчета как активную (не табуляцию, так как это отдельная кнопка)
+    document
+      .getElementById("counting-content")
+      .style.setProperty("display", "flex", "important");
     loadCounting();
   }
 }
@@ -4333,8 +4352,11 @@ function loadCounting() {
 
   // Здесь будет функционал для подсчета
   const countingContainer = document.getElementById("countingContainer");
-  countingContainer.innerHTML =
-    '<div class="empty-message">Функция в разработке</div>';
+
+  if (countingContainer) {
+    countingContainer.innerHTML =
+      '<div class="empty-message">Функция в разработке</div>';
+  }
 }
 
 // Закрыть модальное окно при клике вне его

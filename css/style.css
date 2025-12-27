@@ -40,7 +40,8 @@ body {
 .container.not-logged-in #allbets-content,
 .container.not-logged-in #participants-content,
 .container.not-logged-in #profile-content,
-.container.not-logged-in #settings-content {
+.container.not-logged-in #settings-content,
+.container.not-logged-in #counting-content {
   display: none !important;
 }
 
