@@ -647,6 +647,13 @@ export function notifyTelegramLinked(
     `✅ <b>${username}</b> (@${telegramUsername}) успешно привязал Telegram!\n\n` +
     `Добро пожаловать в 1xBetLineBoom! 🍀`;
 
+  const adminMessage =
+    `🔗 <b>Пользователь связал Telegram:</b>\n\n` +
+    `👤 <b>Имя на сайте:</b> ${username}\n` +
+    `🆔 <b>Telegram username:</b> @${telegramUsername}\n` +
+    `🕐 <b>Время:</b> ${new Date().toLocaleString("ru-RU")}\n\n` +
+    `✅ Telegram успешно привязан к аккаунту!`;
+
   try {
     // Отправляем личное сообщение пользователю
     if (chatId && bot) {
@@ -670,6 +677,20 @@ export function notifyTelegramLinked(
         err.message
       );
     });
+    console.log(
+      `📢 Сообщение о регистрации отправлено в группу для @${telegramUsername}`
+    );
+
+    // Отправляем личное сообщение админу о связывании профиля
+    sendAdminNotification(adminMessage).catch((err) => {
+      console.error(
+        `❌ Ошибка отправки личного сообщения админу о привязке @${telegramUsername}:`,
+        err.message
+      );
+    });
+    console.log(
+      `📧 Личное сообщение админу отправлено о привязке @${telegramUsername}`
+    );
     console.log(
       `� Сообщение о регистрации отправлено в группу для @${telegramUsername}`
     );
