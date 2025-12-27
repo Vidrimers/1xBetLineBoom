@@ -64,6 +64,84 @@ const awardImageUpload = multer({
 const LOG_FILE_PATH = path.join(__dirname, "log.html");
 const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10 MB
 
+// Путь к файлу логов терминала
+const TERMINAL_LOGS_PATH = path.join(__dirname, "terminal-logs.txt");
+const MAX_TERMINAL_LOGS_SIZE = 5 * 1024 * 1024; // 5 MB
+let terminalLogs = [];
+
+// Функция для добавления логов в массив терминала
+function addTerminalLog(message) {
+  const timestamp = new Date().toLocaleString("ru-RU");
+  const logEntry = `[${timestamp}] ${message}`;
+
+  terminalLogs.push(logEntry);
+
+  // Ограничиваем размер массива (максимум 10000 строк)
+  if (terminalLogs.length > 10000) {
+    terminalLogs = terminalLogs.slice(-5000);
+  }
+
+  // Также пишем в файл для персистентности
+  try {
+    fs.appendFileSync(TERMINAL_LOGS_PATH, logEntry + "\n", "utf-8");
+
+    // Проверяем размер файла и очищаем если нужно
+    const stats = fs.statSync(TERMINAL_LOGS_PATH);
+    if (stats.size > MAX_TERMINAL_LOGS_SIZE) {
+      const lines = fs.readFileSync(TERMINAL_LOGS_PATH, "utf-8").split("\n");
+      const lastLines = lines.slice(-2500).join("\n");
+      fs.writeFileSync(TERMINAL_LOGS_PATH, lastLines, "utf-8");
+    }
+  } catch (err) {
+    // Игнорируем ошибки записи файла
+  }
+}
+
+// Переопределяем console.log для логирования
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.log = function (...args) {
+  originalLog.apply(console, args);
+  const message = args
+    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
+    .join(" ");
+  addTerminalLog(message);
+};
+
+console.error = function (...args) {
+  originalError.apply(console, args);
+  const message = args
+    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
+    .join(" ");
+  addTerminalLog(`❌ ERROR: ${message}`);
+};
+
+console.warn = function (...args) {
+  originalWarn.apply(console, args);
+  const message = args
+    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
+    .join(" ");
+  addTerminalLog(`⚠️ WARN: ${message}`);
+};
+
+// Загружаем логи из файла при запуске
+try {
+  if (fs.existsSync(TERMINAL_LOGS_PATH)) {
+    const fileContent = fs.readFileSync(TERMINAL_LOGS_PATH, "utf-8");
+    terminalLogs = fileContent
+      .split("\n")
+      .filter((line) => line.trim().length > 0);
+    // Ограничиваем при загрузке
+    if (terminalLogs.length > 5000) {
+      terminalLogs = terminalLogs.slice(-5000);
+    }
+  }
+} catch (err) {
+  console.error("Ошибка при загрузке логов терминала:", err);
+}
+
 // Путь к папке с бэкапами
 const BACKUPS_DIR = path.join(__dirname, "backups");
 
@@ -5260,6 +5338,49 @@ app.post("/api/admin/cleanup-orphaned-data", (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== API ENDPOINTS ДЛЯ ТЕРМИНАЛА =====
+
+// GET /api/terminal-logs - получить логи терминала
+app.get("/api/terminal-logs", (req, res) => {
+  try {
+    const logs = terminalLogs.join("\n");
+    res.json({
+      success: true,
+      logs: logs || "[Логи пусты]",
+      count: terminalLogs.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// DELETE /api/terminal-logs - очистить логи терминала
+app.delete("/api/terminal-logs", (req, res) => {
+  try {
+    terminalLogs = [];
+
+    // Очищаем файл логов
+    try {
+      fs.writeFileSync(TERMINAL_LOGS_PATH, "", "utf-8");
+    } catch (err) {
+      console.error("Ошибка при очистке файла логов:", err);
+    }
+
+    res.json({
+      success: true,
+      message: "✅ Логи терминала очищены",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 });
 

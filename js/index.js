@@ -7151,3 +7151,155 @@ displayMatches = function (...args) {
   setTimeout(initHorizontalDragScroll, 100);
   return result;
 };
+
+// ===== ФУНКЦИИ ДЛЯ ТЕРМИНАЛА =====
+
+let terminalAutoScroll = true;
+let terminalRefreshInterval = null;
+
+// Открыть модальное окно терминала
+function openTerminalModal() {
+  const modal = document.getElementById("terminalModal");
+  if (modal) {
+    modal.classList.add("active");
+    console.log("✅ Терминал открыт");
+    refreshTerminalLogs();
+    if (terminalRefreshInterval) clearInterval(terminalRefreshInterval);
+    terminalRefreshInterval = setInterval(refreshTerminalLogs, 1000);
+  }
+}
+
+// Закрыть модальное окно терминала
+function closeTerminalModal(event) {
+  const modal = document.getElementById("terminalModal");
+  if (modal) {
+    modal.classList.remove("active");
+    if (terminalRefreshInterval) {
+      clearInterval(terminalRefreshInterval);
+      terminalRefreshInterval = null;
+    }
+  }
+}
+
+// Получить логи терминала с сервера
+async function refreshTerminalLogs() {
+  try {
+    const response = await fetch("/api/terminal-logs");
+
+    if (!response.ok) throw new Error("Ошибка загрузки логов");
+
+    const data = await response.json();
+
+    const content = document.getElementById("terminalContent");
+
+    if (content) {
+      // Если это HTML контент или чистый текст
+      if (data.logs) {
+        const lines = data.logs.split("\n");
+
+        // Создаем HTML разноцветный вывод
+        const htmlContent = lines
+          .map((line) => {
+            let color = "#00ff00"; // зелёный по умолчанию
+            let className = "";
+
+            // Определяем цвет в зависимости от типа лога
+            if (line.includes("❌") || line.includes("ERROR")) {
+              color = "#ff3333"; // красный для ошибок
+              className = "error";
+            } else if (line.includes("⚠️") || line.includes("WARN")) {
+              color = "#ffff00"; // жёлтый для предупреждений
+              className = "warn";
+            } else if (line.includes("✅") || line.includes("успешно")) {
+              color = "#00ff00"; // зелёный для успеха
+              className = "success";
+            } else if (line.includes("📧") || line.includes("сообщение")) {
+              color = "#00ffff"; // голубой для сообщений
+              className = "info";
+            } else if (line.includes("🔗") || line.includes("Telegram")) {
+              color = "#00bfff"; // синий для телеграма
+              className = "telegram";
+            } else if (line.includes("[")) {
+              color = "#888888"; // серый для времени
+              className = "time";
+            }
+
+            return `<div style="color: ${color}" class="log-line ${className}">${escapeHtml(
+              line
+            )}</div>`;
+          })
+          .join("");
+
+        content.innerHTML = htmlContent || "[Логи пусты]";
+
+        // Автоскролл в конец если включен
+        if (terminalAutoScroll) {
+          content.scrollTop = content.scrollHeight;
+        }
+      }
+    }
+  } catch (error) {
+    const content = document.getElementById("terminalContent");
+    if (content) {
+      content.innerHTML = `<div style="color: #ff3333">❌ Ошибка загрузки логов: ${escapeHtml(
+        error.message
+      )}</div>`;
+    }
+  }
+}
+
+// Функция для экранирования HTML
+function escapeHtml(text) {
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+// Очистить логи терминала
+async function clearTerminalLogs() {
+  if (!confirm("Вы уверены, что хотите очистить логи?")) return;
+
+  try {
+    const response = await fetch("/api/terminal-logs", {
+      method: "DELETE",
+    });
+
+    if (!response.ok) throw new Error("Ошибка очистки логов");
+
+    const content = document.getElementById("terminalContent");
+    if (content) {
+      content.textContent = "[✅ Логи очищены]";
+    }
+
+    // Обновляем логи через 500мс
+    setTimeout(refreshTerminalLogs, 500);
+  } catch (error) {
+    console.error("Ошибка при очистке логов:", error);
+    alert("Ошибка при очистке логов: " + error.message);
+  }
+}
+
+// Переключить автоскролл
+function toggleTerminalAutoScroll() {
+  terminalAutoScroll = !terminalAutoScroll;
+  const btn = document.getElementById("terminalAutoScrollBtn");
+  if (btn) {
+    if (terminalAutoScroll) {
+      btn.style.background = "rgba(76, 175, 80, 0.7)";
+      btn.style.borderColor = "#4caf50";
+      btn.textContent = "⬇️ Auto";
+      // Сразу скроллим вниз
+      const content = document.getElementById("terminalContent");
+      if (content) content.scrollTop = content.scrollHeight;
+    } else {
+      btn.style.background = "rgba(255, 87, 34, 0.7)";
+      btn.style.borderColor = "#ff5722";
+      btn.textContent = "⏸️ Стоп";
+    }
+  }
+}

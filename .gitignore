@@ -16,5 +16,6 @@ replacements.txt
 reset-db.js
 add-timezone-column.js
 log.html
+terminal-logs.txt
 
 DISCORD_OAUTH_SETUP.md
