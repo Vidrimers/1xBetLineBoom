@@ -4255,6 +4255,27 @@ app.post("/api/admin/events", (req, res) => {
   }
 });
 
+// GET /api/admin/events/:eventId/rounds - Получить все уникальные туры турнира
+app.get("/api/admin/events/:eventId/rounds", (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    const rounds = db
+      .prepare(
+        `
+        SELECT DISTINCT round FROM matches
+        WHERE event_id = ? AND round IS NOT NULL
+        ORDER BY round
+      `
+      )
+      .all(eventId);
+
+    res.json(rounds.map((r) => r.round));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/matches - Создать новый матч (только для админа)
 app.post("/api/admin/matches", (req, res) => {
   const {

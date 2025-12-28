@@ -5005,6 +5005,47 @@ function formatMatchTimeOnly(matchDate) {
 
 // ===== СОЗДАНИЕ МАТЧЕЙ =====
 
+// Загрузить существующие туры для модального окна
+async function loadRoundsForModal(modalType, eventId) {
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/rounds`);
+    const rounds = await response.json();
+
+    const selectId =
+      modalType === "create" ? "matchRoundSelect" : "editMatchRoundSelect";
+    const selectElement = document.getElementById(selectId);
+
+    // Очищаем все опции кроме первой (заглушки)
+    while (selectElement.options.length > 1) {
+      selectElement.remove(1);
+    }
+
+    // Добавляем туры в выпадающий список
+    rounds.forEach((round) => {
+      const option = document.createElement("option");
+      option.value = round;
+      option.textContent = round;
+      selectElement.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Ошибка при загрузке туров:", error);
+  }
+}
+
+// Выбрать существующий тур из выпадающего списка
+function selectExistingRound(modalType) {
+  const selectId =
+    modalType === "create" ? "matchRoundSelect" : "editMatchRoundSelect";
+  const inputId = modalType === "create" ? "matchRound" : "editMatchRound";
+
+  const selectElement = document.getElementById(selectId);
+  const inputElement = document.getElementById(inputId);
+
+  if (selectElement.value) {
+    inputElement.value = selectElement.value;
+  }
+}
+
 // Открыть модальное окно для создания матча
 function openCreateMatchModal() {
   if (!currentUser) {
@@ -5035,6 +5076,9 @@ function openCreateMatchModal() {
   document.getElementById("showPenaltiesInGame").checked = false;
   document.getElementById("showExtraTime").checked = false;
   document.getElementById("showPenaltiesAtEnd").checked = false;
+
+  // Загружаем существующие туры
+  loadRoundsForModal("create", currentEventId);
 
   // Открываем модальное окно
   const modal = document.getElementById("createMatchModal");
@@ -5165,6 +5209,9 @@ function openEditMatchModal(id, team1, team2, date, round) {
   document.getElementById("editMatchTeam2").value = team2;
   document.getElementById("editMatchDate").value = date || "";
   document.getElementById("editMatchRound").value = round || "";
+
+  // Загружаем существующие туры
+  loadRoundsForModal("edit", currentEventId);
 
   // Установим параметры финального матча
   if (match) {
