@@ -85,6 +85,47 @@ let currentRoundFilter = "all"; // Текущий фильтр по туру
 let roundsOrder = []; // Порядок туров из БД
 let tempRoundsOrder = []; // Временный порядок для редактирования
 
+function moveAuthButtonToProfile() {
+  const authBtn = document.getElementById("authBtn");
+  const placeholder = document.getElementById("profileAuthPlaceholder");
+  if (!authBtn || !placeholder) return;
+  if (!placeholder.contains(authBtn)) {
+    placeholder.appendChild(authBtn);
+  }
+}
+
+function moveAuthButtonToLoginForm() {
+  const authBtn = document.getElementById("authBtn");
+  const userInput = document.querySelector(".user-input");
+  if (!authBtn || !userInput) return;
+  const countingBtn = document.getElementById("countingBtn");
+  if (userInput.contains(authBtn)) return;
+  if (countingBtn) {
+    userInput.insertBefore(authBtn, countingBtn);
+  } else {
+    userInput.appendChild(authBtn);
+  }
+}
+
+function setAuthButtonToLogoutState() {
+  const authBtn = document.getElementById("authBtn");
+  if (!authBtn) return;
+  authBtn.classList.add("logout-mode");
+  authBtn.innerHTML =
+    '<span class="logout-text logout-text-before">ВЫ</span><span class="logout-cross">X</span><span class="logout-text logout-text-after">ОД</span>';
+  authBtn.onclick = () => logoutUser();
+  moveAuthButtonToProfile();
+}
+
+function setAuthButtonToLoginState() {
+  const authBtn = document.getElementById("authBtn");
+  if (!authBtn) return;
+  authBtn.classList.remove("logout-mode");
+  authBtn.innerHTML = "Войти";
+  authBtn.onclick = () => initUser();
+  moveAuthButtonToLoginForm();
+}
+
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 
 // Загрузить порядок туров из БД
@@ -305,12 +346,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("username").value = user.username;
     document.getElementById("username").disabled = true;
 
-    // Меняем кнопку на "Выход"
-    const authBtn = document.getElementById("authBtn");
-    authBtn.textContent = "Выход";
-    authBtn.style.border = "1px solid rgba(244, 67, 54)";
-    authBtn.style.background = "transparent";
-    authBtn.onclick = () => logoutUser();
+    setAuthButtonToLogoutState();
 
     // Показываем админ-кнопки если это админ
     if (user.isAdmin) {
@@ -322,6 +358,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadEventsList();
     await loadMyBets();
   } else {
+    setAuthButtonToLoginState();
     loadEventsList();
   }
 
@@ -400,11 +437,7 @@ async function initUser() {
     document.getElementById("usernameBold").textContent = user.username;
     document.getElementById("username").disabled = true;
 
-    // Меняем кнопку на "Выход"
-    const authBtn = document.getElementById("authBtn");
-    authBtn.textContent = "Выход";
-    authBtn.style.background = "transparent";
-    authBtn.onclick = () => logoutUser();
+    setAuthButtonToLogoutState();
 
     // Показываем админ-кнопки если это админ
     if (currentUser.isAdmin) {
@@ -453,11 +486,7 @@ function logoutUser() {
   document.getElementById("adminSettingsPanel").style.display = "none";
 
   // Меняем кнопку обратно на "Начать"
-  const authBtn = document.getElementById("authBtn");
-  authBtn.textContent = "Войти";
-  authBtn.style.background = "";
-  authBtn.style.border = "1px solid #3a7bd5";
-  authBtn.onclick = () => initUser();
+  setAuthButtonToLoginState();
 
   // Очищаем ставки
   document.getElementById("myBetsList").innerHTML =

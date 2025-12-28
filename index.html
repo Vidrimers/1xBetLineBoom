@@ -61,7 +61,9 @@
             placeholder="Логин"
             onkeypress="if(event.key === 'Enter') initUser()"
           />
-          <button id="authBtn" onclick="initUser()">Войти</button>
+          <button id="authBtn" class="auth-btn" onclick="initUser()">
+            Войти
+          </button>
           <button
             id="countingBtn"
             onclick="switchTab('counting')"
@@ -322,8 +324,14 @@
         id="profile-content"
         style="display: none; margin-top: -5px"
       >
-        <div class="section">
-          <h2>👤 Мой профиль</h2>
+        <div class="section profile-section">
+          <div class="profile-heading-row">
+            <h2>👤 Мой профиль</h2>
+            <div
+              id="profileAuthPlaceholder"
+              class="profile-auth-placeholder"
+            ></div>
+          </div>
           <div class="profile-container" id="profileContainer">
             <div class="empty-message">Загружаем профиль...</div>
           </div>

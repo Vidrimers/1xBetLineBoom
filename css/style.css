@@ -105,6 +105,21 @@ header h1 {
   justify-content: center;
 }
 
+.auth-btn {
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-weight: 600;
+  transition: background 0.3s ease, border 0.3s ease, color 0.3s ease,
+    transform 0.3s ease;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  cursor: pointer;
+  background: transparent;
+}
+
 .container.not-logged-in #username {
   display: block;
 }
@@ -124,6 +139,87 @@ header h1 {
 .user-input #authBtn:hover {
   background: rgba(58, 123, 213, 0.9);
   box-shadow: 0 4px 12px rgba(58, 123, 213, 0.4);
+}
+
+.profile-section .profile-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.profile-section .profile-header h2 {
+  margin: 0;
+}
+
+.profile-auth-placeholder {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  width: 0;
+  height: 0;
+}
+
+#profile-content {
+  position: relative;
+}
+
+.auth-btn.logout-mode {
+  background: transparent;
+  color: #f44336;
+  padding: 6px 10px;
+  flex-direction: row;
+  gap: 2px;
+  align-items: center;
+  min-width: 60px;
+  justify-content: center;
+  border: none;
+  position: absolute;
+  top: 5px;
+  right: -10px;
+  z-index: 2;
+  transition: all 0.35s ease;
+  box-shadow: none;
+}
+
+.auth-btn.logout-mode .logout-cross {
+  font-size: 1em;
+  line-height: 0.1;
+  display: inline-flex;
+  color: #f44336;
+  transition: transform 0.35s ease;
+}
+
+.auth-btn.logout-mode .logout-text {
+  font-size: 0.65em;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  color: #a0a8b8;
+  display: inline-flex;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 0;
+  opacity: 0;
+  transform: translateY(4px) scale(0.65);
+  transition: opacity 0.35s ease, transform 0.35s ease, max-width 0.35s ease;
+  justify-content: center;
+}
+
+.auth-btn.logout-mode:hover {
+  transform: scale(1.05);
+  box-shadow: none;
+  right: 5px;
+}
+
+.auth-btn.logout-mode:hover .logout-cross {
+  transform: rotate(720deg);
+}
+
+.auth-btn.logout-mode:hover .logout-text {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  max-width: 40px;
 }
 
 button#adminBtn,
@@ -210,9 +306,6 @@ button:active {
   flex-direction: column;
   gap: 5px;
 }
-.matches-container {
-}
-
 .section h2 {
   color: #5a9fd4;
   margin-bottom: 10px;
