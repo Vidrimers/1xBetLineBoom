@@ -7717,8 +7717,8 @@ function scrollUpScreen() {
   });
 }
 
-// Показываем/скрываем кнопки прокрутки на основе положения скролла
-window.addEventListener("scroll", function () {
+// Функция для проверки и обновления видимости кнопок прокрутки
+function updateScrollButtonsVisibility() {
   const scrollDownBtn = document.getElementById("scrollDownBtn");
   const scrollUpBtn = document.getElementById("scrollUpBtn");
 
@@ -7745,28 +7745,17 @@ window.addEventListener("scroll", function () {
       scrollUpBtn.classList.remove("show");
     }
   } else {
+    // На десктопе кнопки скрыты
     scrollDownBtn.classList.remove("show");
     scrollUpBtn.classList.remove("show");
   }
-});
+}
+
+// Обновляем видимость кнопок при скролле
+window.addEventListener("scroll", updateScrollButtonsVisibility);
+
+// Обновляем видимость кнопок при изменении размера окна (очень важно!)
+window.addEventListener("resize", updateScrollButtonsVisibility);
 
 // Проверяем при загрузке страницы
-window.addEventListener("load", function () {
-  const scrollDownBtn = document.getElementById("scrollDownBtn");
-  const scrollUpBtn = document.getElementById("scrollUpBtn");
-  const isMobile = window.innerWidth <= 768;
-  const scrollTop = window.scrollY;
-  const documentHeight = document.documentElement.scrollHeight;
-  const windowHeight = window.innerHeight;
-  const isNearBottom = scrollTop + windowHeight > documentHeight - 100;
-  const isNearTop = scrollTop < 100;
-
-  if (isMobile) {
-    if (!isNearBottom) {
-      scrollDownBtn.classList.add("show");
-    }
-    if (!isNearTop) {
-      scrollUpBtn.classList.add("show");
-    }
-  }
-});
+window.addEventListener("load", updateScrollButtonsVisibility);

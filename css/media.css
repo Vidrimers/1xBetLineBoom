@@ -1,5 +1,11 @@
 /* ===== RESPONSIVE DESIGN (Desktop First) ===== */
 
+/* Кнопки прокрутки скрыты на десктопе (больше 768px) */
+.scroll-down-btn,
+.scroll-up-btn {
+  display: none;
+}
+
 /* ===== TABLET: 1200px и ниже ===== */
 @media (max-width: 1200px) {
   .container {
@@ -471,22 +477,20 @@
     z-index: 100;
     color: #fff;
     border: 2px solid;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .scroll-down-btn {
     bottom: 20px;
     right: 20px;
-    /* background: #3a7bd5;
-    border-color: #2a5aaa;
-    box-shadow: 0 4px 12px rgba(58, 123, 213, 0.4); */
-    background: transparent;
     border: none;
     box-shadow: none;
   }
 
   .scroll-down-btn:active {
     transform: scale(0.95);
-    box-shadow: 0 2px 6px none;
+    box-shadow: none;
   }
 
   .scroll-down-btn.show {
@@ -497,7 +501,6 @@
     bottom: 80px;
     right: 20px;
     background: transparent;
-    /* border-color: #388e3c; */
     border: none;
     box-shadow: none;
   }
