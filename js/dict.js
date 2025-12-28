@@ -334,8 +334,29 @@ function mapTeamName(name) {
     .replace(/\bцрвена зв\b/g, "црвена")
     .replace(/\bшахт[её]р\b/g, "шахтер");
   var mapped = TEAM_NAME_MAP[norm] || raw;
-  // writeLogToFile(
-  //   "[mapTeamName] raw: " + raw + ", norm: " + norm + ", mapped: " + mapped
-  // );
   return mapped;
+}
+
+function removeDiacritics_(s) {
+  try {
+    return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  } catch (e) {
+    return s || "";
+  }
+}
+
+function fixSpaces_(s) {
+  return (s || "")
+    .replace(/[\u00A0\u2007\u202F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeTeam_(s) {
+  return fixSpaces_(removeDiacritics_(s))
+    .toLowerCase()
+    .replace(/[’'`]/g, "")
+    .replace(/[^a-z0-9\u0400-\u04FF\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

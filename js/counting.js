@@ -1,5 +1,8 @@
 // ===== ПОДСЧЁТ =====
 
+// Переменная для хранения выбранной лиги
+let selectedCompetition = "CL"; // По умолчанию Champions League
+
 function loadCounting() {
   if (!isAdmin()) {
     alert("У вас нет прав");
@@ -94,7 +97,7 @@ function loadCounting() {
           🔄 Обновить
         </button>
 
-        <button id="countingCalculateBtn" style="
+        <button id="countingCalculateBtn" onclick="calculateCountingResults()" style="
           padding: 8px 16px;
           background: rgba(76, 175, 80, 0.7);
           color: #c8e6c9;
@@ -110,6 +113,18 @@ function loadCounting() {
         </button>
       </div>
 
+      <div style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+        <button id="comp-WC" onclick="selectCompetition('WC')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="World Cup">🌍 World Cup</button>
+        <button id="comp-CL" onclick="selectCompetition('CL')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Champions League">🏆 Champions League</button>
+        <button id="comp-EC" onclick="selectCompetition('EC')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Euro">🇪🇺 Euro</button>
+        <button id="comp-BL1" onclick="selectCompetition('BL1')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Bundesliga">⚽ Bundesliga</button>
+        <button id="comp-DED" onclick="selectCompetition('DED')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Eredivisie">🇳🇱 Eredivisie</button>
+        <button id="comp-PD" onclick="selectCompetition('PD')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="La Liga">🇪🇸 La Liga</button>
+        <button id="comp-FL1" onclick="selectCompetition('FL1')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Ligue 1">🇫🇷 Ligue 1</button>
+        <button id="comp-PL" onclick="selectCompetition('PL')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Premier League">🇬🇧 Premier League</button>
+        <button id="comp-SA" onclick="selectCompetition('SA')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Serie A">🇮🇹 Serie A</button>
+      </div>
+
       <div id="countingResults" style="margin-top: 20px;">
         <div class="empty-message">Нажмите "Обновить" для загрузки ставок</div>
       </div>
@@ -117,6 +132,9 @@ function loadCounting() {
 
     // Автоматически загружаем ставки на сегодня
     updateCountingResults();
+
+    // Подсветим кнопку выбранной лиги по умолчанию (CL)
+    selectCompetition(selectedCompetition || "CL");
   }
 }
 
@@ -260,4 +278,292 @@ function setCountingToday() {
     dateFromInput.value = todayStr;
     dateToInput.value = todayStr;
   }
+}
+
+// Выбрать соревнование
+function selectCompetition(code) {
+  selectedCompetition = code;
+  const competitionNames = {
+    WC: "World Cup",
+    CL: "Champions League",
+    EC: "Euro",
+    BL1: "Bundesliga",
+    DED: "Eredivisie",
+    PD: "La Liga",
+    FL1: "Ligue 1",
+    PL: "Premier League",
+    SA: "Serie A",
+  };
+
+  // Убираем выделение со всех кнопок
+  const allButtons = document.querySelectorAll("[id^='comp-']");
+  allButtons.forEach((btn) => {
+    btn.style.background = "rgba(100, 100, 100, 0.7)";
+    btn.style.color = "#e0e6f0";
+    btn.style.border = "1px solid #666";
+    btn.style.fontWeight = "normal";
+  });
+
+  // Выделяем выбранную кнопку
+  const selectedBtn = document.getElementById(`comp-${code}`);
+  if (selectedBtn) {
+    selectedBtn.style.background = "rgba(76, 175, 80, 0.9)";
+    selectedBtn.style.color = "#ffffff";
+    selectedBtn.style.border = "2px solid #4caf50";
+    selectedBtn.style.fontWeight = "bold";
+  }
+
+  console.log("Выбрана лига:", competitionNames[code]);
+}
+
+// Подсчитать результаты ставок
+async function calculateCountingResults() {
+  const dateFrom = document.getElementById("countingDateFrom")?.value;
+  const dateTo = document.getElementById("countingDateTo")?.value;
+  const resultsDiv = document.getElementById("countingResults");
+
+  if (!dateFrom || !dateTo) {
+    alert("Выберите даты");
+    return;
+  }
+
+  resultsDiv.innerHTML =
+    '<div class="empty-message">⏳ Загружаем матчи и проверяем ставки...</div>';
+
+  try {
+    // Получаем все ставки
+    const betsResponse = await fetch(
+      `/api/counting-bets?dateFrom=${dateFrom}&dateTo=${dateTo}`
+    );
+
+    if (!betsResponse.ok) {
+      throw new Error("Ошибка при загрузке ставок");
+    }
+
+    const bets = await betsResponse.json();
+
+    if (!bets || bets.length === 0) {
+      resultsDiv.innerHTML =
+        '<div class="empty-message">Нет ставок в статусе "В ожидании" за выбранный период</div>';
+      return;
+    }
+
+    // Получаем матчи через серверный прокси
+    const matchesResponse = await fetch(
+      `/api/fd-matches?competition=${encodeURIComponent(
+        selectedCompetition
+      )}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+    );
+
+    if (!matchesResponse.ok) {
+      const errorText = await matchesResponse.text();
+      throw new Error(
+        `Ошибка при загрузке матчей: ${errorText || matchesResponse.statusText}`
+      );
+    }
+
+    const matchesData = await matchesResponse.json();
+    const matches = matchesData.matches || [];
+
+    // Проверяем ставки и определяем результаты
+    const results = checkBetsResults(bets, matches);
+
+    // Отображаем результаты
+    displayCalculationResults(results, bets);
+  } catch (error) {
+    console.error("Ошибка при подсчете:", error);
+    resultsDiv.innerHTML = `<div class="empty-message">❌ Ошибка: ${error.message}</div>`;
+  }
+}
+
+// Проверить результаты ставок
+function removeDiacritics(value) {
+  try {
+    return (value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  } catch (e) {
+    return value || "";
+  }
+}
+
+function fixSpaces(value) {
+  return (value || "")
+    .replace(/[\u00A0\u2007\u202F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeForComparison(name) {
+  const mappedName =
+    typeof mapTeamName === "function" ? mapTeamName(name) : name || "";
+  return fixSpaces(removeDiacritics(mappedName))
+    .toLowerCase()
+    .replace(/[’'`]/g, "")
+    .replace(/[^a-z0-9\u0400-\u04FF\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function checkBetsResults(bets, fdMatches) {
+  const results = [];
+
+  bets.forEach((bet) => {
+    // Ищем матч в результатах Football-Data
+    const matchedFdMatch = fdMatches.find((m) => {
+      const homeTeamNormalized = normalizeForComparison(m.homeTeam.name);
+      const awayTeamNormalized = normalizeForComparison(m.awayTeam.name);
+      const betTeam1Normalized = normalizeForComparison(bet.team1_name);
+      const betTeam2Normalized = normalizeForComparison(bet.team2_name);
+
+      return (
+        (homeTeamNormalized === betTeam1Normalized &&
+          awayTeamNormalized === betTeam2Normalized) ||
+        (homeTeamNormalized === betTeam2Normalized &&
+          awayTeamNormalized === betTeam1Normalized)
+      );
+    });
+
+    if (matchedFdMatch) {
+      const homeScore = matchedFdMatch.score.fullTime.home;
+      const awayScore = matchedFdMatch.score.fullTime.away;
+
+      let result = "unknown";
+      if (homeScore > awayScore) {
+        result = "home";
+      } else if (homeScore < awayScore) {
+        result = "away";
+      } else {
+        result = "draw";
+      }
+
+      // Определяем выиграла ли ставка
+      let isWon = false;
+      if (bet.prediction === "draw" && result === "draw") {
+        isWon = true;
+      } else if (bet.prediction === "team1" && result === "home") {
+        isWon = true;
+      } else if (bet.prediction === "team2" && result === "away") {
+        isWon = true;
+      }
+
+      results.push({
+        ...bet,
+        fdMatch: matchedFdMatch,
+        result: result,
+        isWon: isWon,
+        score: `${homeScore}:${awayScore}`,
+      });
+    } else {
+      results.push({
+        ...bet,
+        result: "not_found",
+        isWon: false,
+        score: "Матч не найден",
+      });
+    }
+  });
+
+  return results;
+}
+
+// Отобразить результаты подсчета
+function displayCalculationResults(results, originalBets) {
+  const resultsDiv = document.getElementById("countingResults");
+
+  // Группируем результаты по пользователям
+  const grouped = {};
+
+  results.forEach((result) => {
+    const key = result.username;
+    if (!grouped[key]) {
+      grouped[key] = {
+        username: result.username,
+        total: 0,
+        won: 0,
+        lost: 0,
+        notFound: 0,
+        bets: [],
+      };
+    }
+
+    grouped[key].total++;
+    if (result.result === "not_found") {
+      grouped[key].notFound++;
+    } else if (result.isWon) {
+      grouped[key].won++;
+    } else {
+      grouped[key].lost++;
+    }
+
+    grouped[key].bets.push(result);
+  });
+
+  // Строим HTML
+  let html = `<div style="margin-bottom: 20px;">`;
+
+  Object.values(grouped).forEach((group) => {
+    const winRate =
+      group.total > 0
+        ? ((group.won / (group.total - group.notFound)) * 100).toFixed(1)
+        : 0;
+
+    html += `
+      <div style="background: rgba(90, 159, 212, .1); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #5a9fd4;">
+        <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 12px; font-size: 1.05em;">
+          👤 ${group.username}
+          <span style="color: #4db8a8; margin-left: 15px;">📊 Выигрыши: ${
+            group.won
+          }/${group.total - group.notFound} (${winRate}%)</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+    `;
+
+    group.bets.forEach((bet) => {
+      let backgroundColor = "rgba(58, 123, 213, 0.2)";
+      let borderColor = "#4db8a8";
+      let resultText = "❓";
+
+      if (bet.result === "not_found") {
+        backgroundColor = "rgba(255, 152, 0, 0.2)";
+        borderColor = "#ff9800";
+        resultText = "⚠️ Матч не найден";
+      } else if (bet.isWon) {
+        backgroundColor = "rgba(76, 175, 80, 0.2)";
+        borderColor = "#4caf50";
+        resultText = "✅ Выигрыш";
+      } else {
+        backgroundColor = "rgba(244, 67, 54, 0.2)";
+        borderColor = "#f44336";
+        resultText = "❌ Проигрыш";
+      }
+
+      const matchInfo = `${bet.team1_name} vs ${bet.team2_name}`;
+      const betDisplay =
+        bet.prediction === "draw"
+          ? "Ничья"
+          : bet.prediction === "team1"
+          ? bet.team1_name
+          : bet.team2_name;
+
+      html += `
+        <div style="background: ${backgroundColor}; padding: 12px; border-radius: 6px; border-left: 2px solid ${borderColor};">
+          <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 8px;">${matchInfo}</div>
+          <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">📌 ${betDisplay}</div>
+          ${
+            bet.result !== "not_found"
+              ? `<div style="color: #ccc; font-size: 0.85em; margin-bottom: 4px;">Счет: ${bet.score}</div>`
+              : ""
+          }
+          <div style="color: #4db8a8; font-weight: 600; font-size: 0.9em;">${resultText}</div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  resultsDiv.innerHTML = html;
 }

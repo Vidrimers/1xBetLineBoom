@@ -2774,7 +2774,57 @@ app.get("/api/user/:userId/bets", (req, res) => {
   }
 });
 
+// GET /api/fd-token - Получить токен Football-Data API
+app.get("/api/fd-token", (req, res) => {
+  const token = process.env.FD_API_TOKEN;
+  if (!token) {
+    return res.status(500).json({ error: "FD_API_TOKEN не установлен" });
+  }
+  res.json({ token });
+});
+
 // GET /api/counting-bets - Получить все ставки в статусе "pending" за период
+app.get("/api/fd-matches", async (req, res) => {
+  try {
+    const { competition, dateFrom, dateTo } = req.query;
+    if (!competition || !dateFrom || !dateTo) {
+      return res
+        .status(400)
+        .json({ error: "Отсутствуют параметры competition/dateFrom/dateTo" });
+    }
+
+    const token = process.env.FD_API_TOKEN;
+    if (!token) {
+      return res.status(500).json({ error: "FD_API_TOKEN не задан" });
+    }
+
+    const url = `https://api.football-data.org/v4/competitions/${encodeURIComponent(
+      competition
+    )}/matches?status=FINISHED&dateFrom=${encodeURIComponent(
+      dateFrom
+    )}&dateTo=${encodeURIComponent(dateTo)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "X-Auth-Token": token,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res
+        .status(response.status)
+        .json({ error: errorText || response.statusText });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("/api/fd-matches", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/counting-bets", (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
