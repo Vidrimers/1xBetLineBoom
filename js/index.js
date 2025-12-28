@@ -7700,3 +7700,73 @@ function toggleTerminalAutoScroll() {
     }
   }
 }
+
+// Функция прокрутки экрана на 100vh вниз
+function scrollDownScreen() {
+  window.scrollBy({
+    top: window.innerHeight,
+    behavior: "smooth",
+  });
+}
+
+// Функция прокрутки экрана на 100vh вверх
+function scrollUpScreen() {
+  window.scrollBy({
+    top: -window.innerHeight,
+    behavior: "smooth",
+  });
+}
+
+// Показываем/скрываем кнопки прокрутки на основе положения скролла
+window.addEventListener("scroll", function () {
+  const scrollDownBtn = document.getElementById("scrollDownBtn");
+  const scrollUpBtn = document.getElementById("scrollUpBtn");
+
+  // Показываем кнопки только на мобильных устройствах (max-width: 768px)
+  const isMobile = window.innerWidth <= 768;
+  const scrollTop = window.scrollY;
+  const documentHeight = document.documentElement.scrollHeight;
+  const windowHeight = window.innerHeight;
+  const isNearBottom = scrollTop + windowHeight > documentHeight - 100;
+  const isNearTop = scrollTop < 100;
+
+  if (isMobile) {
+    // Показываем кнопку вниз, если не в конце страницы
+    if (!isNearBottom) {
+      scrollDownBtn.classList.add("show");
+    } else {
+      scrollDownBtn.classList.remove("show");
+    }
+
+    // Показываем кнопку вверх, если не в начале страницы
+    if (!isNearTop) {
+      scrollUpBtn.classList.add("show");
+    } else {
+      scrollUpBtn.classList.remove("show");
+    }
+  } else {
+    scrollDownBtn.classList.remove("show");
+    scrollUpBtn.classList.remove("show");
+  }
+});
+
+// Проверяем при загрузке страницы
+window.addEventListener("load", function () {
+  const scrollDownBtn = document.getElementById("scrollDownBtn");
+  const scrollUpBtn = document.getElementById("scrollUpBtn");
+  const isMobile = window.innerWidth <= 768;
+  const scrollTop = window.scrollY;
+  const documentHeight = document.documentElement.scrollHeight;
+  const windowHeight = window.innerHeight;
+  const isNearBottom = scrollTop + windowHeight > documentHeight - 100;
+  const isNearTop = scrollTop < 100;
+
+  if (isMobile) {
+    if (!isNearBottom) {
+      scrollDownBtn.classList.add("show");
+    }
+    if (!isNearTop) {
+      scrollUpBtn.classList.add("show");
+    }
+  }
+});

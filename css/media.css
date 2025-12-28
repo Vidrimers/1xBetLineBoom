@@ -454,6 +454,62 @@
   .event-item.hovered .event-admin-actions {
     display: flex;
   }
+
+  /* Кнопки прокрутки на мобильке */
+  .scroll-down-btn,
+  .scroll-up-btn {
+    position: fixed;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    z-index: 100;
+    color: #fff;
+    border: 2px solid;
+  }
+
+  .scroll-down-btn {
+    bottom: 20px;
+    right: 20px;
+    /* background: #3a7bd5;
+    border-color: #2a5aaa;
+    box-shadow: 0 4px 12px rgba(58, 123, 213, 0.4); */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .scroll-down-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 6px none;
+  }
+
+  .scroll-down-btn.show {
+    display: flex;
+  }
+
+  .scroll-up-btn {
+    bottom: 80px;
+    right: 20px;
+    background: transparent;
+    /* border-color: #388e3c; */
+    border: none;
+    box-shadow: none;
+  }
+
+  .scroll-up-btn:active {
+    transform: scale(0.95);
+    box-shadow: none;
+  }
+
+  .scroll-up-btn.show {
+    display: flex;
+  }
 }
 
 /* ===== PHONE: 600px и ниже ===== */
