@@ -52,7 +52,7 @@ function loadCounting() {
           Сегодня
         </button>
 
-        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 5px; flex-wrap: wrap; flex-direction: column; align-items: center;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <label for="countingDateFrom" style="color: #b0b8c8; font-weight: 500;">Дата от:</label>
             <input type="date" id="countingDateFrom" value="${yesterdayStr}" style="
@@ -177,7 +177,7 @@ function displayCountingBets(bets, dateFrom, dateTo) {
 
   Object.values(grouped).forEach((group) => {
     html += `
-      <div style="background: rgba(40, 44, 54, 0.85); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 3px solid #5a9fd4;">
+      <div style="background: rgba(40, 44, 54, 0.85); padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 3px solid #5a9fd4;">
         <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 12px; font-size: 1em;">
           👤 ${group.username} — 🏆 ${group.event_name}
         </div>
