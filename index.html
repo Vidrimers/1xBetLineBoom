@@ -1941,7 +1941,13 @@
           ></div>
           <div
             id="tournamentParticipantBetsList"
-            style="max-height: 500px; overflow-y: auto"
+            style="
+              max-height: 500px;
+              overflow-y: auto;
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+              gap: 10px;
+            "
           >
             <div class="empty-message">Загружаем ставки...</div>
           </div>
