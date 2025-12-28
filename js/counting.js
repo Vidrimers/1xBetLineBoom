@@ -79,13 +79,131 @@ function loadCounting() {
             ">
           </div>
         </div>
+
+        <button id="updateCountingBtn" onclick="updateCountingResults()" style="
+          padding: 8px 16px;
+          background: rgba(255, 193, 7, 0.7);
+          color: #fff8e1;
+          border: 1px solid #fbc02d;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 0.9em;
+          font-weight: 500;
+          transition: all 0.3s ease;
+        " onmouseover="this.style.background='rgba(255, 193, 7, 0.95)'" onmouseout="this.style.background='rgba(255, 193, 7, 0.7)'">
+          🔄 Обновить
+        </button>
       </div>
 
       <div id="countingResults" style="margin-top: 20px;">
-        <div class="empty-message">Выберите даты и нажмите "Обновить"</div>
+        <div class="empty-message">Нажмите "Обновить" для загрузки ставок</div>
       </div>
     `;
+
+    // Автоматически загружаем ставки на сегодня
+    updateCountingResults();
   }
+}
+
+async function updateCountingResults() {
+  const dateFrom = document.getElementById("countingDateFrom")?.value;
+  const dateTo = document.getElementById("countingDateTo")?.value;
+
+  if (!dateFrom || !dateTo) {
+    alert("Выберите даты");
+    return;
+  }
+
+  try {
+    // Получаем все ставки со статусом "pending"
+    const response = await fetch(
+      `/api/counting-bets?dateFrom=${dateFrom}&dateTo=${dateTo}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Ошибка при загрузке ставок");
+    }
+
+    const bets = await response.json();
+    displayCountingBets(bets, dateFrom, dateTo);
+  } catch (error) {
+    console.error("Ошибка:", error);
+    document.getElementById("countingResults").innerHTML =
+      '<div class="empty-message">Ошибка при загрузке ставок</div>';
+  }
+}
+
+function displayCountingBets(bets, dateFrom, dateTo) {
+  const resultsDiv = document.getElementById("countingResults");
+
+  if (!bets || bets.length === 0) {
+    resultsDiv.innerHTML =
+      '<div class="empty-message">Нет ставок в статусе "В ожидании" за выбранный период</div>';
+    return;
+  }
+
+  // Группируем ставки по пользователям и турнирам
+  const grouped = {};
+
+  bets.forEach((bet) => {
+    const key = `${bet.username}__${bet.event_name}`;
+    if (!grouped[key]) {
+      grouped[key] = {
+        username: bet.username,
+        event_name: bet.event_name,
+        bets: [],
+      };
+    }
+    grouped[key].bets.push(bet);
+  });
+
+  // Строим HTML
+  let html = `<div style="margin-bottom: 20px;">`;
+
+  Object.values(grouped).forEach((group) => {
+    html += `
+      <div style="background: rgba(40, 44, 54, 0.85); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 3px solid #5a9fd4;">
+        <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 12px; font-size: 1em;">
+          👤 ${group.username} — 🏆 ${group.event_name}
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+    `;
+
+    group.bets.forEach((bet) => {
+      const matchInfo = `${bet.team1_name || "Команда1"} vs ${
+        bet.team2_name || "Команда2"
+      }`;
+      const betDisplay = bet.is_final_bet
+        ? `${bet.parameter_type}: ${bet.prediction}`
+        : bet.prediction === "draw"
+        ? "Ничья"
+        : bet.prediction === "team1"
+        ? bet.team1_name
+        : bet.team2_name;
+
+      html += `
+        <div style="background: rgba(58, 123, 213, 0.2); padding: 12px; border-radius: 6px; border-left: 2px solid #4db8a8;">
+          <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 8px;">${matchInfo}</div>
+          <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">📌 ${betDisplay}</div>
+          <div style="color: #999; font-size: 0.8em;">
+            ${
+              bet.match_date
+                ? new Date(bet.match_date).toLocaleString("ru-RU")
+                : "Дата неизвестна"
+            }
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  resultsDiv.innerHTML = html;
 }
 
 function setCountingPreviousDay() {

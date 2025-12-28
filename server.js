@@ -2774,6 +2774,50 @@ app.get("/api/user/:userId/bets", (req, res) => {
   }
 });
 
+// GET /api/counting-bets - Получить все ставки в статусе "pending" за период
+app.get("/api/counting-bets", (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+
+    if (!dateFrom || !dateTo) {
+      return res
+        .status(400)
+        .json({ error: "Требуются даты dateFrom и dateTo" });
+    }
+
+    // Запрашиваем все ставки в статусе pending, которые были созданы в выбранный период
+    const bets = db
+      .prepare(
+        `
+      SELECT 
+        b.*,
+        u.username,
+        m.team1_name,
+        m.team2_name,
+        m.winner,
+        m.status as match_status,
+        m.round,
+        m.is_final,
+        m.match_date,
+        e.name as event_name
+      FROM bets b
+      JOIN users u ON b.user_id = u.id
+      JOIN matches m ON b.match_id = m.id
+      JOIN events e ON m.event_id = e.id
+      WHERE m.winner IS NULL
+        AND DATE(m.match_date) >= DATE(?)
+        AND DATE(m.match_date) <= DATE(?)
+      ORDER BY e.name, u.username, m.match_date
+    `
+      )
+      .all(dateFrom, dateTo);
+
+    res.json(bets);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/bets/:betId - Удалить ставку пользователя
 app.delete("/api/bets/:betId", async (req, res) => {
   try {
