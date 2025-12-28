@@ -14,7 +14,8 @@ const THREAD_ID = process.env.THREAD_ID
   : null;
 const SERVER_IP = process.env.SERVER_IP || "localhost";
 const SERVER_PORT = process.env.PORT || "3000";
-const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
+// const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
+const SERVER_URL = `https://${SERVER_IP}`;
 
 console.log(
   `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
