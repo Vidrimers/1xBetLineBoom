@@ -567,7 +567,7 @@ function displayEvents() {
           <div style="font-size: 1em; font-weight: bold; color: #5a9fd4; min-width: 30px; text-align: center; padding-top: 5px;">#${positionNumber}</div>
           <div class="event-item ${event.locked_reason ? "locked" : ""} ${
         event.id === currentEventId ? "active" : ""
-      }" style="flex: 1;">
+      }" data-event-id="${event.id}" style="flex: 1;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
               <div onclick="selectEvent(${event.id}, '${
         event.name
@@ -643,6 +643,8 @@ function displayEvents() {
 
   eventsList.innerHTML = html;
   initEventAdminToggles();
+  initEventItemClickHandlers();
+  restoreMobileActiveEvent();
 }
 
 async function selectEvent(eventId, eventName) {
@@ -874,6 +876,99 @@ function initEventAdminToggles() {
       toggle.textContent = isVisible ? "×" : "<";
     });
   });
+}
+
+const EVENT_ADMIN_MOBILE_BREAKPOINT = 768;
+let eventItemClickHandlersInit = false;
+let mobileActiveEventId = null;
+
+function restoreMobileActiveEvent() {
+  const eventsList = document.getElementById("eventsList");
+  if (!eventsList || !mobileActiveEventId) {
+    return;
+  }
+
+  eventsList
+    .querySelectorAll(".event-item.hovered")
+    .forEach((item) => item.classList.remove("hovered"));
+
+  const target = eventsList.querySelector(
+    `.event-item[data-event-id="${mobileActiveEventId}"]`
+  );
+
+  if (target) {
+    target.classList.add("hovered");
+  }
+}
+
+function initEventItemClickHandlers() {
+  if (eventItemClickHandlersInit) {
+    return;
+  }
+
+  const eventsList = document.getElementById("eventsList");
+  if (!eventsList) {
+    return;
+  }
+
+  const mobileQuery = window.matchMedia(
+    `(max-width: ${EVENT_ADMIN_MOBILE_BREAKPOINT}px)`
+  );
+
+  const clearHovered = () => {
+    mobileActiveEventId = null;
+    eventsList
+      .querySelectorAll(".event-item.hovered")
+      .forEach((item) => item.classList.remove("hovered"));
+  };
+
+  const handleItemClick = (event) => {
+    if (!mobileQuery.matches) {
+      return;
+    }
+
+    const item = event.target.closest(".event-item");
+    if (!item || event.target.closest(".event-admin-actions")) {
+      return;
+    }
+
+    const eventId = item.dataset.eventId;
+    if (!eventId) {
+      return;
+    }
+
+    const isActive = mobileActiveEventId === eventId;
+    mobileActiveEventId = isActive ? null : eventId;
+    restoreMobileActiveEvent();
+  };
+
+  eventsList.addEventListener("click", handleItemClick);
+
+  document.addEventListener("click", (event) => {
+    if (!mobileQuery.matches) {
+      return;
+    }
+
+    if (event.target.closest(".event-item")) {
+      return;
+    }
+
+    clearHovered();
+  });
+
+  const handleMediaChange = (event) => {
+    if (!event.matches) {
+      clearHovered();
+    }
+  };
+
+  if (typeof mobileQuery.addEventListener === "function") {
+    mobileQuery.addEventListener("change", handleMediaChange);
+  } else if (typeof mobileQuery.addListener === "function") {
+    mobileQuery.addListener(handleMediaChange);
+  }
+
+  eventItemClickHandlersInit = true;
 }
 
 function initMatchRowClickHandlers() {

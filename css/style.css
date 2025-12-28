@@ -391,6 +391,7 @@ button:active {
   transition: all 0.3s ease;
   border-left: 4px solid #3a7bd5;
   color: #e0e6f0;
+  position: relative;
 }
 
 .event-item:hover {
@@ -566,6 +567,10 @@ button:active {
   right: 10px;
   width: auto;
   z-index: 1;
+  display: none;
+  gap: 5px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .event-admin-controls {
@@ -603,6 +608,20 @@ button:active {
   background: rgba(77, 184, 168, 0.95);
   border-color: rgba(77, 184, 168, 0.95);
   transform: rotate(-90deg);
+}
+
+.event-item:hover .event-admin-actions {
+  display: flex;
+}
+
+@media (max-width: 768px) {
+  .event-item:hover .event-admin-actions {
+    display: none;
+  }
+
+  .event-item.hovered .event-admin-actions {
+    display: flex;
+  }
 }
 
 .match-row.has-user-bet {
