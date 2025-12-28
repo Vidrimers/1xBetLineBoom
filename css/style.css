@@ -614,16 +614,6 @@ button:active {
   display: flex;
 }
 
-@media (max-width: 768px) {
-  .event-item:hover .event-admin-actions {
-    display: none;
-  }
-
-  .event-item.hovered .event-admin-actions {
-    display: flex;
-  }
-}
-
 .match-row.has-user-bet {
   background: rgba(80, 60, 40, 0.7);
   border-left-color: #ffb81c;
@@ -992,8 +982,6 @@ button.tab-btn:hover {
   min-width: 50px;
   text-align: center;
 }
-
-
 
 .participant-points {
   text-align: center;
@@ -1686,43 +1674,6 @@ button.tab-btn:hover {
   transform: scale(0.98);
 }
 
-@media (max-width: 768px) {
-  .content {
-    grid-template-columns: 1fr;
-  }
-
-  header h1 {
-    font-size: 1.8em;
-  }
-
-  .match-vs {
-    flex-direction: column;
-  }
-
-  .bet-buttons {
-    flex-direction: column;
-  }
-
-  .modal-content {
-    width: 95%;
-    max-height: 90vh;
-  }
-
-  .admin-user-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .admin-user-actions {
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .admin-btn {
-    flex: 1;
-  }
-}
-
 /* ===== НАСТРОЙКИ ===== */
 .settings-container {
   display: flex;
@@ -1839,17 +1790,6 @@ button.tab-btn:hover {
 .btn-delete:hover {
   background: rgba(244, 67, 54, 0.6);
   color: #fff;
-}
-
-@media (max-width: 500px) {
-  .settings-container {
-    flex-direction: column;
-  }
-
-  .setting-item {
-    min-width: 100%;
-    flex: 1 1 100%;
-  }
 }
 
 /* Кнопки фильтрации по турам */
@@ -2269,67 +2209,6 @@ input:checked + .slider:before {
   background: rgba(255, 152, 0, 0.1);
   border-radius: 10px;
   border: 2px dashed #ff9800;
-}
-
-@media (max-width: 600px) {
-  .tournament-winner-card {
-    padding: 25px;
-  }
-
-  .winner-header {
-    font-size: 1.2em;
-  }
-
-  .winner-avatar {
-    width: 120px;
-    height: 120px;
-  }
-
-  .winner-name {
-    font-size: 1.5em;
-  }
-
-  .stat-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .stat-value {
-    text-align: left;
-  }
-
-  .award-description {
-    text-align: left;
-  }
-
-  .no-winner-message {
-    font-size: 1.5em;
-    min-height: 200px;
-    padding: 30px;
-  }
-
-  /* Убираем ненужные ховеры на мобильке */
-  .event-item:hover,
-  .event-item.locked:hover,
-  .matches-table tr:hover,
-  .match-admin-toggle:hover,
-  .event-admin-toggle:hover,
-  .bet-btn:hover,
-  .bet-delete-btn:hover,
-  .participant-item:hover,
-  .participant-item.winner:hover,
-  .event-card:hover,
-  .event-card.locked:hover,
-  .round-filter-btn:hover,
-  .edit-rounds-btn:hover,
-  .setting-link:hover,
-  .setting-hint-small a:hover,
-  .btn-save:hover,
-  .btn-delete:hover {
-    background: unset;
-    border-color: unset;
-    color: unset;
-  }
 }
 
 /* Контейнер с матчами - расположение в одну строку с space-between */

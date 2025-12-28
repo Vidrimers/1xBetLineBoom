@@ -115,7 +115,12 @@
   }
 
   .content {
+    grid-template-columns: 1fr;
     gap: 15px;
+  }
+
+  header h1 {
+    font-size: 1.8em;
   }
 
   .section {
@@ -156,6 +161,15 @@
   .team {
     padding: 6px;
     font-size: 0.85em;
+  }
+
+  .match-vs {
+    flex-direction: column;
+  }
+
+  .bet-buttons {
+    gap: 5px;
+    flex-direction: column;
   }
 
   .bet-buttons {
@@ -412,6 +426,33 @@
 
   .section.bet-section {
     max-height: 55vh;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .admin-user-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-user-actions {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .admin-btn {
+    flex: 1;
+  }
+
+  .event-item:hover .event-admin-actions {
+    display: none;
+  }
+
+  .event-item.hovered .event-admin-actions {
+    display: flex;
   }
 }
 
@@ -920,6 +961,77 @@
   .rounds-order-buttons button {
     padding: 6px 12px;
     font-size: 0.8em;
+  }
+
+  .tournament-winner-card {
+    padding: 25px;
+  }
+
+  .winner-header {
+    font-size: 1.2em;
+  }
+
+  .winner-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .winner-name {
+    font-size: 1.5em;
+  }
+
+  .stat-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stat-value {
+    text-align: left;
+  }
+
+  .award-description {
+    text-align: left;
+  }
+
+  .no-winner-message {
+    font-size: 1.5em;
+    min-height: 200px;
+    padding: 30px;
+  }
+
+  /* Убираем ненужные ховеры на мобильке */
+  .event-item:hover,
+  .event-item.locked:hover,
+  .matches-table tr:hover,
+  .match-admin-toggle:hover,
+  .event-admin-toggle:hover,
+  .bet-btn:hover,
+  .bet-delete-btn:hover,
+  .participant-item:hover,
+  .participant-item.winner:hover,
+  .event-card:hover,
+  .event-card.locked:hover,
+  .round-filter-btn:hover,
+  .edit-rounds-btn:hover,
+  .setting-link:hover,
+  .setting-hint-small a:hover,
+  .btn-save:hover,
+  .btn-delete:hover {
+    background: unset;
+    border-color: unset;
+    color: unset;
+  }
+}
+
+/* ===== EXTRA SMALL: 500px и ниже ===== */
+@media (max-width: 500px) {
+  .settings-container {
+    flex-direction: column;
+  }
+
+  .setting-item {
+    min-width: 100%;
+    flex: 1 1 100%;
   }
 }
 
