@@ -600,18 +600,20 @@ function displayEvents() {
                 }
                 ${lockedBadge}
               </div>
-              ${
-                isAdmin()
-                  ? `<div style="display: flex; gap: 5px; margin-left: 10px; flex-wrap: wrap; justify-content: flex-end;">
+            </div>
+            ${
+              isAdmin()
+                ? `<div class="event-admin-actions">
+                  <div class="event-admin-controls" data-event-id="${event.id}">
                     <button onclick="openEditEventModal(${
                       event.id
                     }, '${event.name.replace(/'/g, "\\'")}', '${
-                      event.description
-                        ? event.description.replace(/'/g, "\\'")
-                        : ""
-                    }', '${event.start_date || ""}', '${
-                      event.end_date || ""
-                    }')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
+                    event.description
+                      ? event.description.replace(/'/g, "\\'")
+                      : ""
+                  }', '${event.start_date || ""}', '${
+                    event.end_date || ""
+                  }')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
                     ${
                       event.locked_reason
                         ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
@@ -620,10 +622,19 @@ function displayEvents() {
                     <button class="event-delete-btn" onclick="deleteEvent(${
                       event.id
                     })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'">✕</button>
-                  </div>`
-                  : ""
-              }
-            </div>
+                  </div>
+                  <button
+                    class="event-admin-toggle"
+                    data-event-id="${event.id}"
+                    type="button"
+                    aria-expanded="false"
+                    title="Дополнительные действия"
+                  >
+                    &lt;
+                  </button>
+                </div>`
+                : ""
+            }
           </div>
         </div>
     `;
@@ -631,6 +642,7 @@ function displayEvents() {
     .join("");
 
   eventsList.innerHTML = html;
+  initEventAdminToggles();
 }
 
 async function selectEvent(eventId, eventName) {
@@ -835,6 +847,24 @@ function initAdminActionToggles() {
     const matchId = toggle.dataset.matchId;
     const panel = document.querySelector(
       `.match-admin-controls[data-match-id="${matchId}"]`
+    );
+    if (!panel) return;
+
+    toggle.addEventListener("click", () => {
+      const isVisible = panel.classList.toggle("visible");
+      toggle.setAttribute("aria-expanded", isVisible ? "true" : "false");
+      toggle.textContent = isVisible ? "×" : "<";
+    });
+  });
+}
+
+function initEventAdminToggles() {
+  const toggles = document.querySelectorAll(".event-admin-toggle");
+
+  toggles.forEach((toggle) => {
+    const eventId = toggle.dataset.eventId;
+    const panel = document.querySelector(
+      `.event-admin-controls[data-event-id="${eventId}"]`
     );
     if (!panel) return;
 

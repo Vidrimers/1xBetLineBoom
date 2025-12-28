@@ -557,6 +557,51 @@ button:active {
   display: flex;
 }
 
+.event-admin-actions {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  width: auto;
+  z-index: 1;
+}
+
+.event-admin-controls {
+  position: absolute;
+  top: 0;
+  right: 32px;
+  display: none;
+  gap: 5px;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.event-admin-controls.visible {
+  display: flex;
+}
+
+.event-admin-toggle {
+  border-radius: 5px;
+  background: transparent !important;
+  border: 1px solid rgba(58, 123, 213, 0.9);
+  color: #e0e6f0;
+  font-size: 0.8em;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 3px 5px !important;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.event-admin-toggle:hover {
+  background: transparent;
+}
+
+.event-admin-toggle[aria-expanded="true"] {
+  background: rgba(77, 184, 168, 0.95);
+  border-color: rgba(77, 184, 168, 0.95);
+  transform: rotate(-90deg);
+}
+
 .match-row.has-user-bet {
   background: rgba(80, 60, 40, 0.7);
   border-left-color: #ffb81c;
