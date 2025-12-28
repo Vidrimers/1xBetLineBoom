@@ -471,15 +471,17 @@ button:active {
   position: absolute;
   top: 5px;
   left: 5px;
-  display: flex;
+  display: none;
   align-items: center;
   gap: 6px;
   z-index: 1;
 }
 
+.match-row.hovered .match-admin-panel {
+  display: flex;
+}
+
 .match-result-toggle {
-  /* width: 28px; */
-  /* height: 28px; */
   border-radius: 5px;
   background: transparent !important;
   border: 1px solid rgba(58, 123, 213, 0.9);
@@ -495,10 +497,6 @@ button:active {
   background: rgba(77, 184, 168, 0.95);
   border-color: rgba(77, 184, 168, 0.95);
   transform: rotate(90deg);
-}
-.match-result-toggle:hover {
-  /* transform: translateY(0); */
-  /* transform: rotate(90deg); */
 }
 
 .match-result-controls {
@@ -517,6 +515,11 @@ button:active {
   right: 5px;
   width: auto;
   z-index: 1;
+  display: none;
+}
+
+.match-row.hovered .match-admin-actions {
+  display: flex;
 }
 
 .match-admin-toggle {

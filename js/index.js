@@ -876,6 +876,54 @@ function initEventAdminToggles() {
   });
 }
 
+function initMatchRowClickHandlers() {
+  const matchRows = document.querySelectorAll(".match-row");
+  let isProcessing = false;
+
+  matchRows.forEach((row) => {
+    row.addEventListener("click", (e) => {
+      // Не закрывать если кликнули на кнопку админ-панели или результатов
+      if (
+        e.target.closest(".match-admin-actions") ||
+        e.target.closest(".match-admin-panel") ||
+        e.target.closest(".match-result-controls")
+      ) {
+        e.stopPropagation();
+        return;
+      }
+
+      isProcessing = true;
+
+      // Закрыть все остальные панели
+      matchRows.forEach((other) => {
+        if (other !== row) {
+          other.classList.remove("hovered");
+        }
+      });
+
+      // Переключить текущую панель
+      row.classList.toggle("hovered");
+
+      // Предотвратить срабатывание document click handler
+      setTimeout(() => {
+        isProcessing = false;
+      }, 50);
+    });
+  });
+
+  // Закрыть панели при клике вне контейнера матчей
+  document.addEventListener("click", (e) => {
+    if (isProcessing) return;
+
+    const matchesContainer = document.getElementById("matchesContainer");
+    if (matchesContainer && !matchesContainer.contains(e.target)) {
+      matchRows.forEach((row) => {
+        row.classList.remove("hovered");
+      });
+    }
+  });
+}
+
 // Отображение карточки победителя завершённого турнира
 async function displayTournamentWinner(eventId) {
   try {
@@ -1484,6 +1532,7 @@ function displayMatches() {
   initToggleStates();
   initMatchResultToggles();
   initAdminActionToggles();
+  initMatchRowClickHandlers();
 }
 
 // ===== СТАВКИ =====
