@@ -727,6 +727,11 @@ button.tab-btn:hover {
   text-align: center;
 }
 
+#tournamentParticipantsList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
+
 .participant-points {
   text-align: center;
   display: flex;
@@ -907,7 +912,7 @@ button.tab-btn:hover {
   text-align: center;
   padding: 10px;
   /* background: linear-gradient(135deg, #0066cc 0%, #001f50 100%); */
-  background: rgba(58, 123, 213, 0.7);
+  /* background: rgba(58, 123, 213, 0.7); */
   /* color: white; */
   color: #e0e6f0;
   border-radius: 10px;
@@ -947,9 +952,9 @@ button.tab-btn:hover {
 
 .profile-stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
   margin-top: 15px;
+  gap: 10px;
 }
 
 .stat-card {
@@ -959,6 +964,9 @@ button.tab-btn:hover {
   text-align: center;
   border-left: 4px solid #3a7bd5;
   color: #e0e6f0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .stat-card.won {
@@ -991,6 +999,7 @@ button.tab-btn:hover {
   background: rgba(44, 50, 63, 0.7);
   border-radius: 8px;
   border-left: 4px solid #3a7bd5;
+  text-align: center;
 }
 
 .profile-section-title {
@@ -1963,7 +1972,7 @@ input:checked + .slider:before {
 .stat-label {
   color: #a0a8b8;
   font-size: 0.9em;
-  text-align: left;
+  /* text-align: left; */
   flex: 1;
 }
 
@@ -1971,7 +1980,7 @@ input:checked + .slider:before {
   color: #4db8a8;
   font-size: 1em;
   font-weight: bold;
-  text-align: right;
+  /* text-align: right; */
   flex: 0 0 auto;
 }
 
@@ -1979,7 +1988,7 @@ input:checked + .slider:before {
   color: #ffd700;
   font-size: 1em;
   max-width: 150px;
-  text-align: right;
+  /* text-align: right; */
   word-break: break-word;
 }
 

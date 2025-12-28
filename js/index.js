@@ -2695,11 +2695,11 @@ function displayProfile(profile) {
         <div class="stat-value">${profile.total_bets}</div>
       </div>
       <div class="stat-card won">
-        <div class="stat-label">✅ Угаданных ставок за всё время</div>
+        <div class="stat-label">✅ Угаданных ставок</div>
         <div class="stat-value">${profile.won_bets}</div>
       </div>
       <div class="stat-card lost">
-        <div class="stat-label">❌ Неугаданных ставок за всё время</div>
+        <div class="stat-label">❌ Неугаданных ставок</div>
         <div class="stat-value">${profile.lost_bets}</div>
       </div>
       <div class="stat-card pending">
