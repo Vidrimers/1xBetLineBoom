@@ -1347,9 +1347,10 @@ button.tab-btn:hover {
 }
 
 .modal-close:hover {
-  transform: scale(1.2);
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
+  background: transparent;
+  border-radius: none !important;
+  box-shadow: none !important;
+  transform: rotate(720deg) !important;
 }
 
 .modal-body {
