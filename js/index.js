@@ -6277,7 +6277,7 @@ async function showUserProfile(userId, username) {
 
     // Формируем модальное окно
     const profileHTML = `
-      <div style="background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
+      <div style="background: #0a0e27; padding: 15px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
         <h2 style="color: #7ab0e0; margin-bottom: 20px; text-align: center;">${username}</h2>
         
         <div style="text-align: center; margin-bottom: 25px;">
@@ -6409,8 +6409,8 @@ async function showUserProfile(userId, username) {
     overlay.style.cssText =
       "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;";
     overlay.innerHTML = `
-      <div style="position: relative; background: #0a0e27; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-        <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #999; font-size: 24px; cursor: pointer;">×</button>
+      <div style="position: relative; background: #0a0e27; padding: 5px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; scrollbar-width: none;">
+        <button class="close-profile-btn" onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 0; right: 0; background: none; border: none; color: #999; font-size: 24px; cursor: pointer;">×</button>
         ${profileHTML.replace(
           '<div style="background: #0a0e27;',
           '<div style="background: transparent;'

@@ -272,6 +272,17 @@ button:active {
   transform: translateY(0);
 }
 
+.close-profile-btn {
+  position: sticky !important;
+  top: 0;
+  left: 100%;
+  transition: transform 0.35s ease !important;
+}
+.close-profile-btn:hover {
+  box-shadow: none !important;
+  transform: rotate(720deg) scale(1.05) !important;
+}
+
 .content {
   width: 100%;
   max-width: 1200px;
