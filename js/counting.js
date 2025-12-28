@@ -368,11 +368,67 @@ async function calculateCountingResults() {
     // Проверяем ставки и определяем результаты
     const results = checkBetsResults(bets, matches);
 
+    // Пытаемся подтвердить результаты для матчей (обновляем статус и победителя)
+    await confirmMatchesFromCounting(results);
+
+    // Обновляем список ставок, чтобы вкладка «Мои ставки» увидела финальную разбивку
+    await loadMyBets();
+
     // Отображаем результаты
     displayCalculationResults(results, bets);
   } catch (error) {
     console.error("Ошибка при подсчете:", error);
     resultsDiv.innerHTML = `<div class="empty-message">❌ Ошибка: ${error.message}</div>`;
+  }
+}
+
+async function confirmMatchesFromCounting(results) {
+  if (!isAdmin() || !currentUser) {
+    return;
+  }
+
+  const toUpdate = {};
+
+  results.forEach((betResult) => {
+    const matchId = betResult.match_id;
+    const fdMatch = betResult.fdMatch;
+    if (matchId && fdMatch) {
+      toUpdate[matchId] = fdMatch;
+    }
+  });
+
+  const adminUsername = currentUser.username;
+  const updateEntries = Object.entries(toUpdate);
+
+  for (const [matchId, fdMatch] of updateEntries) {
+    const homeScore = fdMatch.score?.fullTime?.home ?? 0;
+    const awayScore = fdMatch.score?.fullTime?.away ?? 0;
+    const resultKey =
+      homeScore > awayScore
+        ? "team1_win"
+        : homeScore < awayScore
+        ? "team2_win"
+        : "draw";
+
+    try {
+      const response = await fetch(`/api/admin/matches/${matchId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: adminUsername,
+          status: "finished",
+          result: resultKey,
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn(
+          `Не удалось подтвердить матч ${matchId}: ${response.status}`
+        );
+      }
+    } catch (error) {
+      console.error(`Ошибка подтверждения матча ${matchId}:`, error);
+    }
   }
 }
 
