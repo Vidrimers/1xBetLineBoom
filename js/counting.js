@@ -181,7 +181,7 @@ function displayCountingBets(bets, dateFrom, dateTo) {
         <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 12px; font-size: 1em;">
           👤 ${group.username} — 🏆 ${group.event_name}
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 5px;">
     `;
 
     group.bets.forEach((bet) => {
