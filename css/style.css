@@ -2286,6 +2286,29 @@ input:checked + .slider:before {
     min-height: 200px;
     padding: 30px;
   }
+
+  /* Убираем ненужные ховеры на мобильке */
+  .event-item:hover,
+  .event-item.locked:hover,
+  .matches-table tr:hover,
+  .match-admin-toggle:hover,
+  .event-admin-toggle:hover,
+  .bet-btn:hover,
+  .bet-delete-btn:hover,
+  .participant-item:hover,
+  .participant-item.winner:hover,
+  .event-card:hover,
+  .event-card.locked:hover,
+  .round-filter-btn:hover,
+  .edit-rounds-btn:hover,
+  .setting-link:hover,
+  .setting-hint-small a:hover,
+  .btn-save:hover,
+  .btn-delete:hover {
+    background: unset;
+    border-color: unset;
+    color: unset;
+  }
 }
 
 /* Контейнер с матчами - расположение в одну строку с space-between */
