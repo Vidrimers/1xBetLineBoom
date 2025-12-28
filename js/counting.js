@@ -93,6 +93,21 @@ function loadCounting() {
         " onmouseover="this.style.background='rgba(255, 193, 7, 0.95)'" onmouseout="this.style.background='rgba(255, 193, 7, 0.7)'">
           🔄 Обновить
         </button>
+
+        <button id="countingCalculateBtn" style="
+          padding: 8px 16px;
+          background: rgba(76, 175, 80, 0.7);
+          color: #c8e6c9;
+          border: 1px solid #4caf50;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 0.9em;
+          font-weight: 500;
+          transition: all 0.3s ease;
+          margin-left: 8px;
+        " onmouseover="this.style.background='rgba(76, 175, 80, 0.95)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.7)'">
+          📊 Считать
+        </button>
       </div>
 
       <div id="countingResults" style="margin-top: 20px;">
