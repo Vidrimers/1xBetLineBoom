@@ -4287,20 +4287,15 @@ app.post("/api/admin/matches", (req, res) => {
       .json({ error: "Турнир, команда 1 и команда 2 обязательны" });
   }
 
-  // Проверяем дату матча
-  if (!match_date) {
-    return res.status(400).json({
-      error: "Дата матча обязательна",
-    });
-  }
-
-  // Проверяем что дата валидная
-  const dateObj = new Date(match_date);
-  if (isNaN(dateObj.getTime())) {
-    return res.status(400).json({
-      error:
-        "Неверный формат даты. Используйте ISO формат (YYYY-MM-DDTHH:mm:ss)",
-    });
+  // Проверяем что дата валидная (если указана)
+  if (match_date) {
+    const dateObj = new Date(match_date);
+    if (isNaN(dateObj.getTime())) {
+      return res.status(400).json({
+        error:
+          "Неверный формат даты. Используйте ISO формат (YYYY-MM-DDTHH:mm:ss)",
+      });
+    }
   }
 
   try {

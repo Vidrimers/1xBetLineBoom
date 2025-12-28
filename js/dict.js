@@ -137,6 +137,8 @@ const TEAM_NAME_MAP = {
   виченца: "LR Vicenza",
   пиза: "AC Pisa 1909",
   комо: "Como 1907",
+  кальяри: "Cagliari Calcio",
+  парма: "Parma Calcio 1913",
 
   // ===== WORLD CUP 2026 =====
   // NORTE Y AMÉRICA CENTRAL
