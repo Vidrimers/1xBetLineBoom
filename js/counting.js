@@ -213,17 +213,22 @@ function displayCountingBets(bets, dateFrom, dateTo) {
         : bet.prediction === "team1"
         ? bet.team1_name
         : bet.team2_name;
+      const formattedMatchDate = bet.match_date
+        ? new Date(bet.match_date).toLocaleString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "Дата неизвестна";
 
       html += `
         <div style="background: rgba(58, 123, 213, 0.2); padding: 12px; border-radius: 6px; border-left: 2px solid #4db8a8;">
           <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 8px;">${matchInfo}</div>
           <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">📌 ${betDisplay}</div>
           <div style="color: #999; font-size: 0.8em;">
-            ${
-              bet.match_date
-                ? new Date(bet.match_date).toLocaleString("ru-RU")
-                : "Дата неизвестна"
-            }
+            ${formattedMatchDate}
           </div>
         </div>
       `;
