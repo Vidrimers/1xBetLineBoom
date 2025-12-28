@@ -828,6 +828,24 @@ function initMatchResultToggles() {
   });
 }
 
+function initAdminActionToggles() {
+  const toggles = document.querySelectorAll(".match-admin-toggle");
+
+  toggles.forEach((toggle) => {
+    const matchId = toggle.dataset.matchId;
+    const panel = document.querySelector(
+      `.match-admin-controls[data-match-id="${matchId}"]`
+    );
+    if (!panel) return;
+
+    toggle.addEventListener("click", () => {
+      const isVisible = panel.classList.toggle("visible");
+      toggle.setAttribute("aria-expanded", isVisible ? "true" : "false");
+      toggle.textContent = isVisible ? "×" : "<";
+    });
+  });
+}
+
 // Отображение карточки победителя завершённого турнира
 async function displayTournamentWinner(eventId) {
   try {
@@ -1154,35 +1172,46 @@ function displayMatches() {
                 `
                 }
               </div>
-              <div style="position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 1;">
-                ${
-                  effectiveStatus === "finished"
-                    ? `
-                <button onclick="unlockMatch(${match.id})"
-                  style="background: transparent; border: 1px solid #f57c00; color: #ffe0b2; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
-                  onmouseover="this.style.background='rgba(255, 152, 0, 0.6)'; this.style.color='#fff'"
-                  onmouseout="this.style.background='transparent'; this.style.color='#ffe0b2'"
-                  title="Разблокировать матч">
-                  🔓
-                </button>
-                `
-                    : ""
-                }
-                <button onclick="openEditMatchModal(${match.id}, '${
+              <div class="match-admin-actions" data-match-id="${match.id}">
+                <div class="match-admin-controls" data-match-id="${match.id}">
+                  ${
+                    effectiveStatus === "finished"
+                      ? `
+                  <button onclick="unlockMatch(${match.id})"
+                    style="background: transparent; border: 1px solid #f57c00; color: #ffe0b2; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
+                    onmouseover="this.style.background='rgba(255, 152, 0, 0.6)'; this.style.color='#fff'"
+                    onmouseout="this.style.background='transparent'; this.style.color='#ffe0b2'"
+                    title="Разблокировать матч">
+                    🔓
+                  </button>
+                  `
+                      : ""
+                  }
+                  <button onclick="openEditMatchModal(${match.id}, '${
                     match.team1_name
                   }', '${match.team2_name}', '${match.match_date || ""}', '${
                     match.round || ""
                   }')"
-                  style="background: transparent; border: 1px solid #3a7bd5; color: #7ab0e0; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
-                  onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
-                  onmouseout="this.style.background='transparent'; this.style.color='#7ab0e0'">
-                  ✏️
-                </button>
-                <button onclick="deleteMatch(${match.id})"
-                  style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
-                  onmouseover="this.style.background='#f44336'; this.style.color='white'"
-                  onmouseout="this.style.background='transparent'; this.style.color='#f44336'">
-                  ✕
+                    style="background: transparent; border: 1px solid #3a7bd5; color: #7ab0e0; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
+                    onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
+                    onmouseout="this.style.background='transparent'; this.style.color='#7ab0e0'">
+                    ✏️
+                  </button>
+                  <button onclick="deleteMatch(${match.id})"
+                    style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
+                    onmouseover="this.style.background='#f44336'; this.style.color='white'"
+                    onmouseout="this.style.background='transparent'; this.style.color='#f44336'">
+                    ✕
+                  </button>
+                </div>
+                <button
+                  class="match-admin-toggle"
+                  data-match-id="${match.id}"
+                  type="button"
+                  aria-expanded="false"
+                  title="Работа с матчем"
+                >
+                  &lt;
                 </button>
               </div>
             `
@@ -1424,6 +1453,7 @@ function displayMatches() {
   // Инициализируем состояние toggle'ов после добавления HTML в DOM
   initToggleStates();
   initMatchResultToggles();
+  initAdminActionToggles();
 }
 
 // ===== СТАВКИ =====
