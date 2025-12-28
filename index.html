@@ -64,23 +64,11 @@
           <button id="authBtn" class="auth-btn" onclick="initUser()">
             Войти
           </button>
-          <button
-            id="countingBtn"
-            onclick="switchTab('counting')"
-            style="
-              display: none;
-              background: rgba(58, 123, 213, 0.7);
-              border: 1px solid #3a7bd5;
-              color: #e0e6f0;
-            "
-          >
-            📊 Подсчет
-          </button>
         </div>
         <p
           id="userStatus"
           style="
-            margin-top: 10px;
+            /* margin-top: 10px; */
             color: #b0b8c8;
             text-align: center;
             display: none;
@@ -289,7 +277,31 @@
         style="display: none; margin-top: -5px"
       >
         <div class="section" id="tournamentsSection">
-          <h2>🏆 Турниры</h2>
+          <div
+            class="tournaments-table-header"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 10px;
+            "
+          >
+            <h2 style="margin: 0">🏆 Турниры</h2>
+            <button
+              id="countingBtn"
+              onclick="switchTab('counting')"
+              style="
+                display: none;
+                background: transparent;
+                border: 1px solid #3a7bd5;
+                color: #e0e6f0;
+                padding: 3px 7px;
+                font-size: 0.9em;
+              "
+            >
+              📊 Подсчет
+            </button>
+          </div>
           <div class="events-grid" id="eventsGrid">
             <div class="empty-message">Загружаем турниры...</div>
           </div>

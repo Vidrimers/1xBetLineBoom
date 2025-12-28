@@ -39,7 +39,7 @@ function loadCounting() {
           font-size: 0.9em;
           transition: all 0.3s ease;
         " onmouseover="this.style.background='rgba(58, 123, 213, 0.95)'" onmouseout="this.style.background='rgba(58, 123, 213, 0.7)'">
-          ← Предыдущая дата
+          Предыдущая дата
         </button>
 
         <button id="todayBtn" onclick="setCountingToday()" style="
