@@ -177,7 +177,7 @@ function displayCountingBets(bets, dateFrom, dateTo) {
 
   Object.values(grouped).forEach((group) => {
     html += `
-      <div style="background: rgba(40, 44, 54, 0.85); padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 3px solid #5a9fd4;">
+      <div style="background: rgba(90, 159, 212, .1);; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 3px solid #5a9fd4;">
         <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 12px; font-size: 1em;">
           👤 ${group.username} — 🏆 ${group.event_name}
         </div>
