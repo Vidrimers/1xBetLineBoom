@@ -909,6 +909,11 @@ button.tab-btn:hover {
   gap: 10px;
 }
 
+#tournamentParticipantsList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
+
 .participant-item {
   padding: 15px;
   background: rgba(44, 50, 63, 0.7);
@@ -988,10 +993,7 @@ button.tab-btn:hover {
   text-align: center;
 }
 
-#tournamentParticipantsList {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
-}
+
 
 .participant-points {
   text-align: center;
