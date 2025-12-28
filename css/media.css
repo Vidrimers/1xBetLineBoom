@@ -67,6 +67,10 @@
     font-size: 1.4em;
   }
 
+  #userStatus {
+    font-size: 0.8em;
+  }
+
   .match-row {
     padding: 12px;
     gap: 8px;
@@ -105,6 +109,10 @@
 
   header h1 {
     font-size: 1.2em;
+  }
+
+  #userStatus {
+    font-size: 0.6em;
   }
 
   .user-section {
@@ -169,16 +177,9 @@
     font-size: 0.85em;
   }
 
-  .match-vs {
-    flex-direction: column;
-  }
-
   .bet-buttons {
     gap: 5px;
     flex-direction: column;
-  }
-
-  .bet-buttons {
     gap: 5px;
   }
 
@@ -615,7 +616,6 @@
   .match-row {
     padding: 8px;
     margin-bottom: 10px;
-    flex-direction: column;
   }
 
   .match-teams {
@@ -1584,7 +1584,6 @@
   }
 
   .match-vs {
-    flex-direction: column;
     gap: 4px;
     margin-bottom: 5px;
   }
