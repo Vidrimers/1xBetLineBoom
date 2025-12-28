@@ -810,6 +810,24 @@ function initToggleStates() {
   });
 }
 
+function initMatchResultToggles() {
+  const toggles = document.querySelectorAll(".match-result-toggle");
+
+  toggles.forEach((toggle) => {
+    const matchId = toggle.dataset.matchId;
+    const panel = document.querySelector(
+      `.match-result-controls[data-match-id="${matchId}"]`
+    );
+    if (!panel) return;
+
+    toggle.addEventListener("click", () => {
+      const isVisible = panel.classList.toggle("visible");
+      toggle.setAttribute("aria-expanded", isVisible ? "true" : "false");
+      toggle.textContent = isVisible ? "×" : ">";
+    });
+  });
+}
+
 // Отображение карточки победителя завершённого турнира
 async function displayTournamentWinner(eventId) {
   try {
@@ -1090,7 +1108,7 @@ function displayMatches() {
             ${
               isAdmin()
                 ? `
-              <div style="position: absolute; top: 5px; left: 5px; display: flex; gap: 5px; z-index: 1;">
+              <div class="match-admin-panel">
                 ${
                   match.is_final
                     ? `
@@ -1103,24 +1121,36 @@ function displayMatches() {
                 </button>
                 `
                     : `
-                <button onclick="setMatchResult(${match.id}, 'team1')"
-                  style="background: transparent; color: #e0e6f0; border: 1px solid rgba(58, 123, 213, 0.7); padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
-                  onmouseover="this.style.background='rgba(58, 123, 213, 0.9)'"
-                  onmouseout="this.style.background='transparent'">
-                  1
+                <button
+                  class="match-result-toggle"
+                  data-match-id="${match.id}"
+                  type="button"
+                  aria-expanded="false"
+                  title="Показать кнопки результата"
+                  style="padding: 0;"
+                >
+                  &gt;
                 </button>
-                <button onclick="setMatchResult(${match.id}, 'draw')"
-                  style="background: transparent; color: white; border: 1px solid #f57c00; padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
-                  onmouseover="this.style.background='#e65100'"
-                  onmouseout="this.style.background='transparent'">
-                  X
-                </button>
-                <button onclick="setMatchResult(${match.id}, 'team2')"
-                  style="background: transparent; color: #a0d895; border: 1px solid rgba(76, 175, 80, 0.7); padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
-                  onmouseover="this.style.background='rgba(76, 175, 80, 0.9)'"
-                  onmouseout="this.style.background='transparent'">
-                  2
-                </button>
+                <div class="match-result-controls" data-match-id="${match.id}">
+                  <button onclick="setMatchResult(${match.id}, 'team1')"
+                    style="background: transparent; color: #e0e6f0; border: 1px solid rgba(58, 123, 213, 0.7); padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                    onmouseover="this.style.background='rgba(58, 123, 213, 0.9)'"
+                    onmouseout="this.style.background='transparent'">
+                    1
+                  </button>
+                  <button onclick="setMatchResult(${match.id}, 'draw')"
+                    style="background: transparent; color: white; border: 1px solid #f57c00; padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                    onmouseover="this.style.background='#e65100'"
+                    onmouseout="this.style.background='transparent'">
+                    X
+                  </button>
+                  <button onclick="setMatchResult(${match.id}, 'team2')"
+                    style="background: transparent; color: #a0d895; border: 1px solid rgba(76, 175, 80, 0.7); padding: 5px 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.75em; font-weight: bold;"
+                    onmouseover="this.style.background='rgba(76, 175, 80, 0.9)'"
+                    onmouseout="this.style.background='transparent'">
+                    2
+                  </button>
+                </div>
                 `
                 }
               </div>
@@ -1393,6 +1423,7 @@ function displayMatches() {
 
   // Инициализируем состояние toggle'ов после добавления HTML в DOM
   initToggleStates();
+  initMatchResultToggles();
 }
 
 // ===== СТАВКИ =====

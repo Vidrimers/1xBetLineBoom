@@ -467,6 +467,50 @@ button:active {
   transition: all 0.2s ease;
 }
 
+.match-admin-panel {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 1;
+}
+
+.match-result-toggle {
+  /* width: 28px; */
+  /* height: 28px; */
+  border-radius: 5px;
+  background: transparent !important;
+  border: 1px solid rgba(58, 123, 213, 0.9);
+  color: #e0e6f0;
+  font-size: 0.8em;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 3px 5px !important;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.match-result-toggle[aria-expanded="true"] {
+  background: rgba(77, 184, 168, 0.95);
+  border-color: rgba(77, 184, 168, 0.95);
+  transform: rotate(90deg);
+}
+.match-result-toggle:hover {
+  /* transform: translateY(0); */
+  /* transform: rotate(90deg); */
+}
+
+.match-result-controls {
+  display: none;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.match-result-controls.visible {
+  display: flex;
+}
+
 .match-row.has-user-bet {
   background: rgba(80, 60, 40, 0.7);
   border-left-color: #ffb81c;
