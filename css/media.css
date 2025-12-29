@@ -1445,6 +1445,7 @@
 
   .section.bet-section {
     max-height: 45vh;
+    margin: 5px 20px 0;
   }
 
   .round-filter-btn {
@@ -1567,8 +1568,10 @@
 
   .event-item {
     padding: 6px;
-    font-size: 0.75em;
+    font-size: 1em;
     border-radius: 4px;
+    text-align: center;
+    min-height: 100px;
   }
 
   .match-row {
