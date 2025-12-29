@@ -1406,7 +1406,7 @@ function displayMatches() {
                     ? `<div style="text-align: center; font-size: 0.85em; color: #b0b8c8; margin: 10px auto;">${formatMatchTime(
                         match.match_date
                       )}${statusBadge}</div>`
-                    : ""
+                    : `<div style="text-align: center; font-size: 0.85em; color: #666; margin: 10px auto;">Дата не указана${statusBadge}</div>`
                 }
                 <div class="bet-buttons-three">
                     <button class="bet-btn team1 ${
