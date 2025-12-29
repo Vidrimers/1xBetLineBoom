@@ -1573,7 +1573,7 @@
   }
 
   .events-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 6px;
     margin-bottom: 20px;
   }
@@ -1582,6 +1582,10 @@
     padding: 6px;
     border-radius: 4px;
     font-size: 0.8em;
+  }
+
+  .tournaments-section-divider {
+    font-size: 0.7em;
   }
 
   .match-row {
@@ -1615,9 +1619,11 @@
   .match-round {
   }
   .match-date {
+    font-size: 0.6em !important;
   }
 
   .match-noDate {
+    font-size: 0.6em !important;
   }
 
   .bet-buttons {
@@ -1626,7 +1632,7 @@
   }
 
   .bet-btn {
-    padding: 3px 3px;
+    padding: 9px 3px;
     font-size: 0.7em;
     border-radius: 3px;
   }
@@ -2017,7 +2023,14 @@
   }
 
   .bet-match {
+    font-size: 0.9em;
+  }
+
+  .bet-stake {
     font-size: 0.75em;
+  }
+  .bet-round {
+    font-size: 0.8em !important;
   }
 
   .bet-prediction {
@@ -2047,7 +2060,7 @@
 
   .section.bet-section {
     padding: 0 4px 4px 4px;
-    /* max-height: 40vh; */
+    margin: 5px 30px 0;
   }
 
   .round-filter-btn {

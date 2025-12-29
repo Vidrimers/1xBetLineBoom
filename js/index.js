@@ -1403,10 +1403,10 @@ function displayMatches() {
                 }
                 ${
                   match.match_date
-                    ? `<div style="text-align: center; font-size: 0.85em; color: #b0b8c8; margin: 10px auto;">${formatMatchTime(
+                    ? `<div class="match-date" style="text-align: center; font-size: 0.8em; color: #b0b8c8; margin: 10px auto;">${formatMatchTime(
                         match.match_date
                       )}${statusBadge}</div>`
-                    : `<div style="text-align: center; font-size: 0.85em; color: #666; margin: 10px auto;">Дата не указана${statusBadge}</div>`
+                    : `<div class="match-noDate" style="text-align: center; font-size: 0.8em; color: #666; margin: 10px auto;">Дата не указана${statusBadge}</div>`
                 }
                 <div class="bet-buttons-three">
                     <button class="bet-btn team1 ${
@@ -2240,7 +2240,7 @@ function displayMyBets(bets) {
                     <span class="bet-status ${statusClass}">${statusText}</span>
                 </div>
                 <div class="bet-info" style="font-size: 0.9em; color: #b0b8c8;">
-                    <span>Ставка: <strong>${(() => {
+                    <span class="bet-stake">Ставка: <strong>${(() => {
                       // Если это финальная ставка на параметр
                       if (bet.is_final_bet) {
                         const paramName = {
@@ -2270,7 +2270,7 @@ function displayMyBets(bets) {
                       }
                     })()}</strong></span>
                 </div>
-                <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
+                <div class="bet-round" style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
                     ${
                       bet.is_final
                         ? "🏆 ФИНАЛ"
