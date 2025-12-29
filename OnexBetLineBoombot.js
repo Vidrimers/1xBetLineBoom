@@ -1812,7 +1812,7 @@ export function startBot() {
         break;
       case "🌐 Открыть сайт":
         logUserAction(msg, "Нажата кнопка: Открыть сайт");
-        sendMessageWithThread(chatId, `🌐 Открыть сайт:`, {
+        sendMessageWithThread(chatId, `1xbetlineboom.xyz`, {
           parse_mode: "HTML",
           __msg: msg,
           reply_markup: {
