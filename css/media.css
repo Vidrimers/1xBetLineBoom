@@ -98,7 +98,6 @@
   }
 
   header {
-    flex-direction: column;
     gap: 8px;
     margin-bottom: 8px;
   }
@@ -528,7 +527,6 @@
   }
 
   header {
-    gap: 5px;
     margin-bottom: 5px;
   }
 
@@ -1106,7 +1104,6 @@
   }
 
   header {
-    gap: 4px;
     margin-bottom: 4px;
   }
 
@@ -1115,7 +1112,7 @@
   }
 
   header h1 {
-    font-size: 1em;
+    font-size: 1.5em;
   }
 
   .user-section {
@@ -1489,9 +1486,7 @@
   }
 
   header {
-    gap: 3px;
     margin-bottom: 3px;
-    flex-direction: column;
   }
 
   header img {
@@ -1500,7 +1495,7 @@
   }
 
   header h1 {
-    font-size: 0.95em;
+    font-size: 1.3em;
     margin: 0;
   }
 
@@ -1618,11 +1613,12 @@
   }
 
   .match-round {
-
   }
-  .match-date{}
-  
-  .match-noDate{}
+  .match-date {
+  }
+
+  .match-noDate {
+  }
 
   .bet-buttons {
     width: 100%;
@@ -1631,7 +1627,7 @@
 
   .bet-btn {
     padding: 3px 3px;
-    font-size: 0.6em;
+    font-size: 0.7em;
     border-radius: 3px;
   }
 
@@ -1642,7 +1638,7 @@
 
   .lucky-btn {
     padding: 3px 5px;
-    font-size: 0.6em;
+    font-size: 0.7em;
     border-radius: 10px;
   }
 
@@ -2056,8 +2052,9 @@
 
   .round-filter-btn {
     padding: 2px 3px;
-    font-size: 0.55em;
-    border-radius: 12px;
+    font-size: 0.8em;
+    border-radius: 8px;
+    line-height: 1.5;
   }
 
   .edit-rounds-btn {
