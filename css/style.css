@@ -1195,6 +1195,9 @@ button.tab-btn:hover {
   font-size: 1.5em;
   font-weight: 600;
   margin-bottom: 5px;
+  display: inline;
+  position: relative;
+  padding: 0 10px;
 }
 
 .profile-member-since {

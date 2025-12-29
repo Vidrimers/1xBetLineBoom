@@ -2948,6 +2948,9 @@ function displayProfile(profile) {
           font-size: .5em;
           transition: all 0.3s ease;
           display: none;
+          box-shadow: none;
+          position: absolute;
+          bottom: 5px;
         " title="Изменить имя">✏️</button>
       </div>
       <div class="profile-member-since">Участник с ${createdDate}</div>

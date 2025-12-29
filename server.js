@@ -383,11 +383,6 @@ async function sendTournamentWinnerNotification(
 // Функция записи лога в HTML файл
 function writeBetLog(action, data) {
   try {
-    // Отправляем уведомление в Telegram только для ставок (не для настроек)
-    if (action === "placed" || action === "deleted") {
-      notifyBetAction(action, data);
-    }
-
     // Проверяем размер файла
     if (fs.existsSync(LOG_FILE_PATH)) {
       const stats = fs.statSync(LOG_FILE_PATH);
