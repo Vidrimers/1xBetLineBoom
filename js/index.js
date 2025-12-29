@@ -1398,7 +1398,7 @@ function displayMatches() {
                 </div>
                 ${
                   match.round
-                    ? `<div style="text-align: center; font-size: 0.8em; color: #5a9fd4; font-weight: 500; margin: 5px auto 0;">${match.round}</div>`
+                    ? `<div class="match-round" style="text-align: center; font-size: 0.8em; color: #5a9fd4; font-weight: 500; margin: 5px auto 0;">${match.round}</div>`
                     : ""
                 }
                 ${

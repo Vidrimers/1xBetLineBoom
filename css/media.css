@@ -1608,7 +1608,7 @@
 
   .team {
     padding: 3px;
-    font-size: 0.7em;
+    font-size: 0.8em;
     border-radius: 3px;
     font-weight: 500;
   }
@@ -1616,6 +1616,13 @@
   .vs-text {
     font-size: 0.65em;
   }
+
+  .match-round {
+
+  }
+  .match-date{}
+  
+  .match-noDate{}
 
   .bet-buttons {
     width: 100%;
@@ -1650,7 +1657,7 @@
   }
 
   .tab-btn {
-    padding: 4px 6px;
+    padding: 6px;
     font-size: 1em;
     font-weight: 500;
   }
