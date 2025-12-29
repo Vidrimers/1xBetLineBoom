@@ -1645,11 +1645,13 @@
     margin-bottom: 10px;
     flex-wrap: wrap;
     justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
 
   .tab-btn {
     padding: 4px 6px;
-    font-size: 0.65em;
+    font-size: 1em;
     font-weight: 500;
   }
 
