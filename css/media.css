@@ -1,11 +1,5 @@
 /* ===== RESPONSIVE DESIGN (Desktop First) ===== */
 
-/* Кнопки прокрутки скрыты на десктопе (больше 768px) */
-.scroll-down-btn,
-.scroll-up-btn {
-  display: none;
-}
-
 /* ===== TABLET: 1200px и ниже ===== */
 @media (max-width: 1200px) {
   .container {
@@ -458,59 +452,6 @@
   }
 
   .event-item.hovered .event-admin-actions {
-    display: flex;
-  }
-
-  /* Кнопки прокрутки на мобильке */
-  .scroll-down-btn,
-  .scroll-up-btn {
-    position: fixed;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    font-size: 24px;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
-    z-index: 100;
-    color: #fff;
-    border: 2px solid;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  .scroll-down-btn {
-    bottom: 20px;
-    right: 20px;
-    border: none;
-    box-shadow: none;
-  }
-
-  .scroll-down-btn:active {
-    transform: scale(0.95);
-    box-shadow: none;
-  }
-
-  .scroll-down-btn.show {
-    display: flex;
-  }
-
-  .scroll-up-btn {
-    bottom: 80px;
-    right: 20px;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-  }
-
-  .scroll-up-btn:active {
-    transform: scale(0.95);
-    box-shadow: none;
-  }
-
-  .scroll-up-btn.show {
     display: flex;
   }
 }
@@ -1482,21 +1423,26 @@
     grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
 
-  .events-participant-item .participant-rank, .participant-rank {
+  .events-participant-item .participant-rank,
+  .participant-rank {
     font-size: 1em;
   }
-  .events-participant-item .participant-avatar, .participant-avatar {
+  .events-participant-item .participant-avatar,
+  .participant-avatar {
     margin: 0 auto;
   }
-  .events-participant-item .participant-points, .participant-points {
+  .events-participant-item .participant-points,
+  .participant-points {
     margin: 0 auto;
   }
-  .events-participant-item .participant-bets-count, .participant-bets-count {
+  .events-participant-item .participant-bets-count,
+  .participant-bets-count {
     width: 70px;
     font-size: 1em;
     margin: 0 auto;
   }
-  .events-participant-item .participant-name, .participant-name {
+  .events-participant-item .participant-name,
+  .participant-name {
     font-size: 1em;
   }
 }
@@ -1725,7 +1671,6 @@
   }
 
   .participant-name {
-    font-size: 0.8em;
     margin-bottom: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
