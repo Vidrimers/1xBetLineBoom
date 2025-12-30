@@ -6696,6 +6696,9 @@ function openAvatarModal() {
 
   // Инициализируем обработчик выбора файла если еще не инициализирован
   initAvatarInput();
+
+  // Блокируем скролл страницы при открытии модального окна
+  document.body.style.overflow = "hidden";
 }
 
 function initAvatarInput() {
@@ -6989,6 +6992,9 @@ function closeAvatarModal(event) {
   document.getElementById("pngPreviewContainer").style.display = "none";
   document.getElementById("cropperContainer").style.display = "none";
   document.getElementById("avatarImage").src = "";
+
+  // Разблокируем скролл страницы при закрытии модального окна
+  document.body.style.overflow = "";
 }
 
 function updateGifResultPreview() {

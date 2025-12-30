@@ -1454,6 +1454,19 @@
   .participant-name {
     font-size: 1em;
   }
+
+  #avatarModal {
+    .modal-body{
+      flex-direction: column;
+    }
+  }
+  .avatar-input-container{
+    flex: auto !important;
+  }
+  .avatar-result-container{
+    flex: auto !important;
+
+  }
 }
 
 /* ===== EXTRA SMALL PHONE: 400px и ниже ===== */
