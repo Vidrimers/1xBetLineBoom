@@ -5,9 +5,7 @@ import fs from "fs";
 import multer from "multer";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import gifsicle from "gifsicle";
 import { execSync, spawnSync } from "child_process";
-import ffmpegStatic from "ffmpeg-static";
 import {
   startBot,
   notifyIllegalBet,
@@ -3356,8 +3354,7 @@ app.get("/api/user/:userId/awards", (req, res) => {
 app.post("/api/user/:userId/avatar", (req, res) => {
   try {
     const { userId } = req.params;
-    const { avatarData, fileType, gifPositionX, gifPositionY, gifZoom } =
-      req.body;
+    const { avatarData, fileType } = req.body;
 
     if (!avatarData) {
       return res.status(400).json({ error: "Данные аватара не предоставлены" });
@@ -3365,9 +3362,7 @@ app.post("/api/user/:userId/avatar", (req, res) => {
 
     // Определяем расширение файла на основе MIME type
     let extension = "png"; // По умолчанию PNG
-    if (fileType === "image/gif") {
-      extension = "gif";
-    } else if (fileType === "image/jpeg" || fileType === "image/jpg") {
+    if (fileType === "image/jpeg" || fileType === "image/jpg") {
       extension = "jpg";
     }
 
@@ -3397,109 +3392,6 @@ app.post("/api/user/:userId/avatar", (req, res) => {
     const filepath = path.join(__dirname, "img", "avatar", filename);
 
     fs.writeFileSync(filepath, buffer);
-
-    // Обрезаем GIF по координатам если это GIF файл с указанными координатами
-    if (
-      extension === "gif" &&
-      gifPositionX !== undefined &&
-      gifPositionY !== undefined
-    ) {
-      try {
-        const posX = Math.max(0, parseInt(gifPositionX) || 0);
-        const posY = Math.max(0, parseInt(gifPositionY) || 0);
-        const zoomFactor = parseFloat(gifZoom) || 1;
-
-        // Применяем масштаб при расчете координат обрезания
-        const actualX = Math.round(posX * zoomFactor);
-        const actualY = Math.round(posY * zoomFactor);
-
-        console.log(
-          `📍 Обрезаю GIF по координатам: X=${actualX}, Y=${actualY} (zoom=${(
-            zoomFactor * 100
-          ).toFixed(0)}%)`
-        );
-
-        const croppedFilepath = filepath + ".cropped.gif";
-
-        // Используем ffmpeg для обрезания GIF с сохранением анимации
-        // crop=width:height:x:y (crop=200:200:actualX:actualY)
-        const command = `"${ffmpegStatic}" -i "${filepath}" -vf "crop=200:200:${actualX}:${actualY}" -c:v gif "${croppedFilepath}" 2>&1`;
-
-        try {
-          execSync(command, { stdio: "pipe" });
-
-          // Проверяем что файл создан и заменяем оригинал
-          if (fs.existsSync(croppedFilepath)) {
-            const originalSize = fs.statSync(filepath).size;
-            const croppedSize = fs.statSync(croppedFilepath).size;
-
-            fs.unlinkSync(filepath);
-            fs.renameSync(croppedFilepath, filepath);
-
-            console.log(
-              `✅ GIF обрезан: ${(originalSize / 1024).toFixed(1)}KB → ${(
-                croppedSize / 1024
-              ).toFixed(1)}KB`
-            );
-          }
-        } catch (ffmpegErr) {
-          console.warn(
-            `⚠️ Не удалось обрезать GIF ffmpeg: ${ffmpegErr.message}`
-          );
-          // Продолжаем с оригинальным файлом
-        }
-      } catch (cropErr) {
-        console.warn(`⚠️ Ошибка при обрезании GIF: ${cropErr.message}`);
-      }
-    }
-
-    // Оптимизируем GIF если это GIF файл
-    if (extension === "gif") {
-      try {
-        const originalSize = fs.statSync(filepath).size;
-        console.log(
-          `📊 Оригинальный размер GIF: ${(originalSize / 1024 / 1024).toFixed(
-            2
-          )} MB`
-        );
-
-        // Используем gifsicle для оптимизации GIF
-        // --optimize=3 это максимальное сжатие без потери анимации
-        const command = `gifsicle --optimize=3 "${filepath}" -o "${filepath}.optimized.gif" 2>&1`;
-
-        try {
-          execSync(command, { stdio: "pipe" });
-          const optimizedSize = fs.statSync(`${filepath}.optimized.gif`).size;
-          const compression = (
-            (1 - optimizedSize / originalSize) *
-            100
-          ).toFixed(1);
-
-          if (optimizedSize < originalSize) {
-            // Заменяем оригинальный файл на оптимизированный
-            fs.renameSync(`${filepath}.optimized.gif`, filepath);
-            console.log(
-              `✅ GIF оптимизирован: ${(originalSize / 1024).toFixed(1)}KB → ${(
-                optimizedSize / 1024
-              ).toFixed(1)}KB (сжато на ${compression}%)`
-            );
-          } else {
-            // Оптимизированный файл больше - удаляем его
-            fs.unlinkSync(`${filepath}.optimized.gif`);
-            console.log(
-              "ℹ️ GIF оптимизация не дала улучшения, используем оригинал"
-            );
-          }
-        } catch (gifsicleErr) {
-          console.warn(
-            `⚠️ Не удалось оптимизировать GIF: ${gifsicleErr.message}`
-          );
-          // Продолжаем с оригинальным файлом
-        }
-      } catch (err) {
-        console.warn(`⚠️ Ошибка при обработке GIF: ${err.message}`);
-      }
-    }
 
     // Сохраняем путь к файлу в БД
     const avatarPath = `/img/avatar/${filename}`;

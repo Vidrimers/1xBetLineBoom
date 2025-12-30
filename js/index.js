@@ -6724,6 +6724,16 @@ function initAvatarInput() {
         file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
       console.log("Это GIF?", isGif);
 
+      // Проверяем, что файл не является GIF
+      if (isGif) {
+        alert(
+          "GIF файлы не поддерживаются. Пожалуйста, выберите изображение в формате PNG, JPG или JPEG."
+        );
+        // Очищаем input
+        e.target.value = "";
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (event) => {
         console.log("✅ Файл прочитан");
@@ -6735,144 +6745,6 @@ function initAvatarInput() {
         if (cropper) {
           cropper.destroy();
           cropper = null;
-        }
-
-        // Для GIF - не используем cropper, просто сохраняем оригинал
-        if (isGif) {
-          console.log("✅ GIF выбран, не используем cropper");
-          document.getElementById("cropperContainer").style.display = "none";
-          document.getElementById("gifPreviewColumn").style.display = "flex";
-          document.getElementById("pngPreviewContainer").style.display = "none";
-          document.getElementById("gifResultPreview").style.display = "block";
-          document.querySelector(".avatar-result-container").style.display =
-            "flex";
-          document.getElementById("savAvatarBtn").style.display = "block";
-
-          // Показываем GIF в полном размере для выбора области
-          document.getElementById("gifFullPreview").src = event.target.result;
-
-          // Инициализируем контроли для выбора позиции
-          window.gifPositionX = 0;
-          window.gifPositionY = 0;
-          window.gifZoom = 1;
-          window.gifBase64 = event.target.result;
-
-          // Обновляем preview результата
-          updateGifResultPreview();
-
-          // Удаляем старые обработчики события
-          const selectionBox = document.getElementById("gifSelectionBox");
-          const newSelectionBox = selectionBox.cloneNode(true);
-          selectionBox.parentNode.replaceChild(newSelectionBox, selectionBox);
-
-          // Добавляем drag функцию для квадрата
-          const newBox = document.getElementById("gifSelectionBox");
-          const gifPreview = document.getElementById("gifFullPreview");
-          const gifPreviewColumn = document.getElementById("gifPreviewColumn");
-          let isDragging = false;
-          let offsetX = 0;
-          let offsetY = 0;
-
-          newBox.addEventListener("mousedown", (e) => {
-            isDragging = true;
-            // Запоминаем начальное смещение мыши от левого верхнего угла рамки
-            const boxRect = newBox.getBoundingClientRect();
-            offsetX = e.clientX - boxRect.left;
-            offsetY = e.clientY - boxRect.top;
-            e.preventDefault();
-          });
-
-          const handleMouseMove = (e) => {
-            if (!isDragging || !gifPreview.complete) return;
-
-            // Получаем координаты GIF на странице
-            const gifRect = gifPreview.getBoundingClientRect();
-            const columnRect = gifPreviewColumn.getBoundingClientRect();
-
-            // Позиция мыши в системе координат контейнера
-            const mouseX = e.clientX - columnRect.left;
-            const mouseY = e.clientY - columnRect.top;
-
-            // Позиция GIF в системе координат контейнера
-            const gifX = gifRect.left - columnRect.left;
-            const gifY = gifRect.top - columnRect.top;
-
-            // Желаемая позиция рамки в системе координат контейнера
-            let boxX = mouseX - offsetX;
-            let boxY = mouseY - offsetY;
-
-            // Преобразуем в координаты внутри GIF (логические координаты)
-            let logicalX = (boxX - gifX) / window.gifZoom;
-            let logicalY = (boxY - gifY) / window.gifZoom;
-
-            // Ограничиваем координаты
-            const maxX = gifPreview.naturalWidth - 200;
-            const maxY = gifPreview.naturalHeight - 200;
-
-            logicalX = Math.max(0, Math.min(logicalX, maxX));
-            logicalY = Math.max(0, Math.min(logicalY, maxY));
-
-            window.gifPositionX = logicalX;
-            window.gifPositionY = logicalY;
-
-            // Визуальная позиция рамки на экране
-            const visualX = gifX + logicalX * window.gifZoom;
-            const visualY = gifY + logicalY * window.gifZoom;
-
-            newBox.style.left = visualX + "px";
-            newBox.style.top = visualY + "px";
-
-            updateGifResultPreview();
-          };
-
-          const handleMouseUp = () => {
-            isDragging = false;
-          };
-
-          document.addEventListener("mousemove", handleMouseMove);
-          document.addEventListener("mouseup", handleMouseUp);
-
-          // Сохраняем обработчики для удаления позже
-          window.gifMouseMoveHandler = handleMouseMove;
-          window.gifMouseUpHandler = handleMouseUp;
-
-          // Добавляем zoom через скролл мыши
-          const handleWheel = (e) => {
-            if (!window.gifBase64) return;
-            e.preventDefault();
-
-            // Определяем направление скролла
-            const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            window.gifZoom = Math.max(0.5, Math.min(window.gifZoom + delta, 3));
-
-            // Применяем масштаб к изображению
-            gifPreview.style.transform = `scale(${window.gifZoom})`;
-            gifPreview.style.transformOrigin = "top left";
-            console.log(`🔍 Zoom: ${(window.gifZoom * 100).toFixed(0)}%`);
-
-            // Обновляем позицию рамки при изменении zoom
-            const gifRect = gifPreview.getBoundingClientRect();
-            const columnRect = gifPreviewColumn.getBoundingClientRect();
-            const gifX = gifRect.left - columnRect.left;
-            const gifY = gifRect.top - columnRect.top;
-
-            const visualX = gifX + window.gifPositionX * window.gifZoom;
-            const visualY = gifY + window.gifPositionY * window.gifZoom;
-
-            newBox.style.left = visualX + "px";
-            newBox.style.top = visualY + "px";
-
-            updateGifResultPreview();
-          };
-
-          gifPreviewColumn.addEventListener("wheel", handleWheel, {
-            passive: false,
-          });
-          window.gifWheelHandler = handleWheel;
-
-          // Сохраняем оригинальный файл как base64
-          window.gifAvatarData = event.target.result;
-          return;
         }
 
         console.log("Создаю Cropper для обычного изображения...");
