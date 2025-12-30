@@ -6741,6 +6741,8 @@ function initAvatarInput() {
           document.getElementById("gifPreviewColumn").style.display = "flex";
           document.getElementById("pngPreviewContainer").style.display = "none";
           document.getElementById("gifResultPreview").style.display = "block";
+          document.querySelector(".avatar-result-container").style.display =
+            "flex";
           document.getElementById("savAvatarBtn").style.display = "block";
 
           // Показываем GIF в полном размере для выбора области
@@ -6878,6 +6880,8 @@ function initAvatarInput() {
         document.getElementById("cropperContainer").style.display = "block";
         document.getElementById("pngPreviewContainer").style.display = "block";
         document.getElementById("gifResultPreview").style.display = "none";
+        document.querySelector(".avatar-result-container").style.display =
+          "none";
         document.getElementById("savAvatarBtn").style.display = "block";
 
         // Очищаем сохраненные GIF данные
@@ -6991,6 +6995,7 @@ function closeAvatarModal(event) {
   document.getElementById("gifResultPreview").style.display = "block"; // Показываем по умолчанию для следующего раза
   document.getElementById("pngPreviewContainer").style.display = "none";
   document.getElementById("cropperContainer").style.display = "none";
+  document.querySelector(".avatar-result-container").style.display = "flex"; // Сбрасываем видимость контейнера результата
   document.getElementById("avatarImage").src = "";
 
   // Разблокируем скролл страницы при закрытии модального окна
