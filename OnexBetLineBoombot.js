@@ -1567,23 +1567,21 @@ export function startBot() {
       const displayName = user.username || firstName;
 
       // Рассчитываем процент побед
-      // Общее количество ставок = выигранные + проигранные + в ожидании
-      const totalBets =
-        (user.won_bets || 0) + (user.lost_bets || 0) + (user.pending_bets || 0);
+      // Используем ту же логику, что и на сайте: won_count / total_bets (только завершенные ставки)
       const winPercentage =
-        totalBets > 0
-          ? Math.round(((user.won_bets || 0) / totalBets) * 100)
+        (user.total_bets || 0) > 0
+          ? Math.round(((user.won_count || 0) / (user.total_bets || 0)) * 100)
           : 0;
 
       await sendMessageWithThread(
         chatId,
         `📊 <b>${displayName}:</b>\n\n` +
-          `<b>Ставок за всё время:</b> <i>${totalBets}</i>\n` +
+          `<b>Ставок за всё время:</b> <i>${user.total_bets || 0}</i>\n` +
           `<b>✅ Угаданных ставок за всё время:</b> <i>${
-            user.won_bets || 0
+            user.won_count || 0
           }</i>\n` +
           `<b>❌ Неугаданных ставок за всё время:</b> <i>${
-            user.lost_bets || 0
+            (user.total_bets || 0) - (user.won_count || 0)
           }</i>\n` +
           `<b>⏳ В ожидании:</b> <i>${user.pending_bets || 0}</i>\n\n` +
           `<b>🏆 Победы в турнирах:</b> <i>${
