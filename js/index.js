@@ -650,7 +650,7 @@ function displayEvents() {
   // Активные турниры
   if (activeEvents.length > 0) {
     html +=
-      '<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ АКТИВНЫЕ ТУРНИРЫ ━━━</div>';
+      '<div style="text-align: center; color: #b0b8c8; font-size: 0.7em;margin: 15px 0;">━━━ АКТИВНЫЕ ТУРНИРЫ ━━━</div>';
     html += activeEvents
       .map((event) => {
         const positionNumber = activeIndex++;
@@ -662,7 +662,7 @@ function displayEvents() {
   // Предстоящие турниры
   if (upcomingEvents.length > 0) {
     html +=
-      '<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ПРЕДСТОЯЩИЕ ТУРНИРЫ ━━━</div>';
+      '<div style="text-align: center; color: #b0b8c8; font-size: 0.7em;margin: 15px 0;">━━━ ПРЕДСТОЯЩИЕ ТУРНИРЫ ━━━</div>';
     html += upcomingEvents
       .map((event) => {
         const positionNumber = upcomingIndex++;
@@ -674,7 +674,7 @@ function displayEvents() {
   // Завершенные турниры
   if (completedEvents.length > 0) {
     html +=
-      '<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
+      '<div style="text-align: center; color: #b0b8c8; font-size: 0.7em;margin: 15px 0;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
     html += completedEvents
       .map((event) => {
         const positionNumber = completedIndex++;
