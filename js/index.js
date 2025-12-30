@@ -6688,6 +6688,9 @@ function openAvatarModal() {
   modal.style.display = "flex";
   input.value = "";
   container.style.display = "none";
+  document.getElementById("gifPreviewColumn").style.display = "none"; // Скрываем GIF preview при открытии
+  document.querySelector(".avatar-result-container").style.display = "none"; // Скрываем контейнер результата при открытии
+  document.getElementById("gifResultPreview").style.display = "none"; // Скрываем GIF результат при открытии
   saveBtn.style.display = "none";
   if (cropper) {
     cropper.destroy();
@@ -6992,10 +6995,10 @@ function closeAvatarModal(event) {
 
   // Скрываем контейнеры редактирования
   document.getElementById("gifPreviewColumn").style.display = "none";
-  document.getElementById("gifResultPreview").style.display = "block"; // Показываем по умолчанию для следующего раза
+  document.getElementById("gifResultPreview").style.display = "none"; // Скрываем по умолчанию
   document.getElementById("pngPreviewContainer").style.display = "none";
   document.getElementById("cropperContainer").style.display = "none";
-  document.querySelector(".avatar-result-container").style.display = "flex"; // Сбрасываем видимость контейнера результата
+  document.querySelector(".avatar-result-container").style.display = "none"; // Скрываем по умолчанию
   document.getElementById("avatarImage").src = "";
 
   // Разблокируем скролл страницы при закрытии модального окна
