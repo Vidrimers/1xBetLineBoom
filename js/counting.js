@@ -381,6 +381,24 @@ async function calculateCountingResults() {
 
     // Отображаем результаты
     displayCalculationResults(results, bets);
+
+    // Отправляем уведомление в Telegram
+    try {
+      await fetch("/api/notify-counting-results", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dateFrom,
+          dateTo,
+          results,
+        }),
+      });
+      console.log("✅ Уведомление о подсчете отправлено в Telegram");
+    } catch (error) {
+      console.error("❌ Ошибка отправки уведомления в Telegram:", error);
+    }
   } catch (error) {
     console.error("Ошибка при подсчете:", error);
     resultsDiv.innerHTML = `<div class="empty-message">❌ Ошибка: ${error.message}</div>`;

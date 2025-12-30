@@ -5436,6 +5436,105 @@ app.delete("/api/terminal-logs", (req, res) => {
   }
 });
 
+// Отправка уведомления о подсчете ставок в Telegram
+app.post("/api/notify-counting-results", async (req, res) => {
+  try {
+    const { dateFrom, dateTo, results } = req.body;
+
+    if (!dateFrom || !dateTo || !results) {
+      return res
+        .status(400)
+        .json({ error: "Не указаны обязательные параметры" });
+    }
+
+    // Группируем результаты по пользователям и считаем очки
+    const userStats = {};
+    let maxPoints = 0;
+    let winner = null;
+
+    results.forEach((result) => {
+      const username = result.username;
+      if (!userStats[username]) {
+        userStats[username] = 0;
+      }
+      if (result.isWon) {
+        userStats[username]++;
+      }
+    });
+
+    // Находим победителя (максимальное количество очков)
+    Object.entries(userStats).forEach(([username, points]) => {
+      if (points > maxPoints) {
+        maxPoints = points;
+        winner = username;
+      }
+    });
+
+    // Формируем сообщение
+    const dateStr = new Date().toLocaleDateString("ru-RU");
+    let message = `📊 <b>Результаты подсчета ставок</b>\n\n`;
+    message += `📅 Дата: ${dateStr}\n`;
+    message += `📆 Период: ${dateFrom} - ${dateTo}\n\n`;
+
+    if (winner) {
+      message += `🏆 Победитель дня: <b>${winner}</b> (${maxPoints} очков)\n\n`;
+    }
+
+    message += `📈 Статистика участников:\n`;
+    Object.entries(userStats)
+      .sort(([, a], [, b]) => b - a)
+      .forEach(([username, points]) => {
+        message += `• ${username}: ${points} очков\n`;
+      });
+
+    // Отправляем сообщение в Telegram
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      console.error("❌ Telegram токен или chat ID не настроены");
+      return res.status(500).json({ error: "Telegram не настроен" });
+    }
+
+    const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
+
+    for (const chatId of chatIds) {
+      try {
+        const response = await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          console.error(
+            `❌ Ошибка отправки в чат ${chatId}:`,
+            response.statusText
+          );
+        } else {
+          console.log(`✅ Уведомление отправлено в чат ${chatId}`);
+        }
+      } catch (error) {
+        console.error(`❌ Ошибка отправки уведомления в чат ${chatId}:`, error);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка при отправке уведомления:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Запуск сервера
 app.listen(PORT, "0.0.0.0", () => {
   console.log(
