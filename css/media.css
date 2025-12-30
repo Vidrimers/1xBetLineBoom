@@ -268,7 +268,7 @@
   }
 
   .settings-container {
-    flex-direction: column;
+    /* flex-direction: column; */
     gap: 8px;
   }
 
@@ -1024,7 +1024,7 @@
 /* ===== EXTRA SMALL: 500px и ниже ===== */
 @media (max-width: 500px) {
   .settings-container {
-    flex-direction: column;
+    /* flex-direction: column; */
   }
 
   .setting-item {
@@ -1093,6 +1093,15 @@
     font-size: 0.95em;
     margin-bottom: 5px;
     padding-bottom: 5px;
+  }
+
+  .profile-stats-grid {
+    grid-template-columns: repeat(3, minmax(100px, 1fr));
+  }
+
+  .profile-stats-grid .stat-value{
+    text-align: center;
+    font-size: 1.2em;
   }
 
   .event-card {
@@ -1877,10 +1886,6 @@
     font-size: 0.7em;
   }
 
-  .stat-value {
-    font-size: 0.85em;
-  }
-
   .award-description {
     font-size: 0.7em;
     max-width: 100px;
@@ -1914,7 +1919,6 @@
   }
 
   .profile-stats-grid {
-    grid-template-columns: 1fr;
     gap: 6px;
     margin-top: 8px;
   }
