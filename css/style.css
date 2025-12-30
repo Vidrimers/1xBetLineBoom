@@ -900,10 +900,17 @@ button.tab-btn:hover {
   gap: 10px;
 }
 
-#tournamentParticipantsList {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
+.events-participants-list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+
+/* #participantsList {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(180px, 1fr));
+  gap: 10px;
+} */
 
 .participant-item {
   padding: 15px;
@@ -917,6 +924,8 @@ button.tab-btn:hover {
   gap: 15px;
   cursor: pointer;
 }
+
+
 
 .participant-item:hover {
   transform: translateX(5px);

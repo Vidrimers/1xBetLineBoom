@@ -2447,7 +2447,7 @@ function displayParticipants(participants) {
       }
 
       return `
-    <div class="participant-item" onclick="showUserProfile(${
+    <div class="participant-item " onclick="showUserProfile(${
       participant.id
     }, '${participant.username.replace(/'/g, "\\'")}')">
       <div class="participant-rank">#${index + 1}</div>
@@ -2653,7 +2653,7 @@ function displayTournamentParticipants(
       const winnerClass = isLocked && place === 1 ? "winner" : "";
 
       return `
-    <div class="participant-item ${winnerClass}" onclick="showTournamentParticipantBets(${
+    <div class="participant-item events-participant-item ${winnerClass}" onclick="showTournamentParticipantBets(${
         participant.id
       }, '${participant.username.replace(/'/g, "\\'")}', ${eventId})">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
