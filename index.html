@@ -863,6 +863,60 @@
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 ></textarea>
               </div>
+              <div class="form-group">
+                <label for="eventIcon">Иконка турнира</label>
+                <select
+                  id="eventIcon"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                >
+                  <option value="🏆">🏆 Стандартный</option>
+                  <option value="img/cups/world-cup.png">
+                    🌍 Чемпионат мира
+                  </option>
+                  <option value="img/cups/champions-league.png">
+                    🏆 Лига чемпионов
+                  </option>
+                  <option value="img/cups/european-league.png">
+                    ⚽ Лига европы
+                  </option>
+                  <option value="img/cups/conference-league.png">
+                    🏅 Лига конференций
+                  </option>
+                  <option value="img/cups/serie-a.png">🇮🇹 Serie A</option>
+                  <option value="img/cups/england-premier-league.png">
+                    🏴󠁧󠁢󠁥󠁮󠁧󠁿 Английская премьер лига
+                  </option>
+                  <option value="img/cups/spain-la-liga.png">🇪🇸 Ла Лига</option>
+                  <option value="img/cups/france-league-ligue-1.png">
+                    🇫🇷 Лига 1
+                  </option>
+                  <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
+                  <option value="custom">🎯 Свой турнир</option>
+                </select>
+              </div>
+              <div
+                class="form-group"
+                id="customIconGroup"
+                style="display: none"
+              >
+                <label for="eventCustomIcon">Своя иконка (URL или emoji)</label>
+                <input
+                  type="text"
+                  id="eventCustomIcon"
+                  placeholder="Введите URL изображения или emoji"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div class="form-group">
+                <label for="eventBackgroundColor">Цвет фона (RGBA)</label>
+                <input
+                  type="text"
+                  id="eventBackgroundColor"
+                  placeholder="rgba(255, 255, 255, 0.1) или transparent"
+                  value="rgba(224, 230, 240, .4)"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
               <div
                 style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
               >
@@ -903,6 +957,278 @@
                   type="button"
                   class="form-btn-cancel"
                   onclick="closeCreateEventModal()"
+                >
+                  ❌ Отмена
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Модальное окно для редактирования турнира -->
+      <div id="editEventModal" class="modal" style="display: none">
+        <div class="modal-content" style="max-width: 500px">
+          <div class="modal-header">
+            <h2>✏️ Редактировать турнир</h2>
+            <button class="modal-close" onclick="closeEditEventModal()">
+              &times;
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="editEventForm" onsubmit="submitEditEvent(event)">
+              <input type="hidden" id="editEventId" />
+              <div class="form-group">
+                <label for="editEventName">Название турнира *</label>
+                <input
+                  type="text"
+                  id="editEventName"
+                  placeholder="Например: Чемпионат мира 2026"
+                  required
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div class="form-group">
+                <label for="editEventDescription">Описание</label>
+                <textarea
+                  id="editEventDescription"
+                  placeholder="Описание турнира (опционально)"
+                  rows="2"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="editEventIcon">Иконка турнира</label>
+                <select
+                  id="editEventIcon"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                >
+                  <option value="🏆">🏆 Стандартный</option>
+                  <option value="img/cups/world-cup.png">
+                    🌍 Чемпионат мира
+                  </option>
+                  <option value="img/cups/champions-league.png">
+                    🏆 Лига чемпионов
+                  </option>
+                  <option value="img/cups/european-league.png">
+                    ⚽ Лига европы
+                  </option>
+                  <option value="img/cups/conference-league.png">
+                    🏅 Лига конференций
+                  </option>
+                  <option value="img/cups/serie-a.png">🇮🇹 Serie A</option>
+                  <option value="img/cups/england-premier-league.png">
+                    🏴󠁧󠁢󠁥󠁮󠁧󠁿 Английская премьер лига
+                  </option>
+                  <option value="img/cups/spain-la-liga.png">🇪🇸 Ла Лига</option>
+                  <option value="img/cups/france-league-ligue-1.png">
+                    🇫🇷 Лига 1
+                  </option>
+                  <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
+                  <option value="custom">🎯 Свой турнир</option>
+                </select>
+              </div>
+              <div
+                class="form-group"
+                id="editCustomIconGroup"
+                style="display: none"
+              >
+                <label for="editEventCustomIcon"
+                  >Своя иконка (URL или emoji)</label
+                >
+                <input
+                  type="text"
+                  id="editEventCustomIcon"
+                  placeholder="Введите URL изображения или emoji"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div class="form-group">
+                <label for="editEventBackgroundColor">Цвет фона (RGBA)</label>
+                <input
+                  type="text"
+                  id="editEventBackgroundColor"
+                  placeholder="rgba(255, 255, 255, 0.1) или transparent"
+                  value="rgba(224, 230, 240, .4)"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+              >
+                <div class="form-group" style="margin: 0">
+                  <label for="editEventDate">Дата начала</label>
+                  <input
+                    type="date"
+                    id="editEventDate"
+                    style="
+                      width: 100%;
+                      padding: 6px;
+                      font-size: 0.85em;
+                      height: 30px;
+                      height: auto;
+                    "
+                  />
+                </div>
+                <div class="form-group" style="margin: 0">
+                  <label for="editEventEndDate">Дата конца</label>
+                  <input
+                    type="date"
+                    id="editEventEndDate"
+                    style="
+                      width: 100%;
+                      padding: 6px;
+                      font-size: 0.85em;
+                      height: 30px;
+                      height: auto;
+                    "
+                  />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="form-btn-submit">
+                  ✅ Сохранить
+                </button>
+                <button
+                  type="button"
+                  class="form-btn-cancel"
+                  onclick="closeEditEventModal()"
+                >
+                  ❌ Отмена
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Модальное окно для редактирования турнира -->
+      <div id="editEventModal" class="modal" style="display: none">
+        <div class="modal-content" style="max-width: 500px">
+          <div class="modal-header">
+            <h2>✏️ Редактировать турнир</h2>
+            <button class="modal-close" onclick="closeEditEventModal()">
+              &times;
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="editEventForm" onsubmit="submitEditEvent(event)">
+              <input type="hidden" id="editEventId" />
+              <div class="form-group">
+                <label for="editEventName">Название турнира *</label>
+                <input
+                  type="text"
+                  id="editEventName"
+                  placeholder="Например: Чемпионат мира 2026"
+                  required
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div class="form-group">
+                <label for="editEventDescription">Описание</label>
+                <textarea
+                  id="editEventDescription"
+                  placeholder="Описание турнира (опционально)"
+                  rows="2"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="editEventIcon">Иконка турнира</label>
+                <select
+                  id="editEventIcon"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                >
+                  <option value="🏆">🏆 Стандартный</option>
+                  <option value="img/cups/world-cup.png">
+                    🌍 Чемпионат мира
+                  </option>
+                  <option value="img/cups/champions-league.png">
+                    🏆 Лига чемпионов
+                  </option>
+                  <option value="img/cups/european-league.png">
+                    ⚽ Лига европы
+                  </option>
+                  <option value="img/cups/conference-league.png">
+                    🏅 Лига конференций
+                  </option>
+                  <option value="img/cups/serie-a.png">🇮🇹 Serie A</option>
+                  <option value="img/cups/england-premier-league.png">
+                    🏴󠁧󠁢󠁥󠁮󠁧󠁿 Английская премьер лига
+                  </option>
+                  <option value="img/cups/spain-la-liga.png">🇪🇸 Ла Лига</option>
+                  <option value="img/cups/france-league-ligue-1.png">
+                    🇫🇷 Лига 1
+                  </option>
+                  <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
+                  <option value="custom">🎯 Свой турнир</option>
+                </select>
+              </div>
+              <div
+                class="form-group"
+                id="editCustomIconGroup"
+                style="display: none"
+              >
+                <label for="editEventCustomIcon"
+                  >Своя иконка (URL или emoji)</label
+                >
+                <input
+                  type="text"
+                  id="editEventCustomIcon"
+                  placeholder="Введите URL изображения или emoji"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div class="form-group">
+                <label for="editEventBackgroundColor">Цвет фона (RGBA)</label>
+                <input
+                  type="text"
+                  id="editEventBackgroundColor"
+                  placeholder="rgba(255, 255, 255, 0.1) или transparent"
+                  value="rgba(224, 230, 240, .4)"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+              >
+                <div class="form-group" style="margin: 0">
+                  <label for="editEventDate">Дата начала</label>
+                  <input
+                    type="date"
+                    id="editEventDate"
+                    style="
+                      width: 100%;
+                      padding: 6px;
+                      font-size: 0.85em;
+                      height: 30px;
+                      height: auto;
+                    "
+                  />
+                </div>
+                <div class="form-group" style="margin: 0">
+                  <label for="editEventEndDate">Дата конца</label>
+                  <input
+                    type="date"
+                    id="editEventEndDate"
+                    style="
+                      width: 100%;
+                      padding: 6px;
+                      font-size: 0.85em;
+                      height: 30px;
+                      height: auto;
+                    "
+                  />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="form-btn-submit">
+                  ✅ Сохранить
+                </button>
+                <button
+                  type="button"
+                  class="form-btn-cancel"
+                  onclick="closeEditEventModal()"
                 >
                   ❌ Отмена
                 </button>
@@ -1553,6 +1879,62 @@
                   rows="2"
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="editEventIcon">Иконка турнира</label>
+                <select
+                  id="editEventIcon"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                >
+                  <option value="🏆">🏆 Стандартный</option>
+                  <option value="img/cups/world-cup.png">
+                    🌍 Чемпионат мира
+                  </option>
+                  <option value="img/cups/champions-league.png">
+                    🏆 Лига чемпионов
+                  </option>
+                  <option value="img/cups/european-league.png">
+                    ⚽ Лига европы
+                  </option>
+                  <option value="img/cups/conference-league.png">
+                    🏅 Лига конференций
+                  </option>
+                  <option value="img/cups/serie-a.png">🇮🇹 Serie A</option>
+                  <option value="img/cups/england-premier-league.png">
+                    🏴󠁧󠁢󠁥󠁮󠁧󠁿 Английская премьер лига
+                  </option>
+                  <option value="img/cups/spain-la-liga.png">🇪🇸 Ла Лига</option>
+                  <option value="img/cups/france-league-ligue-1.png">
+                    🇫🇷 Лига 1
+                  </option>
+                  <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
+                  <option value="custom">🎯 Свой турнир</option>
+                </select>
+              </div>
+              <div
+                class="form-group"
+                id="editCustomIconGroup"
+                style="display: none"
+              >
+                <label for="editEventCustomIcon"
+                  >Своя иконка (URL или emoji)</label
+                >
+                <input
+                  type="text"
+                  id="editEventCustomIcon"
+                  placeholder="Введите URL изображения или emoji"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
+              </div>
+              <div class="form-group">
+                <label for="editEventBackgroundColor">Цвет фона (RGBA)</label>
+                <input
+                  type="text"
+                  id="editEventBackgroundColor"
+                  placeholder="rgba(255, 255, 255, 0.1) или transparent"
+                  value="rgba(224, 230, 240, .4)"
+                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                />
               </div>
               <div
                 style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"

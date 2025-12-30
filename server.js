@@ -1177,6 +1177,9 @@ db.exec(`
     name TEXT UNIQUE NOT NULL,
     description TEXT,
     start_date DATETIME,
+    end_date DATETIME,
+    icon TEXT DEFAULT '🏆',
+    background_color TEXT DEFAULT 'rgba(224, 230, 240, .4)',
     status TEXT DEFAULT 'active',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
@@ -1230,6 +1233,22 @@ try {
 // Добавляем колонку end_date если её нет (для конца турнира)
 try {
   db.prepare("ALTER TABLE events ADD COLUMN end_date DATETIME").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
+// Добавляем колонку icon если её нет (для иконки турнира)
+try {
+  db.prepare("ALTER TABLE events ADD COLUMN icon TEXT DEFAULT '🏆'").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
+// Добавляем колонку background_color если её нет (для цвета фона турнира)
+try {
+  db.prepare(
+    "ALTER TABLE events ADD COLUMN background_color TEXT DEFAULT 'rgba(224, 230, 240, .4)'"
+  ).run();
 } catch (error) {
   // Колонка уже существует, это нормально
 }
@@ -1723,6 +1742,24 @@ app.get("/api/events", (req, res) => {
       )
       .all();
     res.json(events);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Получить один турнир по ID
+app.get("/api/events/:eventId", (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = db
+      .prepare("SELECT * FROM events WHERE id = ? AND status = 'active'")
+      .get(eventId);
+
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+
+    res.json(event);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -4183,7 +4220,15 @@ app.post("/api/football-data/sync-results", async (req, res) => {
 
 // POST /api/admin/events - Создать новое событие (только для админа)
 app.post("/api/admin/events", (req, res) => {
-  const { username, name, description, start_date, end_date } = req.body;
+  const {
+    username,
+    name,
+    description,
+    start_date,
+    end_date,
+    icon,
+    background_color,
+  } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
   // Проверяем, является ли пользователь админом
@@ -4200,11 +4245,18 @@ app.post("/api/admin/events", (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO events (name, description, start_date, end_date)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO events (name, description, start_date, end_date, icon, background_color)
+      VALUES (?, ?, ?, ?, ?, ?)
     `
       )
-      .run(name, description || null, start_date || null, end_date || null);
+      .run(
+        name,
+        description || null,
+        start_date || null,
+        end_date || null,
+        icon || null,
+        background_color || null
+      );
 
     res.json({
       id: result.lastInsertRowid,
@@ -4212,7 +4264,77 @@ app.post("/api/admin/events", (req, res) => {
       description,
       start_date,
       end_date,
+      icon,
+      background_color,
       message: "Событие успешно создано",
+    });
+  } catch (error) {
+    if (error.message.includes("UNIQUE constraint failed")) {
+      res
+        .status(400)
+        .json({ error: "Событие с таким названием уже существует" });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+// PUT /api/admin/events/:eventId - Редактировать событие (только для админа)
+app.put("/api/admin/events/:eventId", (req, res) => {
+  const { eventId } = req.params;
+  const {
+    username,
+    name,
+    description,
+    start_date,
+    end_date,
+    icon,
+    background_color,
+  } = req.body;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  // Проверяем обязательные поля
+  if (!name) {
+    return res.status(400).json({ error: "Название турнира обязательно" });
+  }
+
+  try {
+    const result = db
+      .prepare(
+        `
+      UPDATE events
+      SET name = ?, description = ?, start_date = ?, end_date = ?, icon = ?, background_color = ?
+      WHERE id = ?
+    `
+      )
+      .run(
+        name,
+        description || null,
+        start_date || null,
+        end_date || null,
+        icon || null,
+        background_color || null,
+        eventId
+      );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    res.json({
+      id: eventId,
+      name,
+      description,
+      start_date,
+      end_date,
+      icon,
+      background_color,
+      message: "Событие успешно обновлено",
     });
   } catch (error) {
     if (error.message.includes("UNIQUE constraint failed")) {

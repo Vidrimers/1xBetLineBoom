@@ -1,4 +1,28 @@
 // Случайная ставка по всем матчам выбранного тура
+
+// Соответствие иконок их текстовым описаниям для title атрибутов
+const iconTitles = {
+  "🏆": "Стандартный",
+  "img/cups/world-cup.png": "Чемпионат мира",
+  "img/cups/champions-league.png": "Лига чемпионов",
+  "img/cups/european-league.png": "Лига европы",
+  "img/cups/conference-league.png": "Лига конференций",
+  "img/cups/serie-a.png": "Serie A",
+  "img/cups/england-premier-league.png": "Английская премьер лига",
+  "img/cups/spain-la-liga.png": "Ла Лига",
+  "img/cups/france-league-ligue-1.png": "Лига 1",
+  "img/cups/bundesliga.png": "Бундеслига",
+  custom: "Свой турнир",
+};
+
+// Функция для получения title иконки
+function getIconTitle(icon) {
+  return (
+    iconTitles[icon] ||
+    (icon.startsWith("http") || icon.length > 10 ? "Кастомная иконка" : icon)
+  );
+}
+
 async function luckyBetForCurrentRound() {
   if (!currentUser) {
     alert("Сначала войдите в аккаунт");
@@ -553,7 +577,29 @@ function generateEventHTML(
           <div onclick="selectEvent(${event.id}, '${
     event.name
   }')" style="flex: 1; cursor: ${isCompleted ? "not-allowed" : "pointer"};">
-            <strong>${event.name}</strong>
+            <strong>${
+              event.icon
+                ? event.icon.startsWith("img/") || event.icon.startsWith("http")
+                  ? `<img class="event-icon" src="${
+                      event.icon
+                    }" alt="иконка" title="${getIconTitle(
+                      event.icon
+                    )}" style="width: 34px; height: 34px; vertical-align: middle; margin-right: 8px; background: ${
+                      event.background_color === "transparent" ||
+                      !event.background_color
+                        ? "rgba(224, 230, 240, .4)"
+                        : event.background_color
+                    }; padding: 2px; border-radius: 3px;">`
+                  : `<span style="display: inline-block; vertical-align: middle; margin-right: 8px; background: ${
+                      event.background_color === "transparent" ||
+                      !event.background_color
+                        ? "rgba(224, 230, 240, .4)"
+                        : event.background_color
+                    }; padding: 2px 4px; border-radius: 3px;" title="${getIconTitle(
+                      event.icon
+                    )}">${event.icon}</span>`
+                : ""
+            }${event.name}</strong>
             <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
               event.description || "Нет описания"
             }</p>
@@ -591,11 +637,7 @@ function generateEventHTML(
           <div class="event-admin-controls" data-event-id="${event.id}">
             <button onclick="openEditEventModal(${
               event.id
-            }, '${event.name.replace(/'/g, "\\'")}', '${
-                event.description ? event.description.replace(/'/g, "\\'") : ""
-              }', '${event.start_date || ""}', '${
-                event.end_date || ""
-              }')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
+            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
             ${
               isCompleted
                 ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
@@ -4322,6 +4364,20 @@ function openCreateEventModal() {
   const modal = document.getElementById("createEventModal");
   if (modal) {
     modal.style.display = "flex";
+
+    // Добавляем обработчики событий для иконки
+    const iconSelect = document.getElementById("eventIcon");
+    const customIconGroup = document.getElementById("customIconGroup");
+
+    if (iconSelect && customIconGroup) {
+      iconSelect.addEventListener("change", function () {
+        if (this.value === "custom") {
+          customIconGroup.style.display = "block";
+        } else {
+          customIconGroup.style.display = "none";
+        }
+      });
+    }
   }
 }
 
@@ -4342,6 +4398,16 @@ async function submitCreateEvent(event) {
   const description = document.getElementById("eventDescription").value.trim();
   const start_date = document.getElementById("eventDate").value;
   const end_date = document.getElementById("eventEndDate").value;
+  const iconSelect = document.getElementById("eventIcon");
+  const customIconInput = document.getElementById("eventCustomIcon");
+  const backgroundColor = document
+    .getElementById("eventBackgroundColor")
+    .value.trim();
+
+  let icon = iconSelect.value;
+  if (icon === "custom" && customIconInput.value.trim()) {
+    icon = customIconInput.value.trim();
+  }
 
   if (!name) {
     alert("Пожалуйста, введите название турнира");
@@ -4360,6 +4426,8 @@ async function submitCreateEvent(event) {
         description: description || null,
         start_date: start_date || null,
         end_date: end_date || null,
+        icon: icon || "🏆",
+        background_color: backgroundColor || "transparent",
       }),
     });
 
@@ -7629,5 +7697,226 @@ function toggleTerminalAutoScroll() {
       btn.style.borderColor = "#ff5722";
       btn.textContent = "⏸️ Стоп";
     }
+  }
+}
+
+// ===== МОДАЛЬНЫЕ ОКНА ТУРНИРОВ =====
+
+// Открыть модальное окно создания турнира
+function openCreateEventModal() {
+  console.log("🔧 openCreateEventModal called");
+  const modal = document.getElementById("createEventModal");
+  console.log("🔧 modal element:", modal);
+  if (modal) {
+    modal.style.display = "flex";
+    document
+      .getElementById("eventIcon")
+      .addEventListener("change", handleEventIconChange);
+    console.log("🔧 modal opened successfully");
+  } else {
+    console.error("🔧 createEventModal not found!");
+  }
+}
+
+// Закрыть модальное окно создания турнира
+function closeCreateEventModal() {
+  document.getElementById("createEventModal").style.display = "none";
+  document.getElementById("createEventForm").reset();
+  document.getElementById("customIconGroup").style.display = "none";
+  document
+    .getElementById("eventIcon")
+    .removeEventListener("change", handleEventIconChange);
+}
+
+// Открыть модальное окно редактирования турнира
+function openEditEventModal(eventId) {
+  console.log("🔧 openEditEventModal called with eventId:", eventId);
+  // Загружаем данные о турнире
+  fetch(`/api/events/${eventId}`)
+    .then((response) => {
+      console.log("🔧 fetch response status:", response.status);
+      return response.json();
+    })
+    .then((event) => {
+      console.log("🔧 fetched event data:", event);
+      // Заполняем форму данными
+      document.getElementById("editEventId").value = event.id;
+      document.getElementById("editEventName").value = event.name;
+      document.getElementById("editEventDescription").value =
+        event.description || "";
+      document.getElementById("editEventDate").value = event.start_date
+        ? event.start_date.split("T")[0]
+        : "";
+      document.getElementById("editEventEndDate").value = event.end_date
+        ? event.end_date.split("T")[0]
+        : "";
+
+      // Устанавливаем иконку
+      const iconSelect = document.getElementById("editEventIcon");
+      const customIconGroup = document.getElementById("editCustomIconGroup");
+      const customIconInput = document.getElementById("editEventCustomIcon");
+
+      if (event.icon) {
+        // Проверяем, есть ли такая опция в select
+        const option = Array.from(iconSelect.options).find(
+          (opt) => opt.value === event.icon
+        );
+        if (option) {
+          iconSelect.value = event.icon;
+          customIconGroup.style.display = "none";
+        } else {
+          // Это кастомная иконка
+          iconSelect.value = "custom";
+          customIconInput.value = event.icon;
+          customIconGroup.style.display = "block";
+        }
+      } else {
+        iconSelect.value = "🏆";
+        customIconGroup.style.display = "none";
+      }
+
+      // Устанавливаем цвет фона
+      document.getElementById("editEventBackgroundColor").value =
+        event.background_color || "transparent";
+
+      // Показываем модальное окно
+      const modal = document.getElementById("editEventModal");
+      console.log("🔧 editEventModal element:", modal);
+      if (modal) {
+        modal.style.display = "flex";
+        document
+          .getElementById("editEventIcon")
+          .addEventListener("change", handleEditEventIconChange);
+        console.log("🔧 edit modal opened successfully");
+      } else {
+        console.error("🔧 editEventModal not found!");
+      }
+    })
+    .catch((error) => {
+      console.error("❌ Ошибка при загрузке данных турнира:", error);
+      alert("Ошибка при загрузке данных турнира: " + error.message);
+    });
+}
+
+// Закрыть модальное окно редактирования турнира
+function closeEditEventModal() {
+  document.getElementById("editEventModal").style.display = "none";
+  document.getElementById("editEventForm").reset();
+  document.getElementById("editCustomIconGroup").style.display = "none";
+  document
+    .getElementById("editEventIcon")
+    .removeEventListener("change", handleEditEventIconChange);
+}
+
+// Обработчик изменения иконки для создания турнира
+function handleEventIconChange() {
+  const select = document.getElementById("eventIcon");
+  const customGroup = document.getElementById("customIconGroup");
+  customGroup.style.display = select.value === "custom" ? "block" : "none";
+}
+
+// Обработчик изменения иконки для редактирования турнира
+function handleEditEventIconChange() {
+  const select = document.getElementById("editEventIcon");
+  const customGroup = document.getElementById("editCustomIconGroup");
+  customGroup.style.display = select.value === "custom" ? "block" : "none";
+}
+
+// Отправить форму создания турнира
+async function submitCreateEvent(event) {
+  event.preventDefault();
+
+  const eventData = {
+    username: currentUser.username,
+    name: document.getElementById("eventName").value,
+    description: document.getElementById("eventDescription").value,
+    start_date: document.getElementById("eventDate").value || null,
+    end_date: document.getElementById("eventEndDate").value || null,
+  };
+
+  // Определяем иконку
+  const iconSelect = document.getElementById("eventIcon");
+  if (iconSelect.value === "custom") {
+    eventData.icon = document.getElementById("eventCustomIcon").value;
+  } else {
+    eventData.icon = iconSelect.value;
+  }
+
+  // Определяем цвет фона
+  eventData.background_color = document.getElementById(
+    "eventBackgroundColor"
+  ).value;
+
+  try {
+    const response = await fetch("/api/admin/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(eventData),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      closeCreateEventModal();
+      loadEventsList();
+    } else {
+      alert(result.error || "Ошибка при создании турнира");
+    }
+  } catch (error) {
+    console.error("Ошибка:", error);
+    alert("Ошибка при создании турнира");
+  }
+}
+
+// Отправить форму редактирования турнира
+async function submitEditEvent(event) {
+  event.preventDefault();
+
+  const eventId = document.getElementById("editEventId").value;
+  const eventData = {
+    username: currentUser.username,
+    name: document.getElementById("editEventName").value.trim(),
+    description: document.getElementById("editEventDescription").value.trim(),
+    start_date: document.getElementById("editEventDate").value || null,
+    end_date: document.getElementById("editEventEndDate").value || null,
+  };
+
+  // Проверяем обязательные поля
+  if (!eventData.name) {
+    alert("Название турнира обязательно");
+    return;
+  }
+
+  // Определяем иконку
+  const iconSelect = document.getElementById("editEventIcon");
+  if (iconSelect.value === "custom") {
+    eventData.icon = document.getElementById("editEventCustomIcon").value;
+  } else {
+    eventData.icon = iconSelect.value;
+  }
+
+  // Определяем цвет фона
+  eventData.background_color = document.getElementById(
+    "editEventBackgroundColor"
+  ).value;
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(eventData),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      closeEditEventModal();
+      loadEventsList();
+    } else {
+      alert(result.error || "Ошибка при обновлении турнира");
+    }
+  } catch (error) {
+    console.error("Ошибка:", error);
+    alert("Ошибка при обновлении турнира");
   }
 }

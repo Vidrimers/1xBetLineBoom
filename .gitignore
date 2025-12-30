@@ -17,6 +17,8 @@ reset-db.js
 add-timezone-column.js
 log.html
 terminal-logs.txt
+add-event-columns.js
+MIGRATION-README.md
 
 Autoparsing.js
 
