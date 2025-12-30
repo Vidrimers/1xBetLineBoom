@@ -3075,6 +3075,35 @@ app.get("/api/participants", (req, res) => {
           ELSE 0 
         END) as won_count,
         SUM(CASE 
+          WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
+            CASE 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                            (b.prediction = 'team2' AND m.winner = 'team2') OR
+                            (b.prediction = 'draw' AND m.winner = 'draw') OR
+                            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                            (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+                  ELSE 0 
+                END
+              -- Финальные параметры
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 2
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 2
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 2
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 2
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 2
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 2
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 2
+                  ELSE 0
+                END
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as lost_bets,
+        SUM(CASE 
           WHEN (b.is_final_bet = 0 AND m.winner IS NULL) OR 
                (b.is_final_bet = 1 AND fpr.id IS NULL) THEN 1 
           ELSE 0 
