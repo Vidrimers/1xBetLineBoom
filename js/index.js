@@ -501,17 +501,118 @@ async function loadEventsList() {
     events = await response.json();
     displayEvents();
 
-    // При первой загрузке выбираем первый незаблокированный турнир
+    // При первой загрузке выбираем первый активный турнир, или первый предстоящий, или первый доступный
     if (!currentEventId && events.length > 0) {
-      const firstActiveEvent =
-        events.find((e) => !e.locked_reason) || events[0];
-      selectEvent(firstActiveEvent.id);
+      const now = new Date();
+      const firstActiveEvent = events.find(
+        (e) => !e.locked_reason && e.start_date && new Date(e.start_date) <= now
+      );
+      const firstUpcomingEvent = events.find(
+        (e) =>
+          !e.locked_reason && (!e.start_date || new Date(e.start_date) > now)
+      );
+      const eventToSelect =
+        firstActiveEvent ||
+        firstUpcomingEvent ||
+        events.find((e) => !e.locked_reason) ||
+        events[0];
+      if (eventToSelect) {
+        selectEvent(eventToSelect.id);
+      }
     }
   } catch (error) {
     console.error("Ошибка при загрузке событий:", error);
     document.getElementById("eventsList").innerHTML =
       '<div class="empty-message">Ошибка при загрузке событий</div>';
   }
+}
+
+function generateEventHTML(
+  event,
+  positionNumber,
+  isCompleted = false,
+  isActive = false
+) {
+  // Если турнир завершен, показываем индикатор
+  const lockedBadge = isCompleted
+    ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; padding: 5px 8px; background: rgba(244, 67, 54, 0.2); border-radius: 3px; font-size: 0.85em;">
+          <span style="color: #f44336; font-weight: bold; font-size: 0.8em;">🔒</span>
+          <span style="color: #b0b8c8; font-size: 0.85em;">${event.locked_reason}</span>
+        </div>`
+    : "";
+
+  return `
+    <div style="display: flex; align-items: flex-start; gap: 10px;">
+      <div style="font-size: 1em; font-weight: bold; color: #5a9fd4; min-width: 30px; text-align: center; padding-top: 5px;">#${positionNumber}</div>
+      <div class="event-item ${isCompleted ? "locked" : ""} ${
+    isActive ? "active-tournament" : ""
+  } ${event.id === currentEventId ? "active" : ""}" data-event-id="${
+    event.id
+  }" style="flex: 1;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
+          <div onclick="selectEvent(${event.id}, '${
+    event.name
+  }')" style="flex: 1; cursor: ${isCompleted ? "not-allowed" : "pointer"};">
+            <strong>${event.name}</strong>
+            <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
+              event.description || "Нет описания"
+            }</p>
+            ${
+              event.start_date || event.end_date
+                ? `<p style="font-size: 0.85em; opacity: 0.6; margin-top: 3px;">
+                ${
+                  event.start_date
+                    ? `📅 с ${new Date(event.start_date).toLocaleDateString(
+                        "ru-RU"
+                      )}`
+                    : ""
+                }
+                ${
+                  event.end_date
+                    ? ` по ${new Date(event.end_date).toLocaleDateString(
+                        "ru-RU"
+                      )}`
+                    : ""
+                }
+              </p>`
+                : ""
+            }
+            ${lockedBadge}
+          </div>
+          ${
+            event.id === currentEventId
+              ? '<div style="color: #4caf50; font-weight: bold; position: absolute; right: 0px; bottom: 0px;">●</div>'
+              : ""
+          }
+        </div>
+        ${
+          isAdmin()
+            ? `<div class="event-admin-actions">
+          <div class="event-admin-controls" data-event-id="${event.id}">
+            <button onclick="openEditEventModal(${
+              event.id
+            }, '${event.name.replace(/'/g, "\\'")}', '${
+                event.description ? event.description.replace(/'/g, "\\'") : ""
+              }', '${event.start_date || ""}', '${
+                event.end_date || ""
+              }')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
+            ${
+              isCompleted
+                ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
+                : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'">🔒</button>`
+            }
+            <button class="event-delete-btn" onclick="deleteEvent(${
+              event.id
+            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'">✕</button>
+          </div>
+          <button class="event-admin-toggle" data-event-id="${
+            event.id
+          }" type="button" aria-expanded="false" title="Дополнительные действия">&lt;</button>
+        </div>`
+            : ""
+        }
+      </div>
+    </div>`;
 }
 
 function displayEvents() {
@@ -523,123 +624,64 @@ function displayEvents() {
     return;
   }
 
-  // Сортируем события: активные сверху, заблокированные снизу
-  const sortedEvents = [...events].sort((a, b) => {
-    const aLocked = a.locked_reason ? 1 : 0;
-    const bLocked = b.locked_reason ? 1 : 0;
-    return aLocked - bLocked;
+  // Получаем текущую дату для сравнения
+  const now = new Date();
+
+  // Разделяем события на категории
+  const upcomingEvents = events.filter((event) => {
+    if (event.locked_reason) return false;
+    if (!event.start_date) return true; // Если нет даты начала, считаем предстоящим
+    return new Date(event.start_date) > now;
   });
 
+  const activeEvents = events.filter((event) => {
+    if (event.locked_reason) return false;
+    if (!event.start_date) return false;
+    return new Date(event.start_date) <= now;
+  });
+
+  const completedEvents = events.filter((event) => event.locked_reason);
+
   let html = "";
-  let lastWasLocked = false;
   let activeIndex = 1;
+  let upcomingIndex = 1;
   let completedIndex = 1;
 
-  html += sortedEvents
-    .map((event) => {
-      // Добавляем разделитель перед заблокированными турнирами
-      let separator = "";
-      if (event.locked_reason && !lastWasLocked) {
-        separator =
-          '<div style="text-align: center; color: #b0b8c8; font-size: 0.9em;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
-        completedIndex = 1; // Начинаем нумерацию завершенных с 1
-      }
-      lastWasLocked = !!event.locked_reason;
+  // Активные турниры
+  if (activeEvents.length > 0) {
+    html +=
+      '<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ АКТИВНЫЕ ТУРНИРЫ ━━━</div>';
+    html += activeEvents
+      .map((event) => {
+        const positionNumber = activeIndex++;
+        return generateEventHTML(event, positionNumber, false, true);
+      })
+      .join("");
+  }
 
-      // Определяем номер позиции
-      const positionNumber = event.locked_reason ? completedIndex : activeIndex;
-      if (event.locked_reason) {
-        completedIndex++;
-      } else {
-        activeIndex++;
-      }
+  // Предстоящие турниры
+  if (upcomingEvents.length > 0) {
+    html +=
+      '<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ПРЕДСТОЯЩИЕ ТУРНИРЫ ━━━</div>';
+    html += upcomingEvents
+      .map((event) => {
+        const positionNumber = upcomingIndex++;
+        return generateEventHTML(event, positionNumber);
+      })
+      .join("");
+  }
 
-      // Если турнир заблокирован, показываем индикатор
-      const lockedBadge = event.locked_reason
-        ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; padding: 5px 8px; background: #ffe0e0; border-radius: 3px; font-size: 0.85em;color: #f44336;background: rgba(244, 67, 54, 0.2);">
-              <span style="color: #f44336; font-weight: bold; font-size: 0.8em;">🔒</span>
-              <span style="color: #b0b8c8; font-size: 0.85em;">${event.locked_reason}</span>
-            </div>`
-        : "";
-
-      return `${separator}
-        <div style="display: flex; align-items: flex-start; gap: 10px;">
-          <div style="font-size: 1em; font-weight: bold; color: #5a9fd4; min-width: 30px; text-align: center; padding-top: 5px;">#${positionNumber}</div>
-          <div class="event-item ${event.locked_reason ? "locked" : ""} ${
-        event.id === currentEventId ? "active" : ""
-      }" data-event-id="${event.id}" style="flex: 1;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div onclick="selectEvent(${event.id}, '${
-        event.name
-      }')" style="flex: 1; cursor: ${
-        event.locked_reason ? "not-allowed" : "pointer"
-      };">
-                <strong>${event.name}</strong>
-                <p style="font-size: 0.9em; opacity: 0.7; margin-top: 5px;">${
-                  event.description || "Нет описания"
-                }</p>
-                ${
-                  event.start_date || event.end_date
-                    ? `<p style="font-size: 0.85em; opacity: 0.6; margin-top: 3px;">
-                        ${
-                          event.start_date
-                            ? `📅 с ${new Date(
-                                event.start_date
-                              ).toLocaleDateString("ru-RU")}`
-                            : ""
-                        }
-                        ${
-                          event.end_date
-                            ? ` по ${new Date(
-                                event.end_date
-                              ).toLocaleDateString("ru-RU")}`
-                            : ""
-                        }
-                      </p>`
-                    : ""
-                }
-                ${lockedBadge}
-              </div>
-            </div>
-            ${
-              isAdmin()
-                ? `<div class="event-admin-actions">
-                  <div class="event-admin-controls" data-event-id="${event.id}">
-                    <button onclick="openEditEventModal(${
-                      event.id
-                    }, '${event.name.replace(/'/g, "\\'")}', '${
-                    event.description
-                      ? event.description.replace(/'/g, "\\'")
-                      : ""
-                  }', '${event.start_date || ""}', '${
-                    event.end_date || ""
-                  }')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
-                    ${
-                      event.locked_reason
-                        ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
-                        : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'">🔒</button>`
-                    }
-                    <button class="event-delete-btn" onclick="deleteEvent(${
-                      event.id
-                    })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'">✕</button>
-                  </div>
-                  <button
-                    class="event-admin-toggle"
-                    data-event-id="${event.id}"
-                    type="button"
-                    aria-expanded="false"
-                    title="Дополнительные действия"
-                  >
-                    &lt;
-                  </button>
-                </div>`
-                : ""
-            }
-          </div>
-        </div>
-    `;
-    })
-    .join("");
+  // Завершенные турниры
+  if (completedEvents.length > 0) {
+    html +=
+      '<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ЗАВЕРШЕННЫЕ ТУРНИРЫ ━━━</div>';
+    html += completedEvents
+      .map((event) => {
+        const positionNumber = completedIndex++;
+        return generateEventHTML(event, positionNumber, true);
+      })
+      .join("");
+  }
 
   eventsList.innerHTML = html;
   initEventAdminToggles();

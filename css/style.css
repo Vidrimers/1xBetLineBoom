@@ -425,11 +425,17 @@ button:active {
   box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
 }
 
-.event-item.locked.active {
-  /* background: rgba(80, 40, 40, 0.85); */
-  background: rgba(28, 28, 28, 0.5);
-  background: rgba(40, 40, 40, 0.5);
-  color: #e0e6f0;
+.event-item.active-tournament:hover {
+  background: rgba(76, 175, 80, 0.4);
+  transform: translateX(5px);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.event-item.active-tournament.active {
+  background: rgba(76, 175, 80, 0.6);
+  color: #fff;
+  border-color: #4caf50;
 }
 
 .matches-table {
@@ -900,7 +906,7 @@ button.tab-btn:hover {
   gap: 10px;
 }
 
-.events-participants-list{
+.events-participants-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -924,8 +930,6 @@ button.tab-btn:hover {
   gap: 15px;
   cursor: pointer;
 }
-
-
 
 .participant-item:hover {
   transform: translateX(5px);
