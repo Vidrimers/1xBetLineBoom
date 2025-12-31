@@ -15,6 +15,7 @@ import {
   sendUserMessage,
   sendGroupNotification,
   notifyTelegramLinked,
+  stopBot,
 } from "./OnexBetLineBoombot.js";
 
 dotenv.config();
@@ -5684,6 +5685,19 @@ app.post("/api/notify-counting-results", async (req, res) => {
     console.error("❌ Ошибка при отправке уведомления:", error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("\n🛑 Получен SIGINT, останавливаем сервер...");
+  stopBot();
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  console.log("\n🛑 Получен SIGTERM, останавливаем сервер...");
+  stopBot();
+  process.exit(0);
 });
 
 // Запуск сервера

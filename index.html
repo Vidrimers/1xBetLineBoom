@@ -863,7 +863,7 @@
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 ></textarea>
               </div>
-              <div class="form-group">
+              <div class="form-group create-event-icon event-icon">
                 <label for="eventIcon">Иконка турнира</label>
                 <select
                   id="eventIcon"
@@ -895,7 +895,7 @@
                 </select>
               </div>
               <div
-                class="form-group"
+                class="form-group create-event-icon event-custom-icon"
                 id="customIconGroup"
                 style="display: none"
               >
@@ -907,7 +907,7 @@
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 />
               </div>
-              <div class="form-group">
+              <div class="form-group event-background-color">
                 <label for="eventBackgroundColor">Цвет фона (RGBA)</label>
                 <input
                   type="text"
@@ -920,7 +920,7 @@
               <div
                 style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
               >
-                <div class="form-group" style="margin: 0">
+                <div class="form-group event-date" style="margin: 0">
                   <label for="eventDate">Дата начала</label>
                   <input
                     type="date"
@@ -934,7 +934,7 @@
                     "
                   />
                 </div>
-                <div class="form-group" style="margin: 0">
+                <div class="form-group event-end-date" style="margin: 0">
                   <label for="eventEndDate">Дата конца</label>
                   <input
                     type="date"
@@ -967,7 +967,7 @@
       </div>
 
       <!-- Модальное окно для редактирования турнира -->
-      <div id="editEventModal" class="modal" style="display: none">
+      <div id="editEventModal" class="modal edit-event-modal" style="display: none">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
             <h2>✏️ Редактировать турнир</h2>
@@ -975,10 +975,10 @@
               &times;
             </button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body edit-event">
             <form id="editEventForm" onsubmit="submitEditEvent(event)">
               <input type="hidden" id="editEventId" />
-              <div class="form-group">
+              <div class="form-group edit-event-name">
                 <label for="editEventName">Название турнира *</label>
                 <input
                   type="text"
@@ -988,7 +988,7 @@
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 />
               </div>
-              <div class="form-group">
+              <div class="form-group edit-event-description">
                 <label for="editEventDescription">Описание</label>
                 <textarea
                   id="editEventDescription"
@@ -997,7 +997,7 @@
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 ></textarea>
               </div>
-              <div class="form-group">
+              <div class="form-group edit-event-icon event-icon">
                 <label for="editEventIcon">Иконка турнира</label>
                 <select
                   id="editEventIcon"
@@ -1029,7 +1029,7 @@
                 </select>
               </div>
               <div
-                class="form-group"
+                class="form-group edit-event-icon event-custom-icon"
                 id="editCustomIconGroup"
                 style="display: none"
               >
@@ -1043,7 +1043,7 @@
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 />
               </div>
-              <div class="form-group">
+              <div class="form-group edit-event-background-color event-background-color">
                 <label for="editEventBackgroundColor">Цвет фона (RGBA)</label>
                 <input
                   type="text"
@@ -1056,7 +1056,7 @@
               <div
                 style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
               >
-                <div class="form-group" style="margin: 0">
+                <div class="form-group edit-event-date" style="margin: 0">
                   <label for="editEventDate">Дата начала</label>
                   <input
                     type="date"
@@ -1070,7 +1070,7 @@
                     "
                   />
                 </div>
-                <div class="form-group" style="margin: 0">
+                <div class="form-group edit-event-end-date" style="margin: 0">
                   <label for="editEventEndDate">Дата конца</label>
                   <input
                     type="date"

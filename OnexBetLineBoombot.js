@@ -30,6 +30,7 @@ if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
 
 // Создаём экземпляр бота (будет инициализирован в startBot)
 let bot = null;
+let botStarted = false; // Флаг для предотвращения повторного запуска
 
 // Файл очереди для неотправленных уведомлений (JSONL)
 const NOTIF_QUEUE_FILE = path.join(
@@ -698,9 +699,35 @@ export function notifyTelegramLinked(
 // ===== ИНИЦИАЛИЗАЦИЯ И ЗАПУСК БОТА =====
 
 export function startBot() {
-  bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+  if (botStarted) {
+    console.log("ℹ️ Бот уже запущен, пропускаем повторную инициализацию");
+    return;
+  }
 
-  console.log("✅ Telegram бот запущен");
+  // Проверяем переменную окружения для включения polling
+  const enablePolling = process.env.TELEGRAM_BOT_POLLING === "true";
+
+  if (enablePolling) {
+    try {
+      bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+      botStarted = true;
+      console.log("✅ Telegram бот запущен с polling");
+    } catch (error) {
+      console.error("❌ Ошибка при запуске бота с polling:", error.message);
+      console.log("🔄 Запускаем бота без polling...");
+      bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
+      botStarted = true;
+      console.log(
+        "✅ Telegram бот запущен без polling (только отправка сообщений)"
+      );
+    }
+  } else {
+    bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
+    botStarted = true;
+    console.log(
+      "✅ Telegram бот запущен без polling (TELEGRAM_BOT_POLLING=false)"
+    );
+  }
 
   // Запускаем background worker для повторной отправки уведомлений
   startNotifWorker();
@@ -1839,6 +1866,18 @@ export function startBot() {
       );
       console.error("Full polling error:", error);
 
+      // Если 409 Conflict - другой бот уже получает обновления
+      if (error && error.response && error.response.statusCode === 409) {
+        console.log(
+          "⚠️ Конфликт polling (409): другой экземпляр бота уже работает"
+        );
+        console.log("🔄 Отключаем polling для этого экземпляра");
+        if (bot) {
+          bot.stopPolling();
+        }
+        return; // Не пытаемся восстановить polling
+      }
+
       // Если EFATAL — это фатальная ошибка polling, часто связана с сетевыми разрывами
       if (error && error.code === "EFATAL") {
         // Вспомогательные функции
@@ -1925,4 +1964,13 @@ export function startBot() {
   });
 
   console.log("✅ Все обработчики бота зарегистрированы");
+}
+
+export function stopBot() {
+  if (bot) {
+    console.log("🛑 Останавливаем Telegram бота...");
+    bot.stopPolling();
+    bot = null;
+    botStarted = false;
+  }
 }
