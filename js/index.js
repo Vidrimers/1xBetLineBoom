@@ -6725,11 +6725,26 @@ async function showUserProfile(userId, username) {
           <div class="award-icon-container" style="background: #2a1a0a; padding: 15px; border-radius: 8px;">
             <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Побед в турнирах</div>
             <div class="award-icons" style="font-size: 1.4em; font-weight: bold; color: #ffc107;">
-              ${"🏆".repeat(Math.min(userData.tournament_wins, 5))}${
-                userData.tournament_wins > 5
-                  ? " (" + userData.tournament_wins + ")"
-                  : ""
-              }
+              ${(() => {
+                // Подсчитываем иконки турниров
+                const iconCounts = {};
+                tournamentAwards.forEach((award) => {
+                  const icon = award.event_icon || "🏆";
+                  iconCounts[icon] = (iconCounts[icon] || 0) + 1;
+                });
+
+                // Формируем отображение иконок
+                const iconsDisplay = Object.entries(iconCounts)
+                  .map(([icon, count]) => {
+                    const displayIcon = icon.startsWith("img/")
+                      ? `<img src="${icon}" alt="trophy" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
+                      : icon;
+                    return count > 1 ? `${displayIcon}×${count}` : displayIcon;
+                  })
+                  .join(" ");
+
+                return iconsDisplay;
+              })()}
             </div>
           </div>
         `
