@@ -2834,7 +2834,27 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     // Устанавливаем заголовок
     document.getElementById(
       "tournamentParticipantBetsTitle"
-    ).textContent = `📊 Ставки ${username} в турнире`;
+    ).textContent = `📊 Ставки ${username}`;
+
+    // Рассчитываем точность угадывания для этого турнира
+    const totalBets = bets.length;
+    const wonBets = bets.filter((b) => b.result === "won").length;
+    const lostBets = bets.filter((b) => b.result === "lost").length;
+    const pendingBets = bets.filter((b) => b.result === "pending").length;
+    const completedBets = wonBets + lostBets;
+
+    let accuracyHTML = "";
+    if (completedBets > 0) {
+      const accuracy = ((wonBets / completedBets) * 100).toFixed(1);
+      accuracyHTML = `Точность: <strong>${accuracy}%</strong> (${wonBets}/${completedBets})`;
+    } else if (pendingBets > 0) {
+      accuracyHTML = `Все ставки в ожидании (${pendingBets})`;
+    } else {
+      accuracyHTML = `Нет завершенных ставок`;
+    }
+
+    document.getElementById("tournamentParticipantAccuracy").innerHTML =
+      accuracyHTML;
 
     // Определяем завершённые туры (где ВСЕ ставки имеют результат, нет pending)
     const completedRounds = new Set();
