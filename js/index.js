@@ -3637,17 +3637,27 @@ async function removeModerator(moderatorId) {
 
 // Открыть панель управления наградами
 async function openAwardsPanel() {
+  console.log("🏆 Открытие панели управления наградами");
+
   if (!isAdmin()) {
     alert("❌ У вас нет прав для управления наградами");
     return;
   }
 
   const modal = document.getElementById("awardsModal");
+  if (!modal) {
+    console.error("❌ Элемент awardsModal не найден!");
+    alert("❌ Ошибка: модальное окно не найдено");
+    return;
+  }
+
   modal.style.display = "flex";
 
+  console.log("📋 Загрузка списка наград...");
   // Загружаем список наград
   loadAwardsList();
 
+  console.log("🎪 Загрузка списка турниров...");
   // Загружаем список турниров
   loadEventsForAwards();
 }
@@ -3655,7 +3665,9 @@ async function openAwardsPanel() {
 // Закрыть панель управления наградами
 function closeAwardsPanel() {
   const modal = document.getElementById("awardsModal");
-  modal.style.display = "none";
+  if (modal) {
+    modal.style.display = "none";
+  }
 }
 
 // Загрузить список выданных наград
@@ -3833,6 +3845,7 @@ async function loadEventsForAwards() {
 
     // Добавляем обработчик изменения турнира
     select.onchange = () => {
+      console.log(`🎯 Выбран турнир: ${select.value}`);
       if (select.value) {
         loadTournamentParticipantsForAward(select.value);
       } else {
@@ -3848,23 +3861,35 @@ async function loadEventsForAwards() {
 // Загрузить участников турнира
 async function loadTournamentParticipantsForAward(eventId) {
   try {
+    console.log(`🔍 Загрузка участников для турнира ${eventId}`);
     const response = await fetch(
       `/api/events/${eventId}/tournament-participants`
     );
+
+    if (!response.ok) {
+      console.error(`❌ Ошибка ответа сервера: ${response.status}`);
+      throw new Error(`Ошибка сервера: ${response.status}`);
+    }
+
     const participants = await response.json();
 
-    console.log("Загруженные участники:", participants);
+    console.log("✅ Загруженные участники:", participants);
+    console.log(`📊 Количество участников: ${participants.length}`);
 
     const select = document.getElementById("participantSelectForAward");
 
-    // Очищаем текущие опции кроме первой
-    while (select.options.length > 1) {
-      select.remove(1);
+    if (!select) {
+      console.error("❌ Элемент participantSelectForAward не найден!");
+      return;
     }
+
+    // Очищаем текущие опции
+    select.innerHTML = '<option value="">-- Выбрать участника --</option>';
 
     if (!Array.isArray(participants) || participants.length === 0) {
       select.innerHTML =
         '<option value="">-- Участников не найдено --</option>';
+      console.warn("⚠️ В турнире нет участников со ставками");
       return;
     }
 
@@ -3872,14 +3897,22 @@ async function loadTournamentParticipantsForAward(eventId) {
     participants.forEach((participant) => {
       const option = document.createElement("option");
       // Используем id вместо user_id (так как API возвращает id)
-      const userId = participant.user_id || participant.id;
+      const userId = participant.id;
       option.value = String(userId);
       option.textContent = participant.username;
       select.appendChild(option);
-      console.log(`Добавлен участник: ${participant.username}, ID: ${userId}`);
+      console.log(
+        `➕ Добавлен участник: ${participant.username}, ID: ${userId}`
+      );
     });
+
+    console.log(`✅ Всего добавлено участников: ${participants.length}`);
   } catch (error) {
-    console.error("Ошибка при загрузке участников:", error);
+    console.error("❌ Ошибка при загрузке участников:", error);
+    const select = document.getElementById("participantSelectForAward");
+    if (select) {
+      select.innerHTML = '<option value="">-- Ошибка загрузки --</option>';
+    }
   }
 }
 
@@ -4377,364 +4410,6 @@ async function removeAward(awardId) {
   } catch (error) {
     console.error("Ошибка при удалении награды:", error);
     alert(`❌ Ошибка при удалении награды: ${error.message}`);
-  }
-}
-
-// Создать новое событие (только для админа)
-function openCreateEventModal() {
-  if (!currentUser) {
-    alert("Сначала войдите в систему");
-    return;
-  }
-
-  if (!isAdmin()) {
-    alert("У вас нет прав для создания событий");
-    return;
-  }
-
-  // Открываем модальное окно
-  const modal = document.getElementById("createEventModal");
-  if (modal) {
-    modal.style.display = "flex";
-
-    // Добавляем обработчики событий для чекбокса кастомной иконки
-    const customIconCheckbox = document.getElementById("customIconCheckbox");
-    const customIconGroup = document.getElementById("customIconGroup");
-
-    console.log("customIconCheckbox:", customIconCheckbox);
-    console.log("customIconGroup:", customIconGroup);
-
-    if (customIconCheckbox && customIconGroup) {
-      customIconCheckbox.addEventListener(
-        "change",
-        handleCreateEventIconChange
-      );
-    }
-  }
-}
-
-// Закрыть модальное окно для создания турнира
-function closeCreateEventModal() {
-  const modal = document.getElementById("createEventModal");
-  modal.style.display = "none";
-
-  // Очищаем форму
-  document.getElementById("createEventForm").reset();
-
-  // Скрываем поле кастомной иконки
-  const customIconGroup = document.getElementById("customIconGroup");
-  if (customIconGroup) {
-    customIconGroup.style.display = "none";
-  }
-
-  // Удаляем обработчик чекбокса кастомной иконки
-  const customIconCheckbox = document.getElementById("customIconCheckbox");
-  if (customIconCheckbox) {
-    customIconCheckbox.removeEventListener(
-      "change",
-      handleCreateEventIconChange
-    );
-  }
-}
-
-// Отправить форму создания турнира
-async function submitCreateEvent(event) {
-  event.preventDefault();
-
-  const name = document.getElementById("eventName").value.trim();
-  const description = document.getElementById("eventDescription").value.trim();
-  const start_date = document.getElementById("eventDate").value;
-  const end_date = document.getElementById("eventEndDate").value;
-  const iconSelect = document.getElementById("eventIcon");
-  const customIconCheckbox = document.getElementById("customIconCheckbox");
-  const customIconInput = document.getElementById("eventCustomIcon");
-  const backgroundColor = document
-    .getElementById("eventBackgroundColor")
-    .value.trim();
-
-  let icon = iconSelect.value;
-  if (customIconCheckbox.checked && customIconInput.value.trim()) {
-    icon = customIconInput.value.trim();
-  }
-
-  if (!name) {
-    alert("Пожалуйста, введите название турнира");
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/admin/events", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: currentUser.username,
-        name,
-        description: description || null,
-        start_date: start_date || null,
-        end_date: end_date || null,
-        icon: icon || "🏆",
-        background_color: backgroundColor || "transparent",
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      alert("Ошибка: " + result.error);
-      return;
-    }
-
-    // Закрываем модальное окно
-    closeCreateEventModal();
-
-    // Перезагружаем турниры
-    loadEventsList();
-  } catch (error) {
-    console.error("Ошибка при создании турнира:", error);
-    alert("Ошибка при создании турнира");
-  }
-}
-
-// Удалить событие (только для админа)
-async function deleteEvent(eventId) {
-  if (!currentUser) {
-    alert("Сначала войдите в систему");
-    return;
-  }
-
-  if (!isAdmin()) {
-    alert("У вас нет прав для удаления событий");
-    return;
-  }
-
-  if (!confirm("Вы уверены, что хотите удалить это событие?")) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/admin/events/${eventId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: currentUser.username,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      alert("Ошибка: " + result.error);
-      return;
-    }
-
-    loadEventsList();
-  } catch (error) {
-    console.error("Ошибка при удалении турнира:", error);
-    alert("Ошибка при удалении турнира");
-  }
-}
-
-// Открыть модальное окно для блокировки турнира
-function openLockEventModal(eventId, eventName) {
-  if (!isAdmin()) {
-    alert("У вас нет прав");
-    return;
-  }
-
-  // Сохраняем ID события для использования в submitLockEvent
-  document.getElementById("lockEventForm").dataset.eventId = eventId;
-  document.getElementById("lockEventForm").dataset.eventName = eventName;
-
-  const modal = document.getElementById("lockEventModal");
-  if (modal) {
-    modal.style.display = "flex";
-  }
-}
-
-// Закрыть модальное окно для блокировки турнира
-function closeLockEventModal() {
-  const modal = document.getElementById("lockEventModal");
-  modal.style.display = "none";
-
-  // Очищаем форму
-  document.getElementById("lockEventForm").reset();
-  delete document.getElementById("lockEventForm").dataset.eventId;
-}
-
-// Отправить форму блокировки турнира
-async function submitLockEvent(event) {
-  event.preventDefault();
-
-  const form = document.getElementById("lockEventForm");
-  const eventId = form.dataset.eventId;
-  const reason = document.getElementById("eventLockReason").value.trim();
-
-  if (!reason) {
-    alert("Пожалуйста, укажите причину блокировки");
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/admin/events/${eventId}/lock`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: currentUser.username,
-        reason: reason,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      alert("Ошибка: " + result.error);
-      return;
-    }
-
-    // Закрываем модальное окно
-    closeLockEventModal();
-
-    // Перезагружаем турниры
-    loadEventsList();
-  } catch (error) {
-    console.error("Ошибка при блокировке турнира:", error);
-    alert("Ошибка при блокировке турнира");
-  }
-}
-
-// Разблокировать турнир
-async function unlockEvent(eventId) {
-  if (!isAdmin()) {
-    alert("У вас нет прав");
-    return;
-  }
-
-  if (!confirm("Вы уверены, что хотите разблокировать этот турнир?")) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/admin/events/${eventId}/unlock`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: currentUser.username,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      alert("Ошибка: " + result.error);
-      return;
-    }
-
-    // Перезагружаем турниры
-    loadEventsList();
-  } catch (error) {
-    console.error("Ошибка при разблокировке турнира:", error);
-    alert("Ошибка при разблокировке турнира");
-  }
-}
-
-// Открыть модальное окно редактирования турнира
-function openEditEventModal(
-  eventId,
-  eventName,
-  eventDescription,
-  startDate,
-  endDate
-) {
-  if (!isAdmin()) {
-    alert("У вас нет прав");
-    return;
-  }
-
-  // Сохраняем ID события для использования в submitEditEvent
-  document.getElementById("editEventForm").dataset.eventId = eventId;
-
-  // Заполняем поля формы текущими значениями
-  document.getElementById("editEventName").value = eventName;
-  document.getElementById("editEventDescription").value = eventDescription;
-  document.getElementById("editEventStartDate").value = startDate
-    ? startDate.split("T")[0]
-    : "";
-  document.getElementById("editEventEndDate").value = endDate
-    ? endDate.split("T")[0]
-    : "";
-
-  const modal = document.getElementById("editEventModal");
-  if (modal) {
-    modal.style.display = "flex";
-  }
-}
-
-// Закрыть модальное окно редактирования турнира
-function closeEditEventModal() {
-  const modal = document.getElementById("editEventModal");
-  modal.style.display = "none";
-
-  // Очищаем форму
-  document.getElementById("editEventForm").reset();
-  delete document.getElementById("editEventForm").dataset.eventId;
-}
-
-// Отправить форму редактирования турнира
-async function submitEditEvent(event) {
-  event.preventDefault();
-
-  const form = document.getElementById("editEventForm");
-  const eventId = form.dataset.eventId;
-  const name = document.getElementById("editEventName").value.trim();
-  const description = document
-    .getElementById("editEventDescription")
-    .value.trim();
-  const start_date = document.getElementById("editEventStartDate").value;
-  const end_date = document.getElementById("editEventEndDate").value;
-
-  if (!name) {
-    alert("Пожалуйста, укажите название турнира");
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/admin/events/${eventId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: currentUser.username,
-        name: name,
-        description: description,
-        start_date: start_date || null,
-        end_date: end_date || null,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      alert("Ошибка: " + result.error);
-      return;
-    }
-
-    // Закрываем модальное окно
-    closeEditEventModal();
-
-    // Перезагружаем турниры
-    loadEventsList();
-  } catch (error) {
-    console.error("Ошибка при редактировании турнира:", error);
-    alert("Ошибка при редактировании турнира");
   }
 }
 
