@@ -3162,7 +3162,7 @@ app.get("/api/participants", (req, res) => {
       const tournaments = db
         .prepare(
           `
-        SELECT DISTINCT e.id, e.name
+        SELECT DISTINCT e.id, e.name, e.icon
         FROM events e
         WHERE e.locked_reason IS NOT NULL
       `
@@ -3170,6 +3170,7 @@ app.get("/api/participants", (req, res) => {
         .all();
 
       let tournament_wins = 0;
+      let won_icons = [];
 
       // Для каждого завершенного турнира проверяем, выиграл ли участник
       tournaments.forEach((tournament) => {
@@ -3228,12 +3229,14 @@ app.get("/api/participants", (req, res) => {
           userWinsInTournament === maxWinsInTournament
         ) {
           tournament_wins++;
+          won_icons.push(tournament.icon);
         }
       });
 
       return {
         ...participant,
         tournament_wins,
+        won_icons,
       };
     });
 

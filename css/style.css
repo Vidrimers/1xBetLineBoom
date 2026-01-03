@@ -1107,18 +1107,26 @@ button.tab-btn:hover {
 }
 
 .event-icon {
-    /* width: 24px; */
-    /* height: 24px; */
+  /* width: 24px; */
+  /* height: 24px; */
   object-fit: contain;
   border-radius: 4px;
 }
 
-.event-card .event-icon{
+.tournament-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.event-card .event-icon {
   width: 35px;
   height: 35px;
 }
 
-.event-grid>.event-card{
+.event-grid > .event-card {
   align-items: center;
 }
 

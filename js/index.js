@@ -2520,13 +2520,22 @@ function displayParticipants(participants) {
 
   participantsList.innerHTML = sortedParticipants
     .map((participant, index) => {
-      // Формируем трофеи
-      const wins = participant.tournament_wins || 0;
+      // Формируем трофеи из иконок турниров
+      const wonIcons = participant.won_icons || [];
       let trophies = "";
-      if (wins <= 5) {
-        trophies = "🏆".repeat(wins);
-      } else {
-        trophies = "🏆x" + wins;
+      if (wonIcons.length > 0) {
+        const iconCounts = {};
+        wonIcons.forEach((icon) => {
+          iconCounts[icon] = (iconCounts[icon] || 0) + 1;
+        });
+        trophies = Object.entries(iconCounts)
+          .map(([icon, count]) => {
+            const displayIcon = icon.startsWith("img/")
+              ? `<img src="${icon}" alt="trophy" class="tournament-icon">`
+              : icon;
+            return count > 1 ? `${displayIcon}x${count}` : displayIcon;
+          })
+          .join(" ");
       }
 
       return `
@@ -2540,7 +2549,7 @@ function displayParticipants(participants) {
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
         ${
-          wins > 0
+          wonIcons.length > 0
             ? `<div class="participant-tournaments">Побед в турнирах: ${trophies}</div>`
             : ""
         }
