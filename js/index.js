@@ -149,6 +149,49 @@ function setAuthButtonToLoginState() {
   moveAuthButtonToLoginForm();
 }
 
+// ===== ТЕМЫ =====
+
+// Изменить тему сайта
+function changeTheme(themeName) {
+  console.log(`🎨 Смена темы на: ${themeName}`);
+
+  // Удаляем все классы тем
+  document.body.classList.remove(
+    "theme-default",
+    "theme-hacker-green",
+    "theme-solarized",
+    "theme-matrix",
+    "theme-cyberpunk",
+    "theme-leagueChampions",
+    "theme-leagueEurope"
+  );
+
+  // Добавляем новый класс темы
+  document.body.classList.add(themeName);
+
+  // Сохраняем выбор темы в localStorage
+  localStorage.setItem("selectedTheme", themeName);
+
+  console.log(`✅ Тема ${themeName} применена`);
+}
+
+// Загрузить сохраненную тему при загрузке страницы
+function loadSavedTheme() {
+  const savedTheme = localStorage.getItem("selectedTheme") || "theme-default";
+  console.log(`📂 Загружена сохраненная тема: ${savedTheme}`);
+
+  // Применяем тему
+  document.body.classList.add(savedTheme);
+
+  // Устанавливаем правильный radio button
+  const themeRadio = document.querySelector(
+    `input[name="theme"][value="${savedTheme}"]`
+  );
+  if (themeRadio) {
+    themeRadio.checked = true;
+  }
+}
+
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 
 // Загрузить порядок туров из БД
@@ -335,6 +378,9 @@ async function loadConfig() {
 // Загрузить турниры при загрузке страницы
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🔄 DOMContentLoaded - начало загрузки");
+
+  // Загружаем сохраненную тему
+  loadSavedTheme();
 
   // Загружаем конфиг сначала
   await loadConfig();

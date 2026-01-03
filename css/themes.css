@@ -1,0 +1,412 @@
+/* ========================================
+   СИСТЕМА ТЕМ
+   ======================================== */
+
+/* === THEME DEFAULT (Текущая основная тема) === */
+/* Дефолтная тема использует стили из style.css без изменений */
+
+/* === THEME HACKER GREEN === */
+body.theme-hacker-green {
+  background: #000000 !important;
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green * {
+  color: #00ff00;
+}
+
+body.theme-hacker-green .header {
+  background: linear-gradient(135deg, #001100 0%, #003300 100%) !important;
+  border-bottom: 2px solid #00ff00;
+}
+
+body.theme-hacker-green .section {
+  background: #001100 !important;
+  border: 1px solid #00ff00;
+}
+
+body.theme-hacker-green .event-card {
+  background: linear-gradient(135deg, #002200 0%, #004400 100%) !important;
+  border: 2px solid #00ff00 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+body.theme-hacker-green .event-card:hover {
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+body.theme-hacker-green .match-card {
+  background: #003300 !important;
+  border: 1px solid #00ff00 !important;
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green button,
+body.theme-hacker-green .btn {
+  background: linear-gradient(135deg, #00aa00 0%, #00ff00 100%) !important;
+  color: #000000 !important;
+  border: 1px solid #00ff00 !important;
+  font-weight: bold;
+}
+
+body.theme-hacker-green input,
+body.theme-hacker-green select,
+body.theme-hacker-green textarea {
+  background: #001100 !important;
+  border: 1px solid #00ff00 !important;
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green .modal-content {
+  background: #000000 !important;
+  border: 2px solid #00ff00 !important;
+}
+
+/* === THEME SOLARIZED === */
+body.theme-solarized {
+  background: #002b36 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .header {
+  background: linear-gradient(135deg, #073642 0%, #002b36 100%) !important;
+  border-bottom: 2px solid #268bd2;
+}
+
+body.theme-solarized .section {
+  background: #073642 !important;
+  border: 1px solid #586e75;
+}
+
+body.theme-solarized .event-card {
+  background: linear-gradient(135deg, #073642 0%, #0d4a5f 100%) !important;
+  border: 2px solid #268bd2 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .match-card {
+  background: #0d4a5f !important;
+  border-left: 4px solid #2aa198 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized button,
+body.theme-solarized .btn {
+  background: linear-gradient(135deg, #268bd2 0%, #2aa198 100%) !important;
+  color: #fdf6e3 !important;
+}
+
+body.theme-solarized input,
+body.theme-solarized select,
+body.theme-solarized textarea {
+  background: #073642 !important;
+  border: 1px solid #586e75 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .modal-content {
+  background: #002b36 !important;
+  border: 2px solid #268bd2 !important;
+}
+
+/* === THEME MATRIX === */
+body.theme-matrix {
+  font-family: "Courier New", monospace;
+  background: #000000 !important;
+  color: #00ff41 !important;
+}
+
+body.theme-matrix * {
+  font-family: "Courier New", monospace;
+}
+
+body.theme-matrix .header {
+  background: linear-gradient(135deg, #000000 0%, #001a00 100%) !important;
+  box-shadow: 0 4px 6px rgba(0, 255, 65, 0.5);
+  border-bottom: 3px solid #00ff41;
+}
+
+body.theme-matrix .section {
+  background: #000a00 !important;
+  border: 2px solid #00ff41;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+}
+
+body.theme-matrix .event-card {
+  background: linear-gradient(135deg, #001100 0%, #002200 100%) !important;
+  border: 2px solid #00ff41 !important;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+  color: #00ff41 !important;
+}
+
+body.theme-matrix .event-card:hover {
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.7);
+  transform: scale(1.02);
+}
+
+body.theme-matrix .match-card {
+  background: #001a00 !important;
+  border: 2px solid #00ff41 !important;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+  color: #00ff41 !important;
+}
+
+body.theme-matrix button,
+body.theme-matrix .btn {
+  background: linear-gradient(135deg, #00dd33 0%, #00ff41 100%) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.6);
+  border: 2px solid #00ff41 !important;
+  font-weight: bold;
+}
+
+body.theme-matrix input,
+body.theme-matrix select,
+body.theme-matrix textarea {
+  background: #000a00 !important;
+  border: 2px solid #00ff41 !important;
+  color: #00ff41 !important;
+}
+
+body.theme-matrix .modal-content {
+  background: #000000 !important;
+  border: 3px solid #00ff41 !important;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+}
+
+/* === THEME CYBERPUNK === */
+body.theme-cyberpunk {
+  background: #0a0014 !important;
+  color: #00ffff !important;
+}
+
+body.theme-cyberpunk .header {
+  background: linear-gradient(
+    135deg,
+    #1a0a2e 0%,
+    #ff00ff 20%,
+    #00ffff 80%,
+    #1a0a2e 100%
+  ) !important;
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.6);
+  border-bottom: 3px solid #ff00ff;
+}
+
+body.theme-cyberpunk .section {
+  background: linear-gradient(135deg, #16213e 0%, #1a0a2e 100%) !important;
+  border: 2px solid #ff00ff;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
+}
+
+body.theme-cyberpunk .event-card {
+  background: linear-gradient(
+    135deg,
+    #1a0a2e 0%,
+    #16213e 50%,
+    #1a0a2e 100%
+  ) !important;
+  border: 2px solid #ff00ff !important;
+  box-shadow: 0 0 25px rgba(255, 0, 255, 0.5),
+    inset 0 0 20px rgba(0, 255, 255, 0.2);
+  color: #00ffff !important;
+}
+
+body.theme-cyberpunk .event-card:hover {
+  box-shadow: 0 0 40px rgba(255, 0, 255, 0.8),
+    inset 0 0 30px rgba(0, 255, 255, 0.3);
+  border-color: #00ffff;
+}
+
+body.theme-cyberpunk .match-card {
+  background: linear-gradient(135deg, #16213e 0%, #2d1b4e 100%) !important;
+  border-left: 4px solid #ff00ff !important;
+  border-right: 2px solid #00ffff !important;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+  color: #00ffff !important;
+}
+
+body.theme-cyberpunk button,
+body.theme-cyberpunk .btn {
+  background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
+  border: 2px solid #ff00ff !important;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+body.theme-cyberpunk button:hover,
+body.theme-cyberpunk .btn:hover {
+  background: linear-gradient(135deg, #00ffff 0%, #ff00ff 100%) !important;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+}
+
+body.theme-cyberpunk input,
+body.theme-cyberpunk select,
+body.theme-cyberpunk textarea {
+  background: #0a0014 !important;
+  border: 2px solid #ff00ff !important;
+  color: #00ffff !important;
+}
+
+body.theme-cyberpunk .modal-content {
+  background: linear-gradient(135deg, #0a0014 0%, #1a0a2e 100%) !important;
+  border: 3px solid #ff00ff !important;
+  box-shadow: 0 0 40px rgba(255, 0, 255, 0.6);
+}
+
+/* === THEME LEAGUE CHAMPIONS === */
+body.theme-leagueChampions {
+  background: #0a1428 !important;
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .header {
+  background: linear-gradient(
+    135deg,
+    #162447 0%,
+    #1b9ce5 50%,
+    #162447 100%
+  ) !important;
+  border-bottom: 3px solid #1b9ce5;
+  box-shadow: 0 4px 15px rgba(27, 156, 229, 0.5);
+}
+
+body.theme-leagueChampions .section {
+  background: linear-gradient(135deg, #162447 0%, #1f4068 100%) !important;
+  border: 2px solid #1b9ce5;
+}
+
+body.theme-leagueChampions .event-card {
+  background: linear-gradient(135deg, #1f4068 0%, #2a5c8a 100%) !important;
+  border: 3px solid #1b9ce5 !important;
+  box-shadow: 0 6px 20px rgba(27, 156, 229, 0.4);
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .event-card:hover {
+  box-shadow: 0 8px 30px rgba(27, 156, 229, 0.6);
+  transform: translateY(-3px);
+  border-color: #00d9ff;
+}
+
+body.theme-leagueChampions .match-card {
+  background: linear-gradient(135deg, #1f4068 0%, #2a5c8a 100%) !important;
+  border-left: 5px solid #1b9ce5 !important;
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions button,
+body.theme-leagueChampions .btn {
+  background: linear-gradient(135deg, #1b9ce5 0%, #00d9ff 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  border: 2px solid #1b9ce5 !important;
+  box-shadow: 0 4px 15px rgba(27, 156, 229, 0.5);
+}
+
+body.theme-leagueChampions button:hover,
+body.theme-leagueChampions .btn:hover {
+  background: linear-gradient(135deg, #00d9ff 0%, #1b9ce5 100%) !important;
+  box-shadow: 0 6px 20px rgba(27, 156, 229, 0.7);
+}
+
+body.theme-leagueChampions input,
+body.theme-leagueChampions select,
+body.theme-leagueChampions textarea {
+  background: #162447 !important;
+  border: 2px solid #1b9ce5 !important;
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .modal-content {
+  background: #0a1428 !important;
+  border: 3px solid #1b9ce5 !important;
+  box-shadow: 0 0 30px rgba(27, 156, 229, 0.4);
+}
+
+/* === THEME LEAGUE EUROPE === */
+body.theme-leagueEurope {
+  background: #0f1419 !important;
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope .header {
+  background: linear-gradient(
+    135deg,
+    #1a1f2e 0%,
+    #ffd700 50%,
+    #1a1f2e 100%
+  ) !important;
+  border-bottom: 4px solid #ffd700;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6);
+}
+
+body.theme-leagueEurope .section {
+  background: linear-gradient(135deg, #1a1f2e 0%, #252d3d 100%) !important;
+  border: 2px solid #ffd700;
+}
+
+body.theme-leagueEurope .event-card {
+  background: linear-gradient(135deg, #252d3d 0%, #3a4556 100%) !important;
+  border: 3px solid #ffd700 !important;
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5);
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope .event-card:hover {
+  box-shadow: 0 8px 35px rgba(255, 215, 0, 0.7);
+  transform: translateY(-3px);
+  border-color: #ffed4e;
+}
+
+body.theme-leagueEurope .match-card {
+  background: linear-gradient(135deg, #252d3d 0%, #3a4556 100%) !important;
+  border-left: 5px solid #ffd700 !important;
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope button,
+body.theme-leagueEurope .btn {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+  color: #000000 !important;
+  font-weight: 700;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6);
+}
+
+body.theme-leagueEurope button:hover,
+body.theme-leagueEurope .btn:hover {
+  background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%) !important;
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.8);
+}
+
+body.theme-leagueEurope input,
+body.theme-leagueEurope select,
+body.theme-leagueEurope textarea {
+  background: #1a1f2e !important;
+  border: 2px solid #ffd700 !important;
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope .modal-content {
+  background: #0f1419 !important;
+  border: 3px solid #ffd700 !important;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.5);
+}
+
+/* === Переходы между темами === */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.event-card,
+.match-card,
+.header,
+button,
+.btn,
+.section,
+.modal-content {
+  transition: all 0.3s ease;
+}
