@@ -583,7 +583,7 @@ function generateEventHTML(
                       event.icon
                     }" alt="иконка" title="${getIconTitle(
                       event.icon
-                    )}" style="width: 34px; height: 34px; vertical-align: middle; margin-right: 8px; background: ${
+                    )}" style="width: 35px; height: 35px; vertical-align: middle; margin-right: 8px; background: ${
                       event.background_color === "transparent" ||
                       !event.background_color
                         ? "rgba(224, 230, 240, .4)"
@@ -7961,7 +7961,9 @@ async function submitEditEvent(event) {
 // Инициализация кастомного select
 function initCustomSelect(selectId) {
   const customSelect = document.getElementById(selectId);
-  if (!customSelect) return;
+  if (!customSelect || customSelect.dataset.initialized) return;
+
+  customSelect.dataset.initialized = "true";
 
   const selectSelected = customSelect.querySelector(".select-selected");
   const selectItems = customSelect.querySelector(".select-items");
@@ -7996,14 +7998,16 @@ function initCustomSelect(selectId) {
       }
     });
   });
-
-  // Закрытие при клике вне
-  document.addEventListener("click", function (e) {
-    if (!customSelect.contains(e.target)) {
-      selectItems.classList.add("select-hide");
-    }
-  });
 }
+
+// Глобальный listener для закрытия select при клике вне
+document.addEventListener("click", function (e) {
+  if (!e.target.closest(".custom-select")) {
+    document.querySelectorAll(".select-items").forEach((item) => {
+      item.classList.add("select-hide");
+    });
+  }
+});
 
 // Установка значения для кастомного select
 function setCustomSelectValue(selectId, value) {

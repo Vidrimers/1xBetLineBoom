@@ -1519,7 +1519,6 @@ button.tab-btn:hover {
 
 .modal-body {
   padding: 20px;
-  overflow-y: auto;
   color: #e0e6f0;
 }
 
@@ -2272,7 +2271,7 @@ input:checked + .slider:before {
   top: 100%;
   left: 0;
   right: 0;
-  z-index: 99;
+  z-index: 1000;
   max-height: 200px;
   overflow-y: auto;
 }
@@ -2295,7 +2294,9 @@ input:checked + .slider:before {
 }
 
 .mini-preview {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
+  background: rgba(224, 230, 240, 0.5);
+  border-radius: 3px;
 }
