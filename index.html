@@ -894,21 +894,25 @@
                     🇫🇷 Лига 1
                   </option>
                   <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
-                  <option value="custom">🎯 Свой турнир</option>
                 </select>
               </div>
-              <div
-                class="form-group create-event-icon event-custom-icon"
-                id="customIconGroup"
-                style="display: none"
-              >
-                <label for="eventCustomIcon">Своя иконка (URL или emoji)</label>
-                <input
-                  type="text"
-                  id="eventCustomIcon"
-                  placeholder="Введите URL изображения или emoji"
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
-                />
+              <div class="form-group create-event-icon custom-event-icon">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="customIconCheckbox" style="margin: 0;">
+                  🎯 Свой турнир
+                </label>
+                <div
+                  class="event-custom-icon"
+                  id="customIconGroup"
+                  style="display: none; margin-top: 8px;"
+                >
+                  <input
+                    type="text"
+                    id="eventCustomIcon"
+                    placeholder="Введите URL изображения или emoji"
+                    style="width: 100%; padding: 8px; font-size: 0.95em"
+                  />
+                </div>
               </div>
               <div class="form-group event-background-color">
                 <label for="eventBackgroundColor">Цвет фона (RGBA)</label>
@@ -1010,6 +1014,7 @@
                 <label for="editEventIcon">Иконка турнира</label>
                 <select
                   id="editEventIcon"
+                  class="event-icon-select"
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 >
                   <option value="🏆">🏆 Стандартный</option>
@@ -1034,23 +1039,25 @@
                     🇫🇷 Лига 1
                   </option>
                   <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
-                  <option value="custom">🎯 Свой турнир</option>
                 </select>
               </div>
-              <div
-                class="form-group edit-event-icon event-custom-icon"
-                id="editCustomIconGroup"
-                style="display: none"
-              >
-                <label for="editEventCustomIcon"
-                  >Своя иконка (URL или emoji)</label
+              <div class="form-group edit-event-icon custom-event-icon">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="editCustomIconCheckbox" style="margin: 0;">
+                  🎯 Свой турнир
+                </label>
+                <div
+                  class="event-custom-icon"
+                  id="editCustomIconGroup"
+                  style="display: none; margin-top: 8px;"
                 >
-                <input
-                  type="text"
-                  id="editEventCustomIcon"
-                  placeholder="Введите URL изображения или emoji"
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
-                />
+                  <input
+                    type="text"
+                    id="editEventCustomIcon"
+                    placeholder="Введите URL изображения или emoji"
+                    style="width: 100%; padding: 8px; font-size: 0.95em"
+                  />
+                </div>
               </div>
               <div class="form-group edit-event-background-color event-background-color">
                 <label for="editEventBackgroundColor">Цвет фона (RGBA)</label>

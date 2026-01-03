@@ -12,7 +12,6 @@ const iconTitles = {
   "img/cups/spain-la-liga.png": "Ла Лига",
   "img/cups/france-league-ligue-1.png": "Лига 1",
   "img/cups/bundesliga.png": "Бундеслига",
-  custom: "Свой турнир",
 };
 
 // Функция для получения title иконки
@@ -4365,18 +4364,18 @@ function openCreateEventModal() {
   if (modal) {
     modal.style.display = "flex";
 
-    // Добавляем обработчики событий для иконки
-    const iconSelect = document.getElementById("eventIcon");
+    // Добавляем обработчики событий для чекбокса кастомной иконки
+    const customIconCheckbox = document.getElementById("customIconCheckbox");
     const customIconGroup = document.getElementById("customIconGroup");
 
-    if (iconSelect && customIconGroup) {
-      iconSelect.addEventListener("change", function () {
-        if (this.value === "custom") {
-          customIconGroup.style.display = "block";
-        } else {
-          customIconGroup.style.display = "none";
-        }
-      });
+    console.log("customIconCheckbox:", customIconCheckbox);
+    console.log("customIconGroup:", customIconGroup);
+
+    if (customIconCheckbox && customIconGroup) {
+      customIconCheckbox.addEventListener(
+        "change",
+        handleCreateEventIconChange
+      );
     }
   }
 }
@@ -4388,6 +4387,21 @@ function closeCreateEventModal() {
 
   // Очищаем форму
   document.getElementById("createEventForm").reset();
+
+  // Скрываем поле кастомной иконки
+  const customIconGroup = document.getElementById("customIconGroup");
+  if (customIconGroup) {
+    customIconGroup.style.display = "none";
+  }
+
+  // Удаляем обработчик чекбокса кастомной иконки
+  const customIconCheckbox = document.getElementById("customIconCheckbox");
+  if (customIconCheckbox) {
+    customIconCheckbox.removeEventListener(
+      "change",
+      handleCreateEventIconChange
+    );
+  }
 }
 
 // Отправить форму создания турнира
@@ -4399,13 +4413,14 @@ async function submitCreateEvent(event) {
   const start_date = document.getElementById("eventDate").value;
   const end_date = document.getElementById("eventEndDate").value;
   const iconSelect = document.getElementById("eventIcon");
+  const customIconCheckbox = document.getElementById("customIconCheckbox");
   const customIconInput = document.getElementById("eventCustomIcon");
   const backgroundColor = document
     .getElementById("eventBackgroundColor")
     .value.trim();
 
   let icon = iconSelect.value;
-  if (icon === "custom" && customIconInput.value.trim()) {
+  if (customIconCheckbox.checked && customIconInput.value.trim()) {
     icon = customIconInput.value.trim();
   }
 
@@ -7710,8 +7725,8 @@ function openCreateEventModal() {
   if (modal) {
     modal.style.display = "flex";
     document
-      .getElementById("eventIcon")
-      .addEventListener("change", handleEventIconChange);
+      .getElementById("customIconCheckbox")
+      .addEventListener("change", handleCreateEventIconChange);
     console.log("🔧 modal opened successfully");
   } else {
     console.error("🔧 createEventModal not found!");
@@ -7724,8 +7739,8 @@ function closeCreateEventModal() {
   document.getElementById("createEventForm").reset();
   document.getElementById("customIconGroup").style.display = "none";
   document
-    .getElementById("eventIcon")
-    .removeEventListener("change", handleEventIconChange);
+    .getElementById("customIconCheckbox")
+    .removeEventListener("change", handleCreateEventIconChange);
 }
 
 // Открыть модальное окно редактирования турнира
@@ -7753,6 +7768,9 @@ function openEditEventModal(eventId) {
 
       // Устанавливаем иконку
       const iconSelect = document.getElementById("editEventIcon");
+      const customIconCheckbox = document.getElementById(
+        "editCustomIconCheckbox"
+      );
       const customIconGroup = document.getElementById("editCustomIconGroup");
       const customIconInput = document.getElementById("editEventCustomIcon");
 
@@ -7763,15 +7781,17 @@ function openEditEventModal(eventId) {
         );
         if (option) {
           iconSelect.value = event.icon;
+          customIconCheckbox.checked = false;
           customIconGroup.style.display = "none";
         } else {
           // Это кастомная иконка
-          iconSelect.value = "custom";
+          customIconCheckbox.checked = true;
           customIconInput.value = event.icon;
           customIconGroup.style.display = "block";
         }
       } else {
         iconSelect.value = "🏆";
+        customIconCheckbox.checked = false;
         customIconGroup.style.display = "none";
       }
 
@@ -7785,7 +7805,7 @@ function openEditEventModal(eventId) {
       if (modal) {
         modal.style.display = "flex";
         document
-          .getElementById("editEventIcon")
+          .getElementById("editCustomIconCheckbox")
           .addEventListener("change", handleEditEventIconChange);
         console.log("🔧 edit modal opened successfully");
       } else {
@@ -7804,7 +7824,7 @@ function closeEditEventModal() {
   document.getElementById("editEventForm").reset();
   document.getElementById("editCustomIconGroup").style.display = "none";
   document
-    .getElementById("editEventIcon")
+    .getElementById("editCustomIconCheckbox")
     .removeEventListener("change", handleEditEventIconChange);
 }
 
@@ -7815,11 +7835,26 @@ function handleEventIconChange() {
   customGroup.style.display = select.value === "custom" ? "block" : "none";
 }
 
-// Обработчик изменения иконки для редактирования турнира
+// Обработчик изменения чекбокса кастомной иконки для редактирования турнира
 function handleEditEventIconChange() {
-  const select = document.getElementById("editEventIcon");
-  const customGroup = document.getElementById("editCustomIconGroup");
-  customGroup.style.display = select.value === "custom" ? "block" : "none";
+  console.log("handleEditEventIconChange called");
+  const customIconGroup = document.getElementById("editCustomIconGroup");
+  console.log("edit customIconGroup:", customIconGroup);
+  if (customIconGroup) {
+    customIconGroup.style.display = this.checked ? "block" : "none";
+    console.log("Set edit display to:", customIconGroup.style.display);
+  }
+}
+
+// Обработчик изменения чекбокса кастомной иконки для создания турнира
+function handleCreateEventIconChange() {
+  console.log("handleCreateEventIconChange called");
+  const customIconGroup = document.getElementById("customIconGroup");
+  console.log("create customIconGroup:", customIconGroup);
+  if (customIconGroup) {
+    customIconGroup.style.display = this.checked ? "block" : "none";
+    console.log("Set create display to:", customIconGroup.style.display);
+  }
 }
 
 // Отправить форму создания турнира
@@ -7889,7 +7924,8 @@ async function submitEditEvent(event) {
 
   // Определяем иконку
   const iconSelect = document.getElementById("editEventIcon");
-  if (iconSelect.value === "custom") {
+  const customIconCheckbox = document.getElementById("editCustomIconCheckbox");
+  if (customIconCheckbox.checked) {
     eventData.icon = document.getElementById("editEventCustomIcon").value;
   } else {
     eventData.icon = iconSelect.value;
