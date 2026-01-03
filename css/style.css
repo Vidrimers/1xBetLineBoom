@@ -1083,6 +1083,7 @@ button.tab-btn:hover {
   transition: all 0.3s ease;
   text-align: center;
   color: #e0e6f0;
+  align-items: center;
 }
 
 .event-card:hover {
