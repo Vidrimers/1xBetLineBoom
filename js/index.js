@@ -589,12 +589,12 @@ function generateEventHTML(
                         ? "rgba(224, 230, 240, .4)"
                         : event.background_color
                     }; padding: 2px; border-radius: 3px;">`
-                  : `<span style="display: inline-block; vertical-align: middle; margin-right: 8px; background: ${
+                  : `<span style="display: inline-block; margin-right: 8px; background: ${
                       event.background_color === "transparent" ||
                       !event.background_color
                         ? "rgba(224, 230, 240, .4)"
                         : event.background_color
-                    }; padding: 2px 4px; border-radius: 3px;" title="${getIconTitle(
+                    }; padding: 2px; width: 35px; height: 35px; vertical-align: middle; text-align: center; line-height: 1.8; border-radius: 3px;" title="${getIconTitle(
                       event.icon
                     )}">${event.icon}</span>`
                 : ""
@@ -7724,6 +7724,7 @@ function openCreateEventModal() {
   console.log("🔧 modal element:", modal);
   if (modal) {
     modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
     document
       .getElementById("customIconCheckbox")
       .addEventListener("change", handleCreateEventIconChange);
@@ -7737,6 +7738,7 @@ function openCreateEventModal() {
 // Закрыть модальное окно создания турнира
 function closeCreateEventModal() {
   document.getElementById("createEventModal").style.display = "none";
+  document.body.style.overflow = "";
   document.getElementById("createEventForm").reset();
   document.getElementById("customIconGroup").style.display = "none";
   document
@@ -7804,6 +7806,7 @@ function openEditEventModal(eventId) {
       console.log("🔧 editEventModal element:", modal);
       if (modal) {
         modal.style.display = "flex";
+        document.body.style.overflow = "hidden";
         document
           .getElementById("editCustomIconCheckbox")
           .addEventListener("change", handleEditEventIconChange);
@@ -7822,6 +7825,7 @@ function openEditEventModal(eventId) {
 // Закрыть модальное окно редактирования турнира
 function closeEditEventModal() {
   document.getElementById("editEventModal").style.display = "none";
+  document.body.style.overflow = "";
   document.getElementById("editEventForm").reset();
   document.getElementById("editCustomIconGroup").style.display = "none";
   document
