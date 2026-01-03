@@ -1370,6 +1370,10 @@ button.tab-btn:hover {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
+.award-icon-container{}
+
+.award-icons{}
+
 .award-icon img{
   width: 60px;
   height: 60px;
