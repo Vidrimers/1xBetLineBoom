@@ -2601,11 +2601,15 @@ async function displayTournaments(events) {
   // Для каждого события загружаем дополнительные данные если оно заблокировано
   const activeCards = await Promise.all(
     activeEvents.map(async (event) => {
+      const iconHtml =
+        event.icon && event.icon.startsWith("img/")
+          ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
+          : event.icon || "🏆";
       return `
     <div class="event-card" onclick="loadTournamentParticipants(${
       event.id
     }, '${event.name.replace(/'/g, "\\'")}')">
-      <div class="event-card-title">🏆 ${event.name}</div>
+      <div class="event-card-title">${iconHtml} ${event.name}</div>
       <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
     </div>
   `;
@@ -2634,11 +2638,16 @@ async function displayTournaments(events) {
         console.error("Ошибка при загрузке участников турнира:", error);
       }
 
+      const iconHtml =
+        event.icon && event.icon.startsWith("img/")
+          ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
+          : event.icon || "🏆";
+
       return `
     <div class="event-card locked" onclick="loadTournamentParticipants(${
       event.id
     }, '${event.name.replace(/'/g, "\\'")}')">
-      <div class="event-card-title">🏆 ${event.name}</div>
+      <div class="event-card-title">${iconHtml} ${event.name}</div>
       <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
       <div class="event-card-locked">🔒 ${
         event.locked_reason
