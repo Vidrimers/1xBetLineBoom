@@ -1879,7 +1879,7 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
 
     // Получаем информацию о турнире
     const event = db
-      .prepare("SELECT id, name FROM events WHERE id = ?")
+      .prepare("SELECT id, name, icon FROM events WHERE id = ?")
       .get(eventId);
 
     if (!event) {

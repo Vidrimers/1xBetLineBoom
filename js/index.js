@@ -1127,11 +1127,16 @@ async function displayTournamentWinner(eventId) {
     // Если победитель отсутствует
     if (!data.winner) {
       console.log(`⚠️ Победитель не найден для турнира ${eventId}`);
+      const tournamentIcon = data.tournament.icon || "🏆";
+      const displayIcon = tournamentIcon.startsWith("img/")
+        ? `<img src="${tournamentIcon}" alt="tournament" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
+        : tournamentIcon;
+
       const noWinnerHTML = `
         <div class="tournament-winner-container">
           <div class="tournament-winner-card">
             <div class="winner-header">
-              🏆 Турнир "${data.tournament.name}"
+              ${displayIcon} Турнир "${data.tournament.name}"
             </div>
             
             <div class="winner-content">
@@ -1153,11 +1158,16 @@ async function displayTournamentWinner(eventId) {
 
     console.log(`✅ Отображение победителя:`, winner.username);
 
+    const tournamentIcon = tournament.icon || "🏆";
+    const displayIcon = tournamentIcon.startsWith("img/")
+      ? `<img src="${tournamentIcon}" alt="tournament" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
+      : tournamentIcon;
+
     const winnerHTML = `
       <div class="tournament-winner-container">
         <div class="tournament-winner-card">
           <div class="winner-header">
-            🏆 Победитель турнира "${tournament.name}"
+            ${displayIcon} Победитель турнира "${tournament.name}"
           </div>
           
           <div class="winner-content">
