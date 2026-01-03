@@ -7727,6 +7727,7 @@ function openCreateEventModal() {
     document
       .getElementById("customIconCheckbox")
       .addEventListener("change", handleCreateEventIconChange);
+    initCustomSelect("eventIconSelect");
     console.log("🔧 modal opened successfully");
   } else {
     console.error("🔧 createEventModal not found!");
@@ -7767,7 +7768,6 @@ function openEditEventModal(eventId) {
         : "";
 
       // Устанавливаем иконку
-      const iconSelect = document.getElementById("editEventIcon");
       const customIconCheckbox = document.getElementById(
         "editCustomIconCheckbox"
       );
@@ -7775,12 +7775,12 @@ function openEditEventModal(eventId) {
       const customIconInput = document.getElementById("editEventCustomIcon");
 
       if (event.icon) {
-        // Проверяем, есть ли такая опция в select
-        const option = Array.from(iconSelect.options).find(
-          (opt) => opt.value === event.icon
+        // Проверяем, есть ли такая опция в кастомном select
+        const item = document.querySelector(
+          `#editEventIconSelect div[data-value="${event.icon}"]`
         );
-        if (option) {
-          iconSelect.value = event.icon;
+        if (item) {
+          setCustomSelectValue("editEventIconSelect", event.icon);
           customIconCheckbox.checked = false;
           customIconGroup.style.display = "none";
         } else {
@@ -7790,7 +7790,7 @@ function openEditEventModal(eventId) {
           customIconGroup.style.display = "block";
         }
       } else {
-        iconSelect.value = "🏆";
+        setCustomSelectValue("editEventIconSelect", "🏆");
         customIconCheckbox.checked = false;
         customIconGroup.style.display = "none";
       }
@@ -7807,6 +7807,7 @@ function openEditEventModal(eventId) {
         document
           .getElementById("editCustomIconCheckbox")
           .addEventListener("change", handleEditEventIconChange);
+        initCustomSelect("editEventIconSelect");
         console.log("🔧 edit modal opened successfully");
       } else {
         console.error("🔧 editEventModal not found!");
@@ -7954,5 +7955,67 @@ async function submitEditEvent(event) {
   } catch (error) {
     console.error("Ошибка:", error);
     alert("Ошибка при обновлении турнира");
+  }
+}
+
+// Инициализация кастомного select
+function initCustomSelect(selectId) {
+  const customSelect = document.getElementById(selectId);
+  if (!customSelect) return;
+
+  const selectSelected = customSelect.querySelector(".select-selected");
+  const selectItems = customSelect.querySelector(".select-items");
+  const hiddenInput = customSelect.querySelector('input[type="hidden"]');
+
+  // Открытие/закрытие списка
+  selectSelected.addEventListener("click", function () {
+    selectItems.classList.toggle("select-hide");
+    // Закрыть другие открытые select
+    document.querySelectorAll(".select-items").forEach((item) => {
+      if (item !== selectItems) {
+        item.classList.add("select-hide");
+      }
+    });
+  });
+
+  // Выбор опции
+  selectItems.querySelectorAll("div").forEach((item) => {
+    item.addEventListener("click", function () {
+      const value = this.getAttribute("data-value");
+      const text = this.innerHTML;
+
+      hiddenInput.value = value;
+      selectSelected.innerHTML = text;
+      selectItems.classList.add("select-hide");
+
+      // Вызвать обработчик изменения, если есть
+      if (selectId === "eventIconSelect") {
+        // Для create, ничего, так как custom через чекбокс
+      } else if (selectId === "editEventIconSelect") {
+        // Аналогично
+      }
+    });
+  });
+
+  // Закрытие при клике вне
+  document.addEventListener("click", function (e) {
+    if (!customSelect.contains(e.target)) {
+      selectItems.classList.add("select-hide");
+    }
+  });
+}
+
+// Установка значения для кастомного select
+function setCustomSelectValue(selectId, value) {
+  const customSelect = document.getElementById(selectId);
+  if (!customSelect) return;
+
+  const selectSelected = customSelect.querySelector(".select-selected");
+  const hiddenInput = customSelect.querySelector('input[type="hidden"]');
+  const item = customSelect.querySelector(`div[data-value="${value}"]`);
+
+  if (item) {
+    hiddenInput.value = value;
+    selectSelected.innerHTML = item.innerHTML;
   }
 }

@@ -2235,3 +2235,67 @@ input:checked + .slider:before {
   align-items: center;
   width: 100%;
 }
+
+/* Кастомный select */
+.custom-select {
+  position: relative;
+  width: 100%;
+}
+
+.select-selected {
+  background-color: rgba(50, 55, 70, 0.7);
+  border: 2px solid #3a7bd5;
+  border-radius: 5px;
+  padding: 8px;
+  font-size: 0.95em;
+  color: #e0e6f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.select-selected:after {
+  content: "▼";
+  position: absolute;
+  right: 10px;
+  color: #e0e6f0;
+  pointer-events: none;
+}
+
+.select-items {
+  position: absolute;
+  background-color: rgba(40, 44, 54, 0.95);
+  border: 1px solid #3a7bd5;
+  border-radius: 5px;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.select-items div {
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e0e6f0;
+}
+
+.select-items div:hover {
+  background-color: rgba(58, 123, 213, 0.3);
+}
+
+.select-hide {
+  display: none;
+}
+
+.mini-preview {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
