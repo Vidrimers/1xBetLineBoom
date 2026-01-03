@@ -1886,7 +1886,43 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
       return res.status(404).json({ error: "Турнир не найден" });
     }
 
-    // Получаем награду (хранится в таблице awards)
+    // Сначала проверяем автоматические награды в tournament_awards
+    const tournamentAward = db
+      .prepare(
+        `
+        SELECT ta.id, ta.user_id, ta.event_id, ta.event_name, ta.won_bets, ta.awarded_at as created_at, 
+               u.username, u.avatar_path
+        FROM tournament_awards ta
+        JOIN users u ON ta.user_id = u.id
+        WHERE ta.event_id = ?
+        ORDER BY ta.won_bets DESC, ta.awarded_at ASC
+        LIMIT 1
+      `
+      )
+      .get(eventId);
+
+    console.log(`🏆 Найденная автоматическая награда:`, tournamentAward);
+
+    if (tournamentAward) {
+      // Возвращаем данные победителя из tournament_awards
+      const winnerData = {
+        id: tournamentAward.id,
+        user_id: tournamentAward.user_id,
+        event_id: tournamentAward.event_id,
+        username: tournamentAward.username,
+        avatar_path: tournamentAward.avatar_path,
+        won_bets_count: tournamentAward.won_bets,
+        created_at: tournamentAward.created_at,
+        description: `Победитель турнира "${tournamentAward.event_name}"`,
+      };
+
+      return res.json({
+        tournament: event,
+        winner: winnerData,
+      });
+    }
+
+    // Если автоматическая награда не найдена, проверяем пользовательские награды (таблица awards)
     const award = db
       .prepare(
         `
@@ -1900,7 +1936,7 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
       )
       .get(eventId);
 
-    console.log(`🏆 Найденная награда:`, award);
+    console.log(`🏆 Найденная пользовательская награда:`, award);
 
     if (!award) {
       // Если награда не найдена, пробуем без JOIN
