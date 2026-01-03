@@ -3139,9 +3139,14 @@ async function loadUserAwards(userId) {
     // Отображаем автоматические награды за турниры
     tournamentAwards.forEach((award) => {
       const awardDate = new Date(award.awarded_at).toLocaleDateString("ru-RU");
+      const icon = award.event_icon || "🏆";
+      const awardIcon = icon.startsWith("img/")
+        ? `<img src="${icon}" alt="trophy" class="tournament-icon">`
+        : icon;
+
       awardsHTML += `
         <div class="award-card">
-          <div class="award-icon">🏆</div>
+          <div class="award-icon">${awardIcon}</div>
           <div class="award-title">Победитель в турнире "${award.event_name}"</div>
           <div class="award-info">Угадано: <strong>${award.won_bets}</strong> ставок</div>
           <div class="award-date">${awardDate}</div>
@@ -6747,9 +6752,14 @@ async function showUserProfile(userId, username) {
 
                   if (isTournamentAward) {
                     // Это награда за победу в турнире
+                    const icon = award.event_icon || "🏆";
+                    const awardIcon = icon.startsWith("img/")
+                      ? `<img src="${icon}" alt="trophy" class="tournament-icon">`
+                      : icon;
+
                     return `
                     <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;height: 200px;display: flex;flex-direction: column;justify-content: center;">
-                    <div class="award-icon">🏆</div>
+                    <div class="award-icon">${awardIcon}</div>
                       <div style="color: #fff; font-weight: 600; margin-bottom: 4px; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);">Победитель в турнире "${award.event_name}"</div>
                       <div style="color: #fff; font-size: 0.85em; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">Угадано: <strong>${award.won_bets}</strong> ставок</div>
                       <div style="color: #ffe0b2; font-size: 0.75em; margin-top: 4px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">${awardDate}</div>

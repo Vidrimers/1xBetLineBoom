@@ -3407,10 +3407,11 @@ app.get("/api/user/:userId/awards", (req, res) => {
     const awards = db
       .prepare(
         `
-      SELECT id, event_name, won_bets, awarded_at
-      FROM tournament_awards
-      WHERE user_id = ?
-      ORDER BY awarded_at DESC
+      SELECT ta.id, ta.event_name, ta.won_bets, ta.awarded_at, e.icon as event_icon
+      FROM tournament_awards ta
+      LEFT JOIN events e ON ta.event_id = e.id
+      WHERE ta.user_id = ?
+      ORDER BY ta.awarded_at DESC
     `
       )
       .all(userId);
