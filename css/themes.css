@@ -63,6 +63,11 @@ body.theme-hacker-green .modal-content {
   border: 2px solid #00ff00 !important;
 }
 
+body.theme-hacker-green .user-profile-modal {
+  background: #001100 !important;
+  border: 2px solid #00ff00 !important;
+}
+
 /* === THEME SOLARIZED === */
 body.theme-solarized {
   background: #002b36 !important;
@@ -107,6 +112,11 @@ body.theme-solarized textarea {
 
 body.theme-solarized .modal-content {
   background: #002b36 !important;
+  border: 2px solid #268bd2 !important;
+}
+
+body.theme-solarized .user-profile-modal {
+  background: #073642 !important;
   border: 2px solid #268bd2 !important;
 }
 
@@ -171,6 +181,12 @@ body.theme-matrix textarea {
 
 body.theme-matrix .modal-content {
   background: #000000 !important;
+  border: 3px solid #00ff41 !important;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+}
+
+body.theme-matrix .user-profile-modal {
+  background: #001100 !important;
   border: 3px solid #00ff41 !important;
   box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
 }
@@ -256,6 +272,12 @@ body.theme-cyberpunk .modal-content {
   box-shadow: 0 0 40px rgba(255, 0, 255, 0.6);
 }
 
+body.theme-cyberpunk .user-profile-modal {
+  background: linear-gradient(135deg, #0a0014 0%, #1a0a2e 100%) !important;
+  border: 3px solid #ff00ff !important;
+  box-shadow: 0 0 40px rgba(255, 0, 255, 0.6);
+}
+
 /* === THEME LEAGUE CHAMPIONS === */
 body.theme-leagueChampions {
   background: #0a1428 !important;
@@ -326,6 +348,12 @@ body.theme-leagueChampions .modal-content {
   box-shadow: 0 0 30px rgba(27, 156, 229, 0.4);
 }
 
+body.theme-leagueChampions .user-profile-modal {
+  background: #162447 !important;
+  border: 3px solid #1b9ce5 !important;
+  box-shadow: 0 0 30px rgba(27, 156, 229, 0.4);
+}
+
 /* === THEME LEAGUE EUROPE === */
 body.theme-leagueEurope {
   background: #0f1419 !important;
@@ -392,6 +420,12 @@ body.theme-leagueEurope textarea {
 
 body.theme-leagueEurope .modal-content {
   background: #0f1419 !important;
+  border: 3px solid #ffd700 !important;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.5);
+}
+
+body.theme-leagueEurope .user-profile-modal {
+  background: #1a1f2e !important;
   border: 3px solid #ffd700 !important;
   box-shadow: 0 0 35px rgba(255, 215, 0, 0.5);
 }
