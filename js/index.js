@@ -183,12 +183,10 @@ function loadSavedTheme() {
   // Применяем тему
   document.body.classList.add(savedTheme);
 
-  // Устанавливаем правильный radio button
-  const themeRadio = document.querySelector(
-    `input[name="theme"][value="${savedTheme}"]`
-  );
-  if (themeRadio) {
-    themeRadio.checked = true;
+  // Устанавливаем правильное значение в select
+  const themeSelect = document.getElementById("themeSelect");
+  if (themeSelect) {
+    themeSelect.value = savedTheme;
   }
 }
 
