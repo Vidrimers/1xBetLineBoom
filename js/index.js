@@ -2925,6 +2925,10 @@ async function showTournamentParticipantBets(userId, username, eventId) {
       return;
     }
     
+    // Находим первый незавершенный тур для установки активным
+    const firstUnfinishedRound = sortedRounds.find(round => !completedRounds.has(round));
+    const defaultActiveRound = firstUnfinishedRound || sortedRounds[0];
+    
     roundsFilter.innerHTML =
       `<button class="round-filter-btn" data-round="all" 
               onclick="filterTournamentParticipantBets('all')">
@@ -2933,7 +2937,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
       sortedRounds
         .map((round) => {
           const isCompleted = completedRounds.has(round);
-          const isActive = sortedRounds.length > 0 && round === sortedRounds[0];
+          const isActive = round === defaultActiveRound;
           const activeClass = isActive ? "active" : "";
           // Finished класс добавляется для всех завершённых туров
           const finishedClass = isCompleted ? "finished" : "";
@@ -2952,10 +2956,9 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     window.currentTournamentRounds = sortedRounds;
     window.completedTournamentRounds = completedRounds;
 
-    // Отображаем ставки первого тура (если есть туры) или все ставки
+    // Отображаем ставки первого незавершенного тура (если есть туры) или все ставки
     if (sortedRounds.length > 0) {
-      const firstRound = sortedRounds[0];
-      const filteredBets = bets.filter((bet) => bet.round === firstRound);
+      const filteredBets = bets.filter((bet) => bet.round === defaultActiveRound);
       displayTournamentParticipantBets(filteredBets);
     } else {
       displayTournamentParticipantBets(bets);
