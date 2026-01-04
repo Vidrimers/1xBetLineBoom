@@ -5265,6 +5265,94 @@ function closeCreateMatchModal() {
   document.getElementById("matchRound").disabled = false;
 }
 
+// Открыть модальное окно для блокировки турнира
+function openLockEventModal(eventId, eventName) {
+  const modal = document.getElementById("lockEventModal");
+  if (modal) {
+    modal.style.display = "flex";
+    // Сохраняем ID турнира в скрытое поле
+    document.getElementById("lockEventForm").dataset.eventId = eventId;
+  }
+}
+
+// Закрыть модальное окно для блокировки турнира
+function closeLockEventModal() {
+  const modal = document.getElementById("lockEventModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+  // Очищаем форму
+  document.getElementById("lockEventForm").reset();
+}
+
+// Отправить форму блокировки турнира
+async function submitLockEvent(event) {
+  event.preventDefault();
+  
+  const eventId = document.getElementById("lockEventForm").dataset.eventId;
+  const reason = document.getElementById("eventLockReason").value.trim();
+  
+  if (!eventId || !reason) {
+    alert("Пожалуйста, заполните все поля");
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/lock`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+        reason: reason,
+      }),
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      closeLockEventModal();
+      loadEventsList();
+    } else {
+      alert("Ошибка при блокировке турнира: " + (result.error || response.status));
+    }
+  } catch (error) {
+    console.error("❌ Ошибка:", error);
+    alert("Ошибка при блокировке турнира: " + error.message);
+  }
+}
+
+// Разблокировать турнир
+async function unlockEvent(eventId) {
+  if (!confirm("Вы уверены, что хотите разблокировать этот турнир?")) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/unlock`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+      }),
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      loadEventsList();
+    } else {
+      alert("Ошибка при разблокировке турнира: " + (result.error || response.status));
+    }
+  } catch (error) {
+    console.error("❌ Ошибка:", error);
+    alert("Ошибка при разблокировке турнира: " + error.message);
+  }
+}
+
 // Отправить форму создания матча
 async function submitCreateMatch(event) {
   event.preventDefault();

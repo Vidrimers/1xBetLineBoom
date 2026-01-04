@@ -1479,6 +1479,19 @@ button.tab-btn:hover {
   animation: fadeIn 0.3s ease;
 }
 
+/* Переопределяем display для модальных окон когда они открыты */
+.modal[style*="display: flex"] {
+  display: flex !important;
+}
+
+#lockEventModal[style*="display: flex"] {
+  display: flex !important;
+}
+
+#importMatchesModal[style*="display: flex"] {
+  display: flex !important;
+}
+
 /* Стили для модального окна терминала */
 .terminal-modal {
   position: fixed !important;
