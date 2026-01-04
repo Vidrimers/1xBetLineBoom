@@ -1578,6 +1578,8 @@ button.tab-btn:hover {
 .modal-body {
   padding: 20px;
   color: #e0e6f0;
+  max-height: calc(90vh - 120px); /* Вычитаем высоту header и footer */
+  overflow-y: auto;
 }
 
 .admin-users-list {
