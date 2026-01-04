@@ -7627,6 +7627,39 @@ async function clearTerminalLogs() {
   }
 }
 
+// Сохранить логи терминала на ПК
+async function saveTerminalLogs() {
+  try {
+    const response = await fetch("/api/terminal-logs");
+    if (!response.ok) throw new Error("Ошибка загрузки логов");
+    
+    const data = await response.json();
+    if (!data.logs) {
+      alert("❌ Нет логов для сохранения");
+      return;
+    }
+
+    const blob = new Blob([data.logs], { type: "text/plain;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, -5);
+    a.download = `terminal-logs-${timestamp}.txt`;
+    
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    console.log("✅ Логи сохранены на ПК");
+  } catch (error) {
+    console.error("Ошибка при сохранении логов:", error);
+    alert("❌ Ошибка при сохранении логов: " + error.message);
+  }
+}
+
 // Переключить автоскролл
 function toggleTerminalAutoScroll() {
   terminalAutoScroll = !terminalAutoScroll;
