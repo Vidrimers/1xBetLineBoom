@@ -1279,211 +1279,6 @@
       <!-- Модальное окно для создания матча -->
       <!-- Модальное окно для импорта матчей -->
 
-      <!-- Модальное окно для редактирования матча -->
-      <div id="editMatchModal" class="modal" style="display: none">
-        <div class="modal-content" style="max-width: 500px">
-          <div class="modal-header">
-            <h2>✏️ Редактировать матч</h2>
-            <button class="modal-close" onclick="closeEditMatchModal()">
-              &times;
-            </button>
-          </div>
-          <div class="modal-body">
-            <form onsubmit="submitEditMatch(event)">
-              <input type="hidden" id="editMatchId" />
-              <div class="form-group">
-                <label for="editMatchTeam1">Команда 1 *</label>
-                <input
-                  type="text"
-                  id="editMatchTeam1"
-                  required
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
-                />
-              </div>
-              <div class="form-group">
-                <label for="editMatchTeam2">Команда 2 *</label>
-                <input
-                  type="text"
-                  id="editMatchTeam2"
-                  required
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
-                />
-              </div>
-              <div class="form-group">
-                <label for="editMatchDate">Дата и время матча</label>
-                <input
-                  type="datetime-local"
-                  id="editMatchDate"
-                  style="
-                    width: 40%;
-                    padding: 6px;
-                    font-size: 0.85em;
-                    height: 30px;
-                    background: rgba(50, 55, 70, 0.7);
-                    color: #e0e6f0;
-                  "
-                />
-              </div>
-              <div class="form-group">
-                <label for="editMatchRound">Тур / Группа / Стадия</label>
-                <div style="display: flex; gap: 8px; margin-top: 4px">
-                  <select
-                    id="editMatchRoundSelect"
-                    style="
-                      flex: 0.5;
-                      padding: 8px;
-                      font-size: 0.95em;
-                      border-radius: 4px;
-                      border: 2px solid #3a7bd5;
-                      background: rgba(50, 55, 70, 0.7);
-                      color: #e0e6f0;
-                    "
-                    onchange="selectExistingRound('edit')"
-                  >
-                    <option value="">-- Выбери тур --</option>
-                  </select>
-                  <input
-                    type="text"
-                    id="editMatchRound"
-                    placeholder="Или введи новый тур"
-                    style="
-                      flex: 1;
-                      padding: 8px;
-                      font-size: 0.95em;
-                      border-radius: 4px;
-                      border: 2px solid #3a7bd5;
-                    "
-                  />
-                </div>
-              </div>
-
-              <!-- Чекбокс финального матча -->
-              <div class="form-group">
-                <label style="display: flex; align-items: center; gap: 8px">
-                  <input
-                    type="checkbox"
-                    id="editMatchIsFinal"
-                    onchange="toggleFinalMatch('edit')"
-                    style="cursor: pointer; width: auto"
-                  />
-                  <span>🏆 Финальный матч</span>
-                </label>
-                <span
-                  style="
-                    color: #b0b8c8;
-                    font-size: 0.85em;
-                    margin-left: 26px;
-                    display: block;
-                    margin-top: 4px;
-                  "
-                  >Отключить ввод тура и включить доп параметры</span
-                >
-              </div>
-
-              <!-- Доп параметры для финального матча -->
-              <div
-                id="finalMatchParamsEdit"
-                style="
-                  display: none;
-                  background: rgba(58, 123, 213, 0.1);
-                  padding: 12px;
-                  border-radius: 4px;
-                  margin-bottom: 10px;
-                "
-              >
-                <p
-                  style="
-                    color: #7ab0e0;
-                    font-size: 0.9em;
-                    margin: 0 0 10px 0;
-                    font-weight: 500;
-                  "
-                >
-                  Включить доп параметры:
-                </p>
-                <div
-                  style="
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 10px;
-                  "
-                >
-                  <label style="display: flex; align-items: center; gap: 6px">
-                    <input
-                      type="checkbox"
-                      id="editShowExactScore"
-                      style="cursor: pointer; width: auto"
-                    />
-                    <span style="font-size: 0.9em">📊 Точный счет</span>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 6px">
-                    <input
-                      type="checkbox"
-                      id="editShowYellowCards"
-                      style="cursor: pointer; width: auto"
-                    />
-                    <span style="font-size: 0.9em">🟨 Желтые</span>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 6px">
-                    <input
-                      type="checkbox"
-                      id="editShowRedCards"
-                      style="cursor: pointer; width: auto"
-                    />
-                    <span style="font-size: 0.9em">🟥 Красные</span>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 6px">
-                    <input
-                      type="checkbox"
-                      id="editShowCorners"
-                      style="cursor: pointer; width: auto"
-                    />
-                    <span style="font-size: 0.9em">⚽ Угловые</span>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 6px">
-                    <input
-                      type="checkbox"
-                      id="editShowPenaltiesInGame"
-                      style="cursor: pointer; width: auto"
-                    />
-                    <span style="font-size: 0.9em">⚽ Пенальти в игре</span>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 6px">
-                    <input
-                      type="checkbox"
-                      id="editShowExtraTime"
-                      style="cursor: pointer; width: auto"
-                    />
-                    <span style="font-size: 0.9em">⏱️ Доп. время</span>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 6px">
-                    <input
-                      type="checkbox"
-                      id="editShowPenaltiesAtEnd"
-                      style="cursor: pointer; width: auto"
-                    />
-                    <span style="font-size: 0.9em">⚽ Пенальти в конце</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <button type="submit" class="form-btn-submit">
-                  ✅ Сохранить
-                </button>
-                <button
-                  type="button"
-                  class="form-btn-cancel"
-                  onclick="closeEditMatchModal()"
-                >
-                  ❌ Отмена
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
       <!-- Модальное окно для блокировки турнира -->
       <!-- Модальное окно редактирования турнира -->
       <div id="editEventModal" class="modal" style="display: none">
@@ -2975,6 +2770,211 @@
           <button class="save-btn" onclick="saveRoundsOrder()">
             Сохранить
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для редактирования матча -->
+    <div id="editMatchModal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 500px">
+        <div class="modal-header">
+          <h2>✏️ Редактировать матч</h2>
+          <button class="modal-close" onclick="closeEditMatchModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form onsubmit="submitEditMatch(event)">
+            <input type="hidden" id="editMatchId" />
+            <div class="form-group">
+              <label for="editMatchTeam1">Команда 1 *</label>
+              <input
+                type="text"
+                id="editMatchTeam1"
+                required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editMatchTeam2">Команда 2 *</label>
+              <input
+                type="text"
+                id="editMatchTeam2"
+                required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editMatchDate">Дата и время матча</label>
+              <input
+                type="datetime-local"
+                id="editMatchDate"
+                style="
+                  width: 40%;
+                  padding: 6px;
+                  font-size: 0.85em;
+                  height: 30px;
+                  background: rgba(50, 55, 70, 0.7);
+                  color: #e0e6f0;
+                "
+              />
+            </div>
+            <div class="form-group">
+              <label for="editMatchRound">Тур / Группа / Стадия</label>
+              <div style="display: flex; gap: 8px; margin-top: 4px">
+                <select
+                  id="editMatchRoundSelect"
+                  style="
+                    flex: 0.5;
+                    padding: 8px;
+                    font-size: 0.95em;
+                    border-radius: 4px;
+                    border: 2px solid #3a7bd5;
+                    background: rgba(50, 55, 70, 0.7);
+                    color: #e0e6f0;
+                  "
+                  onchange="selectExistingRound('edit')"
+                >
+                  <option value="">-- Выбери тур --</option>
+                </select>
+                <input
+                  type="text"
+                  id="editMatchRound"
+                  placeholder="Или введи новый тур"
+                  style="
+                    flex: 1;
+                    padding: 8px;
+                    font-size: 0.95em;
+                    border-radius: 4px;
+                    border: 2px solid #3a7bd5;
+                  "
+                />
+              </div>
+            </div>
+
+            <!-- Чекбокс финального матча -->
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 8px">
+                <input
+                  type="checkbox"
+                  id="editMatchIsFinal"
+                  onchange="toggleFinalMatch('edit')"
+                  style="cursor: pointer; width: auto"
+                />
+                <span>🏆 Финальный матч</span>
+              </label>
+              <span
+                style="
+                  color: #b0b8c8;
+                  font-size: 0.85em;
+                  margin-left: 26px;
+                  display: block;
+                  margin-top: 4px;
+                "
+                >Отключить ввод тура и включить доп параметры</span
+              >
+            </div>
+
+            <!-- Доп параметры для финального матча -->
+            <div
+              id="finalMatchParamsEdit"
+              style="
+                display: none;
+                background: rgba(58, 123, 213, 0.1);
+                padding: 12px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+              "
+            >
+              <p
+                style="
+                  color: #7ab0e0;
+                  font-size: 0.9em;
+                  margin: 0 0 10px 0;
+                  font-weight: 500;
+                "
+              >
+                Включить доп параметры:
+              </p>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 10px;
+                "
+              >
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowExactScore"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">📊 Точный счет</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowYellowCards"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">🟨 Желтые</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowRedCards"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">🟥 Красные</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowCorners"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Угловые</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowPenaltiesInGame"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Пенальти в игре</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowExtraTime"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⏱️ Доп. время</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="checkbox"
+                    id="editShowPenaltiesAtEnd"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span style="font-size: 0.9em">⚽ Пенальти в конце</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="form-btn-submit">
+                ✅ Сохранить
+              </button>
+              <button
+                type="button"
+                class="form-btn-cancel"
+                onclick="closeEditMatchModal()"
+              >
+                ❌ Отмена
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
