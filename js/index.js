@@ -2919,7 +2919,12 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     });
 
     // Создаём кнопки туров
-    const roundsFilter = document.getElementById("tournamentRoundsFilter");
+    const roundsFilter = document.getElementById("tournamentRoundsFilterScroll");
+    if (!roundsFilter) {
+      console.error("tournamentRoundsFilterScroll не найден");
+      return;
+    }
+    
     roundsFilter.innerHTML =
       `<button class="round-filter-btn" data-round="all" 
               onclick="filterTournamentParticipantBets('all')">
@@ -3032,7 +3037,7 @@ function filterTournamentParticipantBets(round) {
 
   // Обновляем активную кнопку
   document
-    .querySelectorAll("#tournamentRoundsFilter .round-filter-btn")
+    .querySelectorAll("#tournamentRoundsFilterScroll .round-filter-btn")
     .forEach((btn) => {
       btn.classList.remove("active");
       // Добавляем active только если это кнопка "Все туры" или незавершённый тур
@@ -7425,6 +7430,12 @@ function initHorizontalDragScroll() {
   const roundsContainer = document.getElementById("roundsFilterContainer");
   if (roundsContainer) {
     horizontalDragScroll.initElement(roundsContainer);
+  }
+  
+  // Инициализируем также для tournamentRoundsFilter
+  const tournamentRoundsFilter = document.getElementById("tournamentRoundsFilter");
+  if (tournamentRoundsFilter) {
+    horizontalDragScroll.initElement(tournamentRoundsFilter);
   }
 }
 

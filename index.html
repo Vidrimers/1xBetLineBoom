@@ -1959,11 +1959,24 @@
             id="tournamentRoundsFilter"
             style="
               margin-bottom: 20px;
-              display: flex;
-              gap: 10px;
-              flex-wrap: wrap;
+              overflow-x: auto;
+              overflow-y: hidden;
+              scrollbar-width: none;
+              max-width: 100%;
             "
-          ></div>
+          >
+            <div
+              id="tournamentRoundsFilterScroll"
+              style="
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 7px;
+                align-items: center;
+                padding: 8px 10px;
+                height: 100%;
+              "
+            ></div>
+          </div>
           <div
             id="tournamentParticipantBetsList"
             style="

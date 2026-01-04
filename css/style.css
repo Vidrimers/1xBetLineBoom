@@ -1948,6 +1948,39 @@ button.tab-btn:hover {
   padding: 8px 10px;
   height: 100%;
   /* Ключевое свойство - содержимое займет столько ширины сколько нужно */
+
+/* Стили для tournamentRoundsFilter (аналогично roundsFilterContainer) */
+#tournamentRoundsFilter {
+  cursor: grab;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+#tournamentRoundsFilter:active {
+  cursor: grabbing;
+}
+
+/* Скрытие скроллбара для WebKit браузеров (Chrome, Safari, Edge) */
+#tournamentRoundsFilter > div::-webkit-scrollbar {
+  display: none;
+}
+
+#tournamentRoundsFilterScroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Контейнер с кнопками туров для горизонтального скролла */
+#tournamentRoundsFilterScroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 7px;
+  align-items: center;
+  padding: 8px 10px;
+  height: 100%;
+  /* Ключевое свойство - содержимое займет столько ширины сколько нужно */
+}
   width: max-content;
 }
 
