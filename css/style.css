@@ -876,6 +876,7 @@ button:active {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-x: hidden;
 }
 
 .tab-btn {
@@ -1777,6 +1778,7 @@ button.tab-btn:hover {
   gap: 15px;
   max-width: 100%;
   justify-content: flex-start;
+  overflow-x: hidden;
 }
 
 .setting-item,
@@ -1788,9 +1790,10 @@ button.tab-btn:hover {
   background: rgba(44, 50, 63, 0.7);
   border-radius: 10px;
   border-left: 3px solid #3a7bd5;
-  flex: 0 1 calc(33.333% - 10px);
+  flex: 0 1 calc(33.333% - 15px);
   min-width: 200px;
   max-width: 100%;
+  box-sizing: border-box;
 }
 
 .setting-label {

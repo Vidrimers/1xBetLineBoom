@@ -65,7 +65,7 @@
 
   .setting-item,
   .settings-item {
-    flex: 0 1 calc(50% - 6px);
+    flex: 0 1 calc(50% - 12px);
     min-width: 180px;
   }
 
