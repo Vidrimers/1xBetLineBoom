@@ -1396,6 +1396,13 @@ button.tab-btn:hover {
 
 .award-icon-container{}
 
+.award-icon-container .award-icons .tournament-icon{
+  width: 2em !important;
+  height: 2em !important;
+  background: rgba(224, 230, 240, .4) !important;
+  /* padding: 2px; */
+}
+
 .award-icons{}
 
 .award-icon img{
