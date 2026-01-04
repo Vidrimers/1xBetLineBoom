@@ -2730,7 +2730,7 @@ function displayParticipants(participants) {
         <div class="participant-name">${participant.username}</div>
         ${
           wonIcons.length > 0
-            ? `<div class="participant-tournaments">Побед в турнирах: ${trophies}</div>`
+            ? `<div class="participant-tournaments">Победы в турнирах: ${trophies}</div>`
             : ""
         }
         <div class="participant-stats">

@@ -1143,6 +1143,7 @@ button.tab-btn:hover {
   object-fit: contain;
   border-radius: 4px;
   vertical-align: middle;
+  background: rgba(224, 230, 240, .4);
 }
 
 .event-card .event-icon {
