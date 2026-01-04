@@ -6705,7 +6705,7 @@ async function showUserProfile(userId, username) {
           userData.tournament_wins > 0
             ? `
           <div class="award-icon-container" style="background: #2a1a0a; padding: 15px; border-radius: 8px;">
-            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Побед в турнирах</div>
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Победы в турнирах</div>
             <div class="award-icons" style="font-size: 1em; font-weight: bold; color: #ffc107;">
               ${(() => {
                 // Подсчитываем иконки турниров
