@@ -4888,12 +4888,14 @@ async function loadSettings() {
         <p class="setting-hint">ТГ для уведомлений/напоминаний</p>
         <div class="setting-control">
           <input type="text" id="telegramUsernameInput" value="${telegramUsername}" placeholder="@username" onkeypress="if(event.key === 'Enter') saveTelegramUsername()">
+          <div class="setting-buttons">
           <button onclick="saveTelegramUsername()" class="btn-save">💾</button>
           ${
             telegramUsername
               ? `<button onclick="deleteTelegramUsername()" class="btn-delete">🗑️</button>`
               : ""
           }
+          </div>
         </div>
         <p class="setting-hint-small">Свой ТГ можно узнать в <a href="https://t.me/OnexBetLineBoomBot" target="_blank">боте</a> → Профиль или /profile</p>
       </div>
