@@ -60,13 +60,13 @@
   }
 
   .settings-container {
-    gap: 8px;
+    gap: 12px;
   }
 
   .setting-item,
   .settings-item {
-    flex: 1 1 calc(50% - 4px);
-    min-width: 140px;
+    flex: 0 1 calc(50% - 6px);
+    min-width: 180px;
   }
 
   header img {
@@ -284,14 +284,13 @@
   }
 
   .settings-container {
-    /* flex-direction: column; */
-    gap: 8px;
+    gap: 10px;
   }
 
   .setting-item,
   .settings-item {
     min-width: 100%;
-    flex: 1 1 100%;
+    flex: 0 1 100%;
     max-width: 100%;
   }
 
