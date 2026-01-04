@@ -2610,10 +2610,10 @@ function displayParticipants(participants) {
             : ""
         }
         <div class="participant-stats">
-          Ставок за всё время: ${participant.total_bets || 0} | 
-          Угаданных ставок за всё время: ${participant.won_bets || 0} | 
-          Неугаданных ставок за всё время: ${participant.lost_bets || 0} | 
-          В ожидании: ${participant.pending_bets || 0}
+          <span>Ставок за всё время: ${participant.total_bets || 0} |</span>
+          <span>Угаданных ставок за всё время: ${participant.won_bets || 0} |</span>
+          <span>Неугаданных ставок за всё время: ${participant.lost_bets || 0} |</span>
+          <span>В ожидании: ${participant.pending_bets || 0}</span>
         </div>
       </div>
       <div class="participant-points">очки
@@ -2820,10 +2820,10 @@ function displayTournamentParticipants(
       <div class="participant-info">
         <div class="participant-name">${participant.username}</div>
         <div class="participant-stats">
-          Ставок в турнире: ${participant.event_bets || 0} | 
-          Угаданных: ${participant.event_won || 0} | 
-          Неугаданных: ${participant.event_lost || 0} | 
-          В ожидании: ${participant.event_pending || 0}
+          <span>Ставок в турнире: ${participant.event_bets || 0} |</span>
+          <span>Угаданных: ${participant.event_won || 0} |</span>
+          <span>Неугаданных: ${participant.event_lost || 0} |</span>
+          <span>В ожидании: ${participant.event_pending || 0}</span>
         </div>
         </div>
         <div class="participant-points">очки
