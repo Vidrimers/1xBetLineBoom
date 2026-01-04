@@ -53,7 +53,8 @@ const NOTIF_MAX_ATTEMPTS = parseInt(process.env.NOTIF_MAX_ATTEMPTS || "6", 10);
 // ===== ФУНКЦИЯ РЕГИСТРАЦИИ TELEGRAM ПОЛЬЗОВАТЕЛЯ =====
 async function registerTelegramUser(msg) {
   const telegramUsername = msg.from?.username;
-  const chatId = msg.chat.id;
+  // ВАЖНО: используем msg.from.id (личный ID пользователя), а не msg.chat.id (может быть ID группы)
+  const chatId = msg.from?.id;
   const firstName = msg.from?.first_name;
 
   if (!telegramUsername) return; // Если нет username - пропускаем
