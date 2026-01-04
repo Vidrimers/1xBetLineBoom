@@ -2338,26 +2338,41 @@ function displayMyBets(bets) {
     return;
   }
 
-  // Группируем ставки по турнирам (event_name)
+  // Группируем ставки по турнирам (event_name) и сохраняем статус турнира
   const betsByEvent = {};
   bets.forEach((bet) => {
     const eventName = bet.event_name || "Турнир не указан";
     if (!betsByEvent[eventName]) {
-      betsByEvent[eventName] = [];
+      betsByEvent[eventName] = {
+        status: bet.event_status || 'active', // Сохраняем статус турнира
+        bets: []
+      };
     }
-    betsByEvent[eventName].push(bet);
+    betsByEvent[eventName].bets.push(bet);
   });
 
-  // Сортируем турниры по названию
-  const sortedEvents = Object.keys(betsByEvent).sort();
+  // Сортируем турниры: сначала активные (active), потом остальные (archived, completed)
+  const sortedEvents = Object.keys(betsByEvent).sort((a, b) => {
+    const statusA = betsByEvent[a].status;
+    const statusB = betsByEvent[b].status;
+    
+    // Активные турниры идут первыми
+    if (statusA === 'active' && statusB !== 'active') return -1;
+    if (statusA !== 'active' && statusB === 'active') return 1;
+    
+    // Если оба активные или оба неактивные - сортируем по названию
+    return a.localeCompare(b);
+  });
 
   // Формируем HTML с разделителями по турнирам
   let html = "";
 
   sortedEvents.forEach((eventName) => {
+    const eventData = betsByEvent[eventName];
+    
     html += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ${eventName} ━━━</div>`;
 
-    html += betsByEvent[eventName]
+    html += eventData.bets
       .map((bet) => {
         let statusClass = "pending";
         let statusText = "⏳ В ожидании";
