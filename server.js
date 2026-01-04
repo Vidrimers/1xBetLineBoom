@@ -10,6 +10,7 @@ import {
   startBot,
   notifyIllegalBet,
   notifyNewBet,
+  notifyBetDeleted,
   getNotificationQueue,
   flushQueueNow,
   writeNotificationQueue,
@@ -149,53 +150,6 @@ const BACKUPS_DIR = path.join(__dirname, "backups");
 if (!fs.existsSync(BACKUPS_DIR)) {
   fs.mkdirSync(BACKUPS_DIR, { recursive: true });
   console.log("📁 Папка backups создана");
-}
-
-// Функция отправки уведомления о ставке админу в Telegram
-async function notifyBetAction(action, data) {
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
-
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
-    return;
-  }
-
-  try {
-    const time = new Date().toLocaleString("ru-RU");
-    let emoji = action === "placed" ? "✅" : "❌";
-    let actionText = action === "placed" ? "СТАВКА СДЕЛАНА" : "СТАВКА УДАЛЕНА";
-
-    // Преобразуем draw -> Ничья, team1/team2 -> названия команд для сообщений
-    let predictionText = data.prediction;
-    if (data.prediction === "team1") {
-      predictionText = data.team1;
-    } else if (data.prediction === "team2") {
-      predictionText = data.team2;
-    } else if (data.prediction === "draw") {
-      predictionText = "Ничья";
-    }
-    const message = `${emoji} ${actionText}
-
-👤 Пользователь: ${data.username}
-🎯 Ставка: ${predictionText}
-⚽ Матч: ${data.team1} vs ${data.team2}
-🏆 Турнир: ${data.eventName || "Неизвестный"}
-🕐 Время: ${time}`;
-
-    await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_ADMIN_ID,
-          text: message,
-        }),
-      }
-    );
-  } catch (error) {
-    console.error("❌ Ошибка отправки уведомления в Telegram:", error);
-  }
 }
 
 // Функция отправки уведомления о завершении турнира в группу
@@ -3040,6 +2994,30 @@ app.delete("/api/bets/:betId", async (req, res) => {
       is_final_match: match?.is_final,
       round: match?.round,
     });
+
+    // Отправляем уведомление админу об удалении ставки
+    try {
+      let predictionText = bet.prediction === "draw" ? "Ничья" : bet.prediction;
+      
+      // Если прогноз содержит название команды, используем его как есть
+      // Если это "team1" или "team2", преобразуем в названия команд
+      if (bet.prediction === "team1" || bet.prediction === match?.team1_name) {
+        predictionText = match?.team1_name || "?";
+      } else if (bet.prediction === "team2" || bet.prediction === match?.team2_name) {
+        predictionText = match?.team2_name || "?";
+      }
+      
+      await notifyBetDeleted(
+        betUser?.username || "неизвестный",
+        match?.team1_name || "?",
+        match?.team2_name || "?",
+        predictionText,
+        match?.event_name
+      );
+    } catch (err) {
+      console.error("⚠️ Ошибка отправки уведомления админу об удалении ставки:", err.message);
+      // Не прерываем процесс удаления ставки если ошибка в отправке уведомления
+    }
 
     // Отправляем личное сообщение пользователю в Telegram об удалении ставки если он не отключил уведомления
     if (

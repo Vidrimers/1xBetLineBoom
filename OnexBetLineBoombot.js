@@ -595,6 +595,25 @@ export async function notifyNewBet(
   await sendAdminNotification(message);
 }
 
+// Функция для отправки уведомления админу об удалении ставки
+export async function notifyBetDeleted(
+  username,
+  team1,
+  team2,
+  prediction,
+  eventName
+) {
+  const message =
+    `❌ <b>СТАВКА УДАЛЕНА!</b>\n\n` +
+    `👤 Пользователь: <b>${username}</b>\n` +
+    `⚽ Матч: <b>${team1}</b> vs <b>${team2}</b>\n` +
+    `🎯 Прогноз: <b>${prediction}</b>\n` +
+    `🏆 Турнир: ${eventName || "Неизвестный"}\n` +
+    `⏰ ${new Date().toLocaleString("ru-RU")}`;
+
+  await sendAdminNotification(message);
+}
+
 // Функция для отправки уведомления о завершённом матче
 export async function notifyMatchFinished(match, winner) {
   const message =
@@ -1190,23 +1209,12 @@ export function startBot() {
 
   // Команда /next_match и кнопка ⚽ Ближайший матч
   const handleNextMatch = async (chatIdOrMsg, legacyMsg = null) => {
-    console.log(
-      `📍 handleNextMatch вызвана, chatIdOrMsg type: ${typeof chatIdOrMsg}, chatIdOrMsg:`,
-      chatIdOrMsg
-    );
-
     // Поддерживаем оба способа вызова для совместимости
     const msg =
       chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
         ? chatIdOrMsg
         : legacyMsg;
     const chatId = msg ? msg.chat.id : chatIdOrMsg;
-
-    console.log(
-      `📍 msg:`,
-      msg ? `${msg.chat.id}` : "null",
-      `chatId: ${chatId}`
-    );
 
     if (msg) logUserAction(msg, "Нажата кнопка/команда: Ближайший матч");
 
@@ -1216,22 +1224,14 @@ export function startBot() {
 
     // Определяем временные границы для загрузки матчей
     const now = new Date();
-    const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
-    console.log(
-      `📍 Границы поиска: от ${fiveDaysAgo.toISOString()} до текущего времени`
-    );
 
     try {
-      console.log(`📍 Начинаем загрузку турниров с ${SERVER_URL}/api/events`);
       // Загружаем все турниры с их матчами
       const response = await fetch(`${SERVER_URL}/api/events`);
 
       if (!response.ok) {
         console.error(
           `Ошибка при загрузке турниров (HTTP ${response.status}): ${SERVER_URL}/api/events`
-        );
-        console.log(
-          "[handleNextMatch] Sending error message about server failure"
         );
         await sendMessageWithThread(
           chatId,
@@ -1242,16 +1242,12 @@ export function startBot() {
             parse_mode: "HTML",
           })
         );
-        console.log("[handleNextMatch] Error message sent successfully");
         return;
       }
 
       const events = await response.json();
 
       if (!events || events.length === 0) {
-        console.log(
-          "[handleNextMatch] No events found, sending 'no events' message"
-        );
         await sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
@@ -1261,49 +1257,29 @@ export function startBot() {
             parse_mode: "HTML",
           })
         );
-        console.log("[handleNextMatch] 'No events' message sent successfully");
         return;
       }
 
       // Собираем все матчи из всех турниров
-      console.log(`📍 Загружаем матчи из ${events.length} турниров`);
       const allMatches = [];
       for (const event of events) {
         try {
-          console.log(
-            `📍 Загружаем матчи для турнира ${event.id} (${event.name})`
-          );
           const matchesResponse = await fetch(
             `${SERVER_URL}/api/events/${event.id}/matches`
           );
           if (matchesResponse.ok) {
             const matches = await matchesResponse.json();
-            console.log(
-              `📍 Получено ${matches?.length || 0} матчей для турнира ${
-                event.id
-              }`
-            );
             if (matches && matches.length > 0) {
-              console.log(
-                `📍 Структура первого матча:`,
-                JSON.stringify(matches[0], null, 2)
-              );
               matches.forEach((match) => {
                 const matchDate = new Date(match.match_date);
 
                 // Не показываем матчи которые не имеют даты
                 if (!match.match_date) {
-                  console.log(
-                    `📍 Пропускаем матч ${match.team1_name} vs ${match.team2_name} - нет даты`
-                  );
                   return;
                 }
 
                 // Показываем только матчи БЕЗ результата (future/ongoing)
                 if (match.winner) {
-                  console.log(
-                    `📍 Пропускаем матч ${match.team1_name} vs ${match.team2_name} - есть результат`
-                  );
                   return;
                 }
 
@@ -1312,9 +1288,6 @@ export function startBot() {
                   now.getTime() - 30 * 24 * 60 * 60 * 1000
                 );
                 if (matchDate < thirtyDaysAgo) {
-                  console.log(
-                    `📍 Пропускаем матч ${match.team1_name} vs ${match.team2_name} - слишком старый`
-                  );
                   return;
                 }
 
@@ -1333,30 +1306,19 @@ export function startBot() {
         }
       }
 
-      console.log(
-        `📍 Всего загружено ${allMatches.length} матчей (из них после фильтра по 5 дням)`
-      );
-
       // Разделяем матчи на идущие и будущие
       // Показываем только матчи БЕЗ результата И С датой (ongoing и future)
       const ongoingMatches = [];
       const futureMatches = [];
 
-      console.log(`📍 Начинаем разделение матчей... Текущее время: ${now}`);
       allMatches.forEach((match) => {
         // Пропускаем матчи которые не имеют даты
         if (!match.match_date) {
-          console.log(
-            `📍 Пропускаем матч: ${match.team1_name} vs ${match.team2_name} - нет даты (null)`
-          );
           return;
         }
 
         // Пропускаем матчи с результатом (завершенные)
         if (match.winner) {
-          console.log(
-            `📍 Пропускаем матч: ${match.team1_name} vs ${match.team2_name} - есть результат`
-          );
           return;
         }
 
@@ -1364,24 +1326,15 @@ export function startBot() {
 
         // Пропускаем если дата невалидна (это происходит когда match_date = null)
         if (isNaN(matchDate.getTime())) {
-          console.log(
-            `📍 Пропускаем матч: ${match.team1_name} vs ${match.team2_name} - невалидная дата`
-          );
           return;
         }
-
-        console.log(
-          `📍 Проверяем матч: ${match.team1_name} vs ${match.team2_name}, дата: ${matchDate}`
-        );
 
         // Матчи которые в прошлом - это "идущие" матчи (ongoing)
         // Матчи которые в будущем - это "будущие" матчи (future)
         if (matchDate <= now) {
           ongoingMatches.push(match);
-          console.log(`  → Добавлен в ongoing (идет прямо сейчас)`);
         } else {
           futureMatches.push(match);
-          console.log(`  → Добавлен в future (будущий матч)`);
         }
       });
 
@@ -1391,10 +1344,6 @@ export function startBot() {
       );
       futureMatches.sort(
         (a, b) => new Date(a.match_date) - new Date(b.match_date)
-      );
-
-      console.log(
-        `📍 После сортировки: ongoing=${ongoingMatches.length}, future=${futureMatches.length}`
       );
 
       // Если есть идущие матчи, показываем их
@@ -1442,7 +1391,6 @@ export function startBot() {
 
       // Если нет идущих матчей, показываем будущие
       if (futureMatches.length === 0) {
-        console.log(`📍 Нет предстоящих матчей, отправляем уведомление`);
         await sendMessageWithThread(
           chatId,
           `⚽ <b>Ближайший матч:</b>\n\n` +
@@ -1452,7 +1400,6 @@ export function startBot() {
             parse_mode: "HTML",
           })
         );
-        console.log(`📍 Уведомление о отсутствии матчей отправлено`);
         return;
       }
 
@@ -1462,10 +1409,6 @@ export function startBot() {
       // Фильтруем матчи на ту же дату
       const matchesOnSameDay = futureMatches.filter(
         (match) => new Date(match.match_date).toDateString() === nearestDate
-      );
-
-      console.log(
-        `📍 Ближайшая дата: ${nearestDate}, матчей на эту дату: ${matchesOnSameDay.length}`
       );
 
       // Форматируем сообщение с матчами
@@ -1492,33 +1435,18 @@ export function startBot() {
 
       messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
 
-      console.log(
-        `📍 Отправляем сообщение о будущих матчах (${matchesOnSameDay.length} матчей)`
+      await sendMessageWithThread(
+        chatId,
+        messageText,
+        opts("future", {
+          parse_mode: "HTML",
+        })
       );
-      console.log(`📍 Текст сообщения длина: ${messageText.length}`);
-      try {
-        await sendMessageWithThread(
-          chatId,
-          messageText,
-          opts("future", {
-            parse_mode: "HTML",
-          })
-        );
-        console.log(`📍 Сообщение о будущих матчах отправлено успешно`);
-      } catch (sendError) {
-        console.error(
-          `📍 Ошибка при отправке сообщения о будущих матчах:`,
-          sendError
-        );
-        throw sendError;
-      }
     } catch (error) {
       console.error(
         "Ошибка при загрузке ближайших матчей:",
         error && error.message ? error.message : error
       );
-      console.error("Full error:", error);
-      console.log(`📍 Отправляем сообщение об ошибке в чат ${chatId}`);
       await sendMessageWithThread(
         chatId,
         `⚽ <b>Ближайший матч:</b>\n\n` +
@@ -1529,7 +1457,6 @@ export function startBot() {
         })
       );
     }
-    console.log(`📍 handleNextMatch завершена`);
   };
 
   bot.onText(/\/next_match/, (msg) => handleNextMatch(msg.chat.id, msg));
