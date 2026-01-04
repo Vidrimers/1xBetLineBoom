@@ -303,10 +303,14 @@ button:active {
 
 .section.bet-section {
   padding: 0px 10px 10px 10px;
-  max-height: 60vh;
+  max-height: 55vh;
   overflow: auto;
   scrollbar-width: none;
   position: relative;
+}
+
+.section.bet-section.bet-section-bets,.section.bet-section.bet-section-matches{
+  max-height: 75vh;
 }
 
 #matchesSection {
