@@ -192,6 +192,25 @@ function loadSavedTheme() {
   }
 }
 
+// ===== УНИВЕРСАЛЬНЫЕ ФУНКЦИИ ДЛЯ МОДАЛЬНЫХ ОКОН =====
+
+// Блокировка скролла страницы при открытии модалки
+function lockBodyScroll() {
+  document.body.style.overflow = 'hidden';
+}
+
+// Разблокировка скролла страницы при закрытии модалки
+function unlockBodyScroll() {
+  document.body.style.overflow = '';
+}
+
+// Универсальная функция закрытия модалки при клике вне контента
+function closeModalOnOutsideClick(event, modalId, closeFunction) {
+  if (event.target.id === modalId) {
+    closeFunction();
+  }
+}
+
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 
 // Загрузить порядок туров из БД
@@ -4514,6 +4533,7 @@ async function loadAdminUsers() {
 // Закрыть модальное окно
 function closeAdminModal() {
   document.getElementById("adminModal").style.display = "none";
+  unlockBodyScroll();
 }
 
 // Загрузить подсчет результатов
@@ -5257,6 +5277,7 @@ function openCreateMatchModal() {
   // Открываем модальное окно
   const modal = document.getElementById("createMatchModal");
   if (modal) {
+    lockBodyScroll();
     modal.style.display = "flex";
   }
 }
@@ -5265,6 +5286,7 @@ function openCreateMatchModal() {
 function closeCreateMatchModal() {
   const modal = document.getElementById("createMatchModal");
   modal.style.display = "none";
+  unlockBodyScroll();
 
   // Очищаем форму
   document.getElementById("createMatchForm").reset();
@@ -5277,6 +5299,7 @@ function closeCreateMatchModal() {
 function openLockEventModal(eventId, eventName) {
   const modal = document.getElementById("lockEventModal");
   if (modal) {
+    lockBodyScroll();
     modal.style.display = "flex";
     // Сохраняем ID турнира в скрытое поле
     document.getElementById("lockEventForm").dataset.eventId = eventId;
@@ -5288,6 +5311,7 @@ function closeLockEventModal() {
   const modal = document.getElementById("lockEventModal");
   if (modal) {
     modal.style.display = "none";
+    unlockBodyScroll();
   }
   // Очищаем форму
   document.getElementById("lockEventForm").reset();
@@ -5498,11 +5522,13 @@ function openEditMatchModal(id, team1, team2, date, round) {
     toggleFinalMatch("edit");
   }
 
+  lockBodyScroll();
   document.getElementById("editMatchModal").style.display = "flex";
 }
 
 function closeEditMatchModal() {
   document.getElementById("editMatchModal").style.display = "none";
+  unlockBodyScroll();
 
   // Очищаем параметры финального матча
   document.getElementById("editMatchIsFinal").checked = false;
@@ -6252,11 +6278,13 @@ function openImportMatchesModal() {
   // Инициализируем превью разделителя при открытии модального окна
   updateImportSeparatorPreview();
 
+  lockBodyScroll();
   document.getElementById("importMatchesModal").style.display = "flex";
 }
 
 function closeImportMatchesModal() {
   document.getElementById("importMatchesModal").style.display = "none";
+  unlockBodyScroll();
   document.getElementById("importMatchesData").value = "";
   document.getElementById("importEventId").value = "";
 }
@@ -7627,8 +7655,8 @@ function openCreateEventModal() {
   const modal = document.getElementById("createEventModal");
   console.log("🔧 modal element:", modal);
   if (modal) {
+    lockBodyScroll();
     modal.style.display = "flex";
-    document.body.style.overflow = "hidden";
     document
       .getElementById("customIconCheckbox")
       .addEventListener("change", handleCreateEventIconChange);
@@ -7642,7 +7670,7 @@ function openCreateEventModal() {
 // Закрыть модальное окно создания турнира
 function closeCreateEventModal() {
   document.getElementById("createEventModal").style.display = "none";
-  document.body.style.overflow = "";
+  unlockBodyScroll();
   document.getElementById("createEventForm").reset();
   document.getElementById("customIconGroup").style.display = "none";
   document
@@ -7709,8 +7737,8 @@ function openEditEventModal(eventId) {
       const modal = document.getElementById("editEventModal");
       console.log("🔧 editEventModal element:", modal);
       if (modal) {
+        lockBodyScroll();
         modal.style.display = "flex";
-        document.body.style.overflow = "hidden";
         document
           .getElementById("editCustomIconCheckbox")
           .addEventListener("change", handleEditEventIconChange);
@@ -7729,7 +7757,7 @@ function openEditEventModal(eventId) {
 // Закрыть модальное окно редактирования турнира
 function closeEditEventModal() {
   document.getElementById("editEventModal").style.display = "none";
-  document.body.style.overflow = "";
+  unlockBodyScroll();
   document.getElementById("editEventForm").reset();
   document.getElementById("editCustomIconGroup").style.display = "none";
   document

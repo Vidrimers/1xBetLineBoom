@@ -1495,6 +1495,11 @@ button.tab-btn:hover {
   display: flex !important;
 }
 
+/* Предотвращаем закрытие модалки при клике на содержимое */
+.modal-content {
+  pointer-events: auto;
+}
+
 /* Стили для модального окна терминала */
 .terminal-modal {
   position: fixed !important;

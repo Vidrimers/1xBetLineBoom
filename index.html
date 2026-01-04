@@ -855,7 +855,7 @@
       </div>
 
       <!-- Модальное окно для управления пользователями -->
-      <div id="adminModal" class="modal" style="display: none">
+      <div id="adminModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'adminModal', closeAdminModal)">
         <div class="modal-content">
           <div class="modal-header">
             <h2>👥 Управление пользователями</h2>
@@ -872,7 +872,7 @@
       </div>
 
       <!-- Модальное окно для создания турнира -->
-      <div id="createEventModal" class="modal" style="display: none">
+      <div id="createEventModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'createEventModal', closeCreateEventModal)">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
             <h2>➕ Создать новый турнир</h2>
@@ -1006,7 +1006,7 @@
       </div>
 
       <!-- Модальное окно для редактирования турнира -->
-      <div id="editEventModal" class="modal edit-event-modal" style="display: none">
+      <div id="editEventModal" class="modal edit-event-modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'editEventModal', closeEditEventModal)">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
             <h2>✏️ Редактировать турнир</h2>
@@ -2346,7 +2346,7 @@
     <script src="js/counting.js"></script>
 
     <!-- Модальное окно для создания матча -->
-    <div id="createMatchModal" class="modal" style="display: none">
+    <div id="createMatchModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'createMatchModal', closeCreateMatchModal)">
       <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
           <h2>➕ Создать новый матч</h2>
@@ -2577,7 +2577,7 @@
     </div>
 
     <!-- Модальное окно для импорта матчей -->
-    <div id="importMatchesModal" class="modal" style="display: none">
+    <div id="importMatchesModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'importMatchesModal', closeImportMatchesModal)">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
           <h2>📥 Импорт матчей</h2>
@@ -2716,7 +2716,7 @@
     </div>
 
     <!-- Модальное окно для блокировки турнира -->
-    <div id="lockEventModal" class="modal" style="display: none">
+    <div id="lockEventModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'lockEventModal', closeLockEventModal)">
       <div class="modal-content">
         <div class="modal-header">
           <h2>🔒 Заблокировать турнир</h2>
@@ -2775,7 +2775,7 @@
     </div>
 
     <!-- Модальное окно для редактирования матча -->
-    <div id="editMatchModal" class="modal" style="display: none">
+    <div id="editMatchModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'editMatchModal', closeEditMatchModal)">
       <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
           <h2>✏️ Редактировать матч</h2>
