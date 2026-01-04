@@ -18,6 +18,7 @@ add-timezone-column.js
 log.html
 terminal-logs.txt
 add-event-columns.js
+add-theme-column.js
 MIGRATION-README.md
 
 Autoparsing.js
