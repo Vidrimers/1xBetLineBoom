@@ -9,6 +9,7 @@ import { execSync, spawnSync } from "child_process";
 import {
   startBot,
   notifyIllegalBet,
+  notifyNewBet,
   getNotificationQueue,
   flushQueueNow,
   writeNotificationQueue,
@@ -2763,6 +2764,30 @@ app.post("/api/bets", async (req, res) => {
       is_final_match: match.is_final,
       round: match.round,
     });
+
+    // Отправляем уведомление админу о новой ставке
+    try {
+      let predictionText = prediction === "draw" ? "Ничья" : prediction;
+      
+      // Если прогноз содержит название команды, используем его как есть
+      // Если это "team1" или "team2", преобразуем в названия команд
+      if (prediction === "team1" || prediction === match.team1_name) {
+        predictionText = match.team1_name;
+      } else if (prediction === "team2" || prediction === match.team2_name) {
+        predictionText = match.team2_name;
+      }
+      
+      await notifyNewBet(
+        user?.username || "неизвестный",
+        match.team1_name,
+        match.team2_name,
+        predictionText,
+        match.event_name
+      );
+    } catch (err) {
+      console.error("⚠️ Ошибка отправки уведомления админу:", err.message);
+      // Не прерываем процесс создания ставки если ошибка в отправке уведомления
+    }
 
     // Отправляем личное сообщение пользователю в Telegram если он привязал аккаунт и не отключил уведомления
     if (user?.telegram_username && user?.telegram_notifications_enabled !== 0) {

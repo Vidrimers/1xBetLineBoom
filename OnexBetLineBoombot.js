@@ -576,14 +576,21 @@ export async function notifyNewMatch(match, tournament) {
   await sendAdminNotification(message);
 }
 
-// Функция для отправки уведомления о ставке
-export async function notifyNewBet(user, match, prediction, amount) {
+// Функция для отправки уведомления админу о новой ставке
+export async function notifyNewBet(
+  username,
+  team1,
+  team2,
+  prediction,
+  eventName
+) {
   const message =
-    `💰 <b>Новая ставка!</b>\n\n` +
-    `👤 Пользователь: ${user.username}\n` +
-    `⚽ Матч: ${match.team1_name} vs ${match.team2_name}\n` +
-    `🎯 Прогноз: ${prediction}\n` +
-    `💵 Сумма: ${amount}`;
+    `💰 <b>НОВАЯ СТАВКА!</b>\n\n` +
+    `👤 Пользователь: <b>${username}</b>\n` +
+    `⚽ Матч: <b>${team1}</b> vs <b>${team2}</b>\n` +
+    `🎯 Прогноз: <b>${prediction}</b>\n` +
+    `🏆 Турнир: ${eventName || "Неизвестный"}\n` +
+    `⏰ ${new Date().toLocaleString("ru-RU")}`;
 
   await sendAdminNotification(message);
 }
