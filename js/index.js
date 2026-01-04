@@ -7355,6 +7355,7 @@ class HorizontalDragScroll {
     this.onTouchStart = this.onTouchStart.bind(this);
     this.onTouchMove = this.onTouchMove.bind(this);
     this.onTouchEnd = this.onTouchEnd.bind(this);
+    this.onWheel = this.onWheel.bind(this);
   }
 
   initElement(element) {
@@ -7369,6 +7370,15 @@ class HorizontalDragScroll {
     element.addEventListener("touchstart", this.onTouchStart, {
       passive: true,
     });
+    element.addEventListener("wheel", this.onWheel, { passive: false });
+  }
+
+  onWheel(e) {
+    // Предотвращаем вертикальную прокрутку страницы
+    e.preventDefault();
+    
+    // Прокручиваем горизонтально
+    e.currentTarget.scrollLeft += e.deltaY;
   }
 
   onMouseDown(e) {
