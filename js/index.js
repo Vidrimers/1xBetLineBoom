@@ -1534,8 +1534,42 @@ function displayMatches() {
     return 0;
   });
 
-  matchesContainer.innerHTML = sortedMatches
-    .map((match) => {
+  // Группируем матчи по датам
+  const matchesByDate = {};
+  sortedMatches.forEach((match) => {
+    let dateKey = "Без даты";
+    if (match.match_date) {
+      const date = new Date(match.match_date);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      dateKey = `${day}.${month}.${year}`;
+    }
+    if (!matchesByDate[dateKey]) {
+      matchesByDate[dateKey] = [];
+    }
+    matchesByDate[dateKey].push(match);
+  });
+
+  // Сортируем ключи дат (сначала реальные даты, потом "Без даты")
+  const sortedDateKeys = Object.keys(matchesByDate).sort((a, b) => {
+    if (a === "Без даты") return 1;
+    if (b === "Без даты") return -1;
+    const [dayA, monthA, yearA] = a.split(".").map(Number);
+    const [dayB, monthB, yearB] = b.split(".").map(Number);
+    const dateA = new Date(yearA, monthA - 1, dayA);
+    const dateB = new Date(yearB, monthB - 1, dayB);
+    return dateA - dateB;
+  });
+
+  // Генерируем HTML с разделителями по датам
+  let htmlContent = "";
+  sortedDateKeys.forEach((dateKey) => {
+    // Добавляем разделитель даты
+    htmlContent += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ${dateKey} ━━━</div>`;
+    
+    // Добавляем матчи для этой даты
+    matchesByDate[dateKey].forEach((match) => {
       // Определяем статус на основе даты
       const effectiveStatus = getMatchStatusByDate(match);
 
@@ -1555,7 +1589,7 @@ function displayMatches() {
           '<span style="display: inline-block; padding: 3px 8px; background: rgba(100, 100, 100, 0.8); color: #e0e0e0; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">✓ ЗАВЕРШЕН</span>';
       }
 
-      return `
+      const matchHtml = `
         <div class="match-row ${betClass}" data-match-id="${
         match.id
       }" style="position: relative;">
@@ -1849,8 +1883,11 @@ function displayMatches() {
             </div>
         </div>
     `;
-    })
-    .join("");
+      htmlContent += matchHtml;
+    });
+  });
+
+  matchesContainer.innerHTML = htmlContent;
 
   // Добавляем обработчики для disabled кнопок
   const disabledButtons = matchesContainer.querySelectorAll("button[disabled]");
