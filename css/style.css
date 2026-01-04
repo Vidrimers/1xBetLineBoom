@@ -980,6 +980,9 @@ button.tab-btn:hover {
   font-weight: 500;
   letter-spacing: 0.5px;
 }
+.participant-tournaments span{
+  margin-right: 2px;
+}
 
 .participant-stats {
   font-size: 0.9em;

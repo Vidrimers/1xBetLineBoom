@@ -2589,7 +2589,7 @@ function displayParticipants(participants) {
             const displayIcon = icon.startsWith("img/")
               ? `<img src="${icon}" alt="trophy" class="tournament-icon">`
               : icon;
-            return count > 1 ? `${displayIcon}x${count}` : displayIcon;
+            return count > 1 ? `<span>${displayIcon}x${count}</span>` : displayIcon;
           })
           .join(" ");
       }
