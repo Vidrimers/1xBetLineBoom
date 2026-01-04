@@ -152,7 +152,77 @@ function setAuthButtonToLoginState() {
 // ===== ТЕМЫ =====
 
 // Изменить тему сайта
-function changeTheme(themeName) {
+// Предварительный просмотр темы (без сохранения на сервере)
+function previewTheme(themeName) {
+  console.log(`🎨 Предпросмотр темы: ${themeName}`);
+
+  // Удаляем все классы тем
+  document.body.classList.remove(
+    "theme-default",
+    "theme-hacker-green",
+    "theme-solarized",
+    "theme-matrix",
+    "theme-cyberpunk",
+    "theme-leagueChampions",
+    "theme-leagueEurope"
+  );
+
+  // Добавляем новый класс темы
+  document.body.classList.add(themeName);
+
+  console.log(`✅ Тема ${themeName} применена для предпросмотра`);
+}
+
+// Сохранить выбранную тему
+async function saveTheme() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  const themeSelect = document.getElementById("themeSelect");
+  const themeName = themeSelect.value;
+  const btn = document.getElementById("saveThemeBtn");
+
+  try {
+    // Визуальная обратная связь
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch(`/api/user/${currentUser.id}/settings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: themeName }),
+    });
+
+    if (response.ok) {
+      // Сохраняем в localStorage
+      localStorage.setItem("selectedTheme", themeName);
+      
+      // Показываем успешное сохранение
+      btn.textContent = "✅ Сохранено!";
+      setTimeout(() => {
+        btn.textContent = "Сохранить";
+        btn.disabled = false;
+      }, 2000);
+      
+      console.log(`✅ Тема ${themeName} сохранена на сервере`);
+    } else {
+      throw new Error("Ошибка сохранения");
+    }
+  } catch (error) {
+    console.error("❌ Ошибка сохранения темы на сервере:", error);
+    btn.textContent = "❌ Ошибка";
+    setTimeout(() => {
+      btn.textContent = "Сохранить";
+      btn.disabled = false;
+    }, 2000);
+    alert("Ошибка при сохранении темы");
+  }
+}
+
+// Изменить тему (используется при загрузке сохраненной темы)
+async function changeTheme(themeName) {
   console.log(`🎨 Смена темы на: ${themeName}`);
 
   // Удаляем все классы тем
@@ -169,16 +239,15 @@ function changeTheme(themeName) {
   // Добавляем новый класс темы
   document.body.classList.add(themeName);
 
-  // Сохраняем выбор темы в localStorage
-  localStorage.setItem("selectedTheme", themeName);
-
   console.log(`✅ Тема ${themeName} применена`);
 }
 
 // Загрузить сохраненную тему при загрузке страницы
-function loadSavedTheme() {
-  const savedTheme = localStorage.getItem("selectedTheme") || "theme-default";
-  console.log(`📂 Загружена сохраненная тема: ${savedTheme}`);
+async function loadSavedTheme() {
+  // Сначала загружаем из localStorage для быстрого применения
+  let savedTheme = localStorage.getItem("selectedTheme") || "theme-default";
+  
+  console.log(`📂 Загружена тема из localStorage: ${savedTheme}`);
 
   // Применяем тему
   document.body.classList.add(savedTheme);
@@ -187,6 +256,41 @@ function loadSavedTheme() {
   const themeSelect = document.getElementById("themeSelect");
   if (themeSelect) {
     themeSelect.value = savedTheme;
+  }
+
+  // Если пользователь залогинен, загружаем тему с сервера
+  if (currentUser) {
+    try {
+      const response = await fetch(`/api/user/${currentUser.id}/notifications`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.theme && data.theme !== savedTheme) {
+          // Если тема на сервере отличается, применяем её
+          savedTheme = data.theme;
+          localStorage.setItem("selectedTheme", savedTheme);
+          
+          // Удаляем старую тему и применяем новую
+          document.body.classList.remove(
+            "theme-default",
+            "theme-hacker-green",
+            "theme-solarized",
+            "theme-matrix",
+            "theme-cyberpunk",
+            "theme-leagueChampions",
+            "theme-leagueEurope"
+          );
+          document.body.classList.add(savedTheme);
+          
+          if (themeSelect) {
+            themeSelect.value = savedTheme;
+          }
+          
+          console.log(`📂 Тема обновлена с сервера: ${savedTheme}`);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Ошибка загрузки темы с сервера:", error);
+    }
   }
 }
 
@@ -505,6 +609,9 @@ async function initUser() {
 
     // Сохраняем пользователя в localStorage
     localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+    // Загружаем тему с сервера после логина
+    await loadSavedTheme();
 
     // Обновляем классы контейнера для показа контента
     const container = document.querySelector(".container");
@@ -4891,7 +4998,7 @@ async function saveTelegramNotificationSettings() {
     btn.textContent = "Сохранение...";
     btn.disabled = true;
 
-    const response = await fetch(`/api/user/${currentUser.id}/notifications`, {
+    const response = await fetch(`/api/user/${currentUser.id}/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ telegram_notifications_enabled: isEnabled }),
@@ -4935,7 +5042,7 @@ async function saveGroupRemindersSettings() {
     btn.textContent = "Сохранение...";
     btn.disabled = true;
 
-    const response = await fetch(`/api/user/${currentUser.id}/notifications`, {
+    const response = await fetch(`/api/user/${currentUser.id}/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ telegram_group_reminders_enabled: isEnabled }),

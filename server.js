@@ -1115,6 +1115,14 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// Миграция: добавляем theme если её нет
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN theme TEXT DEFAULT 'theme-default'`);
+  console.log("✅ Колонка theme добавлена в таблицу users");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
 // Таблица для связки telegram username → chat_id (для отправки личных сообщений)
 db.exec(`
   CREATE TABLE IF NOT EXISTS telegram_users (
@@ -1648,7 +1656,7 @@ app.get("/api/user/timezone", (req, res) => {
 });
 
 // Сохранить часовой пояс пользователя
-app.post("/api/user/timezone", (req, res) => {
+app.post("/api/user/timezone", async (req, res) => {
   try {
     const { username, timezone } = req.body;
 
@@ -1666,6 +1674,13 @@ app.post("/api/user/timezone", (req, res) => {
         .json({ error: `Неверный часовой пояс: ${timezone}` });
     }
 
+    // Получаем старый часовой пояс для логирования
+    const user = db
+      .prepare("SELECT timezone, telegram_username FROM users WHERE username = ?")
+      .get(username);
+
+    const oldTimezone = user?.timezone || 'не установлен';
+
     const result = db
       .prepare("UPDATE users SET timezone = ? WHERE username = ?")
       .run(timezone, username);
@@ -1677,6 +1692,41 @@ app.post("/api/user/timezone", (req, res) => {
     console.log(
       `🕐 Часовой пояс пользователя ${username} изменен на ${timezone}`
     );
+
+    // Отправляем уведомление админу об изменении часового пояса
+    try {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const time = new Date().toLocaleString("ru-RU");
+
+        const adminMessage = `🕐 ИЗМЕНЕНИЕ ЧАСОВОГО ПОЯСА
+
+👤 Пользователь: ${username}
+${user?.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Новый часовой пояс: ${timezone}
+📍 Старый часовой пояс: ${oldTimezone}
+🕐 Время: ${time}`;
+
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: adminMessage,
+            }),
+          }
+        );
+      }
+    } catch (err) {
+      console.error(
+        "⚠️ Ошибка отправки уведомления админу об изменении часового пояса:",
+        err.message
+      );
+    }
 
     res.json({ success: true, timezone });
   } catch (error) {
@@ -3766,10 +3816,10 @@ app.delete("/api/user/:userId/telegram", async (req, res) => {
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
         const time = new Date().toLocaleString("ru-RU");
-        const message = `📱 TELEGRAM USERNAME
+        const message = `📱 УДАЛЕНИЕ TELEGRAM USERNAME
 
 👤 Пользователь: ${user.username}
-✏️ Действие: удалил свой ТГ
+✏️ Действие: удалил привязку Telegram
 📲 Был: @${oldTelegramUsername}
 🕐 Время: ${time}`;
 
@@ -3810,19 +3860,78 @@ app.delete("/api/user/:userId/telegram", async (req, res) => {
   }
 });
 
-// PUT /api/user/:userId/notifications - Управление настройками уведомлений
-app.put("/api/user/:userId/notifications", async (req, res) => {
+// PUT /api/user/:userId/settings - Управление настройками пользователя
+app.put("/api/user/:userId/settings", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { telegram_notifications_enabled, telegram_group_reminders_enabled } =
+    const { telegram_notifications_enabled, telegram_group_reminders_enabled, theme } =
       req.body;
 
     // Проверяем существование пользователя
     const user = db
-      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .prepare("SELECT id, username, telegram_username, theme FROM users WHERE id = ?")
       .get(userId);
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Обновляем тему (если передана)
+    if (theme !== undefined) {
+      const oldTheme = user.theme || 'theme-default';
+      db.prepare(
+        "UPDATE users SET theme = ? WHERE id = ?"
+      ).run(theme, userId);
+
+      // Записываем в лог изменение темы
+      writeBetLog("settings", {
+        username: user.username,
+        setting: "Theme",
+        oldValue: oldTheme,
+        newValue: theme,
+      });
+
+      // Отправляем уведомление админу об изменении темы
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+          const time = new Date().toLocaleString("ru-RU");
+          const themeNames = {
+            'theme-default': 'Дефолтная',
+            'theme-hacker-green': '💻 Hacker Green',
+            'theme-solarized': '🌅 Solarized',
+            'theme-matrix': '🟢 Matrix',
+            'theme-cyberpunk': '🌃 Cyberpunk',
+            'theme-leagueChampions': '🏆 League Champions',
+            'theme-leagueEurope': '⭐ League Europe'
+          };
+
+          const adminMessage = `🎨 ИЗМЕНЕНИЕ ТЕМЫ
+
+👤 Пользователь: ${user.username}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Новая тема: ${themeNames[theme] || theme}
+🕐 Время: ${time}`;
+
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: adminMessage,
+              }),
+            }
+          );
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления админу об изменении темы:",
+          err.message
+        );
+      }
     }
 
     // Обновляем настройки (если они переданы)
@@ -3976,6 +4085,7 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
       message: "Настройки сохранены",
       telegram_notifications_enabled: telegram_notifications_enabled,
       telegram_group_reminders_enabled: telegram_group_reminders_enabled,
+      theme: theme,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -3988,7 +4098,7 @@ app.get("/api/user/:userId/notifications", (req, res) => {
     const { userId } = req.params;
     const user = db
       .prepare(
-        "SELECT telegram_notifications_enabled, telegram_group_reminders_enabled FROM users WHERE id = ?"
+        "SELECT telegram_notifications_enabled, telegram_group_reminders_enabled, theme FROM users WHERE id = ?"
       )
       .get(userId);
 
@@ -4000,6 +4110,7 @@ app.get("/api/user/:userId/notifications", (req, res) => {
       telegram_notifications_enabled: user.telegram_notifications_enabled === 1,
       telegram_group_reminders_enabled:
         user.telegram_group_reminders_enabled === 1,
+      theme: user.theme || 'theme-default',
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
