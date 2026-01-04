@@ -2855,7 +2855,13 @@ app.get("/api/user/:userId/bets", (req, res) => {
     const bets = db
       .prepare(
         `
-      SELECT b.*, m.team1_name, m.team2_name, m.winner, m.status as match_status, m.round, m.is_final, e.name as event_name, e.status as event_status
+      SELECT b.*, 
+             m.team1_name, m.team2_name, m.winner, 
+             m.status as match_status, m.round, m.is_final, 
+             e.name as event_name, 
+             e.status as event_status,
+             e.start_date as event_start_date,
+             e.locked_reason as event_locked_reason
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id

@@ -2338,27 +2338,34 @@ function displayMyBets(bets) {
     return;
   }
 
-  // Группируем ставки по турнирам (event_name) и сохраняем статус турнира
+  // Группируем ставки по турнирам (event_name) и определяем активность турнира
   const betsByEvent = {};
+  const now = new Date();
+  
   bets.forEach((bet) => {
     const eventName = bet.event_name || "Турнир не указан";
     if (!betsByEvent[eventName]) {
+      // Определяем активность турнира по той же логике, что и в списке турниров
+      const isActive = bet.event_start_date && 
+                      new Date(bet.event_start_date) <= now && 
+                      !bet.event_locked_reason;
+      
       betsByEvent[eventName] = {
-        status: bet.event_status || 'active', // Сохраняем статус турнира
+        isActive: isActive, // true если турнир активный
         bets: []
       };
     }
     betsByEvent[eventName].bets.push(bet);
   });
 
-  // Сортируем турниры: сначала активные (active), потом остальные (archived, completed)
+  // Сортируем турниры: сначала активные, потом остальные
   const sortedEvents = Object.keys(betsByEvent).sort((a, b) => {
-    const statusA = betsByEvent[a].status;
-    const statusB = betsByEvent[b].status;
+    const isActiveA = betsByEvent[a].isActive;
+    const isActiveB = betsByEvent[b].isActive;
     
     // Активные турниры идут первыми
-    if (statusA === 'active' && statusB !== 'active') return -1;
-    if (statusA !== 'active' && statusB === 'active') return 1;
+    if (isActiveA && !isActiveB) return -1;
+    if (!isActiveA && isActiveB) return 1;
     
     // Если оба активные или оба неактивные - сортируем по названию
     return a.localeCompare(b);
