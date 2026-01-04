@@ -81,9 +81,9 @@
 
       <!-- Содержимое вкладки Ставки (двухколонная структура) -->
       <div class="content" id="allbets-content" style="margin-top: -5px">
-        <!-- Левая колонка: Турниры и матчи -->
+        <!-- Турниры -->
         <div
-          id="leftColumn"
+          class="allbets-column tournaments-column"
           style="
             min-width: 0;
             cursor: grab;
@@ -91,7 +91,6 @@
             touch-action: manipulation;
           "
         >
-          <!-- Турниры -->
           <div class="section bet-section bet-section-tournaments">
             <div
               class="tournaments-header"
@@ -132,23 +131,15 @@
               <div class="empty-message">Загружаем турниры...</div>
             </div>
           </div>
-
-          <!-- Мои ставки -->
-          <div class="section bet-section bet-section-bets" style="margin-top: 10px">
-            <h2 class="my-bets-title">💰 Мои ставки</h2>
-            <div class="my-bets-list" id="myBetsList">
-              <div class="empty-message">У вас пока нет ставок</div>
-            </div>
-          </div>
         </div>
 
-        <!-- Правая колонка: Матчи -->
-        <div style="min-width: 0">
+        <!-- Матчи -->
+        <div class="allbets-column matches-column" style="min-width: 0">
           <!-- Матчи -->
           <div
             class="section bet-section bet-section-matches"
             id="matchesSection"
-            style="margin-top: 10px"
+            style=""
           >
             <!-- Див с матчами мне повезет и добавить матч -->
             <div
@@ -271,6 +262,16 @@
               <div class="empty-message">
                 Выберите событие для просмотра матчей
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Мои ставки -->
+        <div class="allbets-column bets-column" style="min-width: 0">
+          <div class="section bet-section bet-section-bets">
+            <h2 class="my-bets-title">💰 Мои ставки</h2>
+            <div class="my-bets-list" id="myBetsList">
+              <div class="empty-message">У вас пока нет ставок</div>
             </div>
           </div>
         </div>

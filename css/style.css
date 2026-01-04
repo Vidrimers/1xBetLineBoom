@@ -855,6 +855,22 @@ button:active {
   gap: 10px;
 }
 
+/* Порядок на десктопе: Турниры слева, Матчи справа, Мои ставки под Турнирами */
+.tournaments-column {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.matches-column {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.bets-column {
+  grid-column: 1;
+  grid-row: 2;
+}
+
 #participants-content,
 #profile-content {
   display: flex;

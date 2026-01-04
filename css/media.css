@@ -14,6 +14,22 @@
     grid-template-columns: 1fr;
   }
 
+  /* Порядок на мобильных: Турниры, Матчи, Мои ставки */
+  .tournaments-column {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .matches-column {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .bets-column {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
   .profile-stats-grid {
     grid-template-columns: 1fr;
   }
