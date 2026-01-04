@@ -2972,5 +2972,51 @@
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно для установки результата финального матча -->
+    <div id="finalMatchResultModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'finalMatchResultModal', closeFinalMatchResultModal)">
+      <div class="modal-content" style="max-width: 600px" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h2>🏆 Результат финального матча</h2>
+          <button class="modal-close" onclick="closeFinalMatchResultModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Кнопки выбора победителя -->
+          <div style="margin-bottom: 20px">
+            <label style="display: block; margin-bottom: 10px; font-weight: 600">
+              Выберите победителя:
+            </label>
+            <div id="finalResultButtonsContainer" style="display: flex; gap: 10px">
+              <!-- Кнопки будут добавлены динамически -->
+            </div>
+          </div>
+
+          <!-- Контейнер для параметров финала -->
+          <div id="finalParametersContainer">
+            <!-- Параметры будут добавлены динамически -->
+          </div>
+
+          <!-- Кнопка сохранения -->
+          <div style="margin-top: 20px; display: flex; gap: 10px">
+            <button
+              onclick="saveFinalMatchResult()"
+              class="form-btn-submit"
+              style="flex: 1"
+            >
+              ✅ Сохранить результат
+            </button>
+            <button
+              onclick="closeFinalMatchResultModal()"
+              class="form-btn-cancel"
+              style="flex: 1"
+            >
+              ❌ Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

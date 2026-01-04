@@ -6113,6 +6113,7 @@ function openFinalMatchResultModal(matchId) {
   }
 
   modal.style.display = "flex";
+  lockBodyScroll(); // Блокируем скролл страницы
 }
 
 /**
@@ -6123,6 +6124,7 @@ function closeFinalMatchResultModal(event) {
 
   const modal = document.getElementById("finalMatchResultModal");
   modal.style.display = "none";
+  unlockBodyScroll(); // Разблокируем скролл страницы
   currentFinalMatchId = null;
   currentFinalResult = null;
 
