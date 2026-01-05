@@ -3329,26 +3329,62 @@ function displayProfile(profile) {
 
   profileContainer.innerHTML = `
     <div class="profile-header">
-      <div class="profile-avatar" style="position: relative;" onmouseover="document.getElementById('avatarEditBtn').style.opacity='1'" onmouseout="document.getElementById('avatarEditBtn').style.opacity='0'">
-        <img src="${avatarSrc}" style="width: 100px; border-radius: 30%;">
-        <button id="avatarEditBtn" onclick="openAvatarModal()" style="
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: transparent;
-          border: none;
-          color: #fff;
-          cursor: pointer;
-          font-size: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        ">📷</button>
+      <div class="profile-avatar-container" onclick="this.classList.toggle('flipped')" style="
+        width: 100px;
+        height: 100px;
+        perspective: 1000px;
+        cursor: pointer;
+        margin: 0 auto;
+      ">
+        <div class="profile-avatar-flipper" style="
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transition: transform 0.6s;
+          transform-style: preserve-3d;
+        ">
+          <!-- Передняя сторона (аватарка) -->
+          <div class="profile-avatar-front" style="
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 30%;
+            overflow: hidden;
+          ">
+            <img src="${avatarSrc}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          
+          <!-- Задняя сторона (кнопка редактирования) -->
+          <div class="profile-avatar-back" style="
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 30%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(44, 50, 63, 0.8);
+          ">
+            <button id="avatarEditBtn" onclick="event.stopPropagation(); openAvatarModal()" style="
+              background: rgba(255, 255, 255, 0.2);
+              border: 2px solid white;
+              color: white;
+              width: 60px;
+              height: 60px;
+              border-radius: 50%;
+              cursor: pointer;
+              font-size: 27px;
+              display: flex;
+              justify-content: center;
+              transition: all 0.3s ease;
+              
+            " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.transform='scale(1)'">📷</button>
+          </div>
+        </div>
       </div>
       <div class="profile-username" onmouseover="document.getElementById('editUsernameBtn').style.display='inline'" onmouseout="document.getElementById('editUsernameBtn').style.display='none'">
         <span id="usernameDisplay">${profile.username}</span>

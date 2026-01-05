@@ -1254,6 +1254,11 @@ button.tab-btn:hover {
   object-fit: cover;
 }
 
+/* Flip эффект для аватарки */
+.profile-avatar-container.flipped .profile-avatar-flipper {
+  transform: rotateY(180deg);
+}
+
 .profile-username {
   font-size: 1.5em;
   font-weight: 600;
