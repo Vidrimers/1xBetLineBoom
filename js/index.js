@@ -3372,6 +3372,12 @@ function displayProfile(profile) {
         <div class="stat-label">✅ Угаданных ставок</div>
         <div class="stat-value">${profile.won_bets}</div>
       </div>
+      <div class="stat-card" style="background: rgba(76, 175, 80, 0.15); border-left: 4px solid #4caf50; cursor: help;" title="${profile.max_win_streak_event ? `Турнир: ${profile.max_win_streak_event}` : 'Нет серии'}">
+        <div class="stat-label">🔥 Угаданных подряд</div>
+        <div class="stat-value" style="color: #4caf50;">${
+          profile.max_win_streak || 0
+        }</div>
+      </div>
       <div class="stat-card lost">
         <div class="stat-label">❌ Неугаданных ставок</div>
         <div class="stat-value">${profile.lost_bets}</div>
@@ -6838,6 +6844,14 @@ async function showUserProfile(userId, username) {
               userData.won_bets || 0
             }</div>
           </div>
+          <div 
+            style="background: rgba(76, 175, 80, 0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; cursor: help;" 
+            title="${userData.max_win_streak_event ? `Турнир: ${userData.max_win_streak_event}` : 'Нет серии'}">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">🔥 Угаданных подряд</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #4caf50;">${
+              userData.max_win_streak || 0
+            }</div>
+          </div>
           <div style="background: #1a1a2e; padding: 15px; border-radius: 8px;">
             <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">Неугаданных</div>
             <div style="font-size: 1.6em; font-weight: bold; color: #f44336;">${
@@ -6854,14 +6868,6 @@ async function showUserProfile(userId, username) {
             <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">🏆 Побед в турнирах</div>
             <div style="font-size: 1.6em; font-weight: bold; color: #ffc107;">${
               userData.tournament_wins || 0
-            }</div>
-          </div>
-          <div 
-            style="background: rgba(76, 175, 80, 0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; cursor: help;" 
-            title="${userData.max_win_streak_event ? `Турнир: ${userData.max_win_streak_event}` : 'Нет серии'}">
-            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">🔥 Угаданных подряд</div>
-            <div style="font-size: 1.6em; font-weight: bold; color: #4caf50;">${
-              userData.max_win_streak || 0
             }</div>
           </div>
         </div>
