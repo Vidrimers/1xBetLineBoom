@@ -1354,6 +1354,9 @@ button.tab-btn:hover {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
 }
 
 .award-card::before {
