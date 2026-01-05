@@ -3050,7 +3050,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     }
 
     const betsData = await response.json();
-    const { rounds, bets, show_bets } = betsData;
+    const { rounds, bets, show_bets, event_name } = betsData;
 
     // Применяем глобальный порядок туров если он есть
     let sortedRounds = rounds;
@@ -3090,6 +3090,27 @@ async function showTournamentParticipantBets(userId, username, eventId) {
 
     document.getElementById("tournamentParticipantAccuracy").innerHTML =
       accuracyHTML;
+
+    // Рассчитываем максимальную серию угаданных ставок подряд в этом турнире
+    let maxStreak = 0;
+    let currentStreak = 0;
+    const completedBetsOrdered = bets
+      .filter(b => !b.is_hidden && (b.result === 'won' || b.result === 'lost'))
+      .sort((a, b) => a.id - b.id);
+
+    completedBetsOrdered.forEach(bet => {
+      if (bet.result === 'won') {
+        currentStreak++;
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
+        }
+      } else {
+        currentStreak = 0;
+      }
+    });
+
+    document.getElementById("tournamentParticipantStreak").innerHTML = 
+      `<span title="Турнир: ${event_name}" style="cursor: help;">🔥 Макс. серия: <strong>${maxStreak}</strong></span>`;
 
     // Определяем завершённые туры (где ВСЕ ставки имеют результат, нет pending)
     const completedRounds = new Set();
@@ -6833,6 +6854,14 @@ async function showUserProfile(userId, username) {
             <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">🏆 Побед в турнирах</div>
             <div style="font-size: 1.6em; font-weight: bold; color: #ffc107;">${
               userData.tournament_wins || 0
+            }</div>
+          </div>
+          <div 
+            style="background: rgba(76, 175, 80, 0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; cursor: help;" 
+            title="${userData.max_win_streak_event ? `Турнир: ${userData.max_win_streak_event}` : 'Нет серии'}">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">🔥 Угаданных подряд</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #4caf50;">${
+              userData.max_win_streak || 0
             }</div>
           </div>
         </div>

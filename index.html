@@ -1531,7 +1531,10 @@
       <div class="modal-content" style="max-width: 900px">
         <div class="modal-header">
           <h2 id="tournamentParticipantBetsTitle">📊 Ставки участника</h2>
-          <div id="tournamentParticipantAccuracy" style="font-size: 0.9em; color: #4caf50; margin-top: 5px;"></div>
+          <div style="display: flex; gap: 15px; margin-top: 5px; font-size: 0.9em;">
+            <div id="tournamentParticipantAccuracy" style="color: #4caf50;"></div>
+            <div id="tournamentParticipantStreak" style="color: #ff9800; cursor: help;"></div>
+          </div>
           <button
             class="modal-close"
             onclick="closeTournamentParticipantBetsModal()"

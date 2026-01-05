@@ -2110,6 +2110,11 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
     const userId = parseInt(req.params.userId);
     const viewerUserId = req.query.viewerId ? parseInt(req.query.viewerId) : null;
 
+    // Получаем название турнира
+    const event = db
+      .prepare("SELECT name FROM events WHERE id = ?")
+      .get(eventId);
+
     // Получаем настройку show_bets пользователя
     const userSettings = db
       .prepare("SELECT show_bets FROM users WHERE id = ?")
@@ -2252,6 +2257,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
       rounds: rounds.length > 0 ? rounds : [],
       bets: allBets,
       show_bets: showBets,
+      event_name: event?.name || 'Турнир',
     });
   } catch (error) {
     console.error(
@@ -3524,6 +3530,76 @@ app.get("/api/user/:userId/profile", (req, res) => {
       .get(userId);
 
     profile.tournament_wins = tournamentWins?.count || 0;
+
+    // Рассчитываем максимальную серию угаданных ставок подряд
+    const allBets = db
+      .prepare(
+        `
+        SELECT 
+          b.id,
+          b.created_at,
+          m.event_id,
+          e.name as event_name,
+          CASE 
+            -- Обычные ставки
+            WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+              CASE 
+                WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                     (b.prediction = 'team2' AND m.winner = 'team2') OR
+                     (b.prediction = 'draw' AND m.winner = 'draw') OR
+                     (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                     (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1
+                ELSE 0
+              END
+            -- Финальные параметры
+            WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+              CASE 
+                WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                ELSE 0
+              END
+            ELSE NULL
+          END as is_won
+        FROM bets b
+        LEFT JOIN matches m ON b.match_id = m.id
+        LEFT JOIN events e ON m.event_id = e.id
+        LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+        WHERE b.user_id = ? AND (m.winner IS NOT NULL OR fpr.id IS NOT NULL)
+        ORDER BY b.created_at ASC
+      `
+      )
+      .all(userId);
+
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let maxStreakEventId = null;
+    let maxStreakEventName = null;
+    let currentStreakEventId = null;
+
+    allBets.forEach(bet => {
+      if (bet.is_won === 1) {
+        currentStreak++;
+        if (currentStreak === 1) {
+          currentStreakEventId = bet.event_id;
+        }
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
+          maxStreakEventId = currentStreakEventId;
+          maxStreakEventName = bet.event_name;
+        }
+      } else {
+        currentStreak = 0;
+        currentStreakEventId = null;
+      }
+    });
+
+    profile.max_win_streak = maxStreak;
+    profile.max_win_streak_event = maxStreakEventName;
 
     res.json(profile);
   } catch (error) {
