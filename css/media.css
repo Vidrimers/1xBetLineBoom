@@ -1465,32 +1465,69 @@
     min-height: 100px;
   }
 
-  .events-participant-item,
-  .participant-item {
+  .participants-list .participant-item {
+    display: grid !important;
+    /* grid-template-columns: 1fr auto; */
+    grid-template-columns: 2fr 1fr;
+    grid-template-areas:
+      "rank avatar"
+      "info avatar";
+    gap: 10px;
+    align-items: center;
+  }
+
+  .participants-list .participant-rank {
+    grid-area: rank;
+    font-size: 1em;
+    justify-self: start;
+  }
+  
+  .participants-list .participant-avatar {
+    grid-area: avatar;
+    margin: auto;
+    align-self: center;
+    justify-self: center;
+    width: 80px;
+    height: 80px;
+  }
+  
+  .participants-list .participant-info {
+    grid-area: info;
+    justify-self: start;
+  }
+
+  .participants-list .participant-name {
+    font-size: 1em;
+  }
+  
+  .participants-list .participant-stats {
+    text-align: left;
+  }
+
+  .events-participant-item {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
 
-  .events-participant-item .participant-rank,
-  .participant-rank {
+  .events-participant-item .participant-rank {
     font-size: 1em;
   }
-  .events-participant-item .participant-avatar,
-  .participant-avatar {
+  
+  .events-participant-item .participant-avatar {
     margin: 0 auto;
   }
-  .events-participant-item .participant-points,
-  .participant-points {
+  
+  .events-participant-item .participant-points {
     margin: 0 auto;
   }
-  .events-participant-item .participant-bets-count,
-  .participant-bets-count {
+  
+  .events-participant-item .participant-bets-count {
     width: 70px;
     font-size: 1em;
     margin: 0 auto;
   }
-  .events-participant-item .participant-name,
-  .participant-name {
+  
+  .events-participant-item .participant-name {
     font-size: 1em;
   }
 
@@ -1613,6 +1650,11 @@
 
   .participants-list {
     grid-template-columns: repeat(1, minmax(150px, 1fr));
+  }
+
+  .participants-list .participant-avatar {
+    width: 60px;
+    height: 60px;
   }
 
   .event-item {
