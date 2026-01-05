@@ -3177,6 +3177,9 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     // Открываем модальное окно
     document.getElementById("tournamentParticipantBetsModal").style.display =
       "flex";
+    
+    // Блокируем прокрутку страницы
+    document.body.style.overflow = 'hidden';
   } catch (error) {
     console.error("Ошибка при загрузке ставок турнира:", error);
     alert("Ошибка при загрузке ставок");
@@ -3280,6 +3283,9 @@ function closeTournamentParticipantBetsModal() {
     "none";
   window.currentTournamentBets = null;
   window.currentTournamentRounds = null;
+  
+  // Разблокируем прокрутку страницы
+  document.body.style.overflow = '';
 }
 
 // ===== ПРОФИЛЬ =====
@@ -6939,7 +6945,7 @@ async function showUserProfile(userId, username) {
                       : icon;
 
                     return `
-                    <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;height: 200px;display: flex;flex-direction: column;justify-content: space-evenly;">
+                    <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.5) 100%), url('img/winner.jpg') center / cover; border: 2px solid rgba(212, 175, 55, 0.7); border-radius: 8px; padding: 10px; text-align: center;height: 200px;display: flex;flex-direction: column;justify-content: space-between;">
                     <div class="award-icon">${awardIcon}</div>
                       <div style="color: #fff; font-weight: 600; margin-bottom: 4px; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);">Победитель в турнире "${award.event_name}"</div>
                       <div style="color: #ffe0b2; font-size: 0.75em; margin-top: 4px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);">${awardDate}</div>
@@ -6982,13 +6988,20 @@ async function showUserProfile(userId, username) {
       "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;";
     overlay.innerHTML = `
       <div class="user-profile-modal" style="position: relative; padding: 5px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; scrollbar-width: none;">
-        <button class="close-profile-btn" onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 0; right: 0; background: none; border: none; color: #999; font-size: 24px; cursor: pointer;">×</button>
+        <button class="close-profile-btn" onclick="this.parentElement.parentElement.remove(); document.body.style.overflow = '';" style="position: absolute; top: 0; right: 0; background: none; border: none; color: #999; font-size: 24px; cursor: pointer;">×</button>
         ${profileHTML}
       </div>
     `;
     overlay.onclick = (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) {
+        overlay.remove();
+        document.body.style.overflow = '';
+      }
     };
+    
+    // Блокируем прокрутку страницы
+    document.body.style.overflow = 'hidden';
+    
     document.body.appendChild(overlay);
   } catch (error) {
     console.error("Ошибка при загрузке профиля:", error);
