@@ -274,9 +274,6 @@ button:active {
 }
 
 .close-profile-btn {
-  position: sticky !important;
-  top: 0;
-  left: 100%;
   transition: transform 0.35s ease !important;
 }
 .close-profile-btn:hover {
