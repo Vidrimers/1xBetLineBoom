@@ -1468,9 +1468,8 @@
   .participants-list .participant-item {
     display: grid !important;
     /* grid-template-columns: 1fr auto; */
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 3fr 1fr;
     grid-template-areas:
-      "rank avatar"
       "info avatar";
     gap: 10px;
     align-items: center;
@@ -1480,6 +1479,7 @@
     grid-area: rank;
     font-size: 1em;
     justify-self: start;
+    display: none;
   }
   
   .participants-list .participant-avatar {
@@ -1498,6 +1498,7 @@
 
   .participants-list .participant-name {
     font-size: 1em;
+    margin-bottom: 5px;
   }
   
   .participants-list .participant-stats {
