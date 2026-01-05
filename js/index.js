@@ -2748,13 +2748,17 @@ function displayParticipants(participants) {
     return;
   }
 
-  // Сортируем по выигранным ставкам в убывающем порядке
-  // При одинаковых won_bets сортируем по меньшему количеству проигрышей
+  // Сортируем по количеству побед в турнирах, затем по имени
   const sortedParticipants = [...participants].sort((a, b) => {
-    if ((b.won_bets || 0) !== (a.won_bets || 0)) {
-      return (b.won_bets || 0) - (a.won_bets || 0); // Выигрыши: больше → выше
+    const aWins = (a.won_icons || []).length;
+    const bWins = (b.won_icons || []).length;
+    
+    if (bWins !== aWins) {
+      return bWins - aWins; // Больше побед в турнирах → выше
     }
-    return (a.lost_bets || 0) - (b.lost_bets || 0); // Проигрыши: меньше → выше
+    
+    // При равном количестве побед сортируем по имени (алфавитный порядок)
+    return a.username.localeCompare(b.username, 'ru');
   });
 
   participantsList.innerHTML = sortedParticipants
@@ -2799,10 +2803,6 @@ function displayParticipants(participants) {
           <span>В ожидании: ${participant.pending_bets || 0}</span>
         </div>
       </div>
-      <div class="participant-points">очки
-      <div class="participant-bets-count">${
-        participant.won_bets || 0
-      }</div></div>
     </div>
 `;
     })
