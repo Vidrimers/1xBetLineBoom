@@ -2742,6 +2742,12 @@ async function loadParticipants() {
 function displayParticipants(participants) {
   const participantsList = document.getElementById("participantsList");
 
+  // Обновляем заголовок с количеством участников
+  const participantsHeader = document.getElementById('participantsHeader');
+  if (participantsHeader) {
+    participantsHeader.textContent = `👥 Всего участников: ${participants.length}`;
+  }
+
   if (participants.length === 0) {
     participantsList.innerHTML =
       '<div class="empty-message">Участники не найдены</div>';
