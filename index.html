@@ -655,6 +655,59 @@
                 </button>
               </div>
             </div>
+
+            <!-- Показывать ставки другим -->
+            <div
+              class="settings-item"
+              style="
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                margin-bottom: 15px;
+                border-left: 3px solid #9c27b0;
+              "
+            >
+              <div>
+                <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
+                  👁️ Показывать ставки другим
+                </h3>
+                <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
+                  Выберите, когда другие пользователи смогут видеть ваши ставки
+                </p>
+                <select
+                  id="showBetsSelect"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid #9c27b0;
+                    border-radius: 5px;
+                    color: #aaa;
+                    font-size: 14px;
+                    cursor: pointer;
+                    margin-bottom: 12px;
+                  "
+                >
+                  <option value="always">Да (всегда показывать)</option>
+                  <option value="after_start">Только после начала матча</option>
+                </select>
+                <button
+                  onclick="saveShowBetsSettings()"
+                  style="
+                    padding: 10px 20px;
+                    background: #9c27b0;
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    width: 100%;
+                  "
+                >
+                  💾 Сохранить
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Админ-панель в настройках -->

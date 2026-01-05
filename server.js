@@ -1123,6 +1123,14 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// Миграция: добавляем show_bets если её нет
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN show_bets TEXT DEFAULT 'always'`);
+  console.log("✅ Колонка show_bets добавлена в таблицу users");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
 // Таблица для связки telegram username → chat_id (для отправки личных сообщений)
 db.exec(`
   CREATE TABLE IF NOT EXISTS telegram_users (
@@ -2100,6 +2108,15 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
   try {
     const eventId = parseInt(req.params.eventId);
     const userId = parseInt(req.params.userId);
+    const viewerUserId = req.query.viewerId ? parseInt(req.query.viewerId) : null;
+
+    // Получаем настройку show_bets пользователя
+    const userSettings = db
+      .prepare("SELECT show_bets FROM users WHERE id = ?")
+      .get(userId);
+    
+    const showBets = userSettings?.show_bets || 'always';
+    const isOwner = viewerUserId === userId;
 
     // Получаем все туры для этого события (из таблицы matches)
     const rounds = db
@@ -2126,6 +2143,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
           m.team2_name as team2,
           m.winner,
           m.round as round,
+          m.match_date,
           0 as is_final_bet,
           CASE 
             WHEN b.prediction = 'team1' THEN m.team1_name
@@ -2167,6 +2185,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
           m.team2_name as team2,
           m.winner,
           m.round as round,
+          m.match_date,
           1 as is_final_bet,
           b.parameter_type,
           CASE 
@@ -2210,11 +2229,29 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
       .all(eventId, userId);
 
     // Объединяем обе таблицы
-    const allBets = [...bets, ...finalBets];
+    let allBets = [...bets, ...finalBets];
+
+    // Если show_bets = 'after_start' и не владелец, помечаем скрытые ставки
+    if (showBets === 'after_start' && !isOwner) {
+      const now = new Date();
+      allBets = allBets.map(bet => {
+        if (!bet.match_date) {
+          return { ...bet, is_hidden: true };
+        }
+        const matchDate = new Date(bet.match_date);
+        if (matchDate > now) {
+          return { ...bet, is_hidden: true };
+        }
+        return { ...bet, is_hidden: false };
+      });
+    } else {
+      allBets = allBets.map(bet => ({ ...bet, is_hidden: false }));
+    }
 
     res.json({
       rounds: rounds.length > 0 ? rounds : [],
       bets: allBets,
+      show_bets: showBets,
     });
   } catch (error) {
     console.error(
@@ -4118,6 +4155,93 @@ app.get("/api/user/:userId/notifications", (req, res) => {
         user.telegram_group_reminders_enabled === 1,
       theme: user.theme || 'theme-default',
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/user/:userId/show-bets - Получить настройку показа ставок
+app.get("/api/user/:userId/show-bets", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = db
+      .prepare("SELECT show_bets FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({
+      show_bets: user.show_bets || 'always',
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/user/:userId/show-bets - Сохранить настройку показа ставок
+app.put("/api/user/:userId/show-bets", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { show_bets } = req.body;
+
+    if (!show_bets || !['always', 'after_start'].includes(show_bets)) {
+      return res.status(400).json({ error: "Неверное значение show_bets" });
+    }
+
+    const user = db
+      .prepare("SELECT username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    db.prepare("UPDATE users SET show_bets = ? WHERE id = ?").run(show_bets, userId);
+
+    // Отправляем уведомление админу
+    try {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const time = new Date().toLocaleString("ru-RU", {
+          timeZone: "Europe/Moscow",
+        });
+
+        const showBetsNames = {
+          'always': 'Да (всегда показывать)',
+          'after_start': 'Только после начала матча'
+        };
+
+        const adminMessage = `👁️ ИЗМЕНЕНИЕ НАСТРОЙКИ ПОКАЗА СТАВОК
+
+👤 Пользователь: ${user.username}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Новая настройка: ${showBetsNames[show_bets] || show_bets}
+🕐 Время: ${time}`;
+
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: adminMessage,
+            }),
+          }
+        );
+      }
+    } catch (err) {
+      console.error(
+        "⚠️ Ошибка отправки уведомления админу об изменении настройки показа ставок:",
+        err.message
+      );
+    }
+
+    res.json({ success: true, show_bets });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

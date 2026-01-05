@@ -3035,10 +3035,10 @@ async function showTournamentParticipantBets(userId, username, eventId) {
   try {
     console.log("Загружаем ставки для юзера:", userId, "в турнире:", eventId);
 
-    // Получаем ставки участника в турнире
-    const response = await fetch(
-      `/api/event/${eventId}/participant/${userId}/bets`
-    );
+    // Получаем ставки участника в турнире, передаем viewerId
+    const viewerId = currentUser?.id || null;
+    const url = `/api/event/${eventId}/participant/${userId}/bets${viewerId ? `?viewerId=${viewerId}` : ''}`;
+    const response = await fetch(url);
 
     console.log("Статус ответа:", response.status);
 
@@ -3050,7 +3050,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     }
 
     const betsData = await response.json();
-    const { rounds, bets } = betsData;
+    const { rounds, bets, show_bets } = betsData;
 
     // Применяем глобальный порядок туров если он есть
     let sortedRounds = rounds;
@@ -3176,7 +3176,9 @@ function displayTournamentParticipantBets(bets) {
     .map(
       (bet) => `
     <div style="background: #1a1a2e; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid ${
-      bet.result === "won"
+      bet.is_hidden
+        ? "#9e9e9e"
+        : bet.result === "won"
         ? "#4caf50"
         : bet.result === "lost"
         ? "#f44336"
@@ -3184,30 +3186,40 @@ function displayTournamentParticipantBets(bets) {
     };">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <strong style="color: #7ab0e0;">${bet.team1} vs ${bet.team2}</strong>
-        <span style="background: ${
-          bet.result === "won"
-            ? "#4caf50"
-            : bet.result === "lost"
-            ? "#f44336"
-            : "#ff9800"
-        }; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
-          ${
+        ${bet.is_hidden ? 
+          `<span style="background: #9e9e9e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
+            🔒 Скрыто
+          </span>` :
+          `<span style="background: ${
             bet.result === "won"
-              ? "✅ Угадано"
+              ? "#4caf50"
               : bet.result === "lost"
-              ? "❌ Неугадано"
-              : "⏳ В ожидании"
-          }
-        </span>
-      </div>
-      <div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
-        Ставка: <strong>${bet.prediction_display || bet.prediction}</strong>
-        ${
-          bet.result !== "pending"
-            ? ` | Результат: <strong>${bet.actual_result}</strong>`
-            : ""
+              ? "#f44336"
+              : "#ff9800"
+          }; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
+            ${
+              bet.result === "won"
+                ? "✅ Угадано"
+                : bet.result === "lost"
+                ? "❌ Неугадано"
+                : "⏳ В ожидании"
+            }
+          </span>`
         }
       </div>
+      ${bet.is_hidden ?
+        `<div style="color: #ffa726; font-size: 0.9em; font-style: italic;">
+          🔒 Ставка скрыта до начала матча
+        </div>` :
+        `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+          Ставка: <strong>${bet.prediction_display || bet.prediction}</strong>
+          ${
+            bet.result !== "pending"
+              ? ` | Результат: <strong>${bet.actual_result}</strong>`
+              : ""
+          }
+        </div>`
+      }
       ${
         bet.round
           ? `<div style="color: #666; font-size: 0.85em;">${bet.round}</div>`
@@ -4987,6 +4999,9 @@ async function loadSettings() {
 
     // Инициализируем часовые поясы
     await initTimezoneSettings();
+
+    // Загружаем настройку показа ставок
+    await loadShowBetsSettings();
   } catch (error) {
     console.error("Ошибка при загрузке настроек:", error);
     // Не очищаем контейнер, чтобы статический HTML остался видимым
@@ -5256,6 +5271,26 @@ async function loadUserTimezone() {
   }
 }
 
+// Загрузить настройку "Показывать ставки другим"
+async function loadShowBetsSettings() {
+  try {
+    if (!currentUser) return;
+
+    const response = await fetch(`/api/user/${currentUser.id}/show-bets`);
+    const data = await response.json();
+
+    if (response.ok) {
+      const select = document.getElementById("showBetsSelect");
+      if (select) {
+        select.value = data.show_bets || "always";
+        console.log(`✅ Настройка "Показывать ставки" загружена: ${data.show_bets}`);
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка при загрузке настройки показа ставок:", error);
+  }
+}
+
 // Сохранить часовой пояс пользователя
 async function saveTimezoneSettings() {
   try {
@@ -5317,6 +5352,54 @@ async function saveTimezoneSettings() {
     console.error("Ошибка при сохранении часового пояса:", error);
     alert("Ошибка при сохранении");
     btn.textContent = "💾 Сохранить часовой пояс";
+    btn.disabled = false;
+  }
+}
+
+// Сохранить настройку "Показывать ставки другим"
+async function saveShowBetsSettings() {
+  try {
+    if (!currentUser) {
+      alert("Сначала войдите в систему");
+      return;
+    }
+
+    const select = document.getElementById("showBetsSelect");
+    const showBets = select.value;
+
+    const btn = event.target;
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch(`/api/user/${currentUser.id}/show-bets`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        show_bets: showBets,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      currentUser.show_bets = showBets;
+      btn.textContent = "✅ Сохранено!";
+      console.log(`✅ Настройка "Показывать ставки" сохранена: ${showBets}`);
+
+      setTimeout(() => {
+        btn.textContent = "💾 Сохранить";
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      alert("Ошибка: " + result.error);
+      btn.textContent = "💾 Сохранить";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении настройки:", error);
+    alert("Ошибка при сохранении");
+    const btn = event.target;
+    btn.textContent = "💾 Сохранить";
     btn.disabled = false;
   }
 }
