@@ -1494,15 +1494,24 @@
   .participants-list .participant-info {
     grid-area: info;
     justify-self: start;
+    display: grid;
   }
 
   .participants-list .participant-name {
     font-size: 1em;
     margin-bottom: 5px;
+    order: 1;
   }
   
   .participants-list .participant-stats {
     text-align: left;
+    order: 2;
+    margin-bottom: 5px;
+  }
+
+  .participants-list .participant-tournaments{
+    margin-bottom: 5px;
+    order: 3;
   }
 
   .events-participant-item {
