@@ -7849,11 +7849,24 @@ function initPageScrollOnHeaders() {
     if (!element) return;
 
     let startY = 0;
+    let lastY = 0;
+    let lastTime = 0;
+    let velocity = 0;
     let isDragging = false;
+    let momentumAnimation = null;
 
     element.addEventListener('touchstart', (e) => {
       startY = e.touches[0].clientY;
+      lastY = startY;
+      lastTime = Date.now();
+      velocity = 0;
       isDragging = true;
+      
+      // Останавливаем предыдущую анимацию инерции
+      if (momentumAnimation) {
+        cancelAnimationFrame(momentumAnimation);
+        momentumAnimation = null;
+      }
     }, { passive: false });
 
     element.addEventListener('touchmove', (e) => {
@@ -7864,16 +7877,54 @@ function initPageScrollOnHeaders() {
       e.stopPropagation();
 
       const currentY = e.touches[0].clientY;
-      const deltaY = startY - currentY;
+      const currentTime = Date.now();
+      const deltaY = lastY - currentY;
+      const deltaTime = currentTime - lastTime;
 
-      // Скроллим страницу вместо контента внутри
+      // Вычисляем скорость (пиксели в миллисекунду)
+      if (deltaTime > 0) {
+        velocity = deltaY / deltaTime;
+      }
+
+      // Скроллим страницу
       window.scrollBy(0, deltaY);
-      startY = currentY;
+      
+      lastY = currentY;
+      lastTime = currentTime;
     }, { passive: false });
 
     element.addEventListener('touchend', () => {
       isDragging = false;
+      
+      // Запускаем инерционный скролл если скорость достаточная
+      if (Math.abs(velocity) > 0.1) {
+        startMomentumScroll(velocity);
+      }
     }, { passive: false });
+
+    function startMomentumScroll(initialVelocity) {
+      let currentVelocity = initialVelocity;
+      const deceleration = 0.95; // Коэффициент замедления (0.95 = 5% замедление за кадр)
+      const minVelocity = 0.1; // Минимальная скорость для продолжения
+
+      function animate() {
+        if (Math.abs(currentVelocity) < minVelocity) {
+          momentumAnimation = null;
+          return;
+        }
+
+        // Скроллим с текущей скоростью
+        window.scrollBy(0, currentVelocity * 16); // 16ms ≈ 1 кадр при 60fps
+        
+        // Замедляем
+        currentVelocity *= deceleration;
+
+        // Продолжаем анимацию
+        momentumAnimation = requestAnimationFrame(animate);
+      }
+
+      animate();
+    }
   });
 }
 
