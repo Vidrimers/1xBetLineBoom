@@ -7836,6 +7836,54 @@ displayMatches = function (...args) {
   return result;
 };
 
+// ===== ОБРАБОТКА TOUCH СОБЫТИЙ ДЛЯ СКРОЛЛА СТРАНИЦЫ =====
+
+function initPageScrollOnHeaders() {
+  const elements = [
+    document.querySelector('.tournaments-header'),
+    document.querySelector('.matches-container'), // Весь контейнер, а не только h2
+    document.querySelector('.my-bets-title')
+  ];
+
+  elements.forEach(element => {
+    if (!element) return;
+
+    let startY = 0;
+    let isDragging = false;
+
+    element.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+      isDragging = true;
+    }, { passive: false });
+
+    element.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+
+      // Предотвращаем стандартный скролл контейнера
+      e.preventDefault();
+      e.stopPropagation();
+
+      const currentY = e.touches[0].clientY;
+      const deltaY = startY - currentY;
+
+      // Скроллим страницу вместо контента внутри
+      window.scrollBy(0, deltaY);
+      startY = currentY;
+    }, { passive: false });
+
+    element.addEventListener('touchend', () => {
+      isDragging = false;
+    }, { passive: false });
+  });
+}
+
+// Инициализируем при загрузке
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPageScrollOnHeaders);
+} else {
+  initPageScrollOnHeaders();
+}
+
 // ===== ФУНКЦИИ ДЛЯ ТЕРМИНАЛА =====
 
 let terminalAutoScroll = true;

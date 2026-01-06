@@ -1452,7 +1452,7 @@
   .section.bet-section {
     max-height: 80vh;
     /* margin: 5px 25px 0; */
-    margin: 5px 35px 0 0;
+    margin: 5px 15px 0 15px;
   }
 
   .round-filter-btn {
