@@ -285,6 +285,8 @@
 
   .settings-container {
     gap: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .setting-item,
@@ -757,12 +759,17 @@
 
   .settings-container {
     gap: 6px;
+    /* grid-template-columns:  */
   }
 
   .setting-item,
   .settings-item {
     min-width: 100%;
     padding: 12px;
+  }
+
+  .settings-item-content-wrapper{
+    min-width: 100% !important;
   }
 
   .setting-label {
@@ -1052,6 +1059,7 @@
 @media (max-width: 500px) {
   .settings-container {
     /* flex-direction: column; */
+    grid-template-columns: 1fr;
   }
 
   .setting-item {
