@@ -1322,9 +1322,14 @@ async function displayTournamentWinner(eventId) {
     }
 
     const { tournament, winner } = data;
-    const avatarPath = winner.avatar_path
-      ? `./img/${winner.avatar_path}`
-      : "./img/default-avatar.jpg";
+    
+    // Правильно формируем путь к аватарке
+    let avatarPath = "/img/default-avatar.jpg";
+    if (winner.avatar_path) {
+      avatarPath = `/img/${winner.avatar_path}`;
+    } else if (winner.avatar) {
+      avatarPath = winner.avatar; // base64 или полный путь
+    }
 
     console.log(`✅ Отображение победителя:`, winner.username);
 
@@ -1337,7 +1342,7 @@ async function displayTournamentWinner(eventId) {
       <div class="tournament-winner-container">
         <div class="tournament-winner-card">
           <div class="winner-header">
-            ${displayIcon} Победитель турнира "${tournament.name}"
+            ${displayIcon} "${tournament.name}"
           </div>
           
           <div class="winner-content">
@@ -1349,10 +1354,7 @@ async function displayTournamentWinner(eventId) {
               <div class="winner-name">${winner.username}</div>
               
               <div class="winner-stats">
-                <div class="stat-item">
-                  <span class="stat-label">Правильных прогнозов:</span>
-                  <span class="stat-value">${winner.won_bets_count}</span>
-                </div>
+                
                 
                 <div class="stat-item">
                   <span class="stat-label">Награда:</span>

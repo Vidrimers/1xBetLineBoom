@@ -2243,6 +2243,7 @@ input:checked + .slider:before {
   width: 100%;
   max-width: 500px;
   max-height: 40vh;
+  max-height: 100%;
   background: linear-gradient(
     135deg,
     rgba(58, 123, 213, 0.15) 0%,

@@ -1904,7 +1904,7 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
       .prepare(
         `
         SELECT ta.id, ta.user_id, ta.event_id, ta.event_name, ta.won_bets, ta.awarded_at as created_at, 
-               u.username, u.avatar_path
+               u.username, u.avatar_path, u.avatar
         FROM tournament_awards ta
         JOIN users u ON ta.user_id = u.id
         WHERE ta.event_id = ?
@@ -1924,9 +1924,10 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
         event_id: tournamentAward.event_id,
         username: tournamentAward.username,
         avatar_path: tournamentAward.avatar_path,
+        avatar: tournamentAward.avatar,
         won_bets_count: tournamentAward.won_bets,
         created_at: tournamentAward.created_at,
-        description: `Победитель турнира "${tournamentAward.event_name}"`,
+        description: `"${event.name}"`, // Используем актуальное название из events
       };
 
       return res.json({
@@ -1939,7 +1940,7 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
     const award = db
       .prepare(
         `
-        SELECT a.id, a.user_id, a.event_id, a.description, a.created_at, u.username, u.avatar_path
+        SELECT a.id, a.user_id, a.event_id, a.description, a.created_at, u.username, u.avatar_path, u.avatar
         FROM awards a
         JOIN users u ON a.user_id = u.id
         WHERE a.event_id = ?
@@ -1976,7 +1977,7 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
 
       // Получаем данные пользователя отдельно
       const user = db
-        .prepare("SELECT id, username, avatar_path FROM users WHERE id = ?")
+        .prepare("SELECT id, username, avatar_path, avatar FROM users WHERE id = ?")
         .get(awardWithoutJoin.user_id);
 
       if (!user) {
@@ -2006,6 +2007,7 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
         ...awardWithoutJoin,
         username: user.username,
         avatar_path: user.avatar_path,
+        avatar: user.avatar,
         won_bets_count: wonBetsResult?.won_count || 0,
       };
 

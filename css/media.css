@@ -793,10 +793,6 @@
     max-width: 95%;
   }
 
-  .winner-header {
-    font-size: 0.95em;
-  }
-
   .winner-content {
     gap: 10px;
   }
@@ -813,10 +809,10 @@
   .winner-stats {
     padding: 10px;
     gap: 6px;
-  }
+    display: grid;
+    align-items: flex-start;
+    grid-template-columns: 1fr auto;
 
-  .stat-item {
-    font-size: 0.8em;
   }
 
   .stat-label {
@@ -829,7 +825,7 @@
 
   .award-description {
     font-size: 0.8em;
-    max-width: 120px;
+    max-width: 250px;
   }
 
   .no-winner-message {
@@ -864,7 +860,7 @@
   }
 
   .stat-label {
-    font-size: 0.75em;
+    font-size: 0.9em;
   }
 
   .stat-value {
@@ -995,21 +991,22 @@
   }
 
   .winner-header {
-    font-size: 1.2em;
+    font-size: 1em;
   }
 
   .winner-avatar {
-    width: 120px;
-    height: 120px;
+    width: 80px;
+    height: 80px;
   }
 
   .winner-name {
-    font-size: 1.5em;
+    font-size: 1.3em;
   }
 
   .stat-item {
     flex-direction: column;
     align-items: flex-start;
+    font-size: 0.8em;
   }
 
   .stat-value {
@@ -1018,6 +1015,7 @@
 
   .award-description {
     text-align: left;
+    font-size: 1.1em;
   }
 
   .no-winner-message {
@@ -1468,7 +1466,7 @@
   .participants-list .participant-item {
     display: grid !important;
     /* grid-template-columns: 1fr auto; */
-    grid-template-columns: 3fr 1fr;
+    grid-template-columns: 3fr 2fr;
     grid-template-areas:
       "info avatar";
     gap: 10px;
@@ -1996,7 +1994,7 @@
 
   .award-description {
     font-size: 0.7em;
-    max-width: 100px;
+    /* max-width: 100px; */
   }
 
   .no-winner-message {
