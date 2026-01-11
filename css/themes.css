@@ -486,6 +486,121 @@ body.theme-leagueEurope #avatarEditBtn {
   box-shadow: none !important;
 }
 
+/* === Стили для tab-btn (вкладки) === */
+/* Hacker Green */
+body.theme-hacker-green .tab-btn {
+  color: #00ff00 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(0, 255, 0, 0.4) inset !important;
+}
+
+body.theme-hacker-green .tab-btn:hover {
+  color: #00ff00 !important;
+  background: rgba(0, 255, 0, 0.1) !important;
+}
+
+body.theme-hacker-green .tab-btn.active {
+  color: #00ff00 !important;
+  background: rgba(0, 255, 0, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(0, 255, 0, 0.6) !important;
+}
+
+/* Solarized */
+body.theme-solarized .tab-btn {
+  color: #268bd2 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(38, 139, 210, 0.4) inset !important;
+}
+
+body.theme-solarized .tab-btn:hover {
+  color: #2aa198 !important;
+  background: rgba(38, 139, 210, 0.1) !important;
+}
+
+body.theme-solarized .tab-btn.active {
+  color: #2aa198 !important;
+  background: rgba(38, 139, 210, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(38, 139, 210, 0.6) !important;
+}
+
+/* Matrix */
+body.theme-matrix .tab-btn {
+  color: #00ff41 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(0, 255, 65, 0.4) inset !important;
+}
+
+body.theme-matrix .tab-btn:hover {
+  color: #00ff41 !important;
+  background: rgba(0, 255, 65, 0.1) !important;
+}
+
+body.theme-matrix .tab-btn.active {
+  color: #00ff41 !important;
+  background: rgba(0, 255, 65, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(0, 255, 65, 0.6) !important;
+}
+
+/* Cyberpunk */
+body.theme-cyberpunk .tab-btn {
+  color: #ff00ff !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(255, 0, 255, 0.4) inset !important;
+}
+
+body.theme-cyberpunk .tab-btn:hover {
+  color: #00ffff !important;
+  background: rgba(255, 0, 255, 0.1) !important;
+}
+
+body.theme-cyberpunk .tab-btn.active {
+  color: #00ffff !important;
+  background: rgba(255, 0, 255, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.6) !important;
+}
+
+/* League Champions */
+body.theme-leagueChampions .tab-btn {
+  color: #3b82f6 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(59, 130, 246, 0.4) inset !important;
+}
+
+body.theme-leagueChampions .tab-btn:hover {
+  color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+body.theme-leagueChampions .tab-btn.active {
+  color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.6) !important;
+}
+
+/* League Europe */
+body.theme-leagueEurope .tab-btn {
+  color: #ffd700 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(255, 215, 0, 0.4) inset !important;
+}
+
+body.theme-leagueEurope .tab-btn:hover {
+  color: #ffed4e !important;
+  background: rgba(255, 215, 0, 0.1) !important;
+}
+
+body.theme-leagueEurope .tab-btn.active {
+  color: #ffed4e !important;
+  background: rgba(255, 215, 0, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6) !important;
+}
+
 /* === Кнопки фильтрации туров === */
 /* Обычные кнопки туров - прозрачные */
 body.theme-hacker-green .round-filter-btn,
