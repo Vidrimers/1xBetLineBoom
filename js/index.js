@@ -5021,6 +5021,38 @@ async function deleteUser(userId, username) {
   }
 }
 
+// Тест уведомлений в группу
+async function testGroupNotification() {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/test-group-notification", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    console.log("✅ Тестовое уведомление отправлено в группу");
+  } catch (error) {
+    console.error("Ошибка при отправке тестового уведомления:", error);
+    alert("Ошибка при отправке уведомления");
+  }
+}
+
 // Загрузить настройки
 async function loadSettings() {
   if (!currentUser) {

@@ -5544,6 +5544,60 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : "📱 T
   }
 });
 
+// POST /api/admin/test-group-notification - Отправить тестовое уведомление в группу
+app.post("/api/admin/test-group-notification", async (req, res) => {
+  const { username: adminUsername } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Получаем пользователей с включенными напоминаниями в группе
+    const usersWithReminders = db
+      .prepare(
+        "SELECT username, telegram_username FROM users WHERE telegram_group_reminders_enabled = 1"
+      )
+      .all();
+
+    // Создаём список упоминаний
+    const mentions = usersWithReminders
+      .map((user) =>
+        user.telegram_username ? `@${user.telegram_username}` : user.username
+      )
+      .join(", ");
+
+    // Формируем тестовое сообщение
+    const testMessage = `⏰ <b>🧪 ТЕСТОВОЕ НАПОМИНАНИЕ</b>
+
+Это тестовое сообщение для проверки уведомлений в группе.
+
+Матч начнётся <b>20.01.2026 в 18:30</b>
+
+⚽ <b>Реал Мадрид</b> vs <b>Барселона</b>
+🏆 Турнир: Лига Чемпионов 2024/25
+
+👥 <b>Пользователи с включенными напоминаниями:</b>
+${mentions || "Нет пользователей"}
+
+💬 Не забудьте сделать прогноз!
+
+🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>
+
+<i>Это тестовое сообщение отправлено администратором</i>`;
+
+    // Отправляем в группу
+    await sendGroupNotification(testMessage);
+
+    console.log("✅ Тестовое уведомление отправлено в группу");
+    res.json({ success: true, message: "Тестовое уведомление отправлено" });
+  } catch (error) {
+    console.error("Ошибка при отправке тестового уведомления:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/notify-illegal-bet - уведомление админу о попытке запретной ставки
 app.post("/api/admin/notify-illegal-bet", async (req, res) => {
   const { username, team1, team2, prediction, matchStatus } = req.body;
