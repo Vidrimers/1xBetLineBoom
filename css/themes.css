@@ -430,6 +430,151 @@ body.theme-leagueEurope .user-profile-modal {
   box-shadow: 0 0 35px rgba(255, 215, 0, 0.5);
 }
 
+/* === Исключения для bet-delete-btn во всех темах === */
+body.theme-hacker-green .bet-delete-btn,
+body.theme-solarized .bet-delete-btn,
+body.theme-matrix .bet-delete-btn,
+body.theme-cyberpunk .bet-delete-btn,
+body.theme-leagueChampions .bet-delete-btn,
+body.theme-leagueEurope .bet-delete-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .bet-delete-btn:hover,
+body.theme-solarized .bet-delete-btn:hover,
+body.theme-matrix .bet-delete-btn:hover,
+body.theme-cyberpunk .bet-delete-btn:hover,
+body.theme-leagueChampions .bet-delete-btn:hover,
+body.theme-leagueEurope .bet-delete-btn:hover {
+  background: rgba(244, 67, 54, 0.2) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* === Исключения для auth-btn.logout-mode во всех темах === */
+body.theme-hacker-green .auth-btn.logout-mode,
+body.theme-solarized .auth-btn.logout-mode,
+body.theme-matrix .auth-btn.logout-mode,
+body.theme-cyberpunk .auth-btn.logout-mode,
+body.theme-leagueChampions .auth-btn.logout-mode,
+body.theme-leagueEurope .auth-btn.logout-mode {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .auth-btn.logout-mode:hover,
+body.theme-solarized .auth-btn.logout-mode:hover,
+body.theme-matrix .auth-btn.logout-mode:hover,
+body.theme-cyberpunk .auth-btn.logout-mode:hover,
+body.theme-leagueChampions .auth-btn.logout-mode:hover,
+body.theme-leagueEurope .auth-btn.logout-mode:hover {
+  box-shadow: none !important;
+}
+
+/* === Исключения для avatarEditBtn во всех темах === */
+body.theme-hacker-green #avatarEditBtn,
+body.theme-solarized #avatarEditBtn,
+body.theme-matrix #avatarEditBtn,
+body.theme-cyberpunk #avatarEditBtn,
+body.theme-leagueChampions #avatarEditBtn,
+body.theme-leagueEurope #avatarEditBtn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* === Кнопки фильтрации туров === */
+/* Обычные кнопки туров - прозрачные */
+body.theme-hacker-green .round-filter-btn,
+body.theme-solarized .round-filter-btn,
+body.theme-matrix .round-filter-btn,
+body.theme-cyberpunk .round-filter-btn,
+body.theme-leagueChampions .round-filter-btn,
+body.theme-leagueEurope .round-filter-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Активная кнопка тура - НЕ переопределяем, используем стили темы */
+body.theme-hacker-green .round-filter-btn.active {
+  background: linear-gradient(135deg, #00aa00 0%, #00ff00 100%) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.4) !important;
+  border: 2px solid #00ff00 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.theme-solarized .round-filter-btn.active {
+  background: linear-gradient(135deg, #268bd2 0%, #2aa198 100%) !important;
+  color: #fdf6e3 !important;
+  box-shadow: 0 0 10px rgba(38, 139, 210, 0.4) !important;
+  border: 2px solid #268bd2 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.theme-matrix .round-filter-btn.active {
+  background: linear-gradient(135deg, #00dd33 0%, #00ff41 100%) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.4) !important;
+  border: 2px solid #00ff41 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.theme-cyberpunk .round-filter-btn.active {
+  background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.4) !important;
+  border: 2px solid #ff00ff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.theme-leagueChampions .round-filter-btn.active {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4) !important;
+  border: 2px solid #3b82f6 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.theme-leagueEurope .round-filter-btn.active {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4) !important;
+  border: 2px solid #ffd700 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Завершенные туры - оранжевые */
+body.theme-hacker-green .round-filter-btn.finished,
+body.theme-solarized .round-filter-btn.finished,
+body.theme-matrix .round-filter-btn.finished,
+body.theme-cyberpunk .round-filter-btn.finished,
+body.theme-leagueChampions .round-filter-btn.finished,
+body.theme-leagueEurope .round-filter-btn.finished {
+  background: rgba(255, 152, 0, 0.6) !important;
+  border-color: #f57c00 !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .round-filter-btn.finished:hover,
+body.theme-solarized .round-filter-btn.finished:hover,
+body.theme-matrix .round-filter-btn.finished:hover,
+body.theme-cyberpunk .round-filter-btn.finished:hover,
+body.theme-leagueChampions .round-filter-btn.finished:hover,
+body.theme-leagueEurope .round-filter-btn.finished:hover {
+  background: rgba(255, 152, 0, 0.8) !important;
+  border-color: #c9721c !important;
+}
+
 /* === Переходы между темами === */
 body {
   transition: background-color 0.3s ease, color 0.3s ease;
