@@ -5492,6 +5492,19 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    // Названия тем
+    const themeNames = {
+      'theme-default': 'Дефолтная',
+      'theme-hacker-green': '💻 Hacker Green',
+      'theme-solarized': '🌅 Solarized',
+      'theme-matrix': '🟢 Matrix',
+      'theme-cyberpunk': '🌃 Cyberpunk',
+      'theme-leagueChampions': '🏆 League Champions',
+      'theme-leagueEurope': '⭐ League Europe',
+      'theme-dark': '🌙 Темная',
+      'theme-light': '☀️ Светлая'
+    };
+
     // Форматируем настройки для отправки
     const settingsMessage = `⚙️ НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
 
@@ -5506,13 +5519,7 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : "📱 T
 • Напоминания в группе: ${user.telegram_group_reminders_enabled ? "✅ Включены" : "❌ Отключены"}
 
 🎨 ИНТЕРФЕЙС:
-• Тема: ${
-  user.theme === "theme-dark" ? "🌙 Темная" : 
-  user.theme === "theme-light" ? "☀️ Светлая" : 
-  user.theme === "theme-leagueChampions" ? "⚽ Лига Чемпионов" :
-  user.theme === "theme-default" ? "🔄 По умолчанию" :
-  user.theme || "🔄 По умолчанию"
-}
+• Тема: ${themeNames[user.theme] || user.theme || "Дефолтная"}
 • Часовой пояс: ${user.timezone || "Europe/Moscow (по умолчанию)"}
 
 🔒 ПРИВАТНОСТЬ:
