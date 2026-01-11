@@ -601,16 +601,120 @@ body.theme-leagueEurope .tab-btn.active {
   box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6) !important;
 }
 
+/* === Стили для participant-item:hover === */
+body.theme-hacker-green .participant-item:hover {
+  background: rgba(0, 255, 0, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(0, 255, 0, 0.3) !important;
+}
+
+body.theme-solarized .participant-item:hover {
+  background: rgba(38, 139, 210, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(38, 139, 210, 0.3) !important;
+}
+
+body.theme-matrix .participant-item:hover {
+  background: rgba(0, 255, 65, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(0, 255, 65, 0.3) !important;
+}
+
+body.theme-cyberpunk .participant-item:hover {
+  background: rgba(255, 0, 255, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 255, 0.3) !important;
+}
+
+body.theme-leagueChampions .participant-item:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+body.theme-leagueEurope .participant-item:hover {
+  background: rgba(255, 215, 0, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3) !important;
+}
+
+/* === Стили для close-profile-btn === */
+body.theme-hacker-green .close-profile-btn,
+body.theme-solarized .close-profile-btn,
+body.theme-matrix .close-profile-btn,
+body.theme-cyberpunk .close-profile-btn,
+body.theme-leagueChampions .close-profile-btn,
+body.theme-leagueEurope .close-profile-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .close-profile-btn {
+  color: #00ff00 !important;
+}
+
+body.theme-solarized .close-profile-btn {
+  color: #268bd2 !important;
+}
+
+body.theme-matrix .close-profile-btn {
+  color: #00ff41 !important;
+}
+
+body.theme-cyberpunk .close-profile-btn {
+  color: #ff00ff !important;
+}
+
+body.theme-leagueChampions .close-profile-btn {
+  color: #3b82f6 !important;
+}
+
+body.theme-leagueEurope .close-profile-btn {
+  color: #ffd700 !important;
+}
+
+/* Hover состояния для close-profile-btn */
+body.theme-hacker-green .close-profile-btn:hover {
+  color: #00ff00 !important;
+  background: rgba(0, 255, 0, 0.2) !important;
+}
+
+body.theme-solarized .close-profile-btn:hover {
+  color: #268bd2 !important;
+  background: rgba(38, 139, 210, 0.2) !important;
+}
+
+body.theme-matrix .close-profile-btn:hover {
+  color: #00ff41 !important;
+  background: rgba(0, 255, 65, 0.2) !important;
+}
+
+body.theme-cyberpunk .close-profile-btn:hover {
+  color: #ff00ff !important;
+  background: rgba(255, 0, 255, 0.2) !important;
+}
+
+body.theme-leagueChampions .close-profile-btn:hover {
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+}
+
+body.theme-leagueEurope .close-profile-btn:hover {
+  /* color: #000000 !important; */
+  color: rgba(255, 247, 203, 0.8) !important;
+  background: rgba(255, 215, 0, 0.8) !important;
+}
+
 /* === Кнопки фильтрации туров === */
 /* Обычные кнопки туров - прозрачные */
 body.theme-hacker-green .round-filter-btn,
 body.theme-solarized .round-filter-btn,
 body.theme-matrix .round-filter-btn,
 body.theme-cyberpunk .round-filter-btn,
-body.theme-leagueChampions .round-filter-btn,
+body.theme-leagueChampions .round-filter-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 body.theme-leagueEurope .round-filter-btn {
   background: transparent !important;
   box-shadow: none !important;
+  color: #b0b8c8 !important;
 }
 
 /* Активная кнопка тура - НЕ переопределяем, используем стили темы */
