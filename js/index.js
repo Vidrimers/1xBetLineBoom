@@ -5395,9 +5395,13 @@ async function saveTimezoneSettings() {
     if (response.ok) {
       // Обновляем часовой пояс в currentUser
       currentUser.timezone = timezone;
+      
+      // ВАЖНО: Обновляем localStorage чтобы при перезагрузке страницы использовался новый timezone
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
       console.log(`🕐 Часовой пояс обновлен: ${timezone}`);
       console.log(`🕐 currentUser.timezone = ${currentUser.timezone}`);
+      console.log(`💾 localStorage обновлен`);
 
       btn.textContent = "✅ Сохранено!";
       console.log(`✅ Часовой пояс сохранен: ${timezone}`);
@@ -5453,6 +5457,10 @@ async function saveShowBetsSettings() {
 
     if (response.ok) {
       currentUser.show_bets = showBets;
+      
+      // Обновляем localStorage
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      
       btn.textContent = "✅ Сохранено!";
       console.log(`✅ Настройка "Показывать ставки" сохранена: ${showBets}`);
 
@@ -5836,14 +5844,17 @@ function openEditMatchModal(id, team1, team2, date, round) {
   let localDateString = "";
   if (date) {
     const utcDate = new Date(date);
-    // Форматируем в формат YYYY-MM-DDTHH:mm для datetime-local input
+    
+    // ВАЖНО: Используем локальные методы для получения времени в часовом поясе браузера
+    // datetime-local input ожидает локальное время без информации о часовом поясе
     const year = utcDate.getFullYear();
     const month = String(utcDate.getMonth() + 1).padStart(2, '0');
     const day = String(utcDate.getDate()).padStart(2, '0');
     const hours = String(utcDate.getHours()).padStart(2, '0');
     const minutes = String(utcDate.getMinutes()).padStart(2, '0');
     localDateString = `${year}-${month}-${day}T${hours}:${minutes}`;
-    console.log(`🕐 Загрузка для редактирования: ${date} (UTC) → ${localDateString} (локальное)`);
+    
+    console.log(`🕐 Загрузка для редактирования: ${date} (UTC в БД) → ${localDateString} (локальное время браузера для input)`);
   }
   
   document.getElementById("editMatchDate").value = localDateString;
