@@ -5294,8 +5294,15 @@ async function initTimezoneSettings() {
     // Получаем список поддерживаемых часовых поясов
     const timezones = Intl.supportedValuesOf("timeZone");
 
+    // Фильтруем: оставляем только Europe, Asia и UTC
+    const filteredTimezones = timezones.filter(tz => {
+      return tz.startsWith('Europe/') || 
+             tz.startsWith('Asia/') || 
+             tz === 'UTC';
+    });
+
     // Сортируем и добавляем в select
-    timezones.sort().forEach((tz) => {
+    filteredTimezones.sort().forEach((tz) => {
       const option = document.createElement("option");
       option.value = tz;
 
