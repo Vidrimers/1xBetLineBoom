@@ -5831,7 +5831,22 @@ function openEditMatchModal(id, team1, team2, date, round) {
   document.getElementById("editMatchId").value = id;
   document.getElementById("editMatchTeam1").value = team1;
   document.getElementById("editMatchTeam2").value = team2;
-  document.getElementById("editMatchDate").value = date || "";
+  
+  // Конвертируем UTC дату в локальный формат для input
+  let localDateString = "";
+  if (date) {
+    const utcDate = new Date(date);
+    // Форматируем в формат YYYY-MM-DDTHH:mm для datetime-local input
+    const year = utcDate.getFullYear();
+    const month = String(utcDate.getMonth() + 1).padStart(2, '0');
+    const day = String(utcDate.getDate()).padStart(2, '0');
+    const hours = String(utcDate.getHours()).padStart(2, '0');
+    const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+    localDateString = `${year}-${month}-${day}T${hours}:${minutes}`;
+    console.log(`🕐 Загрузка для редактирования: ${date} (UTC) → ${localDateString} (локальное)`);
+  }
+  
+  document.getElementById("editMatchDate").value = localDateString;
   document.getElementById("editMatchRound").value = round || "";
 
   // Загружаем существующие туры
@@ -5909,6 +5924,14 @@ async function submitEditMatch(event) {
   }
 
   try {
+    // Конвертируем время из локального в UTC
+    let matchDateUTC = null;
+    if (date) {
+      const localDate = new Date(date);
+      matchDateUTC = localDate.toISOString();
+      console.log(`🕐 Редактирование - конвертация времени: ${date} (локальное) → ${matchDateUTC} (UTC)`);
+    }
+
     const response = await fetch(`/api/admin/matches/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -5916,7 +5939,7 @@ async function submitEditMatch(event) {
         username: currentUser.username,
         team1_name: team1,
         team2_name: team2,
-        match_date: date,
+        match_date: matchDateUTC,
         round: round || null,
         is_final: isFinal,
         show_exact_score: showExactScore,
