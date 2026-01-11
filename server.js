@@ -5506,7 +5506,13 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : "📱 T
 • Напоминания в группе: ${user.telegram_group_reminders_enabled ? "✅ Включены" : "❌ Отключены"}
 
 🎨 ИНТЕРФЕЙС:
-• Тема: ${user.theme === "dark" ? "🌙 Темная" : user.theme === "light" ? "☀️ Светлая" : "🔄 Авто"}
+• Тема: ${
+  user.theme === "theme-dark" ? "🌙 Темная" : 
+  user.theme === "theme-light" ? "☀️ Светлая" : 
+  user.theme === "theme-leagueChampions" ? "⚽ Лига Чемпионов" :
+  user.theme === "theme-default" ? "🔄 По умолчанию" :
+  user.theme || "🔄 По умолчанию"
+}
 • Часовой пояс: ${user.timezone || "Europe/Moscow (по умолчанию)"}
 
 🔒 ПРИВАТНОСТЬ:
