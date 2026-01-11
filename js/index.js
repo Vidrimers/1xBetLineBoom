@@ -5755,6 +5755,19 @@ async function submitCreateMatch(event) {
     let created = 0;
     let lastError = null;
 
+    // Конвертируем время из часового пояса админа в UTC
+    let matchDateUTC = null;
+    if (matchDate) {
+      // Создаем Date объект из введенной строки
+      // Браузер интерпретирует это как локальное время
+      const localDate = new Date(matchDate);
+      
+      // Конвертируем в UTC ISO строку
+      matchDateUTC = localDate.toISOString();
+      
+      console.log(`🕐 Конвертация времени: ${matchDate} (локальное) → ${matchDateUTC} (UTC)`);
+    }
+
     for (let i = 0; i < copiesCount; i++) {
       const response = await fetch("/api/admin/matches", {
         method: "POST",
@@ -5766,7 +5779,7 @@ async function submitCreateMatch(event) {
           event_id: currentEventId,
           team1,
           team2,
-          match_date: matchDate || null,
+          match_date: matchDateUTC || null,
           round: round || null,
           is_final: isFinal,
           show_exact_score: showExactScore,
@@ -7902,10 +7915,11 @@ function initPageScrollOnHeaders() {
       }
     }, { passive: false });
 
+    // Инерционный скролл
     function startMomentumScroll(initialVelocity) {
       let currentVelocity = initialVelocity;
       const deceleration = 0.95; // Коэффициент замедления (0.95 = 5% замедление за кадр)
-      const minVelocity = 0.1; // Минимальная скорость для продолжения
+      const minVelocity = 0.1; // Минимальная скорость для продолжения анимации
 
       function animate() {
         if (Math.abs(currentVelocity) < minVelocity) {
