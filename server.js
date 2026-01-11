@@ -5465,6 +5465,85 @@ app.delete("/api/admin/users/:userId", (req, res) => {
   }
 });
 
+// POST /api/admin/user-settings/:userId - Отправить настройки пользователя админу в Telegram
+app.post("/api/admin/user-settings/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { username: adminUsername } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Получаем полную информацию о пользователе
+    const user = db
+      .prepare(
+        `SELECT 
+          id, username, email, created_at, telegram_username, 
+          timezone, theme, show_bets,
+          telegram_notifications_enabled, telegram_group_reminders_enabled
+        FROM users 
+        WHERE id = ?`
+      )
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Форматируем настройки для отправки
+    const settingsMessage = `⚙️ НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
+
+👤 Пользователь: ${user.username}
+🆔 ID: ${user.id}
+${user.email ? `📧 Email: ${user.email}` : ""}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : "📱 Telegram: не привязан"}
+📅 Регистрация: ${user.created_at ? new Date(user.created_at).toLocaleString("ru-RU") : "неизвестно"}
+
+🔔 УВЕДОМЛЕНИЯ:
+• Личные сообщения в ТГ: ${user.telegram_notifications_enabled ? "✅ Включены" : "❌ Отключены"}
+• Напоминания в группе: ${user.telegram_group_reminders_enabled ? "✅ Включены" : "❌ Отключены"}
+
+🎨 ИНТЕРФЕЙС:
+• Тема: ${user.theme === "dark" ? "🌙 Темная" : user.theme === "light" ? "☀️ Светлая" : "🔄 Авто"}
+• Часовой пояс: ${user.timezone || "Europe/Moscow (по умолчанию)"}
+
+🔒 ПРИВАТНОСТЬ:
+• Показывать ставки: ${user.show_bets === "always" ? "Всегда" : user.show_bets === "after_start" ? "После начала матча" : "Не установлено"}`;
+
+    // Отправляем сообщение админу
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+      return res.status(500).json({ error: "Telegram не настроен" });
+    }
+
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: settingsMessage,
+        }),
+      }
+    );
+
+    if (!telegramResponse.ok) {
+      throw new Error("Ошибка отправки в Telegram");
+    }
+
+    console.log(`✅ Настройки пользователя ${user.username} отправлены админу`);
+    res.json({ success: true, message: "Настройки отправлены в Telegram" });
+  } catch (error) {
+    console.error("Ошибка при отправке настроек:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/notify-illegal-bet - уведомление админу о попытке запретной ставки
 app.post("/api/admin/notify-illegal-bet", async (req, res) => {
   const { username, team1, team2, prediction, matchStatus } = req.body;

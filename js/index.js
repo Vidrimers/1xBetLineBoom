@@ -4857,6 +4857,9 @@ function displayAdminUsersModal() {
         </div>
       </div>
       <div class="admin-user-actions">
+        <button class="admin-btn admin-btn-settings" onclick="sendUserSettingsToAdmin(${
+          user.id
+        }, '${user.username}')" title="Получить настройки пользователя">⚙️</button>
         <button class="admin-btn admin-btn-rename" onclick="renameUser(${
           user.id
         }, '${user.username}')">✏️ Переименовать</button>
@@ -4943,6 +4946,38 @@ async function renameUser(userId, currentUsername) {
   } catch (error) {
     console.error("Ошибка при переименовании:", error);
     alert("Ошибка при переименовании пользователя");
+  }
+}
+
+// Отправить настройки пользователя админу в Telegram
+async function sendUserSettingsToAdmin(userId, username) {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/user-settings/${userId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    // Настройки отправлены успешно (без алерта)
+  } catch (error) {
+    console.error("Ошибка при отправке настроек:", error);
+    alert("Ошибка при отправке настроек");
   }
 }
 

@@ -1685,6 +1685,18 @@ button.tab-btn:hover {
   transform: translateY(-2px);
 }
 
+.admin-btn-settings {
+  background: #9c27b0;
+  color: white;
+  padding: 8px 12px;
+  min-width: 40px;
+}
+
+.admin-btn-settings:hover {
+  background: #7b1fa2;
+  transform: translateY(-2px);
+}
+
 .admin-btn-delete {
   background: #f44336;
   color: white;
