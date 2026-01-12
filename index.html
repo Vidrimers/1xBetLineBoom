@@ -749,6 +749,42 @@
                 </button>
               </div>
             </div>
+
+            <!-- Устройства -->
+            <div
+              class="settings-item"
+              style="
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                margin-bottom: 15px;
+                border-left: 3px solid #4caf50;
+              "
+            >
+              <div>
+                <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
+                  📱 Управление устройствами
+                </h3>
+                <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
+                  Просмотр и управление устройствами, на которых вы вошли в систему
+                </p>
+                <button
+                  onclick="openDevicesModal()"
+                  style="
+                    padding: 10px 20px;
+                    background: #4caf50;
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    width: 100%;
+                  "
+                >
+                  📱 Устройства
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Админ-панель в настройках -->
@@ -2072,6 +2108,31 @@
       </div>
     </div>
 
+    <!-- Модальное окно для управления устройствами -->
+    <div
+      id="devicesModal"
+      class="modal"
+      style="display: none"
+      onclick="if(event.target.id === 'devicesModal') closeDevicesModal()"
+    >
+      <div class="modal-content" style="max-width: 700px">
+        <div class="modal-header">
+          <h2>📱 Управление устройствами</h2>
+          <button class="modal-close" onclick="closeDevicesModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="color: #aaa; margin-bottom: 20px; font-size: 14px">
+            Список устройств, на которых вы вошли в систему. Вы можете завершить сеанс на любом устройстве.
+          </p>
+          <div id="devicesList" style="display: flex; flex-direction: column; gap: 15px">
+            <div class="empty-message">Загружаем устройства...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ТЕРМИНАЛ МОДАЛЬНОЕ ОКНО -->
     <div
       id="terminalModal"
@@ -2202,6 +2263,26 @@
           >
             ❌ Закрыть
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для управления устройствами -->
+    <div id="devicesModal" class="modal" style="display: none" onclick="if(event.target.id === 'devicesModal') closeDevicesModal()">
+      <div class="modal-content" style="max-width: 700px">
+        <div class="modal-header">
+          <h2>📱 Управление устройствами</h2>
+          <button class="modal-close" onclick="closeDevicesModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="color: #aaa; margin-bottom: 20px">
+            Список устройств, на которых вы вошли в систему. Вы можете завершить сеанс на любом устройстве.
+          </p>
+          <div id="devicesList" style="display: flex; flex-direction: column; gap: 15px">
+            <div style="text-align: center; color: #aaa; padding: 20px">
+              Загрузка устройств...
+            </div>
+          </div>
         </div>
       </div>
     </div>

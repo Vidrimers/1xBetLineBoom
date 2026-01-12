@@ -845,3 +845,74 @@ button,
 .modal-content {
   transition: all 0.3s ease;
 }
+
+/* Устройства в темах */
+.theme-hacker-green .device-item,
+.theme-matrix .device-item {
+  border-left-color: #00ff00;
+}
+
+.theme-hacker-green .device-item.current-device,
+.theme-matrix .device-item.current-device {
+  border-left-color: #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.theme-hacker-green .device-current-badge,
+.theme-matrix .device-current-badge {
+  background: #00ff00;
+  color: #000;
+}
+
+.theme-solarized .device-item {
+  border-left-color: #268bd2;
+}
+
+.theme-solarized .device-item.current-device {
+  border-left-color: #268bd2;
+  background: rgba(38, 139, 210, 0.1);
+}
+
+.theme-solarized .device-current-badge {
+  background: #268bd2;
+}
+
+.theme-cyberpunk .device-item {
+  border-left-color: #ff00ff;
+}
+
+.theme-cyberpunk .device-item.current-device {
+  border-left-color: #ff00ff;
+  background: rgba(255, 0, 255, 0.1);
+}
+
+.theme-cyberpunk .device-current-badge {
+  background: #ff00ff;
+}
+
+.theme-league-champions .device-item {
+  border-left-color: #0066cc;
+}
+
+.theme-league-champions .device-item.current-device {
+  border-left-color: #0066cc;
+  background: rgba(0, 102, 204, 0.1);
+}
+
+.theme-league-champions .device-current-badge {
+  background: #0066cc;
+}
+
+.theme-league-europe .device-item {
+  border-left-color: #ff9900;
+}
+
+.theme-league-europe .device-item.current-device {
+  border-left-color: #ff9900;
+  background: rgba(255, 153, 0, 0.1);
+}
+
+.theme-league-europe .device-current-badge {
+  background: #ff9900;
+  color: #000;
+}

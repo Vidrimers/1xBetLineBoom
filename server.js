@@ -4280,6 +4280,119 @@ app.post("/api/user/:userId/telegram/confirm-delete", async (req, res) => {
   }
 });
 
+// POST /api/sessions - Создать новую сессию
+app.post("/api/sessions", async (req, res) => {
+  try {
+    const { user_id, device_info, browser, os } = req.body;
+
+    // Получаем IP адрес
+    const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+
+    // Проверяем, есть ли уже сессия с таким же устройством и IP
+    const existingSession = db.prepare(`
+      SELECT session_token FROM sessions 
+      WHERE user_id = ? AND device_info = ? AND browser = ? AND os = ? AND ip_address = ?
+    `).get(user_id, device_info, browser, os, ip_address);
+
+    if (existingSession) {
+      // Обновляем last_activity существующей сессии
+      db.prepare(`
+        UPDATE sessions 
+        SET last_activity = CURRENT_TIMESTAMP 
+        WHERE session_token = ?
+      `).run(existingSession.session_token);
+
+      return res.json({ 
+        success: true, 
+        session_token: existingSession.session_token,
+        message: "Сессия обновлена" 
+      });
+    }
+
+    // Генерируем уникальный токен сессии
+    const session_token = `${user_id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    // Создаем новую сессию
+    db.prepare(`
+      INSERT INTO sessions (user_id, session_token, device_info, browser, os, ip_address)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(user_id, session_token, device_info, browser, os, ip_address);
+
+    res.json({ 
+      success: true, 
+      session_token,
+      message: "Сессия создана" 
+    });
+  } catch (error) {
+    console.error("❌ Ошибка создания сессии:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/user/:userId/sessions - Получить все сессии пользователя
+app.get("/api/user/:userId/sessions", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const sessions = db.prepare(`
+      SELECT id, session_token, device_info, browser, os, ip_address, 
+             last_activity, created_at
+      FROM sessions
+      WHERE user_id = ?
+      ORDER BY last_activity DESC
+    `).all(userId);
+
+    res.json(sessions);
+  } catch (error) {
+    console.error("❌ Ошибка получения сессий:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/sessions/:sessionToken/validate - Проверить валидность сессии
+app.get("/api/sessions/:sessionToken/validate", async (req, res) => {
+  try {
+    const { sessionToken } = req.params;
+
+    const session = db.prepare(`
+      SELECT id FROM sessions WHERE session_token = ?
+    `).get(sessionToken);
+
+    if (!session) {
+      return res.status(404).json({ valid: false, error: "Сессия не найдена" });
+    }
+
+    res.json({ valid: true });
+  } catch (error) {
+    console.error("❌ Ошибка валидации сессии:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/user/:userId/sessions/:sessionToken - Удалить конкретную сессию
+app.delete("/api/user/:userId/sessions/:sessionToken", async (req, res) => {
+  try {
+    const { userId, sessionToken } = req.params;
+
+    // Проверяем, что сессия принадлежит пользователю
+    const session = db.prepare(`
+      SELECT id FROM sessions WHERE user_id = ? AND session_token = ?
+    `).get(userId, sessionToken);
+
+    if (!session) {
+      return res.status(404).json({ error: "Сессия не найдена" });
+    }
+
+    // Удаляем сессию
+    db.prepare("DELETE FROM sessions WHERE session_token = ?").run(sessionToken);
+
+    res.json({ success: true, message: "Сессия удалена" });
+  } catch (error) {
+    console.error("❌ Ошибка удаления сессии:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 
 // PUT /api/user/:userId/settings - Управление настройками пользователя

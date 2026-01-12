@@ -677,6 +677,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentUser = user;
     console.log("✅ currentUser установлен:", currentUser);
 
+    // Проверяем валидность сессии
+    const sessionToken = localStorage.getItem("sessionToken");
+    if (sessionToken) {
+      // Проверяем, существует ли сессия на сервере
+      try {
+        const validateResponse = await fetch(`/api/sessions/${sessionToken}/validate`);
+        if (!validateResponse.ok) {
+          // Сессия недействительна - разлогиниваем
+          console.log("⚠️ Сессия недействительна, выполняется выход");
+          localStorage.removeItem("currentUser");
+          localStorage.removeItem("sessionToken");
+          location.reload();
+          return;
+        }
+      } catch (err) {
+        console.error("⚠️ Ошибка проверки сессии:", err);
+      }
+    } else {
+      // Если нет токена сессии, создаем новую
+      const deviceData = getDeviceInfo();
+      try {
+        const sessionResponse = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            device_info: deviceData.deviceInfo,
+            browser: deviceData.browser,
+            os: deviceData.os
+          })
+        });
+
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          localStorage.setItem("sessionToken", sessionData.session_token);
+          console.log("✅ Сессия создана при загрузке:", sessionData.session_token);
+        }
+      } catch (err) {
+        console.error("⚠️ Ошибка создания сессии при загрузке:", err);
+      }
+    }
+
     // Обновляем классы контейнера для показа контента
     const container = document.querySelector(".container");
     container.classList.remove("not-logged-in");
@@ -706,6 +748,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     loadEventsList();
     await loadMyBets();
+
+    // Запускаем периодическую проверку сессии каждые 30 секунд
+    setInterval(async () => {
+      const token = localStorage.getItem("sessionToken");
+      if (token && currentUser) {
+        try {
+          const validateResponse = await fetch(`/api/sessions/${token}/validate`);
+          if (!validateResponse.ok) {
+            // Сессия недействительна - разлогиниваем
+            console.log("⚠️ Сессия стала недействительной, выполняется выход");
+            alert("Вы были разлогинены с этого устройства");
+            localStorage.removeItem("currentUser");
+            localStorage.removeItem("sessionToken");
+            location.reload();
+          }
+        } catch (err) {
+          console.error("⚠️ Ошибка проверки сессии:", err);
+        }
+      }
+    }, 30000); // Проверка каждые 30 секунд
   } else {
     setAuthButtonToLoginState();
     loadEventsList();
@@ -720,6 +782,49 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // ===== ПОЛЬЗОВАТЕЛЬ =====
+
+// Получить информацию об устройстве
+function getDeviceInfo() {
+  const ua = navigator.userAgent;
+  let deviceInfo = 'Desktop';
+  let browser = 'Unknown';
+  let os = 'Unknown';
+
+  // Определяем устройство
+  if (/mobile/i.test(ua)) {
+    deviceInfo = 'Mobile';
+  } else if (/tablet|ipad/i.test(ua)) {
+    deviceInfo = 'Tablet';
+  }
+
+  // Определяем браузер
+  if (ua.indexOf('Firefox') > -1) {
+    browser = 'Firefox';
+  } else if (ua.indexOf('Chrome') > -1) {
+    browser = 'Chrome';
+  } else if (ua.indexOf('Safari') > -1) {
+    browser = 'Safari';
+  } else if (ua.indexOf('Edge') > -1) {
+    browser = 'Edge';
+  } else if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) {
+    browser = 'Opera';
+  }
+
+  // Определяем ОС
+  if (ua.indexOf('Win') > -1) {
+    os = 'Windows';
+  } else if (ua.indexOf('Mac') > -1) {
+    os = 'MacOS';
+  } else if (ua.indexOf('Linux') > -1) {
+    os = 'Linux';
+  } else if (ua.indexOf('Android') > -1) {
+    os = 'Android';
+  } else if (ua.indexOf('iOS') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) {
+    os = 'iOS';
+  }
+
+  return { deviceInfo, browser, os };
+}
 
 async function initUser() {
   let username = document.getElementById("username").value.trim();
@@ -766,6 +871,30 @@ async function initUser() {
     currentUser = user;
     currentUser.isAdmin = isAdminUser; // Устанавливаем флаг админа
 
+    // Создаем сессию на сервере
+    const deviceData = getDeviceInfo();
+    try {
+      const sessionResponse = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          device_info: deviceData.deviceInfo,
+          browser: deviceData.browser,
+          os: deviceData.os
+        })
+      });
+
+      if (sessionResponse.ok) {
+        const sessionData = await sessionResponse.json();
+        // Сохраняем session_token в localStorage
+        localStorage.setItem("sessionToken", sessionData.session_token);
+        console.log("✅ Сессия создана:", sessionData.session_token);
+      }
+    } catch (err) {
+      console.error("⚠️ Ошибка создания сессии:", err);
+    }
+
     // Сохраняем пользователя в localStorage
     localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
@@ -808,9 +937,23 @@ async function initUser() {
 }
 
 // Функция выхода из аккаунта
-function logoutUser() {
+async function logoutUser() {
+  // Удаляем сессию на сервере
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (sessionToken && currentUser) {
+    try {
+      await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}`, {
+        method: 'DELETE'
+      });
+      console.log("✅ Сессия удалена");
+    } catch (err) {
+      console.error("⚠️ Ошибка удаления сессии:", err);
+    }
+  }
+
   // Удаляем пользователя из localStorage
   localStorage.removeItem("currentUser");
+  localStorage.removeItem("sessionToken");
 
   // Очищаем переменную
   currentUser = null;
@@ -4181,6 +4324,120 @@ function closeAwardsPanel() {
   const modal = document.getElementById("awardsModal");
   if (modal) {
     modal.style.display = "none";
+  }
+}
+
+// Открыть модальное окно устройств
+async function openDevicesModal() {
+  const modal = document.getElementById("devicesModal");
+  if (modal) {
+    modal.style.display = "flex";
+    await loadDevicesList();
+  }
+}
+
+// Закрыть модальное окно устройств
+function closeDevicesModal() {
+  const modal = document.getElementById("devicesModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+// Загрузить список устройств
+async function loadDevicesList() {
+  if (!currentUser) return;
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/sessions`);
+    const sessions = await response.json();
+
+    const listContainer = document.getElementById("devicesList");
+
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+      listContainer.innerHTML = '<div class="empty-message">Нет активных устройств</div>';
+      return;
+    }
+
+    // Получаем текущий session_token из localStorage
+    const currentSessionToken = localStorage.getItem("sessionToken");
+
+    listContainer.innerHTML = sessions.map(session => {
+      const isCurrentDevice = session.session_token === currentSessionToken;
+      const deviceIcon = getDeviceIcon(session.device_info, session.os);
+      const lastActivity = new Date(session.last_activity).toLocaleString("ru-RU");
+      const createdAt = new Date(session.created_at).toLocaleString("ru-RU");
+
+      return `
+        <div class="device-item ${isCurrentDevice ? 'current-device' : ''}">
+          <div class="device-info">
+            <div class="device-name">
+              ${deviceIcon} ${session.device_info || 'Неизвестное устройство'}
+              ${isCurrentDevice ? '<span class="device-current-badge">Текущее устройство</span>' : ''}
+            </div>
+            <div class="device-details">
+              <div>🌐 Браузер: ${session.browser || 'Неизвестно'}</div>
+              <div>💻 ОС: ${session.os || 'Неизвестно'}</div>
+              <div>🌍 IP: ${session.ip_address || 'Неизвестно'}</div>
+              <div>🕐 Последняя активность: ${lastActivity}</div>
+              <div>📅 Вход: ${createdAt}</div>
+            </div>
+          </div>
+          <button 
+            class="device-logout-btn" 
+            onclick="logoutDevice('${session.session_token}')"
+            ${isCurrentDevice ? 'disabled' : ''}
+          >
+            ${isCurrentDevice ? '🔒 Текущее' : '❌ Выйти'}
+          </button>
+        </div>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error("❌ Ошибка загрузки устройств:", error);
+    document.getElementById("devicesList").innerHTML = 
+      '<div class="empty-message">Ошибка загрузки устройств</div>';
+  }
+}
+
+// Получить иконку устройства
+function getDeviceIcon(deviceInfo, os) {
+  const device = (deviceInfo || '').toLowerCase();
+  const osLower = (os || '').toLowerCase();
+
+  if (device.includes('mobile') || device.includes('phone')) return '📱';
+  if (device.includes('tablet') || device.includes('ipad')) return '📱';
+  if (osLower.includes('android')) return '📱';
+  if (osLower.includes('ios')) return '📱';
+  if (osLower.includes('windows')) return '💻';
+  if (osLower.includes('mac')) return '💻';
+  if (osLower.includes('linux')) return '🐧';
+  
+  return '🖥️';
+}
+
+// Выйти с устройства
+async function logoutDevice(sessionToken) {
+  if (!currentUser) return;
+
+  if (!confirm('Вы уверены, что хотите завершить сеанс на этом устройстве?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      await loadDevicesList();
+    } else {
+      const result = await response.json();
+      alert('Ошибка: ' + result.error);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при выходе с устройства:", error);
+    alert('Ошибка при выходе с устройства');
   }
 }
 
