@@ -3209,8 +3209,9 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     // Рассчитываем максимальную серию угаданных ставок подряд в этом турнире
     let maxStreak = 0;
     let currentStreak = 0;
+    // Для расчета серии учитываем все завершенные ставки, независимо от is_hidden
     const completedBetsOrdered = bets
-      .filter(b => !b.is_hidden && (b.result === 'won' || b.result === 'lost'))
+      .filter(b => (b.result === 'won' || b.result === 'lost'))
       .sort((a, b) => a.id - b.id);
 
     completedBetsOrdered.forEach(bet => {
@@ -3313,9 +3314,17 @@ function displayTournamentParticipantBets(bets) {
 
   betsList.innerHTML = bets
     .map(
-      (bet) => `
+      (bet) => {
+        // Проверяем, завершен ли тур
+        const completedRounds = window.completedTournamentRounds || new Set();
+        const isRoundFinished = completedRounds.has(bet.round);
+        
+        // В завершенных турах всегда показываем ставки
+        const shouldHideBet = bet.is_hidden && !isRoundFinished;
+        
+        return `
     <div style="background: #1a1a2e; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid ${
-      bet.is_hidden
+      shouldHideBet
         ? "#9e9e9e"
         : bet.result === "won"
         ? "#4caf50"
@@ -3325,7 +3334,7 @@ function displayTournamentParticipantBets(bets) {
     };">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <strong style="color: #7ab0e0;">${bet.team1} vs ${bet.team2}</strong>
-        ${bet.is_hidden ? 
+        ${shouldHideBet ? 
           `<span style="background: #9e9e9e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
             🔒 Скрыто
           </span>` :
@@ -3346,7 +3355,7 @@ function displayTournamentParticipantBets(bets) {
           </span>`
         }
       </div>
-      ${bet.is_hidden ?
+      ${shouldHideBet ?
         `<div style="color: #ffa726; font-size: 0.9em; font-style: italic;">
           🔒 Ставка скрыта до начала матча
         </div>` :
@@ -3365,7 +3374,8 @@ function displayTournamentParticipantBets(bets) {
           : ""
       }
     </div>
-  `
+  `;
+      }
     )
     .join("");
 }
