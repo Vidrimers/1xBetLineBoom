@@ -50,7 +50,7 @@ async function luckyBetForCurrentRound() {
     luckyBtn.disabled = true;
   }
   
-  // Ждем 1 секунду пока кубик крутится
+  // Ждем 2 секунды пока кубик крутится
   await new Promise(resolve => setTimeout(resolve, 2000));
   
   // Для каждого такого матча делаем случайную ставку
@@ -72,6 +72,23 @@ async function luckyBetForCurrentRound() {
     } catch (e) {
       console.error("Ошибка при отправке случайной ставки:", e);
     }
+  }
+  
+  // Отправляем уведомление админу
+  try {
+    const currentEvent = events.find(e => e.id === currentEventId);
+    await fetch("/api/admin/notify-lucky-bet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        eventName: currentEvent ? currentEvent.name : "Неизвестный турнир",
+        round: currentRoundFilter,
+        matchesCount: matchesToBet.length,
+      }),
+    });
+  } catch (e) {
+    console.error("Ошибка при отправке уведомления админу:", e);
   }
   
   // Убираем анимацию и включаем кнопку

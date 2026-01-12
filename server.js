@@ -5630,6 +5630,68 @@ app.post("/api/admin/notify-illegal-bet", async (req, res) => {
   }
 });
 
+// POST /api/admin/notify-lucky-bet - Уведомить админа о случайной ставке
+app.post("/api/admin/notify-lucky-bet", async (req, res) => {
+  const { userId, eventName, round, matchesCount } = req.body;
+
+  try {
+    // Получаем информацию о пользователе
+    const user = db
+      .prepare(
+        "SELECT username, email, telegram_username FROM users WHERE id = ?"
+      )
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Формируем сообщение для админа
+    const luckyMessage = `🎲 СЛУЧАЙНАЯ СТАВКА
+
+👤 Пользователь: ${user.username}
+🆔 ID: ${userId}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+
+🏆 Турнир: ${eventName}
+🎯 Тур: ${round}
+⚽ Матчей: ${matchesCount}
+
+💭 Пользователь решил положиться на удачу!`;
+
+    // Отправляем сообщение админу
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+      console.log("⚠️ Telegram не настроен, уведомление не отправлено");
+      return res.json({ success: true, message: "Telegram не настроен" });
+    }
+
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: luckyMessage,
+        }),
+      }
+    );
+
+    if (!telegramResponse.ok) {
+      throw new Error("Ошибка отправки в Telegram");
+    }
+
+    console.log(`✅ Уведомление о случайной ставке от ${user.username} отправлено админу`);
+    res.json({ success: true, message: "Уведомление отправлено" });
+  } catch (error) {
+    console.error("Ошибка при отправке уведомления о случайной ставке:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/admin/matches/:matchId - Удалить матч
 app.delete("/api/admin/matches/:matchId", (req, res) => {
   const { matchId } = req.params;
