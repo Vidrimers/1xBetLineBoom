@@ -748,30 +748,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     loadEventsList();
     await loadMyBets();
-
-    // Запускаем периодическую проверку сессии каждые 30 секунд
-    setInterval(async () => {
-      const token = localStorage.getItem("sessionToken");
-      if (token && currentUser) {
-        try {
-          const validateResponse = await fetch(`/api/sessions/${token}/validate`);
-          if (!validateResponse.ok) {
-            // Сессия недействительна - разлогиниваем
-            console.log("⚠️ Сессия стала недействительной, выполняется выход");
-            alert("Вы были разлогинены с этого устройства");
-            localStorage.removeItem("currentUser");
-            localStorage.removeItem("sessionToken");
-            location.reload();
-          }
-        } catch (err) {
-          console.error("⚠️ Ошибка проверки сессии:", err);
-        }
-      }
-    }, 30000); // Проверка каждые 30 секунд
   } else {
     setAuthButtonToLoginState();
     loadEventsList();
   }
+
+  // Запускаем периодическую проверку сессии каждые 5 секунд
+  setInterval(async () => {
+    const token = localStorage.getItem("sessionToken");
+    const user = localStorage.getItem("currentUser");
+    if (token && user) {
+      try {
+        const validateResponse = await fetch(`/api/sessions/${token}/validate`);
+        if (!validateResponse.ok) {
+          // Сессия недействительна - разлогиниваем
+          console.log("⚠️ Сессия стала недействительной, выполняется выход");
+          alert("Вы были разлогинены с этого устройства");
+          localStorage.removeItem("currentUser");
+          localStorage.removeItem("sessionToken");
+          location.reload();
+        }
+      } catch (err) {
+        console.error("⚠️ Ошибка проверки сессии:", err);
+      }
+    }
+  }, 5000); // Проверка каждые 5 секунд
 
   // Запускаем обновление статусов матчей каждые 30 секунд
   matchUpdateInterval = setInterval(() => {
@@ -4420,19 +4421,45 @@ function getDeviceIcon(deviceInfo, os) {
 async function logoutDevice(sessionToken) {
   if (!currentUser) return;
 
-  if (!confirm('Вы уверены, что хотите завершить сеанс на этом устройстве?')) {
+  // Проверяем, привязан ли Telegram
+  if (!currentUser.telegram_username) {
+    alert('Для выхода с устройства необходимо привязать Telegram в настройках');
+    return;
+  }
+
+  if (!confirm('Для завершения сеанса на этом устройстве требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?')) {
     return;
   }
 
   try {
-    const response = await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}`, {
-      method: 'DELETE'
+    // Запрашиваем код подтверждения
+    const response = await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}/request-logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
     });
 
+    const result = await response.json();
+
     if (response.ok) {
-      await loadDevicesList();
+      // Показываем поле для ввода кода
+      const code = prompt('Введите код подтверждения, отправленный вам в Telegram:');
+      if (!code) return;
+
+      // Подтверждаем выход
+      const confirmResponse = await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}/confirm-logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation_code: code })
+      });
+
+      const confirmResult = await confirmResponse.json();
+
+      if (confirmResponse.ok) {
+        await loadDevicesList();
+      } else {
+        alert('Ошибка: ' + confirmResult.error);
+      }
     } else {
-      const result = await response.json();
       alert('Ошибка: ' + result.error);
     }
   } catch (error) {

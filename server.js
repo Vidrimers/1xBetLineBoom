@@ -4393,6 +4393,148 @@ app.delete("/api/user/:userId/sessions/:sessionToken", async (req, res) => {
   }
 });
 
+// POST /api/user/:userId/sessions/:sessionToken/request-logout - Запросить выход с устройства
+app.post("/api/user/:userId/sessions/:sessionToken/request-logout", async (req, res) => {
+  try {
+    const { userId, sessionToken } = req.params;
+
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+    
+    if (!user || !user.telegram_username) {
+      return res.status(404).json({ error: "Пользователь не найден или Telegram не привязан" });
+    }
+
+    // Проверяем, что сессия принадлежит пользователю
+    const session = db.prepare(`
+      SELECT device_info, browser, os FROM sessions WHERE user_id = ? AND session_token = ?
+    `).get(userId, sessionToken);
+
+    if (!session) {
+      return res.status(404).json({ error: "Сессия не найдена" });
+    }
+
+    // Генерируем 6-значный код
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Сохраняем код с временем истечения (5 минут)
+    confirmationCodes.set(`logout_${userId}_${sessionToken}`, {
+      code,
+      expires: Date.now() + 5 * 60 * 1000
+    });
+
+    // Отправляем код в Telegram
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN) {
+      const message = `🔐 КОД ПОДТВЕРЖДЕНИЯ
+
+Вы запросили выход с устройства на сайте 1xBetLineBoom.
+
+Устройство: ${session.device_info || 'Неизвестно'}
+Браузер: ${session.browser || 'Неизвестно'}
+ОС: ${session.os || 'Неизвестно'}
+
+Ваш код подтверждения: <code>${code}</code>
+
+Код действителен 5 минут.
+
+Если это были не вы, проигнорируйте это сообщение.`;
+
+      try {
+        await sendTelegramMessageByUsername(user.telegram_username, message);
+        res.json({ success: true, message: "Код отправлен в Telegram" });
+      } catch (err) {
+        console.error("❌ Ошибка отправки кода:", err);
+        res.status(500).json({ error: "Не удалось отправить код в Telegram. Убедитесь, что вы писали боту." });
+      }
+    } else {
+      res.status(500).json({ error: "Telegram бот не настроен" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/sessions/:sessionToken/confirm-logout - Подтвердить выход с устройства
+app.post("/api/user/:userId/sessions/:sessionToken/confirm-logout", async (req, res) => {
+  try {
+    const { userId, sessionToken } = req.params;
+    const { confirmation_code } = req.body;
+
+    const stored = confirmationCodes.get(`logout_${userId}_${sessionToken}`);
+    
+    if (!stored) {
+      return res.status(400).json({ error: "Код не найден. Запросите новый код." });
+    }
+
+    if (Date.now() > stored.expires) {
+      confirmationCodes.delete(`logout_${userId}_${sessionToken}`);
+      return res.status(400).json({ error: "Код истек. Запросите новый код." });
+    }
+
+    if (stored.code !== confirmation_code) {
+      return res.status(400).json({ error: "Неверный код подтверждения" });
+    }
+
+    // Код верный, удаляем сессию
+    const user = db
+      .prepare("SELECT id, username FROM users WHERE id = ?")
+      .get(userId);
+
+    const session = db.prepare(`
+      SELECT device_info, browser, os FROM sessions WHERE user_id = ? AND session_token = ?
+    `).get(userId, sessionToken);
+
+    if (!session) {
+      confirmationCodes.delete(`logout_${userId}_${sessionToken}`);
+      return res.status(404).json({ error: "Сессия не найдена" });
+    }
+
+    // Удаляем сессию
+    db.prepare("DELETE FROM sessions WHERE session_token = ?").run(sessionToken);
+
+    // Удаляем использованный код
+    confirmationCodes.delete(`logout_${userId}_${sessionToken}`);
+
+    // Уведомляем админа
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      const time = new Date().toLocaleString("ru-RU");
+      const message = `📱 ВЫХОД С УСТРОЙСТВА
+
+👤 Пользователь: ${user.username}
+✏️ Действие: завершил сеанс на устройстве (с подтверждением)
+📱 Устройство: ${session.device_info || 'Неизвестно'}
+🌐 Браузер: ${session.browser || 'Неизвестно'}
+💻 ОС: ${session.os || 'Неизвестно'}
+🕐 Время: ${time}`;
+
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          }
+        );
+      } catch (err) {
+        console.error("❌ Ошибка отправки уведомления:", err);
+      }
+    }
+
+    res.json({ success: true, message: "Сессия успешно удалена" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 
 // PUT /api/user/:userId/settings - Управление настройками пользователя
