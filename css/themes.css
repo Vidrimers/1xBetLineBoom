@@ -794,6 +794,43 @@ body.theme-leagueEurope .round-filter-btn.finished:hover {
   border-color: #c9721c !important;
 }
 
+/* === Настройки === */
+body.theme-hacker-green .setting-item,
+body.theme-hacker-green .settings-item {
+  background: rgba(0, 255, 0, 0.05) !important;
+  border-left-color: #00ff00 !important;
+}
+
+body.theme-solarized .setting-item,
+body.theme-solarized .settings-item {
+  background: rgba(38, 139, 210, 0.1) !important;
+  border-left-color: #268bd2 !important;
+}
+
+body.theme-matrix .setting-item,
+body.theme-matrix .settings-item {
+  background: rgba(0, 255, 0, 0.05) !important;
+  border-left-color: #00ff00 !important;
+}
+
+body.theme-cyberpunk .setting-item,
+body.theme-cyberpunk .settings-item {
+  background: rgba(255, 0, 255, 0.05) !important;
+  border-left-color: #ff00ff !important;
+}
+
+body.theme-leagueChampions .setting-item,
+body.theme-leagueChampions .settings-item {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-left-color: #3b82f6 !important;
+}
+
+body.theme-leagueEurope .setting-item,
+body.theme-leagueEurope .settings-item {
+  background: rgba(255, 215, 0, 0.05) !important;
+  border-left-color: #ffd700 !important;
+}
+
 /* === Переходы между темами === */
 body {
   transition: background-color 0.3s ease, color 0.3s ease;
