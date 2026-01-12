@@ -5325,23 +5325,74 @@ async function saveTelegramUsername() {
   const input = document.getElementById("telegramUsernameInput");
   const username = input.value.trim();
 
-  try {
-    const response = await fetch(`/api/user/${currentUser.id}/telegram`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telegram_username: username }),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      loadSettings(); // Перезагружаем настройки
-    } else {
-      alert("Ошибка: " + result.error);
+  // Если у пользователя уже есть привязанный Telegram, требуем подтверждение
+  if (currentUser.telegram_username) {
+    if (!confirm("Для изменения Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?")) {
+      return;
     }
-  } catch (error) {
-    console.error("Ошибка при сохранении:", error);
-    alert("Ошибка при сохранении");
+
+    try {
+      // Запрашиваем код подтверждения
+      const response = await fetch(`/api/user/${currentUser.id}/telegram/request-change`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ new_telegram_username: username }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Показываем поле для ввода кода
+        const code = prompt("Введите код подтверждения, отправленный вам в Telegram:");
+        if (!code) return;
+
+        // Подтверждаем изменение
+        const confirmResponse = await fetch(`/api/user/${currentUser.id}/telegram/confirm-change`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            new_telegram_username: username,
+            confirmation_code: code 
+          }),
+        });
+
+        const confirmResult = await confirmResponse.json();
+
+        if (confirmResponse.ok) {
+          alert("Telegram логин успешно изменен!");
+          currentUser.telegram_username = username;
+          loadSettings();
+        } else {
+          alert("Ошибка: " + confirmResult.error);
+        }
+      } else {
+        alert("Ошибка: " + result.error);
+      }
+    } catch (error) {
+      console.error("Ошибка при изменении:", error);
+      alert("Ошибка при изменении");
+    }
+  } else {
+    // Первая привязка - без подтверждения
+    try {
+      const response = await fetch(`/api/user/${currentUser.id}/telegram`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegram_username: username }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        currentUser.telegram_username = username;
+        loadSettings();
+      } else {
+        alert("Ошибка: " + result.error);
+      }
+    } catch (error) {
+      console.error("Ошибка при сохранении:", error);
+      alert("Ошибка при сохранении");
+    }
   }
 }
 
@@ -5352,15 +5403,45 @@ async function deleteTelegramUsername() {
     return;
   }
 
+  if (!currentUser.telegram_username) {
+    alert("Telegram логин не привязан");
+    return;
+  }
+
+  if (!confirm("Для удаления Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?")) {
+    return;
+  }
+
   try {
-    const response = await fetch(`/api/user/${currentUser.id}/telegram`, {
-      method: "DELETE",
+    // Запрашиваем код подтверждения
+    const response = await fetch(`/api/user/${currentUser.id}/telegram/request-delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
     });
 
     const result = await response.json();
 
     if (response.ok) {
-      loadSettings(); // Перезагружаем настройки
+      // Показываем поле для ввода кода
+      const code = prompt("Введите код подтверждения, отправленный вам в Telegram:");
+      if (!code) return;
+
+      // Подтверждаем удаление
+      const confirmResponse = await fetch(`/api/user/${currentUser.id}/telegram/confirm-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation_code: code }),
+      });
+
+      const confirmResult = await confirmResponse.json();
+
+      if (confirmResponse.ok) {
+        alert("Telegram логин успешно удален!");
+        currentUser.telegram_username = null;
+        loadSettings();
+      } else {
+        alert("Ошибка: " + confirmResult.error);
+      }
     } else {
       alert("Ошибка: " + result.error);
     }

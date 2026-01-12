@@ -3825,6 +3825,19 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    // Проверяем уникальность Telegram username
+    if (telegram_username) {
+      const existingUser = db
+        .prepare("SELECT id FROM users WHERE LOWER(telegram_username) = ? AND id != ?")
+        .get(telegram_username.toLowerCase(), userId);
+      
+      if (existingUser) {
+        return res.status(400).json({ 
+          error: `Telegram @${telegram_username} уже привязан к другому аккаунту` 
+        });
+      }
+    }
+
     const oldTelegramUsername = user.telegram_username;
 
     db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(
@@ -3980,6 +3993,294 @@ app.delete("/api/user/:userId/telegram", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Хранилище кодов подтверждения (в памяти, можно перенести в БД)
+const confirmationCodes = new Map();
+
+// Вспомогательная функция для отправки сообщения пользователю по telegram_username
+async function sendTelegramMessageByUsername(telegram_username, message) {
+  const cleanUsername = telegram_username.toLowerCase();
+  const telegramUser = db
+    .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
+    .get(cleanUsername);
+
+  if (!telegramUser || !telegramUser.chat_id) {
+    throw new Error(`Пользователь @${telegram_username} не найден в Telegram или не писал боту`);
+  }
+
+  await sendUserMessage(telegramUser.chat_id, message);
+}
+
+// POST /api/user/:userId/telegram/request-change - Запросить изменение Telegram username
+app.post("/api/user/:userId/telegram/request-change", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { new_telegram_username } = req.body;
+
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+    
+    if (!user || !user.telegram_username) {
+      return res.status(404).json({ error: "Пользователь не найден или Telegram не привязан" });
+    }
+
+    // Генерируем 6-значный код
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Сохраняем код с временем истечения (5 минут)
+    confirmationCodes.set(`change_${userId}`, {
+      code,
+      newUsername: new_telegram_username,
+      expires: Date.now() + 5 * 60 * 1000
+    });
+
+    // Отправляем код в Telegram
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN) {
+      const message = `🔐 КОД ПОДТВЕРЖДЕНИЯ
+
+Вы запросили изменение Telegram логина на сайте 1xBetLineBoom.
+
+Новый логин: @${new_telegram_username}
+
+Ваш код подтверждения: <code>${code}</code>
+
+Код действителен 5 минут.
+
+Если это были не вы, проигнорируйте это сообщение.`;
+
+      try {
+        await sendTelegramMessageByUsername(user.telegram_username, message);
+        res.json({ success: true, message: "Код отправлен в Telegram" });
+      } catch (err) {
+        console.error("❌ Ошибка отправки кода:", err);
+        res.status(500).json({ error: "Не удалось отправить код в Telegram. Убедитесь, что вы писали боту." });
+      }
+    } else {
+      res.status(500).json({ error: "Telegram бот не настроен" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/telegram/confirm-change - Подтвердить изменение Telegram username
+app.post("/api/user/:userId/telegram/confirm-change", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { new_telegram_username, confirmation_code } = req.body;
+
+    const stored = confirmationCodes.get(`change_${userId}`);
+    
+    if (!stored) {
+      return res.status(400).json({ error: "Код не найден. Запросите новый код." });
+    }
+
+    if (Date.now() > stored.expires) {
+      confirmationCodes.delete(`change_${userId}`);
+      return res.status(400).json({ error: "Код истек. Запросите новый код." });
+    }
+
+    if (stored.code !== confirmation_code) {
+      return res.status(400).json({ error: "Неверный код подтверждения" });
+    }
+
+    if (stored.newUsername !== new_telegram_username) {
+      return res.status(400).json({ error: "Логин не совпадает с запрошенным" });
+    }
+
+    // Проверяем уникальность нового Telegram username
+    let cleanNewUsername = new_telegram_username;
+    if (cleanNewUsername && cleanNewUsername.startsWith("@")) {
+      cleanNewUsername = cleanNewUsername.substring(1);
+    }
+
+    if (cleanNewUsername) {
+      const existingUser = db
+        .prepare("SELECT id FROM users WHERE LOWER(telegram_username) = ? AND id != ?")
+        .get(cleanNewUsername.toLowerCase(), userId);
+      
+      if (existingUser) {
+        confirmationCodes.delete(`change_${userId}`);
+        return res.status(400).json({ 
+          error: `Telegram @${cleanNewUsername} уже привязан к другому аккаунту` 
+        });
+      }
+    }
+
+    // Код верный, обновляем username
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    const oldUsername = user.telegram_username;
+
+    db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(
+      cleanNewUsername,
+      userId
+    );
+
+    // Удаляем использованный код
+    confirmationCodes.delete(`change_${userId}`);
+
+    // Уведомляем админа
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      const time = new Date().toLocaleString("ru-RU");
+      const message = `📱 ИЗМЕНЕНИЕ TELEGRAM USERNAME
+
+👤 Пользователь: ${user.username}
+✏️ Действие: изменил Telegram логин
+📲 Было: @${oldUsername}
+📲 Стало: @${cleanNewUsername}
+🕐 Время: ${time}`;
+
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          }
+        );
+      } catch (err) {
+        console.error("❌ Ошибка отправки уведомления:", err);
+      }
+    }
+
+    res.json({ success: true, message: "Telegram username успешно изменен" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/telegram/request-delete - Запросить удаление Telegram username
+app.post("/api/user/:userId/telegram/request-delete", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+    
+    if (!user || !user.telegram_username) {
+      return res.status(404).json({ error: "Пользователь не найден или Telegram не привязан" });
+    }
+
+    // Генерируем 6-значный код
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Сохраняем код с временем истечения (5 минут)
+    confirmationCodes.set(`delete_${userId}`, {
+      code,
+      expires: Date.now() + 5 * 60 * 1000
+    });
+
+    // Отправляем код в Telegram
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN) {
+      const message = `🔐 КОД ПОДТВЕРЖДЕНИЯ
+
+Вы запросили удаление Telegram логина на сайте 1xBetLineBoom.
+
+Ваш код подтверждения: <code>${code}</code>
+
+Код действителен 5 минут.
+
+Если это были не вы, проигнорируйте это сообщение.`;
+
+      try {
+        await sendTelegramMessageByUsername(user.telegram_username, message);
+        res.json({ success: true, message: "Код отправлен в Telegram" });
+      } catch (err) {
+        console.error("❌ Ошибка отправки кода:", err);
+        res.status(500).json({ error: "Не удалось отправить код в Telegram. Убедитесь, что вы писали боту." });
+      }
+    } else {
+      res.status(500).json({ error: "Telegram бот не настроен" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/telegram/confirm-delete - Подтвердить удаление Telegram username
+app.post("/api/user/:userId/telegram/confirm-delete", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { confirmation_code } = req.body;
+
+    const stored = confirmationCodes.get(`delete_${userId}`);
+    
+    if (!stored) {
+      return res.status(400).json({ error: "Код не найден. Запросите новый код." });
+    }
+
+    if (Date.now() > stored.expires) {
+      confirmationCodes.delete(`delete_${userId}`);
+      return res.status(400).json({ error: "Код истек. Запросите новый код." });
+    }
+
+    if (stored.code !== confirmation_code) {
+      return res.status(400).json({ error: "Неверный код подтверждения" });
+    }
+
+    // Код верный, удаляем username
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    const oldUsername = user.telegram_username;
+
+    db.prepare("UPDATE users SET telegram_username = NULL WHERE id = ?").run(userId);
+
+    // Удаляем использованный код
+    confirmationCodes.delete(`delete_${userId}`);
+
+    // Уведомляем админа
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      const time = new Date().toLocaleString("ru-RU");
+      const message = `📱 УДАЛЕНИЕ TELEGRAM USERNAME
+
+👤 Пользователь: ${user.username}
+✏️ Действие: удалил привязку Telegram (с подтверждением)
+📲 Был: @${oldUsername}
+🕐 Время: ${time}`;
+
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          }
+        );
+      } catch (err) {
+        console.error("❌ Ошибка отправки уведомления:", err);
+      }
+    }
+
+    res.json({ success: true, message: "Telegram username успешно удален" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 
 // PUT /api/user/:userId/settings - Управление настройками пользователя
 app.put("/api/user/:userId/settings", async (req, res) => {
