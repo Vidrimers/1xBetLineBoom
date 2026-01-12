@@ -165,50 +165,54 @@
               <div class="matches-container">
                 <h2 style="margin: 0; padding-bottom: 10px">⚽ Матчи</h2>
                 <div style="display: flex; gap: 8px; align-items: center">
-                  <button
-                    class="lucky-btn"
-                    onclick="luckyBetForCurrentRound()"
-                    title="Сделать случайную ставку по всем матчам выбранного тура"
-                  >
-                    <span class="dice-icon">
-                      <div class="dice-3d">
-                        <div class="dice-face dice-front">
-                          <span class="dot"></span>
+                  <div style="position: relative;">
+                    <button
+                      class="lucky-btn"
+                      onclick="luckyBetForCurrentRound()"
+                      title="Сделать случайную ставку по всем матчам выбранного тура"
+                    >
+                      <span class="lucky-text">Мне повезет</span>
+                    </button>
+                    <span class="dice-wrapper">
+                      <span class="dice-icon">
+                        <div class="dice-3d">
+                          <div class="dice-face dice-front">
+                            <span class="dot"></span>
+                          </div>
+                          <div class="dice-face dice-back">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
+                          <div class="dice-face dice-right">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
+                          <div class="dice-face dice-left">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
+                          <div class="dice-face dice-top">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
+                          <div class="dice-face dice-bottom">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
                         </div>
-                        <div class="dice-face dice-back">
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                        </div>
-                        <div class="dice-face dice-right">
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                        </div>
-                        <div class="dice-face dice-left">
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                        </div>
-                        <div class="dice-face dice-top">
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                        </div>
-                        <div class="dice-face dice-bottom">
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                          <span class="dot"></span>
-                        </div>
-                      </div>
+                      </span>
                     </span>
-                    <span class="lucky-text">Мне повезет</span>
-                  </button>
+                  </div>
                   <button
                     id="addMatchBtn"
                     onclick="openCreateMatchModal()"

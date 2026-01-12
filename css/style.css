@@ -1,6 +1,6 @@
 /* Кнопка "Мне повезет" */
 .lucky-btn {
-  padding: 6px 14px;
+  padding: 6px 14px 6px 28px;
   font-size: 0.85em;
   background: #fffbe6;
   color: #f57c00;
@@ -11,10 +11,9 @@
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(245, 124, 0, 0.08);
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   min-width: 120px;
+  text-align: center;
 }
 
 /* Hover только для десктопа */
@@ -27,27 +26,38 @@
   .lucky-btn:hover .lucky-text {
     opacity: 0;
   }
-  
-  .lucky-btn:hover .dice-icon {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-right: 0;
-  }
 }
 
 .lucky-text {
   transition: opacity 0.4s ease;
+  display: inline-block;
+  vertical-align: middle;
 }
 
-.lucky-btn .dice-icon {
-  display: inline-block;
+/* Wrapper с фиксированными размерами - теперь вне кнопки */
+.dice-wrapper {
+  position: fixed;
+  width: 14px;
+  height: 14px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1000;
+  transition: transform 0.4s ease;
+}
+
+/* Плавный переход при hover и spinning */
+.dice-wrapper.dice-transitioning {
+  transition: left 0.4s ease, top 0.4s ease, transform 0.4s ease;
+}
+
+.dice-icon {
+  display: block;
   perspective: 150px;
   width: 14px;
   height: 14px;
-  vertical-align: middle;
-  margin-right: 5px;
-  transition: all 0.4s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .dice-3d {
@@ -67,7 +77,10 @@
   border: 1px solid #d0d0d0;
   border-radius: 2px;
   display: grid;
+  grid-template-rows: 4px 4px 4px;
+  grid-template-columns: 4px 4px 4px;
   padding: 2px;
+  box-sizing: border-box;
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8),
               inset 0 -1px 2px rgba(0, 0, 0, 0.1),
               0 2px 4px rgba(0, 0, 0, 0.2);
@@ -83,7 +96,6 @@
 
 /* Грань 1 - одна точка по центру */
 .dice-front {
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   transform: rotateY(0deg) translateZ(7px);
 }
 .dice-front .dot {
@@ -92,7 +104,6 @@
 
 /* Грань 2 - две точки по диагонали */
 .dice-back {
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   transform: rotateY(180deg) translateZ(7px);
 }
 .dice-back .dot:nth-child(1) {
@@ -104,7 +115,6 @@
 
 /* Грань 3 - три точки по диагонали */
 .dice-right {
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   transform: rotateY(90deg) translateZ(7px);
 }
 .dice-right .dot:nth-child(1) {
@@ -119,7 +129,6 @@
 
 /* Грань 4 - четыре точки по углам */
 .dice-left {
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   transform: rotateY(-90deg) translateZ(7px);
 }
 .dice-left .dot:nth-child(1) {
@@ -137,7 +146,6 @@
 
 /* Грань 5 - пять точек */
 .dice-top {
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   transform: rotateX(90deg) translateZ(7px);
 }
 .dice-top .dot:nth-child(1) {
@@ -158,7 +166,6 @@
 
 /* Грань 6 - шесть точек */
 .dice-bottom {
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   transform: rotateX(-90deg) translateZ(7px);
 }
 .dice-bottom .dot:nth-child(1) {
@@ -180,7 +187,7 @@
   grid-area: 3 / 3;
 }
 
-/* Состояние spinning - текст исчезает, кубик плавно перемещается в центр и крутится */
+/* Состояние spinning */
 .lucky-btn.spinning {
   pointer-events: none;
   opacity: 0.7;
@@ -191,58 +198,36 @@
   transition: opacity 0.4s ease;
 }
 
-.lucky-btn.spinning .dice-icon {
-  width: 22px;
-  height: 22px;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-right: 0;
-  transition: all 0.4s ease;
+.lucky-btn.spinning ~ .dice-wrapper {
+  transition: transform 0.4s ease;
 }
 
-.lucky-btn.spinning .dice-3d {
+.lucky-btn.spinning ~ .dice-wrapper .dice-3d {
   animation: dice-roll 2s ease-out;
-  width: 22px;
-  height: 22px;
-  transition: width 0.4s ease, height 0.4s ease;
 }
 
-.lucky-btn.spinning .dice-face {
-  width: 22px;
-  height: 22px;
-  padding: 3px;
-  transition: all 0.4s ease;
+.lucky-btn.spinning ~ .dice-wrapper .dice-front {
+  transform: rotateY(0deg) translateZ(7px);
 }
 
-.lucky-btn.spinning .dice-front {
-  transform: rotateY(0deg) translateZ(11px);
+.lucky-btn.spinning ~ .dice-wrapper .dice-back {
+  transform: rotateY(180deg) translateZ(7px);
 }
 
-.lucky-btn.spinning .dice-back {
-  transform: rotateY(180deg) translateZ(11px);
+.lucky-btn.spinning ~ .dice-wrapper .dice-right {
+  transform: rotateY(90deg) translateZ(7px);
 }
 
-.lucky-btn.spinning .dice-right {
-  transform: rotateY(90deg) translateZ(11px);
+.lucky-btn.spinning ~ .dice-wrapper .dice-left {
+  transform: rotateY(-90deg) translateZ(7px);
 }
 
-.lucky-btn.spinning .dice-left {
-  transform: rotateY(-90deg) translateZ(11px);
+.lucky-btn.spinning ~ .dice-wrapper .dice-top {
+  transform: rotateX(90deg) translateZ(7px);
 }
 
-.lucky-btn.spinning .dice-top {
-  transform: rotateX(90deg) translateZ(11px);
-}
-
-.lucky-btn.spinning .dice-bottom {
-  transform: rotateX(-90deg) translateZ(11px);
-}
-
-.lucky-btn.spinning .dot {
-  width: 3px;
-  height: 3px;
-  transition: all 0.4s ease;
+.lucky-btn.spinning ~ .dice-wrapper .dice-bottom {
+  transform: rotateX(-90deg) translateZ(7px);
 }
 
 @keyframes dice-roll {

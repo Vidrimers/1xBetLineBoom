@@ -1,5 +1,78 @@
 // Случайная ставка по всем матчам выбранного тура
 
+// Позиционирование кубика относительно кнопки
+function updateDicePosition() {
+  const btn = document.querySelector('.lucky-btn');
+  const dice = document.querySelector('.dice-wrapper');
+  
+  if (!btn || !dice) return;
+  
+  const rect = btn.getBoundingClientRect();
+  const isSpinning = btn.classList.contains('spinning');
+  const isHovered = btn.matches(':hover') && window.innerWidth >= 769; // Только для десктопа
+  
+  if (isSpinning || isHovered) {
+    // Включаем плавный переход
+    dice.classList.add('dice-transitioning');
+    
+    // В центре кнопки
+    dice.style.left = `${rect.left + rect.width / 2}px`;
+    dice.style.top = `${rect.top + rect.height / 2}px`;
+    dice.style.transform = isSpinning ? 'translate(-50%, -50%) scale(1.57)' : 'translate(-50%, -50%)';
+  } else {
+    // Включаем плавный переход для возврата
+    dice.classList.add('dice-transitioning');
+    
+    // Слева от текста
+    dice.style.left = `${rect.left + 8}px`;
+    dice.style.top = `${rect.top + rect.height / 2}px`;
+    dice.style.transform = 'translateY(-50%)';
+    
+    // Убираем transition после завершения анимации, чтобы не мешать при скролле
+    setTimeout(() => {
+      if (!btn.matches(':hover') && !btn.classList.contains('spinning')) {
+        dice.classList.remove('dice-transitioning');
+      }
+    }, 400);
+  }
+}
+
+// Обновляем позицию при скролле и ресайзе
+let dicePositionInterval = null;
+
+function startDicePositionTracking() {
+  updateDicePosition();
+  if (!dicePositionInterval) {
+    dicePositionInterval = setInterval(() => {
+      const btn = document.querySelector('.lucky-btn');
+      const dice = document.querySelector('.dice-wrapper');
+      
+      // Обновляем позицию без transition при скролле
+      if (btn && dice && !btn.matches(':hover') && !btn.classList.contains('spinning')) {
+        const rect = btn.getBoundingClientRect();
+        dice.style.left = `${rect.left + 8}px`;
+        dice.style.top = `${rect.top + rect.height / 2}px`;
+      } else {
+        updateDicePosition();
+      }
+    }, 16); // ~60fps
+  }
+  
+  // Добавляем обработчики hover для десктопа
+  const btn = document.querySelector('.lucky-btn');
+  if (btn && window.innerWidth >= 769) {
+    btn.addEventListener('mouseenter', updateDicePosition);
+    btn.addEventListener('mouseleave', updateDicePosition);
+  }
+}
+
+function stopDicePositionTracking() {
+  if (dicePositionInterval) {
+    clearInterval(dicePositionInterval);
+    dicePositionInterval = null;
+  }
+}
+
 // Соответствие иконок их текстовым описаниям для title атрибутов
 const iconTitles = {
   "🏆": "Стандартный",
@@ -48,6 +121,7 @@ async function luckyBetForCurrentRound() {
   if (luckyBtn) {
     luckyBtn.classList.add('spinning');
     luckyBtn.disabled = true;
+    updateDicePosition(); // Обновляем позицию для центрирования
   }
   
   // Ждем 2 секунды пока кубик крутится
@@ -95,6 +169,7 @@ async function luckyBetForCurrentRound() {
   if (luckyBtn) {
     luckyBtn.classList.remove('spinning');
     luckyBtn.disabled = false;
+    updateDicePosition(); // Возвращаем позицию обратно
   }
   
   await loadMyBets();
@@ -534,6 +609,9 @@ async function loadConfig() {
 // Загрузить турниры при загрузке страницы
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🔄 DOMContentLoaded - начало загрузки");
+
+  // Запускаем отслеживание позиции кубика
+  startDicePositionTracking();
 
   // Загружаем сохраненную тему
   loadSavedTheme();
