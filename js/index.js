@@ -483,12 +483,18 @@ function openRoundsOrderModal() {
 
   renderRoundsOrderList();
   document.getElementById("roundsOrderModal").classList.add("active");
+  
+  // Блокируем скролл body
+  document.body.style.overflow = 'hidden';
 }
 
 // Закрыть модальное окно
 function closeRoundsOrderModal(event) {
   if (event && event.target !== event.currentTarget) return;
   document.getElementById("roundsOrderModal").classList.remove("active");
+  
+  // Разблокируем скролл body
+  document.body.style.overflow = '';
 }
 
 // Отрисовать список туров в модальном окне
@@ -500,6 +506,7 @@ function renderRoundsOrderList() {
       <li class="rounds-order-item" draggable="true" data-index="${index}">
         <span class="drag-handle">☰</span>
         <span class="round-name">${round}</span>
+        <button class="delete-round-btn" onclick="deleteRound('${round.replace(/'/g, "\\'")}', ${index})" title="Удалить тур и все его матчи">×</button>
       </li>
     `
     )
@@ -515,6 +522,45 @@ function renderRoundsOrderList() {
     item.addEventListener("dragenter", handleDragEnter);
     item.addEventListener("dragleave", handleDragLeave);
   });
+}
+
+// Удалить тур и все его матчи
+async function deleteRound(roundName, index) {
+  if (!confirm(`Вы уверены, что хотите удалить тур "${roundName}" и все его матчи?`)) {
+    return;
+  }
+
+  try {
+    // Удаляем тур из временного массива
+    tempRoundsOrder.splice(index, 1);
+    
+    // Удаляем матчи этого тура из базы данных
+    const response = await fetch(`/api/admin/rounds/${encodeURIComponent(roundName)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        event_id: currentEventId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Ошибка при удалении тура');
+    }
+
+    // Обновляем глобальный массив туров
+    roundsOrder = [...tempRoundsOrder];
+    await saveRoundsOrderToStorage();
+    
+    // Перезагружаем матчи
+    await loadMatches();
+    
+    // Перерисовываем список туров в модалке
+    renderRoundsOrderList();
+  } catch (error) {
+    console.error('Ошибка при удалении тура:', error);
+    alert('Не удалось удалить тур');
+  }
 }
 
 // Drag-and-drop обработчики

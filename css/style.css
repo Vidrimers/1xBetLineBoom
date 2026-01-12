@@ -2356,6 +2356,25 @@ button.tab-btn:hover {
   color: #e0e6f0;
 }
 
+.rounds-order-item .delete-round-btn {
+  background: transparent;
+  border: none;
+  color: #f44336;
+  font-size: 1.5em;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 8px;
+  margin-left: 10px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.rounds-order-item .delete-round-btn:hover {
+  opacity: 1;
+  color: #ff5252;
+  transform: scale(1.2);
+}
+
 .rounds-order-buttons {
   display: flex;
   gap: 10px;

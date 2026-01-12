@@ -5731,6 +5731,58 @@ app.delete("/api/admin/matches/:matchId", (req, res) => {
   }
 });
 
+// DELETE /api/admin/rounds/:roundName - Удалить тур и все его матчи
+app.delete("/api/admin/rounds/:roundName", (req, res) => {
+  const { roundName } = req.params;
+  const { username, event_id } = req.body;
+
+  if (username !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Получаем все матчи этого тура
+    const matches = db
+      .prepare("SELECT id FROM matches WHERE round = ? AND event_id = ?")
+      .all(roundName, event_id);
+
+    console.log(`🗑️ Удаление тура "${roundName}" с ${matches.length} матчами`);
+
+    // Удаляем ставки для каждого матча
+    for (const match of matches) {
+      db.prepare("DELETE FROM bets WHERE match_id = ?").run(match.id);
+      
+      try {
+        db.prepare("DELETE FROM final_bets WHERE match_id = ?").run(match.id);
+      } catch (e) {
+        // Таблица final_bets не существует
+      }
+
+      try {
+        db.prepare("DELETE FROM final_parameters_results WHERE match_id = ?").run(match.id);
+      } catch (e) {
+        // Таблица не существует
+      }
+    }
+
+    // Удаляем все матчи тура
+    const result = db
+      .prepare("DELETE FROM matches WHERE round = ? AND event_id = ?")
+      .run(roundName, event_id);
+
+    console.log(`✅ Тур "${roundName}" удален, удалено матчей: ${result.changes}`);
+    
+    res.json({ 
+      success: true, 
+      message: `Тур "${roundName}" и ${matches.length} матчей успешно удалены`,
+      deletedMatches: matches.length
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при удалении тура:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/clear-logs - Очистить файл логов (только для админа)
 app.post("/api/admin/clear-logs", (req, res) => {
   const { username } = req.body;
