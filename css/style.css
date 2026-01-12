@@ -10,11 +10,34 @@
   font-weight: 600;
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(245, 124, 0, 0.08);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
 }
-.lucky-btn:hover {
-  background: #ffe0b2;
-  /* color: #fff; */
-  border-color: #c9721c;
+
+/* Hover только для десктопа */
+@media (min-width: 769px) {
+  .lucky-btn:hover {
+    background: #ffe0b2;
+    border-color: #c9721c;
+  }
+  
+  .lucky-btn:hover .lucky-text {
+    opacity: 0;
+  }
+  
+  .lucky-btn:hover .dice-icon {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-right: 0;
+  }
+}
+
+.lucky-text {
+  transition: opacity 0.4s ease;
 }
 
 .lucky-btn .dice-icon {
@@ -24,6 +47,7 @@
   height: 14px;
   vertical-align: middle;
   margin-right: 5px;
+  transition: all 0.4s ease;
 }
 
 .dice-3d {
@@ -156,34 +180,39 @@
   grid-area: 3 / 3;
 }
 
+/* Состояние spinning - текст исчезает, кубик плавно перемещается в центр и крутится */
 .lucky-btn.spinning {
   pointer-events: none;
   opacity: 0.7;
 }
 
+.lucky-btn.spinning .lucky-text {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
 .lucky-btn.spinning .dice-icon {
   width: 22px;
   height: 22px;
-  transition: width 0.3s, height 0.3s;
-  position: relative;
-  z-index: 10;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-right: 0;
+  transition: all 0.4s ease;
 }
 
 .lucky-btn.spinning .dice-3d {
   animation: dice-roll 2s ease-out;
   width: 22px;
   height: 22px;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  margin-left: -11px;
-  margin-top: -11px;
+  transition: width 0.4s ease, height 0.4s ease;
 }
 
 .lucky-btn.spinning .dice-face {
   width: 22px;
   height: 22px;
   padding: 3px;
+  transition: all 0.4s ease;
 }
 
 .lucky-btn.spinning .dice-front {
@@ -213,15 +242,7 @@
 .lucky-btn.spinning .dot {
   width: 3px;
   height: 3px;
-}
-
-.lucky-btn.spinning {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
-.lucky-btn.spinning .dice-3d {
-  animation: dice-roll 2s ease-out;
+  transition: all 0.4s ease;
 }
 
 @keyframes dice-roll {
