@@ -42,6 +42,17 @@ async function luckyBetForCurrentRound() {
     alert("Нет доступных матчей для случайной ставки в этом туре");
     return;
   }
+  
+  // Находим кнопку и добавляем класс для анимации
+  const luckyBtn = document.querySelector('.lucky-btn');
+  if (luckyBtn) {
+    luckyBtn.classList.add('spinning');
+    luckyBtn.disabled = true;
+  }
+  
+  // Ждем 1 секунду пока кубик крутится
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
   // Для каждого такого матча делаем случайную ставку
   for (const match of matchesToBet) {
     const options = ["team1", "draw", "team2"];
@@ -62,6 +73,13 @@ async function luckyBetForCurrentRound() {
       console.error("Ошибка при отправке случайной ставки:", e);
     }
   }
+  
+  // Убираем анимацию и включаем кнопку
+  if (luckyBtn) {
+    luckyBtn.classList.remove('spinning');
+    luckyBtn.disabled = false;
+  }
+  
   await loadMyBets();
 }
 
