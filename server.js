@@ -6109,7 +6109,7 @@ app.put("/api/admin/users/:userId", (req, res) => {
 });
 
 // DELETE /api/admin/users/:userId - Удалить пользователя (только для админа)
-app.delete("/api/admin/users/:userId", (req, res) => {
+app.delete("/api/admin/users/:userId", async (req, res) => {
   const { userId } = req.params;
   const { username: adminUsername } = req.body;
 
@@ -6127,12 +6127,26 @@ app.delete("/api/admin/users/:userId", (req, res) => {
   }
 
   try {
+    // Получаем информацию о пользователе перед удалением
+    const userInfo = db
+      .prepare("SELECT username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!userInfo) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
     // Получаем все финальные ставки пользователя чтобы потом удалить их параметры
     const finalBets = db
       .prepare(
         "SELECT match_id FROM bets WHERE user_id = ? AND is_final_bet = 1"
       )
       .all(userId);
+
+    // Получаем количество ставок пользователя
+    const betsCount = db
+      .prepare("SELECT COUNT(*) as count FROM bets WHERE user_id = ?")
+      .get(userId);
 
     // Удаляем все ставки пользователя
     db.prepare("DELETE FROM bets WHERE user_id = ?").run(userId);
@@ -6161,6 +6175,37 @@ app.delete("/api/admin/users/:userId", (req, res) => {
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Отправляем уведомление админу
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      const time = new Date().toLocaleString("ru-RU");
+      const message = `🗑️ УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
+
+👤 Пользователь: ${userInfo.username}
+${userInfo.telegram_username ? `📱 Telegram: @${userInfo.telegram_username}` : ""}
+📊 Удалено ставок: ${betsCount.count}
+✏️ Действие: удален из системы
+🕐 Время: ${time}`;
+
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          }
+        );
+      } catch (err) {
+        console.error("❌ Ошибка отправки уведомления админу:", err);
+      }
     }
 
     res.json({ message: "Пользователь успешно удален" });
