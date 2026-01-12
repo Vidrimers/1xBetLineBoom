@@ -6108,6 +6108,34 @@ app.put("/api/admin/users/:userId", (req, res) => {
   }
 });
 
+// GET /api/admin/users/:userId/bot-contact-check - Проверить, писал ли пользователь боту
+app.get("/api/admin/users/:userId/bot-contact-check", (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Получаем информацию о пользователе
+    const user = db
+      .prepare("SELECT username, telegram_username, telegram_id, require_login_2fa FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    const result = {
+      username: user.username,
+      telegram_username: user.telegram_username,
+      telegram_id: user.telegram_id,
+      has_bot_contact: !!user.telegram_id,
+      require_login_2fa: user.require_login_2fa !== 0
+    };
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/admin/users/:userId - Удалить пользователя (только для админа)
 app.delete("/api/admin/users/:userId", async (req, res) => {
   const { userId } = req.params;

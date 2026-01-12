@@ -1938,6 +1938,16 @@ button.tab-btn:hover {
   transform: translateY(-2px);
 }
 
+.admin-btn-bot-check {
+  background: #00bcd4;
+  color: white;
+}
+
+.admin-btn-bot-check:hover {
+  background: #0097a7;
+  transform: translateY(-2px);
+}
+
 /* Стили для формы */
 .form-group {
   display: flex;

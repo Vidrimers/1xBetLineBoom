@@ -5364,20 +5364,68 @@ function displayAdminUsersModal() {
         </div>
       </div>
       <div class="admin-user-actions">
+        <button class="admin-btn admin-btn-bot-check" onclick="checkUserBotContact(${
+          user.id
+        }, '${user.username}')" title="Проверка писал ли пользователь боту">🤖</button>
         <button class="admin-btn admin-btn-settings" onclick="sendUserSettingsToAdmin(${
           user.id
         }, '${user.username}')" title="Получить настройки пользователя">⚙️</button>
         <button class="admin-btn admin-btn-rename" onclick="renameUser(${
           user.id
-        }, '${user.username}')">✏️ Переименовать</button>
+        }, '${user.username}')" title="Переименовать пользователя">✏️</button>
         <button class="admin-btn admin-btn-delete" onclick="deleteUser(${
           user.id
-        }, '${user.username}')">🗑️ Удалить</button>
+        }, '${user.username}')" title="Удалить пользователя">🗑️</button>
       </div>
     </div>
   `
     )
     .join("");
+}
+
+// Проверить, писал ли пользователь боту
+async function checkUserBotContact(userId, username) {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/bot-contact-check`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert("Ошибка: " + result.error);
+      return;
+    }
+
+    let message = `👤 Пользователь: ${username}\n\n`;
+
+    if (result.telegram_username) {
+      message += `📱 Telegram: @${result.telegram_username}\n`;
+      
+      if (result.has_bot_contact) {
+        message += `✅ Статус: Писал боту в личку\n`;
+        message += `💬 Chat ID: ${result.telegram_id}\n`;
+        message += `🔐 2FA при логине: ${result.require_login_2fa ? 'Включено' : 'Отключено'}`;
+      } else {
+        message += `❌ Статус: НЕ писал боту в личку\n\n`;
+        message += `⚠️ Пользователь НЕ сможет:\n`;
+        message += `  • Получать коды подтверждения при логине\n`;
+        message += `  • Получать коды для выхода с устройств\n`;
+        message += `  • Получать коды для изменения Telegram\n\n`;
+        message += `Нужно написать боту @OnexBetLineBoomBot команду /start в личных сообщениях!`;
+      }
+    } else {
+      message += `❌ Telegram не привязан\n\n`;
+      message += `Пользователь должен привязать Telegram в настройках профиля.`;
+    }
+
+    alert(message);
+  } catch (error) {
+    console.error("Ошибка при проверке контакта с ботом:", error);
+    alert("Ошибка при проверке");
+  }
 }
 
 // Отобразить список пользователей в отдельном окне
