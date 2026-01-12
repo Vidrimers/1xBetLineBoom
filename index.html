@@ -518,6 +518,66 @@
               </div>
             </div>
 
+            <!-- Подтверждение логина через бота -->
+            <div
+              class="settings-item"
+              style="
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                margin-bottom: 15px;
+                border-left: 3px solid #e74c3c;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  flex-wrap: wrap;
+                  gap: 15px;
+                "
+              >
+                <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
+                  <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
+                    🔐 Подтверждение логина через бота
+                  </h3>
+                  <p style="margin: 0 0 8px 0; color: #aaa; font-size: 14px">
+                    Требовать код подтверждения из Telegram при каждом входе для дополнительной безопасности
+                  </p>
+                  <p style="margin: 0; color: #888; font-size: 12px">
+                    ⚠️ Для работы необходимо: 1) Привязать Telegram в настройках выше 2) Написать боту 
+                    <a href="https://t.me/OnexBetLineBoomBot" target="_blank" style="color: #5a9fd4; text-decoration: none;">@OnexBetLineBoomBot</a> 
+                    команду /start
+                  </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <label class="switch">
+                    <input type="checkbox" id="login2faCheckbox" />
+                    <span class="slider"></span>
+                  </label>
+                  <button
+                    onclick="saveLogin2faSettings()"
+                    id="saveLogin2faBtn"
+                    style="
+                      padding: 8px 16px;
+                      background: #e74c3c;
+                      color: white;
+                      border: none;
+                      border-radius: 4px;
+                      cursor: pointer;
+                      font-weight: 500;
+                      transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='#c0392b'"
+                    onmouseout="this.style.background='#e74c3c'"
+                  >
+                    Сохранить
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Показ победителя на завершённых турнирах -->
             <div
               class="settings-item"

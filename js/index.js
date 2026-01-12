@@ -5638,6 +5638,12 @@ async function loadSettings() {
       remindersCheckbox.checked = telegramGroupRemindersEnabled;
     }
 
+    // Загружаем настройку подтверждения логина через бота
+    const login2faCheckbox = document.getElementById("login2faCheckbox");
+    if (login2faCheckbox) {
+      login2faCheckbox.checked = currentUser.require_login_2fa !== 0; // По умолчанию включено
+    }
+
     // Загружаем настройку показа победителя
     await loadShowTournamentWinnerSetting();
 
@@ -5872,6 +5878,62 @@ async function saveGroupRemindersSettings() {
   } catch (error) {
     console.error("Ошибка при сохранении напоминаний в группе:", error);
     alert("Ошибка при сохранении");
+    btn.textContent = "Сохранить";
+    btn.disabled = false;
+  }
+}
+
+// Сохранить настройку подтверждения логина через бота
+async function saveLogin2faSettings() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  try {
+    const checkbox = document.getElementById("login2faCheckbox");
+    const isEnabled = checkbox.checked;
+    const btn = document.getElementById("saveLogin2faBtn");
+
+    // Проверяем, привязан ли Telegram
+    if (isEnabled && !currentUser.telegram_username) {
+      alert("Для включения подтверждения логина необходимо сначала привязать Telegram в настройках выше");
+      checkbox.checked = false;
+      return;
+    }
+
+    // Добавляем визуальную обратную связь
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch(`/api/user/${currentUser.id}/settings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ require_login_2fa: isEnabled ? 1 : 0 }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Обновляем в currentUser
+      currentUser.require_login_2fa = isEnabled ? 1 : 0;
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+      // Показываем успешное сохранение
+      btn.textContent = "✅ Сохранено!";
+      setTimeout(() => {
+        btn.textContent = "Сохранить";
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      alert("Ошибка: " + result.error);
+      btn.textContent = "Сохранить";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении настройки 2FA:", error);
+    alert("Ошибка при сохранении");
+    const btn = document.getElementById("saveLogin2faBtn");
     btn.textContent = "Сохранить";
     btn.disabled = false;
   }

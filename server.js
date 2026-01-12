@@ -2288,7 +2288,8 @@ app.post("/api/user", (req, res) => {
       res.json(user);
     } else {
       // Пользователь существует - проверяем, нужна ли 2FA
-      if (user.telegram_id) {
+      // Проверяем: есть ли telegram_id И включена ли настройка require_login_2fa
+      if (user.telegram_id && user.require_login_2fa !== 0) {
         // Требуется подтверждение через Telegram
         res.json({ 
           requiresConfirmation: true, 
@@ -2296,7 +2297,7 @@ app.post("/api/user", (req, res) => {
           username: user.username 
         });
       } else {
-        // 2FA не настроена, возвращаем пользователя
+        // 2FA не настроена или отключена, возвращаем пользователя
         res.json(user);
       }
     }
@@ -4672,7 +4673,7 @@ app.post("/api/user/:userId/sessions/:sessionToken/confirm-logout", async (req, 
 app.put("/api/user/:userId/settings", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { telegram_notifications_enabled, telegram_group_reminders_enabled, theme } =
+    const { telegram_notifications_enabled, telegram_group_reminders_enabled, theme, require_login_2fa } =
       req.body;
 
     // Проверяем существование пользователя
@@ -4681,6 +4682,22 @@ app.put("/api/user/:userId/settings", async (req, res) => {
       .get(userId);
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Обновляем настройку подтверждения логина через бота (если передана)
+    if (require_login_2fa !== undefined) {
+      const login2faEnabled = require_login_2fa ? 1 : 0;
+      db.prepare(
+        "UPDATE users SET require_login_2fa = ? WHERE id = ?"
+      ).run(login2faEnabled, userId);
+
+      // Записываем в лог изменение настройки
+      writeBetLog("settings", {
+        username: user.username,
+        setting: "Login 2FA",
+        oldValue: null,
+        newValue: login2faEnabled ? "Включено" : "Отключено",
+      });
     }
 
     // Обновляем тему (если передана)
