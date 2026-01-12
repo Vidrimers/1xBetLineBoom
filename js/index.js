@@ -207,6 +207,119 @@ function toggleFinalMatch(modal) {
 let currentUser = null;
 let currentEventId = null;
 let events = [];
+
+// Кастомные модальные окна
+function showCustomAlert(message, title = "Уведомление", icon = "ℹ️") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    
+    overlay.innerHTML = `
+      <div class="custom-modal">
+        <div class="custom-modal-title">${icon} ${title}</div>
+        <div class="custom-modal-message">${message}</div>
+        <div class="custom-modal-buttons">
+          <button class="custom-modal-btn custom-modal-btn-primary" onclick="this.closest('.custom-modal-overlay').remove()">OK</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    overlay.querySelector('.custom-modal-btn').addEventListener('click', () => {
+      resolve(true);
+    });
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve(true);
+      }
+    });
+  });
+}
+
+function showCustomConfirm(message, title = "Подтверждение", icon = "❓") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    
+    overlay.innerHTML = `
+      <div class="custom-modal">
+        <div class="custom-modal-title">${icon} ${title}</div>
+        <div class="custom-modal-message">${message}</div>
+        <div class="custom-modal-buttons">
+          <button class="custom-modal-btn custom-modal-btn-secondary" data-action="cancel">Отмена</button>
+          <button class="custom-modal-btn custom-modal-btn-primary" data-action="confirm">Продолжить</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    overlay.querySelectorAll('.custom-modal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.getAttribute('data-action');
+        overlay.remove();
+        resolve(action === 'confirm');
+      });
+    });
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve(false);
+      }
+    });
+  });
+}
+
+function showCustomPrompt(message, title = "Ввод данных", icon = "✏️", placeholder = "") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    
+    overlay.innerHTML = `
+      <div class="custom-modal">
+        <div class="custom-modal-title">${icon} ${title}</div>
+        <div class="custom-modal-message">${message}</div>
+        <input type="text" class="custom-modal-input" placeholder="${placeholder}" autofocus>
+        <div class="custom-modal-buttons">
+          <button class="custom-modal-btn custom-modal-btn-secondary" data-action="cancel">Отмена</button>
+          <button class="custom-modal-btn custom-modal-btn-primary" data-action="confirm">OK</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    const input = overlay.querySelector('.custom-modal-input');
+    
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        overlay.remove();
+        resolve(input.value.trim() || null);
+      }
+    });
+    
+    overlay.querySelectorAll('.custom-modal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.getAttribute('data-action');
+        overlay.remove();
+        resolve(action === 'confirm' ? (input.value.trim() || null) : null);
+      });
+    });
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve(null);
+      }
+    });
+    
+    setTimeout(() => input.focus(), 100);
+  });
+}
 let matches = [];
 let userBets = [];
 let ADMIN_LOGIN = null;
@@ -834,7 +947,7 @@ async function initUser() {
   let username = document.getElementById("username").value.trim();
 
   if (!username) {
-    alert("Пожалуйста, введите имя");
+    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "⚠️");
     return;
   }
 
@@ -850,7 +963,7 @@ async function initUser() {
       body: JSON.stringify({ attemptedUsername: username }),
     }).catch((err) => console.error("Ошибка отправки уведомления:", err));
 
-    alert("Ну, ты давай не охуевай совсем, малютка");
+    await showCustomAlert("Ну, ты давай не охуевай совсем, малютка", "Доступ запрещен", "🚫");
     document.getElementById("username").value = "";
     return;
   }
@@ -884,7 +997,13 @@ async function initUser() {
     // Проверяем, требуется ли подтверждение через Telegram
     if (result.requiresConfirmation) {
       // Запрашиваем код подтверждения
-      if (!confirm('Для входа требуется подтверждение через Telegram. Вам будет отправлен код подтверждения. Продолжить?')) {
+      const shouldContinue = await showCustomConfirm(
+        'Для входа требуется подтверждение через Telegram. Вам будет отправлен код подтверждения.',
+        'Подтверждение входа',
+        '🔐'
+      );
+      
+      if (!shouldContinue) {
         return;
       }
 
@@ -899,7 +1018,13 @@ async function initUser() {
 
         if (requestResponse.ok) {
           // Показываем поле для ввода кода
-          const code = prompt('Введите код подтверждения, отправленный вам в Telegram:');
+          const code = await showCustomPrompt(
+            'Код подтверждения отправлен вам в Telegram. Введите его ниже:',
+            'Введите код',
+            '🔐',
+            '123456'
+          );
+          
           if (!code) return;
 
           // Подтверждаем вход
@@ -915,7 +1040,7 @@ async function initUser() {
           const confirmResult = await confirmResponse.json();
 
           if (!confirmResponse.ok) {
-            alert('Ошибка: ' + confirmResult.error);
+            await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
             return;
           }
 
@@ -923,12 +1048,12 @@ async function initUser() {
           currentUser = confirmResult;
           currentUser.isAdmin = isAdminUser;
         } else {
-          alert('Ошибка: ' + requestResult.error);
+          await showCustomAlert(requestResult.error, 'Ошибка', '❌');
           return;
         }
       } catch (error) {
         console.error("Ошибка при подтверждении входа:", error);
-        alert("Ошибка при подтверждении входа");
+        await showCustomAlert("Ошибка при подтверждении входа", 'Ошибка', '❌');
         return;
       }
     } else {
@@ -4494,11 +4619,17 @@ async function logoutDevice(sessionToken) {
 
   // Проверяем, привязан ли Telegram
   if (!currentUser.telegram_username) {
-    alert('Для выхода с устройства необходимо привязать Telegram в настройках');
+    await showCustomAlert('Для выхода с устройства необходимо привязать Telegram в настройках', 'Требуется Telegram', '⚠️');
     return;
   }
 
-  if (!confirm('Для завершения сеанса на этом устройстве требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?')) {
+  const shouldContinue = await showCustomConfirm(
+    'Для завершения сеанса на этом устройстве требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения.',
+    'Подтверждение выхода',
+    '🔐'
+  );
+  
+  if (!shouldContinue) {
     return;
   }
 
@@ -4513,7 +4644,13 @@ async function logoutDevice(sessionToken) {
 
     if (response.ok) {
       // Показываем поле для ввода кода
-      const code = prompt('Введите код подтверждения, отправленный вам в Telegram:');
+      const code = await showCustomPrompt(
+        'Код подтверждения отправлен вам в Telegram. Введите его ниже:',
+        'Введите код',
+        '🔐',
+        '123456'
+      );
+      
       if (!code) return;
 
       // Подтверждаем выход
@@ -4528,14 +4665,14 @@ async function logoutDevice(sessionToken) {
       if (confirmResponse.ok) {
         await loadDevicesList();
       } else {
-        alert('Ошибка: ' + confirmResult.error);
+        await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
       }
     } else {
-      alert('Ошибка: ' + result.error);
+      await showCustomAlert(result.error, 'Ошибка', '❌');
     }
   } catch (error) {
     console.error("❌ Ошибка при выходе с устройства:", error);
-    alert('Ошибка при выходе с устройства');
+    await showCustomAlert('Ошибка при выходе с устройства', 'Ошибка', '❌');
   }
 }
 
@@ -4545,13 +4682,19 @@ async function toggleTrustedDevice(sessionToken, isTrusted) {
 
   // Проверяем, привязан ли Telegram
   if (!currentUser.telegram_username) {
-    alert('Для управления доверенными устройствами необходимо привязать Telegram в настройках');
+    await showCustomAlert('Для управления доверенными устройствами необходимо привязать Telegram в настройках', 'Требуется Telegram', '⚠️');
     return;
   }
 
   const action = isTrusted ? 'убрать из доверенных' : 'добавить в доверенные';
   
-  if (!confirm(`Для того чтобы ${action} это устройство, требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?`)) {
+  const shouldContinue = await showCustomConfirm(
+    `Для того чтобы ${action} это устройство, требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения.`,
+    isTrusted ? 'Убрать из доверенных' : 'Добавить в доверенные',
+    isTrusted ? '🔓' : '🔒'
+  );
+  
+  if (!shouldContinue) {
     return;
   }
 
@@ -4567,7 +4710,13 @@ async function toggleTrustedDevice(sessionToken, isTrusted) {
 
     if (response.ok) {
       // Показываем поле для ввода кода
-      const code = prompt('Введите код подтверждения, отправленный вам в Telegram:');
+      const code = await showCustomPrompt(
+        'Код подтверждения отправлен вам в Telegram. Введите его ниже:',
+        'Введите код',
+        '🔐',
+        '123456'
+      );
+      
       if (!code) return;
 
       // Подтверждаем изменение
@@ -4584,15 +4733,20 @@ async function toggleTrustedDevice(sessionToken, isTrusted) {
 
       if (confirmResponse.ok) {
         await loadDevicesList();
+        await showCustomAlert(
+          `Устройство успешно ${isTrusted ? 'убрано из доверенных' : 'добавлено в доверенные'}`,
+          'Успешно',
+          '✅'
+        );
       } else {
-        alert('Ошибка: ' + confirmResult.error);
+        await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
       }
     } else {
-      alert('Ошибка: ' + result.error);
+      await showCustomAlert(result.error, 'Ошибка', '❌');
     }
   } catch (error) {
     console.error("❌ Ошибка при изменении статуса доверенного устройства:", error);
-    alert('Ошибка при изменении статуса доверенного устройства');
+    await showCustomAlert('Ошибка при изменении статуса доверенного устройства', 'Ошибка', '❌');
   }
 }
 
