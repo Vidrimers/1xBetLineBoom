@@ -659,9 +659,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Запускаем отслеживание позиции кубика
   startDicePositionTracking();
 
-  // Загружаем сохраненную тему
-  loadSavedTheme();
-
   // Загружаем конфиг сначала
   await loadConfig();
 
@@ -746,11 +743,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("adminSettingsPanel").style.display = "block";
     }
 
+    // Загружаем тему с сервера после установки currentUser
+    await loadSavedTheme();
+
     loadEventsList();
     await loadMyBets();
   } else {
     setAuthButtonToLoginState();
     loadEventsList();
+    
+    // Загружаем тему из localStorage для незалогиненных пользователей
+    await loadSavedTheme();
   }
 
   // Запускаем периодическую проверку сессии каждые 5 секунд
