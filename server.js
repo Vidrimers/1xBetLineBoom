@@ -2285,7 +2285,109 @@ app.post("/api/user", (req, res) => {
         .prepare("INSERT INTO users (username) VALUES (?)")
         .run(username);
       user = { id: result.lastInsertRowid, username };
+      res.json(user);
+    } else {
+      // Пользователь существует - проверяем, нужна ли 2FA
+      if (user.telegram_id) {
+        // Требуется подтверждение через Telegram
+        res.json({ 
+          requiresConfirmation: true, 
+          userId: user.id,
+          username: user.username 
+        });
+      } else {
+        // 2FA не настроена, возвращаем пользователя
+        res.json(user);
+      }
     }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/login/request - Запросить код для входа
+app.post("/api/user/login/request", async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    const user = db
+      .prepare("SELECT id, username, telegram_id, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+    
+    if (!user || !user.telegram_id) {
+      return res.status(404).json({ error: "Пользователь не найден или Telegram не привязан" });
+    }
+
+    // Генерируем 6-значный код
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Сохраняем код с временем истечения (5 минут)
+    confirmationCodes.set(`login_${userId}`, {
+      code,
+      expires: Date.now() + 5 * 60 * 1000
+    });
+
+    // Отправляем код в Telegram через chat_id
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN) {
+      const message = `🔐 КОД ПОДТВЕРЖДЕНИЯ ВХОДА
+
+Попытка входа в аккаунт на сайте 1xBetLineBoom.
+
+👤 Аккаунт: ${user.username}
+
+Ваш код подтверждения: <code>${code}</code>
+
+Код действителен 5 минут.
+
+Если это были не вы, проигнорируйте это сообщение и смените пароль.`;
+
+      try {
+        await sendUserMessage(user.telegram_id, message);
+        res.json({ success: true, message: "Код отправлен в Telegram" });
+      } catch (err) {
+        console.error("❌ Ошибка отправки кода:", err);
+        res.status(500).json({ error: "Не удалось отправить код в Telegram" });
+      }
+    } else {
+      res.status(500).json({ error: "Telegram бот не настроен" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/login/confirm - Подтвердить вход
+app.post("/api/user/login/confirm", async (req, res) => {
+  try {
+    const { userId, confirmation_code } = req.body;
+
+    const stored = confirmationCodes.get(`login_${userId}`);
+    
+    if (!stored) {
+      return res.status(400).json({ error: "Код не найден. Запросите новый код." });
+    }
+
+    if (Date.now() > stored.expires) {
+      confirmationCodes.delete(`login_${userId}`);
+      return res.status(400).json({ error: "Код истек. Запросите новый код." });
+    }
+
+    if (stored.code !== confirmation_code) {
+      return res.status(400).json({ error: "Неверный код подтверждения" });
+    }
+
+    // Код верный, возвращаем пользователя
+    const user = db
+      .prepare("SELECT * FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Удаляем использованный код
+    confirmationCodes.delete(`login_${userId}`);
 
     res.json(user);
   } catch (error) {
@@ -3840,8 +3942,23 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
 
     const oldTelegramUsername = user.telegram_username;
 
-    db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(
+    // Получаем telegram_id (chat_id) из telegram_users если пользователь уже писал боту
+    let telegramId = null;
+    if (telegram_username) {
+      const cleanUsername = telegram_username.toLowerCase();
+      const telegramUser = db
+        .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
+        .get(cleanUsername);
+      
+      if (telegramUser && telegramUser.chat_id) {
+        telegramId = telegramUser.chat_id;
+      }
+    }
+
+    // Обновляем telegram_username и telegram_id
+    db.prepare("UPDATE users SET telegram_username = ?, telegram_id = ? WHERE id = ?").run(
       telegram_username || null,
+      telegramId,
       userId
     );
 
@@ -4116,8 +4233,22 @@ app.post("/api/user/:userId/telegram/confirm-change", async (req, res) => {
 
     const oldUsername = user.telegram_username;
 
-    db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(
+    // Получаем telegram_id (chat_id) из telegram_users
+    let telegramId = null;
+    if (cleanNewUsername) {
+      const telegramUser = db
+        .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
+        .get(cleanNewUsername.toLowerCase());
+      
+      if (telegramUser && telegramUser.chat_id) {
+        telegramId = telegramUser.chat_id;
+      }
+    }
+
+    // Обновляем telegram_username и telegram_id
+    db.prepare("UPDATE users SET telegram_username = ?, telegram_id = ? WHERE id = ?").run(
       cleanNewUsername,
+      telegramId,
       userId
     );
 

@@ -868,9 +868,63 @@ async function initUser() {
       body: JSON.stringify({ username: usernameToSend }),
     });
 
-    const user = await response.json();
-    currentUser = user;
-    currentUser.isAdmin = isAdminUser; // Устанавливаем флаг админа
+    const result = await response.json();
+
+    // Проверяем, требуется ли подтверждение через Telegram
+    if (result.requiresConfirmation) {
+      // Запрашиваем код подтверждения
+      if (!confirm('Для входа требуется подтверждение через Telegram. Вам будет отправлен код подтверждения. Продолжить?')) {
+        return;
+      }
+
+      try {
+        const requestResponse = await fetch("/api/user/login/request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: result.userId })
+        });
+
+        const requestResult = await requestResponse.json();
+
+        if (requestResponse.ok) {
+          // Показываем поле для ввода кода
+          const code = prompt('Введите код подтверждения, отправленный вам в Telegram:');
+          if (!code) return;
+
+          // Подтверждаем вход
+          const confirmResponse = await fetch("/api/user/login/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              userId: result.userId,
+              confirmation_code: code 
+            })
+          });
+
+          const confirmResult = await confirmResponse.json();
+
+          if (!confirmResponse.ok) {
+            alert('Ошибка: ' + confirmResult.error);
+            return;
+          }
+
+          // Код верный, продолжаем логин
+          currentUser = confirmResult;
+          currentUser.isAdmin = isAdminUser;
+        } else {
+          alert('Ошибка: ' + requestResult.error);
+          return;
+        }
+      } catch (error) {
+        console.error("Ошибка при подтверждении входа:", error);
+        alert("Ошибка при подтверждении входа");
+        return;
+      }
+    } else {
+      // 2FA не требуется
+      currentUser = result;
+      currentUser.isAdmin = isAdminUser;
+    }
 
     // Создаем сессию на сервере
     const deviceData = getDeviceInfo();
@@ -916,7 +970,7 @@ async function initUser() {
 
     // Показываем информацию о пользователе
     document.getElementById("userStatus").style.display = "block";
-    document.getElementById("usernameBold").textContent = user.username;
+    document.getElementById("usernameBold").textContent = currentUser.username;
     document.getElementById("username").disabled = true;
 
     setAuthButtonToLogoutState();
@@ -933,7 +987,7 @@ async function initUser() {
     loadMyBets();
   } catch (error) {
     console.error("Ошибка при входе:", error);
-    alert("Ошибка при входе");
+    alert("Ошибка при входе: " + (error.message || error));
   }
 }
 
