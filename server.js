@@ -2290,12 +2290,40 @@ app.post("/api/user", (req, res) => {
       // Пользователь существует - проверяем, нужна ли 2FA
       // Проверяем: есть ли telegram_id И включена ли настройка require_login_2fa
       if (user.telegram_id && user.require_login_2fa !== 0) {
-        // Требуется подтверждение через Telegram
-        res.json({ 
-          requiresConfirmation: true, 
-          userId: user.id,
-          username: user.username 
-        });
+        // Проверяем, было ли это устройство доверенным ранее
+        const { device_info, browser, os } = req.body;
+        const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+        
+        console.log("🔍 Проверка доверенного устройства:");
+        console.log("  User ID:", user.id);
+        console.log("  Device:", device_info);
+        console.log("  Browser:", browser);
+        console.log("  OS:", os);
+        console.log("  IP:", ip_address);
+        
+        // Ищем любую доверенную сессию с этого устройства (даже старую)
+        const wasTrusted = db.prepare(`
+          SELECT id FROM sessions 
+          WHERE user_id = ? AND device_info = ? AND browser = ? AND os = ? 
+          AND ip_address = ? AND is_trusted = 1
+          ORDER BY created_at DESC LIMIT 1
+        `).get(user.id, device_info, browser, os, ip_address);
+
+        console.log("  Найдена доверенная сессия:", wasTrusted ? "ДА" : "НЕТ");
+
+        if (wasTrusted) {
+          // Устройство было доверенным, пропускаем 2FA
+          console.log("✅ Устройство доверенное, пропускаем 2FA");
+          res.json(user);
+        } else {
+          // Требуется подтверждение через Telegram
+          console.log("⚠️ Требуется 2FA");
+          res.json({ 
+            requiresConfirmation: true, 
+            userId: user.id,
+            username: user.username 
+          });
+        }
       } else {
         // 2FA не настроена или отключена, возвращаем пользователя
         res.json(user);
@@ -4422,7 +4450,7 @@ app.post("/api/sessions", async (req, res) => {
 
     // Проверяем, есть ли уже сессия с таким же устройством и IP
     const existingSession = db.prepare(`
-      SELECT session_token FROM sessions 
+      SELECT session_token, is_trusted FROM sessions 
       WHERE user_id = ? AND device_info = ? AND browser = ? AND os = ? AND ip_address = ?
     `).get(user_id, device_info, browser, os, ip_address);
 
@@ -4441,14 +4469,32 @@ app.post("/api/sessions", async (req, res) => {
       });
     }
 
+    // Проверяем, было ли это устройство доверенным ранее (даже если сессия была удалена)
+    const wasTrusted = db.prepare(`
+      SELECT is_trusted FROM sessions 
+      WHERE user_id = ? AND device_info = ? AND browser = ? AND os = ? AND ip_address = ? AND is_trusted = 1
+      ORDER BY created_at DESC LIMIT 1
+    `).get(user_id, device_info, browser, os, ip_address);
+
+    const is_trusted = wasTrusted ? 1 : 0;
+
+    console.log("🔧 Создание новой сессии:");
+    console.log("  User ID:", user_id);
+    console.log("  Device:", device_info);
+    console.log("  Browser:", browser);
+    console.log("  OS:", os);
+    console.log("  IP:", ip_address);
+    console.log("  Было доверенным ранее:", wasTrusted ? "ДА" : "НЕТ");
+    console.log("  is_trusted:", is_trusted);
+
     // Генерируем уникальный токен сессии
     const session_token = `${user_id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    // Создаем новую сессию
+    // Создаем новую сессию с сохранением статуса доверенного устройства
     db.prepare(`
-      INSERT INTO sessions (user_id, session_token, device_info, browser, os, ip_address)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(user_id, session_token, device_info, browser, os, ip_address);
+      INSERT INTO sessions (user_id, session_token, device_info, browser, os, ip_address, is_trusted)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(user_id, session_token, device_info, browser, os, ip_address, is_trusted);
 
     res.json({ 
       success: true, 
@@ -4468,7 +4514,7 @@ app.get("/api/user/:userId/sessions", async (req, res) => {
 
     const sessions = db.prepare(`
       SELECT id, session_token, device_info, browser, os, ip_address, 
-             last_activity, created_at
+             last_activity, created_at, is_trusted
       FROM sessions
       WHERE user_id = ?
       ORDER BY last_activity DESC
@@ -4662,6 +4708,165 @@ app.post("/api/user/:userId/sessions/:sessionToken/confirm-logout", async (req, 
     }
 
     res.json({ success: true, message: "Сессия успешно удалена" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/sessions/:sessionToken/request-trust - Запросить изменение статуса доверенного устройства
+app.post("/api/user/:userId/sessions/:sessionToken/request-trust", async (req, res) => {
+  try {
+    const { userId, sessionToken } = req.params;
+    const { is_trusted } = req.body;
+
+    const user = db
+      .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+    
+    if (!user || !user.telegram_username) {
+      return res.status(404).json({ error: "Пользователь не найден или Telegram не привязан" });
+    }
+
+    // Проверяем, что сессия принадлежит пользователю
+    const session = db.prepare(`
+      SELECT device_info, browser, os FROM sessions WHERE user_id = ? AND session_token = ?
+    `).get(userId, sessionToken);
+
+    if (!session) {
+      return res.status(404).json({ error: "Сессия не найдена" });
+    }
+
+    // Генерируем 6-значный код
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Сохраняем код с временем истечения (5 минут)
+    confirmationCodes.set(`trust_${userId}_${sessionToken}`, {
+      code,
+      expires: Date.now() + 5 * 60 * 1000
+    });
+
+    // Отправляем код в Telegram
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN) {
+      const action = is_trusted ? 'добавить в доверенные' : 'убрать из доверенных';
+      const message = `🔐 КОД ПОДТВЕРЖДЕНИЯ
+
+Вы запросили изменение статуса устройства на сайте 1xBetLineBoom.
+
+Устройство: ${session.device_info || 'Неизвестно'}
+Браузер: ${session.browser || 'Неизвестно'}
+ОС: ${session.os || 'Неизвестно'}
+
+Действие: ${action}
+
+Ваш код подтверждения: <code>${code}</code>
+
+Код действителен 5 минут.
+
+Если это были не вы, проигнорируйте это сообщение.`;
+
+      try {
+        await sendTelegramMessageByUsername(user.telegram_username, message);
+        res.json({ success: true, message: "Код отправлен в Telegram" });
+      } catch (err) {
+        console.error("❌ Ошибка отправки кода:", err);
+        res.status(500).json({ error: "Не удалось отправить код в Telegram. Убедитесь, что вы писали боту." });
+      }
+    } else {
+      res.status(500).json({ error: "Telegram бот не настроен" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/sessions/:sessionToken/confirm-trust - Подтвердить изменение статуса доверенного устройства
+app.post("/api/user/:userId/sessions/:sessionToken/confirm-trust", async (req, res) => {
+  try {
+    const { userId, sessionToken } = req.params;
+    const { confirmation_code, is_trusted } = req.body;
+
+    const stored = confirmationCodes.get(`trust_${userId}_${sessionToken}`);
+    
+    if (!stored) {
+      return res.status(400).json({ error: "Код не найден. Запросите новый код." });
+    }
+
+    if (Date.now() > stored.expires) {
+      confirmationCodes.delete(`trust_${userId}_${sessionToken}`);
+      return res.status(400).json({ error: "Код истек. Запросите новый код." });
+    }
+
+    if (stored.code !== confirmation_code) {
+      return res.status(400).json({ error: "Неверный код подтверждения" });
+    }
+
+    // Код верный, обновляем статус доверенного устройства
+    const user = db
+      .prepare("SELECT id, username FROM users WHERE id = ?")
+      .get(userId);
+
+    const session = db.prepare(`
+      SELECT device_info, browser, os, is_trusted FROM sessions WHERE user_id = ? AND session_token = ?
+    `).get(userId, sessionToken);
+
+    if (!session) {
+      confirmationCodes.delete(`trust_${userId}_${sessionToken}`);
+      return res.status(404).json({ error: "Сессия не найдена" });
+    }
+
+    console.log("🔒 Обновление статуса доверенного устройства:");
+    console.log("  User ID:", userId);
+    console.log("  Session Token:", sessionToken);
+    console.log("  Текущий is_trusted:", session.is_trusted);
+    console.log("  Новый is_trusted:", is_trusted ? 1 : 0);
+
+    // Обновляем статус
+    const updateResult = db.prepare("UPDATE sessions SET is_trusted = ? WHERE session_token = ?").run(is_trusted ? 1 : 0, sessionToken);
+    
+    console.log("  Обновлено строк:", updateResult.changes);
+
+    // Проверяем что обновилось
+    const updatedSession = db.prepare("SELECT is_trusted FROM sessions WHERE session_token = ?").get(sessionToken);
+    console.log("  Проверка после обновления - is_trusted:", updatedSession ? updatedSession.is_trusted : "сессия не найдена");
+
+    // Удаляем использованный код
+    confirmationCodes.delete(`trust_${userId}_${sessionToken}`);
+
+    // Уведомляем админа
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      const time = new Date().toLocaleString("ru-RU");
+      const action = is_trusted ? 'добавил в доверенные' : 'убрал из доверенных';
+      const message = `🔒 ИЗМЕНЕНИЕ СТАТУСА УСТРОЙСТВА
+
+👤 Пользователь: ${user.username}
+✏️ Действие: ${action} устройство (с подтверждением)
+📱 Устройство: ${session.device_info || 'Неизвестно'}
+🌐 Браузер: ${session.browser || 'Неизвестно'}
+💻 ОС: ${session.os || 'Неизвестно'}
+🕐 Время: ${time}`;
+
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          }
+        );
+      } catch (err) {
+        console.error("❌ Ошибка отправки уведомления:", err);
+      }
+    }
+
+    res.json({ success: true, message: "Статус устройства успешно изменен" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

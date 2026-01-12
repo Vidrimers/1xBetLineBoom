@@ -273,7 +273,8 @@ body {
 .container.not-logged-in #participants-content,
 .container.not-logged-in #profile-content,
 .container.not-logged-in #settings-content,
-.container.not-logged-in #counting-content {
+.container.not-logged-in #counting-content,
+.container.not-logged-in .profile-section {
   display: none !important;
 }
 
@@ -2780,6 +2781,52 @@ input:checked + .slider:before {
   cursor: not-allowed;
 }
 
+.device-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.device-trust-btn {
+  background: rgba(76, 175, 80, 0.7);
+  color: #fff;
+  border: 1px solid #4caf50;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.device-trust-btn:hover {
+  background: rgba(76, 175, 80, 0.9);
+  transform: scale(1.05);
+}
+
+.device-trust-btn.trusted {
+  background: rgba(33, 150, 243, 0.7);
+  border: 1px solid #2196f3;
+}
+
+.device-trust-btn.trusted:hover {
+  background: rgba(33, 150, 243, 0.9);
+}
+
+.device-trusted-badge {
+  background: rgba(76, 175, 80, 0.8);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+.trusted-device {
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
 /* Устройства */
 .device-item {
   background: rgba(255, 255, 255, 0.05);
@@ -2851,4 +2898,51 @@ input:checked + .slider:before {
 .device-logout-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Дополнительные стили для доверенных устройств */
+.device-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.device-trust-btn {
+  background: rgba(76, 175, 80, 0.7);
+  color: #fff;
+  border: 1px solid #4caf50;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.device-trust-btn:hover {
+  background: rgba(76, 175, 80, 0.9);
+  transform: scale(1.05);
+}
+
+.device-trust-btn.trusted {
+  background: rgba(33, 150, 243, 0.7);
+  border: 1px solid #2196f3;
+}
+
+.device-trust-btn.trusted:hover {
+  background: rgba(33, 150, 243, 0.9);
+}
+
+.device-trusted-badge {
+  background: rgba(76, 175, 80, 0.8);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+.trusted-device {
+  border: 1px solid rgba(76, 175, 80, 0.5);
 }

@@ -862,13 +862,21 @@ async function initUser() {
   // Обновляем input с правильным логином
   document.getElementById("username").value = usernameToSend;
 
+  // Получаем информацию об устройстве
+  const deviceData = getDeviceInfo();
+
   try {
     const response = await fetch("/api/user", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username: usernameToSend }),
+      body: JSON.stringify({ 
+        username: usernameToSend,
+        device_info: deviceData.deviceInfo,
+        browser: deviceData.browser,
+        os: deviceData.os
+      }),
     });
 
     const result = await response.json();
@@ -929,8 +937,7 @@ async function initUser() {
       currentUser.isAdmin = isAdminUser;
     }
 
-    // Создаем сессию на сервере
-    const deviceData = getDeviceInfo();
+    // Создаем сессию на сервере (используем deviceData, объявленную выше)
     try {
       const sessionResponse = await fetch("/api/sessions", {
         method: "POST",
@@ -996,17 +1003,11 @@ async function initUser() {
 
 // Функция выхода из аккаунта
 async function logoutUser() {
-  // Удаляем сессию на сервере
+  // НЕ удаляем сессию на сервере, чтобы сохранить статус доверенного устройства
+  // Просто удаляем токен из localStorage
   const sessionToken = localStorage.getItem("sessionToken");
   if (sessionToken && currentUser) {
-    try {
-      await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}`, {
-        method: 'DELETE'
-      });
-      console.log("✅ Сессия удалена");
-    } catch (err) {
-      console.error("⚠️ Ошибка удаления сессии:", err);
-    }
+    console.log("✅ Разлогин (сессия сохранена на сервере для доверенных устройств)");
   }
 
   // Удаляем пользователя из localStorage
@@ -1040,6 +1041,9 @@ async function logoutUser() {
 
   // Меняем кнопку обратно на "Начать"
   setAuthButtonToLoginState();
+
+  // Переключаемся на вкладку "Все ставки"
+  switchTab("allbets");
 
   // Очищаем ставки
   document.getElementById("myBetsList").innerHTML =
@@ -3734,15 +3738,14 @@ function displayProfile(profile) {
             height: 100%;
             backface-visibility: hidden;
             transform: rotateY(180deg);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: url('img/default-avatar.jpg') center/cover;
             border-radius: 30%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(44, 50, 63, 0.8);
           ">
             <button id="avatarEditBtn" onclick="event.stopPropagation(); openAvatarModal()" style="
-              background: rgba(255, 255, 255, 0.2);
+              background: rgba(44, 50, 63, 0.9);
               border: 2px solid white;
               color: white;
               width: 60px;
@@ -4422,16 +4425,18 @@ async function loadDevicesList() {
 
     listContainer.innerHTML = sessions.map(session => {
       const isCurrentDevice = session.session_token === currentSessionToken;
+      const isTrusted = session.is_trusted === 1;
       const deviceIcon = getDeviceIcon(session.device_info, session.os);
       const lastActivity = new Date(session.last_activity).toLocaleString("ru-RU");
       const createdAt = new Date(session.created_at).toLocaleString("ru-RU");
 
       return `
-        <div class="device-item ${isCurrentDevice ? 'current-device' : ''}">
+        <div class="device-item ${isCurrentDevice ? 'current-device' : ''} ${isTrusted ? 'trusted-device' : ''}">
           <div class="device-info">
             <div class="device-name">
               ${deviceIcon} ${session.device_info || 'Неизвестное устройство'}
               ${isCurrentDevice ? '<span class="device-current-badge">Текущее устройство</span>' : ''}
+              ${isTrusted ? '<span class="device-trusted-badge">✓ Доверенное</span>' : ''}
             </div>
             <div class="device-details">
               <div>🌐 Браузер: ${session.browser || 'Неизвестно'}</div>
@@ -4441,13 +4446,22 @@ async function loadDevicesList() {
               <div>📅 Вход: ${createdAt}</div>
             </div>
           </div>
-          <button 
-            class="device-logout-btn" 
-            onclick="logoutDevice('${session.session_token}')"
-            ${isCurrentDevice ? 'disabled' : ''}
-          >
-            ${isCurrentDevice ? '🔒 Текущее' : '❌ Выйти'}
-          </button>
+          <div class="device-actions">
+            <button 
+              class="device-trust-btn ${isTrusted ? 'trusted' : ''}" 
+              onclick="toggleTrustedDevice('${session.session_token}', ${isTrusted})"
+              title="${isTrusted ? 'Убрать из доверенных' : 'Добавить в доверенные'}"
+            >
+              ${isTrusted ? '✓ Доверенное' : '🔒 Доверенное'}
+            </button>
+            <button 
+              class="device-logout-btn" 
+              onclick="logoutDevice('${session.session_token}')"
+              ${isCurrentDevice ? 'disabled' : ''}
+            >
+              ${isCurrentDevice ? '🔒 Текущее' : '❌ Выйти'}
+            </button>
+          </div>
         </div>
       `;
     }).join('');
@@ -4522,6 +4536,63 @@ async function logoutDevice(sessionToken) {
   } catch (error) {
     console.error("❌ Ошибка при выходе с устройства:", error);
     alert('Ошибка при выходе с устройства');
+  }
+}
+
+// Переключить доверенное устройство
+async function toggleTrustedDevice(sessionToken, isTrusted) {
+  if (!currentUser) return;
+
+  // Проверяем, привязан ли Telegram
+  if (!currentUser.telegram_username) {
+    alert('Для управления доверенными устройствами необходимо привязать Telegram в настройках');
+    return;
+  }
+
+  const action = isTrusted ? 'убрать из доверенных' : 'добавить в доверенные';
+  
+  if (!confirm(`Для того чтобы ${action} это устройство, требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?`)) {
+    return;
+  }
+
+  try {
+    // Запрашиваем код подтверждения
+    const response = await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}/request-trust`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_trusted: !isTrusted })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Показываем поле для ввода кода
+      const code = prompt('Введите код подтверждения, отправленный вам в Telegram:');
+      if (!code) return;
+
+      // Подтверждаем изменение
+      const confirmResponse = await fetch(`/api/user/${currentUser.id}/sessions/${sessionToken}/confirm-trust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          confirmation_code: code,
+          is_trusted: !isTrusted
+        })
+      });
+
+      const confirmResult = await confirmResponse.json();
+
+      if (confirmResponse.ok) {
+        await loadDevicesList();
+      } else {
+        alert('Ошибка: ' + confirmResult.error);
+      }
+    } else {
+      alert('Ошибка: ' + result.error);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при изменении статуса доверенного устройства:", error);
+    alert('Ошибка при изменении статуса доверенного устройства');
   }
 }
 
