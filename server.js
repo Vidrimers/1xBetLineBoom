@@ -2271,7 +2271,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
 });
 
 // 5. Получить или создать пользователя
-app.post("/api/user", (req, res) => {
+app.post("/api/user", async (req, res) => {
   try {
     const { username } = req.body;
 
@@ -2281,10 +2281,64 @@ app.post("/api/user", (req, res) => {
       .get(username);
 
     if (!user) {
+      // Получаем IP адрес
+      const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+      
+      // Создаем нового пользователя
       const result = db
         .prepare("INSERT INTO users (username) VALUES (?)")
         .run(username);
       user = { id: result.lastInsertRowid, username };
+      
+      // Проверяем, были ли другие пользователи с этого IP
+      const otherUsers = db.prepare(`
+        SELECT DISTINCT u.username 
+        FROM sessions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.ip_address = ? AND u.id != ?
+        ORDER BY s.created_at DESC
+        LIMIT 5
+      `).all(ip_address, user.id);
+
+      const time = new Date().toLocaleString("ru-RU");
+      
+      let message = `👤 НОВЫЙ ПОЛЬЗОВАТЕЛЬ
+
+🆔 ID: ${user.id}
+👤 Имя: ${username}
+🌍 IP: ${ip_address}
+🕐 Время: ${time}`;
+
+      if (otherUsers.length > 0) {
+        message += `\n\n⚠️ С этого IP уже заходили:`;
+        otherUsers.forEach(u => {
+          message += `\n  • ${u.username}`;
+        });
+      }
+
+      // Отправляем уведомление админу
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: message,
+              }),
+            }
+          );
+          console.log(`✅ Уведомление о новом пользователе ${username} отправлено админу`);
+        }
+      } catch (error) {
+        console.error("❌ Ошибка отправки уведомления админу:", error);
+      }
+
       res.json(user);
     } else {
       // Пользователь существует - проверяем, нужна ли 2FA
