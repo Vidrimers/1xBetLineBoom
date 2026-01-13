@@ -5788,7 +5788,7 @@ async function syncAllTelegramIds() {
         <div style="background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #f44336;">
           <div style="font-weight: bold; margin-bottom: 5px; color: #f44336;">❌ Без Telegram:</div>
           <div style="font-size: 14px; margin-bottom: 10px;">
-            ${result.without_telegram} пользовател${result.without_telegram === 1 ? 'ь' : 'ей'} вообще не привязал${result.without_telegram === 1 ? '' : 'и'} Telegram.<br>
+            ${result.without_telegram} пользовател${result.without_telegram === 1 ? 'ь' : 'ей'} не привязал${result.without_telegram === 1 ? '' : 'и'} Telegram.<br>
             Они не смогут использовать функции с подтверждением через бота.
           </div>
           <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(244, 67, 54, 0.3);">
