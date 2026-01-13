@@ -2224,3 +2224,128 @@
     font-size: 0.85em;
   }
 }
+
+/* Адаптив для модалки устройств */
+@media (max-width: 768px) {
+  .device-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 12px;
+  }
+
+  .device-item:hover {
+    transform: none;
+  }
+
+  .device-info {
+    width: 100%;
+  }
+
+  .device-name {
+    font-size: 14px;
+    flex-wrap: wrap;
+  }
+
+  .device-details {
+    font-size: 12px;
+  }
+
+  .device-details > div {
+    margin-bottom: 3px;
+  }
+
+  .device-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .device-trust-btn,
+  .device-logout-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .device-current-badge,
+  .device-trusted-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .device-item {
+    padding: 10px;
+    gap: 12px;
+  }
+
+  .device-name {
+    font-size: 13px;
+  }
+
+  .device-details {
+    font-size: 11px;
+  }
+
+  .device-trust-btn,
+  .device-logout-btn {
+    padding: 8px;
+    font-size: 12px;
+  }
+}
+
+/* Адаптив для модального окна устройств */
+@media (max-width: 768px) {
+  #devicesModal .modal-content {
+    max-width: 95% !important;
+    margin: 10px;
+    max-height: 80vh;
+  }
+
+  #devicesModal .modal-header h2 {
+    font-size: 18px;
+  }
+
+  #devicesModal .modal-body {
+    padding: 15px;
+  }
+
+  #devicesList {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  #devicesModal .modal-content {
+    max-width: 100% !important;
+    margin: 0;
+    border-radius: 0;
+    max-height: 80vh;
+    height: 80vh;
+  }
+
+  #devicesModal .modal-header {
+    padding: 12px 15px;
+  }
+
+  #devicesModal .modal-header h2 {
+    font-size: 16px;
+  }
+
+  #devicesModal .modal-close {
+    width: 30px;
+    height: 30px;
+    font-size: 24px;
+  }
+
+  #devicesModal .modal-body {
+    padding: 10px;
+  }
+
+  #devicesList {
+    gap: 8px;
+  }
+}

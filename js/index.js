@@ -4517,6 +4517,8 @@ function closeAwardsPanel() {
 async function openDevicesModal() {
   const modal = document.getElementById("devicesModal");
   if (modal) {
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
     modal.style.display = "flex";
     await loadDevicesList();
   }
@@ -4526,6 +4528,8 @@ async function openDevicesModal() {
 function closeDevicesModal() {
   const modal = document.getElementById("devicesModal");
   if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
     modal.style.display = "none";
   }
 }
