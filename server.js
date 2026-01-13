@@ -6327,11 +6327,32 @@ app.get("/api/admin/users/:userId/bot-contact-check", (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    // Проверяем в реальном времени, есть ли пользователь в telegram_users
+    let actualTelegramId = user.telegram_id;
+    let hasBotContact = false;
+
+    if (user.telegram_username) {
+      const telegramUser = db
+        .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
+        .get(user.telegram_username.toLowerCase());
+      
+      if (telegramUser && telegramUser.chat_id) {
+        actualTelegramId = telegramUser.chat_id;
+        hasBotContact = true;
+
+        // Если telegram_id в users не совпадает с актуальным, обновляем его
+        if (user.telegram_id !== telegramUser.chat_id) {
+          db.prepare("UPDATE users SET telegram_id = ? WHERE id = ?").run(telegramUser.chat_id, userId);
+          console.log(`✅ Автоматически обновлен telegram_id для ${user.username}: ${telegramUser.chat_id}`);
+        }
+      }
+    }
+
     const result = {
       username: user.username,
       telegram_username: user.telegram_username,
-      telegram_id: user.telegram_id,
-      has_bot_contact: !!user.telegram_id,
+      telegram_id: actualTelegramId,
+      has_bot_contact: hasBotContact,
       require_login_2fa: user.require_login_2fa !== 0
     };
 
