@@ -405,7 +405,28 @@
         style="display: none; margin-top: -5px"
       >
         <div class="section">
-          <h2>⚙️ Настройки</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">⚙️ Настройки</h2>
+            <button 
+              onclick="openBugReportModal()"
+              title="Нашел баг? Напиши"
+              style="
+                padding: 10px 20px;
+                background: rgba(244, 67, 54, 0.8);
+                color: #fff;
+                border: 1px solid #f44336;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.background='rgba(244, 67, 54, 1)'"
+              onmouseout="this.style.background='rgba(244, 67, 54, 0.8)'"
+            >
+              🐛 Нашел баг? Напиши
+            </button>
+          </div>
           <div class="settings-container" id="settingsContainer">
             <!-- Telegram уведомления -->
             <div
@@ -2370,9 +2391,72 @@
       </div>
     </div>
 
+    <!-- Модальное окно для отправки багрепорта -->
+    <div id="bugReportModal" class="modal" style="display: none" onclick="if(event.target.id === 'bugReportModal') closeBugReportModal()">
+      <div class="modal-content" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>🐛 Сообщить об ошибке</h2>
+          <button class="modal-close" onclick="closeBugReportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="color: #aaa; margin-bottom: 20px">
+            Опишите проблему, которую вы обнаружили. Ваше сообщение будет отправлено администратору.
+          </p>
+          <textarea 
+            id="bugReportText" 
+            placeholder="Опишите ошибку: где увидели, что произошло, что ожидали увидеть..."
+            style="
+              width: 100%;
+              min-height: 150px;
+              padding: 12px;
+              background: rgba(0, 0, 0, 0.3);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 6px;
+              color: #fff;
+              font-size: 14px;
+              font-family: inherit;
+              resize: vertical;
+              margin-bottom: 15px;
+            "
+          ></textarea>
+          <div style="display: flex; gap: 10px; justify-content: flex-end">
+            <button 
+              onclick="closeBugReportModal()"
+              style="
+                padding: 10px 20px;
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+              "
+            >
+              Отмена
+            </button>
+            <button 
+              onclick="sendBugReport()"
+              style="
+                padding: 10px 20px;
+                background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+                color: #fff;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+              "
+            >
+              📤 Отправить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="js/dict.js"></script>
-    <script src="js/index.js?v=13"></script>
+    <script src="js/index.js?v=15"></script>
     <script src="js/counting.js"></script>
 
     <!-- Модальное окно для создания матча -->

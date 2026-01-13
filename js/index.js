@@ -4534,6 +4534,76 @@ function closeDevicesModal() {
   }
 }
 
+// Открыть модальное окно багрепорта
+function openBugReportModal() {
+  if (!currentUser) {
+    showCustomAlert("Войдите в систему, чтобы отправить сообщение об ошибке", "Требуется вход", "⚠️");
+    return;
+  }
+
+  const modal = document.getElementById("bugReportModal");
+  if (modal) {
+    // Очищаем поле ввода
+    document.getElementById("bugReportText").value = "";
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = "flex";
+  }
+}
+
+// Закрыть модальное окно багрепорта
+function closeBugReportModal() {
+  const modal = document.getElementById("bugReportModal");
+  if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
+    modal.style.display = "none";
+  }
+}
+
+// Отправить багрепорт
+async function sendBugReport() {
+  if (!currentUser) {
+    await showCustomAlert("Войдите в систему", "Ошибка", "❌");
+    return;
+  }
+
+  const bugText = document.getElementById("bugReportText").value.trim();
+  
+  if (!bugText) {
+    await showCustomAlert("Пожалуйста, опишите проблему", "Ошибка", "⚠️");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/bug-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        username: currentUser.username,
+        bugText: bugText
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      closeBugReportModal();
+      await showCustomAlert(
+        "Спасибо за сообщение! Администратор получил ваш отчет об ошибке.",
+        "Отправлено",
+        "✅"
+      );
+    } else {
+      await showCustomAlert(result.error || "Ошибка при отправке", "Ошибка", "❌");
+    }
+  } catch (error) {
+    console.error("Ошибка при отправке багрепорта:", error);
+    await showCustomAlert("Ошибка при отправке сообщения", "Ошибка", "❌");
+  }
+}
+
 // Загрузить список устройств
 async function loadDevicesList() {
   if (!currentUser) return;

@@ -6692,6 +6692,61 @@ ${user.telegram_username ? `🤖 Писал боту: ${hasBotContact ? "✅ Д�
   }
 });
 
+// POST /api/bug-report - Отправить багрепорт админу
+app.post("/api/bug-report", async (req, res) => {
+  try {
+    const { userId, username, bugText } = req.body;
+
+    if (!userId || !username || !bugText) {
+      return res.status(400).json({ error: "Не все данные предоставлены" });
+    }
+
+    // Получаем информацию о пользователе
+    const user = db
+      .prepare("SELECT telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+      return res.status(500).json({ error: "Telegram не настроен" });
+    }
+
+    const time = new Date().toLocaleString("ru-RU");
+    const message = `🐛 СООБЩЕНИЕ ОБ ОШИБКЕ
+
+👤 От пользователя: ${username}
+${user?.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+🕐 Время: ${time}
+
+📝 Описание проблемы:
+${bugText}`;
+
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: message,
+        }),
+      }
+    );
+
+    if (!telegramResponse.ok) {
+      throw new Error("Ошибка отправки в Telegram");
+    }
+
+    console.log(`✅ Багрепорт от ${username} отправлен админу`);
+    res.json({ success: true, message: "Багрепорт отправлен" });
+  } catch (error) {
+    console.error("Ошибка при отправке багрепорта:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/test-group-notification - Отправить тестовое уведомление в группу
 app.post("/api/admin/test-group-notification", async (req, res) => {
   const { username: adminUsername } = req.body;
