@@ -4892,6 +4892,10 @@ app.put("/api/user/:userId/settings", async (req, res) => {
     // Обновляем настройку подтверждения логина через бота (если передана)
     if (require_login_2fa !== undefined) {
       const login2faEnabled = require_login_2fa ? 1 : 0;
+      
+      // Получаем старое значение
+      const oldValue = db.prepare("SELECT require_login_2fa FROM users WHERE id = ?").get(userId);
+      
       db.prepare(
         "UPDATE users SET require_login_2fa = ? WHERE id = ?"
       ).run(login2faEnabled, userId);
@@ -4900,9 +4904,45 @@ app.put("/api/user/:userId/settings", async (req, res) => {
       writeBetLog("settings", {
         username: user.username,
         setting: "Login 2FA",
-        oldValue: null,
+        oldValue: oldValue?.require_login_2fa ? "Включено" : "Отключено",
         newValue: login2faEnabled ? "Включено" : "Отключено",
       });
+
+      // Отправляем уведомление админу об изменении настройки 2FA
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+          const time = new Date().toLocaleString("ru-RU");
+          const statusIcon = login2faEnabled ? '🔐' : '🔓';
+          const statusText = login2faEnabled ? 'Включено' : 'Отключено';
+
+          const adminMessage = `${statusIcon} ИЗМЕНЕНИЕ НАСТРОЙКИ 2FA
+
+👤 Пользователь: ${user.username}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Подтверждение логина через бота: ${statusText}
+🕐 Время: ${time}`;
+
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: adminMessage,
+              }),
+            }
+          );
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления админу об изменении 2FA:",
+          err.message
+        );
+      }
     }
 
     // Обновляем тему (если передана)
