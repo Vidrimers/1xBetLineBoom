@@ -5782,7 +5782,37 @@ async function syncAllTelegramIds() {
       });
     }
 
-    if (result.updated === 0 && result.not_found === 0) {
+    if (result.without_telegram > 0 && result.without_telegram_users) {
+      message += `
+        <div style="border-top: 1px solid rgba(255,255,255,0.2); margin: 15px 0 10px 0;"></div>
+        <div style="background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #f44336;">
+          <div style="font-weight: bold; margin-bottom: 5px; color: #f44336;">❌ Без Telegram:</div>
+          <div style="font-size: 14px; margin-bottom: 10px;">
+            ${result.without_telegram} пользовател${result.without_telegram === 1 ? 'ь' : 'ей'} вообще не привязал${result.without_telegram === 1 ? '' : 'и'} Telegram.<br>
+            Они не смогут использовать функции с подтверждением через бота.
+          </div>
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(244, 67, 54, 0.3);">
+            <div style="font-weight: bold; margin-bottom: 8px; color: #f44336;">Список пользователей:</div>
+      `;
+      
+      result.without_telegram_users.forEach(user => {
+        message += `
+          <div style="background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 4px; margin-bottom: 6px;">
+            <div style="font-weight: bold;">👤 ${user.username}</div>
+            <div style="font-size: 13px; color: #aaa; margin-left: 20px;">
+              📱 Telegram не привязан
+            </div>
+          </div>
+        `;
+      });
+      
+      message += `
+          </div>
+        </div>
+      `;
+    }
+
+    if (result.updated === 0 && result.not_found === 0 && result.without_telegram === 0) {
       message += `
         <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #4caf50;">
           <div style="font-size: 14px; color: #4caf50;">

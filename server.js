@@ -6351,6 +6351,13 @@ app.post("/api/admin/sync-telegram-ids", (req, res) => {
       WHERE telegram_username IS NOT NULL
     `).all();
 
+    // Получаем пользователей БЕЗ привязанного Telegram
+    const usersWithoutTelegram = db.prepare(`
+      SELECT id, username 
+      FROM users 
+      WHERE telegram_username IS NULL
+    `).all();
+
     let updated = 0;
     let skipped = 0;
     let notFound = 0;
@@ -6398,7 +6405,9 @@ app.post("/api/admin/sync-telegram-ids", (req, res) => {
       skipped,
       not_found: notFound,
       details,
-      not_found_users: notFoundUsers
+      not_found_users: notFoundUsers,
+      without_telegram: usersWithoutTelegram.length,
+      without_telegram_users: usersWithoutTelegram
     });
   } catch (error) {
     console.error("❌ Ошибка синхронизации:", error);
