@@ -6597,9 +6597,10 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
     const user = db
       .prepare(
         `SELECT 
-          id, username, email, created_at, telegram_username, 
+          id, username, email, created_at, telegram_username, telegram_id,
           timezone, theme, show_bets,
-          telegram_notifications_enabled, telegram_group_reminders_enabled
+          telegram_notifications_enabled, telegram_group_reminders_enabled,
+          require_login_2fa
         FROM users 
         WHERE id = ?`
       )
@@ -6607,6 +6608,18 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем, есть ли пользователь в telegram_users (писал ли боту)
+    let hasBotContact = false;
+    if (user.telegram_username) {
+      const telegramUser = db
+        .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
+        .get(user.telegram_username.toLowerCase());
+      
+      if (telegramUser && telegramUser.chat_id) {
+        hasBotContact = true;
+      }
     }
 
     // Названия тем
@@ -6629,11 +6642,16 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
 🆔 ID: ${user.id}
 ${user.email ? `📧 Email: ${user.email}` : ""}
 ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : "📱 Telegram: не привязан"}
+${user.telegram_id ? `💬 Chat ID: ${user.telegram_id}` : ""}
+${user.telegram_username ? `🤖 Писал боту: ${hasBotContact ? "✅ Да" : "❌ Нет"}` : ""}
 📅 Регистрация: ${user.created_at ? new Date(user.created_at).toLocaleString("ru-RU") : "неизвестно"}
 
 🔔 УВЕДОМЛЕНИЯ:
 • Личные сообщения в ТГ: ${user.telegram_notifications_enabled ? "✅ Включены" : "❌ Отключены"}
 • Напоминания в группе: ${user.telegram_group_reminders_enabled ? "✅ Включены" : "❌ Отключены"}
+
+🔐 БЕЗОПАСНОСТЬ:
+• 2FA при логине: ${user.require_login_2fa ? "✅ Включено" : "❌ Отключено"}
 
 🎨 ИНТЕРФЕЙС:
 • Тема: ${themeNames[user.theme] || user.theme || "Дефолтная"}
