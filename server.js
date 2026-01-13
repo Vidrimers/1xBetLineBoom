@@ -6701,6 +6701,12 @@ app.post("/api/bug-report", async (req, res) => {
       return res.status(400).json({ error: "Не все данные предоставлены" });
     }
 
+    // Сохраняем багрепорт в базу данных
+    const result = db.prepare(`
+      INSERT INTO bug_reports (user_id, username, bug_text, status)
+      VALUES (?, ?, ?, 'new')
+    `).run(userId, username, bugText);
+
     // Получаем информацию о пользователе
     const user = db
       .prepare("SELECT telegram_username FROM users WHERE id = ?")
@@ -6714,7 +6720,7 @@ app.post("/api/bug-report", async (req, res) => {
     }
 
     const time = new Date().toLocaleString("ru-RU");
-    const message = `🐛 СООБЩЕНИЕ ОБ ОШИБКЕ
+    const message = `🐛 СООБЩЕНИЕ ОБ ОШИБКЕ #${result.lastInsertRowid}
 
 👤 От пользователя: ${username}
 ${user?.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
@@ -6739,10 +6745,112 @@ ${bugText}`;
       throw new Error("Ошибка отправки в Telegram");
     }
 
-    console.log(`✅ Багрепорт от ${username} отправлен админу`);
+    console.log(`✅ Багрепорт #${result.lastInsertRowid} от ${username} отправлен админу`);
     res.json({ success: true, message: "Багрепорт отправлен" });
   } catch (error) {
     console.error("Ошибка при отправке багрепорта:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/bug-reports - Получить все багрепорты
+app.get("/api/admin/bug-reports", (req, res) => {
+  const { username: adminUsername } = req.query;
+
+  // Проверяем, является ли пользователь админом
+  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    const bugReports = db.prepare(`
+      SELECT 
+        br.id,
+        br.user_id,
+        br.username,
+        br.bug_text,
+        br.status,
+        br.created_at,
+        u.telegram_username
+      FROM bug_reports br
+      LEFT JOIN users u ON br.user_id = u.id
+      ORDER BY br.created_at DESC
+    `).all();
+
+    res.json(bugReports);
+  } catch (error) {
+    console.error("Ошибка при получении багрепортов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/bug-reports/:id/status - Изменить статус багрепорта
+app.put("/api/admin/bug-reports/:id/status", async (req, res) => {
+  const { id } = req.params;
+  const { status, username: adminUsername } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Получаем информацию о багрепорте до обновления
+    const bugReport = db.prepare(`
+      SELECT br.id, br.user_id, br.username, br.bug_text, br.status as old_status
+      FROM bug_reports br
+      WHERE br.id = ?
+    `).get(id);
+
+    if (!bugReport) {
+      return res.status(404).json({ error: "Багрепорт не найден" });
+    }
+
+    // Обновляем статус
+    db.prepare("UPDATE bug_reports SET status = ? WHERE id = ?").run(status, id);
+
+    // Отправляем уведомление пользователю, если статус изменился
+    if (bugReport.old_status !== status) {
+      const user = db.prepare("SELECT telegram_id FROM users WHERE id = ?").get(bugReport.user_id);
+      
+      if (user && user.telegram_id) {
+        const statusEmoji = {
+          'new': '🆕',
+          'in_progress': '🔄',
+          'resolved': '✅',
+          'rejected': '❌'
+        };
+
+        const statusText = {
+          'new': 'Новый',
+          'in_progress': 'В работе',
+          'resolved': 'Решено',
+          'rejected': 'Отклонено'
+        };
+
+        const message = `🐛 ОБНОВЛЕНИЕ СТАТУСА БАГРЕПОРТА #${id}
+
+${statusEmoji[status]} Статус изменен на: <b>${statusText[status]}</b>
+
+📝 Ваше сообщение:
+${bugReport.bug_text.substring(0, 200)}${bugReport.bug_text.length > 200 ? '...' : ''}
+
+${status === 'resolved' ? '✅ Спасибо за помощь, малютка!' : ''}
+${status === 'in_progress' ? '🔄 Как нехуй - щас починим.' : ''}
+${status === 'rejected' ? '❌ Это не баг, это фича.' : ''}`;
+
+        try {
+          await sendUserMessage(user.telegram_id, message);
+          console.log(`✅ Уведомление о смене статуса багрепорта #${id} отправлено пользователю ${bugReport.username}`);
+        } catch (error) {
+          console.error(`❌ Ошибка отправки уведомления пользователю:`, error);
+        }
+      }
+    }
+
+    res.json({ success: true, message: "Статус обновлен" });
+  } catch (error) {
+    console.error("Ошибка при обновлении статуса:", error);
     res.status(500).json({ error: error.message });
   }
 });

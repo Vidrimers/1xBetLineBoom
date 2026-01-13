@@ -3087,3 +3087,116 @@ input:checked + .slider:before {
 .custom-modal::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
+
+/* Багрепорты */
+.bug-report-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  border-left: 4px solid #ff9800;
+  transition: all 0.3s ease;
+}
+
+.bug-report-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(5px);
+}
+
+.bug-report-card[data-status="new"] {
+  border-left-color: #ff9800;
+}
+
+.bug-report-card[data-status="in_progress"] {
+  border-left-color: #2196f3;
+}
+
+.bug-report-card[data-status="resolved"] {
+  border-left-color: #4caf50;
+  opacity: 0.7;
+}
+
+.bug-report-card[data-status="rejected"] {
+  border-left-color: #f44336;
+  opacity: 0.6;
+}
+
+.bug-report-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.bug-report-id {
+  color: #ff9800;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.bug-report-user {
+  color: #fff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bug-report-telegram {
+  color: #00bcd4;
+  font-size: 13px;
+}
+
+.bug-report-date {
+  color: #aaa;
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.bug-report-text {
+  color: #ddd;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.bug-report-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.bug-report-status {
+  color: #fff;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bug-report-status-select {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.bug-report-status-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.bug-report-status-select:focus {
+  outline: none;
+  border-color: #00bcd4;
+}

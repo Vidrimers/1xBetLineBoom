@@ -4604,6 +4604,143 @@ async function sendBugReport() {
   }
 }
 
+// Открыть модальное окно багрепортов (для админа)
+async function openBugReportsModal() {
+  console.log("🐛 openBugReportsModal вызвана");
+  console.log("currentUser:", currentUser);
+  console.log("ADMIN_DB_NAME:", ADMIN_DB_NAME);
+  
+  if (!currentUser || currentUser.username !== ADMIN_DB_NAME) {
+    await showCustomAlert("Недостаточно прав", "Ошибка", "❌");
+    return;
+  }
+
+  const modal = document.getElementById("bugReportsModal");
+  console.log("modal найдена:", modal);
+  
+  if (modal) {
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = "flex";
+    console.log("✅ Модальное окно открыто, display:", modal.style.display);
+    await loadBugReports();
+  } else {
+    console.error("❌ Модальное окно bugReportsModal не найдено!");
+  }
+}
+
+// Закрыть модальное окно багрепортов
+function closeBugReportsModal() {
+  const modal = document.getElementById("bugReportsModal");
+  if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
+    modal.style.display = "none";
+  }
+}
+
+// Загрузить список багрепортов
+async function loadBugReports() {
+  console.log("📋 loadBugReports вызвана");
+  
+  if (!currentUser || currentUser.username !== ADMIN_DB_NAME) {
+    console.log("❌ Нет прав для загрузки багрепортов");
+    return;
+  }
+
+  try {
+    console.log("🔄 Запрос багрепортов...");
+    const response = await fetch(`/api/admin/bug-reports?username=${currentUser.username}`);
+    const bugReports = await response.json();
+    
+    console.log("📦 Получено багрепортов:", bugReports.length);
+
+    const listContainer = document.getElementById("bugReportsList");
+
+    if (!Array.isArray(bugReports) || bugReports.length === 0) {
+      listContainer.innerHTML = '<div class="empty-message">Нет багрепортов</div>';
+      return;
+    }
+
+    listContainer.innerHTML = bugReports.map(report => {
+      const createdAt = new Date(report.created_at).toLocaleString("ru-RU");
+      const statusIcon = {
+        'new': '🆕',
+        'in_progress': '🔄',
+        'resolved': '✅',
+        'rejected': '❌'
+      }[report.status] || '❓';
+
+      const statusText = {
+        'new': 'Новый',
+        'in_progress': 'В работе',
+        'resolved': 'Решено',
+        'rejected': 'Отклонено'
+      }[report.status] || 'Неизвестно';
+
+      return `
+        <div class="bug-report-card" data-status="${report.status}">
+          <div class="bug-report-header">
+            <div class="bug-report-id">#${report.id}</div>
+            <div class="bug-report-user">
+              👤 ${report.username}
+              ${report.telegram_username ? `<span class="bug-report-telegram">@${report.telegram_username}</span>` : ''}
+            </div>
+            <div class="bug-report-date">🕐 ${createdAt}</div>
+          </div>
+          <div class="bug-report-text">${report.bug_text}</div>
+          <div class="bug-report-footer">
+            <div class="bug-report-status">
+              ${statusIcon} <span>${statusText}</span>
+            </div>
+            <select 
+              class="bug-report-status-select" 
+              onchange="changeBugStatus(${report.id}, this.value)"
+            >
+              <option value="new" ${report.status === 'new' ? 'selected' : ''}>🆕 Новый</option>
+              <option value="in_progress" ${report.status === 'in_progress' ? 'selected' : ''}>🔄 В работе</option>
+              <option value="resolved" ${report.status === 'resolved' ? 'selected' : ''}>✅ Решено</option>
+              <option value="rejected" ${report.status === 'rejected' ? 'selected' : ''}>❌ Отклонено</option>
+            </select>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error("Ошибка при загрузке багрепортов:", error);
+    document.getElementById("bugReportsList").innerHTML = 
+      '<div class="empty-message">Ошибка загрузки багрепортов</div>';
+  }
+}
+
+// Изменить статус багрепорта
+async function changeBugStatus(id, status) {
+  if (!currentUser || currentUser.username !== ADMIN_DB_NAME) return;
+
+  try {
+    const response = await fetch(`/api/admin/bug-reports/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: status,
+        username: currentUser.username
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Перезагружаем список багрепортов
+      await loadBugReports();
+    } else {
+      await showCustomAlert(result.error || "Ошибка при обновлении статуса", "Ошибка", "❌");
+    }
+  } catch (error) {
+    console.error("Ошибка при изменении статуса:", error);
+    await showCustomAlert("Ошибка при обновлении статуса", "Ошибка", "❌");
+  }
+}
+
 // Загрузить список устройств
 async function loadDevicesList() {
   if (!currentUser) return;

@@ -1054,6 +1054,24 @@
                 👥 Пользователи
               </button>
               <button
+                style="
+                  background: rgba(244, 67, 54, 0.8);
+                  color: #fff;
+                  border: 1px solid #f44336;
+                  padding: 12px 24px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 1em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                "
+                onclick="openBugReportsModal()"
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+              >
+                🐛 Баги
+              </button>
+              <button
                 onclick="testGroupNotification()"
                 style="
                   background: rgba(156, 39, 176, 0.8);
@@ -1142,6 +1160,23 @@
           <div class="modal-body">
             <div id="adminUsersList" class="admin-users-list">
               <div class="empty-message">Загружаем пользователей...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Модальное окно для просмотра багрепортов -->
+      <div id="bugReportsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'bugReportsModal', closeBugReportsModal)">
+        <div class="modal-content" style="max-width: 900px">
+          <div class="modal-header">
+            <h2>🐛 Багрепорты от пользователей</h2>
+            <button class="modal-close" onclick="closeBugReportsModal()">
+              &times;
+            </button>
+          </div>
+          <div class="modal-body">
+            <div id="bugReportsList" style="display: flex; flex-direction: column; gap: 15px">
+              <div class="empty-message">Загружаем багрепорты...</div>
             </div>
           </div>
         </div>
@@ -2457,7 +2492,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="js/dict.js"></script>
-    <script src="js/index.js?v=15"></script>
+    <script src="js/index.js?v=18"></script>
     <script src="js/counting.js"></script>
 
     <!-- Модальное окно для создания матча -->

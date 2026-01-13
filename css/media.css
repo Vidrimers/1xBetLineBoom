@@ -2349,3 +2349,116 @@
     gap: 8px;
   }
 }
+
+/* Адаптив для багрепортов */
+@media (max-width: 768px) {
+  .bug-report-card {
+    padding: 12px;
+  }
+
+  .bug-report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bug-report-date {
+    margin-left: 0;
+  }
+
+  .bug-report-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bug-report-status-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .bug-report-card {
+    padding: 10px;
+  }
+
+  .bug-report-id,
+  .bug-report-user {
+    font-size: 13px;
+  }
+
+  .bug-report-telegram {
+    font-size: 12px;
+  }
+
+  .bug-report-date {
+    font-size: 11px;
+  }
+
+  .bug-report-text {
+    font-size: 13px;
+    padding: 8px;
+  }
+
+  .bug-report-status {
+    font-size: 12px;
+  }
+
+  .bug-report-status-select {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+}
+
+/* Адаптив для модального окна багрепортов */
+@media (max-width: 768px) {
+  #bugReportsModal .modal-content {
+    max-width: 95% !important;
+    margin: 10px;
+    max-height: 80vh;
+  }
+
+  #bugReportsModal .modal-header h2 {
+    font-size: 18px;
+  }
+
+  #bugReportsModal .modal-body {
+    padding: 15px;
+  }
+
+  #bugReportsList {
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #bugReportsModal .modal-content {
+    max-width: 100% !important;
+    margin: 0;
+    border-radius: 0;
+    max-height: 80vh;
+    height: 80vh;
+  }
+
+  #bugReportsModal .modal-header {
+    padding: 12px 15px;
+  }
+
+  #bugReportsModal .modal-header h2 {
+    font-size: 16px;
+  }
+
+  #bugReportsModal .modal-close {
+    width: 30px;
+    height: 30px;
+    font-size: 24px;
+  }
+
+  #bugReportsModal .modal-body {
+    padding: 10px;
+  }
+
+  #bugReportsList {
+    gap: 8px !important;
+  }
+}
