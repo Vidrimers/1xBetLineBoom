@@ -5622,7 +5622,7 @@ function displayAdminUsersModal() {
 // Проверить, писал ли пользователь боту
 async function checkUserBotContact(userId, username) {
   if (!isAdmin()) {
-    alert("У вас нет прав");
+    await showCustomAlert("У вас нет прав", "Ошибка", "❌");
     return;
   }
 
@@ -5631,36 +5631,69 @@ async function checkUserBotContact(userId, username) {
     const result = await response.json();
 
     if (!response.ok) {
-      alert("Ошибка: " + result.error);
+      await showCustomAlert(result.error, "Ошибка", "❌");
       return;
     }
 
-    let message = `👤 Пользователь: ${username}\n\n`;
+    let message = `
+      <div style="text-align: left; line-height: 1.8;">
+        <div style="margin-bottom: 15px; font-size: 16px; font-weight: bold; color: #fff;">
+          👤 Пользователь: ${username}
+        </div>
+    `;
 
     if (result.telegram_username) {
-      message += `📱 Telegram: @${result.telegram_username}\n`;
+      message += `
+        <div style="margin-bottom: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 6px;">
+          <div style="margin-bottom: 8px;">📱 Telegram: <strong>@${result.telegram_username}</strong></div>
+        </div>
+      `;
       
       if (result.has_bot_contact) {
-        message += `✅ Статус: Писал боту в личку\n`;
-        message += `💬 Chat ID: ${result.telegram_id}\n`;
-        message += `🔐 2FA при логине: ${result.require_login_2fa ? 'Включено' : 'Отключено'}`;
+        message += `
+          <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #4caf50;">
+            <div style="font-weight: bold; margin-bottom: 8px; color: #4caf50;">✅ Статус: Писал боту в личку</div>
+            <div style="font-size: 14px; color: #aaa;">
+              💬 Chat ID: <strong style="color: #fff;">${result.telegram_id}</strong><br>
+              🔐 2FA при логине: <strong style="color: ${result.require_login_2fa ? '#4caf50' : '#ff9800'};">${result.require_login_2fa ? 'Включено' : 'Отключено'}</strong>
+            </div>
+          </div>
+        `;
       } else {
-        message += `❌ Статус: НЕ писал боту в личку\n\n`;
-        message += `⚠️ Пользователь НЕ сможет:\n`;
-        message += `  • Получать коды подтверждения при логине\n`;
-        message += `  • Получать коды для выхода с устройств\n`;
-        message += `  • Получать коды для изменения Telegram\n\n`;
-        message += `Нужно написать боту @OnexBetLineBoomBot команду /start в личных сообщениях!`;
+        message += `
+          <div style="background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #f44336;">
+            <div style="font-weight: bold; margin-bottom: 8px; color: #f44336;">❌ Статус: НЕ писал боту в личку</div>
+            <div style="font-size: 14px; margin-bottom: 10px;">
+              <strong style="color: #ff9800;">⚠️ Пользователь НЕ сможет:</strong>
+            </div>
+            <div style="font-size: 14px; margin-left: 15px; color: #aaa;">
+              • Получать коды подтверждения при логине<br>
+              • Получать коды для выхода с устройств<br>
+              • Получать коды для изменения Telegram
+            </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(244, 67, 54, 0.3); font-size: 14px; color: #fff;">
+              💡 Нужно написать боту <strong>@OnexBetLineBoomBot</strong> команду <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">/start</code> в личных сообщениях!
+            </div>
+          </div>
+        `;
       }
     } else {
-      message += `❌ Telegram не привязан\n\n`;
-      message += `Пользователь должен привязать Telegram в настройках профиля.`;
+      message += `
+        <div style="background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #f44336;">
+          <div style="font-weight: bold; margin-bottom: 8px; color: #f44336;">❌ Telegram не привязан</div>
+          <div style="font-size: 14px; color: #aaa;">
+            Пользователь должен привязать Telegram в настройках профиля.
+          </div>
+        </div>
+      `;
     }
 
-    alert(message);
+    message += `</div>`;
+
+    await showCustomAlert(message, "Проверка контакта с ботом", "🤖");
   } catch (error) {
     console.error("Ошибка при проверке контакта с ботом:", error);
-    alert("Ошибка при проверке");
+    await showCustomAlert("Ошибка при проверке контакта с ботом", "Ошибка", "❌");
   }
 }
 
