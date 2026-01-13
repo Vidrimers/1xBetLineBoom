@@ -3063,3 +3063,27 @@ input:checked + .slider:before {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
 }
+
+/* Дополнительные стили для кастомных модалок с большим контентом */
+.custom-modal {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.custom-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.custom-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.custom-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

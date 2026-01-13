@@ -6341,6 +6341,71 @@ app.get("/api/admin/users/:userId/bot-contact-check", (req, res) => {
   }
 });
 
+// POST /api/admin/sync-telegram-ids - Синхронизировать telegram_id для всех пользователей
+app.post("/api/admin/sync-telegram-ids", (req, res) => {
+  try {
+    // Получаем всех пользователей с привязанным Telegram
+    const users = db.prepare(`
+      SELECT id, username, telegram_username, telegram_id 
+      FROM users 
+      WHERE telegram_username IS NOT NULL
+    `).all();
+
+    let updated = 0;
+    let skipped = 0;
+    let notFound = 0;
+    const details = [];
+    const notFoundUsers = [];
+
+    // Обновляем telegram_id для пользователей
+    for (const user of users) {
+      if (!user.telegram_id && user.telegram_username) {
+        const telegramUser = db.prepare(`
+          SELECT chat_id FROM telegram_users 
+          WHERE LOWER(telegram_username) = ?
+        `).get(user.telegram_username.toLowerCase());
+
+        if (telegramUser) {
+          db.prepare(`
+            UPDATE users SET telegram_id = ? WHERE id = ?
+          `).run(telegramUser.chat_id, user.id);
+          
+          updated++;
+          details.push({
+            username: user.username,
+            telegram_username: user.telegram_username,
+            telegram_id: telegramUser.chat_id
+          });
+          
+          console.log(`✅ Обновлен telegram_id для ${user.username}: ${telegramUser.chat_id}`);
+        } else {
+          notFound++;
+          notFoundUsers.push({
+            username: user.username,
+            telegram_username: user.telegram_username
+          });
+          console.log(`⚠️ Не найден в telegram_users: ${user.telegram_username}`);
+        }
+      } else if (user.telegram_id) {
+        skipped++;
+      }
+    }
+
+    res.json({
+      success: true,
+      total: users.length,
+      updated,
+      skipped,
+      not_found: notFound,
+      details,
+      not_found_users: notFoundUsers
+    });
+  } catch (error) {
+    console.error("❌ Ошибка синхронизации:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/admin/users/:userId - Удалить пользователя (только для админа)
 app.delete("/api/admin/users/:userId", async (req, res) => {
   const { userId } = req.params;

@@ -1090,6 +1090,26 @@
         <div class="modal-content">
           <div class="modal-header">
             <h2>👥 Управление пользователями</h2>
+            <button 
+              class="modal-action-btn" 
+              onclick="syncAllTelegramIds()"
+              title="Синхронизировать telegram_id для всех пользователей"
+              style="
+                background: rgba(0, 188, 212, 0.8);
+                color: #fff;
+                border: 1px solid #00bcd4;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.3s ease;
+                margin-right: 10px;
+              "
+              onmouseover="this.style.background='rgba(0, 188, 212, 1)'"
+              onmouseout="this.style.background='rgba(0, 188, 212, 0.8)'"
+            >
+              🤖 Синхронизация
+            </button>
             <button class="modal-close" onclick="closeAdminModal()">
               &times;
             </button>
@@ -2349,7 +2369,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="js/dict.js"></script>
-    <script src="js/index.js?v=6"></script>
+    <script src="js/index.js?v=11"></script>
     <script src="js/counting.js"></script>
 
     <!-- Модальное окно для создания матча -->

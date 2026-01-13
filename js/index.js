@@ -5514,6 +5514,8 @@ async function loadAdminUsers() {
     );
     adminUsers = await response.json();
     displayAdminUsersModal();
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
     document.getElementById("adminModal").style.display = "flex";
   } catch (error) {
     console.error("Ошибка при загрузке пользователей:", error);
@@ -5524,6 +5526,8 @@ async function loadAdminUsers() {
 // Закрыть модальное окно
 function closeAdminModal() {
   document.getElementById("adminModal").style.display = "none";
+  // Разблокируем скролл body
+  document.body.style.overflow = '';
   unlockBodyScroll();
 }
 
@@ -5657,6 +5661,147 @@ async function checkUserBotContact(userId, username) {
   } catch (error) {
     console.error("Ошибка при проверке контакта с ботом:", error);
     alert("Ошибка при проверке");
+  }
+}
+
+// Синхронизировать telegram_id для всех пользователей
+async function syncAllTelegramIds() {
+  if (!isAdmin()) {
+    await showCustomAlert("У вас нет прав", "Ошибка", "❌");
+    return;
+  }
+
+  const shouldContinue = await showCustomConfirm(
+    'Эта операция обновит telegram_id (chat_id) для всех пользователей с привязанным Telegram. Продолжить?',
+    'Синхронизация Telegram ID',
+    '🤖'
+  );
+
+  if (!shouldContinue) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/admin/sync-telegram-ids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      await showCustomAlert(result.error, 'Ошибка', '❌');
+      return;
+    }
+
+    let message = `
+      <div style="text-align: left; line-height: 1.8;">
+        <div style="margin-bottom: 15px; font-size: 16px; font-weight: bold; color: #4caf50;">
+          ✅ Синхронизация завершена успешно!
+        </div>
+        
+        <div style="margin-bottom: 10px; font-size: 15px; font-weight: bold; color: #fff;">
+          📊 Общая статистика:
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px;"></div>
+        
+        <div style="margin-bottom: 8px;">👥 Всего пользователей с Telegram: <strong>${result.total}</strong></div>
+        <div style="margin-bottom: 8px; color: #4caf50;">✅ Обновлено telegram_id: <strong>${result.updated}</strong></div>
+        <div style="margin-bottom: 8px; color: #2196f3;">✓ Уже были актуальны: <strong>${result.skipped}</strong></div>
+        <div style="margin-bottom: 15px; color: #ff9800;">⚠️ Не найдены в telegram_users: <strong>${result.not_found}</strong></div>
+    `;
+
+    if (result.updated > 0) {
+      message += `
+        <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #4caf50;">
+          <div style="font-weight: bold; margin-bottom: 5px; color: #4caf50;">💡 Что это значит:</div>
+          <div style="font-size: 14px;">
+            Для ${result.updated} пользовател${result.updated === 1 ? 'я' : 'ей'} был найден и сохранен chat_id из таблицы telegram_users.<br>
+            Теперь они смогут получать коды подтверждения через бота.
+          </div>
+        </div>
+      `;
+    }
+
+    if (result.not_found > 0) {
+      message += `
+        <div style="background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #ff9800;">
+          <div style="font-weight: bold; margin-bottom: 5px; color: #ff9800;">⚠️ Внимание:</div>
+          <div style="font-size: 14px;">
+            ${result.not_found} пользовател${result.not_found === 1 ? 'ь' : 'ей'} не найден${result.not_found === 1 ? '' : 'ы'} в telegram_users.<br>
+            Это значит, что они:<br>
+            <div style="margin-left: 15px; margin-top: 5px; margin-bottom: 10px;">
+              • Привязали Telegram username в настройках<br>
+              • Но НЕ писали боту /start в личку<br>
+              • Не смогут получать коды подтверждения
+            </div>
+      `;
+      
+      if (result.not_found_users && result.not_found_users.length > 0) {
+        message += `
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 152, 0, 0.3);">
+            <div style="font-weight: bold; margin-bottom: 8px; color: #ff9800;">Список пользователей:</div>
+        `;
+        
+        result.not_found_users.forEach(user => {
+          message += `
+            <div style="background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 4px; margin-bottom: 6px;">
+              <div style="font-weight: bold;">👤 ${user.username}</div>
+              <div style="font-size: 13px; color: #aaa; margin-left: 20px;">
+                📱 @${user.telegram_username}
+              </div>
+            </div>
+          `;
+        });
+        
+        message += `</div>`;
+      }
+      
+      message += `
+          </div>
+        </div>
+      `;
+    }
+
+    if (result.details && result.details.length > 0) {
+      message += `
+        <div style="border-top: 1px solid rgba(255,255,255,0.2); margin: 15px 0 10px 0;"></div>
+        <div style="font-weight: bold; margin-bottom: 10px; color: #fff;">📝 Обновленные пользователи:</div>
+      `;
+      
+      result.details.forEach(detail => {
+        message += `
+          <div style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #2196f3;">
+            <div style="font-weight: bold; margin-bottom: 3px;">👤 ${detail.username}</div>
+            <div style="font-size: 13px; color: #aaa; margin-left: 20px;">
+              📱 @${detail.telegram_username}<br>
+              💬 Chat ID: ${detail.telegram_id}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    if (result.updated === 0 && result.not_found === 0) {
+      message += `
+        <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #4caf50;">
+          <div style="font-size: 14px; color: #4caf50;">
+            ✓ Все пользователи уже имеют актуальный telegram_id.<br>
+            Дополнительных действий не требуется.
+          </div>
+        </div>
+      `;
+    }
+
+    message += `</div>`;
+
+    await showCustomAlert(message, 'Синхронизация завершена', '✅');
+    
+    // Перезагружаем список пользователей
+    await loadAdminUsers();
+  } catch (error) {
+    console.error("Ошибка при синхронизации:", error);
+    await showCustomAlert('Ошибка при синхронизации telegram_id', 'Ошибка', '❌');
   }
 }
 
