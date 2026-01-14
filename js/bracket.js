@@ -172,9 +172,7 @@ function renderBracketModal(isClosed) {
             </button>
           ` : ''}
           ${!isLocked && !isEditingBracket ? `
-            <button class="btn-primary" onclick="saveBracketPredictions()" style="padding: 8px 16px; font-size: 0.9em;">
-              💾
-            </button>
+            
           ` : ''}
           ${isEditingBracket ? `
             <button class="btn-primary" onclick="saveBracketTeams()" style="padding: 8px 16px; font-size: 0.9em;">
@@ -239,24 +237,12 @@ function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex) {
     const prediction = bracketPredictions[stage.id]?.[i];
     
     html += `
-      <div class="bracket-match-vertical">
+      <div class="bracket-match-vertical" data-stage="${stage.id}" data-match="${i}">
         <div class="bracket-match-teams-vertical">
           ${renderTeamSlot(stage.id, i, 0, matchData?.team1, prediction, isClosed)}
           ${renderTeamSlot(stage.id, i, 1, matchData?.team2, prediction, isClosed)}
         </div>
-        ${!isClosed && !isEditingBracket ? `
-          <div class="bracket-match-winner-input">
-            <input 
-              type="text" 
-              class="bracket-winner-input-small" 
-              data-stage="${stage.id}" 
-              data-match="${i}"
-              value="${prediction || ''}"
-              placeholder="Победитель"
-              ${isClosed ? 'disabled' : ''}
-            />
-          </div>
-        ` : prediction && !isEditingBracket ? `
+        ${!isClosed && !isEditingBracket && prediction ? `
           <div class="bracket-match-prediction-small">
             ${prediction}
           </div>
@@ -321,41 +307,143 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
     `;
   }
   
-  // Обычный режим просмотра
+  // Обычный режим - кликабельные слоты для выбора победителя
+  const isClickable = !isClosed && teamName;
+  const clickHandler = isClickable ? `onclick="selectBracketWinner('${stageId}', ${matchIndex}, '${teamName.replace(/'/g, "\\'")}')"` : '';
+  const cursorStyle = isClickable ? 'cursor: pointer;' : '';
+  
   return `
-    <div class="bracket-team-slot ${highlightClass}">
+    <div class="bracket-team-slot ${highlightClass}" 
+         data-stage="${stageId}" 
+         data-match="${matchIndex}" 
+         data-team="${teamName || ''}"
+         ${clickHandler} 
+         style="${cursorStyle}">
       <div class="bracket-team-name">${teamName || `—`}</div>
     </div>
   `;
+}
+
+// Выбрать победителя матча (клик по команде)
+async function selectBracketWinner(stageId, matchIndex, teamName) {
+  if (!currentUser || !currentBracket) return;
+  
+  // Проверяем, закрыта ли сетка
+  const isClosed = isBracketClosed(currentBracket);
+  if (isClosed) {
+    if (typeof showCustomAlert === 'function') {
+      showCustomAlert('Ставки в сетке закрыты', 'Внимание', '🔒');
+    }
+    return;
+  }
+  
+  // Сохраняем выбор в локальном объекте
+  if (!bracketPredictions[stageId]) {
+    bracketPredictions[stageId] = {};
+  }
+  bracketPredictions[stageId][matchIndex] = teamName;
+  
+  // Обновляем только визуальное отображение без перерисовки всей модалки
+  updateBracketMatchDisplay(stageId, matchIndex, teamName);
+  
+  // Автоматически сохраняем прогноз на сервер
+  await saveSingleBracketPrediction(stageId, matchIndex, teamName);
+}
+
+// Сохранить один прогноз на сервер
+async function saveSingleBracketPrediction(stageId, matchIndex, teamName) {
+  if (!currentUser || !currentBracket) return;
+  
+  try {
+    const predictions = [{
+      stage: stageId,
+      match_index: matchIndex,
+      predicted_winner: teamName
+    }];
+    
+    const response = await fetch(`/api/brackets/${currentBracket.id}/predictions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        predictions
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Ошибка сохранения прогноза');
+    }
+    
+    console.log('✅ Прогноз автоматически сохранен');
+  } catch (error) {
+    console.error('Ошибка при автосохранении прогноза:', error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Не удалось сохранить прогноз', 'Ошибка', '❌');
+    }
+  }
+}
+
+// Обновить отображение конкретного матча
+function updateBracketMatchDisplay(stageId, matchIndex, selectedTeam) {
+  // Находим все слоты команд в этом матче
+  const teamSlots = document.querySelectorAll(
+    `.bracket-team-slot[data-stage="${stageId}"][data-match="${matchIndex}"]`
+  );
+  
+  // Обновляем подсветку команд
+  teamSlots.forEach(slot => {
+    const teamName = slot.dataset.team;
+    if (teamName === selectedTeam) {
+      slot.classList.add('bracket-team-winner');
+    } else {
+      slot.classList.remove('bracket-team-winner');
+    }
+  });
+  
+  // Находим или создаем элемент для отображения прогноза
+  const matchContainer = document.querySelector(
+    `.bracket-match-vertical[data-stage="${stageId}"][data-match="${matchIndex}"]`
+  );
+  
+  if (matchContainer) {
+    let predictionElement = matchContainer.querySelector('.bracket-match-prediction-small');
+    
+    if (!predictionElement) {
+      // Создаем элемент если его нет
+      predictionElement = document.createElement('div');
+      predictionElement.className = 'bracket-match-prediction-small';
+      matchContainer.appendChild(predictionElement);
+    }
+    
+    predictionElement.textContent = selectedTeam;
+  }
 }
 
 // Сохранить прогнозы
 async function saveBracketPredictions() {
   if (!currentUser || !currentBracket) return;
   
-  // Собираем все прогнозы из полей ввода
-  const inputs = document.querySelectorAll('.bracket-winner-input');
+  // Собираем все прогнозы из объекта bracketPredictions
   const predictions = [];
   
-  inputs.forEach(input => {
-    const stage = input.dataset.stage;
-    const matchIndex = parseInt(input.dataset.match);
-    const winner = input.value.trim();
-    
-    if (winner) {
-      predictions.push({
-        stage,
-        match_index: matchIndex,
-        predicted_winner: winner
-      });
-    }
+  Object.keys(bracketPredictions).forEach(stage => {
+    Object.keys(bracketPredictions[stage]).forEach(matchIndex => {
+      const winner = bracketPredictions[stage][matchIndex];
+      if (winner) {
+        predictions.push({
+          stage,
+          match_index: parseInt(matchIndex),
+          predicted_winner: winner
+        });
+      }
+    });
   });
   
   if (predictions.length === 0) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Введите хотя бы один прогноз', 'Внимание', '⚠️');
+      await showCustomAlert('Выберите хотя бы одного победителя', 'Внимание', '⚠️');
     } else {
-      alert('Введите хотя бы один прогноз');
+      alert('Выберите хотя бы одного победителя');
     }
     return;
   }

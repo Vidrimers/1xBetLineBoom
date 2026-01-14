@@ -3359,12 +3359,13 @@ input:checked + .slider:before {
 }
 
 .bracket-team-slot.bracket-team-winner {
-  background: rgba(76, 175, 80, 0.2);
-  border-color: #4caf50;
+  background: rgba(90, 159, 212, 0.3);
+  border-color: #5a9fd4;
+  box-shadow: 0 0 10px rgba(90, 159, 212, 0.5);
 }
 
 .bracket-team-slot.bracket-team-winner .bracket-team-name {
-  color: #4caf50;
+  color: #5a9fd4;
   font-weight: bold;
 }
 
