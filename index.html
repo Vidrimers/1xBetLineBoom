@@ -1111,6 +1111,106 @@
               </button>
             </div>
           </div>
+
+          <!-- Панель модератора в настройках -->
+          <div id="moderatorSettingsPanel" style="display: none; margin-top: 20px">
+            <h3 style="margin-bottom: 15px; color: #9c27b0">🛡️ Панель модератора</h3>
+            <div
+              style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: stretch;
+              "
+            >
+              <button
+                id="modViewLogsBtn"
+                onclick="window.open('/log.html', '_blank')"
+                style="
+                  display: none;
+                  background: rgba(90, 159, 212, 0.7);
+                  color: #e0e6f0;
+                  border: 1px solid #3a7bd5;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 140px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+              >
+                📋 Открыть логи
+              </button>
+              <button
+                id="modBackupDBBtn"
+                onclick="backupDatabase()"
+                style="
+                  display: none;
+                  background: rgba(76, 175, 80, 0.7);
+                  color: #c8e6c9;
+                  border: 1px solid #4caf50;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 140px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+              >
+                💾 Бэкап БД
+              </button>
+              <button
+                id="modOrphanedBtn"
+                onclick="checkOrphanedData()"
+                style="
+                  display: none;
+                  background: rgba(255, 87, 34, 0.7);
+                  color: #ffccbc;
+                  border: 1px solid #ff5722;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 160px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+              >
+                🔍 Проверить orphaned
+              </button>
+              <button
+                id="modUsersBtn"
+                onclick="loadAdminUsers()"
+                style="
+                  display: none;
+                  background: rgba(58, 123, 213, 0.8);
+                  color: #e0e6f0;
+                  border: 1px solid #3a7bd5;
+                  padding: 12px 24px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 1em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+              >
+                👥 Пользователи
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1901,7 +2001,17 @@
                     id="permManageTournaments"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🎯 Управление турнирами</span>
+                  <span>🎯 Управление турнирами (редактирование, блокировка)</span>
+                </label>
+                <label
+                  style="display: flex; align-items: center; cursor: pointer"
+                >
+                  <input
+                    type="checkbox"
+                    id="permCreateTournaments"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>➕ Создание турниров</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
@@ -1913,6 +2023,71 @@
                   />
                   <span>📋 Просмотр логов</span>
                 </label>
+                <label
+                  style="display: flex; align-items: center; cursor: pointer"
+                >
+                  <input
+                    type="checkbox"
+                    id="permBackupDB"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>💾 Создание бэкапов БД</span>
+                </label>
+                <label
+                  style="display: flex; align-items: center; cursor: pointer"
+                >
+                  <input
+                    type="checkbox"
+                    id="permManageOrphaned"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🔍 Проверка и очистка orphaned данных</span>
+                </label>
+                <label
+                  style="display: flex; align-items: center; cursor: pointer"
+                >
+                  <input
+                    type="checkbox"
+                    id="permViewUsers"
+                    style="margin-right: 8px; cursor: pointer"
+                    onchange="toggleUserSubPermissions()"
+                  />
+                  <span>👥 Просмотр пользователей</span>
+                </label>
+                <div id="userSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(90, 159, 212, 0.3);">
+                  <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                    <input
+                      type="checkbox"
+                      id="permCheckBot"
+                      style="margin-right: 8px; cursor: pointer"
+                    />
+                    <span>🤖 Проверка контакта с ботом</span>
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                    <input
+                      type="checkbox"
+                      id="permViewSettings"
+                      style="margin-right: 8px; cursor: pointer"
+                    />
+                    <span>⚙️ Просмотр настроек пользователя</span>
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                    <input
+                      type="checkbox"
+                      id="permEditUsers"
+                      style="margin-right: 8px; cursor: pointer"
+                    />
+                    <span>✏️ Переименование пользователей</span>
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input
+                      type="checkbox"
+                      id="permDeleteUsers"
+                      style="margin-right: 8px; cursor: pointer"
+                    />
+                    <span>🗑️ Удаление пользователей</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -1935,6 +2110,170 @@
               ✅ Назначить модератора
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для редактирования прав модератора -->
+    <div
+      id="editModeratorModal"
+      class="modal"
+      style="display: none"
+      onclick="if(event.target.id === 'editModeratorModal') closeEditModeratorModal()"
+    >
+      <div class="modal-content" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>✏️ Редактирование прав модератора</h2>
+          <button class="modal-close" onclick="closeEditModeratorModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 20px">
+            <h3 id="editModeratorUsername" style="color: #5a9fd4; margin-bottom: 15px"></h3>
+          </div>
+
+          <div style="margin-bottom: 15px">
+            <label style="display: block; margin-bottom: 8px; color: #e0e0e0"
+              >Разрешения модератора:</label
+            >
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermManageMatches"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>🏆 Управление матчами (создание, редактирование)</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermManageResults"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>📊 Установка результатов</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermManageTournaments"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>🎯 Управление турнирами (редактирование, блокировка)</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermCreateTournaments"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>➕ Создание турниров</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermViewLogs"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>📋 Просмотр логов</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermBackupDB"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>💾 Создание бэкапов БД</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermManageOrphaned"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>🔍 Проверка и очистка orphaned данных</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermViewUsers"
+                  style="margin-right: 8px; cursor: pointer"
+                  onchange="toggleEditUserSubPermissions()"
+                />
+                <span>👥 Просмотр пользователей</span>
+              </label>
+              <div id="editUserSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(90, 159, 212, 0.3);">
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermCheckBot"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🤖 Проверка контакта с ботом</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermViewSettings"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>⚙️ Просмотр настроек пользователя</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermEditUsers"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>✏️ Переименование пользователей</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input
+                    type="checkbox"
+                    id="editPermDeleteUsers"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🗑️ Удаление пользователей</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onclick="saveModeratorPermissions()"
+            style="
+              background: rgba(76, 175, 80, 0.7);
+              color: #c8e6c9;
+              border: 1px solid #4caf50;
+              padding: 12px 24px;
+              border-radius: 8px;
+              cursor: pointer;
+              font-size: 1em;
+              transition: all 0.3s ease;
+              width: 100%;
+            "
+            onmouseover="this.style.transform='scale(1.02)'"
+            onmouseout="this.style.transform='scale(1)'"
+          >
+            ✅ Сохранить изменения
+          </button>
         </div>
       </div>
     </div>
@@ -2492,7 +2831,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="js/dict.js"></script>
-    <script src="js/index.js?v=18"></script>
+    <script src="js/index.js?v=30"></script>
     <script src="js/counting.js"></script>
 
     <!-- Модальное окно для создания матча -->

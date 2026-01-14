@@ -1,6 +1,6 @@
 {
   "name": "1xBetLineBoom",
-  "version": "1.0.0",
+  "version": "30.0.0",
   "description": "Сайт для ставок",
   "main": "server.js",
   "type": "module",

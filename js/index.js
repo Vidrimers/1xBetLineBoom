@@ -856,6 +856,37 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("adminSettingsPanel").style.display = "block";
     }
 
+    // Загружаем права модератора
+    await loadModeratorPermissions();
+    
+    // Показываем кнопки модератора если есть права
+    if (isModerator()) {
+      // Кнопка создания турнира
+      if (canCreateTournaments()) {
+        document.getElementById("adminBtn").style.display = "inline-block";
+      }
+      
+      // Панель модератора в настройках
+      if (hasAdminPanelAccess()) {
+        console.log("✅ Пользователь - модератор, показываем панель модератора");
+        document.getElementById("moderatorSettingsPanel").style.display = "block";
+        
+        // Показываем кнопки в зависимости от прав
+        if (canViewLogs()) {
+          document.getElementById("modViewLogsBtn").style.display = "inline-block";
+        }
+        if (canBackupDB()) {
+          document.getElementById("modBackupDBBtn").style.display = "inline-block";
+        }
+        if (canManageOrphaned()) {
+          document.getElementById("modOrphanedBtn").style.display = "inline-block";
+        }
+        if (canViewUsers()) {
+          document.getElementById("modUsersBtn").style.display = "inline-block";
+        }
+      }
+    }
+
     // Загружаем тему с сервера после установки currentUser
     await loadSavedTheme();
 
@@ -1047,6 +1078,9 @@ async function initUser() {
           // Код верный, продолжаем логин
           currentUser = confirmResult;
           currentUser.isAdmin = isAdminUser;
+          
+          // Загружаем права модератора
+          await loadModeratorPermissions();
         } else {
           await showCustomAlert(requestResult.error, 'Ошибка', '❌');
           return;
@@ -1060,6 +1094,9 @@ async function initUser() {
       // 2FA не требуется
       currentUser = result;
       currentUser.isAdmin = isAdminUser;
+      
+      // Загружаем права модератора
+      await loadModeratorPermissions();
     }
 
     // Создаем сессию на сервере (используем deviceData, объявленную выше)
@@ -1290,7 +1327,7 @@ function generateEventHTML(
           }
         </div>
         ${
-          isAdmin()
+          canManageTournaments()
             ? `<div class="event-admin-actions">
           <div class="event-admin-controls" data-event-id="${event.id}">
             <button onclick="openEditEventModal(${
@@ -1405,21 +1442,21 @@ async function selectEvent(eventId, eventName) {
   currentEventId = eventId;
   displayEvents(); // Обновляем выделение
 
-  // Показываем кнопку добавления матча для админа
+  // Показываем кнопку добавления матча для админа и модераторов с правами
   const addMatchBtn = document.getElementById("addMatchBtn");
-  if (addMatchBtn && isAdmin()) {
+  if (addMatchBtn && canManageMatches()) {
     addMatchBtn.style.display = "inline-block";
   }
 
-  // Показываем кнопку редактирования туров для админа
+  // Показываем кнопку редактирования туров для админа и модераторов с правами
   const editRoundsBtn = document.getElementById("editRoundsBtn");
-  if (editRoundsBtn && isAdmin()) {
+  if (editRoundsBtn && canManageTournaments()) {
     editRoundsBtn.style.display = "inline-block";
   }
 
-  // Показываем кнопку импорта матчей для админа
+  // Показываем кнопку импорта матчей для админа и модераторов с правами
   const importMatchesBtn = document.getElementById("importMatchesBtn");
-  if (importMatchesBtn && isAdmin()) {
+  if (importMatchesBtn && canManageMatches()) {
     importMatchesBtn.style.display = "inline-block";
   }
 
@@ -2085,7 +2122,7 @@ function displayMatches() {
         match.id
       }" style="position: relative;">
             ${
-              isAdmin()
+              canManageMatches()
                 ? `
               <div class="match-admin-panel">
                 ${
@@ -3038,8 +3075,8 @@ function displayMyBets(bets) {
           }
         }
 
-        // Показываем кнопку удаления: админу всегда, остальным только для матчей со статусом "pending"
-        const canDelete = isAdmin() || bet.match_status === "pending";
+        // Показываем кнопку удаления: админу/модератору всегда, остальным только для матчей со статусом "pending"
+        const canDelete = canManageMatches() || bet.match_status === "pending";
         const deleteBtn = canDelete
           ? `<button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>`
           : "";
@@ -4082,9 +4119,141 @@ function isAdmin() {
   return currentUser && currentUser.isAdmin === true;
 }
 
+// Загрузить права модератора для текущего пользователя
+async function loadModeratorPermissions() {
+  console.log("🔍 Загрузка прав модератора для пользователя:", currentUser);
+  
+  if (!currentUser) {
+    console.log("❌ currentUser не определен");
+    return;
+  }
+  
+  if (currentUser.isAdmin) {
+    // Админу не нужны права модератора
+    currentUser.isModerator = false;
+    currentUser.moderatorPermissions = [];
+    console.log("👑 Пользователь - админ, права модератора не нужны");
+    return;
+  }
+
+  try {
+    console.log("📡 Запрос списка модераторов...");
+    const response = await fetch("/api/moderators");
+    const moderators = await response.json();
+    
+    console.log("📋 Получено модераторов:", moderators);
+    console.log("🔎 Ищем модератора с user_id:", currentUser.id);
+    
+    const moderator = moderators.find(mod => mod.user_id === currentUser.id);
+    
+    if (moderator) {
+      currentUser.isModerator = true;
+      currentUser.moderatorPermissions = moderator.permissions || [];
+      console.log("✅ Права модератора загружены:", currentUser.moderatorPermissions);
+      console.log("👤 currentUser после загрузки:", currentUser);
+    } else {
+      currentUser.isModerator = false;
+      currentUser.moderatorPermissions = [];
+      console.log("ℹ️ Пользователь не является модератором");
+    }
+  } catch (error) {
+    console.error("❌ Ошибка загрузки прав модератора:", error);
+    currentUser.isModerator = false;
+    currentUser.moderatorPermissions = [];
+  }
+}
+
+// Проверить, является ли пользователь модератором
+function isModerator() {
+  return currentUser && currentUser.isModerator === true;
+}
+
+// Проверить, есть ли у пользователя конкретное право
+function hasPermission(permission) {
+  if (isAdmin()) return true; // Админ имеет все права
+  if (!isModerator()) return false;
+  return currentUser.moderatorPermissions.includes(permission);
+}
+
+// Проверить, может ли пользователь управлять матчами
+function canManageMatches() {
+  const result = hasPermission('manage_matches');
+  console.log("🔐 canManageMatches():", result, "| isAdmin:", isAdmin(), "| isModerator:", isModerator(), "| permissions:", currentUser?.moderatorPermissions);
+  return result;
+}
+
+// Проверить, может ли пользователь управлять результатами
+function canManageResults() {
+  return hasPermission('manage_results');
+}
+
+// Проверить, может ли пользователь управлять турнирами
+function canManageTournaments() {
+  return hasPermission('manage_tournaments');
+}
+
+// Проверить, может ли пользователь создавать турниры
+function canCreateTournaments() {
+  return hasPermission('create_tournaments');
+}
+
+// Проверить, может ли пользователь просматривать логи
+function canViewLogs() {
+  return hasPermission('view_logs');
+}
+
+// Проверить, может ли пользователь создавать бэкапы
+function canBackupDB() {
+  return hasPermission('backup_db');
+}
+
+// Проверить, может ли пользователь управлять orphaned данными
+function canManageOrphaned() {
+  return hasPermission('manage_orphaned');
+}
+
+// Проверить, может ли пользователь просматривать пользователей
+function canViewUsers() {
+  return hasPermission('view_users');
+}
+
+// Проверить, может ли пользователь редактировать пользователей
+function canEditUsers() {
+  return hasPermission('edit_users');
+}
+
+// Проверить, может ли пользователь удалять пользователей
+function canDeleteUsers() {
+  return hasPermission('delete_users');
+}
+
+// Проверить, может ли пользователь проверять контакт с ботом
+function canCheckBot() {
+  return isAdmin() || hasPermission('check_bot');
+}
+
+// Проверить, может ли пользователь просматривать настройки пользователей
+function canViewSettings() {
+  return isAdmin() || hasPermission('view_settings');
+}
+
+// Проверить, имеет ли модератор хотя бы одно право из админ-панели
+function hasAdminPanelAccess() {
+  if (isAdmin()) return true;
+  if (!isModerator()) return false;
+  
+  const adminPanelPerms = ['view_logs', 'backup_db', 'manage_orphaned', 'view_users'];
+  return currentUser.moderatorPermissions.some(perm => adminPanelPerms.includes(perm));
+}
+
+// Проверить, имеет ли пользователь права админа или модератора
+function isAdminOrModerator() {
+  return isAdmin() || isModerator();
+}
+
 // Функция для создания бэкапа базы данных
 async function backupDatabase() {
-  if (!isAdmin()) {
+  if (!canBackupDB()) {
     alert("❌ У вас нет прав для создания бэкапа БД");
     return;
   }
@@ -4130,7 +4299,7 @@ async function backupDatabase() {
 
 // Проверить orphaned данные в БД
 async function checkOrphanedData() {
-  if (!isAdmin()) {
+  if (!canManageOrphaned()) {
     alert("❌ У вас нет прав для проверки orphaned данных");
     return;
   }
@@ -4197,7 +4366,7 @@ async function checkOrphanedData() {
 
 // Очистить orphaned данные в БД
 async function cleanupOrphanedData() {
-  if (!isAdmin()) {
+  if (!canManageOrphaned()) {
     alert("❌ У вас нет прав для очистки orphaned данных");
     return;
   }
@@ -4299,7 +4468,7 @@ async function loadModeratorsList() {
         justify-content: space-between;
         align-items: center;
       ">
-        <div>
+        <div style="flex: 1;">
           <div style="color: #e0e0e0; font-weight: bold; margin-bottom: 5px">${
             mod.username
           }</div>
@@ -4307,22 +4476,40 @@ async function loadModeratorsList() {
             Разрешения: ${getPermissionsText(mod.permissions || [])}
           </div>
         </div>
-        <button
-          onclick="removeModerator(${mod.id})"
-          style="
-            background: rgba(244, 67, 54, 0.7);
-            color: #ffb3b3;
-            border: 1px solid #f44336;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-          "
-          onmouseover="this.style.transform='scale(1.05)'"
-          onmouseout="this.style.transform='scale(1)'"
-        >
-          🗑️ Удалить
-        </button>
+        <div style="display: flex; gap: 8px;">
+          <button
+            onclick="openEditModeratorModal(${mod.id}, '${mod.username}', ${JSON.stringify(mod.permissions || []).replace(/"/g, '&quot;')})"
+            style="
+              background: rgba(90, 159, 212, 0.7);
+              color: #e0e6f0;
+              border: 1px solid #3a7bd5;
+              padding: 8px 16px;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 0.9em;
+            "
+            onmouseover="this.style.transform='scale(1.05)'"
+            onmouseout="this.style.transform='scale(1)'"
+          >
+            ✏️ Изменить
+          </button>
+          <button
+            onclick="removeModerator(${mod.id})"
+            style="
+              background: rgba(244, 67, 54, 0.7);
+              color: #ffb3b3;
+              border: 1px solid #f44336;
+              padding: 8px 16px;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 0.9em;
+            "
+            onmouseover="this.style.transform='scale(1.05)'"
+            onmouseout="this.style.transform='scale(1)'"
+          >
+            🗑️ Удалить
+          </button>
+        </div>
       </div>
     `
       )
@@ -4384,8 +4571,16 @@ function getPermissionsText(permissions) {
   const permText = {
     manage_matches: "матчи",
     manage_results: "результаты",
-    manage_tournaments: "турниры",
+    manage_tournaments: "турниры (редактирование)",
+    create_tournaments: "создание турниров",
     view_logs: "логи",
+    backup_db: "бэкапы",
+    manage_orphaned: "orphaned данные",
+    view_users: "пользователи",
+    check_bot: "проверка бота",
+    view_settings: "настройки пользователей",
+    edit_users: "редактирование пользователей",
+    delete_users: "удаление пользователей",
   };
 
   if (permissions.length === 0) return "нет";
@@ -4410,8 +4605,32 @@ async function assignModerator() {
     permissions.push("manage_results");
   if (document.getElementById("permManageTournaments").checked)
     permissions.push("manage_tournaments");
+  if (document.getElementById("permCreateTournaments").checked)
+    permissions.push("create_tournaments");
   if (document.getElementById("permViewLogs").checked)
     permissions.push("view_logs");
+  if (document.getElementById("permBackupDB").checked)
+    permissions.push("backup_db");
+  if (document.getElementById("permManageOrphaned").checked)
+    permissions.push("manage_orphaned");
+  if (document.getElementById("permViewUsers").checked)
+    permissions.push("view_users");
+  if (document.getElementById("permCheckBot").checked)
+    permissions.push("check_bot");
+  if (document.getElementById("permViewSettings").checked)
+    permissions.push("view_settings");
+  if (document.getElementById("permEditUsers").checked)
+    permissions.push("edit_users");
+  if (document.getElementById("permDeleteUsers").checked)
+    permissions.push("delete_users");
+  if (document.getElementById("permCheckBot").checked)
+    permissions.push("check_bot");
+  if (document.getElementById("permViewSettings").checked)
+    permissions.push("view_settings");
+  if (document.getElementById("permEditUsers").checked)
+    permissions.push("edit_users");
+  if (document.getElementById("permDeleteUsers").checked)
+    permissions.push("delete_users");
 
   if (permissions.length === 0) {
     alert("❌ Выберите хотя бы одно разрешение");
@@ -4438,7 +4657,21 @@ async function assignModerator() {
       document.getElementById("permManageMatches").checked = false;
       document.getElementById("permManageResults").checked = false;
       document.getElementById("permManageTournaments").checked = false;
+      document.getElementById("permCreateTournaments").checked = false;
       document.getElementById("permViewLogs").checked = false;
+      document.getElementById("permBackupDB").checked = false;
+      document.getElementById("permManageOrphaned").checked = false;
+      document.getElementById("permViewUsers").checked = false;
+      document.getElementById("permCheckBot").checked = false;
+      document.getElementById("permViewSettings").checked = false;
+      document.getElementById("permEditUsers").checked = false;
+      document.getElementById("permDeleteUsers").checked = false;
+      document.getElementById("userSubPermissions").style.display = "none";
+      document.getElementById("permCheckBot").checked = false;
+      document.getElementById("permViewSettings").checked = false;
+      document.getElementById("permEditUsers").checked = false;
+      document.getElementById("permDeleteUsers").checked = false;
+      document.getElementById("userSubPermissions").style.display = "none";
 
       // Перезагружаем список
       loadModeratorsList();
@@ -4473,6 +4706,179 @@ async function removeModerator(moderatorId) {
   } catch (error) {
     console.error("Ошибка при удалении модератора:", error);
     alert(`❌ Ошибка при удалении модератора: ${error.message}`);
+  }
+}
+
+// Глобальная переменная для хранения ID редактируемого модератора
+let editingModeratorId = null;
+
+// Открыть модальное окно редактирования прав модератора
+function openEditModeratorModal(moderatorId, username, permissions) {
+  editingModeratorId = moderatorId;
+  
+  // Устанавливаем имя пользователя
+  document.getElementById("editModeratorUsername").textContent = `Модератор: ${username}`;
+  
+  // Очищаем все чекбоксы
+  document.getElementById("editPermManageMatches").checked = false;
+  document.getElementById("editPermManageResults").checked = false;
+  document.getElementById("editPermManageTournaments").checked = false;
+  document.getElementById("editPermCreateTournaments").checked = false;
+  document.getElementById("editPermViewLogs").checked = false;
+  document.getElementById("editPermBackupDB").checked = false;
+  document.getElementById("editPermManageOrphaned").checked = false;
+  document.getElementById("editPermViewUsers").checked = false;
+  document.getElementById("editPermCheckBot").checked = false;
+  document.getElementById("editPermViewSettings").checked = false;
+  document.getElementById("editPermEditUsers").checked = false;
+  document.getElementById("editPermDeleteUsers").checked = false;
+  document.getElementById("editUserSubPermissions").style.display = "none";
+  
+  // Устанавливаем текущие права
+  if (Array.isArray(permissions)) {
+    if (permissions.includes("manage_matches")) {
+      document.getElementById("editPermManageMatches").checked = true;
+    }
+    if (permissions.includes("manage_results")) {
+      document.getElementById("editPermManageResults").checked = true;
+    }
+    if (permissions.includes("manage_tournaments")) {
+      document.getElementById("editPermManageTournaments").checked = true;
+    }
+    if (permissions.includes("create_tournaments")) {
+      document.getElementById("editPermCreateTournaments").checked = true;
+    }
+    if (permissions.includes("view_logs")) {
+      document.getElementById("editPermViewLogs").checked = true;
+    }
+    if (permissions.includes("backup_db")) {
+      document.getElementById("editPermBackupDB").checked = true;
+    }
+    if (permissions.includes("manage_orphaned")) {
+      document.getElementById("editPermManageOrphaned").checked = true;
+    }
+    if (permissions.includes("view_users")) {
+      document.getElementById("editPermViewUsers").checked = true;
+      document.getElementById("editUserSubPermissions").style.display = "block";
+    }
+    if (permissions.includes("check_bot")) {
+      document.getElementById("editPermCheckBot").checked = true;
+    }
+    if (permissions.includes("view_settings")) {
+      document.getElementById("editPermViewSettings").checked = true;
+    }
+    if (permissions.includes("edit_users")) {
+      document.getElementById("editPermEditUsers").checked = true;
+    }
+    if (permissions.includes("delete_users")) {
+      document.getElementById("editPermDeleteUsers").checked = true;
+    }
+  }
+  
+  // Показываем модальное окно
+  document.getElementById("editModeratorModal").style.display = "flex";
+}
+
+// Закрыть модальное окно редактирования прав модератора
+function closeEditModeratorModal() {
+  document.getElementById("editModeratorModal").style.display = "none";
+  editingModeratorId = null;
+}
+
+// Переключить видимость подчекбоксов пользователей (форма назначения)
+function toggleUserSubPermissions() {
+  const viewUsersCheckbox = document.getElementById("permViewUsers");
+  const subPermissionsDiv = document.getElementById("userSubPermissions");
+  
+  if (viewUsersCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("permCheckBot").checked = false;
+    document.getElementById("permViewSettings").checked = false;
+    document.getElementById("permEditUsers").checked = false;
+    document.getElementById("permDeleteUsers").checked = false;
+  }
+}
+
+// Переключить видимость подчекбоксов пользователей (форма редактирования)
+function toggleEditUserSubPermissions() {
+  const viewUsersCheckbox = document.getElementById("editPermViewUsers");
+  const subPermissionsDiv = document.getElementById("editUserSubPermissions");
+  
+  if (viewUsersCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("editPermCheckBot").checked = false;
+    document.getElementById("editPermViewSettings").checked = false;
+    document.getElementById("editPermEditUsers").checked = false;
+    document.getElementById("editPermDeleteUsers").checked = false;
+  }
+}
+
+// Сохранить изменения прав модератора
+async function saveModeratorPermissions() {
+  if (!editingModeratorId) {
+    alert("❌ Ошибка: ID модератора не определен");
+    return;
+  }
+  
+  // Собираем разрешения
+  const permissions = [];
+  if (document.getElementById("editPermManageMatches").checked)
+    permissions.push("manage_matches");
+  if (document.getElementById("editPermManageResults").checked)
+    permissions.push("manage_results");
+  if (document.getElementById("editPermManageTournaments").checked)
+    permissions.push("manage_tournaments");
+  if (document.getElementById("editPermCreateTournaments").checked)
+    permissions.push("create_tournaments");
+  if (document.getElementById("editPermViewLogs").checked)
+    permissions.push("view_logs");
+  if (document.getElementById("editPermBackupDB").checked)
+    permissions.push("backup_db");
+  if (document.getElementById("editPermManageOrphaned").checked)
+    permissions.push("manage_orphaned");
+  if (document.getElementById("editPermViewUsers").checked)
+    permissions.push("view_users");
+  if (document.getElementById("editPermCheckBot").checked)
+    permissions.push("check_bot");
+  if (document.getElementById("editPermViewSettings").checked)
+    permissions.push("view_settings");
+  if (document.getElementById("editPermEditUsers").checked)
+    permissions.push("edit_users");
+  if (document.getElementById("editPermDeleteUsers").checked)
+    permissions.push("delete_users");
+
+  if (permissions.length === 0) {
+    alert("❌ Выберите хотя бы одно разрешение");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/moderators/${editingModeratorId}/permissions`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        permissions: permissions,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert("✅ Права модератора успешно обновлены");
+      closeEditModeratorModal();
+      loadModeratorsList();
+    } else {
+      alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при обновлении прав модератора:", error);
+    alert(`❌ Ошибка при обновлении прав: ${error.message}`);
   }
 }
 
@@ -5710,7 +6116,7 @@ let adminUsers = [];
 
 // Загрузить список всех пользователей
 async function loadAdminUsers() {
-  if (!isAdmin()) {
+  if (!canViewUsers()) {
     alert("У вас нет прав для просмотра пользователей");
     return;
   }
@@ -5807,18 +6213,26 @@ function displayAdminUsersModal() {
         </div>
       </div>
       <div class="admin-user-actions">
+        ${canCheckBot() ? `
         <button class="admin-btn admin-btn-bot-check" onclick="checkUserBotContact(${
           user.id
         }, '${user.username}')" title="Проверка писал ли пользователь боту">🤖</button>
+        ` : ''}
+        ${canViewSettings() ? `
         <button class="admin-btn admin-btn-settings" onclick="sendUserSettingsToAdmin(${
           user.id
         }, '${user.username}')" title="Получить настройки пользователя">⚙️</button>
+        ` : ''}
+        ${canEditUsers() && (isAdmin() || user.username !== ADMIN_DB_NAME) ? `
         <button class="admin-btn admin-btn-rename" onclick="renameUser(${
           user.id
         }, '${user.username}')" title="Переименовать пользователя">✏️</button>
+        ` : ''}
+        ${canDeleteUsers() && user.username !== ADMIN_DB_NAME ? `
         <button class="admin-btn admin-btn-delete" onclick="deleteUser(${
           user.id
         }, '${user.username}')" title="Удалить пользователя">🗑️</button>
+        ` : ''}
       </div>
     </div>
   `
@@ -5828,13 +6242,13 @@ function displayAdminUsersModal() {
 
 // Проверить, писал ли пользователь боту
 async function checkUserBotContact(userId, username) {
-  if (!isAdmin()) {
+  if (!canCheckBot()) {
     await showCustomAlert("У вас нет прав", "Ошибка", "❌");
     return;
   }
 
   try {
-    const response = await fetch(`/api/admin/users/${userId}/bot-contact-check`);
+    const response = await fetch(`/api/admin/users/${userId}/bot-contact-check?username=${currentUser.username}`);
     const result = await response.json();
 
     if (!response.ok) {
@@ -6114,8 +6528,14 @@ function displayAdminUsers() {
 
 // Переименовать пользователя
 async function renameUser(userId, currentUsername) {
-  if (!isAdmin()) {
+  if (!canEditUsers()) {
     alert("У вас нет прав");
+    return;
+  }
+
+  // Проверяем, не пытается ли переименовать админа
+  if (currentUsername === ADMIN_DB_NAME && !isAdmin()) {
+    alert("❌ Модератор не может переименовать администратора!");
     return;
   }
 
@@ -6153,7 +6573,7 @@ async function renameUser(userId, currentUsername) {
 
 // Отправить настройки пользователя админу в Telegram
 async function sendUserSettingsToAdmin(userId, username) {
-  if (!isAdmin()) {
+  if (!canViewSettings()) {
     alert("У вас нет прав");
     return;
   }
@@ -6185,8 +6605,14 @@ async function sendUserSettingsToAdmin(userId, username) {
 
 // Удалить пользователя
 async function deleteUser(userId, username) {
-  if (!isAdmin()) {
+  if (!canDeleteUsers()) {
     alert("У вас нет прав");
+    return;
+  }
+
+  // Проверяем, не пытается ли удалить админа
+  if (username === ADMIN_DB_NAME) {
+    alert("❌ Нельзя удалить администратора!");
     return;
   }
 
@@ -6999,7 +7425,7 @@ function openCreateMatchModal() {
     return;
   }
 
-  if (!isAdmin()) {
+  if (!canManageMatches()) {
     alert("У вас нет прав для создания матчей");
     return;
   }
@@ -7247,8 +7673,8 @@ async function submitCreateMatch(event) {
 // ===== РЕДАКТИРОВАНИЕ И УДАЛЕНИЕ МАТЧЕЙ =====
 
 function openEditMatchModal(id, team1, team2, date, round) {
-  if (!isAdmin()) {
-    alert("❌ Только администратор может редактировать матчи");
+  if (!canManageMatches()) {
+    alert("❌ Только администратор или модератор может редактировать матчи");
     return;
   }
 
@@ -7420,8 +7846,8 @@ async function submitEditMatch(event) {
 }
 
 async function deleteMatch(id) {
-  if (!isAdmin()) {
-    alert("❌ Только администратор может удалять матчи");
+  if (!canManageMatches()) {
+    alert("❌ Только администратор или модератор может удалять матчи");
     return;
   }
 
@@ -8021,9 +8447,9 @@ console.log(
   "color: #9c27b0; font-size: 12px;"
 );
 
-// ===== ОЧИСТКА ЛОГОВ =====
+// Очистка логов
 async function clearLogs() {
-  if (!isAdmin()) {
+  if (!canViewLogs()) {
     alert("Недостаточно прав");
     return;
   }

@@ -98,6 +98,43 @@ function addTerminalLog(message) {
   }
 }
 
+// Функция для отправки уведомления админу о действиях модератора
+async function notifyModeratorAction(moderatorUsername, action, details) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+    return;
+  }
+
+  const time = new Date().toLocaleString("ru-RU");
+  const message = `🛡️ ДЕЙСТВИЕ МОДЕРАТОРА
+
+👤 Модератор: ${moderatorUsername}
+🎬 Действие: ${action}
+
+${details}
+
+🕐 Время: ${time}`;
+
+  try {
+    await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: message,
+        }),
+      }
+    );
+    console.log(`✅ Уведомление о действии модератора отправлено админу`);
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления админу:", error);
+  }
+}
+
 // Переопределяем console.log для логирования
 const originalLog = console.log;
 const originalError = console.error;
@@ -1365,7 +1402,7 @@ db.exec(`
     user_id INTEGER NOT NULL UNIQUE,
     permissions TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS user_awards (
@@ -5735,7 +5772,7 @@ app.get("/api/admin/events/:eventId/rounds", (req, res) => {
 });
 
 // POST /api/admin/matches - Создать новый матч (только для админа)
-app.post("/api/admin/matches", (req, res) => {
+app.post("/api/admin/matches", async (req, res) => {
   const {
     username,
     event_id,
@@ -5754,9 +5791,24 @@ app.post("/api/admin/matches", (req, res) => {
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
-  // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем, является ли пользователь админом или модератором с правами
+  const isAdminUser = username === ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("manage_matches");
+    }
+    
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   // Проверяем обязательные поля
@@ -5804,6 +5856,19 @@ app.post("/api/admin/matches", (req, res) => {
         show_extra_time ? 1 : 0,
         show_penalties_at_end ? 1 : 0
       );
+
+    // Отправляем уведомление админу если это модератор
+    if (isModerator) {
+      const event = db.prepare("SELECT name FROM events WHERE id = ?").get(event_id);
+      const matchDateFormatted = match_date ? new Date(match_date).toLocaleString("ru-RU") : "не указана";
+      
+      const details = `⚽ Матч: ${team1} vs ${team2}
+🏆 Турнир: ${event?.name || "Неизвестно"}
+📅 Дата матча: ${matchDateFormatted}
+🔢 Тур: ${round || "не указан"}${is_final ? "\n🏅 Финальный матч" : ""}`;
+
+      await notifyModeratorAction(username, "Создание матча", details);
+    }
 
     res.json({
       id: result.lastInsertRowid,
@@ -6333,13 +6398,28 @@ app.put("/api/admin/events/:eventId", (req, res) => {
   }
 });
 
-// GET /api/admin/users - Получить всех пользователей (только для админа)
+// GET /api/admin/users - Получить всех пользователей (для админа и модераторов с правами)
 app.get("/api/admin/users", (req, res) => {
   const username = req.query.username;
 
   // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("view_users")) {
+      return res.status(403).json({ error: "Недостаточно прав для просмотра пользователей" });
+    }
   }
 
   try {
@@ -6372,9 +6452,24 @@ app.put("/api/admin/users/:userId", (req, res) => {
   const { userId } = req.params;
   const { username: adminUsername, newUsername } = req.body;
 
-  // Проверяем, является ли пользователь админом
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем, является ли пользователь админом или модератором с правами
+  const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(adminUsername);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("edit_users")) {
+      return res.status(403).json({ error: "Недостаточно прав для редактирования пользователей" });
+    }
   }
 
   // Проверяем обязательные поля
@@ -6385,6 +6480,18 @@ app.put("/api/admin/users/:userId", (req, res) => {
   }
 
   try {
+    // Получаем старое имя для уведомления
+    const oldUser = db.prepare("SELECT username FROM users WHERE id = ?").get(userId);
+
+    if (!oldUser) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем, не пытается ли модератор переименовать админа
+    if (!isAdminUser && oldUser.username === process.env.ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Модератор не может переименовать администратора" });
+    }
+
     // Проверяем, не занято ли имя
     const existing = db
       .prepare("SELECT id FROM users WHERE username = ?")
@@ -6401,6 +6508,14 @@ app.put("/api/admin/users/:userId", (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    // Отправляем уведомление админу если это модератор
+    if (!isAdminUser) {
+      const details = `👤 Пользователь: ${oldUser.username}
+➡️ Новое имя: ${newUsername}`;
+      
+      notifyModeratorAction(adminUsername, "Переименование пользователя", details);
+    }
+
     res.json({ message: "Пользователь успешно переименован", newUsername });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -6410,6 +6525,27 @@ app.put("/api/admin/users/:userId", (req, res) => {
 // GET /api/admin/users/:userId/bot-contact-check - Проверить, писал ли пользователь боту
 app.get("/api/admin/users/:userId/bot-contact-check", (req, res) => {
   const { userId } = req.params;
+  const username = req.query.username;
+
+  // Проверяем, является ли пользователь админом
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("check_bot")) {
+      return res.status(403).json({ error: "Недостаточно прав для проверки контакта с ботом" });
+    }
+  }
 
   try {
     // Получаем информацию о пользователе
@@ -6535,17 +6671,43 @@ app.delete("/api/admin/users/:userId", async (req, res) => {
   const { userId } = req.params;
   const { username: adminUsername } = req.body;
 
-  // Проверяем, является ли пользователь админом
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем, является ли пользователь админом или модератором с правами
+  const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(adminUsername);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("view_users")) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
-  // Не даем удалить самого админа
+  // Получаем информацию о пользователе, которого хотят удалить
   const userToDelete = db
     .prepare("SELECT username FROM users WHERE id = ?")
     .get(userId);
-  if (userToDelete && userToDelete.username === process.env.ADMIN_DB_NAME) {
+    
+  if (!userToDelete) {
+    return res.status(404).json({ error: "Пользователь не найден" });
+  }
+
+  // Не даем удалить админа
+  if (userToDelete.username === process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Нельзя удалить админа" });
+  }
+  
+  // Модератор не может удалить админа (дополнительная проверка)
+  if (!isAdminUser && userToDelete.username === process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Модератор не может удалить администратора" });
   }
 
   try {
@@ -6572,6 +6734,9 @@ app.delete("/api/admin/users/:userId", async (req, res) => {
 
     // Удаляем все ставки пользователя
     db.prepare("DELETE FROM bets WHERE user_id = ?").run(userId);
+
+    // Удаляем права модератора если они есть
+    db.prepare("DELETE FROM moderators WHERE user_id = ?").run(userId);
 
     // Удаляем параметры финала для матчей, где у этого пользователя больше нет ставок
     finalBets.forEach((bet) => {
@@ -6605,9 +6770,11 @@ app.delete("/api/admin/users/:userId", async (req, res) => {
 
     if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
       const time = new Date().toLocaleString("ru-RU");
+      const actionBy = isAdminUser ? "Администратор" : `Модератор: ${adminUsername}`;
+      
       const message = `🗑️ УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
 
-👤 Пользователь: ${userInfo.username}
+${!isAdminUser ? `🛡️ ${actionBy}\n` : ""}👤 Пользователь: ${userInfo.username}
 ${userInfo.telegram_username ? `📱 Telegram: @${userInfo.telegram_username}` : ""}
 📊 Удалено ставок: ${betsCount.count}
 ✏️ Действие: удален из системы
@@ -6642,8 +6809,23 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
   const { username: adminUsername } = req.body;
 
   // Проверяем, является ли пользователь админом
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(adminUsername);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("view_settings")) {
+      return res.status(403).json({ error: "Недостаточно прав для просмотра настроек пользователей" });
+    }
   }
 
   try {
