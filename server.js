@@ -1649,6 +1649,36 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// ===== ТАБЛИЦЫ ДЛЯ СЕТОК ПЛЕЙ-ОФФ =====
+
+// Таблица сеток плей-офф
+db.exec(`
+  CREATE TABLE IF NOT EXISTS brackets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    start_date DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES events(id)
+  )
+`);
+
+// Таблица прогнозов пользователей в сетке
+db.exec(`
+  CREATE TABLE IF NOT EXISTS bracket_predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bracket_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    stage TEXT NOT NULL,
+    match_index INTEGER NOT NULL,
+    predicted_winner TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (bracket_id) REFERENCES brackets(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(bracket_id, user_id, stage, match_index)
+  )
+`);
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)
@@ -2250,6 +2280,141 @@ app.get("/api/events/:eventId/tournament-winner", (req, res) => {
     });
   } catch (error) {
     console.error("❌ Ошибка в endpoint tournament-winner:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== API ДЛЯ СЕТОК ПЛЕЙ-ОФФ =====
+
+// Получить сетки для турнира
+app.get("/api/events/:eventId/brackets", (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const brackets = db
+      .prepare("SELECT * FROM brackets WHERE event_id = ? ORDER BY created_at DESC")
+      .all(eventId);
+    res.json(brackets);
+  } catch (error) {
+    console.error("Ошибка получения сеток:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Получить сетку по ID
+app.get("/api/brackets/:bracketId", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const bracket = db
+      .prepare("SELECT * FROM brackets WHERE id = ?")
+      .get(bracketId);
+    
+    if (!bracket) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    res.json(bracket);
+  } catch (error) {
+    console.error("Ошибка получения сетки:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Получить прогнозы пользователя для сетки
+app.get("/api/brackets/:bracketId/predictions/:userId", (req, res) => {
+  try {
+    const { bracketId, userId } = req.params;
+    const predictions = db
+      .prepare("SELECT * FROM bracket_predictions WHERE bracket_id = ? AND user_id = ?")
+      .all(bracketId, userId);
+    res.json(predictions);
+  } catch (error) {
+    console.error("Ошибка получения прогнозов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Сохранить прогнозы пользователя
+app.post("/api/brackets/:bracketId/predictions", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { user_id, predictions } = req.body;
+    
+    if (!user_id || !predictions || !Array.isArray(predictions)) {
+      return res.status(400).json({ error: "Неверные данные" });
+    }
+    
+    // Проверяем, не закрыта ли сетка
+    const bracket = db
+      .prepare("SELECT * FROM brackets WHERE id = ?")
+      .get(bracketId);
+    
+    if (!bracket) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    const startDate = new Date(bracket.start_date);
+    const now = new Date();
+    
+    if (now >= startDate) {
+      return res.status(403).json({ error: "Ставки в сетке закрыты" });
+    }
+    
+    // Удаляем старые прогнозы пользователя
+    db.prepare("DELETE FROM bracket_predictions WHERE bracket_id = ? AND user_id = ?")
+      .run(bracketId, user_id);
+    
+    // Добавляем новые прогнозы
+    const insertStmt = db.prepare(`
+      INSERT INTO bracket_predictions (bracket_id, user_id, stage, match_index, predicted_winner)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    
+    predictions.forEach(p => {
+      insertStmt.run(bracketId, user_id, p.stage, p.match_index, p.predicted_winner);
+    });
+    
+    console.log(`✅ Прогнозы пользователя ${user_id} для сетки ${bracketId} сохранены`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Ошибка сохранения прогнозов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Создать сетку (только для админа)
+app.post("/api/admin/brackets", (req, res) => {
+  try {
+    const { event_id, name, start_date, username } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    if (!event_id || !name || !start_date) {
+      return res.status(400).json({ error: "Не все поля заполнены" });
+    }
+    
+    // Создаем сетку
+    const result = db.prepare(`
+      INSERT INTO brackets (event_id, name, start_date)
+      VALUES (?, ?, ?)
+    `).run(event_id, name, start_date);
+    
+    console.log(`✅ Сетка "${name}" создана для турнира ${event_id}`);
+    
+    res.json({ 
+      success: true, 
+      bracket_id: result.lastInsertRowid 
+    });
+  } catch (error) {
+    console.error("Ошибка создания сетки:", error);
     res.status(500).json({ error: error.message });
   }
 });

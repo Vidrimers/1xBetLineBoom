@@ -1469,6 +1469,12 @@ async function selectEvent(eventId, eventName) {
     addMatchBtn.style.display = "inline-block";
   }
 
+  // Показываем кнопку создания сетки для админа
+  const addBracketBtn = document.getElementById("addBracketBtn");
+  if (addBracketBtn && currentUser && currentUser.isAdmin) {
+    addBracketBtn.style.display = "inline-block";
+  }
+
   // Показываем кнопку редактирования туров для админа и модераторов с правами
   const editRoundsBtn = document.getElementById("editRoundsBtn");
   if (editRoundsBtn && canManageTournaments()) {
@@ -1932,7 +1938,7 @@ async function displayTournamentWinner(eventId) {
   }
 }
 
-function displayMatches() {
+async function displayMatches() {
   const matchesContainer = document.getElementById("matchesContainer");
   const roundsFilterContainer = document.getElementById(
     "roundsFilterContainer"
@@ -2021,7 +2027,31 @@ function displayMatches() {
     // Проверяем, является ли текущий пользователем админом
     const isAdmin = currentUser && currentUser.isAdmin;
 
+    // Загружаем сетки для текущего турнира
+    let bracketsHTML = '';
+    if (currentEventId && typeof loadBracketsForEvent === 'function') {
+      try {
+        const brackets = await loadBracketsForEvent(currentEventId);
+        if (brackets && brackets.length > 0) {
+          brackets.forEach(bracket => {
+            const isClosed = bracket.start_date && new Date(bracket.start_date) <= new Date();
+            const statusIcon = isClosed ? '🔒' : '🏆';
+            bracketsHTML += `
+              <button class="round-filter-btn bracket-filter-btn" 
+                      onclick="openBracketModal(${bracket.id})" 
+                      title="${bracket.name}${isClosed ? ' (Ставки закрыты)' : ' (Ставки открыты)'}">
+                ${statusIcon} ${bracket.name}
+              </button>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки сеток для фильтра:', err);
+      }
+    }
+
     filterButtons.innerHTML = `
+      ${bracketsHTML}
       ${rounds
         .map(
           (round) => `
@@ -2041,7 +2071,6 @@ function displayMatches() {
     roundsFilterContainer.style.display = "none";
     currentRoundFilter = "all"; // Сбрасываем фильтр если туров и финальных матчей нет
   }
-
   // Фильтруем матчи по выбранному туру
   let filteredMatches = matches;
   if (currentRoundFilter !== "all") {
@@ -2113,6 +2142,7 @@ function displayMatches() {
 
   // Генерируем HTML с разделителями по датам
   let htmlContent = "";
+  
   sortedDateKeys.forEach((dateKey) => {
     // Добавляем разделитель даты
     htmlContent += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ${dateKey} ━━━</div>`;

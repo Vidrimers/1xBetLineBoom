@@ -227,6 +227,20 @@
                     ➕
                   </button>
                   <button
+                    id="addBracketBtn"
+                    onclick="openCreateBracketModal()"
+                    style="
+                      display: none;
+                      padding: 0;
+                      font-size: 0.9em;
+                      background: transparent;
+                      border: none;
+                    "
+                    title="Создать сетку плей-офф"
+                  >
+                    🏆
+                  </button>
+                  <button
                     id="editRoundsBtn"
                     onclick="openRoundsOrderModal()"
                     style="
@@ -2831,6 +2845,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="js/dict.js"></script>
+    <script src="js/bracket.js"></script>
     <script src="js/index.js?v=48"></script>
     <script src="js/counting.js"></script>
 
@@ -3747,6 +3762,67 @@
             </button>
             <button
               onclick="closeFinalMatchResultModal()"
+              class="form-btn-cancel"
+              style="flex: 1"
+            >
+              ❌ Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно сетки плей-офф -->
+    <div id="bracketModal" class="modal" onclick="closeBracketModal()">
+      <!-- Контент будет добавлен динамически -->
+    </div>
+
+    <!-- Модальное окно создания сетки (для админа) -->
+    <div id="createBracketModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'createBracketModal', closeCreateBracketModal)">
+      <div class="modal-content" style="max-width: 500px" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h2>➕ Создать сетку плей-офф</h2>
+          <button class="modal-close" onclick="closeCreateBracketModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 15px">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600">
+              Название сетки:
+            </label>
+            <input
+              type="text"
+              id="bracketName"
+              placeholder="Например: Плей-офф Лиги Чемпионов"
+              style="width: 100%; padding: 10px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; color: #e0e6f0;"
+            />
+          </div>
+
+          <div style="margin-bottom: 20px">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600">
+              Дата начала 1/16:
+            </label>
+            <input
+              type="datetime-local"
+              id="bracketStartDate"
+              style="width: 100%; padding: 10px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; color: #e0e6f0;"
+            />
+            <small style="color: #b0b8c8; display: block; margin-top: 5px;">
+              После этой даты ставки в сетке будут закрыты
+            </small>
+          </div>
+
+          <div style="display: flex; gap: 10px">
+            <button
+              onclick="createBracket()"
+              class="form-btn-submit"
+              style="flex: 1"
+            >
+              ✅ Создать
+            </button>
+            <button
+              onclick="closeCreateBracketModal()"
               class="form-btn-cancel"
               style="flex: 1"
             >

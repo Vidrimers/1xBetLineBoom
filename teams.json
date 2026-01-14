@@ -1,0 +1,214 @@
+{
+  "tournament": "UEFA Champions League 2025/26",
+  "stage": "Group Stage - Round 7",
+  "teams_by_status": {
+    "qualify_directly_to_round_of_16": {
+      "title": "Выходят в 1/8 финала (автоматически)",
+      "description": "Топ-8 команд проходят напрямую в 1/8 финала",
+      "count": 8,
+      "teams": [
+        {
+          "position": 1,
+          "name": "Арсенал",
+          "status": "qualify_directly"
+        },
+        {
+          "position": 2,
+          "name": "Бавария",
+          "status": "qualify_directly"
+        },
+        {
+          "position": 3,
+          "name": "Атлетико",
+          "status": "qualify_directly"
+        },
+        {
+          "position": 4,
+          "name": "Ман Сити",
+          "status": "qualify_directly"
+        },
+        {
+          "position": 5,
+          "name": "Аталанта",
+          "status": "qualify_directly"
+        },
+        {
+          "position": 6,
+          "name": "Интер",
+          "status": "qualify_directly"
+        },
+        {
+          "position": 7,
+          "name": "Реал",
+          "status": "qualify_directly"
+        },
+        {
+          "position": 8,
+          "name": "ПСЖ",
+          "status": "qualify_directly"
+        }
+      ]
+    },
+    "playoff_seeded": {
+      "title": "Выходят в стыковые матчи (сеяные)",
+      "description": "Места 9-16, проводят стыковые матчи за право пройти в 1/8 финала",
+      "count": 8,
+      "teams": [
+        {
+          "position": 9,
+          "name": "Ливерпуль",
+          "status": "playoff_seeded"
+        },
+        {
+          "position": 10,
+          "name": "Боруссия Дортмунд",
+          "status": "playoff_seeded"
+        },
+        {
+          "position": 11,
+          "name": "Тоттенхэм",
+          "status": "playoff_seeded"
+        },
+        {
+          "position": 12,
+          "name": "Ньюкасл",
+          "status": "playoff_seeded"
+        },
+        {
+          "position": 13,
+          "name": "Челси",
+          "status": "playoff_seeded"
+        },
+        {
+          "position": 14,
+          "name": "Спортинг",
+          "status": "playoff_seeded"
+        },
+        {
+          "position": 15,
+          "name": "Барселона",
+          "status": "playoff_seeded"
+        },
+        {
+          "position": 16,
+          "name": "Олимпик",
+          "status": "playoff_seeded"
+        }
+      ]
+    },
+    "playoff_unseeded": {
+      "title": "Выходят в стыковые матчи (несеяные)",
+      "description": "Места 17-24, проводят стыковые матчи за право пройти в 1/8 финала",
+      "count": 8,
+      "teams": [
+        {
+          "position": 17,
+          "name": "Ювентус",
+          "status": "playoff_unseeded"
+        },
+        {
+          "position": 18,
+          "name": "Галатасарай",
+          "status": "playoff_unseeded"
+        },
+        {
+          "position": 19,
+          "name": "Монако",
+          "status": "playoff_unseeded"
+        },
+        {
+          "position": 20,
+          "name": "Байер",
+          "status": "playoff_unseeded"
+        },
+        {
+          "position": 21,
+          "name": "ПСВ",
+          "status": "playoff_unseeded"
+        },
+        {
+          "position": 22,
+          "name": "Карабах",
+          "status": "playoff_unseeded"
+        },
+        {
+          "position": 23,
+          "name": "Наполи",
+          "status": "playoff_unseeded"
+        },
+        {
+          "position": 24,
+          "name": "Копенгаген",
+          "status": "playoff_unseeded"
+        }
+      ]
+    },
+    "eliminated": {
+      "title": "Вылетают",
+      "description": "Места 25-36, европейский сезон заканчивается",
+      "count": 12,
+      "teams": [
+        {
+          "position": 25,
+          "name": "Бенфика",
+          "status": "eliminated"
+        },
+        {
+          "position": 26,
+          "name": "Пафос",
+          "status": "eliminated"
+        },
+        {
+          "position": 27,
+          "name": "Юнион",
+          "status": "eliminated"
+        },
+        {
+          "position": 28,
+          "name": "Атлетик",
+          "status": "eliminated"
+        },
+        {
+          "position": 29,
+          "name": "Олимпиакос",
+          "status": "eliminated"
+        },
+        {
+          "position": 30,
+          "name": "Айнтрахт",
+          "status": "eliminated"
+        },
+        {
+          "position": 31,
+          "name": "Брюгге",
+          "status": "eliminated"
+        },
+        {
+          "position": 32,
+          "name": "Буде-Глимт",
+          "status": "eliminated"
+        },
+        {
+          "position": 33,
+          "name": "Славия",
+          "status": "eliminated"
+        },
+        {
+          "position": 34,
+          "name": "Аякс",
+          "status": "eliminated"
+        },
+        {
+          "position": 35,
+          "name": "Вильяреал",
+          "status": "eliminated"
+        },
+        {
+          "position": 36,
+          "name": "Кайрат",
+          "status": "eliminated"
+        }
+      ]
+    }
+  }
+}
