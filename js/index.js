@@ -935,6 +935,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       displayMatches();
     }
   }, 30000);
+
+  // Обновляем настройки когда пользователь возвращается на вкладку
+  // (полезно после привязки Telegram через бота)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && currentUser) {
+      // Проверяем, открыты ли настройки
+      const settingsContainer = document.getElementById("settingsContainer");
+      if (settingsContainer && settingsContainer.offsetParent !== null) {
+        console.log("👁️ Вкладка стала видимой, обновляем настройки");
+        loadSettings();
+      }
+    }
+  });
 });
 
 // ===== ПОЛЬЗОВАТЕЛЬ =====
@@ -6703,6 +6716,9 @@ async function loadSettings() {
     const data = await response.json();
     const telegramUsername = data.telegram_username || "";
 
+    // Обновляем currentUser с актуальными данными
+    currentUser.telegram_username = telegramUsername;
+
     // Загружаем все настройки уведомлений
     const notifResponse = await fetch(
       `/api/user/${currentUser.id}/notifications`
@@ -6736,18 +6752,35 @@ async function loadSettings() {
           }
         </div>
         <p class="setting-hint">ТГ для уведомлений/напоминаний</p>
+        ${telegramUsername ? `
         <div class="setting-control">
-          <input type="text" id="telegramUsernameInput" value="${telegramUsername}" placeholder="@username" onkeypress="if(event.key === 'Enter') saveTelegramUsername()">
+          <input type="text" id="telegramUsernameInput" value="${telegramUsername}" placeholder="@username" disabled style="opacity: 0.6; cursor: not-allowed;">
           <div class="setting-buttons">
-          <button onclick="saveTelegramUsername()" class="btn-save">💾</button>
-          ${
-            telegramUsername
-              ? `<button onclick="deleteTelegramUsername()" class="btn-delete">🗑️</button>`
-              : ""
-          }
+            <button onclick="deleteTelegramUsername()" class="btn-delete">🗑️</button>
           </div>
         </div>
-        <p class="setting-hint-small">Свой ТГ можно узнать в <a href="https://t.me/OnexBetLineBoomBot" target="_blank">боте</a> → Профиль или /profile</p>
+        <p class="setting-hint-small">Информацию можно узнать в <a href="https://t.me/OnexBetLineBoomBot" target="_blank">боте</a></p>
+        ` : `
+        <button 
+          onclick="window.open('https://t.me/OnexBetLineBoomBot?start=link_${currentUser.id}', '_blank')" 
+          style="
+            margin-top: 10px;
+            background: rgba(90, 159, 212, 0.2);
+            color: #5a9fd4;
+            border: 1px solid #5a9fd4;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            width: 100%;
+          "
+          onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'; this.style.transform='scale(1.02)'"
+          onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'; this.style.transform='scale(1)'"
+        >
+          🔗 Привязать свой ТГ
+        </button>
+        `}
       </div>
     `;
 
@@ -6791,7 +6824,7 @@ async function loadSettings() {
 // Сохранить Telegram username
 async function saveTelegramUsername() {
   if (!currentUser) {
-    alert("Сначала войдите в систему");
+    await showCustomAlert("Сначала войдите в систему", "Ошибка", "❌");
     return;
   }
 
@@ -6800,7 +6833,13 @@ async function saveTelegramUsername() {
 
   // Если у пользователя уже есть привязанный Telegram, требуем подтверждение
   if (currentUser.telegram_username) {
-    if (!confirm("Для изменения Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?")) {
+    const confirmed = await showCustomConfirm(
+      "Для изменения Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?",
+      "Подтверждение изменения",
+      "⚠️"
+    );
+    
+    if (!confirmed) {
       return;
     }
 
@@ -6816,7 +6855,12 @@ async function saveTelegramUsername() {
 
       if (response.ok) {
         // Показываем поле для ввода кода
-        const code = prompt("Введите код подтверждения, отправленный вам в Telegram:");
+        const code = await showCustomPrompt(
+          "Введите код подтверждения, отправленный вам в Telegram:",
+          "Подтверждение",
+          "🔐",
+          "Код из Telegram"
+        );
         if (!code) return;
 
         // Подтверждаем изменение
@@ -6832,18 +6876,18 @@ async function saveTelegramUsername() {
         const confirmResult = await confirmResponse.json();
 
         if (confirmResponse.ok) {
-          alert("Telegram логин успешно изменен!");
+          await showCustomAlert("Telegram логин успешно изменен!", "Успех", "✅");
           currentUser.telegram_username = username;
           loadSettings();
         } else {
-          alert("Ошибка: " + confirmResult.error);
+          await showCustomAlert(confirmResult.error, "Ошибка", "❌");
         }
       } else {
-        alert("Ошибка: " + result.error);
+        await showCustomAlert(result.error, "Ошибка", "❌");
       }
     } catch (error) {
       console.error("Ошибка при изменении:", error);
-      alert("Ошибка при изменении");
+      await showCustomAlert("Ошибка при изменении", "Ошибка", "❌");
     }
   } else {
     // Первая привязка - без подтверждения
@@ -6860,11 +6904,11 @@ async function saveTelegramUsername() {
         currentUser.telegram_username = username;
         loadSettings();
       } else {
-        alert("Ошибка: " + result.error);
+        await showCustomAlert("Ошибка: " + result.error, "Ошибка", "❌");
       }
     } catch (error) {
       console.error("Ошибка при сохранении:", error);
-      alert("Ошибка при сохранении");
+      await showCustomAlert("Ошибка при сохранении", "Ошибка", "❌");
     }
   }
 }
@@ -6872,16 +6916,22 @@ async function saveTelegramUsername() {
 // Удалить Telegram username
 async function deleteTelegramUsername() {
   if (!currentUser) {
-    alert("Сначала войдите в систему");
+    await showCustomAlert("Сначала войдите в систему", "Ошибка", "❌");
     return;
   }
 
   if (!currentUser.telegram_username) {
-    alert("Telegram логин не привязан");
+    await showCustomAlert("Telegram логин не привязан", "Ошибка", "❌");
     return;
   }
 
-  if (!confirm("Для удаления Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?")) {
+  const confirmed = await showCustomConfirm(
+    "Для удаления Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?",
+    "Подтверждение удаления",
+    "⚠️"
+  );
+  
+  if (!confirmed) {
     return;
   }
 
@@ -6896,7 +6946,12 @@ async function deleteTelegramUsername() {
 
     if (response.ok) {
       // Показываем поле для ввода кода
-      const code = prompt("Введите код подтверждения, отправленный вам в Telegram:");
+      const code = await showCustomPrompt(
+        "Введите код подтверждения, отправленный вам в Telegram:",
+        "Подтверждение",
+        "🔐",
+        "Код из Telegram"
+      );
       if (!code) return;
 
       // Подтверждаем удаление
@@ -6909,18 +6964,18 @@ async function deleteTelegramUsername() {
       const confirmResult = await confirmResponse.json();
 
       if (confirmResponse.ok) {
-        alert("Telegram логин успешно удален!");
+        await showCustomAlert("Telegram логин успешно удален!", "Успех", "✅");
         currentUser.telegram_username = null;
         loadSettings();
       } else {
-        alert("Ошибка: " + confirmResult.error);
+        await showCustomAlert(confirmResult.error, "Ошибка", "❌");
       }
     } else {
-      alert("Ошибка: " + result.error);
+      await showCustomAlert(result.error, "Ошибка", "❌");
     }
   } catch (error) {
     console.error("Ошибка при удалении:", error);
-    alert("Ошибка при удалении");
+    await showCustomAlert("Ошибка при удалении", "Ошибка", "❌");
   }
 }
 

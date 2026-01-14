@@ -14,11 +14,13 @@ const THREAD_ID = process.env.THREAD_ID
   : null;
 const SERVER_IP = process.env.SERVER_IP || "localhost";
 const SERVER_PORT = process.env.PORT || "3000";
-// const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
-const SERVER_URL = `https://${SERVER_IP}`;
+// Для локальных запросов из бота используем localhost, так как бот и сервер на одной машине
+const SERVER_URL = `http://localhost:${SERVER_PORT}`;
+// Для внешних ссылок (которые отправляются пользователям) используем внешний IP
+const PUBLIC_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 
 console.log(
-  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
+  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, PUBLIC_URL=${PUBLIC_URL}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
 );
 
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
@@ -789,13 +791,85 @@ export function startBot() {
   // ===== ОБРАБОТЧИКИ КОМАНД =====
 
   // Команда /start
-  bot.onText(/\/start/, (msg) => {
+  bot.onText(/\/start(.*)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const firstName = msg.from.first_name || "пользователь";
+    const startParam = match[1].trim(); // Получаем параметр после /start
 
     // Логируем действие
-    logUserAction(msg, "Нажата команда /start");
+    logUserAction(msg, "Нажата команда /start" + (startParam ? ` с параметром: ${startParam}` : ""));
 
+    // Проверяем, есть ли параметр link_{userId}
+    if (startParam && startParam.startsWith('link_')) {
+      const userId = startParam.replace('link_', '');
+      
+      console.log(`🔗 Попытка автоматической привязки для userId: ${userId}`);
+      
+      try {
+        // Получаем username пользователя из Telegram
+        const telegramUsername = msg.from.username;
+        
+        console.log(`📱 Telegram username: ${telegramUsername}`);
+        
+        if (!telegramUsername) {
+          console.log(`❌ У пользователя нет username в Telegram`);
+          replyInThread(
+            msg,
+            `❌ У вас не установлен username в Telegram!\n\n` +
+            `Чтобы привязать аккаунт, сначала установите username в настройках Telegram.`,
+            mainMenuKeyboard
+          );
+          return;
+        }
+
+        const url = `${SERVER_URL}/api/user/${userId}/telegram`;
+        console.log(`🌐 Отправка запроса на: ${url}`);
+        
+        // Отправляем запрос на сервер для привязки
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegram_username: telegramUsername })
+        });
+
+        console.log(`📡 Ответ сервера: ${response.status} ${response.statusText}`);
+        
+        const result = await response.json();
+        console.log(`📦 Данные ответа:`, result);
+
+        if (response.ok) {
+          console.log(`✅ Telegram успешно привязан для userId: ${userId}`);
+          replyInThread(
+            msg,
+            `✅ Telegram успешно привязан!\n\n` +
+            `👤 Ваш username: @${telegramUsername}\n` +
+            `🔗 Аккаунт привязан к профилю\n\n` +
+            `Теперь вы будете получать уведомления о матчах!`,
+            mainMenuKeyboard
+          );
+        } else {
+          console.log(`❌ Ошибка при привязке: ${result.error}`);
+          replyInThread(
+            msg,
+            `❌ Ошибка при привязке: ${result.error || 'Неизвестная ошибка'}\n\n` +
+            `Попробуйте привязать вручную через настройки на сайте.`,
+            mainMenuKeyboard
+          );
+        }
+      } catch (error) {
+        console.error('❌ Ошибка при автоматической привязке Telegram:', error);
+        console.error('Детали ошибки:', error.message, error.stack);
+        replyInThread(
+          msg,
+          `❌ Произошла ошибка при привязке: ${error.message}\n\n` +
+          `Попробуйте привязать вручную через настройки на сайте.`,
+          mainMenuKeyboard
+        );
+      }
+      return;
+    }
+
+    // Обычное приветствие если нет параметра
     replyInThread(
       msg,
       `👋 Привет, ${firstName}!\n\n` +

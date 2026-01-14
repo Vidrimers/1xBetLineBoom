@@ -767,6 +767,134 @@ ${mentions}
   }
 }
 
+// Функция для отправки личных уведомлений пользователям за 3 часа до матча
+async function checkAndNotifyUpcomingMatches() {
+  try {
+    const now = new Date();
+    // Проверяем матчи, которые начнутся через 3 часа (с погрешностью ±5 минут)
+    const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const threeHoursLaterMinus5 = new Date(threeHoursLater.getTime() - 5 * 60 * 1000);
+    const threeHoursLaterPlus5 = new Date(threeHoursLater.getTime() + 5 * 60 * 1000);
+
+    console.log(
+      `🔔 checkAndNotifyUpcomingMatches: Ищем матчи от ${threeHoursLaterMinus5.toISOString()} до ${threeHoursLaterPlus5.toISOString()}`
+    );
+
+    // Получаем матчи, которые начнутся через ~3 часа
+    const upcomingMatches = db
+      .prepare(
+        `
+      SELECT DISTINCT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.match_date >= ? AND m.match_date <= ? AND m.winner IS NULL AND m.match_date IS NOT NULL
+      ORDER BY m.match_date ASC
+    `
+      )
+      .all(threeHoursLaterMinus5.toISOString(), threeHoursLaterPlus5.toISOString());
+
+    console.log(
+      `🔔 Найдено ${upcomingMatches.length} матчей которые начнутся через ~3 часа`
+    );
+
+    if (upcomingMatches.length === 0) {
+      return;
+    }
+
+    // Получаем пользователей с включенными личными уведомлениями и привязанным Telegram
+    const usersWithNotifications = db
+      .prepare(
+        `
+      SELECT id, username, telegram_id, telegram_username
+      FROM users
+      WHERE telegram_notifications_enabled = 1 AND telegram_id IS NOT NULL
+    `
+      )
+      .all();
+
+    console.log(
+      `🔔 Найдено ${usersWithNotifications.length} пользователей с включенными уведомлениями`
+    );
+
+    if (usersWithNotifications.length === 0) {
+      return;
+    }
+
+    // Для каждого матча отправляем уведомления пользователям
+    for (const match of upcomingMatches) {
+      // Проверяем, было ли уже отправлено уведомление за 3 часа для этого матча
+      const existingNotification = db
+        .prepare("SELECT id FROM sent_3hour_reminders WHERE match_id = ?")
+        .get(match.id);
+
+      if (existingNotification) {
+        console.log(`🔔 Уведомление за 3 часа для матча ${match.id} уже было отправлено`);
+        continue;
+      }
+
+      // Форматируем дату и время матча
+      const matchDateTime = new Date(match.match_date);
+      const matchDate = matchDateTime.toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const matchTime = matchDateTime.toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Отправляем уведомление каждому пользователю
+      for (const user of usersWithNotifications) {
+        const message = `⏰ <b>НАПОМИНАНИЕ О МАТЧЕ</b>
+
+Матч начнется через 3 часа!
+
+⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>
+📅 Турнир: ${match.event_name}
+🕐 Время начала: ${matchDate} ${matchTime}
+
+⏳ Успейте сделать ставку!
+
+🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+
+        try {
+          const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+          if (TELEGRAM_BOT_TOKEN) {
+            await fetch(
+              `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: user.telegram_id,
+                  text: message,
+                  parse_mode: "HTML",
+                }),
+              }
+            );
+            console.log(`✅ Уведомление за 3 часа отправлено пользователю ${user.username} (${user.telegram_id})`);
+          }
+        } catch (error) {
+          console.error(`⚠️ Не удалось отправить уведомление пользователю ${user.username}:`, error);
+        }
+
+        // Небольшая задержка между отправками чтобы не перегружать API
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Записываем в БД, что уведомление за 3 часа было отправлено
+      db.prepare("INSERT INTO sent_3hour_reminders (match_id) VALUES (?)").run(match.id);
+
+      console.log(
+        `✅ Уведомления за 3 часа для матча ${match.team1_name} vs ${match.team2_name} отправлены всем пользователям`
+      );
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при проверке предстоящих матчей:", error);
+  }
+}
+
 // Функция для проверки и отправки уведомлений о начале матча
 async function checkAndNotifyMatchStart() {
   try {
@@ -1466,6 +1594,16 @@ db.exec(`
 // Таблица для отслеживания отправленных напоминаний о голосовании
 db.exec(`
   CREATE TABLE IF NOT EXISTS sent_reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (match_id) REFERENCES matches(id)
+  )
+`);
+
+// Таблица для отслеживания отправленных уведомлений за 3 часа до матча
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sent_3hour_reminders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     match_id INTEGER NOT NULL,
     sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -7649,6 +7787,14 @@ console.log(
 setInterval(checkAndNotifyMatchStart, 60 * 1000);
 console.log(
   "⚽ Фоновая задача уведомления о начале матча запущена (интервал: 1 минута)"
+);
+
+// Запуск фоновой задачи для уведомления за 3 часа до матча (каждые 5 минут)
+setInterval(checkAndNotifyUpcomingMatches, 5 * 60 * 1000);
+// Запускаем сразу при старте сервера
+checkAndNotifyUpcomingMatches();
+console.log(
+  "🔔 Фоновая задача уведомления за 3 часа до матча запущена (интервал: 5 минут)"
 );
 
 // GET /api/admin/orphaned-data - Проверить orphaned данные (только для админа)
