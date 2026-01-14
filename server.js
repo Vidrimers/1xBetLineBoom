@@ -2402,18 +2402,16 @@ app.post("/api/brackets/:bracketId/predictions", (req, res) => {
       return res.status(403).json({ error: "Ставки в сетке закрыты" });
     }
     
-    // Удаляем старые прогнозы пользователя
-    db.prepare("DELETE FROM bracket_predictions WHERE bracket_id = ? AND user_id = ?")
-      .run(bracketId, user_id);
-    
-    // Добавляем новые прогнозы
-    const insertStmt = db.prepare(`
+    // Используем UPSERT для каждого прогноза (обновление или вставка)
+    const upsertStmt = db.prepare(`
       INSERT INTO bracket_predictions (bracket_id, user_id, stage, match_index, predicted_winner)
       VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(bracket_id, user_id, stage, match_index) 
+      DO UPDATE SET predicted_winner = excluded.predicted_winner
     `);
     
     predictions.forEach(p => {
-      insertStmt.run(bracketId, user_id, p.stage, p.match_index, p.predicted_winner);
+      upsertStmt.run(bracketId, user_id, p.stage, p.match_index, p.predicted_winner);
     });
     
     console.log(`✅ Прогнозы пользователя ${user_id} для сетки ${bracketId} сохранены`);
@@ -2546,6 +2544,63 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
     });
   } catch (error) {
     console.error("Ошибка обновления команд в сетке:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Обновить структуру сетки (продвижение команд пользователями)
+app.put("/api/brackets/:bracketId/structure", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { user_id, matches } = req.body;
+    
+    if (!user_id) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    if (!matches) {
+      return res.status(400).json({ error: "Не указаны команды" });
+    }
+    
+    // Получаем текущую структуру сетки
+    const bracket = db.prepare("SELECT matches FROM brackets WHERE id = ?").get(bracketId);
+    
+    if (!bracket) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    // Парсим текущие matches
+    let currentMatches = {};
+    if (bracket.matches) {
+      try {
+        currentMatches = JSON.parse(bracket.matches);
+      } catch (e) {
+        currentMatches = {};
+      }
+    }
+    
+    // Объединяем с новыми данными (новые данные имеют приоритет)
+    const mergedMatches = { ...currentMatches, ...matches };
+    
+    // Сохраняем обновленную структуру
+    const result = db.prepare(`
+      UPDATE brackets 
+      SET matches = ?
+      WHERE id = ?
+    `).run(JSON.stringify(mergedMatches), bracketId);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    console.log(`✅ Структура сетки ${bracketId} обновлена пользователем ${user_id}`);
+    
+    res.json({ 
+      success: true, 
+      bracket_id: bracketId 
+    });
+  } catch (error) {
+    console.error("Ошибка обновления структуры сетки:", error);
     res.status(500).json({ error: error.message });
   }
 });
