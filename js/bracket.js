@@ -2,15 +2,55 @@
 
 let currentBracket = null;
 let bracketPredictions = {};
+let isEditingBracket = false;
+let allTeams = [];
 
 // Структура сетки плей-офф
 const BRACKET_STAGES = [
-  { id: 'round_of_16', name: '1/16', matches: 8 },
-  { id: 'round_of_8', name: '1/8', matches: 4 },
+  { id: 'round_of_16', name: '1/16', matches: 16 },
+  { id: 'round_of_8', name: '1/8', matches: 8 },
   { id: 'quarter_finals', name: '1/4', matches: 4 },
   { id: 'semi_finals', name: '1/2', matches: 2 },
-  { id: 'final', name: 'Финал', matches: 1 }
+  { id: 'final', name: '🏆 Финал', matches: 1 }
 ];
+
+// Загрузить команды из teams.json
+async function loadTeams() {
+  try {
+    const response = await fetch('/teams.json');
+    if (!response.ok) {
+      throw new Error('Ошибка загрузки команд');
+    }
+    const data = await response.json();
+    
+    // Собираем все команды из всех категорий
+    allTeams = [];
+    if (data.teams_by_status) {
+      Object.values(data.teams_by_status).forEach(category => {
+        if (category.teams && Array.isArray(category.teams)) {
+          category.teams.forEach(team => {
+            allTeams.push(team.name);
+          });
+        }
+      });
+    }
+    
+    // Сортируем команды по алфавиту
+    allTeams.sort((a, b) => a.localeCompare(b, 'ru'));
+    
+    return allTeams;
+  } catch (error) {
+    console.error('Ошибка загрузки команд:', error);
+    return [];
+  }
+}
+
+// Получить стадии для отображения в зависимости от начальной стадии
+function getStagesForBracket(startStage) {
+  const startIndex = BRACKET_STAGES.findIndex(s => s.id === startStage);
+  if (startIndex === -1) return BRACKET_STAGES;
+  return BRACKET_STAGES.slice(startIndex);
+}
 
 // Загрузить сетки для турнира
 async function loadBracketsForEvent(eventId) {
@@ -38,6 +78,9 @@ async function openBracketModal(bracketId) {
   }
 
   try {
+    // Загружаем команды
+    await loadTeams();
+    
     // Загружаем данные сетки
     const response = await fetch(`/api/brackets/${bracketId}`);
     if (!response.ok) {
@@ -45,6 +88,7 @@ async function openBracketModal(bracketId) {
     }
     
     currentBracket = await response.json();
+    isEditingBracket = false;
     
     // Загружаем прогнозы пользователя
     const predictionsResponse = await fetch(`/api/brackets/${bracketId}/predictions/${currentUser.id}`);
@@ -99,18 +143,42 @@ function renderBracketModal(isClosed) {
   const modal = document.getElementById('bracketModal');
   if (!modal) return;
   
-  const closedBadge = isClosed 
-    ? '<span style="color: #f44336; font-size: 0.9em; margin-left: 10px;">🔒 Ставки закрыты</span>'
-    : '<span style="color: #4caf50; font-size: 0.9em; margin-left: 10px;">✅ Ставки открыты</span>';
+  const isManuallyLocked = currentBracket.is_locked === 1;
+  const isAutoLocked = isClosed && !isManuallyLocked;
+  const isLocked = isClosed || isManuallyLocked;
+  
+  let closedBadge = '';
+  if (isManuallyLocked) {
+    closedBadge = '<span style="color: #ff9800; font-size: 0.9em; margin-left: 10px;">🔒 Заблокировано админом</span>';
+  } else if (isAutoLocked) {
+    closedBadge = '<span style="color: #f44336; font-size: 0.9em; margin-left: 10px;">🔒 Ставки закрыты</span>';
+  } else {
+    closedBadge = '<span style="color: #4caf50; font-size: 0.9em; margin-left: 10px;">✅ Ставки открыты</span>';
+  }
+  
+  const isAdmin = currentUser && currentUser.isAdmin;
   
   modal.innerHTML = `
     <div class="modal-content bracket-modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
         <h2>🏆 Сетка плей-офф${closedBadge}</h2>
         <div style="display: flex; gap: 10px; align-items: center;">
-          ${!isClosed ? `
+          ${isAdmin ? `
+            <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
+              ✏️
+            </button>
+            <button class="btn-secondary" onclick="toggleBracketLock()" style="padding: 8px 16px; font-size: 0.9em;" title="${isManuallyLocked ? 'Разблокировать сетку' : 'Заблокировать сетку'}">
+              ${isManuallyLocked ? '🔓' : '🔒'}
+            </button>
+          ` : ''}
+          ${!isLocked && !isEditingBracket ? `
             <button class="btn-primary" onclick="saveBracketPredictions()" style="padding: 8px 16px; font-size: 0.9em;">
-              💾 Сохранить прогнозы
+              💾
+            </button>
+          ` : ''}
+          ${isEditingBracket ? `
+            <button class="btn-primary" onclick="saveBracketTeams()" style="padding: 8px 16px; font-size: 0.9em;">
+              💾 Сохранить команды
             </button>
           ` : ''}
           <button class="modal-close" onclick="closeBracketModal()">&times;</button>
@@ -118,7 +186,7 @@ function renderBracketModal(isClosed) {
       </div>
       
       <div class="bracket-container">
-        ${renderBracketStages(isClosed)}
+        ${renderBracketStages(isLocked)}
       </div>
     </div>
   `;
@@ -126,56 +194,71 @@ function renderBracketModal(isClosed) {
 
 // Отрисовать стадии сетки
 function renderBracketStages(isClosed) {
-  let html = '<div class="bracket-stages">';
+  const startStage = currentBracket.start_stage || 'round_of_16';
+  const stages = getStagesForBracket(startStage);
   
-  BRACKET_STAGES.forEach(stage => {
+  // Маппинг для текста "Кто проходит в..."
+  const nextStageText = {
+    'round_of_16': 'Кто проходит в 1/8',
+    'round_of_8': 'Кто проходит в 1/4',
+    'quarter_finals': 'Кто проходит в 1/2',
+    'semi_finals': 'Кто проходит в финал',
+    'final': '' // Для финала текст не нужен
+  };
+  
+  let html = '<div class="bracket-stages-wrapper">';
+  
+  stages.forEach(stage => {
+    const headerText = nextStageText[stage.id] || '';
+    
     html += `
-      <div class="bracket-stage">
+      <div class="bracket-stage-column${stage.id === 'final' ? ' bracket-final' : ''}">
+        ${headerText ? `
+          <div style="text-align: center; color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px;">
+            ${headerText}
+          </div>
+        ` : ''}
         <h3 class="bracket-stage-title">${stage.name}</h3>
-        <div class="bracket-matches">
-          ${renderStageMatches(stage, isClosed)}
+        <div class="bracket-matches-column">
+          ${renderStageMatchesVertical(stage, isClosed, 0, stage.matches)}
         </div>
       </div>
     `;
   });
   
-  html += '</div>';
+  html += '</div>'; // bracket-stages-wrapper
   return html;
 }
 
-// Отрисовать матчи стадии
-function renderStageMatches(stage, isClosed) {
+// Отрисовать матчи стадии вертикально
+function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex) {
   let html = '';
   
-  for (let i = 0; i < stage.matches; i++) {
+  for (let i = startIndex; i < endIndex; i++) {
     const matchData = currentBracket.matches?.[stage.id]?.[i];
     const prediction = bracketPredictions[stage.id]?.[i];
     
     html += `
-      <div class="bracket-match">
-        <div class="bracket-match-teams">
-          ${renderTeamInput(stage.id, i, 0, matchData?.team1, prediction, isClosed)}
-          <div class="bracket-match-vs">vs</div>
-          ${renderTeamInput(stage.id, i, 1, matchData?.team2, prediction, isClosed)}
+      <div class="bracket-match-vertical">
+        <div class="bracket-match-teams-vertical">
+          ${renderTeamSlot(stage.id, i, 0, matchData?.team1, prediction, isClosed)}
+          ${renderTeamSlot(stage.id, i, 1, matchData?.team2, prediction, isClosed)}
         </div>
-        ${!isClosed ? `
-          <div class="bracket-match-winner">
-            <label style="font-size: 0.85em; color: #b0b8c8; margin-bottom: 5px; display: block;">
-              Кто пройдет?
-            </label>
+        ${!isClosed && !isEditingBracket ? `
+          <div class="bracket-match-winner-input">
             <input 
               type="text" 
-              class="bracket-winner-input" 
+              class="bracket-winner-input-small" 
               data-stage="${stage.id}" 
               data-match="${i}"
               value="${prediction || ''}"
-              placeholder="Введите команду"
+              placeholder="Победитель"
               ${isClosed ? 'disabled' : ''}
             />
           </div>
-        ` : prediction ? `
-          <div class="bracket-match-prediction">
-            <strong>Ваш прогноз:</strong> ${prediction}
+        ` : prediction && !isEditingBracket ? `
+          <div class="bracket-match-prediction-small">
+            ${prediction}
           </div>
         ` : ''}
       </div>
@@ -185,14 +268,63 @@ function renderStageMatches(stage, isClosed) {
   return html;
 }
 
-// Отрисовать поле ввода команды
-function renderTeamInput(stageId, matchIndex, teamIndex, teamName, prediction, isClosed) {
+// Получить список уже выбранных команд в сетке
+function getSelectedTeams() {
+  const selectedTeams = new Set();
+  
+  if (!currentBracket.matches) return selectedTeams;
+  
+  // Проходим по всем стадиям и матчам
+  Object.values(currentBracket.matches).forEach(stageMatches => {
+    Object.values(stageMatches).forEach(match => {
+      if (match.team1) selectedTeams.add(match.team1);
+      if (match.team2) selectedTeams.add(match.team2);
+    });
+  });
+  
+  return selectedTeams;
+}
+
+// Отрисовать слот команды
+function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, isClosed) {
   const isWinner = prediction && prediction === teamName;
   const highlightClass = isWinner ? 'bracket-team-winner' : '';
   
+  // Режим редактирования для админа
+  if (isEditingBracket) {
+    // Получаем список уже выбранных команд
+    const selectedTeams = getSelectedTeams();
+    
+    // Фильтруем команды: исключаем уже выбранные, но оставляем текущую команду
+    const availableTeams = allTeams.filter(team => 
+      !selectedTeams.has(team) || team === teamName
+    );
+    
+    const teamOptions = availableTeams.map(team => 
+      `<option value="${team}" ${team === teamName ? 'selected' : ''}>${team}</option>`
+    ).join('');
+    
+    return `
+      <div class="bracket-team-slot ${highlightClass}">
+        <select 
+          class="bracket-team-select" 
+          data-stage="${stageId}" 
+          data-match="${matchIndex}" 
+          data-team="${teamIndex}"
+          onchange="updateBracketTeamSelection()"
+          style="width: 100%; padding: 5px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 4px; color: #e0e6f0; font-size: 0.9em;"
+        >
+          <option value="">— Выберите команду —</option>
+          ${teamOptions}
+        </select>
+      </div>
+    `;
+  }
+  
+  // Обычный режим просмотра
   return `
-    <div class="bracket-team ${highlightClass}">
-      ${teamName || `Команда ${teamIndex + 1}`}
+    <div class="bracket-team-slot ${highlightClass}">
+      <div class="bracket-team-name">${teamName || `—`}</div>
     </div>
   `;
 }
@@ -277,10 +409,170 @@ function closeBracketModal() {
   }
   currentBracket = null;
   bracketPredictions = {};
+  isEditingBracket = false;
 }
 
-// Открыть модальное окно создания сетки (для админа)
-function openCreateBracketModal() {
+// Переключить режим редактирования сетки
+function toggleBracketEditMode() {
+  isEditingBracket = !isEditingBracket;
+  const isClosed = isBracketClosed(currentBracket);
+  renderBracketModal(isClosed);
+}
+
+// Переключить блокировку сетки (для админа)
+async function toggleBracketLock() {
+  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  
+  const isCurrentlyLocked = currentBracket.is_locked === 1;
+  const newLockState = isCurrentlyLocked ? 0 : 1;
+  
+  try {
+    const response = await fetch(`/api/admin/brackets/${currentBracket.id}/lock`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        is_locked: newLockState
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Ошибка изменения блокировки');
+    }
+    
+    // Обновляем состояние
+    currentBracket.is_locked = newLockState;
+    
+    const message = newLockState === 1 
+      ? 'Сетка заблокирована. Пользователи не смогут делать прогнозы.' 
+      : 'Сетка разблокирована. Пользователи могут делать прогнозы.';
+    
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(message, 'Успех', '✅');
+    } else {
+      alert(message);
+    }
+    
+    // Перерисовываем модальное окно
+    const isClosed = isBracketClosed(currentBracket);
+    renderBracketModal(isClosed);
+    
+  } catch (error) {
+    console.error('Ошибка при изменении блокировки:', error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(error.message, 'Ошибка', '❌');
+    } else {
+      alert(error.message);
+    }
+  }
+}
+
+// Сохранить команды в сетке (для админа)
+async function saveBracketTeams() {
+  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  
+  try {
+    // Собираем данные о командах из селектов
+    const selects = document.querySelectorAll('.bracket-team-select');
+    const matches = {};
+    
+    selects.forEach(select => {
+      const stage = select.dataset.stage;
+      const matchIndex = parseInt(select.dataset.match);
+      const teamIndex = parseInt(select.dataset.team);
+      const teamName = select.value;
+      
+      if (!matches[stage]) {
+        matches[stage] = {};
+      }
+      
+      if (!matches[stage][matchIndex]) {
+        matches[stage][matchIndex] = {};
+      }
+      
+      if (teamIndex === 0) {
+        matches[stage][matchIndex].team1 = teamName;
+      } else {
+        matches[stage][matchIndex].team2 = teamName;
+      }
+    });
+    
+    // Отправляем данные на сервер
+    const response = await fetch(`/api/admin/brackets/${currentBracket.id}/teams`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        matches: matches
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Ошибка сохранения команд');
+    }
+    
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Команды успешно сохранены!', 'Успех', '✅');
+    } else {
+      alert('Команды успешно сохранены!');
+    }
+    
+    // Обновляем данные сетки
+    currentBracket.matches = matches;
+    isEditingBracket = false;
+    
+    const isClosed = isBracketClosed(currentBracket);
+    renderBracketModal(isClosed);
+    
+  } catch (error) {
+    console.error('Ошибка при сохранении команд:', error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(error.message, 'Ошибка', '❌');
+    } else {
+      alert(error.message);
+    }
+  }
+}
+
+// Обновить выбор команд в селектах (перерисовать после изменения)
+function updateBracketTeamSelection() {
+  // Собираем текущие выборы из селектов
+  const selects = document.querySelectorAll('.bracket-team-select');
+  const currentSelections = {};
+  
+  selects.forEach(select => {
+    const stage = select.dataset.stage;
+    const matchIndex = parseInt(select.dataset.match);
+    const teamIndex = parseInt(select.dataset.team);
+    const teamName = select.value;
+    
+    if (!currentSelections[stage]) {
+      currentSelections[stage] = {};
+    }
+    
+    if (!currentSelections[stage][matchIndex]) {
+      currentSelections[stage][matchIndex] = {};
+    }
+    
+    if (teamIndex === 0) {
+      currentSelections[stage][matchIndex].team1 = teamName;
+    } else {
+      currentSelections[stage][matchIndex].team2 = teamName;
+    }
+  });
+  
+  // Обновляем данные сетки
+  currentBracket.matches = currentSelections;
+  
+  // Перерисовываем модальное окно
+  const isClosed = isBracketClosed(currentBracket);
+  renderBracketModal(isClosed);
+}
+
+// Открыть модальное окно создания/редактирования сетки (для админа)
+async function openCreateBracketModal() {
   console.log('openCreateBracketModal вызвана');
   console.log('currentUser:', currentUser);
   console.log('currentEventId:', currentEventId);
@@ -300,6 +592,21 @@ function openCreateBracketModal() {
     return;
   }
   
+  // Проверяем, есть ли уже сетка для этого турнира
+  try {
+    const brackets = await loadBracketsForEvent(currentEventId);
+    
+    if (brackets && brackets.length > 0) {
+      // Сетка уже существует - открываем редактирование
+      const bracket = brackets[0];
+      openEditBracketModal(bracket);
+      return;
+    }
+  } catch (err) {
+    console.error('Ошибка проверки существующих сеток:', err);
+  }
+  
+  // Сетки нет - открываем создание
   const modal = document.getElementById('createBracketModal');
   console.log('modal:', modal);
   
@@ -311,9 +618,88 @@ function openCreateBracketModal() {
   // Очищаем форму
   const nameInput = document.getElementById('bracketName');
   const dateInput = document.getElementById('bracketStartDate');
+  const stageSelect = document.getElementById('bracketStartStage');
   
   if (nameInput) nameInput.value = '';
   if (dateInput) dateInput.value = '';
+  if (stageSelect) stageSelect.value = 'round_of_16';
+  
+  // Меняем заголовок на "Создать"
+  const modalTitle = modal.querySelector('.modal-header h2');
+  if (modalTitle) modalTitle.textContent = '➕ Создать сетку плей-офф';
+  
+  // Добавляем обработчик изменения стадии
+  if (stageSelect) {
+    stageSelect.onchange = updateStartDateLabel;
+    updateStartDateLabel();
+  }
+  
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+  
+  if (typeof lockBodyScroll === 'function') {
+    lockBodyScroll();
+  } else {
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// Обновить метку даты в зависимости от выбранной стадии
+function updateStartDateLabel() {
+  const stageSelect = document.getElementById('bracketStartStage');
+  const dateLabel = document.getElementById('bracketStartDateLabel');
+  
+  if (!stageSelect || !dateLabel) return;
+  
+  const stage = stageSelect.value;
+  const stageNames = {
+    'round_of_16': '1/16',
+    'round_of_8': '1/8'
+  };
+  
+  dateLabel.textContent = `Дата начала ${stageNames[stage] || '1/16'}:`;
+}
+
+// Открыть модальное окно редактирования сетки
+function openEditBracketModal(bracket) {
+  const modal = document.getElementById('createBracketModal');
+  
+  if (!modal) {
+    console.error('Модальное окно createBracketModal не найдено');
+    return;
+  }
+  
+  // Заполняем форму данными сетки
+  const nameInput = document.getElementById('bracketName');
+  const dateInput = document.getElementById('bracketStartDate');
+  const stageSelect = document.getElementById('bracketStartStage');
+  
+  if (nameInput) nameInput.value = bracket.name;
+  if (stageSelect) stageSelect.value = bracket.start_stage || 'round_of_16';
+  
+  if (dateInput) {
+    // Преобразуем дату в формат datetime-local
+    const date = new Date(bracket.start_date);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+  
+  // Меняем заголовок на "Редактировать"
+  const modalTitle = modal.querySelector('.modal-header h2');
+  if (modalTitle) modalTitle.textContent = '✏️ Редактировать сетку плей-офф';
+  
+  // Добавляем обработчик изменения стадии
+  if (stageSelect) {
+    stageSelect.onchange = updateStartDateLabel;
+    updateStartDateLabel();
+  }
+  
+  // Сохраняем ID сетки для обновления
+  modal.dataset.bracketId = bracket.id;
   
   modal.style.display = 'flex';
   modal.classList.add('active');
@@ -339,12 +725,17 @@ function closeCreateBracketModal() {
   }
 }
 
-// Создать сетку
+// Создать или обновить сетку
 async function createBracket() {
   if (!currentUser || !currentUser.isAdmin) return;
   
+  const modal = document.getElementById('createBracketModal');
+  const bracketId = modal?.dataset.bracketId;
+  const isEdit = !!bracketId;
+  
   const name = document.getElementById('bracketName').value.trim();
   const startDate = document.getElementById('bracketStartDate').value;
+  const startStage = document.getElementById('bracketStartStage').value;
   
   if (!name) {
     if (typeof showCustomAlert === 'function') {
@@ -357,35 +748,39 @@ async function createBracket() {
   
   if (!startDate) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Выберите дату начала 1/16', 'Ошибка', '❌');
+      await showCustomAlert('Выберите дату начала', 'Ошибка', '❌');
     } else {
-      alert('Выберите дату начала 1/16');
+      alert('Выберите дату начала');
     }
     return;
   }
   
   try {
-    console.log('Отправка запроса на создание сетки:', {
+    const url = isEdit ? `/api/admin/brackets/${bracketId}` : '/api/admin/brackets';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    console.log(`${isEdit ? 'Обновление' : 'Создание'} сетки:`, {
       event_id: currentEventId,
       name,
       start_date: startDate,
+      start_stage: startStage,
       username: currentUser.username
     });
     
-    const response = await fetch('/api/admin/brackets', {
-      method: 'POST',
+    const response = await fetch(url, {
+      method: method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         event_id: currentEventId,
         name,
         start_date: startDate,
+        start_stage: startStage,
         username: currentUser.username
       })
     });
     
     console.log('Ответ сервера:', response.status, response.statusText);
     
-    // Получаем текст ответа для отладки
     const responseText = await response.text();
     console.log('Текст ответа:', responseText);
     
@@ -399,16 +794,20 @@ async function createBracket() {
     }
     
     if (!response.ok) {
-      throw new Error(result.error || 'Ошибка создания сетки');
+      throw new Error(result.error || `Ошибка ${isEdit ? 'обновления' : 'создания'} сетки`);
     }
     
-    console.log('Сетка успешно создана:', result);
+    console.log(`Сетка успешно ${isEdit ? 'обновлена' : 'создана'}:`, result);
     
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Сетка успешно создана!', 'Успех', '✅');
+      await showCustomAlert(`Сетка успешно ${isEdit ? 'обновлена' : 'создана'}!`, 'Успех', '✅');
     } else {
-      alert('Сетка успешно создана!');
+      alert(`Сетка успешно ${isEdit ? 'обновлена' : 'создана'}!`);
     }
+    
+    // Очищаем dataset
+    if (modal) delete modal.dataset.bracketId;
+    
     closeCreateBracketModal();
     
     // Обновляем отображение матчей
@@ -416,7 +815,7 @@ async function createBracket() {
       displayMatches();
     }
   } catch (error) {
-    console.error('Ошибка при создании сетки:', error);
+    console.error(`Ошибка при ${isEdit ? 'обновлении' : 'создании'} сетки:`, error);
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert(error.message, 'Ошибка', '❌');
     } else {

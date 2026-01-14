@@ -24,7 +24,7 @@
         },
         {
           "position": 4,
-          "name": "Ман Сити",
+          "name": "МанСити",
           "status": "qualify_directly"
         },
         {
@@ -61,12 +61,12 @@
         },
         {
           "position": 10,
-          "name": "Боруссия Дортмунд",
+          "name": "Боруссия",
           "status": "playoff_seeded"
         },
         {
           "position": 11,
-          "name": "Тоттенхэм",
+          "name": "Тоттенхем",
           "status": "playoff_seeded"
         },
         {
@@ -91,7 +91,7 @@
         },
         {
           "position": 16,
-          "name": "Олимпик",
+          "name": "Марсель",
           "status": "playoff_seeded"
         }
       ]
@@ -185,7 +185,7 @@
         },
         {
           "position": 32,
-          "name": "Буде-Глимт",
+          "name": "Буде",
           "status": "eliminated"
         },
         {

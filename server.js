@@ -1658,10 +1658,35 @@ db.exec(`
     event_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     start_date DATETIME NOT NULL,
+    start_stage TEXT DEFAULT 'round_of_16',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (event_id) REFERENCES events(id)
   )
 `);
+
+// Миграция: добавляем start_stage если её нет
+try {
+  db.prepare("ALTER TABLE brackets ADD COLUMN start_stage TEXT DEFAULT 'round_of_16'").run();
+  console.log("✅ Колонка start_stage добавлена в таблицу brackets");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем matches если её нет
+try {
+  db.prepare("ALTER TABLE brackets ADD COLUMN matches TEXT").run();
+  console.log("✅ Колонка matches добавлена в таблицу brackets");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем is_locked если её нет
+try {
+  db.prepare("ALTER TABLE brackets ADD COLUMN is_locked INTEGER DEFAULT 0").run();
+  console.log("✅ Колонка is_locked добавлена в таблицу brackets");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
 
 // Таблица прогнозов пользователей в сетке
 db.exec(`
@@ -2312,6 +2337,18 @@ app.get("/api/brackets/:bracketId", (req, res) => {
       return res.status(404).json({ error: "Сетка не найдена" });
     }
     
+    // Парсим matches из JSON если есть
+    if (bracket.matches) {
+      try {
+        bracket.matches = JSON.parse(bracket.matches);
+      } catch (e) {
+        console.error('Ошибка парсинга matches:', e);
+        bracket.matches = {};
+      }
+    } else {
+      bracket.matches = {};
+    }
+    
     res.json(bracket);
   } catch (error) {
     console.error("Ошибка получения сетки:", error);
@@ -2352,6 +2389,12 @@ app.post("/api/brackets/:bracketId/predictions", (req, res) => {
       return res.status(404).json({ error: "Сетка не найдена" });
     }
     
+    // Проверяем ручную блокировку
+    if (bracket.is_locked === 1) {
+      return res.status(403).json({ error: "Сетка заблокирована администратором" });
+    }
+    
+    // Проверяем автоматическую блокировку по дате
     const startDate = new Date(bracket.start_date);
     const now = new Date();
     
@@ -2384,7 +2427,7 @@ app.post("/api/brackets/:bracketId/predictions", (req, res) => {
 // Создать сетку (только для админа)
 app.post("/api/admin/brackets", (req, res) => {
   try {
-    const { event_id, name, start_date, username } = req.body;
+    const { event_id, name, start_date, start_stage, username } = req.body;
     
     if (!username) {
       return res.status(401).json({ error: "Требуется авторизация" });
@@ -2403,11 +2446,11 @@ app.post("/api/admin/brackets", (req, res) => {
     
     // Создаем сетку
     const result = db.prepare(`
-      INSERT INTO brackets (event_id, name, start_date)
-      VALUES (?, ?, ?)
-    `).run(event_id, name, start_date);
+      INSERT INTO brackets (event_id, name, start_date, start_stage)
+      VALUES (?, ?, ?, ?)
+    `).run(event_id, name, start_date, start_stage || 'round_of_16');
     
-    console.log(`✅ Сетка "${name}" создана для турнира ${event_id}`);
+    console.log(`✅ Сетка "${name}" создана для турнира ${event_id} (начало: ${start_stage || 'round_of_16'})`);
     
     res.json({ 
       success: true, 
@@ -2415,6 +2458,140 @@ app.post("/api/admin/brackets", (req, res) => {
     });
   } catch (error) {
     console.error("Ошибка создания сетки:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Обновить сетку (только для админа)
+app.put("/api/admin/brackets/:bracketId", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { name, start_date, start_stage, username } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    if (!name || !start_date) {
+      return res.status(400).json({ error: "Не все поля заполнены" });
+    }
+    
+    // Обновляем сетку
+    const result = db.prepare(`
+      UPDATE brackets 
+      SET name = ?, start_date = ?, start_stage = ?
+      WHERE id = ?
+    `).run(name, start_date, start_stage || 'round_of_16', bracketId);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    console.log(`✅ Сетка ${bracketId} обновлена: "${name}" (начало: ${start_stage || 'round_of_16'})`);
+    
+    res.json({ 
+      success: true, 
+      bracket_id: bracketId 
+    });
+  } catch (error) {
+    console.error("Ошибка обновления сетки:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Обновить команды в сетке (только для админа)
+app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { username, matches } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    if (!matches) {
+      return res.status(400).json({ error: "Не указаны команды" });
+    }
+    
+    // Обновляем команды в сетке (сохраняем как JSON)
+    const result = db.prepare(`
+      UPDATE brackets 
+      SET matches = ?
+      WHERE id = ?
+    `).run(JSON.stringify(matches), bracketId);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    console.log(`✅ Команды в сетке ${bracketId} обновлены`);
+    
+    res.json({ 
+      success: true, 
+      bracket_id: bracketId 
+    });
+  } catch (error) {
+    console.error("Ошибка обновления команд в сетке:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Изменить блокировку сетки (только для админа)
+app.put("/api/admin/brackets/:bracketId/lock", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { username, is_locked } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    if (is_locked === undefined) {
+      return res.status(400).json({ error: "Не указано состояние блокировки" });
+    }
+    
+    // Обновляем блокировку сетки
+    const result = db.prepare(`
+      UPDATE brackets 
+      SET is_locked = ?
+      WHERE id = ?
+    `).run(is_locked, bracketId);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    const lockStatus = is_locked === 1 ? 'заблокирована' : 'разблокирована';
+    console.log(`✅ Сетка ${bracketId} ${lockStatus}`);
+    
+    res.json({ 
+      success: true, 
+      bracket_id: bracketId,
+      is_locked: is_locked
+    });
+  } catch (error) {
+    console.error("Ошибка изменения блокировки сетки:", error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -1862,7 +1862,7 @@
           образовательных целях.
         </p>
         <p style="margin: 8px 0; opacity: 0.7">
-          © 2025 1xBetLineBoom. Все права защищены.
+          © 2026 1xBetLineBoom. Все права защищены.
         </p>
       </footer>
 
@@ -3799,9 +3799,25 @@
             />
           </div>
 
+          <div style="margin-bottom: 15px">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600">
+              Начальная стадия:
+            </label>
+            <select
+              id="bracketStartStage"
+              style="width: 100%; padding: 10px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; color: #e0e6f0; cursor: pointer;"
+            >
+              <option value="round_of_16">1/16 финала (32 команды)</option>
+              <option value="round_of_8">1/8 финала (16 команд)</option>
+            </select>
+            <small style="color: #b0b8c8; display: block; margin-top: 5px;">
+              Выберите с какой стадии начинается плей-офф
+            </small>
+          </div>
+
           <div style="margin-bottom: 20px">
             <label style="display: block; margin-bottom: 5px; font-weight: 600">
-              Дата начала 1/16:
+              <span id="bracketStartDateLabel">Дата начала 1/16:</span>
             </label>
             <input
               type="datetime-local"

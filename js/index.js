@@ -2027,6 +2027,15 @@ async function displayMatches() {
     // Проверяем, является ли текущий пользователем админом
     const isAdmin = currentUser && currentUser.isAdmin;
 
+    // Получаем иконку текущего турнира
+    let currentEventIcon = '🏆';
+    if (currentEventId && events && events.length > 0) {
+      const currentEvent = events.find(e => e.id === currentEventId);
+      if (currentEvent && currentEvent.icon) {
+        currentEventIcon = currentEvent.icon;
+      }
+    }
+
     // Загружаем сетки для текущего турнира
     let bracketsHTML = '';
     if (currentEventId && typeof loadBracketsForEvent === 'function') {
@@ -2035,12 +2044,21 @@ async function displayMatches() {
         if (brackets && brackets.length > 0) {
           brackets.forEach(bracket => {
             const isClosed = bracket.start_date && new Date(bracket.start_date) <= new Date();
-            const statusIcon = isClosed ? '🔒' : '🏆';
+            
+            // Формируем иконку
+            let iconHtml = '';
+            if (currentEventIcon.startsWith('img/') || currentEventIcon.startsWith('http')) {
+              iconHtml = `<img src="${currentEventIcon}" alt="icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;" />`;
+            } else {
+              iconHtml = currentEventIcon;
+            }
+            
+            const statusIcon = isClosed ? ' 🔒' : '';
             bracketsHTML += `
               <button class="round-filter-btn bracket-filter-btn" 
                       onclick="openBracketModal(${bracket.id})" 
                       title="${bracket.name}${isClosed ? ' (Ставки закрыты)' : ' (Ставки открыты)'}">
-                ${statusIcon} ${bracket.name}
+                ${iconHtml} ${bracket.name}${statusIcon}
               </button>
             `;
           });
