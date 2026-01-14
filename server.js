@@ -3987,24 +3987,33 @@ app.put("/api/user/:userId/username", async (req, res) => {
 
     // Проверяем есть ли пользователь
     const user = db
-      .prepare("SELECT id, username FROM users WHERE id = ?")
+      .prepare("SELECT id, username, telegram_id FROM users WHERE id = ?")
       .get(userId);
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    // Автоматически делаем первую букву заглавной
+    const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
+
     // Проверяем не используется ли это имя другим пользователем
     const existingUser = db
       .prepare("SELECT id FROM users WHERE username = ? AND id != ?")
-      .get(username, userId);
+      .get(capitalizedUsername, userId);
 
     if (existingUser) {
       return res.status(400).json({ error: "Это имя уже используется" });
     }
 
+    // Проверка на запрещенные имена
+    const forbiddenBase = capitalizedUsername.toLowerCase().replace(/[\s\d\.\-]/g, ''); // Убираем пробелы, цифры, точки, дефисы
+    if (forbiddenBase === 'мемослав' || forbiddenBase === 'memoslav' || forbiddenBase === 'memoslave') {
+      return res.status(400).json({ error: "Are you, ohuel tam?" });
+    }
+
     // Обновляем имя
     db.prepare("UPDATE users SET username = ? WHERE id = ?").run(
-      username,
+      capitalizedUsername,
       userId
     );
 
@@ -4015,16 +4024,50 @@ app.put("/api/user/:userId/username", async (req, res) => {
 
     // Логируем
     console.log(
-      `✅ Username изменён для пользователя ${userId}: "${user.username}" → "${username}"`
+      `✅ Username изменён для пользователя ${userId}: "${user.username}" → "${capitalizedUsername}"`
     );
     console.log(`🔓 Удалено сессий: ${deletedSessions.changes}`);
+
+    // Отправляем уведомление пользователю в Telegram если он привязал аккаунт
+    if (user.telegram_id) {
+      const userMessage = `👤 ИЗМЕНЕНИЕ ИМЕНИ
+
+Ваше имя было успешно изменено:
+• Старое имя: ${user.username}
+• Новое имя: ${capitalizedUsername}
+
+🔓 Вы были разлогинены со всех устройств (${deletedSessions.changes} сессий).
+Войдите заново с новым именем.
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        if (TELEGRAM_BOT_TOKEN) {
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: user.telegram_id,
+                text: userMessage,
+              }),
+            }
+          );
+          console.log(`✅ Уведомление о смене имени отправлено пользователю ${capitalizedUsername}`);
+        }
+      } catch (error) {
+        console.error("⚠️ Не удалось отправить уведомление пользователю:", error);
+      }
+    }
 
     // Отправляем уведомление админу в Telegram (не блокируем ответ)
     const notificationMessage = `👤 ПЕРЕИМЕНОВАНИЕ ПОЛЬЗОВАТЕЛЯ
 
 📝 Пользователь самостоятельно изменил имя:
 • Старое имя: ${user.username}
-• Новое имя: ${username}
+• Новое имя: ${capitalizedUsername}
 • ID пользователя: ${userId}
 • Удалено сессий: ${deletedSessions.changes}
 
@@ -4037,7 +4080,7 @@ app.put("/api/user/:userId/username", async (req, res) => {
 
     res.json({ 
       success: true, 
-      username, 
+      username: capitalizedUsername, 
       message: "Имя успешно изменено. Войдите заново с новым именем",
       deletedSessions: deletedSessions.changes
     });
@@ -6518,7 +6561,7 @@ app.put("/api/admin/users/:userId", (req, res) => {
 
   try {
     // Получаем старое имя для уведомления
-    const oldUser = db.prepare("SELECT username FROM users WHERE id = ?").get(userId);
+    const oldUser = db.prepare("SELECT username, telegram_id FROM users WHERE id = ?").get(userId);
 
     if (!oldUser) {
       return res.status(404).json({ error: "Пользователь не найден" });
@@ -6529,17 +6572,26 @@ app.put("/api/admin/users/:userId", (req, res) => {
       return res.status(403).json({ error: "Модератор не может переименовать администратора" });
     }
 
+    // Автоматически делаем первую букву заглавной
+    const capitalizedNewUsername = newUsername.charAt(0).toUpperCase() + newUsername.slice(1);
+
     // Проверяем, не занято ли имя
     const existing = db
       .prepare("SELECT id FROM users WHERE username = ?")
-      .get(newUsername);
+      .get(capitalizedNewUsername);
     if (existing) {
       return res.status(400).json({ error: "Это имя уже занято" });
     }
 
+    // Проверка на запрещенные имена
+    const forbiddenBase = capitalizedNewUsername.toLowerCase().replace(/[\s\d\.\-]/g, ''); // Убираем пробелы, цифры, точки, дефисы
+    if (forbiddenBase === 'мемослав' || forbiddenBase === 'memoslav' || forbiddenBase === 'memoslave') {
+      return res.status(400).json({ error: "Are you, ohuel tam?" });
+    }
+
     const result = db
       .prepare("UPDATE users SET username = ? WHERE id = ?")
-      .run(newUsername, userId);
+      .run(capitalizedNewUsername, userId);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Пользователь не найден" });
@@ -6550,13 +6602,47 @@ app.put("/api/admin/users/:userId", (req, res) => {
       .prepare("DELETE FROM sessions WHERE user_id = ?")
       .run(userId);
     
-    console.log(`✅ Пользователь ${oldUser.username} переименован в ${newUsername}`);
+    console.log(`✅ Пользователь ${oldUser.username} переименован в ${capitalizedNewUsername}`);
     console.log(`🔓 Удалено сессий: ${deletedSessions.changes}`);
+
+    // Отправляем уведомление пользователю в Telegram если он привязал аккаунт
+    if (oldUser.telegram_id) {
+      const userMessage = `👤 ИЗМЕНЕНИЕ ИМЕНИ
+
+${isAdminUser ? 'Администратор' : 'Модератор'} изменил ваше имя:
+• Старое имя: ${oldUser.username}
+• Новое имя: ${capitalizedNewUsername}
+
+🔓 Вы были разлогинены со всех устройств (${deletedSessions.changes} сессий).
+Войдите заново с новым именем.
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        if (TELEGRAM_BOT_TOKEN) {
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: oldUser.telegram_id,
+                text: userMessage,
+              }),
+            }
+          );
+          console.log(`✅ Уведомление о смене имени отправлено пользователю ${capitalizedNewUsername}`);
+        }
+      } catch (error) {
+        console.error("⚠️ Не удалось отправить уведомление пользователю:", error);
+      }
+    }
 
     // Отправляем уведомление админу если это модератор
     if (!isAdminUser) {
       const details = `👤 Пользователь: ${oldUser.username}
-➡️ Новое имя: ${newUsername}
+➡️ Новое имя: ${capitalizedNewUsername}
 🔓 Разлогинен со всех устройств (удалено сессий: ${deletedSessions.changes})`;
       
       notifyModeratorAction(adminUsername, "Переименование пользователя", details);
@@ -6564,7 +6650,7 @@ app.put("/api/admin/users/:userId", (req, res) => {
 
     res.json({ 
       message: "Пользователь успешно переименован и разлогинен со всех устройств", 
-      newUsername,
+      newUsername: capitalizedNewUsername,
       deletedSessions: deletedSessions.changes
     });
   } catch (error) {

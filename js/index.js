@@ -9417,12 +9417,26 @@ function editUsername() {
     return;
   }
 
-  saveUsername(newUsername);
+  // Автоматически делаем первую букву заглавной
+  const capitalizedUsername = newUsername.charAt(0).toUpperCase() + newUsername.slice(1);
+
+  saveUsername(capitalizedUsername);
 }
 
 // Сохранить новое имя пользователя
 async function saveUsername(newUsername) {
   try {
+    // Проверка на запрещенные имена
+    const forbiddenBase = newUsername.toLowerCase().replace(/[\s\d\.\-]/g, ''); // Убираем пробелы, цифры, точки, дефисы
+    if (forbiddenBase === 'мемослав' || forbiddenBase === 'memoslav' || forbiddenBase === 'memoslave') {
+      await showCustomAlert(
+        "Are you ohuel tam?",
+        "Ошибка",
+        "🚫"
+      );
+      return;
+    }
+    
     // Устанавливаем флаг что идет переименование
     isRenamingUser = true;
     console.log("🔄 Начало переименования пользователя");
