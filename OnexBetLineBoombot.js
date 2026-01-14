@@ -873,7 +873,7 @@ export function startBot() {
           replyInThread(
             msg,
             `❌ Ошибка при привязке: ${result.error || 'Неизвестная ошибка'}\n\n` +
-            `Попробуйте привязать вручную через настройки на сайте.`,
+            `Попробуйте привязать другой.`,
             mainMenuKeyboard
           );
         }
@@ -883,7 +883,7 @@ export function startBot() {
         replyInThread(
           msg,
           `❌ Произошла ошибка при привязке: ${error.message}\n\n` +
-          `Попробуйте привязать вручную через настройки на сайте.`,
+          `Попробуйте привязать позже.`,
           mainMenuKeyboard
         );
       }
