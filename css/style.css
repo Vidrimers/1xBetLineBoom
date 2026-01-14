@@ -3306,9 +3306,68 @@ input:checked + .slider:before {
 .bracket-matches-column {
   display: flex;
   flex-direction: column;
-  gap: 30px;
   justify-content: space-around;
   flex: 1;
+  position: relative;
+}
+
+/* Увеличиваем отступы между матчами для каждой следующей стадии */
+.bracket-stage-column:nth-child(1) .bracket-matches-column {
+  gap: 40px;
+}
+
+.bracket-stage-column:nth-child(2) .bracket-matches-column {
+  gap: 120px;
+}
+
+.bracket-stage-column:nth-child(3) .bracket-matches-column {
+  gap: 280px;
+}
+
+.bracket-stage-column:nth-child(4) .bracket-matches-column {
+  gap: 600px;
+}
+
+.bracket-stage-column:nth-child(5) .bracket-matches-column {
+  gap: 1240px;
+}
+
+/* Добавляем соединительные линии */
+.bracket-match-vertical::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  width: 30px;
+  height: 2px;
+  background: rgba(90, 159, 212, 0.3);
+}
+
+/* Вертикальные линии между парами матчей */
+.bracket-match-vertical:nth-child(odd)::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 30px);
+  top: 50%;
+  width: 2px;
+  height: calc(100% + 40px);
+  background: rgba(90, 159, 212, 0.3);
+}
+
+.bracket-match-vertical:nth-child(even)::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 30px);
+  bottom: 50%;
+  width: 2px;
+  height: calc(100% + 40px);
+  background: rgba(90, 159, 212, 0.3);
+}
+
+/* Убираем линии у финала */
+.bracket-final .bracket-match-vertical::after,
+.bracket-final .bracket-match-vertical::before {
+  display: none;
 }
 
 .bracket-match-vertical {
@@ -3321,6 +3380,20 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+}
+
+.bracket-match-vertical {
+  background: rgba(40, 44, 54, 0.6);
+  border: 1px solid rgba(90, 159, 212, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+  transition: all 0.3s ease;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
 }
 
 .bracket-match-vertical:hover {
