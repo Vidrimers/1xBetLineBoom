@@ -135,6 +135,34 @@ ${details}
   }
 }
 
+// Функция для отправки уведомления админу (общая)
+async function notifyAdmin(message) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+    console.log("⚠️ Telegram не настроен, уведомление не отправлено");
+    return;
+  }
+
+  try {
+    await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: message,
+        }),
+      }
+    );
+    console.log(`✅ Уведомление отправлено админу`);
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления админу:", error);
+  }
+}
+
 // Переопределяем console.log для логирования
 const originalLog = console.log;
 const originalError = console.error;
@@ -2354,27 +2382,9 @@ app.post("/api/user", async (req, res) => {
       }
 
       // Отправляем уведомление админу
-      try {
-        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
-
-        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
-          await fetch(
-            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: TELEGRAM_ADMIN_ID,
-                text: message,
-              }),
-            }
-          );
-          console.log(`✅ Уведомление о новом пользователе ${username} отправлено админу`);
-        }
-      } catch (error) {
-        console.error("❌ Ошибка отправки уведомления админу:", error);
-      }
+      notifyAdmin(message).catch(err => {
+        console.error("⚠️ Не удалось отправить уведомление о новом пользователе:", err);
+      });
 
       res.json(user);
     } else {
@@ -3960,7 +3970,7 @@ app.delete("/api/user/:userId/avatar", (req, res) => {
 });
 
 // PUT /api/user/:userId/username - Изменить username пользователя
-app.put("/api/user/:userId/username", (req, res) => {
+app.put("/api/user/:userId/username", async (req, res) => {
   try {
     const { userId } = req.params;
     const { username } = req.body;
@@ -3998,12 +4008,39 @@ app.put("/api/user/:userId/username", (req, res) => {
       userId
     );
 
+    // Удаляем все сессии пользователя (разлогиниваем со всех устройств)
+    const deletedSessions = db
+      .prepare("DELETE FROM sessions WHERE user_id = ?")
+      .run(userId);
+
     // Логируем
     console.log(
       `✅ Username изменён для пользователя ${userId}: "${user.username}" → "${username}"`
     );
+    console.log(`🔓 Удалено сессий: ${deletedSessions.changes}`);
 
-    res.json({ success: true, username, message: "Имя успешно изменено" });
+    // Отправляем уведомление админу в Telegram (не блокируем ответ)
+    const notificationMessage = `👤 ПЕРЕИМЕНОВАНИЕ ПОЛЬЗОВАТЕЛЯ
+
+📝 Пользователь самостоятельно изменил имя:
+• Старое имя: ${user.username}
+• Новое имя: ${username}
+• ID пользователя: ${userId}
+• Удалено сессий: ${deletedSessions.changes}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+    // Отправляем уведомление асинхронно, не дожидаясь результата
+    notifyAdmin(notificationMessage).catch(err => {
+      console.error("⚠️ Не удалось отправить уведомление админу:", err);
+    });
+
+    res.json({ 
+      success: true, 
+      username, 
+      message: "Имя успешно изменено. Войдите заново с новым именем",
+      deletedSessions: deletedSessions.changes
+    });
   } catch (error) {
     console.error("Ошибка при изменении username:", error);
     res.status(500).json({ error: error.message });
@@ -6508,15 +6545,28 @@ app.put("/api/admin/users/:userId", (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    // Удаляем все сессии переименованного пользователя (разлогиниваем со всех устройств)
+    const deletedSessions = db
+      .prepare("DELETE FROM sessions WHERE user_id = ?")
+      .run(userId);
+    
+    console.log(`✅ Пользователь ${oldUser.username} переименован в ${newUsername}`);
+    console.log(`🔓 Удалено сессий: ${deletedSessions.changes}`);
+
     // Отправляем уведомление админу если это модератор
     if (!isAdminUser) {
       const details = `👤 Пользователь: ${oldUser.username}
-➡️ Новое имя: ${newUsername}`;
+➡️ Новое имя: ${newUsername}
+🔓 Разлогинен со всех устройств (удалено сессий: ${deletedSessions.changes})`;
       
       notifyModeratorAction(adminUsername, "Переименование пользователя", details);
     }
 
-    res.json({ message: "Пользователь успешно переименован", newUsername });
+    res.json({ 
+      message: "Пользователь успешно переименован и разлогинен со всех устройств", 
+      newUsername,
+      deletedSessions: deletedSessions.changes
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

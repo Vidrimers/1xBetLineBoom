@@ -219,7 +219,7 @@ function showCustomAlert(message, title = "Уведомление", icon = "ℹ�
         <div class="custom-modal-title">${icon} ${title}</div>
         <div class="custom-modal-message">${message}</div>
         <div class="custom-modal-buttons">
-          <button class="custom-modal-btn custom-modal-btn-primary" onclick="this.closest('.custom-modal-overlay').remove()">OK</button>
+          <button class="custom-modal-btn custom-modal-btn-primary">OK</button>
         </div>
       </div>
     `;
@@ -227,6 +227,7 @@ function showCustomAlert(message, title = "Уведомление", icon = "ℹ�
     document.body.appendChild(overlay);
     
     overlay.querySelector('.custom-modal-btn').addEventListener('click', () => {
+      overlay.remove();
       resolve(true);
     });
     
@@ -326,7 +327,9 @@ let ADMIN_LOGIN = null;
 let cropper = null;
 let ADMIN_DB_NAME = null;
 let matchUpdateInterval = null;
+let sessionCheckInterval = null;
 let isMatchUpdatingEnabled = true;
+let isRenamingUser = false; // Флаг для блокировки автовыхода при переименовании
 let currentRoundFilter = "all"; // Текущий фильтр по туру
 let roundsOrder = []; // Порядок туров из БД
 let tempRoundsOrder = []; // Временный порядок для редактирования
@@ -901,7 +904,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Запускаем периодическую проверку сессии каждые 5 секунд
-  setInterval(async () => {
+  sessionCheckInterval = setInterval(async () => {
+    // Пропускаем проверку если идет переименование пользователя
+    if (isRenamingUser) {
+      console.log("⏸️ Проверка сессии пропущена (идет переименование)");
+      return;
+    }
+    
     const token = localStorage.getItem("sessionToken");
     const user = localStorage.getItem("currentUser");
     if (token && user) {
@@ -910,7 +919,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!validateResponse.ok) {
           // Сессия недействительна - разлогиниваем
           console.log("⚠️ Сессия стала недействительной, выполняется выход");
-          alert("Вы были разлогинены с этого устройства");
           localStorage.removeItem("currentUser");
           localStorage.removeItem("sessionToken");
           location.reload();
@@ -9415,6 +9423,10 @@ function editUsername() {
 // Сохранить новое имя пользователя
 async function saveUsername(newUsername) {
   try {
+    // Устанавливаем флаг что идет переименование
+    isRenamingUser = true;
+    console.log("🔄 Начало переименования пользователя");
+    
     const response = await fetch(`/api/user/${currentUser.id}/username`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -9424,21 +9436,40 @@ async function saveUsername(newUsername) {
     const result = await response.json();
 
     if (!response.ok) {
-      alert(`❌ Ошибка: ${result.error || "Не удалось изменить имя"}`);
+      isRenamingUser = false; // Сбрасываем флаг при ошибке
+      await showCustomAlert(
+        result.error || "Не удалось изменить имя",
+        "Ошибка",
+        "❌"
+      );
       return;
     }
 
-    // Обновляем в памяти
-    currentUser.username = newUsername;
+    console.log("✅ Имя изменено на сервере, показываем алерт");
 
-    // Обновляем на странице
-    document.getElementById("usernameDisplay").textContent = newUsername;
+    // Показываем сообщение об успешном изменении и ждем подтверждения
+    await showCustomAlert(
+      `Имя успешно изменено на "${newUsername}".\n\nВы будете разлогинены со всех устройств.\nВойдите заново с новым именем.`,
+      "Имя изменено",
+      "✅"
+    );
 
-    // Обновляем в локал сторе
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    console.log("👍 Пользователь нажал OK, выполняется выход");
+
+    // После того как пользователь нажал OK, очищаем данные и разлогиниваем
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("sessionToken");
+    
+    // Перезагружаем страницу (вернет на страницу логина)
+    window.location.reload();
   } catch (error) {
+    isRenamingUser = false; // Сбрасываем флаг при ошибке
     console.error("❌ Ошибка при изменении имени:", error);
-    alert("❌ Ошибка при изменении имени");
+    await showCustomAlert(
+      "Ошибка при изменении имени",
+      "Ошибка",
+      "❌"
+    );
   }
 }
 
