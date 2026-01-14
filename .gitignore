@@ -3,7 +3,6 @@ temp/
 .vscode/
 .DS_Store
 npm/
-screens/
 package-lock.json
 .env
 upload.md
