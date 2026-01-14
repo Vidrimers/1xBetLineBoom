@@ -197,13 +197,13 @@ function renderBracketModal(isClosed) {
   
   modal.innerHTML = `
     <div class="modal-content bracket-modal-content" onclick="event.stopPropagation()">
-      <div class="modal-header">
+      <div class="modal-header" style="position: relative;">
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
           ${statusBadge}
           ${lockDateText}
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; align-items: center;">
           ${isAdmin ? `
             <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
               ✏️
