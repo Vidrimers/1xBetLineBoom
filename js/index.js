@@ -2043,22 +2043,25 @@ async function displayMatches() {
         const brackets = await loadBracketsForEvent(currentEventId);
         if (brackets && brackets.length > 0) {
           brackets.forEach(bracket => {
-            const isClosed = bracket.start_date && new Date(bracket.start_date) <= new Date();
+            const isClosedByDate = bracket.start_date && new Date(bracket.start_date) <= new Date();
+            const isManuallyLocked = bracket.is_locked === 1;
+            const isClosed = isClosedByDate || isManuallyLocked;
             
             // Формируем иконку
             let iconHtml = '';
-            if (currentEventIcon.startsWith('img/') || currentEventIcon.startsWith('http')) {
+            if (isClosed) {
+              iconHtml = '🔒';
+            } else if (currentEventIcon.startsWith('img/') || currentEventIcon.startsWith('http')) {
               iconHtml = `<img src="${currentEventIcon}" alt="icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;" />`;
             } else {
               iconHtml = currentEventIcon;
             }
             
-            const statusIcon = isClosed ? ' 🔒' : '';
             bracketsHTML += `
               <button class="round-filter-btn bracket-filter-btn" 
                       onclick="openBracketModal(${bracket.id})" 
                       title="${bracket.name}${isClosed ? ' (Ставки закрыты)' : ' (Ставки открыты)'}">
-                ${iconHtml} ${bracket.name}${statusIcon}
+                ${iconHtml} ${bracket.name}
               </button>
             `;
           });
