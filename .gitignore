@@ -5,6 +5,7 @@ temp/
 npm/
 package-lock.json
 .env
+.env copy
 upload.md
 serverjs.md
 replacements.txt

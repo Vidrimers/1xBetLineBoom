@@ -23,18 +23,25 @@ const isStandardPort = (USE_HTTPS && SERVER_PORT === "443") || (!USE_HTTPS && SE
 const portSuffix = isStandardPort ? "" : `:${SERVER_PORT}`;
 
 // Для локальных запросов из бота
-// Если SERVER_IP это localhost или 192.168.x.x (локальная сеть), используем его напрямую
-// Иначе это внешний IP и бот должен обращаться к нему
+// Если SERVER_IP это localhost или 192.168.x.x (локальная сеть), используем localhost
+// Если это домен или внешний IP, используем его напрямую
 const isLocalNetwork = SERVER_IP === "localhost" || SERVER_IP.startsWith("192.168.") || SERVER_IP.startsWith("127.0.");
+const isDomain = SERVER_IP.includes(".") && !SERVER_IP.match(/^\d+\.\d+\.\d+\.\d+$/); // Проверяем, это домен или IP
+
+// Если домен, то скорее всего HTTPS через nginx на стандартном порту
 const SERVER_URL = isLocalNetwork 
   ? `http://localhost:${SERVER_PORT}` 
-  : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
+  : (isDomain && !process.env.USE_HTTPS) 
+    ? `https://${SERVER_IP}` // Для доменов по умолчанию HTTPS без порта
+    : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
 
 // Для внешних ссылок (которые отправляются пользователям)
-const PUBLIC_URL = `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
+const PUBLIC_URL = (isDomain && !process.env.USE_HTTPS)
+  ? `https://${SERVER_IP}` // Для доменов по умолчанию HTTPS без порта
+  : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
 
 console.log(
-  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, PUBLIC_URL=${PUBLIC_URL}, USE_HTTPS=${USE_HTTPS}, PORT=${SERVER_PORT}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
+  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, PUBLIC_URL=${PUBLIC_URL}, isDomain=${isDomain}, USE_HTTPS=${USE_HTTPS}, PORT=${SERVER_PORT}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
 );
 
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
