@@ -6528,7 +6528,7 @@ app.get("/api/admin/users", (req, res) => {
 });
 
 // PUT /api/admin/users/:userId - Переименовать пользователя (только для админа)
-app.put("/api/admin/users/:userId", (req, res) => {
+app.put("/api/admin/users/:userId", async (req, res) => {
   const { userId } = req.params;
   const { username: adminUsername, newUsername } = req.body;
 
