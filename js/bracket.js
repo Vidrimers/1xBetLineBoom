@@ -157,13 +157,30 @@ function renderBracketModal(isClosed) {
   const isAutoLocked = isClosed && !isManuallyLocked;
   const isLocked = isClosed || isManuallyLocked;
   
-  let closedBadge = '';
+  let statusBadge = '';
+  let lockDateText = '';
+  
   if (isManuallyLocked) {
-    closedBadge = '<span style="color: #ff9800; font-size: 0.9em; margin-left: 10px;">🔒 Заблокировано админом</span>';
+    statusBadge = '<div style="color: #ff9800; font-size: 0.9em;">🔒 Заблокировано админом</div>';
   } else if (isAutoLocked) {
-    closedBadge = '<span style="color: #f44336; font-size: 0.9em; margin-left: 10px;">🔒 Ставки закрыты</span>';
+    statusBadge = '<div style="color: #f44336; font-size: 0.9em;">🔒 Ставки закрыты</div>';
   } else {
-    closedBadge = '<span style="color: #4caf50; font-size: 0.9em; margin-left: 10px;">✅ Ставки открыты</span>';
+    statusBadge = '<div style="color: #4caf50; font-size: 0.9em;">✅ Ставки открыты</div>';
+    
+    // Форматируем дату и время блокировки
+    if (currentBracket.start_date) {
+      const lockDate = new Date(currentBracket.start_date);
+      const dateStr = lockDate.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+      const timeStr = lockDate.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      lockDateText = `<div style="color: #b0b8c8; font-size: 0.75em; margin-top: 2px;">(будет заблокировано ${dateStr} в ${timeStr})</div>`;
+    }
   }
   
   const isAdmin = currentUser && currentUser.isAdmin;
@@ -181,7 +198,11 @@ function renderBracketModal(isClosed) {
   modal.innerHTML = `
     <div class="modal-content bracket-modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h2>${eventIconHtml}Окончательная сетка плей-офф${closedBadge}</h2>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
+          ${statusBadge}
+          ${lockDateText}
+        </div>
         <div style="display: flex; gap: 10px; align-items: center;">
           ${isAdmin ? `
             <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
