@@ -17,19 +17,24 @@ const SERVER_PORT = process.env.PORT || "3000";
 const USE_HTTPS = process.env.USE_HTTPS === "true"; // Добавляем поддержку HTTPS
 const PROTOCOL = USE_HTTPS ? "https" : "http";
 
+// Определяем нужно ли добавлять порт к URL
+// Порт не добавляется только если это стандартный порт (80 для HTTP, 443 для HTTPS)
+const isStandardPort = (USE_HTTPS && SERVER_PORT === "443") || (!USE_HTTPS && SERVER_PORT === "80");
+const portSuffix = isStandardPort ? "" : `:${SERVER_PORT}`;
+
 // Для локальных запросов из бота
 // Если SERVER_IP это localhost или 192.168.x.x (локальная сеть), используем его напрямую
 // Иначе это внешний IP и бот должен обращаться к нему
 const isLocalNetwork = SERVER_IP === "localhost" || SERVER_IP.startsWith("192.168.") || SERVER_IP.startsWith("127.0.");
 const SERVER_URL = isLocalNetwork 
   ? `http://localhost:${SERVER_PORT}` 
-  : `${PROTOCOL}://${SERVER_IP}${USE_HTTPS ? '' : ':' + SERVER_PORT}`;
+  : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
 
 // Для внешних ссылок (которые отправляются пользователям)
-const PUBLIC_URL = `${PROTOCOL}://${SERVER_IP}${USE_HTTPS ? '' : ':' + SERVER_PORT}`;
+const PUBLIC_URL = `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
 
 console.log(
-  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, PUBLIC_URL=${PUBLIC_URL}, USE_HTTPS=${USE_HTTPS}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
+  `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, PUBLIC_URL=${PUBLIC_URL}, USE_HTTPS=${USE_HTTPS}, PORT=${SERVER_PORT}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
 );
 
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
