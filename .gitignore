@@ -3,6 +3,7 @@ temp/
 .vscode/
 .DS_Store
 npm/
+screens/
 package-lock.json
 .env
 upload.md
@@ -20,6 +21,7 @@ terminal-logs.txt
 add-event-columns.js
 add-theme-column.js
 MIGRATION-README.md
+
 
 Autoparsing.js
 
