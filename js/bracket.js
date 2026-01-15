@@ -625,7 +625,7 @@ function renderBracketModal(isClosed) {
           ${lockDateText}
           ${statsHtml}
         </div>
-        <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; align-items: center;">
+        <div class="bracket-admin button" style="position: absolute; top: 60px; right: 10px; display: flex; gap: 10px; align-items: end; flex-direction: column-reverse;">
           ${showAdminButtons ? `
             <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
               ✏️
@@ -653,8 +653,9 @@ function renderBracketModal(isClosed) {
               💾
             </button>
           ` : ''}
-          <button class="modal-close" onclick="closeBracketModal()">&times;</button>
+          
         </div>
+        <button class="modal-close" style="position: absolute; top: 10px; right: 10px;" onclick="closeBracketModal()">&times;</button>
       </div>
       
       <div class="bracket-container">
