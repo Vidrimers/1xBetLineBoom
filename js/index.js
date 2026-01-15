@@ -3012,52 +3012,11 @@ function displayMyBets(bets) {
     return;
   }
 
-  // Группируем ставки по турнирам (event_name) и определяем активность турнира
-  const betsByEvent = {};
-  const now = new Date();
-  
-  bets.forEach((bet) => {
-    const eventName = bet.event_name || "Турнир не указан";
-    if (!betsByEvent[eventName]) {
-      // Определяем активность турнира по той же логике, что и в списке турниров
-      const isActive = bet.event_start_date && 
-                      new Date(bet.event_start_date) <= now && 
-                      !bet.event_locked_reason;
-      
-      betsByEvent[eventName] = {
-        isActive: isActive, // true если турнир активный
-        bets: []
-      };
-    }
-    betsByEvent[eventName].bets.push(bet);
-  });
-
-  // Сортируем турниры: сначала активные, потом остальные
-  const sortedEvents = Object.keys(betsByEvent).sort((a, b) => {
-    const isActiveA = betsByEvent[a].isActive;
-    const isActiveB = betsByEvent[b].isActive;
-    
-    // Активные турниры идут первыми
-    if (isActiveA && !isActiveB) return -1;
-    if (!isActiveA && isActiveB) return 1;
-    
-    // Если оба активные или оба неактивные - сортируем по названию
-    return a.localeCompare(b);
-  });
-
-  // Формируем HTML с разделителями по турнирам
-  let html = "";
-
-  sortedEvents.forEach((eventName) => {
-    const eventData = betsByEvent[eventName];
-    
-    html += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ${eventName} ━━━</div>`;
-
-    html += eventData.bets
-      .map((bet) => {
-        let statusClass = "pending";
-        let statusText = "⏳ В ожидании";
-        let normalizedPrediction = bet.prediction; // Инициализируем ДО всех условий!
+  // Сначала определяем статус для ВСЕХ ставок
+  const betsWithStatus = bets.map((bet) => {
+    let statusClass = "pending";
+    let statusText = "⏳ В ожидании";
+    let normalizedPrediction = bet.prediction;
 
         // Если это финальная ставка на параметр матча (желтые карты, красные карты и т.д.)
         if (bet.is_final_bet) {
@@ -3190,59 +3149,75 @@ function displayMyBets(bets) {
           ? `<button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>`
           : "";
 
-        return `
-            <div class="bet-item ${statusClass}" data-bet-id="${bet.id}">
-                <div class="bet-info">
-                    <span class="bet-match">${bet.team1_name} vs ${
-          bet.team2_name
-        }</span>
-                    <span class="bet-status ${statusClass}">${statusText}</span>
-                </div>
-                <div class="bet-info" style="font-size: 0.9em; color: #b0b8c8;">
-                    <span class="bet-stake">Ставка: <strong>${(() => {
-                      // Если это финальная ставка на параметр
-                      if (bet.is_final_bet) {
-                        const paramName = {
-                          exact_score: "Точный счет",
-                          yellow_cards: "Желтые",
-                          red_cards: "Красные",
-                          corners: "Угловые",
-                          penalties_in_game: "Пенальти в игре",
-                          extra_time: "Доп. время",
-                          penalties_at_end: "Пенальти в конце",
-                        }[bet.parameter_type];
+        return {
+          bet,
+          statusClass,
+          statusText,
+          normalizedPrediction,
+          deleteBtn,
+          eventName: bet.event_name || "Турнир не указан"
+        };
+      });
 
-                        if (bet.parameter_type === "exact_score") {
-                          // Формат: "Точный счет: Команда1 2:0 Команда2"
-                          return `${paramName}: ${bet.team1_name} ${bet.prediction} ${bet.team2_name}`;
-                        } else {
-                          // Формат: "Желтые: 5" или "Пенальти в игре: ДА"
-                          return `${paramName}: ${bet.prediction}`;
-                        }
-                      } else {
-                        // Обычная ставка - выводим нормализованное имя
-                        if (normalizedPrediction === "draw") {
-                          return "Ничья";
-                        } else {
-                          return normalizedPrediction;
-                        }
-                      }
-                    })()}</strong></span>
-                </div>
-                <div class="bet-round" style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
-                    ${
-                      bet.is_final
-                        ? "🏆 ФИНАЛ"
-                        : bet.round
-                        ? `${bet.round}`
-                        : ""
-                    }
-                </div>
-                ${deleteBtn}
+  // Сортируем ВСЕ ставки: сначала "pending", потом остальные
+  const sortedBets = betsWithStatus.sort((a, b) => {
+    if (a.statusClass === 'pending' && b.statusClass !== 'pending') return -1;
+    if (a.statusClass !== 'pending' && b.statusClass === 'pending') return 1;
+    return 0; // Сохраняем исходный порядок для ставок с одинаковым статусом
+  });
+
+  // Формируем HTML с разделителями по турнирам
+  let html = "";
+  let currentEvent = null;
+
+  sortedBets.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn, eventName }) => {
+    // Добавляем разделитель турнира если он изменился
+    if (currentEvent !== eventName) {
+      html += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ${eventName} ━━━</div>`;
+      currentEvent = eventName;
+    }
+
+    html += `
+        <div class="bet-item ${statusClass}" data-bet-id="${bet.id}">
+            <div class="bet-info">
+                <span class="bet-match">${bet.team1_name} vs ${bet.team2_name}</span>
+                <span class="bet-status ${statusClass}">${statusText}</span>
             </div>
-        `;
-      })
-      .join("");
+            <div class="bet-info" style="font-size: 0.9em; color: #b0b8c8;">
+                <span class="bet-stake">Ставка: <strong>${(() => {
+                  // Если это финальная ставка на параметр
+                  if (bet.is_final_bet) {
+                    const paramName = {
+                      exact_score: "Точный счет",
+                      yellow_cards: "Желтые",
+                      red_cards: "Красные",
+                      corners: "Угловые",
+                      penalties_in_game: "Пенальти в игре",
+                      extra_time: "Доп. время",
+                      penalties_at_end: "Пенальти в конце",
+                    }[bet.parameter_type];
+
+                    if (bet.parameter_type === "exact_score") {
+                      return `${paramName}: ${bet.team1_name} ${bet.prediction} ${bet.team2_name}`;
+                    } else {
+                      return `${paramName}: ${bet.prediction}`;
+                    }
+                  } else {
+                    // Обычная ставка - выводим нормализованное имя
+                    if (normalizedPrediction === "draw") {
+                      return "Ничья";
+                    } else {
+                      return normalizedPrediction;
+                    }
+                  }
+                })()}</strong></span>
+            </div>
+            <div class="bet-round" style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
+                ${bet.is_final ? "🏆 ФИНАЛ" : bet.round ? `${bet.round}` : ""}
+            </div>
+            ${deleteBtn}
+        </div>
+    `;
   });
 
   myBetsList.innerHTML = html;
