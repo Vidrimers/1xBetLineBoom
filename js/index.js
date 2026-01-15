@@ -1517,16 +1517,16 @@ async function selectEvent(eventId, eventName) {
   }
 
   // Скрываем/показываем кнопку "Мне повезет" в зависимости от статуса турнира
-  const luckyBtn = document.querySelector('.lucky-btn');
-  if (luckyBtn) {
+  const luckyBtnContainer = document.getElementById('luckyBtnContainer');
+  if (luckyBtnContainer) {
     // Показываем только для активных турниров (не завершенных и не предстоящих)
     const isLocked = event && event.locked_reason;
     const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
     
     if (isLocked || isUpcoming) {
-      luckyBtn.style.display = 'none';
+      luckyBtnContainer.style.display = 'none';
     } else {
-      luckyBtn.style.display = 'inline-block';
+      luckyBtnContainer.style.display = 'block';
     }
   }
 
