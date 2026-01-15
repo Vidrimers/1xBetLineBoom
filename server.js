@@ -2065,7 +2065,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
         u.avatar,
         u.show_bets,
         COUNT(DISTINCT b.id) as event_bets,
-        SUM(CASE 
+        (SUM(CASE 
           WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
             CASE 
               -- Обычные ставки (не финальные параметры)
@@ -2094,7 +2094,17 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
               ELSE 0
             END 
           ELSE 0 
-        END) as event_won,
+        END) + COALESCE((
+          SELECT SUM(CASE WHEN bp.stage = 'final' THEN 3 ELSE 1 END)
+          FROM bracket_predictions bp
+          INNER JOIN bracket_results br ON bp.bracket_id = br.bracket_id 
+            AND bp.stage = br.stage 
+            AND bp.match_index = br.match_index
+          INNER JOIN brackets bk ON bp.bracket_id = bk.id
+          WHERE bp.user_id = u.id 
+            AND bk.event_id = ?
+            AND bp.predicted_winner = br.actual_winner
+        ), 0)) as event_won,
         SUM(CASE 
           WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
             CASE 
@@ -2135,7 +2145,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
       ORDER BY event_won DESC, event_bets DESC
     `
       )
-      .all(eventId);
+      .all(eventId, eventId);
 
     res.json(participants);
   } catch (error) {
