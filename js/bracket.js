@@ -46,34 +46,239 @@ function getEditableStages(bracket) {
   return result;
 }
 
-// Загрузить команды из teams.json
-async function loadTeams() {
+// Восстановить команды в последующих стадиях на основе прогнозов пользователя
+async function rebuildBracketFromPredictions() {
+  const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+  
+  // Проходим по всем стадиям в порядке
+  for (let i = 0; i < stageOrder.length - 1; i++) {
+    const currentStageId = stageOrder[i];
+    const nextStageId = stageOrder[i + 1];
+    
+    // Если есть прогнозы для текущей стадии
+    if (bracketPredictions[currentStageId]) {
+      Object.keys(bracketPredictions[currentStageId]).forEach(matchIndex => {
+        const winner = bracketPredictions[currentStageId][matchIndex];
+        const nextMatchIndex = Math.floor(matchIndex / 2);
+        const teamPosition = matchIndex % 2;
+        
+        // Создаем структуру если её нет
+        if (!currentBracket.matches) {
+          currentBracket.matches = {};
+        }
+        if (!currentBracket.matches[nextStageId]) {
+          currentBracket.matches[nextStageId] = {};
+        }
+        if (!currentBracket.matches[nextStageId][nextMatchIndex]) {
+          currentBracket.matches[nextStageId][nextMatchIndex] = {};
+        }
+        
+        // Добавляем победителя в следующую стадию
+        if (teamPosition === 0) {
+          currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
+        } else {
+          currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
+        }
+      });
+    }
+  }
+  
+  console.log('✅ Команды в последующих стадиях восстановлены на основе прогнозов');
+}
+
+// Загрузить команды из выбранного файла
+async function loadTeams(filePath = null) {
   try {
-    const response = await fetch('/teams.json');
+    // Если путь не указан, используем сохраненный для текущей сетки или дефолтный
+    if (!filePath) {
+      const bracketId = currentBracket ? currentBracket.id : null;
+      if (bracketId) {
+        filePath = localStorage.getItem(`selectedTeamFile_${bracketId}`) || '/names/LeagueOfChampionsTeams.json';
+      } else {
+        filePath = '/names/LeagueOfChampionsTeams.json';
+      }
+    }
+    
+    const response = await fetch(filePath);
     if (!response.ok) {
       throw new Error('Ошибка загрузки команд');
     }
-    const data = await response.json();
     
-    // Собираем все команды из всех категорий
+    // Определяем формат файла по расширению
+    const ext = filePath.split('.').pop().toLowerCase();
+    
     allTeams = [];
-    if (data.teams_by_status) {
-      Object.values(data.teams_by_status).forEach(category => {
-        if (category.teams && Array.isArray(category.teams)) {
-          category.teams.forEach(team => {
-            allTeams.push(team.name);
-          });
-        }
-      });
+    
+    if (ext === 'json') {
+      // JSON формат
+      const data = await response.json();
+      
+      // Собираем все команды из всех категорий
+      if (data.teams_by_status) {
+        Object.values(data.teams_by_status).forEach(category => {
+          if (category.teams && Array.isArray(category.teams)) {
+            category.teams.forEach(team => {
+              allTeams.push(team.name);
+            });
+          }
+        });
+      }
+    } else if (ext === 'txt') {
+      // TXT формат - команды с новой строки
+      const text = await response.text();
+      allTeams = text.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+    } else if (ext === 'js') {
+      // JS формат - const с командами через запятую
+      const text = await response.text();
+      
+      // Ищем содержимое между фигурными скобками
+      const match = text.match(/\{([^}]+)\}/);
+      if (match) {
+        allTeams = match[1].split(',')
+          .map(team => team.trim())
+          .filter(team => team.length > 0);
+      }
     }
     
     // Сортируем команды по алфавиту
     allTeams.sort((a, b) => a.localeCompare(b, 'ru'));
     
+    console.log(`✅ Загружено ${allTeams.length} команд из ${filePath}`);
     return allTeams;
   } catch (error) {
     console.error('Ошибка загрузки команд:', error);
     return [];
+  }
+}
+
+// Получить список доступных файлов команд
+async function getTeamFiles() {
+  try {
+    const response = await fetch('/api/team-files');
+    if (!response.ok) {
+      throw new Error('Ошибка загрузки списка файлов');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Ошибка получения списка файлов команд:', error);
+    return [];
+  }
+}
+
+// Открыть модальное окно выбора файла команд
+async function openTeamFileSelector() {
+  const files = await getTeamFiles();
+  
+  if (files.length === 0) {
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Не найдено файлов команд в папке names', 'Ошибка', '❌');
+    } else {
+      alert('Не найдено файлов команд в папке names');
+    }
+    return;
+  }
+  
+  const currentFile = localStorage.getItem(`selectedTeamFile_${currentBracket.id}`) || '/names/LeagueOfChampionsTeams.json';
+  
+  // Создаем HTML для списка файлов
+  const fileListHtml = files.map(file => {
+    const isSelected = file.path === currentFile;
+    const icon = file.name.endsWith('.json') ? '📄' : file.name.endsWith('.txt') ? '📝' : '📜';
+    return `
+      <div class="team-file-item ${isSelected ? 'selected' : ''}" 
+           onclick="selectTeamFile('${file.path}')" 
+           style="padding: 12px; margin: 8px 0; background: ${isSelected ? 'rgba(90, 159, 212, 0.2)' : 'rgba(40, 44, 54, 0.5)'}; 
+                  border: 1px solid ${isSelected ? 'rgba(90, 159, 212, 0.5)' : 'rgba(90, 159, 212, 0.2)'}; 
+                  border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.5em;">${icon}</span>
+          <div style="flex: 1;">
+            <div style="font-weight: 500; color: #e0e6f0;">${file.name}</div>
+            <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 2px;">${file.path}</div>
+          </div>
+          ${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;">✓</span>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Создаем модальное окно
+  const modalHtml = `
+    <div id="teamFileSelectorModal" class="modal" style="display: flex;" onclick="closeTeamFileSelector()">
+      <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2>📥 Выбор файла команд</h2>
+          <button class="modal-close" onclick="closeTeamFileSelector()">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+          <p style="color: #b0b8c8; margin-bottom: 15px;">
+            Выберите файл с командами для редактирования сетки:
+          </p>
+          ${fileListHtml}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Добавляем модалку в DOM
+  const existingModal = document.getElementById('teamFileSelectorModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  if (typeof lockBodyScroll === 'function') {
+    lockBodyScroll();
+  }
+}
+
+// Выбрать файл команд
+async function selectTeamFile(filePath) {
+  try {
+    // Сохраняем выбор для текущей сетки
+    if (currentBracket && currentBracket.id) {
+      localStorage.setItem(`selectedTeamFile_${currentBracket.id}`, filePath);
+    }
+    
+    // Перезагружаем команды
+    await loadTeams(filePath);
+    
+    // Закрываем модалку выбора файла
+    closeTeamFileSelector();
+    
+    // Если мы в режиме редактирования, перерисовываем сетку
+    if (isEditingBracket && currentBracket) {
+      const isClosed = isBracketClosed(currentBracket);
+      renderBracketModal(isClosed);
+    }
+    
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(`Файл команд изменен на:\n${filePath.split('/').pop()}`, 'Успех', '✅');
+    } else {
+      alert(`Файл команд изменен на: ${filePath.split('/').pop()}`);
+    }
+  } catch (error) {
+    console.error('Ошибка при выборе файла команд:', error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Не удалось загрузить файл команд', 'Ошибка', '❌');
+    } else {
+      alert('Не удалось загрузить файл команд');
+    }
+  }
+}
+
+// Закрыть модальное окно выбора файла команд
+function closeTeamFileSelector() {
+  const modal = document.getElementById('teamFileSelectorModal');
+  if (modal) {
+    modal.remove();
+  }
+  
+  if (typeof unlockBodyScroll === 'function') {
+    unlockBodyScroll();
   }
 }
 
@@ -125,27 +330,6 @@ async function openBracketModal(bracketId, viewUserId = null) {
     currentBracket = await response.json();
     isEditingBracket = false;
     
-    // Очищаем последующие стадии (они должны заполняться только прогнозами пользователя)
-    const editableStages = getEditableStages(currentBracket);
-    let needsSave = false;
-    
-    if (currentBracket.matches) {
-      Object.keys(currentBracket.matches).forEach(stageId => {
-        if (!editableStages.includes(stageId)) {
-          // Удаляем команды из последующих стадий
-          console.log(`🗑️ Удаляем стадию ${stageId} при загрузке`);
-          delete currentBracket.matches[stageId];
-          needsSave = true;
-        }
-      });
-    }
-    
-    // Если были удалены стадии, сохраняем изменения на сервер
-    if (needsSave && currentUser && currentUser.isAdmin) {
-      console.log('💾 Сохраняем очищенную структуру на сервер');
-      await saveBracketStructure();
-    }
-    
     // Получаем иконку турнира
     let eventIcon = '🏆';
     if (currentBracket.event_id && events && events.length > 0) {
@@ -187,6 +371,9 @@ async function openBracketModal(bracketId, viewUserId = null) {
           bracketPredictions[p.stage] = bracketPredictions[p.stage] || {};
           bracketPredictions[p.stage][p.match_index] = p.predicted_winner;
         });
+        
+        // Восстанавливаем команды в последующих стадиях на основе прогнозов
+        await rebuildBracketFromPredictions();
       } else {
         bracketPredictions = {};
       }
@@ -317,10 +504,11 @@ function renderBracketModal(isClosed) {
   }
   
   modal.innerHTML = `
-    <div class="modal-content bracket-modal-content" onclick="event.stopPropagation()">
+    <div class="modal-content bracket-modal-content ${isEditingBracket ? 'editing-mode' : ''}" onclick="event.stopPropagation()" style="${isEditingBracket ? 'border: 3px solid #f44336; box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);' : ''}">
       <div class="modal-header" style="position: relative;">
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
+          ${isEditingBracket ? '<div style="color: #f44336; font-size: 0.9em; font-weight: 600;">✏️ РЕЖИМ РЕДАКТИРОВАНИЯ</div>' : ''}
           ${statusBadge}
           ${lockReasonText}
           ${lockDateText}
@@ -330,9 +518,14 @@ function renderBracketModal(isClosed) {
             <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
               ✏️
             </button>
-            <button class="btn-secondary" onclick="cleanupBracketStages()" style="padding: 8px 16px; font-size: 0.9em;" title="Очистить последующие стадии">
-              🧹
-            </button>
+            ${isEditingBracket ? `
+              <button class="btn-secondary" onclick="openTeamFileSelector()" style="padding: 8px 16px; font-size: 0.9em;" title="Выбрать файл команд">
+                📥
+              </button>
+              <button class="btn-secondary" onclick="cleanupBracketStages()" style="padding: 8px 16px; font-size: 0.9em;" title="Очистить последующие стадии">
+                🧹
+              </button>
+            ` : ''}
             <button class="btn-secondary ${isAutoLocked ? 'disabled-look' : ''}" onclick="toggleBracketLock()" style="padding: 8px 16px; font-size: 0.9em; ${isAutoLocked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" title="${isAutoLocked ? 'Нельзя разблокировать: плей-офф начался' : (isManuallyLocked ? 'Разблокировать сетку' : 'Заблокировать сетку')}">
               ${isManuallyLocked ? '🔓' : '🔒'}
             </button>
@@ -1558,7 +1751,7 @@ async function cleanupBracketStages() {
   };
   
   const confirmCleanup = await showCustomConfirm(
-    `Эта операция удалит команды из всех последующих стадий после "${stageNames[firstStage]}".\n\nОстанется только первая стадия: ${stageNames[firstStage]}.\n\nПродолжить?`,
+    `Эта операция удалит команды из всех последующих стадий после "${stageNames[firstStage]}".\n\nОстанется только первая стадия: ${stageNames[firstStage]}.\n\n⚠️ ВНИМАНИЕ: Также будут удалены ВСЕ прогнозы пользователей на последующие стадии!\n\nПродолжить?`,
     'Очистка последующих стадий',
     '🧹'
   );
@@ -1568,6 +1761,7 @@ async function cleanupBracketStages() {
   try {
     // Очищаем локально - оставляем только первую стадию
     const firstStageIndex = stageOrder.indexOf(firstStage);
+    const stagesToDelete = [];
     
     if (currentBracket.matches) {
       Object.keys(currentBracket.matches).forEach(stageId => {
@@ -1575,6 +1769,33 @@ async function cleanupBracketStages() {
         // Удаляем все стадии после первой
         if (currentStageIndex > firstStageIndex) {
           delete currentBracket.matches[stageId];
+          stagesToDelete.push(stageId);
+        }
+      });
+    }
+    
+    // Удаляем прогнозы пользователей на последующие стадии из БД
+    if (stagesToDelete.length > 0) {
+      const deleteResponse = await fetch(`/api/brackets/${currentBracket.id}/predictions/cleanup`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser.username,
+          stages: stagesToDelete
+        })
+      });
+      
+      if (!deleteResponse.ok) {
+        throw new Error('Ошибка удаления прогнозов пользователей');
+      }
+      
+      const deleteResult = await deleteResponse.json();
+      console.log(`🗑️ Удалено ${deleteResult.deletedCount} прогнозов пользователей`);
+      
+      // Очищаем локальные прогнозы для удаленных стадий
+      stagesToDelete.forEach(stageId => {
+        if (bracketPredictions[stageId]) {
+          delete bracketPredictions[stageId];
         }
       });
     }

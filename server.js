@@ -2326,6 +2326,35 @@ app.get("/api/events/:eventId/brackets", (req, res) => {
   }
 });
 
+// Получить список файлов команд из папки names
+app.get("/api/team-files", (req, res) => {
+  try {
+    const namesDir = path.join(__dirname, 'names');
+    
+    // Проверяем существование папки
+    if (!fs.existsSync(namesDir)) {
+      return res.json([]);
+    }
+    
+    // Читаем файлы из папки
+    const files = fs.readdirSync(namesDir);
+    
+    // Фильтруем только нужные форматы
+    const teamFiles = files.filter(file => {
+      const ext = path.extname(file).toLowerCase();
+      return ['.json', '.txt', '.js'].includes(ext);
+    }).map(file => ({
+      name: file,
+      path: `/names/${file}`
+    }));
+    
+    res.json(teamFiles);
+  } catch (error) {
+    console.error("Ошибка получения списка файлов команд:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Получить сетку по ID
 app.get("/api/brackets/:bracketId", (req, res) => {
   try {
@@ -2496,6 +2525,42 @@ app.delete("/api/brackets/:bracketId/predictions/:userId/:stage/:matchIndex", (r
     res.json({ success: true, deleted: result.changes > 0 });
   } catch (error) {
     console.error("Ошибка удаления прогноза:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Удалить прогнозы пользователей на определенные стадии (для админа при очистке)
+app.delete("/api/brackets/:bracketId/predictions/cleanup", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { username, stages } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    if (!stages || !Array.isArray(stages) || stages.length === 0) {
+      return res.status(400).json({ error: "Не указаны стадии для удаления" });
+    }
+    
+    // Удаляем прогнозы для указанных стадий
+    const placeholders = stages.map(() => '?').join(',');
+    const result = db.prepare(`
+      DELETE FROM bracket_predictions 
+      WHERE bracket_id = ? AND stage IN (${placeholders})
+    `).run(bracketId, ...stages);
+    
+    console.log(`✅ Удалено ${result.changes} прогнозов для сетки ${bracketId} на стадиях: ${stages.join(', ')}`);
+    res.json({ success: true, deletedCount: result.changes });
+  } catch (error) {
+    console.error("Ошибка удаления прогнозов:", error);
     res.status(500).json({ error: error.message });
   }
 });

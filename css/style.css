@@ -3518,3 +3518,23 @@ input:checked + .slider:before {
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3) !important;
   transform: translateY(-2px);
 }
+
+/* Стили для выбора файла команд */
+.team-file-item {
+  transition: all 0.2s ease;
+}
+
+.team-file-item:hover {
+  background: rgba(90, 159, 212, 0.15) !important;
+  border-color: rgba(90, 159, 212, 0.4) !important;
+  transform: translateX(4px);
+}
+
+.team-file-item.selected {
+  background: rgba(90, 159, 212, 0.2) !important;
+  border-color: rgba(90, 159, 212, 0.5) !important;
+}
+
+.team-file-item.selected:hover {
+  background: rgba(90, 159, 212, 0.25) !important;
+}
