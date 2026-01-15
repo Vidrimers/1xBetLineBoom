@@ -9418,7 +9418,7 @@ async function showUserProfile(userId, username) {
 
     // Создаем простой overlay для модального окна
     const overlay = document.createElement("div");
-    overlay.className = "user-profile-overlay";
+    overlay.className = "user-profile-overlay modal";
     overlay.style.cssText =
       "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;";
     overlay.innerHTML = `
@@ -11013,3 +11013,69 @@ async function showUserBracketPredictionsInline(userId, username = 'Пользо
     }
   }
 }
+
+
+// Универсальная функция для открытия модалки с анимацией
+function openModalWithAnimation(modalId, triggerElement = null) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  
+  // Если передан элемент-триггер, вычисляем откуда анимировать
+  if (triggerElement) {
+    const rect = triggerElement.getBoundingClientRect();
+    const modalRect = modal.getBoundingClientRect();
+    
+    // Вычисляем смещение от центра модалки до триггера
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const triggerCenterX = rect.left + rect.width / 2;
+    const triggerCenterY = rect.top + rect.height / 2;
+    
+    const translateX = (triggerCenterX - centerX) / centerX * 100;
+    const translateY = (triggerCenterY - centerY) / centerY * 100;
+    
+    modal.style.setProperty('--modal-translate-x', `${translateX}%`);
+    modal.style.setProperty('--modal-translate-y', `${translateY}%`);
+    modal.style.setProperty('--modal-origin-x', `${(triggerCenterX / window.innerWidth) * 100}%`);
+    modal.style.setProperty('--modal-origin-y', `${(triggerCenterY / window.innerHeight) * 100}%`);
+  }
+  
+  modal.style.display = 'flex';
+  modal.classList.remove('closing');
+}
+
+// Универсальная функция для закрытия модалки с анимацией
+function closeModalWithAnimation(modalId, callback = null) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  
+  modal.classList.add('closing');
+  
+  setTimeout(() => {
+    modal.style.display = 'none';
+    modal.classList.remove('closing');
+    if (callback) callback();
+  }, 200);
+}
+
+// Автоматическая анимация для всех модалок
+document.addEventListener('DOMContentLoaded', () => {
+  // Наблюдаем за изменениями display у всех модалок
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        const target = mutation.target;
+        if (target.classList.contains('modal') && target.style.display === 'flex') {
+          // Модалка открывается - убираем класс closing если есть
+          target.classList.remove('closing');
+        }
+      }
+    });
+  });
+  
+  // Наблюдаем за всеми элементами с классом modal
+  document.querySelectorAll('.modal').forEach((modal) => {
+    observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
+  });
+});
+

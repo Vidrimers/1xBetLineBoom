@@ -3666,3 +3666,36 @@ input:checked + .slider:before {
 .bracket-team-slot-wrapper .bracket-team-slot {
   flex: 1;
 }
+
+
+/* Анимация модалок */
+.modal {
+  animation: modalFadeIn 0.3s ease-out;
+  transform-origin: var(--modal-origin-x, center) var(--modal-origin-y, center);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.3) translate(var(--modal-translate-x, 0), var(--modal-translate-y, 0));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+}
+
+.modal.closing {
+  animation: modalFadeOut 0.2s ease-in forwards;
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.3) translate(var(--modal-translate-x, 0), var(--modal-translate-y, 0));
+  }
+}
