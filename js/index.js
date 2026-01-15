@@ -3552,7 +3552,7 @@ async function loadTournamentParticipants(eventId, eventName) {
     document.getElementById("tournamentSection").style.display = "block";
     document.getElementById("tournamentTitle").innerText = `📋 ${eventName}`;
 
-    displayTournamentParticipants(participants, isLocked, eventId);
+    await displayTournamentParticipants(participants, isLocked, eventId);
   } catch (error) {
     console.error("Ошибка при загрузке участников турнира:", error);
     document.getElementById("tournamentParticipantsList").innerHTML =
@@ -3560,7 +3560,7 @@ async function loadTournamentParticipants(eventId, eventName) {
   }
 }
 
-function displayTournamentParticipants(
+async function displayTournamentParticipants(
   participants,
   isLocked = false,
   eventId = null
@@ -3573,6 +3573,17 @@ function displayTournamentParticipants(
     tournamentParticipantsList.innerHTML =
       '<div class="empty-message">Участники не найдены</div>';
     return;
+  }
+
+  // Проверяем наличие сетки плей-офф для этого турнира
+  let hasBracket = false;
+  if (eventId) {
+    try {
+      const brackets = await loadBracketsForEvent(eventId);
+      hasBracket = brackets && brackets.length > 0;
+    } catch (error) {
+      console.error('Ошибка проверки наличия сетки:', error);
+    }
   }
 
   // Сортируем по выигранным ставкам в турнире в убывающем порядке
@@ -3598,6 +3609,19 @@ function displayTournamentParticipants(
       // Добавляем класс 'winner' если это заблокированный турнир и первое место
       const winnerClass = isLocked && place === 1 ? "winner" : "";
 
+      // Кнопка сетки плей-офф показывается только если сетка существует
+      const bracketButton = hasBracket ? `
+      <button class="round-filter-btn bracket-filter-btn modal-bracket-filter-btn" 
+              onclick="event.stopPropagation(); showUserBracketPredictionsInline(${participant.id});" 
+              title="Сетка плей-офф"
+              style="margin-left: 10px; font-size: 0.9em;
+              background: transparent !important;
+              color: #b0b8c8 !important;
+              box-shadow: none !important;
+              border: 1px solid #3a7bd5 !important;">
+        Сетка плей-офф
+      </button>` : '';
+
       return `
     <div class="participant-item events-participant-item ${winnerClass}">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
@@ -3615,16 +3639,7 @@ function displayTournamentParticipants(
           <span>В ожидании: ${participant.event_pending || 0}</span>
         </div>
       </div>
-      <button class="round-filter-btn bracket-filter-btn modal-bracket-filter-btn" 
-              onclick="event.stopPropagation(); showUserBracketPredictionsInline(${participant.id});" 
-              title="Сетка плей-офф"
-              style="margin-left: 10px; font-size: 0.9em;
-              background: transparent !important;
-              color: #b0b8c8 !important;
-              box-shadow: none !important;
-              border: 1px solid #3a7bd5 !important;">
-        Сетка плей-офф
-      </button>
+      ${bracketButton}
       <div class="participant-points">очки
         <div class="participant-bets-count">${
           participant.event_won || 0

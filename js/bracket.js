@@ -211,6 +211,9 @@ function renderBracketModal(isClosed) {
             <button class="btn-secondary" onclick="toggleBracketLock()" style="padding: 8px 16px; font-size: 0.9em;" title="${isManuallyLocked ? 'Разблокировать сетку' : 'Заблокировать сетку'}">
               ${isManuallyLocked ? '🔓' : '🔒'}
             </button>
+            <button class="btn-danger" onclick="deleteBracket()" style="padding: 8px 16px; font-size: 0.9em;" title="Удалить сетку">
+              🗑️
+            </button>
           ` : ''}
           ${!isLocked && !isEditingBracket ? `
             
@@ -1247,6 +1250,52 @@ async function createBracket() {
     }
   } catch (error) {
     console.error(`Ошибка при ${isEdit ? 'обновлении' : 'создании'} сетки:`, error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(error.message, 'Ошибка', '❌');
+    } else {
+      alert(error.message);
+    }
+  }
+}
+
+
+// Удалить сетку (для админа)
+async function deleteBracket() {
+  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  
+  const confirmDelete = confirm(`Вы уверены, что хотите удалить сетку "${currentBracket.name}"?\n\nЭто действие удалит:\n- Саму сетку\n- Все прогнозы пользователей\n\nЭто действие необратимо!`);
+  
+  if (!confirmDelete) return;
+  
+  try {
+    const response = await fetch(`/api/admin/brackets/${currentBracket.id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Ошибка удаления сетки');
+    }
+    
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Сетка успешно удалена!', 'Успех', '✅');
+    } else {
+      alert('Сетка успешно удалена!');
+    }
+    
+    closeBracketModal();
+    
+    // Обновляем отображение матчей чтобы убрать кнопку сетки
+    if (typeof displayMatches === 'function') {
+      displayMatches();
+    }
+    
+  } catch (error) {
+    console.error('Ошибка при удалении сетки:', error);
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert(error.message, 'Ошибка', '❌');
     } else {

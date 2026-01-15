@@ -2692,6 +2692,57 @@ app.put("/api/admin/brackets/:bracketId/lock", (req, res) => {
   }
 });
 
+// Удалить сетку (только для админа)
+app.delete("/api/admin/brackets/:bracketId", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { username } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    // Проверяем существование сетки
+    const bracket = db.prepare("SELECT * FROM brackets WHERE id = ?").get(bracketId);
+    
+    if (!bracket) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    // Удаляем все прогнозы для этой сетки
+    const deletedPredictions = db.prepare(`
+      DELETE FROM bracket_predictions WHERE bracket_id = ?
+    `).run(bracketId);
+    
+    // Удаляем саму сетку
+    const result = db.prepare(`
+      DELETE FROM brackets WHERE id = ?
+    `).run(bracketId);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    console.log(`✅ Сетка ${bracketId} удалена (удалено прогнозов: ${deletedPredictions.changes})`);
+    
+    res.json({ 
+      success: true, 
+      bracket_id: bracketId,
+      deleted_predictions: deletedPredictions.changes
+    });
+  } catch (error) {
+    console.error("Ошибка удаления сетки:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/events/:eventId/award - Добавить награду за турнир (для админа)
 app.post("/api/events/:eventId/award", (req, res) => {
   try {
