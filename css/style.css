@@ -3277,7 +3277,7 @@ input:checked + .slider:before {
   display: flex;
   gap: 40px;
   min-width: min-content;
-  padding: 20px;
+  padding: 80px 20px 20px 20px;
   justify-content: flex-start;
   align-items: center;
 }
@@ -3301,11 +3301,15 @@ input:checked + .slider:before {
   padding-bottom: 6px;
   border-bottom: 2px solid rgba(90, 159, 212, 0.3);
   white-space: nowrap;
+  position: absolute;
+  left: 0;
+  right: 0;
+  transition: top 0.3s ease;
 }
 
 .bracket-matches-column {
   display: grid;
-  grid-template-rows: repeat(32, 38px);
+  grid-template-rows: repeat(32, 35px);
   gap: 0;
   flex: 1;
   position: relative;
@@ -3388,9 +3392,9 @@ input:checked + .slider:before {
   background: rgba(40, 44, 54, 0.6);
   border: 1px solid rgba(90, 159, 212, 0.3);
   border-radius: 5px;
-  padding: 5px 6px;
+  padding: 4px 6px;
   transition: all 0.3s ease;
-  min-height: 60px;
+  min-height: 55px;
   display: flex;
   flex-direction: column;
   justify-content: center;

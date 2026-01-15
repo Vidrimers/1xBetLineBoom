@@ -254,11 +254,11 @@ function renderBracketStages(isClosed) {
     html += `
       <div class="bracket-stage-column${stage.id === 'final' ? ' bracket-final' : ''}" data-stage-index="${stageIndex}">
         ${headerText ? `
-          <div style="text-align: center; color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px;">
+          <div class="bracket-header-text" style="text-align: center; color: #b0b8c8; font-size: 0.85em; position: absolute; left: 0; right: 0;">
             ${headerText}
           </div>
         ` : `
-          <div style="text-align: center; color: transparent; font-size: 0.85em; margin-bottom: 5px; visibility: hidden;">
+          <div class="bracket-header-text" style="text-align: center; color: transparent; font-size: 0.85em; visibility: hidden; position: absolute; left: 0; right: 0;">
             &nbsp;
           </div>
         `}
@@ -273,10 +273,41 @@ function renderBracketStages(isClosed) {
   
   html += '</div>'; // bracket-stages-wrapper
   
-  // После рендера нужно нарисовать линии
-  setTimeout(() => drawBracketConnections(), 0);
+  // После рендера нужно нарисовать линии и позиционировать заголовки
+  setTimeout(() => {
+    drawBracketConnections();
+    positionBracketTitles();
+  }, 0);
   
   return html;
+}
+
+// Позиционировать заголовки стадий на уровне первых карточек
+function positionBracketTitles() {
+  const stageColumns = document.querySelectorAll('.bracket-stage-column');
+  
+  stageColumns.forEach(column => {
+    const headerText = column.querySelector('.bracket-header-text');
+    const title = column.querySelector('.bracket-stage-title');
+    const firstMatch = column.querySelector('.bracket-match-vertical');
+    
+    if (!title || !firstMatch) return;
+    
+    const columnRect = column.getBoundingClientRect();
+    const matchRect = firstMatch.getBoundingClientRect();
+    const titleHeight = title.offsetHeight;
+    
+    // Позиционируем заголовок на 20px выше первой карточки
+    const titleTop = matchRect.top - columnRect.top - titleHeight - 20;
+    title.style.top = `${titleTop}px`;
+    
+    // Позиционируем текст "Кто проходит" на 15px выше заголовка
+    if (headerText) {
+      const headerHeight = headerText.offsetHeight;
+      const headerTop = titleTop - headerHeight - 15;
+      headerText.style.top = `${headerTop}px`;
+    }
+  });
 }
 
 // Нарисовать соединительные линии между карточками
