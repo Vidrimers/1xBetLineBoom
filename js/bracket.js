@@ -524,8 +524,11 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   const isWinner = prediction && prediction === teamName;
   const highlightClass = isWinner ? 'bracket-team-winner' : '';
   
-  // Режим редактирования для админа
-  if (isEditingBracket) {
+  // Режим редактирования для админа - только для начальных стадий (1/16 или 1/8)
+  const editableStages = ['round_of_16', 'round_of_8'];
+  const isEditableStage = editableStages.includes(stageId);
+  
+  if (isEditingBracket && isEditableStage) {
     // Получаем список уже выбранных команд
     const selectedTeams = getSelectedTeams();
     
@@ -649,7 +652,7 @@ async function deleteBracketPrediction(stageId, matchIndex) {
   }
 }
 
-// Продвинуть команду в следующую стадию
+// Продвинуть команду в следующую стадию (только локально, не сохраняя в общую структуру)
 async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamName) {
   // Определяем следующую стадию
   const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
@@ -669,7 +672,11 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
   // Определяем позицию команды в следующем матче (0 или 1)
   const teamPosition = currentMatchIndex % 2;
   
-  // Обновляем данные сетки для следующей стадии
+  // Обновляем данные сетки для следующей стадии ТОЛЬКО ЛОКАЛЬНО
+  // НЕ сохраняем в БД для последующих стадий (только для начальных стадий)
+  const editableStages = ['round_of_16', 'round_of_8'];
+  const shouldSaveToServer = editableStages.includes(nextStageId);
+  
   if (!currentBracket.matches) {
     currentBracket.matches = {};
   }
@@ -704,12 +711,14 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
       await saveSingleBracketPrediction(nextStageId, nextMatchIndex, nextStageWinner);
     } else {
       // Победитель больше не участвует - очищаем прогноз и все последующие
-      clearPredictionsFromStage(nextStageId, nextMatchIndex);
+      await clearPredictionsFromStage(nextStageId, nextMatchIndex, false, false, null);
     }
   }
   
-  // Сохраняем обновленную структуру сетки на сервер
-  await saveBracketStructure();
+  // Сохраняем обновленную структуру сетки на сервер ТОЛЬКО для начальных стадий
+  if (shouldSaveToServer) {
+    await saveBracketStructure();
+  }
 }
 
 // Очистить прогнозы начиная с указанной стадии и матча (каскадное удаление)
@@ -777,12 +786,24 @@ async function saveBracketStructure() {
   if (!currentUser || !currentBracket) return;
   
   try {
+    // Фильтруем только начальные стадии для сохранения
+    const editableStages = ['round_of_16', 'round_of_8'];
+    const filteredMatches = {};
+    
+    if (currentBracket.matches) {
+      Object.keys(currentBracket.matches).forEach(stageId => {
+        if (editableStages.includes(stageId)) {
+          filteredMatches[stageId] = currentBracket.matches[stageId];
+        }
+      });
+    }
+    
     const response = await fetch(`/api/brackets/${currentBracket.id}/structure`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id: currentUser.id,
-        matches: currentBracket.matches
+        matches: filteredMatches // Сохраняем только начальные стадии
       })
     });
     
@@ -790,7 +811,7 @@ async function saveBracketStructure() {
       throw new Error('Ошибка сохранения структуры сетки');
     }
     
-    console.log('✅ Структура сетки автоматически сохранена');
+    console.log('✅ Структура сетки (начальные стадии) автоматически сохранена');
   } catch (error) {
     console.error('Ошибка при сохранении структуры сетки:', error);
   }
