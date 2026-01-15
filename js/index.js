@@ -3599,14 +3599,14 @@ function displayTournamentParticipants(
       const winnerClass = isLocked && place === 1 ? "winner" : "";
 
       return `
-    <div class="participant-item events-participant-item ${winnerClass}" onclick="showTournamentParticipantBets(${
-        participant.id
-      }, '${participant.username.replace(/'/g, "\\'")}', ${eventId})">
+    <div class="participant-item events-participant-item ${winnerClass}">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
       <img src="${participant.avatar || "img/default-avatar.jpg"}" alt="${
         participant.username
       }" class="participant-avatar" />
-      <div class="participant-info">
+      <div class="participant-info" onclick="showTournamentParticipantBets(${
+        participant.id
+      }, '${participant.username.replace(/'/g, "\\'")}', ${eventId})" style="cursor: pointer; flex: 1;">
         <div class="participant-name">${participant.username}</div>
         <div class="participant-stats">
           <span>Ставок в турнире: ${participant.event_bets || 0} |</span>
@@ -3614,11 +3614,22 @@ function displayTournamentParticipants(
           <span>Неугаданных: ${participant.event_lost || 0} |</span>
           <span>В ожидании: ${participant.event_pending || 0}</span>
         </div>
-        </div>
-        <div class="participant-points">очки
-      <div class="participant-bets-count">${
-        participant.event_won || 0
-      }</div></div>
+      </div>
+      <button class="round-filter-btn bracket-filter-btn modal-bracket-filter-btn" 
+              onclick="event.stopPropagation(); showUserBracketPredictionsInline(${participant.id});" 
+              title="Сетка плей-офф"
+              style="margin-left: 10px; font-size: 0.9em;
+              background: transparent !important;
+              color: #b0b8c8 !important;
+              box-shadow: none !important;
+              border: 1px solid #3a7bd5 !important;">
+        Сетка плей-офф
+      </button>
+      <div class="participant-points">очки
+        <div class="participant-bets-count">${
+          participant.event_won || 0
+        }</div>
+      </div>
     </div>
   `;
     })
@@ -3740,7 +3751,50 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     const firstUnfinishedRound = sortedRounds.find(round => !completedRounds.has(round));
     const defaultActiveRound = firstUnfinishedRound || sortedRounds[0];
     
+    // Загружаем сетки для текущего турнира
+    let bracketsHTML = '';
+    if (currentEventId && typeof loadBracketsForEvent === 'function') {
+      try {
+        const brackets = await loadBracketsForEvent(currentEventId);
+        if (brackets && brackets.length > 0) {
+          brackets.forEach(bracket => {
+            const isClosedByDate = bracket.start_date && new Date(bracket.start_date) <= new Date();
+            const isManuallyLocked = bracket.is_locked === 1;
+            const isClosed = isClosedByDate || isManuallyLocked;
+            
+            // Получаем иконку турнира
+            let iconHtml = '';
+            if (isClosed) {
+              iconHtml = '🔒';
+            } else {
+              const currentEvent = events.find(e => e.id === currentEventId);
+              if (currentEvent && currentEvent.icon) {
+                if (currentEvent.icon.startsWith('img/') || currentEvent.icon.startsWith('http')) {
+                  iconHtml = `<img src="${currentEvent.icon}" alt="icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;" />`;
+                } else {
+                  iconHtml = currentEvent.icon;
+                }
+              } else {
+                iconHtml = '🏆';
+              }
+            }
+            
+            bracketsHTML += `
+              <button class="round-filter-btn bracket-filter-btn" 
+                      onclick="showUserBracketPredictions(${bracket.id}, ${participantId})" 
+                      title="${bracket.name}${isClosed ? ' (Ставки закрыты)' : ' (Ставки открыты)'}">
+                ${iconHtml} ${bracket.name}
+              </button>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки сеток для модалки турнира:', err);
+      }
+    }
+    
     roundsFilter.innerHTML =
+      bracketsHTML +
       `<button class="round-filter-btn" data-round="all" 
               onclick="filterTournamentParticipantBets('all')">
         Все туры
@@ -10474,5 +10528,123 @@ function setCustomSelectValue(selectId, value) {
   if (item) {
     hiddenInput.value = value;
     selectSelected.innerHTML = item.innerHTML;
+  }
+}
+
+
+// Показать прогнозы пользователя в сетке плей-офф
+async function showUserBracketPredictions(bracketId, userId) {
+  try {
+    // Загружаем прогнозы пользователя
+    const response = await fetch(`/api/brackets/${bracketId}/predictions/${userId}`);
+    if (!response.ok) {
+      throw new Error('Ошибка загрузки прогнозов');
+    }
+    
+    const predictions = await response.json();
+    
+    // Формируем HTML для отображения прогнозов
+    let html = '<div style="padding: 20px;">';
+    
+    if (predictions.length === 0) {
+      html += '<div class="empty-message">Пользователь не сделал прогнозов в этой сетке</div>';
+    } else {
+      // Группируем прогнозы по стадиям
+      const stageNames = {
+        'round_of_16': '1/16 финала',
+        'round_of_8': '1/8 финала',
+        'quarter_finals': '1/4 финала',
+        'semi_finals': '1/2 финала',
+        'final': 'Финал'
+      };
+      
+      const groupedPredictions = {};
+      predictions.forEach(p => {
+        if (!groupedPredictions[p.stage]) {
+          groupedPredictions[p.stage] = [];
+        }
+        groupedPredictions[p.stage].push(p);
+      });
+      
+      // Отображаем прогнозы по стадиям
+      const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+      stageOrder.forEach(stage => {
+        if (groupedPredictions[stage]) {
+          html += `<h3 style="color: #5a9fd4; margin-top: 20px; margin-bottom: 10px;">${stageNames[stage]}</h3>`;
+          html += '<div style="display: flex; flex-direction: column; gap: 8px;">';
+          
+          groupedPredictions[stage].forEach(p => {
+            html += `
+              <div style="background: rgba(40, 44, 54, 0.6); border: 1px solid rgba(90, 159, 212, 0.3); border-radius: 5px; padding: 10px;">
+                <div style="color: #5a9fd4; font-weight: 600;">Матч ${p.match_index + 1}</div>
+                <div style="color: #e0e6f0; margin-top: 5px;">Прогноз: <strong>${p.predicted_winner}</strong></div>
+              </div>
+            `;
+          });
+          
+          html += '</div>';
+        }
+      });
+    }
+    
+    html += '</div>';
+    
+    // Отображаем в контейнере ставок
+    const betsContainer = document.getElementById('tournamentParticipantBetsContainer');
+    if (betsContainer) {
+      betsContainer.innerHTML = html;
+    }
+    
+    // Обновляем активную кнопку
+    document.querySelectorAll("#tournamentRoundsFilterScroll .round-filter-btn").forEach(btn => {
+      btn.classList.remove("active");
+    });
+    document.querySelectorAll("#tournamentRoundsFilterScroll .bracket-filter-btn").forEach(btn => {
+      if (btn.onclick && btn.onclick.toString().includes(`showUserBracketPredictions(${bracketId}`)) {
+        btn.classList.add("active");
+      }
+    });
+    
+  } catch (error) {
+    console.error('Ошибка при загрузке прогнозов пользователя:', error);
+    const betsContainer = document.getElementById('tournamentParticipantBetsContainer');
+    if (betsContainer) {
+      betsContainer.innerHTML = '<div class="empty-message">Ошибка загрузки прогнозов</div>';
+    }
+  }
+}
+
+
+// Показать прогнозы пользователя в сетке (открыть модалку)
+async function showUserBracketPredictionsInline(userId) {
+  try {
+    // Находим сетку для текущего турнира
+    if (!currentEventId) {
+      alert('Сначала выберите турнир');
+      return;
+    }
+    
+    const brackets = await loadBracketsForEvent(currentEventId);
+    if (!brackets || brackets.length === 0) {
+      alert('Для этого турнира нет сетки плей-офф');
+      return;
+    }
+    
+    const bracket = brackets[0];
+    
+    // Открываем модалку ставок участника и показываем прогнозы сетки
+    const participant = document.querySelector(`.participant-item[onclick*="showTournamentParticipantBets(${userId}"]`);
+    if (participant) {
+      const username = participant.querySelector('.participant-name')?.textContent || 'Пользователь';
+      await showTournamentParticipantBets(userId, username, currentEventId);
+      
+      // После открытия модалки кликаем на кнопку сетки
+      setTimeout(() => {
+        showUserBracketPredictions(bracket.id, userId);
+      }, 100);
+    }
+  } catch (error) {
+    console.error('Ошибка при открытии прогнозов сетки:', error);
+    alert('Не удалось загрузить прогнозы сетки');
   }
 }
