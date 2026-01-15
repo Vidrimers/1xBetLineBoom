@@ -2422,6 +2422,47 @@ app.post("/api/brackets/:bracketId/predictions", (req, res) => {
   }
 });
 
+// Удалить прогноз пользователя
+app.delete("/api/brackets/:bracketId/predictions/:userId/:stage/:matchIndex", (req, res) => {
+  try {
+    const { bracketId, userId, stage, matchIndex } = req.params;
+    
+    // Проверяем, не закрыта ли сетка
+    const bracket = db
+      .prepare("SELECT * FROM brackets WHERE id = ?")
+      .get(bracketId);
+    
+    if (!bracket) {
+      return res.status(404).json({ error: "Сетка не найдена" });
+    }
+    
+    // Проверяем ручную блокировку
+    if (bracket.is_locked === 1) {
+      return res.status(403).json({ error: "Сетка заблокирована администратором" });
+    }
+    
+    // Проверяем автоматическую блокировку по дате
+    const startDate = new Date(bracket.start_date);
+    const now = new Date();
+    
+    if (now >= startDate) {
+      return res.status(403).json({ error: "Ставки в сетке закрыты" });
+    }
+    
+    // Удаляем прогноз
+    const result = db.prepare(`
+      DELETE FROM bracket_predictions 
+      WHERE bracket_id = ? AND user_id = ? AND stage = ? AND match_index = ?
+    `).run(bracketId, userId, stage, matchIndex);
+    
+    console.log(`✅ Прогноз пользователя ${userId} для сетки ${bracketId} (${stage}, матч ${matchIndex}) удален`);
+    res.json({ success: true, deleted: result.changes > 0 });
+  } catch (error) {
+    console.error("Ошибка удаления прогноза:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Создать сетку (только для админа)
 app.post("/api/admin/brackets", (req, res) => {
   try {

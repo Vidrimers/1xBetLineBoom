@@ -512,6 +512,28 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
     return;
   }
   
+  // Проверяем, выбрана ли уже эта команда
+  const currentPrediction = bracketPredictions[stageId]?.[matchIndex];
+  
+  if (currentPrediction === teamName) {
+    // Повторный клик на ту же команду - удаляем ставку
+    if (!bracketPredictions[stageId]) {
+      bracketPredictions[stageId] = {};
+    }
+    delete bracketPredictions[stageId][matchIndex];
+    
+    // Обновляем визуальное отображение (убираем подсветку)
+    updateBracketMatchDisplay(stageId, matchIndex, null);
+    
+    // Очищаем все последующие стадии
+    clearPredictionsFromStage(stageId, matchIndex);
+    
+    // Удаляем прогноз из БД
+    await deleteBracketPrediction(stageId, matchIndex);
+    
+    return;
+  }
+  
   // Сохраняем выбор в локальном объекте
   if (!bracketPredictions[stageId]) {
     bracketPredictions[stageId] = {};
@@ -526,6 +548,25 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
   
   // Автоматически сохраняем прогноз на сервер
   await saveSingleBracketPrediction(stageId, matchIndex, teamName);
+}
+
+// Удалить прогноз из БД
+async function deleteBracketPrediction(stageId, matchIndex) {
+  if (!currentUser || !currentBracket) return;
+  
+  try {
+    const response = await fetch(`/api/brackets/${currentBracket.id}/predictions/${currentUser.id}/${stageId}/${matchIndex}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Ошибка удаления прогноза');
+    }
+    
+    console.log('✅ Прогноз удален');
+  } catch (error) {
+    console.error('Ошибка при удалении прогноза:', error);
+  }
 }
 
 // Продвинуть команду в следующую стадию
