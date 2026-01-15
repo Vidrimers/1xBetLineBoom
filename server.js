@@ -2049,6 +2049,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
         u.id,
         u.username,
         u.avatar,
+        u.show_bets,
         COUNT(DISTINCT b.id) as event_bets,
         SUM(CASE 
           WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
@@ -2115,7 +2116,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
       INNER JOIN matches m ON b.match_id = m.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       WHERE m.event_id = ?
-      GROUP BY u.id, u.username, u.avatar
+      GROUP BY u.id, u.username, u.avatar, u.show_bets
       HAVING COUNT(DISTINCT b.id) > 0
       ORDER BY event_won DESC, event_bets DESC
     `
@@ -2360,10 +2361,46 @@ app.get("/api/brackets/:bracketId", (req, res) => {
 app.get("/api/brackets/:bracketId/predictions/:userId", (req, res) => {
   try {
     const { bracketId, userId } = req.params;
+    const { viewerId } = req.query; // ID пользователя, который просматривает
+    
+    // Если просматривает не владелец прогнозов, проверяем настройки приватности
+    if (viewerId && parseInt(viewerId) !== parseInt(userId)) {
+      const targetUser = db
+        .prepare("SELECT show_bets FROM users WHERE id = ?")
+        .get(userId);
+      
+      if (!targetUser) {
+        return res.status(404).json({ error: "Пользователь не найден" });
+      }
+      
+      const showBets = targetUser.show_bets || 'always';
+      
+      // Если настройка 'after_start', проверяем дату начала сетки
+      if (showBets === 'after_start') {
+        const bracket = db
+          .prepare("SELECT start_date FROM brackets WHERE id = ?")
+          .get(bracketId);
+        
+        if (bracket && bracket.start_date) {
+          const startDate = new Date(bracket.start_date);
+          const now = new Date();
+          
+          // Если сетка еще не началась, возвращаем пустой массив
+          if (now < startDate) {
+            return res.json({ 
+              predictions: [], 
+              hidden: true, 
+              message: "Пользователь скрыл свои прогнозы до начала плей-офф" 
+            });
+          }
+        }
+      }
+    }
+    
     const predictions = db
       .prepare("SELECT * FROM bracket_predictions WHERE bracket_id = ? AND user_id = ?")
       .all(bracketId, userId);
-    res.json(predictions);
+    res.json({ predictions, hidden: false });
   } catch (error) {
     console.error("Ошибка получения прогнозов:", error);
     res.status(500).json({ error: error.message });

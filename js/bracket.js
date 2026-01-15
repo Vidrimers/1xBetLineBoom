@@ -3,6 +3,7 @@
 let currentBracket = null;
 let bracketPredictions = {};
 let isEditingBracket = false;
+let isViewingOtherUserBracket = false; // Флаг просмотра чужих прогнозов
 let allTeams = [];
 
 // Структура сетки плей-офф
@@ -105,9 +106,30 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     // Загружаем прогнозы пользователя (целевого или текущего)
     if (targetUserId) {
-      const predictionsResponse = await fetch(`/api/brackets/${bracketId}/predictions/${targetUserId}`);
+      // Передаем viewerId для проверки настроек приватности
+      const currentUserId = currentUser ? currentUser.id : null;
+      const url = `/api/brackets/${bracketId}/predictions/${targetUserId}${currentUserId ? `?viewerId=${currentUserId}` : ''}`;
+      const predictionsResponse = await fetch(url);
+      
       if (predictionsResponse.ok) {
-        const predictions = await predictionsResponse.json();
+        const data = await predictionsResponse.json();
+        
+        // Проверяем, скрыты ли прогнозы
+        if (data.hidden) {
+          // Показываем сообщение и закрываем модалку
+          if (typeof showCustomAlert === 'function') {
+            await showCustomAlert(
+              data.message || 'Пользователь скрыл свои прогнозы',
+              'Прогнозы скрыты',
+              '🔒'
+            );
+          } else {
+            alert(data.message || 'Пользователь скрыл свои прогнозы');
+          }
+          return;
+        }
+        
+        const predictions = data.predictions || data; // Поддержка старого формата
         bracketPredictions = {};
         predictions.forEach(p => {
           bracketPredictions[p.stage] = bracketPredictions[p.stage] || {};
@@ -125,8 +147,10 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     // Если смотрим прогнозы другого пользователя - всегда режим просмотра
     const isViewMode = viewUserId && viewUserId !== (currentUser ? currentUser.id : null);
+    isViewingOtherUserBracket = isViewMode; // Устанавливаем глобальный флаг
     
-    renderBracketModal(isClosed || isViewMode);
+    // Передаем только реальный статус закрытия, режим просмотра определяется через флаг
+    renderBracketModal(isClosed);
     const modal = document.getElementById('bracketModal');
     if (modal) {
       modal.style.display = 'flex';
@@ -187,36 +211,45 @@ function renderBracketModal(isClosed) {
   if (!modal) return;
   
   const isManuallyLocked = currentBracket.is_locked === 1;
-  const isAutoLocked = isClosed && !isManuallyLocked;
-  const isLocked = isClosed || isManuallyLocked;
+  const isAutoLocked = isClosed && !isManuallyLocked && !isViewingOtherUserBracket;
+  const isLocked = isClosed || isManuallyLocked || isViewingOtherUserBracket; // Блокируем при просмотре чужих прогнозов
   
   let statusBadge = '';
   let lockDateText = '';
   
-  if (isManuallyLocked) {
-    statusBadge = '<div style="color: #ff9800; font-size: 0.9em;">🔒 Заблокировано админом</div>';
-  } else if (isAutoLocked) {
-    statusBadge = '<div style="color: #f44336; font-size: 0.9em;">🔒 Ставки закрыты</div>';
-  } else {
-    statusBadge = '<div style="color: #4caf50; font-size: 0.9em;">✅ Ставки открыты</div>';
-    
-    // Форматируем дату и время блокировки
-    if (currentBracket.start_date) {
-      const lockDate = new Date(currentBracket.start_date);
-      const dateStr = lockDate.toLocaleDateString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-      const timeStr = lockDate.toLocaleTimeString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      lockDateText = `<div style="color: #b0b8c8; font-size: 0.75em; margin-top: 2px;">(будет заблокировано ${dateStr} в ${timeStr})</div>`;
+  // Не показываем статус ставок при просмотре чужих прогнозов
+  if (!isViewingOtherUserBracket) {
+    if (isManuallyLocked) {
+      statusBadge = '<div style="color: #ff9800; font-size: 0.9em;">🔒 Заблокировано админом</div>';
+    } else if (isAutoLocked) {
+      statusBadge = '<div style="color: #f44336; font-size: 0.9em;">🔒 Ставки закрыты</div>';
+    } else {
+      statusBadge = '<div style="color: #4caf50; font-size: 0.9em;">✅ Ставки открыты</div>';
+      
+      // Форматируем дату и время блокировки
+      if (currentBracket.start_date) {
+        const lockDate = new Date(currentBracket.start_date);
+        const dateStr = lockDate.toLocaleDateString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        const timeStr = lockDate.toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        lockDateText = `<div style="color: #b0b8c8; font-size: 0.75em; margin-top: 2px;">(будет заблокировано ${dateStr} в ${timeStr})</div>`;
+      }
     }
+  } else {
+    // В режиме просмотра чужих прогнозов показываем соответствующий статус
+    statusBadge = '<div style="color: #5a9fd4; font-size: 0.9em;">👁️ Режим просмотра</div>';
   }
   
   const isAdmin = currentUser && currentUser.isAdmin;
+  
+  // Скрываем кнопки админа если просматриваем чужие прогнозы
+  const showAdminButtons = isAdmin && !isViewingOtherUserBracket;
   
   // Формируем иконку турнира для заголовка
   let eventIconHtml = '🏆';
@@ -237,7 +270,7 @@ function renderBracketModal(isClosed) {
           ${lockDateText}
         </div>
         <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; align-items: center;">
-          ${isAdmin ? `
+          ${showAdminButtons ? `
             <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
               ✏️
             </button>
@@ -877,6 +910,7 @@ function closeBracketModal() {
   currentBracket = null;
   bracketPredictions = {};
   isEditingBracket = false;
+  isViewingOtherUserBracket = false; // Сбрасываем флаг просмотра чужих прогнозов
 }
 
 // Переключить режим редактирования сетки

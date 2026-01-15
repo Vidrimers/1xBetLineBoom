@@ -3610,16 +3610,20 @@ async function displayTournamentParticipants(
       const winnerClass = isLocked && place === 1 ? "winner" : "";
 
       // Кнопка сетки плей-офф показывается только если сетка существует
+      // Проверяем настройки приватности пользователя
+      const showBets = participant.show_bets || 'always';
+      const isPrivate = showBets === 'after_start';
+      
       const bracketButton = hasBracket ? `
       <button class="round-filter-btn bracket-filter-btn modal-bracket-filter-btn" 
               onclick="event.stopPropagation(); showUserBracketPredictionsInline(${participant.id}, '${participant.username.replace(/'/g, "\\'")}');" 
-              title="Сетка плей-офф"
+              title="${isPrivate ? 'Сетка плей-офф (прогнозы могут быть скрыты)' : 'Сетка плей-офф'}"
               style="margin-left: 10px; font-size: 0.9em;
               background: transparent !important;
               color: #b0b8c8 !important;
               box-shadow: none !important;
               border: 1px solid #3a7bd5 !important;">
-        Сетка плей-офф
+        ${isPrivate ? '🔒 ' : ''}Сетка плей-офф
       </button>` : '';
 
       return `
@@ -10550,13 +10554,33 @@ function setCustomSelectValue(selectId, value) {
 // Показать прогнозы пользователя в сетке плей-офф
 async function showUserBracketPredictions(bracketId, userId) {
   try {
-    // Загружаем прогнозы пользователя
-    const response = await fetch(`/api/brackets/${bracketId}/predictions/${userId}`);
+    // Загружаем прогнозы пользователя с передачей viewerId
+    const currentUserId = currentUser ? currentUser.id : null;
+    const url = `/api/brackets/${bracketId}/predictions/${userId}${currentUserId ? `?viewerId=${currentUserId}` : ''}`;
+    const response = await fetch(url);
+    
     if (!response.ok) {
       throw new Error('Ошибка загрузки прогнозов');
     }
     
-    const predictions = await response.json();
+    const data = await response.json();
+    
+    // Проверяем, скрыты ли прогнозы
+    if (data.hidden) {
+      const betsContainer = document.getElementById('tournamentParticipantBetsContainer');
+      if (betsContainer) {
+        betsContainer.innerHTML = `
+          <div style="padding: 40px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+            <div style="font-size: 18px; color: #b0b8c8; margin-bottom: 10px;">Прогнозы скрыты</div>
+            <div style="font-size: 14px; color: #888;">${data.message || 'Пользователь скрыл свои прогнозы до начала плей-офф'}</div>
+          </div>
+        `;
+      }
+      return;
+    }
+    
+    const predictions = data.predictions || data; // Поддержка старого формата
     
     // Формируем HTML для отображения прогнозов
     let html = '<div style="padding: 20px;">';
