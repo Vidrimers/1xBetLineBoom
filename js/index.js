@@ -3612,7 +3612,7 @@ async function displayTournamentParticipants(
       // Кнопка сетки плей-офф показывается только если сетка существует
       const bracketButton = hasBracket ? `
       <button class="round-filter-btn bracket-filter-btn modal-bracket-filter-btn" 
-              onclick="event.stopPropagation(); showUserBracketPredictionsInline(${participant.id});" 
+              onclick="event.stopPropagation(); showUserBracketPredictionsInline(${participant.id}, '${participant.username.replace(/'/g, "\\'")}');" 
               title="Сетка плей-офф"
               style="margin-left: 10px; font-size: 0.9em;
               background: transparent !important;
@@ -10631,7 +10631,7 @@ async function showUserBracketPredictions(bracketId, userId) {
 
 
 // Показать прогнозы пользователя в сетке (открыть модалку)
-async function showUserBracketPredictionsInline(userId) {
+async function showUserBracketPredictionsInline(userId, username = 'Пользователь') {
   try {
     // Находим сетку для текущего турнира
     if (!currentEventId) {
@@ -10647,17 +10647,11 @@ async function showUserBracketPredictionsInline(userId) {
     
     const bracket = brackets[0];
     
-    // Открываем модалку ставок участника и показываем прогнозы сетки
-    const participant = document.querySelector(`.participant-item[onclick*="showTournamentParticipantBets(${userId}"]`);
-    if (participant) {
-      const username = participant.querySelector('.participant-name')?.textContent || 'Пользователь';
-      await showTournamentParticipantBets(userId, username, currentEventId);
-      
-      // После открытия модалки кликаем на кнопку сетки
-      setTimeout(() => {
-        showUserBracketPredictions(bracket.id, userId);
-      }, 100);
-    }
+    // Сохраняем username для использования в модалке
+    window.viewingUserBracketName = username;
+    
+    // Напрямую открываем модалку сетки с прогнозами пользователя
+    await openBracketModal(bracket.id, userId);
   } catch (error) {
     console.error('Ошибка при открытии прогнозов сетки:', error);
     alert('Не удалось загрузить прогнозы сетки');

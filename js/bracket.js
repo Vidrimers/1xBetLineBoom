@@ -67,8 +67,11 @@ async function loadBracketsForEvent(eventId) {
 }
 
 // Открыть модальное окно сетки
-async function openBracketModal(bracketId) {
-  if (!currentUser) {
+async function openBracketModal(bracketId, viewUserId = null) {
+  // viewUserId - ID пользователя, чьи прогнозы нужно показать (если null - показываем текущего пользователя)
+  const targetUserId = viewUserId || (currentUser ? currentUser.id : null);
+  
+  if (!currentUser && !viewUserId) {
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
     } else {
@@ -100,15 +103,19 @@ async function openBracketModal(bracketId) {
     }
     currentBracket.eventIcon = eventIcon;
     
-    // Загружаем прогнозы пользователя
-    const predictionsResponse = await fetch(`/api/brackets/${bracketId}/predictions/${currentUser.id}`);
-    if (predictionsResponse.ok) {
-      const predictions = await predictionsResponse.json();
-      bracketPredictions = {};
-      predictions.forEach(p => {
-        bracketPredictions[p.stage] = bracketPredictions[p.stage] || {};
-        bracketPredictions[p.stage][p.match_index] = p.predicted_winner;
-      });
+    // Загружаем прогнозы пользователя (целевого или текущего)
+    if (targetUserId) {
+      const predictionsResponse = await fetch(`/api/brackets/${bracketId}/predictions/${targetUserId}`);
+      if (predictionsResponse.ok) {
+        const predictions = await predictionsResponse.json();
+        bracketPredictions = {};
+        predictions.forEach(p => {
+          bracketPredictions[p.stage] = bracketPredictions[p.stage] || {};
+          bracketPredictions[p.stage][p.match_index] = p.predicted_winner;
+        });
+      } else {
+        bracketPredictions = {};
+      }
     } else {
       bracketPredictions = {};
     }
@@ -116,11 +123,37 @@ async function openBracketModal(bracketId) {
     // Проверяем, закрыта ли сетка для ставок
     const isClosed = isBracketClosed(currentBracket);
     
-    renderBracketModal(isClosed);
+    // Если смотрим прогнозы другого пользователя - всегда режим просмотра
+    const isViewMode = viewUserId && viewUserId !== (currentUser ? currentUser.id : null);
+    
+    renderBracketModal(isClosed || isViewMode);
     const modal = document.getElementById('bracketModal');
     if (modal) {
       modal.style.display = 'flex';
       modal.classList.add('active');
+      
+      // Если режим просмотра чужих прогнозов - добавляем заголовок
+      if (isViewMode) {
+        const modalTitle = modal.querySelector('.modal-header h2');
+        if (modalTitle) {
+          // Используем сохраненное имя пользователя
+          const username = window.viewingUserBracketName || 'Пользователь';
+          
+          // Формируем иконку турнира для заголовка
+          let eventIconHtml = '🏆';
+          if (currentBracket.eventIcon) {
+            if (currentBracket.eventIcon.startsWith('img/') || currentBracket.eventIcon.startsWith('http')) {
+              eventIconHtml = `<img src="${currentBracket.eventIcon}" alt="icon" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;" />`;
+            } else {
+              eventIconHtml = currentBracket.eventIcon + ' ';
+            }
+          }
+          
+          modalTitle.innerHTML = `${eventIconHtml}Прогнозы: ${username}`;
+          // Очищаем после использования
+          window.viewingUserBracketName = null;
+        }
+      }
     }
     
     if (typeof lockBodyScroll === 'function') {
