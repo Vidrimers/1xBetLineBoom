@@ -3547,12 +3547,23 @@ async function loadTournamentParticipants(eventId, eventName) {
     // Сохраняем eventId для дальнейшего использования
     window.currentEventId = eventId;
 
+    // Загружаем информацию о сетке для проверки даты начала
+    let bracketStartDate = null;
+    try {
+      const brackets = await loadBracketsForEvent(eventId);
+      if (brackets && brackets.length > 0) {
+        bracketStartDate = brackets[0].start_date;
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки информации о сетке:', error);
+    }
+
     // Скрываем section с сеткой турниров и показываем участников турнира
     document.getElementById("tournamentsSection").style.display = "none";
     document.getElementById("tournamentSection").style.display = "block";
     document.getElementById("tournamentTitle").innerText = `📋 ${eventName}`;
 
-    await displayTournamentParticipants(participants, isLocked, eventId);
+    await displayTournamentParticipants(participants, isLocked, eventId, bracketStartDate);
   } catch (error) {
     console.error("Ошибка при загрузке участников турнира:", error);
     document.getElementById("tournamentParticipantsList").innerHTML =
@@ -3563,7 +3574,8 @@ async function loadTournamentParticipants(eventId, eventName) {
 async function displayTournamentParticipants(
   participants,
   isLocked = false,
-  eventId = null
+  eventId = null,
+  bracketStartDate = null
 ) {
   const tournamentParticipantsList = document.getElementById(
     "tournamentParticipantsList"
@@ -3581,9 +3593,21 @@ async function displayTournamentParticipants(
     try {
       const brackets = await loadBracketsForEvent(eventId);
       hasBracket = brackets && brackets.length > 0;
+      // Если дата не была передана, получаем её из загруженной сетки
+      if (!bracketStartDate && hasBracket) {
+        bracketStartDate = brackets[0].start_date;
+      }
     } catch (error) {
       console.error('Ошибка проверки наличия сетки:', error);
     }
+  }
+
+  // Проверяем, началась ли сетка плей-офф
+  let isBracketStarted = false;
+  if (bracketStartDate) {
+    const startDate = new Date(bracketStartDate);
+    const now = new Date();
+    isBracketStarted = now >= startDate;
   }
 
   // Сортируем по выигранным ставкам в турнире в убывающем порядке
@@ -3612,12 +3636,12 @@ async function displayTournamentParticipants(
       // Кнопка сетки плей-офф показывается только если сетка существует
       // Проверяем настройки приватности пользователя
       const showBets = participant.show_bets || 'always';
-      const isPrivate = showBets === 'after_start';
+      const isPrivate = showBets === 'after_start' && !isBracketStarted; // Показываем замок только если сетка еще не началась
       
       const bracketButton = hasBracket ? `
       <button class="round-filter-btn bracket-filter-btn modal-bracket-filter-btn" 
               onclick="event.stopPropagation(); showUserBracketPredictionsInline(${participant.id}, '${participant.username.replace(/'/g, "\\'")}');" 
-              title="${isPrivate ? 'Сетка плей-офф (прогнозы могут быть скрыты)' : 'Сетка плей-офф'}"
+              title="${isPrivate ? 'Сетка плей-офф (прогнозы скрыты до начала)' : 'Сетка плей-офф'}"
               style="margin-left: 10px; font-size: 0.9em;
               background: transparent !important;
               color: #b0b8c8 !important;
