@@ -703,12 +703,13 @@ function renderBracketStages(isClosed, showAdminButtons = false) {
   
   // После рендера нужно нарисовать линии и позиционировать заголовки
   // Только для экранов от 600px и выше
+  // Увеличиваем задержку чтобы дождаться завершения анимации модалки
   setTimeout(() => {
     if (window.innerWidth >= 600) {
       drawBracketConnections();
       positionBracketTitles();
     }
-  }, 0);
+  }, 350); // 300ms анимация + 50ms запас
   
   return html;
 }
