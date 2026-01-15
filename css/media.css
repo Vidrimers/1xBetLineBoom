@@ -2483,10 +2483,6 @@
     gap: 15px;
   }
 
-  .bracket-stage-column {
-    min-width: 160px;
-  }
-
   .bracket-connections-svg {
     width: calc(160px + 12px);
   }
@@ -2508,6 +2504,13 @@
 
   .bracket-stage-title {
     font-size: 0.8em;
+  }
+}
+
+/* От 600px и выше - увеличиваем верхний padding */
+@media (min-width: 600px) {
+  .bracket-modal-content .bracket-stages-wrapper {
+    padding-top: 80px !important;
   }
 }
 
@@ -2597,9 +2600,109 @@
   .bracket-team-slot-wrapper {
     gap: 6px;
   }
+
+  /* Компактный хедер для сетки */
+  .bracket-modal-content .modal-header {
+    padding: 6px 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .bracket-modal-content .modal-header h2 {
+    font-size: 0.85em;
+    margin: 0;
+  }
+
+  .bracket-modal-content .modal-header > div:first-child {
+    flex: 1 1 100%;
+    margin-bottom: 4px;
+  }
+
+  .bracket-modal-content .modal-header > div:last-child {
+    position: static;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .bracket-modal-content .modal-header button {
+    padding: 4px 6px !important;
+    font-size: 0.7em !important;
+  }
+
+  .bracket-modal-content .modal-close {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 18px !important;
+    padding: 0 !important;
+  }
+
+  /* Компактная статистика */
+  .bracket-modal-content [style*="font-size: 0.85em"] {
+    font-size: 0.7em !important;
+  }
+
+  .bracket-modal-content [style*="font-size: 0.9em"] {
+    font-size: 0.75em !important;
+  }
+
+  .bracket-modal-content [style*="font-size: 0.75em"] {
+    font-size: 0.65em !important;
+  }
 }
 
-/* Меньше 600px - вертикальная раскладка на флексах БЕЗ линий */
+/* От 700px до 900px - компактный хедер */
+@media (max-width: 900px) and (min-width: 700px) {
+  .bracket-modal-content .modal-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .bracket-modal-content .modal-header h2 {
+    font-size: 0.9em;
+    margin: 0;
+  }
+
+  .bracket-modal-content .modal-header > div:first-child {
+    flex: 1 1 100%;
+    margin-bottom: 6px;
+  }
+
+  .bracket-modal-content .modal-header > div:last-child {
+    position: static;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .bracket-modal-content .modal-header button {
+    padding: 5px 8px !important;
+    font-size: 0.75em !important;
+  }
+
+  .bracket-modal-content .modal-close {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 20px !important;
+    padding: 0 !important;
+  }
+
+  /* Компактная статистика */
+  .bracket-modal-content [style*="font-size: 0.85em"] {
+    font-size: 0.75em !important;
+  }
+
+  .bracket-modal-content [style*="font-size: 0.9em"] {
+    font-size: 0.8em !important;
+  }
+}
+
+/* Меньше 600px - две карточки в ряд */
 @media (max-width: 599px) {
   .bracket-modal-content {
     width: 99vw;
@@ -2612,7 +2715,7 @@
     overflow-y: auto;
   }
 
-  /* Переключаем на вертикальную раскладку */
+  /* Переключаем на вертикальную раскладку стадий */
   .bracket-stages-wrapper {
     flex-direction: column !important;
     gap: 20px;
@@ -2631,16 +2734,49 @@
     min-width: 100% !important;
   }
 
-  /* Убираем grid, используем flex */
+  /* Используем grid с двумя колонками для матчей */
   .bracket-matches-column {
-    display: flex !important;
-    flex-direction: column;
-    gap: 10px;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto !important;
+    gap: 12px !important;
   }
 
-  /* Сбрасываем все grid-row позиционирование */
+  /* Для финала - центрируем контейнер */
+  .bracket-stage-column[data-stage-index="4"] .bracket-matches-column,
+  .bracket-final .bracket-matches-column {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+  }
+
+  /* Финал - одна карточка по центру */
+  .bracket-match-vertical[data-stage="final"] {
+    grid-column: auto !important;
+    max-width: 400px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Сбрасываем ВСЕ grid-row позиционирование */
   .bracket-stage-column .bracket-match-vertical {
     grid-row: auto !important;
+    grid-column: auto !important;
+  }
+
+  /* Сбрасываем позиционирование для всех стадий */
+  .bracket-stages-wrapper[data-start-stage] .bracket-stage-column .bracket-match-vertical {
+    grid-row: auto !important;
+    grid-column: auto !important;
+  }
+
+  .bracket-stage-column:nth-child(1) .bracket-match-vertical,
+  .bracket-stage-column:nth-child(2) .bracket-match-vertical,
+  .bracket-stage-column:nth-child(3) .bracket-match-vertical,
+  .bracket-stage-column:nth-child(4) .bracket-match-vertical,
+  .bracket-stage-column:nth-child(5) .bracket-match-vertical {
+    grid-row: auto !important;
+    grid-column: auto !important;
   }
 
   /* Убираем SVG линии */
@@ -2668,37 +2804,37 @@
 
   /* Карточки матчей */
   .bracket-match-vertical {
-    min-height: auto;
-    padding: 8px;
+    min-height: auto !important;
+    padding: 8px !important;
   }
 
   .bracket-match-teams-vertical {
-    gap: 6px;
+    gap: 6px !important;
   }
 
   .bracket-team-slot {
-    padding: 6px 8px;
-    min-height: 32px;
-    font-size: 0.9em;
+    padding: 6px 7px !important;
+    min-height: 30px !important;
+    font-size: 0.85em !important;
   }
 
   .bracket-team-name {
-    font-size: 0.85em;
+    font-size: 0.8em !important;
   }
 
   /* Радиокнопки для админа */
   .bracket-team-slot-wrapper {
-    gap: 8px;
+    gap: 6px;
   }
 
   .bracket-radio-custom {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .bracket-radio:checked + .bracket-radio-custom::after {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
   }
 
   /* Кнопки в хедере модалки */
