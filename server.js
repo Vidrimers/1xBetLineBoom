@@ -2657,15 +2657,33 @@ app.put("/api/brackets/:bracketId/structure", (req, res) => {
       }
     }
     
-    // Объединяем с новыми данными (новые данные имеют приоритет)
-    const mergedMatches = { ...currentMatches, ...matches };
+    // Получаем информацию о сетке для определения начальной стадии
+    const bracketInfo = db.prepare("SELECT start_stage FROM brackets WHERE id = ?").get(bracketId);
     
-    // Сохраняем обновленную структуру
+    // Определяем редактируемую стадию из БД
+    const editableStages = bracketInfo && bracketInfo.start_stage ? [bracketInfo.start_stage] : ['round_of_16'];
+    const filteredMatches = {};
+    
+    // Сохраняем только начальные стадии из новых данных
+    Object.keys(matches).forEach(stageId => {
+      if (editableStages.includes(stageId)) {
+        filteredMatches[stageId] = matches[stageId];
+      }
+    });
+    
+    // Также сохраняем начальные стадии из старых данных, если их нет в новых
+    Object.keys(currentMatches).forEach(stageId => {
+      if (editableStages.includes(stageId) && !filteredMatches[stageId]) {
+        filteredMatches[stageId] = currentMatches[stageId];
+      }
+    });
+    
+    // Сохраняем только отфильтрованную структуру (без последующих стадий)
     const result = db.prepare(`
       UPDATE brackets 
       SET matches = ?
       WHERE id = ?
-    `).run(JSON.stringify(mergedMatches), bracketId);
+    `).run(JSON.stringify(filteredMatches), bracketId);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: "Сетка не найдена" });

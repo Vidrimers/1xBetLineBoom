@@ -15,6 +15,37 @@ const BRACKET_STAGES = [
   { id: 'final', name: '🏆 Финал', matches: 1 }
 ];
 
+// Получить первую заполненную стадию сетки
+function getFirstFilledStage(matches) {
+  if (!matches) return null;
+  
+  const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+  
+  for (const stageId of stageOrder) {
+    if (matches[stageId] && Object.keys(matches[stageId]).length > 0) {
+      console.log(`🔍 Первая заполненная стадия: ${stageId}`);
+      return stageId;
+    }
+  }
+  
+  return null;
+}
+
+// Получить список редактируемых стадий (только начальная стадия из БД)
+function getEditableStages(bracket) {
+  // Используем start_stage из БД, если есть
+  if (bracket && bracket.start_stage) {
+    console.log(`✏️ Редактируемая стадия из БД: ${bracket.start_stage}`);
+    return [bracket.start_stage];
+  }
+  
+  // Если start_stage не указана, определяем по первой заполненной стадии
+  const firstStage = getFirstFilledStage(bracket?.matches);
+  const result = firstStage ? [firstStage] : ['round_of_16']; // По умолчанию только 1/16
+  console.log(`✏️ Редактируемые стадии (определено автоматически):`, result);
+  return result;
+}
+
 // Загрузить команды из teams.json
 async function loadTeams() {
   try {
@@ -93,6 +124,27 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     currentBracket = await response.json();
     isEditingBracket = false;
+    
+    // Очищаем последующие стадии (они должны заполняться только прогнозами пользователя)
+    const editableStages = getEditableStages(currentBracket);
+    let needsSave = false;
+    
+    if (currentBracket.matches) {
+      Object.keys(currentBracket.matches).forEach(stageId => {
+        if (!editableStages.includes(stageId)) {
+          // Удаляем команды из последующих стадий
+          console.log(`🗑️ Удаляем стадию ${stageId} при загрузке`);
+          delete currentBracket.matches[stageId];
+          needsSave = true;
+        }
+      });
+    }
+    
+    // Если были удалены стадии, сохраняем изменения на сервер
+    if (needsSave && currentUser && currentUser.isAdmin) {
+      console.log('💾 Сохраняем очищенную структуру на сервер');
+      await saveBracketStructure();
+    }
     
     // Получаем иконку турнира
     let eventIcon = '🏆';
@@ -278,6 +330,9 @@ function renderBracketModal(isClosed) {
             <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
               ✏️
             </button>
+            <button class="btn-secondary" onclick="cleanupBracketStages()" style="padding: 8px 16px; font-size: 0.9em;" title="Очистить последующие стадии">
+              🧹
+            </button>
             <button class="btn-secondary ${isAutoLocked ? 'disabled-look' : ''}" onclick="toggleBracketLock()" style="padding: 8px 16px; font-size: 0.9em; ${isAutoLocked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" title="${isAutoLocked ? 'Нельзя разблокировать: плей-офф начался' : (isManuallyLocked ? 'Разблокировать сетку' : 'Заблокировать сетку')}">
               ${isManuallyLocked ? '🔓' : '🔒'}
             </button>
@@ -290,7 +345,7 @@ function renderBracketModal(isClosed) {
           ` : ''}
           ${isEditingBracket ? `
             <button class="btn-primary" onclick="saveBracketTeams()" style="padding: 8px 16px; font-size: 0.9em;">
-              💾 Сохранить команды
+              💾
             </button>
           ` : ''}
           <button class="modal-close" onclick="closeBracketModal()">&times;</button>
@@ -524,8 +579,8 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   const isWinner = prediction && prediction === teamName;
   const highlightClass = isWinner ? 'bracket-team-winner' : '';
   
-  // Режим редактирования для админа - только для начальных стадий (1/16 или 1/8)
-  const editableStages = ['round_of_16', 'round_of_8'];
+  // Режим редактирования для админа - только для начальной стадии из БД
+  const editableStages = getEditableStages(currentBracket);
   const isEditableStage = editableStages.includes(stageId);
   
   if (isEditingBracket && isEditableStage) {
@@ -673,8 +728,8 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
   const teamPosition = currentMatchIndex % 2;
   
   // Обновляем данные сетки для следующей стадии ТОЛЬКО ЛОКАЛЬНО
-  // НЕ сохраняем в БД для последующих стадий (только для начальных стадий)
-  const editableStages = ['round_of_16', 'round_of_8'];
+  // НЕ сохраняем в БД для последующих стадий (только для начальной стадии)
+  const editableStages = getEditableStages(currentBracket);
   const shouldSaveToServer = editableStages.includes(nextStageId);
   
   if (!currentBracket.matches) {
@@ -786,8 +841,8 @@ async function saveBracketStructure() {
   if (!currentUser || !currentBracket) return;
   
   try {
-    // Фильтруем только начальные стадии для сохранения
-    const editableStages = ['round_of_16', 'round_of_8'];
+    // Фильтруем только начальную стадию из БД для сохранения
+    const editableStages = getEditableStages(currentBracket);
     const filteredMatches = {};
     
     if (currentBracket.matches) {
@@ -1464,5 +1519,85 @@ async function deleteBracket() {
     } else {
       alert(error.message);
     }
+  }
+}
+
+// Очистить последующие стадии сетки (для админа)
+async function cleanupBracketStages() {
+  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  
+  // Определяем первую заполненную стадию
+  const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+  let firstStage = null;
+  
+  if (currentBracket.matches) {
+    for (const stageId of stageOrder) {
+      if (currentBracket.matches[stageId] && Object.keys(currentBracket.matches[stageId]).length > 0) {
+        firstStage = stageId;
+        break;
+      }
+    }
+  }
+  
+  if (!firstStage) {
+    await showCustomAlert(
+      'Не найдено заполненных стадий для очистки.',
+      'Нечего очищать',
+      'ℹ️'
+    );
+    return;
+  }
+  
+  // Определяем название первой стадии для сообщения
+  const stageNames = {
+    'round_of_16': '1/16 финала',
+    'round_of_8': '1/8 финала',
+    'quarter_finals': '1/4 финала',
+    'semi_finals': '1/2 финала',
+    'final': 'Финал'
+  };
+  
+  const confirmCleanup = await showCustomConfirm(
+    `Эта операция удалит команды из всех последующих стадий после "${stageNames[firstStage]}".\n\nОстанется только первая стадия: ${stageNames[firstStage]}.\n\nПродолжить?`,
+    'Очистка последующих стадий',
+    '🧹'
+  );
+  
+  if (!confirmCleanup) return;
+  
+  try {
+    // Очищаем локально - оставляем только первую стадию
+    const firstStageIndex = stageOrder.indexOf(firstStage);
+    
+    if (currentBracket.matches) {
+      Object.keys(currentBracket.matches).forEach(stageId => {
+        const currentStageIndex = stageOrder.indexOf(stageId);
+        // Удаляем все стадии после первой
+        if (currentStageIndex > firstStageIndex) {
+          delete currentBracket.matches[stageId];
+        }
+      });
+    }
+    
+    // Сохраняем на сервер
+    await saveBracketStructure();
+    
+    // Перерисовываем модалку
+    const isClosed = isBracketClosed(currentBracket);
+    renderBracketModal(isClosed);
+    
+    await showCustomAlert(
+      `Последующие стадии успешно очищены!\n\nОсталась только первая стадия: ${stageNames[firstStage]}.\n\nОстальные стадии будут заполняться индивидуально для каждого пользователя на основе их прогнозов.`,
+      'Очистка завершена',
+      '✅'
+    );
+    
+  } catch (error) {
+    console.error('Ошибка при очистке стадий:', error);
+    await showCustomAlert(
+      'Не удалось очистить последующие стадии: ' + error.message,
+      'Ошибка',
+      '❌'
+    );
   }
 }
