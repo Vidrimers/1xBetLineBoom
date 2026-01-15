@@ -1704,6 +1704,20 @@ db.exec(`
   )
 `);
 
+// Таблица фактических результатов матчей в сетке (для админа)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS bracket_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bracket_id INTEGER NOT NULL,
+    stage TEXT NOT NULL,
+    match_index INTEGER NOT NULL,
+    actual_winner TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (bracket_id) REFERENCES brackets(id),
+    UNIQUE(bracket_id, stage, match_index)
+  )
+`);
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)
@@ -2923,6 +2937,113 @@ app.put("/api/admin/brackets/:bracketId/lock", (req, res) => {
     });
   } catch (error) {
     console.error("Ошибка изменения блокировки сетки:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Установить результат матча в сетке (только для админа)
+app.put("/api/admin/brackets/:bracketId/results", async (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { username, stage, match_index, actual_winner } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    if (!stage || match_index === undefined || !actual_winner) {
+      return res.status(400).json({ error: "Не все поля заполнены" });
+    }
+    
+    // Используем UPSERT для результата
+    db.prepare(`
+      INSERT INTO bracket_results (bracket_id, stage, match_index, actual_winner)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(bracket_id, stage, match_index) 
+      DO UPDATE SET actual_winner = excluded.actual_winner
+    `).run(bracketId, stage, match_index, actual_winner);
+    
+    console.log(`✅ Результат матча установлен: сетка ${bracketId}, ${stage}, матч ${match_index}, победитель: ${actual_winner}`);
+    
+    // Получаем информацию о сетке и турнире
+    const bracket = db.prepare("SELECT name, event_id FROM brackets WHERE id = ?").get(bracketId);
+    const event = bracket ? db.prepare("SELECT name FROM events WHERE id = ?").get(bracket.event_id) : null;
+    const eventName = event ? event.name : "Турнир";
+    
+    // Названия стадий
+    const stageNames = {
+      'round_of_16': '1/16 финала',
+      'round_of_8': '1/8 финала',
+      'quarter_finals': '1/4 финала',
+      'semi_finals': '1/2 финала',
+      'final': 'Финал'
+    };
+    const stageName = stageNames[stage] || stage;
+    
+    // Получаем всех пользователей с прогнозами на этот матч
+    const usersWithPredictions = db.prepare(`
+      SELECT 
+        bp.user_id, 
+        bp.predicted_winner,
+        u.username,
+        u.telegram_username,
+        u.telegram_notifications_enabled
+      FROM bracket_predictions bp
+      JOIN users u ON bp.user_id = u.id
+      WHERE bp.bracket_id = ? AND bp.stage = ? AND bp.match_index = ?
+    `).all(bracketId, stage, match_index);
+    
+    // Отправляем уведомления пользователям
+    for (const user of usersWithPredictions) {
+      if (user.telegram_username && user.telegram_notifications_enabled === 1) {
+        // Получаем chat_id из telegram_users
+        const cleanUsername = user.telegram_username.toLowerCase();
+        const telegramUser = db.prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?").get(cleanUsername);
+        
+        if (telegramUser && telegramUser.chat_id) {
+          const isCorrect = user.predicted_winner === actual_winner;
+          const emoji = isCorrect ? '✅' : '❌';
+          
+          const message = `${emoji} Результат матча в сетке плей-офф!\n\n📊 Турнир: ${eventName}\n🏆 Сетка: ${bracket.name}\n⚽ Стадия: ${stageName}\n\n🏁 Победитель: ${actual_winner}\n🎯 Ваш прогноз: ${user.predicted_winner}\n\n${isCorrect ? '🎉 Поздравляем! Вы угадали!' : '😔 К сожалению, прогноз не сбылся'}`;
+          
+          try {
+            await sendUserMessage(telegramUser.chat_id, message);
+            console.log(`✅ Уведомление о результате отправлено пользователю ${user.username} (${isCorrect ? 'угадал' : 'не угадал'})`);
+          } catch (err) {
+            console.error(`❌ Ошибка отправки уведомления пользователю ${user.user_id}:`, err);
+          }
+        }
+      }
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Ошибка установки результата матча:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Получить результаты матчей в сетке
+app.get("/api/brackets/:bracketId/results", (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    
+    const results = db.prepare(`
+      SELECT stage, match_index, actual_winner 
+      FROM bracket_results 
+      WHERE bracket_id = ?
+    `).all(bracketId);
+    
+    res.json(results);
+  } catch (error) {
+    console.error("Ошибка получения результатов:", error);
     res.status(500).json({ error: error.message });
   }
 });

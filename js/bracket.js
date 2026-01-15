@@ -2,6 +2,8 @@
 
 let currentBracket = null;
 let bracketPredictions = {};
+let bracketResults = {}; // Фактические результаты матчей (для админа)
+let bracketResultsInterval = null; // Интервал для обновления результатов
 let isEditingBracket = false;
 let hasUnsavedChanges = false; // Флаг несохраненных изменений
 let originalBracketMatches = null; // Сохраненное состояние для отката
@@ -383,6 +385,24 @@ async function openBracketModal(bracketId, viewUserId = null) {
       bracketPredictions = {};
     }
     
+    // Загружаем результаты матчей (для всех пользователей, чтобы показать правильность прогнозов)
+    try {
+      const resultsResponse = await fetch(`/api/brackets/${bracketId}/results`);
+      if (resultsResponse.ok) {
+        const results = await resultsResponse.json();
+        bracketResults = {};
+        results.forEach(r => {
+          bracketResults[r.stage] = bracketResults[r.stage] || {};
+          bracketResults[r.stage][r.match_index] = r.actual_winner;
+        });
+      } else {
+        bracketResults = {};
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки результатов:', error);
+      bracketResults = {};
+    }
+    
     // Проверяем, закрыта ли сетка для ставок
     const isClosed = isBracketClosed(currentBracket);
     
@@ -419,6 +439,9 @@ async function openBracketModal(bracketId, viewUserId = null) {
           window.viewingUserBracketName = null;
         }
       }
+      
+      // Запускаем периодическое обновление результатов
+      startBracketResultsPolling();
     }
     
     if (typeof lockBodyScroll === 'function') {
@@ -734,16 +757,24 @@ function drawBracketConnections() {
 // Отрисовать матчи стадии вертикально
 function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex) {
   let html = '';
+  const isAdmin = currentUser && currentUser.isAdmin;
   
   for (let i = startIndex; i < endIndex; i++) {
     const matchData = currentBracket.matches?.[stage.id]?.[i];
     const prediction = bracketPredictions[stage.id]?.[i];
+    const actualWinner = bracketResults[stage.id]?.[i];
+    
+    // Определяем цвет карточки на основе правильности прогноза
+    let matchClass = '';
+    if (actualWinner && prediction) {
+      matchClass = prediction === actualWinner ? 'bracket-match-correct' : 'bracket-match-incorrect';
+    }
     
     html += `
-      <div class="bracket-match-vertical" data-stage="${stage.id}" data-match="${i}">
+      <div class="bracket-match-vertical ${matchClass}" data-stage="${stage.id}" data-match="${i}">
         <div class="bracket-match-teams-vertical">
-          ${renderTeamSlot(stage.id, i, 0, matchData?.team1, prediction, isClosed)}
-          ${renderTeamSlot(stage.id, i, 1, matchData?.team2, prediction, isClosed)}
+          ${renderTeamSlotWithRadio(stage.id, i, 0, matchData?.team1, prediction, isClosed, actualWinner, isAdmin)}
+          ${renderTeamSlotWithRadio(stage.id, i, 1, matchData?.team2, prediction, isClosed, actualWinner, isAdmin)}
         </div>
       </div>
     `;
@@ -767,6 +798,33 @@ function getSelectedTeams() {
   });
   
   return selectedTeams;
+}
+
+// Отрисовать слот команды с радиокнопкой (если админ)
+function renderTeamSlotWithRadio(stageId, matchIndex, teamIndex, teamName, prediction, isClosed, actualWinner, isAdmin) {
+  const slot = renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, isClosed);
+  
+  // Если админ и команда есть, добавляем радиокнопку
+  if (isAdmin && teamName) {
+    return `
+      <div class="bracket-team-slot-wrapper">
+        <div class="bracket-result-selector">
+          <label class="bracket-radio-label">
+            <input type="radio" 
+                   name="result_${stageId}_${matchIndex}" 
+                   value="${teamName}"
+                   ${actualWinner === teamName ? 'checked' : ''}
+                   onchange="setBracketMatchResult('${stageId}', ${matchIndex}, '${teamName.replace(/'/g, "\\'")}')"
+                   class="bracket-radio">
+            <span class="bracket-radio-custom"></span>
+          </label>
+        </div>
+        ${slot}
+      </div>
+    `;
+  }
+  
+  return slot;
 }
 
 // Отрисовать слот команды
@@ -1258,8 +1316,13 @@ async function closeBracketModal() {
       document.body.style.overflow = '';
     }
   }
+  
+  // Останавливаем обновление результатов
+  stopBracketResultsPolling();
+  
   currentBracket = null;
   bracketPredictions = {};
+  bracketResults = {};
   isEditingBracket = false;
   hasUnsavedChanges = false; // Сбрасываем флаг
   originalBracketMatches = null; // Очищаем сохраненное состояние
@@ -1888,4 +1951,138 @@ async function cleanupBracketStages() {
       '❌'
     );
   }
+}
+
+// Установить результат матча (для админа)
+async function setBracketMatchResult(stageId, matchIndex, actualWinner) {
+  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  
+  try {
+    const response = await fetch(`/api/admin/brackets/${currentBracket.id}/results`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        stage: stageId,
+        match_index: matchIndex,
+        actual_winner: actualWinner
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Ошибка установки результата');
+    }
+    
+    // Обновляем локальные результаты
+    if (!bracketResults[stageId]) {
+      bracketResults[stageId] = {};
+    }
+    bracketResults[stageId][matchIndex] = actualWinner;
+    
+    // Обновляем цвет карточки без перерисовки всей модалки
+    const matchCard = document.querySelector(`.bracket-match-vertical[data-stage="${stageId}"][data-match="${matchIndex}"]`);
+    if (matchCard) {
+      const prediction = bracketPredictions[stageId]?.[matchIndex];
+      
+      // Удаляем старые классы
+      matchCard.classList.remove('bracket-match-correct', 'bracket-match-incorrect');
+      
+      // Добавляем новый класс если есть прогноз
+      if (prediction) {
+        if (prediction === actualWinner) {
+          matchCard.classList.add('bracket-match-correct');
+        } else {
+          matchCard.classList.add('bracket-match-incorrect');
+        }
+      }
+    }
+    
+    console.log(`✅ Результат установлен: ${stageId}, матч ${matchIndex}, победитель: ${actualWinner}`);
+  } catch (error) {
+    console.error('Ошибка при установке результата:', error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Не удалось установить результат', 'Ошибка', '❌');
+    }
+  }
+}
+
+// Запустить периодическое обновление результатов
+function startBracketResultsPolling() {
+  // Останавливаем предыдущий интервал если есть
+  stopBracketResultsPolling();
+  
+  // Обновляем результаты каждые 5 секунд
+  bracketResultsInterval = setInterval(async () => {
+    if (!currentBracket) {
+      stopBracketResultsPolling();
+      return;
+    }
+    
+    await updateBracketResults();
+  }, 5000);
+  
+  console.log('✅ Запущено обновление результатов сетки');
+}
+
+// Остановить периодическое обновление результатов
+function stopBracketResultsPolling() {
+  if (bracketResultsInterval) {
+    clearInterval(bracketResultsInterval);
+    bracketResultsInterval = null;
+    console.log('⏹️ Остановлено обновление результатов сетки');
+  }
+}
+
+// Обновить результаты матчей
+async function updateBracketResults() {
+  if (!currentBracket) return;
+  
+  try {
+    const resultsResponse = await fetch(`/api/brackets/${currentBracket.id}/results`);
+    if (resultsResponse.ok) {
+      const results = await resultsResponse.json();
+      const newResults = {};
+      results.forEach(r => {
+        newResults[r.stage] = newResults[r.stage] || {};
+        newResults[r.stage][r.match_index] = r.actual_winner;
+      });
+      
+      // Проверяем, изменились ли результаты
+      const hasChanges = JSON.stringify(bracketResults) !== JSON.stringify(newResults);
+      
+      if (hasChanges) {
+        console.log('🔄 Обнаружены новые результаты, обновляем отображение');
+        bracketResults = newResults;
+        
+        // Обновляем только окраску карточек без полной перерисовки
+        updateMatchColors();
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка обновления результатов:', error);
+  }
+}
+
+// Обновить окраску карточек на основе результатов
+function updateMatchColors() {
+  const matches = document.querySelectorAll('.bracket-match-vertical');
+  
+  matches.forEach(match => {
+    const stageId = match.dataset.stage;
+    const matchIndex = parseInt(match.dataset.match);
+    const prediction = bracketPredictions[stageId]?.[matchIndex];
+    const actualWinner = bracketResults[stageId]?.[matchIndex];
+    
+    // Убираем старые классы
+    match.classList.remove('bracket-match-correct', 'bracket-match-incorrect');
+    
+    // Добавляем новый класс если есть результат и прогноз
+    if (actualWinner && prediction) {
+      if (prediction === actualWinner) {
+        match.classList.add('bracket-match-correct');
+      } else {
+        match.classList.add('bracket-match-incorrect');
+      }
+    }
+  });
 }
