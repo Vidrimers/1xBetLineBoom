@@ -214,62 +214,26 @@
                       </span>
                     </span>
                   </div>
-                  <button
-                    id="addMatchBtn"
-                    onclick="openCreateMatchModal()"
-                    style="
-                      display: none;
-                      padding: 0;
-                      font-size: 0.9em;
-                      background: transparent;
-                      border: none;
-                    "
-                  >
-                    ➕
-                  </button>
-                  <button
-                    id="addBracketBtn"
-                    onclick="openCreateBracketModal()"
-                    style="
-                      display: none;
-                      padding: 0;
-                      font-size: 0.9em;
-                      background: transparent;
-                      border: none;
-                    "
-                    title="Создать сетку плей-офф"
-                  >
-                    🏆
-                  </button>
-                  <button
-                    id="editRoundsBtn"
-                    onclick="openRoundsOrderModal()"
-                    style="
-                      display: none;
-                      padding: 0;
-                      font-size: 0.9em;
-                      background: transparent;
-                      border: none;
-                    "
-                    title="Изменить порядок туров"
-                  >
-                    ✎
-                  </button>
-                  <button
-                    id="importMatchesBtn"
-                    onclick="openImportMatchesModal()"
-                    style="
-                      display: none;
-                      padding: 0;
-                      font-size: 0.9em;
-                      /* background: rgba(76, 175, 80, 0.7); */
-                      background: transparent;
-                      border: 1px solid #4caf50;
-                      border: none;
-                    "
-                  >
-                    📥
-                  </button>
+                  <div style="position: relative; z-index: 1001;">
+                    <div id="adminButtonsContainer" style="display: none; position: fixed; top: auto; left: auto; background: rgba(26, 32, 44, 0.95); border: 1px solid #3a7bd5; border-radius: 5px; padding: 8px; gap: 8px; flex-direction: column; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+                    <button
+                      id="adminSettingsBtn"
+                      onclick="toggleAdminButtons(event)"
+                      style="
+                        display: none;
+                        padding: 8px 12px;
+                        font-size: 1.1em;
+                        background: transparent;
+                        border: 1px solid #3a7bd5;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        color: #b0b8c8;
+                      "
+                      title="Настройки администратора"
+                    >
+                      ⚙️
+                    </button>
+                  </div>
                 </div>
               </div>
 

@@ -1530,31 +1530,151 @@ async function selectEvent(eventId, eventName) {
     }
   }
 
-  // Показываем кнопку добавления матча для админа и модераторов с правами
-  const addMatchBtn = document.getElementById("addMatchBtn");
-  if (addMatchBtn && canManageMatches()) {
-    addMatchBtn.style.display = "inline-block";
+  // Скрываем контейнер админских кнопок при переключении турнира
+  const adminButtonsContainer = document.getElementById('adminButtonsContainer');
+  if (adminButtonsContainer) {
+    adminButtonsContainer.style.display = 'none';
   }
 
-  // Показываем кнопку создания сетки для админа
-  const addBracketBtn = document.getElementById("addBracketBtn");
-  if (addBracketBtn && currentUser && currentUser.isAdmin) {
-    addBracketBtn.style.display = "inline-block";
-  }
-
-  // Показываем кнопку редактирования туров для админа и модераторов с правами
-  const editRoundsBtn = document.getElementById("editRoundsBtn");
-  if (editRoundsBtn && canManageTournaments()) {
-    editRoundsBtn.style.display = "inline-block";
-  }
-
-  // Показываем кнопку импорта матчей для админа и модераторов с правами
-  const importMatchesBtn = document.getElementById("importMatchesBtn");
-  if (importMatchesBtn && canManageMatches()) {
-    importMatchesBtn.style.display = "inline-block";
+  // Показываем кнопку настроек админа если есть права
+  const adminSettingsBtn = document.getElementById('adminSettingsBtn');
+  if (adminSettingsBtn && (canManageMatches() || canManageTournaments() || (currentUser && currentUser.isAdmin))) {
+    adminSettingsBtn.style.display = 'inline-block';
+    
+    // Заполняем контейнер админских кнопок
+    if (adminButtonsContainer) {
+      let buttonsHTML = '';
+      
+      if (canManageMatches()) {
+        buttonsHTML += `
+          <button onclick="openCreateMatchModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Добавить матч">
+            ➕
+          </button>
+        `;
+      }
+      
+      if (currentUser && currentUser.isAdmin) {
+        buttonsHTML += `
+          <button onclick="openCreateBracketModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Создать сетку плей-офф">
+            🏆
+          </button>
+        `;
+      }
+      
+      if (canManageTournaments()) {
+        buttonsHTML += `
+          <button onclick="openRoundsOrderModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Изменить порядок туров">
+            ✎
+          </button>
+        `;
+      }
+      
+      if (canManageMatches()) {
+        buttonsHTML += `
+          <button onclick="openImportMatchesModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Импортировать матчи">
+            📥
+          </button>
+        `;
+      }
+      
+      adminButtonsContainer.innerHTML = buttonsHTML;
+    }
+  } else if (adminSettingsBtn) {
+    adminSettingsBtn.style.display = 'none';
   }
 
   loadMatches(eventId);
+}
+
+// Переключение видимости админских кнопок
+function toggleAdminButtons(event) {
+  event.stopPropagation(); // Предотвращаем всплытие события
+  
+  const container = document.getElementById('adminButtonsContainer');
+  const btn = document.getElementById('adminSettingsBtn');
+  
+  if (container && btn) {
+    if (container.style.display === 'none' || !container.style.display) {
+      container.style.display = 'flex';
+      
+      // Функция для обновления позиции
+      const updatePosition = () => {
+        const rect = btn.getBoundingClientRect();
+        const containerHeight = container.offsetHeight;
+        
+        // Позиционируем контейнер над кнопкой с отступом
+        container.style.top = (rect.top - containerHeight - 8) + 'px';
+        container.style.left = rect.left + 'px';
+        
+        // Корректируем позицию если контейнер выходит за пределы экрана
+        const containerRect = container.getBoundingClientRect();
+        if (containerRect.top < 0) {
+          // Если не помещается сверху, показываем снизу
+          container.style.top = (rect.bottom + 8) + 'px';
+        }
+      };
+      
+      // Обновляем позицию сразу
+      updatePosition();
+      
+      // Сохраняем функцию обновления для использования при скролле
+      container._updatePosition = updatePosition;
+      
+      // Добавляем обработчик скролла
+      const scrollHandler = () => {
+        if (container.style.display === 'flex') {
+          updatePosition();
+        }
+      };
+      container._scrollHandler = scrollHandler;
+      
+      // Находим scrollable контейнер (matchesSection)
+      const matchesSection = document.getElementById('matchesSection');
+      if (matchesSection) {
+        matchesSection.addEventListener('scroll', scrollHandler);
+      }
+      window.addEventListener('scroll', scrollHandler);
+      
+      // Добавляем обработчик клика по документу для закрытия меню
+      const clickHandler = (e) => {
+        // Проверяем, что клик был не по кнопке и не по контейнеру
+        if (!btn.contains(e.target) && !container.contains(e.target)) {
+          closeAdminButtons();
+        }
+      };
+      container._clickHandler = clickHandler;
+      setTimeout(() => {
+        document.addEventListener('click', clickHandler);
+      }, 0);
+      
+    } else {
+      closeAdminButtons();
+    }
+  }
+}
+
+// Закрытие админских кнопок
+function closeAdminButtons() {
+  const container = document.getElementById('adminButtonsContainer');
+  if (container) {
+    container.style.display = 'none';
+    
+    // Удаляем обработчики
+    if (container._scrollHandler) {
+      const matchesSection = document.getElementById('matchesSection');
+      if (matchesSection) {
+        matchesSection.removeEventListener('scroll', container._scrollHandler);
+      }
+      window.removeEventListener('scroll', container._scrollHandler);
+      delete container._scrollHandler;
+      delete container._updatePosition;
+    }
+    
+    if (container._clickHandler) {
+      document.removeEventListener('click', container._clickHandler);
+      delete container._clickHandler;
+    }
+  }
 }
 
 // ===== МАТЧИ =====
