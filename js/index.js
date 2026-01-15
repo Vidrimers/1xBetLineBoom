@@ -207,6 +207,7 @@ function toggleFinalMatch(modal) {
 let currentUser = null;
 let currentEventId = null;
 let events = [];
+let tournamentParticipantsInterval = null; // Интервал для автообновления рейтинга
 
 // Кастомные модальные окна
 function showCustomAlert(message, title = "Уведомление", icon = "ℹ️") {
@@ -3567,6 +3568,9 @@ async function displayTournaments(events) {
 
 async function loadTournamentParticipants(eventId, eventName) {
   try {
+    // Останавливаем предыдущий интервал если есть
+    stopTournamentParticipantsPolling();
+    
     // Получаем информацию о событии, чтобы узнать, заблокировано ли оно
     const eventsResponse = await fetch("/api/events");
     const events = await eventsResponse.json();
@@ -3582,6 +3586,8 @@ async function loadTournamentParticipants(eventId, eventName) {
 
     // Сохраняем eventId для дальнейшего использования
     window.currentEventId = eventId;
+    window.currentEventName = eventName;
+    window.currentEventIsLocked = isLocked;
 
     // Загружаем информацию о сетке для проверки даты начала
     let bracketStartDate = null;
@@ -3593,6 +3599,8 @@ async function loadTournamentParticipants(eventId, eventName) {
     } catch (error) {
       console.error('Ошибка загрузки информации о сетке:', error);
     }
+    
+    window.currentBracketStartDate = bracketStartDate;
 
     // Скрываем section с сеткой турниров и показываем участников турнира
     document.getElementById("tournamentsSection").style.display = "none";
@@ -3600,10 +3608,49 @@ async function loadTournamentParticipants(eventId, eventName) {
     document.getElementById("tournamentTitle").innerText = `📋 ${eventName}`;
 
     await displayTournamentParticipants(participants, isLocked, eventId, bracketStartDate);
+    
+    // Запускаем автообновление
+    startTournamentParticipantsPolling();
   } catch (error) {
     console.error("Ошибка при загрузке участников турнира:", error);
     document.getElementById("tournamentParticipantsList").innerHTML =
       '<div class="empty-message">Ошибка при загрузке участников турнира</div>';
+  }
+}
+
+// Запустить автообновление рейтинга участников
+function startTournamentParticipantsPolling() {
+  stopTournamentParticipantsPolling();
+  
+  tournamentParticipantsInterval = setInterval(async () => {
+    if (!window.currentEventId) {
+      stopTournamentParticipantsPolling();
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/events/${window.currentEventId}/tournament-participants`);
+      const participants = await response.json();
+      await displayTournamentParticipants(
+        participants, 
+        window.currentEventIsLocked, 
+        window.currentEventId, 
+        window.currentBracketStartDate
+      );
+    } catch (error) {
+      console.error('Ошибка автообновления рейтинга:', error);
+    }
+  }, 30000); // Обновление каждые 30 секунд
+  
+  console.log('✅ Запущено автообновление рейтинга участников');
+}
+
+// Остановить автообновление рейтинга участников
+function stopTournamentParticipantsPolling() {
+  if (tournamentParticipantsInterval) {
+    clearInterval(tournamentParticipantsInterval);
+    tournamentParticipantsInterval = null;
+    console.log('⏹️ Остановлено автообновление рейтинга участников');
   }
 }
 
@@ -3779,6 +3826,7 @@ async function displayTournamentParticipants(
 }
 
 function backToTournaments() {
+  stopTournamentParticipantsPolling(); // Останавливаем автообновление
   document.getElementById("tournamentsSection").style.display = "block";
   document.getElementById("tournamentSection").style.display = "none";
 }
