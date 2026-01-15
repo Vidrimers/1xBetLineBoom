@@ -537,6 +537,11 @@ function calculateBracketStats(userId) {
 
 // Отрисовать модальное окно сетки
 function renderBracketModal(isClosed) {
+  // Закрываем админское меню если оно открыто (перед перерисовкой)
+  if (typeof closeBracketAdminButtons === 'function') {
+    closeBracketAdminButtons();
+  }
+  
   const modal = document.getElementById('bracketModal');
   if (!modal) return;
   
@@ -628,8 +633,8 @@ function renderBracketModal(isClosed) {
         <div class="bracket-admin button" style="position: absolute; top: 60px; right: 10px; display: flex; gap: 10px; align-items: end; flex-direction: column-reverse;">
           ${showAdminButtons ? `
             <div style="position: relative;">
-              <div id="bracketAdminButtonsContainer" style="display: none; position: fixed; top: auto; left: auto; background: rgba(26, 32, 44, 0.95); border: 1px solid #3a7bd5; border-radius: 5px; padding: 8px; gap: 8px; flex-direction: column; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
-              <button id="bracketAdminSettingsBtn" class="btn-secondary" onclick="toggleBracketAdminButtons(event)" style="padding: 8px 16px; font-size: 1.1em;" title="Настройки администратора">
+              <div id="bracketAdminButtonsContainer" style="display: none; position: fixed; top: auto; left: auto; background: rgba(26, 32, 44, 0.95); border: 1px solid #3a7bd5; border-radius: 5px; padding: 8px; gap: 8px; flex-direction: column; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-10px); transition: opacity 0.2s ease, transform 0.2s ease;"></div>
+              <button id="bracketAdminSettingsBtn" class="btn-secondary" onclick="toggleBracketAdminButtons(event)" style="padding: 5px; font-size: 1.1em;background: transparent;border: none;" title="Настройки администратора">
                 ⚙️
               </button>
             </div>
@@ -2179,15 +2184,21 @@ function toggleBracketAdminButtons(event) {
   if (container && btn) {
     const isOpen = container.style.display === 'flex';
     
-    if (!isOpen) {
-      event.stopPropagation(); // Останавливаем только при открытии
-      
-      // Сначала заполняем контейнер кнопками
-      const isAutoLocked = isBracketClosed(currentBracket) && currentBracket.is_locked !== 1;
-      const isManuallyLocked = currentBracket.is_locked === 1;
+    if (isOpen) {
+      // Закрываем меню
+      closeBracketAdminButtons();
+      return;
+    }
+    
+    // Открываем меню
+    event.stopPropagation();
+    
+    // Сначала заполняем контейнер кнопками
+    const isAutoLocked = isBracketClosed(currentBracket) && currentBracket.is_locked !== 1;
+    const isManuallyLocked = currentBracket.is_locked === 1;
       
       let buttonsHTML = `
-        <button class="btn-secondary" onclick="toggleBracketEditMode(); closeBracketAdminButtons();" style="padding: 8px; font-size: 1.2em;" title="Редактировать команды">
+        <button class="btn-secondary" onclick="toggleBracketEditMode(); closeBracketAdminButtons();" style="padding: 8px; font-size: .9em;" title="Редактировать команды">
           ✏️
         </button>
       `;
@@ -2231,6 +2242,11 @@ function toggleBracketAdminButtons(event) {
       // Используем requestAnimationFrame чтобы дождаться рендеринга
       requestAnimationFrame(() => {
         updatePosition();
+        // Добавляем анимацию появления
+        setTimeout(() => {
+          container.style.opacity = '1';
+          container.style.transform = 'translateY(0)';
+        }, 10);
       });
       
       container._updatePosition = updatePosition;
@@ -2259,10 +2275,6 @@ function toggleBracketAdminButtons(event) {
       setTimeout(() => {
         document.addEventListener('click', clickHandler, true); // true для capture phase
       }, 100);
-      
-    } else {
-      closeBracketAdminButtons();
-    }
   }
 }
 
@@ -2270,21 +2282,27 @@ function toggleBracketAdminButtons(event) {
 function closeBracketAdminButtons() {
   const container = document.getElementById('bracketAdminButtonsContainer');
   if (container) {
-    container.style.display = 'none';
+    // Анимация закрытия
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(-10px)';
     
-    if (container._scrollHandler) {
-      const bracketModal = document.getElementById('bracketModal');
-      if (bracketModal) {
-        bracketModal.removeEventListener('scroll', container._scrollHandler);
+    setTimeout(() => {
+      container.style.display = 'none';
+      
+      if (container._scrollHandler) {
+        const bracketModal = document.getElementById('bracketModal');
+        if (bracketModal) {
+          bracketModal.removeEventListener('scroll', container._scrollHandler);
+        }
+        window.removeEventListener('scroll', container._scrollHandler);
+        delete container._scrollHandler;
+        delete container._updatePosition;
       }
-      window.removeEventListener('scroll', container._scrollHandler);
-      delete container._scrollHandler;
-      delete container._updatePosition;
-    }
-    
-    if (container._clickHandler) {
-      document.removeEventListener('click', container._clickHandler, true);
-      delete container._clickHandler;
-    }
+      
+      if (container._clickHandler) {
+        document.removeEventListener('click', container._clickHandler, true);
+        delete container._clickHandler;
+      }
+    }, 200); // Ждем завершения анимации
   }
 }

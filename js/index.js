@@ -1617,6 +1617,12 @@ function toggleAdminButtons(event) {
       // Обновляем позицию сразу
       updatePosition();
       
+      // Добавляем анимацию появления
+      setTimeout(() => {
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+      }, 10);
+      
       // Сохраняем функцию обновления для использования при скролле
       container._updatePosition = updatePosition;
       
@@ -1657,23 +1663,29 @@ function toggleAdminButtons(event) {
 function closeAdminButtons() {
   const container = document.getElementById('adminButtonsContainer');
   if (container) {
-    container.style.display = 'none';
+    // Анимация закрытия
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(-10px)';
     
-    // Удаляем обработчики
-    if (container._scrollHandler) {
-      const matchesSection = document.getElementById('matchesSection');
-      if (matchesSection) {
-        matchesSection.removeEventListener('scroll', container._scrollHandler);
+    setTimeout(() => {
+      container.style.display = 'none';
+      
+      // Удаляем обработчики
+      if (container._scrollHandler) {
+        const matchesSection = document.getElementById('matchesSection');
+        if (matchesSection) {
+          matchesSection.removeEventListener('scroll', container._scrollHandler);
+        }
+        window.removeEventListener('scroll', container._scrollHandler);
+        delete container._scrollHandler;
+        delete container._updatePosition;
       }
-      window.removeEventListener('scroll', container._scrollHandler);
-      delete container._scrollHandler;
-      delete container._updatePosition;
-    }
-    
-    if (container._clickHandler) {
-      document.removeEventListener('click', container._clickHandler);
-      delete container._clickHandler;
-    }
+      
+      if (container._clickHandler) {
+        document.removeEventListener('click', container._clickHandler);
+        delete container._clickHandler;
+      }
+    }, 200); // Ждем завершения анимации
   }
 }
 
