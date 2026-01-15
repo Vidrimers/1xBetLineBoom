@@ -489,7 +489,7 @@ function renderBracketModal(isClosed) {
       lockReasonText = '<div style="color: #ff9800; font-size: 0.75em; margin-top: 2px;">Причина: Заблокировано администратором</div>';
     } else if (isAutoLocked) {
       statusBadge = '<div style="color: #f44336; font-size: 0.9em;">🔒 Ставки закрыты</div>';
-      lockReasonText = '<div style="color: #f44336; font-size: 0.75em; margin-top: 2px;">Причина: Плей-офф начался, ставки больше не принимаются</div>';
+      lockReasonText = '<div style="color: #f44336; font-size: 0.75em; margin-top: 2px;">Причина: Плей-офф начался или закончен, ставки больше не принимаются</div>';
     } else {
       statusBadge = '<div style="color: #4caf50; font-size: 0.9em;">✅ Ставки открыты</div>';
       
