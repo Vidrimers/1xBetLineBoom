@@ -1547,7 +1547,7 @@ async function selectEvent(eventId, eventName) {
       
       if (canManageMatches()) {
         buttonsHTML += `
-          <button onclick="openCreateMatchModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Добавить матч">
+          <button id="addMatchBtn" onclick="openCreateMatchModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Добавить матч">
             ➕
           </button>
         `;
@@ -1555,7 +1555,7 @@ async function selectEvent(eventId, eventName) {
       
       if (currentUser && currentUser.isAdmin) {
         buttonsHTML += `
-          <button onclick="openCreateBracketModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Создать сетку плей-офф">
+          <button id="addBracketBtn" onclick="openCreateBracketModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Создать сетку плей-офф">
             🏆
           </button>
         `;
@@ -1563,7 +1563,7 @@ async function selectEvent(eventId, eventName) {
       
       if (canManageTournaments()) {
         buttonsHTML += `
-          <button onclick="openRoundsOrderModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Изменить порядок туров">
+          <button id="editRoundsBtn" onclick="openRoundsOrderModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Изменить порядок туров">
             ✎
           </button>
         `;
@@ -1571,7 +1571,7 @@ async function selectEvent(eventId, eventName) {
       
       if (canManageMatches()) {
         buttonsHTML += `
-          <button onclick="openImportMatchesModal(); closeAdminButtons();" style="padding: 8px; font-size: 1.2em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Импортировать матчи">
+          <button id="importMatchesBtn" onclick="openImportMatchesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Импортировать матчи">
             📥
           </button>
         `;
