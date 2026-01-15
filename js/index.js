@@ -275,6 +275,42 @@ function showCustomConfirm(message, title = "Подтверждение", icon =
   });
 }
 
+function showCustomSaveConfirm(message, title = "Несохраненные изменения", icon = "⚠️") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    
+    overlay.innerHTML = `
+      <div class="custom-modal">
+        <div class="custom-modal-title">${icon} ${title}</div>
+        <div class="custom-modal-message">${message}</div>
+        <div class="custom-modal-buttons" style="display: flex; gap: 10px; justify-content: center;">
+          <button class="custom-modal-btn custom-modal-btn-secondary" data-action="cancel">Отмена</button>
+          <button class="custom-modal-btn custom-modal-btn-danger" data-action="discard">Не сохранять</button>
+          <button class="custom-modal-btn custom-modal-btn-primary" data-action="save">Сохранить</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    overlay.querySelectorAll('.custom-modal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.getAttribute('data-action');
+        overlay.remove();
+        resolve(action); // Возвращаем 'save', 'discard' или 'cancel'
+      });
+    });
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve('cancel');
+      }
+    });
+  });
+}
+
 function showCustomPrompt(message, title = "Ввод данных", icon = "✏️", placeholder = "") {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');

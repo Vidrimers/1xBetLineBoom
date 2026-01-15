@@ -3,6 +3,8 @@
 let currentBracket = null;
 let bracketPredictions = {};
 let isEditingBracket = false;
+let hasUnsavedChanges = false; // Флаг несохраненных изменений
+let originalBracketMatches = null; // Сохраненное состояние для отката
 let isViewingOtherUserBracket = false; // Флаг просмотра чужих прогнозов
 let allTeams = [];
 
@@ -1222,7 +1224,30 @@ async function saveBracketPredictions() {
 }
 
 // Закрыть модальное окно сетки
-function closeBracketModal() {
+async function closeBracketModal() {
+  // Проверяем несохраненные изменения
+  if (hasUnsavedChanges && isEditingBracket) {
+    const action = await showCustomSaveConfirm(
+      'У вас есть несохраненные изменения!\n\nЧто вы хотите сделать?',
+      'Несохраненные изменения',
+      '⚠️'
+    );
+    
+    if (action === 'cancel') {
+      return; // Не закрываем модалку
+    } else if (action === 'save') {
+      // Сохраняем изменения
+      await saveBracketTeams();
+      // После сохранения закрываем модалку (флаг hasUnsavedChanges уже сброшен в saveBracketTeams)
+    } else if (action === 'discard') {
+      // Откатываем изменения к оригинальному состоянию
+      if (originalBracketMatches) {
+        currentBracket.matches = JSON.parse(JSON.stringify(originalBracketMatches));
+      }
+    }
+    // Если action === 'discard', просто продолжаем закрытие
+  }
+  
   const modal = document.getElementById('bracketModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1236,11 +1261,46 @@ function closeBracketModal() {
   currentBracket = null;
   bracketPredictions = {};
   isEditingBracket = false;
+  hasUnsavedChanges = false; // Сбрасываем флаг
+  originalBracketMatches = null; // Очищаем сохраненное состояние
   isViewingOtherUserBracket = false; // Сбрасываем флаг просмотра чужих прогнозов
 }
 
 // Переключить режим редактирования сетки
-function toggleBracketEditMode() {
+async function toggleBracketEditMode() {
+  // Если выходим из режима редактирования и есть несохраненные изменения
+  if (isEditingBracket && hasUnsavedChanges) {
+    const action = await showCustomSaveConfirm(
+      'У вас есть несохраненные изменения!\n\nЧто вы хотите сделать?',
+      'Несохраненные изменения',
+      '⚠️'
+    );
+    
+    if (action === 'cancel') {
+      return; // Не выходим из режима редактирования
+    } else if (action === 'save') {
+      // Сохраняем изменения
+      await saveBracketTeams();
+      // После сохранения выходим из режима (флаг hasUnsavedChanges уже сброшен в saveBracketTeams)
+      // isEditingBracket уже установлен в false в saveBracketTeams
+      return; // Выходим, т.к. saveBracketTeams уже перерисовал модалку
+    } else if (action === 'discard') {
+      // Откатываем изменения к оригинальному состоянию
+      if (originalBracketMatches) {
+        currentBracket.matches = JSON.parse(JSON.stringify(originalBracketMatches));
+      }
+      hasUnsavedChanges = false;
+    }
+  }
+  
+  // Если входим в режим редактирования - сохраняем текущее состояние
+  if (!isEditingBracket) {
+    originalBracketMatches = JSON.parse(JSON.stringify(currentBracket.matches || {}));
+  } else {
+    // Если выходим - очищаем сохраненное состояние
+    originalBracketMatches = null;
+  }
+  
   isEditingBracket = !isEditingBracket;
   const isClosed = isBracketClosed(currentBracket);
   renderBracketModal(isClosed);
@@ -1367,6 +1427,7 @@ async function saveBracketTeams() {
     // Обновляем данные сетки
     currentBracket.matches = matches;
     isEditingBracket = false;
+    hasUnsavedChanges = false; // Сбрасываем флаг после успешного сохранения
     
     const isClosed = isBracketClosed(currentBracket);
     renderBracketModal(isClosed);
@@ -1410,6 +1471,9 @@ function updateBracketTeamSelection() {
   
   // Обновляем данные сетки
   currentBracket.matches = currentSelections;
+  
+  // Отмечаем, что есть несохраненные изменения
+  hasUnsavedChanges = true;
   
   // Перерисовываем модальное окно
   const isClosed = isBracketClosed(currentBracket);
@@ -1751,7 +1815,7 @@ async function cleanupBracketStages() {
   };
   
   const confirmCleanup = await showCustomConfirm(
-    `Эта операция удалит команды из всех последующих стадий после "${stageNames[firstStage]}".\n\nОстанется только первая стадия: ${stageNames[firstStage]}.\n\n⚠️ ВНИМАНИЕ: Также будут удалены ВСЕ прогнозы пользователей на последующие стадии!\n\nПродолжить?`,
+    `Эта операция удалит команды из всех последующих стадий после "${stageNames[firstStage]}".\n\nОстанется только первая стадия: ${stageNames[firstStage]}.\n\n⚠️ ВНИМАНИЕ: Также будут удалены ВСЕ прогнозы пользователей (включая первую стадию)!\n\nПродолжить?`,
     'Очистка последующих стадий',
     '🧹'
   );
@@ -1774,7 +1838,10 @@ async function cleanupBracketStages() {
       });
     }
     
-    // Удаляем прогнозы пользователей на последующие стадии из БД
+    // Добавляем первую стадию в список для удаления прогнозов
+    stagesToDelete.push(firstStage);
+    
+    // Удаляем прогнозы пользователей на ВСЕ стадии (включая первую) из БД
     if (stagesToDelete.length > 0) {
       const deleteResponse = await fetch(`/api/brackets/${currentBracket.id}/predictions/cleanup`, {
         method: 'DELETE',
@@ -1792,7 +1859,7 @@ async function cleanupBracketStages() {
       const deleteResult = await deleteResponse.json();
       console.log(`🗑️ Удалено ${deleteResult.deletedCount} прогнозов пользователей`);
       
-      // Очищаем локальные прогнозы для удаленных стадий
+      // Очищаем ВСЕ локальные прогнозы (включая первую стадию)
       stagesToDelete.forEach(stageId => {
         if (bracketPredictions[stageId]) {
           delete bracketPredictions[stageId];
