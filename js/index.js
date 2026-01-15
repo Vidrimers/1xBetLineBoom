@@ -1510,6 +1510,26 @@ async function selectEvent(eventId, eventName) {
   currentEventId = eventId;
   displayEvents(); // Обновляем выделение
 
+  // Очищаем кнопки сетки сразу при переключении турнира
+  const matchesBracketButtons = document.getElementById('matchesBracketButtons');
+  if (matchesBracketButtons) {
+    matchesBracketButtons.innerHTML = '';
+  }
+
+  // Скрываем/показываем кнопку "Мне повезет" в зависимости от статуса турнира
+  const luckyBtn = document.querySelector('.lucky-btn');
+  if (luckyBtn) {
+    // Показываем только для активных турниров (не завершенных и не предстоящих)
+    const isLocked = event && event.locked_reason;
+    const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
+    
+    if (isLocked || isUpcoming) {
+      luckyBtn.style.display = 'none';
+    } else {
+      luckyBtn.style.display = 'inline-block';
+    }
+  }
+
   // Показываем кнопку добавления матча для админа и модераторов с правами
   const addMatchBtn = document.getElementById("addMatchBtn");
   if (addMatchBtn && canManageMatches()) {
@@ -1998,6 +2018,11 @@ async function displayMatches() {
     matchesContainer.innerHTML =
       '<div class="empty-message">Матчи не найдены</div>';
     roundsFilterContainer.style.display = "none";
+    // Очищаем кнопки сетки если нет матчей
+    const matchesBracketButtons = document.getElementById('matchesBracketButtons');
+    if (matchesBracketButtons) {
+      matchesBracketButtons.innerHTML = '';
+    }
     return;
   }
 
@@ -2121,8 +2146,14 @@ async function displayMatches() {
       }
     }
 
+    // Рендерим кнопки сетки в matches-container (всегда обновляем, даже если пусто)
+    const matchesBracketButtons = document.getElementById('matchesBracketButtons');
+    if (matchesBracketButtons) {
+      matchesBracketButtons.innerHTML = bracketsHTML; // Если пусто, то очистит контейнер
+    }
+
+    // Рендерим кнопки туров в roundsFilterScroll
     filterButtons.innerHTML = `
-      ${bracketsHTML}
       ${rounds
         .map(
           (round) => `
@@ -3948,50 +3979,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     const firstUnfinishedRound = sortedRounds.find(round => !completedRounds.has(round));
     const defaultActiveRound = firstUnfinishedRound || sortedRounds[0];
     
-    // Загружаем сетки для текущего турнира
-    let bracketsHTML = '';
-    if (currentEventId && typeof loadBracketsForEvent === 'function') {
-      try {
-        const brackets = await loadBracketsForEvent(currentEventId);
-        if (brackets && brackets.length > 0) {
-          brackets.forEach(bracket => {
-            const isClosedByDate = bracket.start_date && new Date(bracket.start_date) <= new Date();
-            const isManuallyLocked = bracket.is_locked === 1;
-            const isClosed = isClosedByDate || isManuallyLocked;
-            
-            // Получаем иконку турнира
-            let iconHtml = '';
-            if (isClosed) {
-              iconHtml = '🔒';
-            } else {
-              const currentEvent = events.find(e => e.id === currentEventId);
-              if (currentEvent && currentEvent.icon) {
-                if (currentEvent.icon.startsWith('img/') || currentEvent.icon.startsWith('http')) {
-                  iconHtml = `<img src="${currentEvent.icon}" alt="icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;" />`;
-                } else {
-                  iconHtml = currentEvent.icon;
-                }
-              } else {
-                iconHtml = '🏆';
-              }
-            }
-            
-            bracketsHTML += `
-              <button class="round-filter-btn bracket-filter-btn" 
-                      onclick="showUserBracketPredictions(${bracket.id}, ${participantId})" 
-                      title="${bracket.name}${isClosed ? ' (Ставки закрыты)' : ' (Ставки открыты)'}">
-                ${iconHtml} ${bracket.name}
-              </button>
-            `;
-          });
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки сеток для модалки турнира:', err);
-      }
-    }
-    
     roundsFilter.innerHTML =
-      bracketsHTML +
       `<button class="round-filter-btn" data-round="all" 
               onclick="filterTournamentParticipantBets('all')">
         Все туры
