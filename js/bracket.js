@@ -247,11 +247,12 @@ function renderBracketStages(isClosed) {
   
   let html = '<div class="bracket-stages-wrapper">';
   
-  stages.forEach(stage => {
+  stages.forEach((stage, stageIndex) => {
     const headerText = nextStageText[stage.id] || '';
+    const isLastStage = stageIndex === stages.length - 1;
     
     html += `
-      <div class="bracket-stage-column${stage.id === 'final' ? ' bracket-final' : ''}">
+      <div class="bracket-stage-column${stage.id === 'final' ? ' bracket-final' : ''}" data-stage-index="${stageIndex}">
         ${headerText ? `
           <div style="text-align: center; color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px;">
             ${headerText}
@@ -261,12 +262,104 @@ function renderBracketStages(isClosed) {
         <div class="bracket-matches-column">
           ${renderStageMatchesVertical(stage, isClosed, 0, stage.matches)}
         </div>
+        ${!isLastStage ? '<svg class="bracket-connections-svg"></svg>' : ''}
       </div>
     `;
   });
   
   html += '</div>'; // bracket-stages-wrapper
+  
+  // После рендера нужно нарисовать линии
+  setTimeout(() => drawBracketConnections(), 0);
+  
   return html;
+}
+
+// Нарисовать соединительные линии между карточками
+function drawBracketConnections() {
+  const stageColumns = document.querySelectorAll('.bracket-stage-column');
+  
+  stageColumns.forEach((column, index) => {
+    const svg = column.querySelector('.bracket-connections-svg');
+    if (!svg) return;
+    
+    const matches = column.querySelectorAll('.bracket-match-vertical');
+    if (matches.length === 0) return;
+    
+    // Очищаем SVG
+    svg.innerHTML = '';
+    
+    // Рисуем линии для каждой пары матчей
+    for (let i = 0; i < matches.length; i += 2) {
+      const match1 = matches[i];
+      const match2 = matches[i + 1];
+      
+      if (!match1) continue;
+      
+      const rect1 = match1.getBoundingClientRect();
+      const svgRect = svg.getBoundingClientRect();
+      
+      const y1 = rect1.top + rect1.height / 2 - svgRect.top;
+      const x1 = 0;
+      const x2 = 8;
+      
+      // Горизонтальная линия от первого матча
+      const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line1.setAttribute('x1', x1);
+      line1.setAttribute('y1', y1);
+      line1.setAttribute('x2', x2);
+      line1.setAttribute('y2', y1);
+      line1.setAttribute('stroke', 'rgba(90, 159, 212, 0.3)');
+      line1.setAttribute('stroke-width', '2');
+      svg.appendChild(line1);
+      
+      if (match2) {
+        const rect2 = match2.getBoundingClientRect();
+        const y2 = rect2.top + rect2.height / 2 - svgRect.top;
+        
+        // Горизонтальная линия от второго матча
+        const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line2.setAttribute('x1', x1);
+        line2.setAttribute('y1', y2);
+        line2.setAttribute('x2', x2);
+        line2.setAttribute('y2', y2);
+        line2.setAttribute('stroke', 'rgba(90, 159, 212, 0.3)');
+        line2.setAttribute('stroke-width', '2');
+        svg.appendChild(line2);
+        
+        // Вертикальная линия соединяющая две горизонтальные
+        const lineV = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        lineV.setAttribute('x1', x2);
+        lineV.setAttribute('y1', y1);
+        lineV.setAttribute('x2', x2);
+        lineV.setAttribute('y2', y2);
+        lineV.setAttribute('stroke', 'rgba(90, 159, 212, 0.3)');
+        lineV.setAttribute('stroke-width', '2');
+        svg.appendChild(lineV);
+        
+        // Горизонтальная линия к следующей карточке
+        const yMiddle = (y1 + y2) / 2;
+        const lineToNext = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        lineToNext.setAttribute('x1', x2);
+        lineToNext.setAttribute('y1', yMiddle);
+        lineToNext.setAttribute('x2', svgRect.width);
+        lineToNext.setAttribute('y2', yMiddle);
+        lineToNext.setAttribute('stroke', 'rgba(90, 159, 212, 0.3)');
+        lineToNext.setAttribute('stroke-width', '2');
+        svg.appendChild(lineToNext);
+      } else {
+        // Если нет второго матча (полуфинал), просто продлеваем линию
+        const lineToNext = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        lineToNext.setAttribute('x1', x2);
+        lineToNext.setAttribute('y1', y1);
+        lineToNext.setAttribute('x2', svgRect.width);
+        lineToNext.setAttribute('y2', y1);
+        lineToNext.setAttribute('stroke', 'rgba(90, 159, 212, 0.3)');
+        lineToNext.setAttribute('stroke-width', '2');
+        svg.appendChild(lineToNext);
+      }
+    }
+  });
 }
 
 // Отрисовать матчи стадии вертикально

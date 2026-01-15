@@ -3358,42 +3358,30 @@ input:checked + .slider:before {
 
 .bracket-stage-column:nth-child(5) .bracket-match-vertical:nth-child(1) { grid-row: 15 / 17; }
 
-/* Добавляем соединительные линии */
-.bracket-match-vertical::after {
-  content: '';
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  width: 30px;
-  height: 2px;
-  background: rgba(90, 159, 212, 0.3);
-}
-
-/* Вертикальные линии между парами матчей */
-.bracket-match-vertical:nth-child(odd)::before {
-  content: '';
-  position: absolute;
-  left: calc(100% + 30px);
-  top: 50%;
-  width: 2px;
-  height: calc(100% + 40px);
-  background: rgba(90, 159, 212, 0.3);
-}
-
-.bracket-match-vertical:nth-child(even)::before {
-  content: '';
-  position: absolute;
-  left: calc(100% + 30px);
-  bottom: 50%;
-  width: 2px;
-  height: calc(100% + 40px);
-  background: rgba(90, 159, 212, 0.3);
-}
-
-/* Убираем линии у финала */
-.bracket-final .bracket-match-vertical::after,
-.bracket-final .bracket-match-vertical::before {
+/* Убираем старые псевдоэлементы для линий */
+.bracket-match-vertical::after,
+.bracket-match-vertical::before {
   display: none;
+}
+
+/* Контейнер для SVG линий */
+.bracket-stage-column {
+  position: relative;
+}
+
+.bracket-connections-svg {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  width: calc(190px + 16px);
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bracket-match-vertical {
+  position: relative;
+  z-index: 1;
 }
 
 .bracket-match-vertical {
