@@ -3607,6 +3607,55 @@ async function loadTournamentParticipants(eventId, eventName) {
   }
 }
 
+// Вычислить максимальную серию угаданных ставок подряд для пользователя в турнире
+async function calculateMaxWinStreak(userId, eventId) {
+  try {
+    const response = await fetch(`/api/event/${eventId}/participant/${userId}/bets`);
+    if (!response.ok) return 0;
+    
+    const { bets } = await response.json();
+    if (!bets || bets.length === 0) return 0;
+    
+    // Сортируем ставки по дате матча
+    const sortedBets = bets.sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+    
+    let maxStreak = 0;
+    let currentStreak = 0;
+    
+    for (const bet of sortedBets) {
+      // Проверяем только завершенные ставки
+      if (bet.winner === null && !bet.final_result) continue;
+      
+      let isWin = false;
+      
+      // Обычные ставки
+      if (!bet.is_final_bet && bet.winner) {
+        isWin = (bet.prediction === 'team1' && bet.winner === 'team1') ||
+                (bet.prediction === 'team2' && bet.winner === 'team2') ||
+                (bet.prediction === 'draw' && bet.winner === 'draw') ||
+                (bet.prediction === bet.team1_name && bet.winner === 'team1') ||
+                (bet.prediction === bet.team2_name && bet.winner === 'team2');
+      }
+      // Финальные параметры
+      else if (bet.is_final_bet && bet.final_result !== undefined) {
+        isWin = String(bet.prediction) === String(bet.final_result);
+      }
+      
+      if (isWin) {
+        currentStreak++;
+        maxStreak = Math.max(maxStreak, currentStreak);
+      } else {
+        currentStreak = 0;
+      }
+    }
+    
+    return maxStreak;
+  } catch (error) {
+    console.error('Ошибка при вычислении серии побед:', error);
+    return 0;
+  }
+}
+
 async function displayTournamentParticipants(
   participants,
   isLocked = false,
@@ -3646,12 +3695,26 @@ async function displayTournamentParticipants(
     isBracketStarted = now >= startDate;
   }
 
+  // Получаем максимальные серии для всех участников
+  const participantsWithStreaks = await Promise.all(
+    participants.map(async (participant) => {
+      const maxStreak = await calculateMaxWinStreak(participant.id, eventId);
+      return { ...participant, max_win_streak: maxStreak };
+    })
+  );
+
   // Сортируем по выигранным ставкам в турнире в убывающем порядке
-  const sortedParticipants = [...participants].sort((a, b) => {
+  const sortedParticipants = [...participantsWithStreaks].sort((a, b) => {
+    // Сначала по очкам
     if ((b.event_won || 0) !== (a.event_won || 0)) {
-      return (b.event_won || 0) - (a.event_won || 0); // Выигрыши: больше → выше
+      return (b.event_won || 0) - (a.event_won || 0);
     }
-    return (a.event_lost || 0) - (b.event_lost || 0); // Проигрыши: меньше → выше
+    // При равенстве очков - по максимальной серии побед подряд
+    if ((b.max_win_streak || 0) !== (a.max_win_streak || 0)) {
+      return (b.max_win_streak || 0) - (a.max_win_streak || 0);
+    }
+    // При равенстве серий - по проигрышам (меньше = выше)
+    return (a.event_lost || 0) - (b.event_lost || 0);
   });
 
   tournamentParticipantsList.innerHTML = sortedParticipants
