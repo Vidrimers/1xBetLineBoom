@@ -3275,7 +3275,7 @@ input:checked + .slider:before {
 /* Новая структура сетки - все стадии слева направо */
 .bracket-stages-wrapper {
   display: flex;
-  gap: 40px;
+  gap: 20px;
   min-width: min-content;
   padding: 80px 20px 20px 20px;
   justify-content: flex-start;
@@ -3285,12 +3285,12 @@ input:checked + .slider:before {
 .bracket-stage-column {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 190px;
+  gap: 6px;
+  min-width: 200px;
 }
 
 .bracket-final {
-  min-width: 210px;
+  min-width: 220px;
 }
 
 .bracket-stage-title {
@@ -3309,7 +3309,7 @@ input:checked + .slider:before {
 
 .bracket-matches-column {
   display: grid;
-  grid-template-rows: repeat(32, 35px);
+  grid-template-rows: repeat(32, 42px);
   gap: 0;
   flex: 1;
   position: relative;
@@ -3384,21 +3384,17 @@ input:checked + .slider:before {
 }
 
 .bracket-match-vertical {
-  position: relative;
-  z-index: 1;
-}
-
-.bracket-match-vertical {
   background: rgba(40, 44, 54, 0.6);
   border: 1px solid rgba(90, 159, 212, 0.3);
   border-radius: 5px;
-  padding: 4px 6px;
+  padding: 6px 8px;
   transition: all 0.3s ease;
-  min-height: 55px;
+  min-height: 70px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
+  z-index: 1;
 }
 
 .bracket-match-vertical:hover {
@@ -3409,20 +3405,20 @@ input:checked + .slider:before {
 .bracket-match-teams-vertical {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   margin-bottom: 0;
 }
 
 .bracket-team-slot {
-  padding: 4px 6px;
+  padding: 5px 8px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 3px;
   transition: all 0.3s ease;
-  min-height: 24px;
+  min-height: 28px;
   display: flex;
   align-items: center;
-  font-size: 0.85em;
+  font-size: 0.9em;
 }
 
 .bracket-team-slot:hover {
