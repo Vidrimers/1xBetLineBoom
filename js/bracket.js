@@ -8,6 +8,7 @@ let isEditingBracket = false;
 let hasUnsavedChanges = false; // Флаг несохраненных изменений
 let originalBracketMatches = null; // Сохраненное состояние для отката
 let isViewingOtherUserBracket = false; // Флаг просмотра чужих прогнозов
+let viewingUserId = null; // ID пользователя, чьи прогнозы просматриваем
 let allTeams = [];
 
 // Структура сетки плей-офф
@@ -309,10 +310,13 @@ async function loadBracketsForEvent(eventId) {
 
 // Открыть модальное окно сетки
 async function openBracketModal(bracketId, viewUserId = null) {
+  console.log('🔍 openBracketModal вызвана:', { bracketId, viewUserId });
+  
   // viewUserId - ID пользователя, чьи прогнозы нужно показать (если null - показываем текущего пользователя)
   const targetUserId = viewUserId || (currentUser ? currentUser.id : null);
   
   if (!currentUser && !viewUserId) {
+    console.error('❌ Нет авторизации');
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
     } else {
@@ -322,15 +326,19 @@ async function openBracketModal(bracketId, viewUserId = null) {
   }
 
   try {
+    console.log('📡 Загружаем команды...');
     // Загружаем команды
     await loadTeams();
     
+    console.log('📡 Загружаем данные сетки:', bracketId);
     // Загружаем данные сетки
     const response = await fetch(`/api/brackets/${bracketId}`);
     if (!response.ok) {
+      console.error('❌ Ошибка загрузки сетки, статус:', response.status);
       throw new Error('Ошибка загрузки сетки');
     }
     
+    console.log('✅ Сетка загружена');
     currentBracket = await response.json();
     isEditingBracket = false;
     
@@ -409,6 +417,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
     // Если смотрим прогнозы другого пользователя - всегда режим просмотра
     const isViewMode = viewUserId && viewUserId !== (currentUser ? currentUser.id : null);
     isViewingOtherUserBracket = isViewMode; // Устанавливаем глобальный флаг
+    viewingUserId = viewUserId; // Сохраняем ID просматриваемого пользователя
     
     // Передаем только реальный статус закрытия, режим просмотра определяется через флаг
     renderBracketModal(isClosed);
@@ -469,6 +478,48 @@ function isBracketClosed(bracket) {
   return now >= startDate;
 }
 
+// Подсчитать статистику прогнозов в сетке
+function calculateBracketStats(userId) {
+  const stats = {
+    total: 0,
+    correct: 0,
+    incorrect: 0,
+    pending: 0,
+    points: 0
+  };
+  
+  if (!currentBracket || !bracketPredictions) return stats;
+  
+  // Проходим по всем стадиям
+  Object.keys(bracketPredictions).forEach(stageId => {
+    Object.keys(bracketPredictions[stageId]).forEach(matchIndex => {
+      const prediction = bracketPredictions[stageId][matchIndex];
+      if (!prediction) return;
+      
+      stats.total++;
+      
+      // Проверяем есть ли результат для этого матча
+      const actualWinner = bracketResults[stageId]?.[matchIndex];
+      
+      if (actualWinner) {
+        // Результат установлен
+        if (prediction === actualWinner) {
+          stats.correct++;
+          // Начисляем очки: 3 за финал, 1 за остальные
+          stats.points += (stageId === 'final') ? 3 : 1;
+        } else {
+          stats.incorrect++;
+        }
+      } else {
+        // Результат еще не установлен
+        stats.pending++;
+      }
+    });
+  });
+  
+  return stats;
+}
+
 // Отрисовать модальное окно сетки
 function renderBracketModal(isClosed) {
   const modal = document.getElementById('bracketModal');
@@ -513,6 +564,26 @@ function renderBracketModal(isClosed) {
     statusBadge = '<div style="color: #5a9fd4; font-size: 0.9em;">👁️ Режим просмотра</div>';
   }
   
+  // Подсчитываем статистику прогнозов (только если сетка заблокирована)
+  let statsHtml = '';
+  if (currentUser && isLocked) {
+    const userId = isViewingOtherUserBracket ? viewingUserId : currentUser.id;
+    const stats = calculateBracketStats(userId);
+    
+    if (stats.total > 0) {
+      statsHtml = `
+        <div style="color: #b0b8c8; font-size: 0.85em; margin-top: 8px; padding: 8px; background: rgba(40, 44, 54, 0.5); border-radius: 4px;">
+          <div style="display: flex; gap: 15px; justify-content: center;">
+            <span>✅ Угадано: <strong style="color: #4caf50;">${stats.correct}</strong></span>
+            <span>❌ Не угадано: <strong style="color: #f44336;">${stats.incorrect}</strong></span>
+            <span>⏳ В ожидании: <strong style="color: #ff9800;">${stats.pending}</strong></span>
+            <span>🏆 Очки: <strong style="color: #ffd700;">${stats.points}</strong></span>
+          </div>
+        </div>
+      `;
+    }
+  }
+  
   const isAdmin = currentUser && currentUser.isAdmin;
   
   // Скрываем кнопки админа если просматриваем чужие прогнозы
@@ -537,6 +608,7 @@ function renderBracketModal(isClosed) {
           ${statusBadge}
           ${lockReasonText}
           ${lockDateText}
+          ${statsHtml}
         </div>
         <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; align-items: center;">
           ${showAdminButtons ? `
@@ -571,14 +643,14 @@ function renderBracketModal(isClosed) {
       </div>
       
       <div class="bracket-container">
-        ${renderBracketStages(isLocked)}
+        ${renderBracketStages(isLocked, showAdminButtons)}
       </div>
     </div>
   `;
 }
 
 // Отрисовать стадии сетки
-function renderBracketStages(isClosed) {
+function renderBracketStages(isClosed, showAdminButtons = false) {
   const startStage = currentBracket.start_stage || 'round_of_16';
   const stages = getStagesForBracket(startStage);
   
@@ -610,7 +682,7 @@ function renderBracketStages(isClosed) {
         `}
         <h3 class="bracket-stage-title">${stage.name}</h3>
         <div class="bracket-matches-column">
-          ${renderStageMatchesVertical(stage, isClosed, 0, stage.matches)}
+          ${renderStageMatchesVertical(stage, isClosed, 0, stage.matches, showAdminButtons)}
         </div>
         ${!isLastStage ? '<svg class="bracket-connections-svg"></svg>' : ''}
       </div>
@@ -755,9 +827,8 @@ function drawBracketConnections() {
 }
 
 // Отрисовать матчи стадии вертикально
-function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex) {
+function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex, showAdminButtons = false) {
   let html = '';
-  const isAdmin = currentUser && currentUser.isAdmin;
   
   for (let i = startIndex; i < endIndex; i++) {
     const matchData = currentBracket.matches?.[stage.id]?.[i];
@@ -773,8 +844,8 @@ function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex) {
     html += `
       <div class="bracket-match-vertical ${matchClass}" data-stage="${stage.id}" data-match="${i}">
         <div class="bracket-match-teams-vertical">
-          ${renderTeamSlotWithRadio(stage.id, i, 0, matchData?.team1, prediction, isClosed, actualWinner, isAdmin)}
-          ${renderTeamSlotWithRadio(stage.id, i, 1, matchData?.team2, prediction, isClosed, actualWinner, isAdmin)}
+          ${renderTeamSlotWithRadio(stage.id, i, 0, matchData?.team1, prediction, isClosed, actualWinner, showAdminButtons)}
+          ${renderTeamSlotWithRadio(stage.id, i, 1, matchData?.team2, prediction, isClosed, actualWinner, showAdminButtons)}
         </div>
       </div>
     `;
@@ -1327,6 +1398,7 @@ async function closeBracketModal() {
   hasUnsavedChanges = false; // Сбрасываем флаг
   originalBracketMatches = null; // Очищаем сохраненное состояние
   isViewingOtherUserBracket = false; // Сбрасываем флаг просмотра чужих прогнозов
+  viewingUserId = null; // Сбрасываем ID просматриваемого пользователя
 }
 
 // Переключить режим редактирования сетки

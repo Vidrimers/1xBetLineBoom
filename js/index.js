@@ -10835,15 +10835,25 @@ async function showUserBracketPredictions(bracketId, userId) {
 // Показать прогнозы пользователя в сетке (открыть модалку)
 async function showUserBracketPredictionsInline(userId, username = 'Пользователь') {
   try {
-    // Находим сетку для текущего турнира
-    if (!currentEventId) {
-      alert('Сначала выберите турнир');
+    // Находим сетку для текущего турнира (используем window.currentEventId или currentEventId)
+    const eventId = window.currentEventId || currentEventId;
+    
+    if (!eventId) {
+      if (typeof showCustomAlert === 'function') {
+        await showCustomAlert('Сначала выберите турнир', 'Ошибка', '❌');
+      } else {
+        alert('Сначала выберите турнир');
+      }
       return;
     }
     
-    const brackets = await loadBracketsForEvent(currentEventId);
+    const brackets = await loadBracketsForEvent(eventId);
     if (!brackets || brackets.length === 0) {
-      alert('Для этого турнира нет сетки плей-офф');
+      if (typeof showCustomAlert === 'function') {
+        await showCustomAlert('Для этого турнира нет сетки плей-офф', 'Ошибка', '❌');
+      } else {
+        alert('Для этого турнира нет сетки плей-офф');
+      }
       return;
     }
     
@@ -10856,6 +10866,10 @@ async function showUserBracketPredictionsInline(userId, username = 'Пользо
     await openBracketModal(bracket.id, userId);
   } catch (error) {
     console.error('Ошибка при открытии прогнозов сетки:', error);
-    alert('Не удалось загрузить прогнозы сетки');
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Не удалось загрузить прогнозы сетки', 'Ошибка', '❌');
+    } else {
+      alert('Не удалось загрузить прогнозы сетки');
+    }
   }
 }
