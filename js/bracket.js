@@ -257,7 +257,11 @@ function renderBracketStages(isClosed) {
           <div style="text-align: center; color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px;">
             ${headerText}
           </div>
-        ` : ''}
+        ` : `
+          <div style="text-align: center; color: transparent; font-size: 0.85em; margin-bottom: 5px; visibility: hidden;">
+            &nbsp;
+          </div>
+        `}
         <h3 class="bracket-stage-title">${stage.name}</h3>
         <div class="bracket-matches-column">
           ${renderStageMatchesVertical(stage, isClosed, 0, stage.matches)}
