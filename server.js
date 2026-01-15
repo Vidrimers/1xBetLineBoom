@@ -4828,6 +4828,22 @@ app.get("/api/user/:userId/profile", (req, res) => {
     profile.max_win_streak = maxStreak;
     profile.max_win_streak_event = maxStreakEventName;
 
+    // Подсчитываем статистику по сетке плей-офф
+    const bracketStats = db.prepare(`
+      SELECT 
+        COUNT(*) as total_bracket_predictions,
+        SUM(CASE WHEN bp.predicted_winner = br.actual_winner THEN 1 ELSE 0 END) as correct_bracket_predictions,
+        SUM(CASE WHEN bp.predicted_winner != br.actual_winner THEN 1 ELSE 0 END) as incorrect_bracket_predictions
+      FROM bracket_predictions bp
+      LEFT JOIN bracket_results br ON bp.bracket_id = br.bracket_id 
+        AND bp.stage = br.stage 
+        AND bp.match_index = br.match_index
+      WHERE bp.user_id = ? AND br.actual_winner IS NOT NULL
+    `).get(userId);
+
+    profile.bracket_correct = bracketStats?.correct_bracket_predictions || 0;
+    profile.bracket_incorrect = bracketStats?.incorrect_bracket_predictions || 0;
+
     res.json(profile);
   } catch (error) {
     res.status(500).json({ error: error.message });

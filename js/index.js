@@ -4288,6 +4288,14 @@ function displayProfile(profile) {
         <div class="stat-label">⏳ В ожидании</div>
         <div class="stat-value">${profile.pending_bets}</div>
       </div>
+      <div class="stat-card won" style="background: rgba(76, 175, 80, 0.15); border-left: 4px solid #4caf50;">
+        <div class="stat-label">✅ Угаданных в сетке</div>
+        <div class="stat-value">${profile.bracket_correct || 0}</div>
+      </div>
+      <div class="stat-card lost" style="background: rgba(244, 67, 54, 0.15); border-left: 4px solid #f44336;">
+        <div class="stat-label">❌ Неугаданных в сетке</div>
+        <div class="stat-value">${profile.bracket_incorrect || 0}</div>
+      </div>
       <div class="stat-card" style="background: rgba(255, 152, 0, 0.15); border-left: 4px solid #ffc107;">
         <div class="stat-label">🏆 Побед в турнирах</div>
         <div class="stat-value" style="color: #ffc107;">${
@@ -9162,6 +9170,18 @@ async function showUserProfile(userId, username) {
             <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">В ожидании</div>
             <div style="font-size: 1.6em; font-weight: bold; color: #ff9800;">${
               userData.pending_bets || 0
+            }</div>
+          </div>
+          <div style="background: rgba(76, 175, 80, 0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">✅ Угаданных в сетке</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #4caf50;">${
+              userData.bracket_correct || 0
+            }</div>
+          </div>
+          <div style="background: rgba(244, 67, 54, 0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #f44336;">
+            <div style="font-size: 0.85em; color: #999; margin-bottom: 5px;">❌ Неугаданных в сетке</div>
+            <div style="font-size: 1.6em; font-weight: bold; color: #f44336;">${
+              userData.bracket_incorrect || 0
             }</div>
           </div>
           <div style="background: rgba(255, 152, 0, 0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
