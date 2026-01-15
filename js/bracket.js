@@ -568,7 +568,7 @@ function renderBracketStages(isClosed) {
     'final': '' // Для финала текст не нужен
   };
   
-  let html = '<div class="bracket-stages-wrapper">';
+  let html = `<div class="bracket-stages-wrapper" data-start-stage="${startStage}">`;
   
   stages.forEach((stage, stageIndex) => {
     const headerText = nextStageText[stage.id] || '';
