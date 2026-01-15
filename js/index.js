@@ -1278,23 +1278,33 @@ async function loadEventsList() {
     events = await response.json();
     displayEvents();
 
-    // При первой загрузке выбираем первый активный турнир, или первый предстоящий, или первый доступный
+    // При первой загрузке выбираем турнир
     if (!currentEventId && events.length > 0) {
-      const now = new Date();
-      const firstActiveEvent = events.find(
-        (e) => !e.locked_reason && e.start_date && new Date(e.start_date) <= now
-      );
-      const firstUpcomingEvent = events.find(
-        (e) =>
-          !e.locked_reason && (!e.start_date || new Date(e.start_date) > now)
-      );
-      const eventToSelect =
-        firstActiveEvent ||
-        firstUpcomingEvent ||
-        events.find((e) => !e.locked_reason) ||
-        events[0];
-      if (eventToSelect) {
-        selectEvent(eventToSelect.id);
+      // Пытаемся восстановить последний выбранный турнир из localStorage
+      const savedEventId = localStorage.getItem('selectedEventId');
+      const savedEvent = savedEventId ? events.find(e => e.id === parseInt(savedEventId)) : null;
+      
+      // Если сохраненный турнир существует, выбираем его
+      if (savedEvent) {
+        selectEvent(savedEvent.id);
+      } else {
+        // Иначе выбираем первый активный турнир, или первый предстоящий, или первый доступный
+        const now = new Date();
+        const firstActiveEvent = events.find(
+          (e) => !e.locked_reason && e.start_date && new Date(e.start_date) <= now
+        );
+        const firstUpcomingEvent = events.find(
+          (e) =>
+            !e.locked_reason && (!e.start_date || new Date(e.start_date) > now)
+        );
+        const eventToSelect =
+          firstActiveEvent ||
+          firstUpcomingEvent ||
+          events.find((e) => !e.locked_reason) ||
+          events[0];
+        if (eventToSelect) {
+          selectEvent(eventToSelect.id);
+        }
       }
     }
   } catch (error) {
@@ -1555,6 +1565,9 @@ function getMatchStatusByDate(match) {
 
 async function loadMatches(eventId) {
   try {
+    // Сохраняем выбранный турнир в localStorage
+    localStorage.setItem('selectedEventId', eventId);
+    
     // Получаем информацию о турнире
     const eventResponse = await fetch("/api/events");
     const eventsList = await eventResponse.json();
