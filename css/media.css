@@ -2462,3 +2462,440 @@
     gap: 8px !important;
   }
 }
+
+
+/* ===== АДАПТИВ ДЛЯ СЕТКИ ПЛЕЙ-ОФФ ===== */
+
+/* Планшеты - компактная версия с линиями и гридами */
+@media (max-width: 1200px) {
+  .bracket-modal-content {
+    width: 98vw;
+    max-width: 98vw;
+  }
+
+  .bracket-container {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .bracket-stages-wrapper {
+    padding: 60px 12px 12px 12px;
+    gap: 15px;
+  }
+
+  .bracket-stage-column {
+    min-width: 160px;
+  }
+
+  .bracket-connections-svg {
+    width: calc(160px + 12px);
+  }
+
+  .bracket-match-vertical {
+    padding: 5px 6px;
+    min-height: 60px;
+  }
+
+  .bracket-team-slot {
+    padding: 4px 6px;
+    min-height: 26px;
+    font-size: 0.85em;
+  }
+
+  .bracket-team-name {
+    font-size: 0.8em;
+  }
+
+  .bracket-stage-title {
+    font-size: 0.8em;
+  }
+}
+
+/* От 700px до 1200px - компактная горизонтальная версия с линиями */
+@media (max-width: 1200px) and (min-width: 700px) {
+  .bracket-stage-column {
+    min-width: 150px;
+  }
+
+  .bracket-final {
+    min-width: 170px;
+  }
+
+  .bracket-connections-svg {
+    width: calc(150px + 10px);
+  }
+
+  .bracket-match-vertical {
+    padding: 4px 5px;
+    min-height: 55px;
+  }
+
+  .bracket-team-slot {
+    padding: 3px 5px;
+    min-height: 24px;
+    font-size: 0.8em;
+  }
+
+  .bracket-team-name {
+    font-size: 0.75em;
+  }
+
+  .bracket-radio-custom {
+    width: 18px;
+    height: 18px;
+  }
+
+  .bracket-radio:checked + .bracket-radio-custom::after {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+/* От 600px до 700px - еще более компактная горизонтальная версия с линиями */
+@media (max-width: 699px) and (min-width: 600px) {
+  .bracket-stage-column {
+    min-width: 130px;
+  }
+
+  .bracket-final {
+    min-width: 150px;
+  }
+
+  .bracket-connections-svg {
+    width: calc(130px + 8px);
+  }
+
+  .bracket-match-vertical {
+    padding: 3px 4px;
+    min-height: 50px;
+  }
+
+  .bracket-team-slot {
+    padding: 3px 4px;
+    min-height: 22px;
+    font-size: 0.75em;
+  }
+
+  .bracket-team-name {
+    font-size: 0.7em;
+  }
+
+  .bracket-stage-title {
+    font-size: 0.75em;
+  }
+
+  .bracket-radio-custom {
+    width: 16px;
+    height: 16px;
+  }
+
+  .bracket-radio:checked + .bracket-radio-custom::after {
+    width: 8px;
+    height: 8px;
+  }
+
+  .bracket-team-slot-wrapper {
+    gap: 6px;
+  }
+}
+
+/* Меньше 600px - вертикальная раскладка на флексах БЕЗ линий */
+@media (max-width: 599px) {
+  .bracket-modal-content {
+    width: 99vw;
+    max-width: 99vw;
+    max-height: 94vh;
+  }
+
+  .bracket-container {
+    overflow-x: visible;
+    overflow-y: auto;
+  }
+
+  /* Переключаем на вертикальную раскладку */
+  .bracket-stages-wrapper {
+    flex-direction: column !important;
+    gap: 20px;
+    padding: 10px;
+    min-width: 100%;
+    align-items: stretch;
+  }
+
+  .bracket-stage-column {
+    min-width: 100% !important;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .bracket-final {
+    min-width: 100% !important;
+  }
+
+  /* Убираем grid, используем flex */
+  .bracket-matches-column {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Сбрасываем все grid-row позиционирование */
+  .bracket-stage-column .bracket-match-vertical {
+    grid-row: auto !important;
+  }
+
+  /* Убираем SVG линии */
+  .bracket-connections-svg {
+    display: none !important;
+  }
+
+  /* Заголовок стадии */
+  .bracket-stage-title {
+    position: static !important;
+    margin-bottom: 8px;
+    font-size: 0.95em;
+    border-bottom: 2px solid rgba(90, 159, 212, 0.4);
+  }
+
+  /* Текст "Кто проходит в..." */
+  .bracket-header-text {
+    position: static !important;
+    visibility: visible !important;
+    color: #b0b8c8 !important;
+    font-size: 0.75em;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  /* Карточки матчей */
+  .bracket-match-vertical {
+    min-height: auto;
+    padding: 8px;
+  }
+
+  .bracket-match-teams-vertical {
+    gap: 6px;
+  }
+
+  .bracket-team-slot {
+    padding: 6px 8px;
+    min-height: 32px;
+    font-size: 0.9em;
+  }
+
+  .bracket-team-name {
+    font-size: 0.85em;
+  }
+
+  /* Радиокнопки для админа */
+  .bracket-team-slot-wrapper {
+    gap: 8px;
+  }
+
+  .bracket-radio-custom {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bracket-radio:checked + .bracket-radio-custom::after {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* Кнопки в хедере модалки */
+  .modal-header {
+    flex-wrap: wrap;
+  }
+
+  .modal-header > div:first-child {
+    flex: 1 1 100%;
+    margin-bottom: 10px;
+  }
+
+  .modal-header > div:last-child {
+    position: static;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .modal-header button {
+    padding: 6px 10px !important;
+    font-size: 0.8em !important;
+  }
+
+  .modal-close {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 22px !important;
+  }
+
+  /* Статистика в модалке */
+  .bracket-modal-content [style*="display: flex"] {
+    flex-wrap: wrap;
+    gap: 10px !important;
+    justify-content: space-around !important;
+  }
+}
+
+/* Очень маленькие телефоны */
+@media (max-width: 480px) {
+  .bracket-modal-content {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 95vh;
+    border-radius: 8px;
+  }
+
+  .bracket-stages-wrapper {
+    gap: 15px;
+    padding: 8px;
+  }
+
+  .bracket-stage-column {
+    gap: 6px;
+  }
+
+  .bracket-stage-title {
+    font-size: 0.9em;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+  }
+
+  .bracket-header-text {
+    font-size: 0.7em;
+    margin-bottom: 5px;
+  }
+
+  .bracket-match-vertical {
+    padding: 6px;
+    border-radius: 4px;
+  }
+
+  .bracket-match-teams-vertical {
+    gap: 5px;
+  }
+
+  .bracket-team-slot {
+    padding: 5px 6px;
+    min-height: 28px;
+    font-size: 0.85em;
+    border-radius: 3px;
+  }
+
+  .bracket-team-name {
+    font-size: 0.8em;
+  }
+
+  .bracket-team-slot-wrapper {
+    gap: 6px;
+  }
+
+  .bracket-radio-custom {
+    width: 18px;
+    height: 18px;
+    border-width: 1.5px;
+  }
+
+  .bracket-radio:checked + .bracket-radio-custom::after {
+    width: 9px;
+    height: 9px;
+  }
+
+  /* Кнопки в хедере */
+  .modal-header {
+    padding: 8px;
+  }
+
+  .modal-header h2 {
+    font-size: 0.95em;
+  }
+
+  .modal-header button {
+    padding: 5px 8px !important;
+    font-size: 0.75em !important;
+  }
+
+  .modal-close {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 20px !important;
+  }
+
+  /* Статистика */
+  .bracket-modal-content [style*="font-size: 0.85em"] {
+    font-size: 0.75em !important;
+  }
+
+  .bracket-modal-content [style*="font-size: 0.9em"] {
+    font-size: 0.8em !important;
+  }
+}
+
+/* Экстра маленькие телефоны */
+@media (max-width: 400px) {
+  .bracket-modal-content {
+    border-radius: 6px;
+  }
+
+  .bracket-stages-wrapper {
+    gap: 12px;
+    padding: 6px;
+  }
+
+  .bracket-stage-title {
+    font-size: 0.85em;
+  }
+
+  .bracket-header-text {
+    font-size: 0.65em;
+  }
+
+  .bracket-match-vertical {
+    padding: 5px;
+  }
+
+  .bracket-team-slot {
+    padding: 4px 5px;
+    min-height: 26px;
+    font-size: 0.8em;
+  }
+
+  .bracket-team-name {
+    font-size: 0.75em;
+  }
+
+  .bracket-team-slot-wrapper {
+    gap: 5px;
+  }
+
+  .bracket-radio-custom {
+    width: 16px;
+    height: 16px;
+  }
+
+  .bracket-radio:checked + .bracket-radio-custom::after {
+    width: 8px;
+    height: 8px;
+  }
+
+  .modal-header {
+    padding: 6px;
+  }
+
+  .modal-header h2 {
+    font-size: 0.9em;
+  }
+
+  .modal-header button {
+    padding: 4px 6px !important;
+    font-size: 0.7em !important;
+  }
+
+  .modal-close {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 18px !important;
+  }
+}

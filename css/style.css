@@ -3478,8 +3478,8 @@ input:checked + .slider:before {
   cursor: not-allowed;
 }
 
-/* Адаптивность для мобильных */
-@media (max-width: 1200px) {
+/* Адаптивность для мобильных - только для маленьких экранов */
+@media (max-width: 599px) {
   .bracket-stages-wrapper {
     flex-direction: column;
     gap: 30px;
@@ -3496,7 +3496,8 @@ input:checked + .slider:before {
   }
 }
 
-@media (max-width: 768px) {
+/* Адаптив для сетки - только для маленьких экранов */
+@media (max-width: 599px) {
   .bracket-modal-content {
     width: 95vw;
     max-height: 85vh;

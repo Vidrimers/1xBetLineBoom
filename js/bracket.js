@@ -451,6 +451,9 @@ async function openBracketModal(bracketId, viewUserId = null) {
       
       // Запускаем периодическое обновление результатов
       startBracketResultsPolling();
+      
+      // Добавляем обработчик изменения размера окна для перерисовки линий
+      window.addEventListener('resize', handleBracketResize);
     }
     
     if (typeof lockBodyScroll === 'function') {
@@ -466,6 +469,18 @@ async function openBracketModal(bracketId, viewUserId = null) {
       alert('Не удалось загрузить сетку');
     }
   }
+}
+
+// Обработчик изменения размера окна для сетки
+let bracketResizeTimeout;
+function handleBracketResize() {
+  clearTimeout(bracketResizeTimeout);
+  bracketResizeTimeout = setTimeout(() => {
+    if (window.innerWidth >= 600) {
+      drawBracketConnections();
+      positionBracketTitles();
+    }
+  }, 250);
 }
 
 // Проверить, закрыта ли сетка для ставок
@@ -692,9 +707,12 @@ function renderBracketStages(isClosed, showAdminButtons = false) {
   html += '</div>'; // bracket-stages-wrapper
   
   // После рендера нужно нарисовать линии и позиционировать заголовки
+  // Только для экранов от 600px и выше
   setTimeout(() => {
-    drawBracketConnections();
-    positionBracketTitles();
+    if (window.innerWidth >= 600) {
+      drawBracketConnections();
+      positionBracketTitles();
+    }
   }, 0);
   
   return html;
@@ -1390,6 +1408,9 @@ async function closeBracketModal() {
   
   // Останавливаем обновление результатов
   stopBracketResultsPolling();
+  
+  // Удаляем обработчик изменения размера окна
+  window.removeEventListener('resize', handleBracketResize);
   
   currentBracket = null;
   bracketPredictions = {};
