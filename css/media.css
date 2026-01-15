@@ -1527,14 +1527,27 @@
 
   .events-participant-item .participant-rank {
     font-size: 1em;
+    order: 1;
   }
   
   .events-participant-item .participant-avatar {
     margin: 0 auto;
+    order: 2;
+  }
+
+  .events-participant-item .participant-info {
+    order: 3;
+  }
+
+  /* Меняем местами кнопку сетки и очки */
+  .events-participant-item .modal-bracket-filter-btn {
+    order: 5;
+    margin-left: 0 !important;
   }
   
   .events-participant-item .participant-points {
     margin: 0 auto;
+    order: 4;
   }
   
   .events-participant-item .participant-bets-count {
