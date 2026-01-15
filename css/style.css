@@ -650,6 +650,14 @@ button:active {
   cursor: not-allowed;
 }
 
+/* Заблокированный турнир, но выбранный */
+.event-item.locked.active {
+  background: rgba(77, 77, 77, 0.7);
+  border-left: 4px solid #f44336;
+  opacity: 1;
+  color: #fff;
+}
+
 .event-item.locked:hover {
   transform: translateX(0);
   /* background: rgba(80, 40, 40, 0.7); */
