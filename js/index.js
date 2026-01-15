@@ -3159,11 +3159,30 @@ function displayMyBets(bets) {
         };
       });
 
-  // Сортируем ВСЕ ставки: сначала "pending", потом остальные
+  // Сортируем ВСЕ ставки: 
+  // 1. Сначала "pending"
+  // 2. Потом завершенные (won/lost) по дате турнира (новые первыми)
+  // 3. Турниры без даты в самом низу
   const sortedBets = betsWithStatus.sort((a, b) => {
+    // Сначала все pending
     if (a.statusClass === 'pending' && b.statusClass !== 'pending') return -1;
     if (a.statusClass !== 'pending' && b.statusClass === 'pending') return 1;
-    return 0; // Сохраняем исходный порядок для ставок с одинаковым статусом
+    
+    // Если обе ставки завершены (won или lost), сортируем по дате турнира
+    if (a.statusClass !== 'pending' && b.statusClass !== 'pending') {
+      const dateA = a.bet.event_start_date ? new Date(a.bet.event_start_date) : null;
+      const dateB = b.bet.event_start_date ? new Date(b.bet.event_start_date) : null;
+      
+      // Турниры без даты в конец
+      if (!dateA && dateB) return 1;
+      if (dateA && !dateB) return -1;
+      if (!dateA && !dateB) return 0;
+      
+      // Сортируем по дате: новые турниры первыми
+      return dateB - dateA;
+    }
+    
+    return 0;
   });
 
   // Формируем HTML с разделителями по турнирам
