@@ -3967,14 +3967,14 @@ async function displayTournamentParticipants(
       </button>` : '';
 
       return `
-    <div class="participant-item events-participant-item ${winnerClass}">
+    <div class="participant-item events-participant-item ${winnerClass}" onclick="showTournamentParticipantBets(${
+        participant.id
+      }, '${participant.username.replace(/'/g, "\\'")}', ${eventId})" style="cursor: pointer;">
       <div class="participant-rank participant-rank-events">#${place} ${emoji}</div>
       <img src="${participant.avatar || "img/default-avatar.jpg"}" alt="${
         participant.username
       }" class="participant-avatar" />
-      <div class="participant-info" onclick="showTournamentParticipantBets(${
-        participant.id
-      }, '${participant.username.replace(/'/g, "\\'")}', ${eventId})" style="cursor: pointer; flex: 1;">
+      <div class="participant-info" style="flex: 1;">
         <div class="participant-name">${participant.username}</div>
         <div class="participant-stats">
           <span>Ставок в турнире: ${participant.event_bets || 0} |</span>
