@@ -2468,6 +2468,19 @@ app.post("/api/brackets/:bracketId/predictions", (req, res) => {
       return res.status(403).json({ error: "Ставки в сетке закрыты" });
     }
     
+    // Проверяем существующие прогнозы для определения, новые они или измененные
+    const existingPredictions = {};
+    predictions.forEach(p => {
+      const existing = db.prepare(`
+        SELECT predicted_winner FROM bracket_predictions 
+        WHERE bracket_id = ? AND user_id = ? AND stage = ? AND match_index = ?
+      `).get(bracketId, user_id, p.stage, p.match_index);
+      
+      if (existing) {
+        existingPredictions[`${p.stage}_${p.match_index}`] = existing.predicted_winner;
+      }
+    });
+    
     // Используем UPSERT для каждого прогноза (обновление или вставка)
     const upsertStmt = db.prepare(`
       INSERT INTO bracket_predictions (bracket_id, user_id, stage, match_index, predicted_winner)
@@ -2481,6 +2494,75 @@ app.post("/api/brackets/:bracketId/predictions", (req, res) => {
     });
     
     console.log(`✅ Прогнозы пользователя ${user_id} для сетки ${bracketId} сохранены`);
+    
+    // Отправляем уведомление пользователю в Telegram
+    const user = db.prepare("SELECT username, telegram_username, telegram_notifications_enabled FROM users WHERE id = ?").get(user_id);
+    
+    if (user && user.telegram_username && user.telegram_notifications_enabled === 1) {
+      // Получаем chat_id из telegram_users
+      const cleanUsername = user.telegram_username.toLowerCase();
+      const telegramUser = db.prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?").get(cleanUsername);
+      
+      if (telegramUser && telegramUser.chat_id) {
+        // Получаем информацию о турнире
+        const event = db.prepare("SELECT name FROM events WHERE id = ?").get(bracket.event_id);
+        const eventName = event ? event.name : "Турнир";
+        
+        // Формируем текст уведомления
+        const stageNames = {
+          'round_of_16': '1/16 финала',
+          'round_of_8': '1/8 финала',
+          'quarter_finals': '1/4 финала',
+          'semi_finals': '1/2 финала',
+          'final': 'Финал'
+        };
+        
+        // Разделяем на новые и измененные прогнозы
+        const newPredictions = [];
+        const changedPredictions = [];
+        
+        predictions.forEach(p => {
+          const key = `${p.stage}_${p.match_index}`;
+          const oldWinner = existingPredictions[key];
+          
+          if (oldWinner && oldWinner !== p.predicted_winner) {
+            // Прогноз изменен
+            changedPredictions.push({
+              stage: stageNames[p.stage] || p.stage,
+              oldWinner: oldWinner,
+              newWinner: p.predicted_winner
+            });
+          } else if (!oldWinner) {
+            // Новый прогноз
+            newPredictions.push({
+              stage: stageNames[p.stage] || p.stage,
+              winner: p.predicted_winner
+            });
+          }
+        });
+        
+        let message = '';
+        
+        if (changedPredictions.length > 0) {
+          message = `🔄 Прогноз в сетке плей-офф изменен!\n\n📊 Турнир: ${eventName}\n🏆 Сетка: ${bracket.name}\n\n`;
+          changedPredictions.forEach(p => {
+            message += `${p.stage}:\n  ❌ Было: ${p.oldWinner}\n  ✅ Стало: ${p.newWinner}\n\n`;
+          });
+        } else if (newPredictions.length > 0) {
+          message = `🎯 Прогноз в сетке плей-офф сохранен!\n\n📊 Турнир: ${eventName}\n🏆 Сетка: ${bracket.name}\n\n`;
+          newPredictions.forEach(p => {
+            message += `${p.stage}: ${p.winner}\n`;
+          });
+        }
+        
+        if (message) {
+          sendUserMessage(telegramUser.chat_id, message).catch(err => {
+            console.error(`Ошибка отправки уведомления пользователю ${user_id}:`, err);
+          });
+        }
+      }
+    }
+    
     res.json({ success: true });
   } catch (error) {
     console.error("Ошибка сохранения прогнозов:", error);
@@ -2522,6 +2604,39 @@ app.delete("/api/brackets/:bracketId/predictions/:userId/:stage/:matchIndex", (r
     `).run(bracketId, userId, stage, matchIndex);
     
     console.log(`✅ Прогноз пользователя ${userId} для сетки ${bracketId} (${stage}, матч ${matchIndex}) удален`);
+    
+    // Отправляем уведомление пользователю в Telegram
+    if (result.changes > 0) {
+      const user = db.prepare("SELECT username, telegram_username, telegram_notifications_enabled FROM users WHERE id = ?").get(userId);
+      
+      if (user && user.telegram_username && user.telegram_notifications_enabled === 1) {
+        // Получаем chat_id из telegram_users
+        const cleanUsername = user.telegram_username.toLowerCase();
+        const telegramUser = db.prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?").get(cleanUsername);
+        
+        if (telegramUser && telegramUser.chat_id) {
+          // Получаем информацию о турнире
+          const event = db.prepare("SELECT name FROM events WHERE id = ?").get(bracket.event_id);
+          const eventName = event ? event.name : "Турнир";
+          
+          // Формируем текст уведомления
+          const stageNames = {
+            'round_of_16': '1/16 финала',
+            'round_of_8': '1/8 финала',
+            'quarter_finals': '1/4 финала',
+            'semi_finals': '1/2 финала',
+            'final': 'Финал'
+          };
+          
+          const message = `🗑️ Прогноз в сетке плей-офф удален!\n\n📊 Турнир: ${eventName}\n🏆 Сетка: ${bracket.name}\n⚽ Стадия: ${stageNames[stage] || stage}`;
+          
+          sendUserMessage(telegramUser.chat_id, message).catch(err => {
+            console.error(`Ошибка отправки уведомления пользователю ${userId}:`, err);
+          });
+        }
+      }
+    }
+    
     res.json({ success: true, deleted: result.changes > 0 });
   } catch (error) {
     console.error("Ошибка удаления прогноза:", error);
