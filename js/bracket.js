@@ -216,13 +216,16 @@ function renderBracketModal(isClosed) {
   
   let statusBadge = '';
   let lockDateText = '';
+  let lockReasonText = '';
   
   // Не показываем статус ставок при просмотре чужих прогнозов
   if (!isViewingOtherUserBracket) {
     if (isManuallyLocked) {
-      statusBadge = '<div style="color: #ff9800; font-size: 0.9em;">🔒 Заблокировано админом</div>';
+      statusBadge = '<div style="color: #ff9800; font-size: 0.9em;">🔒 Ставки закрыты</div>';
+      lockReasonText = '<div style="color: #ff9800; font-size: 0.75em; margin-top: 2px;">Причина: Заблокировано администратором</div>';
     } else if (isAutoLocked) {
       statusBadge = '<div style="color: #f44336; font-size: 0.9em;">🔒 Ставки закрыты</div>';
+      lockReasonText = '<div style="color: #f44336; font-size: 0.75em; margin-top: 2px;">Причина: Плей-офф начался, ставки больше не принимаются</div>';
     } else {
       statusBadge = '<div style="color: #4caf50; font-size: 0.9em;">✅ Ставки открыты</div>';
       
@@ -267,6 +270,7 @@ function renderBracketModal(isClosed) {
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
           ${statusBadge}
+          ${lockReasonText}
           ${lockDateText}
         </div>
         <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; align-items: center;">
@@ -274,7 +278,7 @@ function renderBracketModal(isClosed) {
             <button class="btn-secondary" onclick="toggleBracketEditMode()" style="padding: 8px 16px; font-size: 0.9em;" title="Редактировать команды">
               ✏️
             </button>
-            <button class="btn-secondary" onclick="toggleBracketLock()" style="padding: 8px 16px; font-size: 0.9em;" title="${isManuallyLocked ? 'Разблокировать сетку' : 'Заблокировать сетку'}">
+            <button class="btn-secondary ${isAutoLocked ? 'disabled-look' : ''}" onclick="toggleBracketLock()" style="padding: 8px 16px; font-size: 0.9em; ${isAutoLocked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" title="${isAutoLocked ? 'Нельзя разблокировать: плей-офф начался' : (isManuallyLocked ? 'Разблокировать сетку' : 'Заблокировать сетку')}">
               ${isManuallyLocked ? '🔓' : '🔒'}
             </button>
             <button class="btn-danger" onclick="deleteBracket()" style="padding: 8px 16px; font-size: 0.9em;" title="Удалить сетку">
@@ -594,11 +598,17 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
     // Обновляем визуальное отображение (убираем подсветку)
     updateBracketMatchDisplay(stageId, matchIndex, null);
     
-    // Очищаем все последующие стадии
-    clearPredictionsFromStage(stageId, matchIndex);
-    
-    // Удаляем прогноз из БД
+    // Удаляем прогноз из БД для текущей стадии
     await deleteBracketPrediction(stageId, matchIndex);
+    
+    // Очищаем все последующие стадии (с удалением из БД)
+    const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+    const currentStageIndex = stageOrder.indexOf(stageId);
+    if (currentStageIndex < stageOrder.length - 1) {
+      const nextStageId = stageOrder[currentStageIndex + 1];
+      const nextMatchIndex = Math.floor(matchIndex / 2);
+      await clearPredictionsFromStage(nextStageId, nextMatchIndex, true);
+    }
     
     return;
   }
@@ -701,8 +711,8 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
   await saveBracketStructure();
 }
 
-// Очистить прогнозы начиная с указанной стадии и матча
-function clearPredictionsFromStage(stageId, matchIndex) {
+// Очистить прогнозы начиная с указанной стадии и матча (каскадное удаление)
+async function clearPredictionsFromStage(stageId, matchIndex, deleteFromDB = false) {
   const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
   const currentStageIndex = stageOrder.indexOf(stageId);
   
@@ -714,12 +724,18 @@ function clearPredictionsFromStage(stageId, matchIndex) {
   // Обновляем визуальное отображение
   updateBracketMatchDisplay(stageId, matchIndex, null);
   
+  // Удаляем прогноз из БД (только для последующих стадий, не для начальной)
+  if (deleteFromDB) {
+    await deleteBracketPrediction(stageId, matchIndex);
+  }
+  
   // Если это не финал, очищаем следующую стадию
   if (currentStageIndex < stageOrder.length - 1) {
     const nextStageId = stageOrder[currentStageIndex + 1];
     const nextMatchIndex = Math.floor(matchIndex / 2);
     
-    clearPredictionsFromStage(nextStageId, nextMatchIndex);
+    // Для всех последующих стадий включаем удаление из БД
+    await clearPredictionsFromStage(nextStageId, nextMatchIndex, true);
   }
 }
 
@@ -924,6 +940,25 @@ function toggleBracketEditMode() {
 async function toggleBracketLock() {
   if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
   
+  // Проверяем, не началась ли сетка автоматически
+  const isClosed = isBracketClosed(currentBracket);
+  const isManuallyLocked = currentBracket.is_locked === 1;
+  const isAutoLocked = isClosed && !isManuallyLocked;
+  
+  // Если сетка автоматически заблокирована (плей-офф начался), не позволяем разблокировать
+  if (isAutoLocked) {
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(
+        'Невозможно изменить блокировку: плей-офф уже начался. Ставки автоматически закрыты.',
+        'Блокировка недоступна',
+        '🔒'
+      );
+    } else {
+      alert('Невозможно изменить блокировку: плей-офф уже начался.');
+    }
+    return;
+  }
+  
   const isCurrentlyLocked = currentBracket.is_locked === 1;
   const newLockState = isCurrentlyLocked ? 0 : 1;
   
@@ -956,7 +991,6 @@ async function toggleBracketLock() {
     }
     
     // Перерисовываем модальное окно
-    const isClosed = isBracketClosed(currentBracket);
     renderBracketModal(isClosed);
     
   } catch (error) {
