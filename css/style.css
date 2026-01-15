@@ -3267,7 +3267,7 @@ input:checked + .slider:before {
 }
 
 .bracket-container {
-  padding: 20px;
+  /* padding: 20px; */
   overflow-x: auto;
   overflow-y: visible;
 }

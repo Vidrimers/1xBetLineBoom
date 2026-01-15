@@ -279,29 +279,40 @@ function renderBracketStages(isClosed) {
 function drawBracketConnections() {
   const stageColumns = document.querySelectorAll('.bracket-stage-column');
   
-  stageColumns.forEach((column, index) => {
+  stageColumns.forEach((column, columnIndex) => {
     const svg = column.querySelector('.bracket-connections-svg');
     if (!svg) return;
     
     const matches = column.querySelectorAll('.bracket-match-vertical');
     if (matches.length === 0) return;
     
+    // Находим следующую колонку и её карточки
+    const nextColumn = stageColumns[columnIndex + 1];
+    if (!nextColumn) return;
+    
+    const nextMatches = nextColumn.querySelectorAll('.bracket-match-vertical');
+    
     // Очищаем SVG
     svg.innerHTML = '';
+    
+    const svgRect = svg.getBoundingClientRect();
     
     // Рисуем линии для каждой пары матчей
     for (let i = 0; i < matches.length; i += 2) {
       const match1 = matches[i];
       const match2 = matches[i + 1];
+      const nextMatch = nextMatches[Math.floor(i / 2)];
       
-      if (!match1) continue;
+      if (!match1 || !nextMatch) continue;
       
       const rect1 = match1.getBoundingClientRect();
-      const svgRect = svg.getBoundingClientRect();
+      const nextRect = nextMatch.getBoundingClientRect();
       
       const y1 = rect1.top + rect1.height / 2 - svgRect.top;
+      const yNext = nextRect.top + nextRect.height / 2 - svgRect.top;
       const x1 = 0;
       const x2 = 8;
+      const xEnd = nextRect.left - svgRect.left;
       
       // Горизонтальная линия от первого матча
       const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -337,23 +348,23 @@ function drawBracketConnections() {
         lineV.setAttribute('stroke-width', '2');
         svg.appendChild(lineV);
         
-        // Горизонтальная линия к следующей карточке
+        // Горизонтальная линия к следующей карточке (от середины между y1 и y2 к левому краю следующей карточки)
         const yMiddle = (y1 + y2) / 2;
         const lineToNext = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         lineToNext.setAttribute('x1', x2);
         lineToNext.setAttribute('y1', yMiddle);
-        lineToNext.setAttribute('x2', svgRect.width);
-        lineToNext.setAttribute('y2', yMiddle);
+        lineToNext.setAttribute('x2', xEnd);
+        lineToNext.setAttribute('y2', yNext);
         lineToNext.setAttribute('stroke', 'rgba(90, 159, 212, 0.3)');
         lineToNext.setAttribute('stroke-width', '2');
         svg.appendChild(lineToNext);
       } else {
-        // Если нет второго матча (полуфинал), просто продлеваем линию
+        // Если нет второго матча (один матч в стадии), линия идет напрямую к следующей карточке
         const lineToNext = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         lineToNext.setAttribute('x1', x2);
         lineToNext.setAttribute('y1', y1);
-        lineToNext.setAttribute('x2', svgRect.width);
-        lineToNext.setAttribute('y2', y1);
+        lineToNext.setAttribute('x2', xEnd);
+        lineToNext.setAttribute('y2', yNext);
         lineToNext.setAttribute('stroke', 'rgba(90, 159, 212, 0.3)');
         lineToNext.setAttribute('stroke-width', '2');
         svg.appendChild(lineToNext);
