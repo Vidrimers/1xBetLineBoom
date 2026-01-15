@@ -283,11 +283,6 @@ function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex) {
           ${renderTeamSlot(stage.id, i, 0, matchData?.team1, prediction, isClosed)}
           ${renderTeamSlot(stage.id, i, 1, matchData?.team2, prediction, isClosed)}
         </div>
-        ${!isClosed && !isEditingBracket && prediction ? `
-          <div class="bracket-match-prediction-small">
-            ${prediction}
-          </div>
-        ` : ''}
       </div>
     `;
   }
@@ -434,8 +429,49 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
   // Обновляем отображение следующей стадии
   updateNextStageDisplay(nextStageId, nextMatchIndex);
   
+  // КАСКАДНОЕ ОБНОВЛЕНИЕ: если в следующей стадии был выбран победитель этого матча,
+  // проверяем, нужно ли продвинуть его дальше
+  if (bracketPredictions[nextStageId] && bracketPredictions[nextStageId][nextMatchIndex]) {
+    const nextStageWinner = bracketPredictions[nextStageId][nextMatchIndex];
+    
+    // Проверяем, есть ли победитель среди обновленных команд
+    const team1 = currentBracket.matches[nextStageId][nextMatchIndex].team1;
+    const team2 = currentBracket.matches[nextStageId][nextMatchIndex].team2;
+    
+    if (nextStageWinner === team1 || nextStageWinner === team2) {
+      // Победитель все еще участвует - продвигаем его дальше
+      await promoteTeamToNextStage(nextStageId, nextMatchIndex, nextStageWinner);
+      await saveSingleBracketPrediction(nextStageId, nextMatchIndex, nextStageWinner);
+    } else {
+      // Победитель больше не участвует - очищаем прогноз и все последующие
+      clearPredictionsFromStage(nextStageId, nextMatchIndex);
+    }
+  }
+  
   // Сохраняем обновленную структуру сетки на сервер
   await saveBracketStructure();
+}
+
+// Очистить прогнозы начиная с указанной стадии и матча
+function clearPredictionsFromStage(stageId, matchIndex) {
+  const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+  const currentStageIndex = stageOrder.indexOf(stageId);
+  
+  // Очищаем прогноз в текущей стадии
+  if (bracketPredictions[stageId]) {
+    delete bracketPredictions[stageId][matchIndex];
+  }
+  
+  // Обновляем визуальное отображение
+  updateBracketMatchDisplay(stageId, matchIndex, null);
+  
+  // Если это не финал, очищаем следующую стадию
+  if (currentStageIndex < stageOrder.length - 1) {
+    const nextStageId = stageOrder[currentStageIndex + 1];
+    const nextMatchIndex = Math.floor(matchIndex / 2);
+    
+    clearPredictionsFromStage(nextStageId, nextMatchIndex);
+  }
 }
 
 // Сохранить структуру сетки (команды в матчах) на сервер
@@ -505,30 +541,12 @@ function updateBracketMatchDisplay(stageId, matchIndex, selectedTeam) {
   // Обновляем подсветку команд
   teamSlots.forEach(slot => {
     const teamName = slot.dataset.team;
-    if (teamName === selectedTeam) {
+    if (selectedTeam && teamName === selectedTeam) {
       slot.classList.add('bracket-team-winner');
     } else {
       slot.classList.remove('bracket-team-winner');
     }
   });
-  
-  // Находим или создаем элемент для отображения прогноза
-  const matchContainer = document.querySelector(
-    `.bracket-match-vertical[data-stage="${stageId}"][data-match="${matchIndex}"]`
-  );
-  
-  if (matchContainer) {
-    let predictionElement = matchContainer.querySelector('.bracket-match-prediction-small');
-    
-    if (!predictionElement) {
-      // Создаем элемент если его нет
-      predictionElement = document.createElement('div');
-      predictionElement.className = 'bracket-match-prediction-small';
-      matchContainer.appendChild(predictionElement);
-    }
-    
-    predictionElement.textContent = selectedTeam;
-  }
 }
 
 // Обновить отображение следующей стадии
