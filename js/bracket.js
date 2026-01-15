@@ -601,13 +601,14 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
     // Удаляем прогноз из БД для текущей стадии
     await deleteBracketPrediction(stageId, matchIndex);
     
-    // Очищаем все последующие стадии (с удалением из БД)
+    // Очищаем все последующие стадии (с удалением из БД и очисткой слотов команд)
+    // Передаем название удаленной команды для поиска и удаления во всех последующих стадиях
     const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
     const currentStageIndex = stageOrder.indexOf(stageId);
     if (currentStageIndex < stageOrder.length - 1) {
       const nextStageId = stageOrder[currentStageIndex + 1];
       const nextMatchIndex = Math.floor(matchIndex / 2);
-      await clearPredictionsFromStage(nextStageId, nextMatchIndex, true);
+      await clearPredictionsFromStage(nextStageId, nextMatchIndex, true, true, teamName);
     }
     
     return;
@@ -712,7 +713,7 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
 }
 
 // Очистить прогнозы начиная с указанной стадии и матча (каскадное удаление)
-async function clearPredictionsFromStage(stageId, matchIndex, deleteFromDB = false) {
+async function clearPredictionsFromStage(stageId, matchIndex, deleteFromDB = false, clearTeamSlots = false, deletedTeamName = null) {
   const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
   const currentStageIndex = stageOrder.indexOf(stageId);
   
@@ -721,7 +722,33 @@ async function clearPredictionsFromStage(stageId, matchIndex, deleteFromDB = fal
     delete bracketPredictions[stageId][matchIndex];
   }
   
-  // Обновляем визуальное отображение
+  // Очищаем слоты команд в следующих стадиях
+  if (clearTeamSlots && currentBracket.matches && currentBracket.matches[stageId] && currentBracket.matches[stageId][matchIndex]) {
+    const matchData = currentBracket.matches[stageId][matchIndex];
+    
+    // Если передано название удаленной команды, ищем и удаляем именно её
+    if (deletedTeamName) {
+      if (matchData.team1 === deletedTeamName) {
+        currentBracket.matches[stageId][matchIndex].team1 = null;
+      }
+      if (matchData.team2 === deletedTeamName) {
+        currentBracket.matches[stageId][matchIndex].team2 = null;
+      }
+    } else {
+      // Если название не передано, используем старую логику (по позиции)
+      const teamPosition = matchIndex % 2;
+      if (teamPosition === 0) {
+        currentBracket.matches[stageId][matchIndex].team1 = null;
+      } else {
+        currentBracket.matches[stageId][matchIndex].team2 = null;
+      }
+    }
+    
+    // Обновляем визуальное отображение слотов команд
+    updateNextStageDisplay(stageId, matchIndex);
+  }
+  
+  // Обновляем визуальное отображение прогноза
   updateBracketMatchDisplay(stageId, matchIndex, null);
   
   // Удаляем прогноз из БД (только для последующих стадий, не для начальной)
@@ -734,8 +761,14 @@ async function clearPredictionsFromStage(stageId, matchIndex, deleteFromDB = fal
     const nextStageId = stageOrder[currentStageIndex + 1];
     const nextMatchIndex = Math.floor(matchIndex / 2);
     
-    // Для всех последующих стадий включаем удаление из БД
-    await clearPredictionsFromStage(nextStageId, nextMatchIndex, true);
+    // Для всех последующих стадий включаем удаление из БД и очистку слотов команд
+    // Передаем название удаленной команды дальше
+    await clearPredictionsFromStage(nextStageId, nextMatchIndex, true, true, deletedTeamName);
+  }
+  
+  // Сохраняем обновленную структуру сетки на сервер (если очищали слоты)
+  if (clearTeamSlots) {
+    await saveBracketStructure();
   }
 }
 
@@ -817,7 +850,6 @@ function updateBracketMatchDisplay(stageId, matchIndex, selectedTeam) {
 // Обновить отображение следующей стадии
 function updateNextStageDisplay(nextStageId, nextMatchIndex) {
   const matchData = currentBracket.matches?.[nextStageId]?.[nextMatchIndex];
-  if (!matchData) return;
   
   // Находим контейнер матча в следующей стадии
   const matchContainer = document.querySelector(
@@ -830,18 +862,27 @@ function updateNextStageDisplay(nextStageId, nextMatchIndex) {
   const teamSlots = matchContainer.querySelectorAll('.bracket-team-slot');
   
   teamSlots.forEach((slot, index) => {
-    const teamName = index === 0 ? matchData.team1 : matchData.team2;
+    const teamName = matchData ? (index === 0 ? matchData.team1 : matchData.team2) : null;
     const teamNameElement = slot.querySelector('.bracket-team-name');
     
-    if (teamNameElement && teamName) {
-      teamNameElement.textContent = teamName;
-      slot.dataset.team = teamName;
-      
-      // Обновляем обработчик клика
-      const isClosed = isBracketClosed(currentBracket);
-      if (!isClosed) {
-        slot.onclick = () => selectBracketWinner(nextStageId, nextMatchIndex, teamName);
-        slot.style.cursor = 'pointer';
+    if (teamNameElement) {
+      if (teamName) {
+        // Устанавливаем название команды
+        teamNameElement.textContent = teamName;
+        slot.dataset.team = teamName;
+        
+        // Обновляем обработчик клика
+        const isClosed = isBracketClosed(currentBracket);
+        if (!isClosed) {
+          slot.onclick = () => selectBracketWinner(nextStageId, nextMatchIndex, teamName);
+          slot.style.cursor = 'pointer';
+        }
+      } else {
+        // Очищаем слот
+        teamNameElement.textContent = '';
+        delete slot.dataset.team;
+        slot.onclick = null;
+        slot.style.cursor = 'default';
       }
     }
   });
