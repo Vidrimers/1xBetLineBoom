@@ -4077,7 +4077,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     }
 
     const betsData = await response.json();
-    const { rounds, bets, show_bets, event_name } = betsData;
+    const { rounds, bets, show_bets, event_name, completed_rounds } = betsData;
 
     // Применяем глобальный порядок туров если он есть
     let sortedRounds = rounds;
@@ -4140,21 +4140,8 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     document.getElementById("tournamentParticipantStreak").innerHTML = 
       `<span title="Турнир: ${event_name}" style="cursor: help;">🔥 Макс. серия: <strong>${maxStreak}</strong></span>`;
 
-    // Определяем завершённые туры (где ВСЕ ставки имеют результат, нет pending)
-    const completedRounds = new Set();
-    const roundsSet = new Set(sortedRounds);
-
-    roundsSet.forEach((round) => {
-      const roundBets = bets.filter((b) => b.round === round);
-      // Тур завершён только если все ставки в нём имеют результат (нет pending)
-      // Проверяем: у каждой ставки result !== 'pending'
-      if (
-        roundBets.length > 0 &&
-        roundBets.every((b) => b.result !== "pending")
-      ) {
-        completedRounds.add(round);
-      }
-    });
+    // Используем завершенные туры из сервера (на основе матчей, а не ставок)
+    const completedRoundsSet = new Set(completed_rounds || []);
 
     // Создаём кнопки туров
     const roundsFilter = document.getElementById("tournamentRoundsFilterScroll");
@@ -4164,7 +4151,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     }
     
     // Находим первый незавершенный тур для установки активным
-    const firstUnfinishedRound = sortedRounds.find(round => !completedRounds.has(round));
+    const firstUnfinishedRound = sortedRounds.find(round => !completedRoundsSet.has(round));
     const defaultActiveRound = firstUnfinishedRound || sortedRounds[0];
     
     roundsFilter.innerHTML =
@@ -4174,7 +4161,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
       </button>` +
       sortedRounds
         .map((round) => {
-          const isCompleted = completedRounds.has(round);
+          const isCompleted = completedRoundsSet.has(round);
           const isActive = round === defaultActiveRound;
           const activeClass = isActive ? "active" : "";
           // Finished класс добавляется для всех завершённых туров
@@ -4192,7 +4179,7 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     // Сохраняем данные для фильтрации
     window.currentTournamentBets = bets;
     window.currentTournamentRounds = sortedRounds;
-    window.completedTournamentRounds = completedRounds;
+    window.completedTournamentRounds = completedRoundsSet;
 
     // Отображаем ставки первого незавершенного тура (если есть туры) или все ставки
     if (sortedRounds.length > 0) {

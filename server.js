@@ -3248,6 +3248,27 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
       .map((r) => r.round)
       .filter((r) => r);
 
+    // Получаем завершенные туры (где все матчи имеют winner)
+    const completedRounds = db
+      .prepare(
+        `
+        SELECT DISTINCT m.round
+        FROM matches m
+        WHERE m.event_id = ? 
+          AND m.round IS NOT NULL
+          AND m.round IN (
+            SELECT round 
+            FROM matches 
+            WHERE event_id = ? 
+              AND round IS NOT NULL
+            GROUP BY round
+            HAVING COUNT(*) = SUM(CASE WHEN winner IS NOT NULL THEN 1 ELSE 0 END)
+          )
+      `
+      )
+      .all(eventId, eventId)
+      .map((r) => r.round);
+
     // Получаем обычные ставки участника в матчах этого события
     const bets = db
       .prepare(
@@ -3369,6 +3390,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
       bets: allBets,
       show_bets: showBets,
       event_name: event?.name || 'Турнир',
+      completed_rounds: completedRounds,
     });
   } catch (error) {
     console.error(
