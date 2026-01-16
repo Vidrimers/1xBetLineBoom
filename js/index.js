@@ -8067,11 +8067,74 @@ async function loadMatchTeams(filePath) {
     const response = await fetch(filePath || selectedMatchTeamFile);
     if (!response.ok) throw new Error('Не удалось загрузить файл');
     
-    const data = await response.json();
+    const contentType = response.headers.get('content-type');
+    const fileExtension = (filePath || selectedMatchTeamFile).split('.').pop().toLowerCase();
+    let data;
+    
+    // Проверяем тип файла
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Если это не JSON, пробуем прочитать как текст
+      const text = await response.text();
+      
+      // Если это JS файл, пытаемся извлечь команды из const
+      if (fileExtension === 'js') {
+        matchTeamsList = [];
+        
+        // Ищем const/let/var с объектом или массивом
+        const constMatch = text.match(/(?:const|let|var)\s+\w+\s*=\s*\{([^}]+)\}/);
+        if (constMatch) {
+          // Извлекаем содержимое между {}
+          const content = constMatch[1];
+          // Разбиваем по запятым и очищаем
+          matchTeamsList = content
+            .split(',')
+            .map(item => item.trim())
+            .filter(item => item && !item.startsWith('//'));
+        } else {
+          // Пробуем найти массив
+          const arrayMatch = text.match(/(?:const|let|var)\s+\w+\s*=\s*\[([^\]]+)\]/);
+          if (arrayMatch) {
+            const content = arrayMatch[1];
+            matchTeamsList = content
+              .split(',')
+              .map(item => item.trim().replace(/['"]/g, ''))
+              .filter(item => item && !item.startsWith('//'));
+          }
+        }
+        
+        if (filePath) {
+          selectedMatchTeamFile = filePath;
+          localStorage.setItem('selectedMatchTeamFile', filePath);
+        }
+        
+        return matchTeamsList;
+      }
+      
+      // Пытаемся распарсить как JSON
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        // Если не JSON, считаем что это список команд построчно
+        matchTeamsList = text.split('\n')
+          .map(line => line.trim())
+          .filter(line => line && !line.startsWith('//') && !line.startsWith('#'));
+        
+        if (filePath) {
+          selectedMatchTeamFile = filePath;
+          localStorage.setItem('selectedMatchTeamFile', filePath);
+        }
+        
+        return matchTeamsList;
+      }
+    }
+    
     matchTeamsList = [];
     
     // Извлекаем команды из структуры
     if (data.teams_by_status) {
+      // Формат с teams_by_status (как LeagueOfChampionsTeams.json)
       Object.values(data.teams_by_status).forEach(status => {
         if (status.teams && Array.isArray(status.teams)) {
           status.teams.forEach(team => {
@@ -8082,7 +8145,11 @@ async function loadMatchTeams(filePath) {
         }
       });
     } else if (data.teams && Array.isArray(data.teams)) {
+      // Формат с массивом teams
       matchTeamsList = data.teams.map(t => typeof t === 'string' ? t : t.name).filter(Boolean);
+    } else if (Array.isArray(data)) {
+      // Простой массив строк (как LeagueOfnames.json)
+      matchTeamsList = data.filter(item => typeof item === 'string' && item.trim());
     }
     
     if (filePath) {
@@ -8093,6 +8160,7 @@ async function loadMatchTeams(filePath) {
     return matchTeamsList;
   } catch (error) {
     console.error('Ошибка загрузки команд:', error);
+    matchTeamsList = [];
     return [];
   }
 }
@@ -8169,6 +8237,12 @@ async function selectMatchTeamFile(filePath, mode) {
     await loadMatchTeams(filePath);
     closeMatchTeamFileSelector();
     
+    // Закрываем все открытые dropdown
+    hideSuggestions('matchTeam1');
+    hideSuggestions('matchTeam2');
+    hideSuggestions('editMatchTeam1');
+    hideSuggestions('editMatchTeam2');
+    
     // Инициализируем автодополнение для текущей модалки
     if (mode === 'create') {
       initTeamAutocomplete('matchTeam1');
@@ -8178,7 +8252,11 @@ async function selectMatchTeamFile(filePath, mode) {
       initTeamAutocomplete('editMatchTeam2');
     }
     
-    alert(`Файл команд изменен на: ${filePath.split('/').pop()}`);
+    if (matchTeamsList.length > 0) {
+      alert(`Файл команд изменен на: ${filePath.split('/').pop()}\nЗагружено команд: ${matchTeamsList.length}`);
+    } else {
+      alert(`Файл команд изменен на: ${filePath.split('/').pop()}\n⚠️ Не удалось загрузить команды из этого файла`);
+    }
   } catch (error) {
     console.error('Ошибка при выборе файла команд:', error);
     alert('Не удалось загрузить файл команд');
@@ -8201,10 +8279,24 @@ function initTeamAutocomplete(inputId) {
   
   const suggestionsId = `${inputId}Suggestions`;
   let selectedIndex = -1;
+  let isMouseOverSuggestions = false;
   
   // Удаляем старые обработчики
   const newInput = input.cloneNode(true);
   input.parentNode.replaceChild(newInput, input);
+  
+  // Получаем div с подсказками
+  const suggestionsDiv = document.getElementById(suggestionsId);
+  
+  // Отслеживаем наведение мыши на список подсказок
+  if (suggestionsDiv) {
+    suggestionsDiv.addEventListener('mouseenter', () => {
+      isMouseOverSuggestions = true;
+    });
+    suggestionsDiv.addEventListener('mouseleave', () => {
+      isMouseOverSuggestions = false;
+    });
+  }
   
   newInput.addEventListener('input', function() {
     const value = this.value.trim().toLowerCase();
@@ -8229,6 +8321,13 @@ function initTeamAutocomplete(inputId) {
       `<div class="team-suggestion-item" data-index="${index}" onclick="selectTeam('${inputId}', '${team.replace(/'/g, "\\'")}')">${team}</div>`
     ).join('');
     suggestionsDiv.style.display = 'block';
+  });
+  
+  newInput.addEventListener('focus', function() {
+    // При фокусе показываем подсказки если есть текст
+    if (this.value.trim() && matchTeamsList.length > 0) {
+      this.dispatchEvent(new Event('input'));
+    }
   });
   
   newInput.addEventListener('keydown', function(e) {
@@ -8259,7 +8358,12 @@ function initTeamAutocomplete(inputId) {
   });
   
   newInput.addEventListener('blur', function() {
-    setTimeout(() => hideSuggestions(inputId), 200);
+    // Закрываем только если мышь не над списком подсказок
+    setTimeout(() => {
+      if (!isMouseOverSuggestions) {
+        hideSuggestions(inputId);
+      }
+    }, 200);
   });
 }
 
@@ -8291,6 +8395,40 @@ function hideSuggestions(inputId) {
     suggestionsDiv.style.display = 'none';
     suggestionsDiv.innerHTML = '';
   }
+}
+
+// Показать/скрыть полный список команд (как dropdown)
+function toggleTeamDropdown(inputId, event) {
+  // Предотвращаем потерю фокуса с инпута
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  const suggestionsDiv = document.getElementById(`${inputId}Suggestions`);
+  const input = document.getElementById(inputId);
+  
+  if (!suggestionsDiv || !input) return;
+  
+  // Если список уже открыт, закрываем
+  if (suggestionsDiv.style.display === 'block') {
+    hideSuggestions(inputId);
+    return;
+  }
+  
+  // Показываем все команды
+  if (matchTeamsList.length === 0) {
+    alert('Сначала загрузите файл команд через кнопку 📥');
+    return;
+  }
+  
+  suggestionsDiv.innerHTML = matchTeamsList.map((team, index) => 
+    `<div class="team-suggestion-item" data-index="${index}" onclick="selectTeam('${inputId}', '${team.replace(/'/g, "\\'")}')">${team}</div>`
+  ).join('');
+  suggestionsDiv.style.display = 'block';
+  
+  // Фокусируем инпут
+  input.focus();
 }
 
 // Открыть модальное окно для блокировки турнира
@@ -8383,12 +8521,27 @@ async function unlockEvent(eventId) {
   }
 }
 
+// Капитализация названия команды (каждое слово с заглавной буквы)
+function capitalizeTeamName(name) {
+  if (!name) return name;
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 // Отправить форму создания матча
 async function submitCreateMatch(event) {
   event.preventDefault();
 
-  const team1 = document.getElementById("matchTeam1").value.trim();
-  const team2 = document.getElementById("matchTeam2").value.trim();
+  let team1 = document.getElementById("matchTeam1").value.trim();
+  let team2 = document.getElementById("matchTeam2").value.trim();
+  
+  // Капитализируем названия команд
+  team1 = capitalizeTeamName(team1);
+  team2 = capitalizeTeamName(team2);
+  
   const matchDate = document.getElementById("matchDate").value;
   let round = document.getElementById("matchRound").value.trim();
   const copies = parseInt(document.getElementById("matchCopies").value) || 1;
@@ -8578,8 +8731,13 @@ async function submitEditMatch(event) {
   event.preventDefault();
 
   const id = document.getElementById("editMatchId").value;
-  const team1 = document.getElementById("editMatchTeam1").value.trim();
-  const team2 = document.getElementById("editMatchTeam2").value.trim();
+  let team1 = document.getElementById("editMatchTeam1").value.trim();
+  let team2 = document.getElementById("editMatchTeam2").value.trim();
+  
+  // Капитализируем названия команд
+  team1 = capitalizeTeamName(team1);
+  team2 = capitalizeTeamName(team2);
+  
   const date = document.getElementById("editMatchDate").value;
   let round = document.getElementById("editMatchRound").value.trim();
 

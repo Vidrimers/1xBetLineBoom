@@ -3795,3 +3795,8 @@ input:checked + .slider:before {
 .team-suggestion-item.active {
   background: rgba(90, 159, 212, 0.3);
 }
+
+/* Кнопка dropdown для команд */
+button[onclick^="toggleTeamDropdown"]:hover {
+  color: #7ab0e0 !important;
+}

@@ -2862,8 +2862,12 @@
                   placeholder="Например: Manchester United"
                   required
                   autocomplete="off"
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                  style="width: 100%; padding: 8px 35px 8px 8px; font-size: 0.95em"
                 />
+                <button type="button" onmousedown="toggleTeamDropdown('matchTeam1', event)" 
+                        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #5a9fd4; cursor: pointer; font-size: 1.2em; padding: 5px;">
+                  ▼
+                </button>
                 <div id="matchTeam1Suggestions" class="team-suggestions"></div>
               </div>
             </div>
@@ -2876,8 +2880,12 @@
                   placeholder="Например: Liverpool FC"
                   required
                   autocomplete="off"
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                  style="width: 100%; padding: 8px 35px 8px 8px; font-size: 0.95em"
                 />
+                <button type="button" onmousedown="toggleTeamDropdown('matchTeam2', event)" 
+                        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #5a9fd4; cursor: pointer; font-size: 1.2em; padding: 5px;">
+                  ▼
+                </button>
                 <div id="matchTeam2Suggestions" class="team-suggestions"></div>
               </div>
             </div>
@@ -3303,8 +3311,12 @@
                   id="editMatchTeam1"
                   required
                   autocomplete="off"
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                  style="width: 100%; padding: 8px 35px 8px 8px; font-size: 0.95em"
                 />
+                <button type="button" onmousedown="toggleTeamDropdown('editMatchTeam1', event)" 
+                        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #5a9fd4; cursor: pointer; font-size: 1.2em; padding: 5px;">
+                  ▼
+                </button>
                 <div id="editMatchTeam1Suggestions" class="team-suggestions"></div>
               </div>
             </div>
@@ -3316,8 +3328,12 @@
                   id="editMatchTeam2"
                   required
                   autocomplete="off"
-                  style="width: 100%; padding: 8px; font-size: 0.95em"
+                  style="width: 100%; padding: 8px 35px 8px 8px; font-size: 0.95em"
                 />
+                <button type="button" onmousedown="toggleTeamDropdown('editMatchTeam2', event)" 
+                        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #5a9fd4; cursor: pointer; font-size: 1.2em; padding: 5px;">
+                  ▼
+                </button>
                 <div id="editMatchTeam2Suggestions" class="team-suggestions"></div>
               </div>
             </div>
