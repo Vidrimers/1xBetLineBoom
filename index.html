@@ -163,7 +163,12 @@
               "
             >
               <div class="matches-container">
-                <h2 style="margin: 0; padding-bottom: 10px">⚽ Матчи</h2>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                  <h2 style="margin: 0;">⚽ Матчи</h2>
+                  <button onclick="showMatchRemindersModal(event)" style="background: transparent; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 1em; cursor: pointer; color: #b0b8c8; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: none;" title="Напоминания о матчах турнира">
+                    🔔
+                  </button>
+                </div>
                 <div style="display: flex; gap: 8px; align-items: center">
                   <div id="matchesBracketButtons"></div>
                   <div id="luckyBtnContainer" style="position: relative;">
@@ -3740,6 +3745,68 @@
     <!-- Модальное окно сетки плей-офф -->
     <div id="bracketModal" class="modal" onclick="closeBracketModal()">
       <!-- Контент будет добавлен динамически -->
+    </div>
+
+    <!-- Модальное окно напоминаний о матчах -->
+    <div id="matchRemindersModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'matchRemindersModal', closeMatchRemindersModal)">
+      <div class="modal-content" style="max-width: 450px" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h2>🔔 Напоминания о матчах</h2>
+          <button class="modal-close" onclick="closeMatchRemindersModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="margin-top: 0; color: #b0b8c8;">
+            Получайте уведомления в Telegram перед началом матчей турнира
+          </p>
+          
+          <div style="margin-bottom: 20px">
+            <label style="display: block; margin-bottom: 10px; font-weight: 600">
+              За сколько часов напомнить:
+            </label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+              <button class="reminder-time-btn" data-hours="1" onclick="selectReminderTime(1)">1ч</button>
+              <button class="reminder-time-btn" data-hours="2" onclick="selectReminderTime(2)">2ч</button>
+              <button class="reminder-time-btn" data-hours="3" onclick="selectReminderTime(3)">3ч</button>
+              <button class="reminder-time-btn" data-hours="4" onclick="selectReminderTime(4)">4ч</button>
+              <button class="reminder-time-btn" data-hours="5" onclick="selectReminderTime(5)">5ч</button>
+              <button class="reminder-time-btn" data-hours="6" onclick="selectReminderTime(6)">6ч</button>
+              <button class="reminder-time-btn" data-hours="7" onclick="selectReminderTime(7)">7ч</button>
+              <button class="reminder-time-btn" data-hours="8" onclick="selectReminderTime(8)">8ч</button>
+              <button class="reminder-time-btn" data-hours="9" onclick="selectReminderTime(9)">9ч</button>
+              <button class="reminder-time-btn" data-hours="10" onclick="selectReminderTime(10)">10ч</button>
+              <button class="reminder-time-btn" data-hours="11" onclick="selectReminderTime(11)">11ч</button>
+              <button class="reminder-time-btn" data-hours="12" onclick="selectReminderTime(12)">12ч</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px">
+            <button
+              onclick="saveMatchReminders()"
+              class="form-btn-submit"
+              style="flex: 1"
+            >
+              💾 Сохранить
+            </button>
+            <button
+              id="deleteReminderBtn"
+              onclick="deleteMatchReminders()"
+              class="form-btn-cancel"
+              style="flex: 1; display: none; background: rgba(244, 67, 54, 0.7); border-color: #f44336;"
+            >
+              🗑️ Удалить
+            </button>
+            <button
+              onclick="closeMatchRemindersModal()"
+              class="form-btn-cancel"
+              style="flex: 1"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Модальное окно создания сетки (для админа) -->

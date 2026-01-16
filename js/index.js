@@ -7470,6 +7470,10 @@ async function saveTelegramNotificationSettings() {
     const result = await response.json();
 
     if (response.ok) {
+      // Обновляем currentUser
+      currentUser.telegram_notifications_enabled = isEnabled ? 1 : 0;
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      
       // Показываем успешное сохранение
       btn.textContent = "✅ Сохранено!";
       setTimeout(() => {
@@ -11140,3 +11144,219 @@ window.fetch = function(...args) {
   return originalFetch(url, options);
 };
 
+
+
+// ===== НАПОМИНАНИЯ О МАТЧАХ =====
+
+// Переменная для хранения выбранного времени напоминания
+let selectedReminderHours = null;
+
+// Показать модалку напоминаний о матчах
+async function showMatchRemindersModal(event) {
+  if (event) event.stopPropagation();
+  
+  // Проверяем авторизацию
+  if (!currentUser) {
+    if (typeof showCustomAlert === 'function') {
+      showCustomAlert('Войдите в систему чтобы настроить напоминания', 'Требуется авторизация', '🔒');
+    }
+    return;
+  }
+  
+  // Проверяем выбран ли турнир
+  if (!currentEventId) {
+    if (typeof showCustomAlert === 'function') {
+      showCustomAlert('Выберите турнир чтобы настроить напоминания', 'Турнир не выбран', '⚠️');
+    }
+    return;
+  }
+  
+  const modal = document.getElementById('matchRemindersModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    selectedReminderHours = null;
+    
+    // Сбрасываем выбор
+    document.querySelectorAll('.reminder-time-btn').forEach(btn => {
+      btn.classList.remove('selected');
+    });
+    
+    // Загружаем текущие настройки
+    await loadMatchReminders();
+  }
+}
+
+// Закрыть модалку напоминаний
+function closeMatchRemindersModal() {
+  const modal = document.getElementById('matchRemindersModal');
+  if (modal) {
+    modal.style.display = 'none';
+    selectedReminderHours = null;
+  }
+}
+
+// Выбрать время напоминания
+function selectReminderTime(hours) {
+  selectedReminderHours = hours;
+  
+  // Обновляем визуальное состояние кнопок
+  document.querySelectorAll('.reminder-time-btn').forEach(btn => {
+    if (parseInt(btn.dataset.hours) === hours) {
+      btn.classList.add('selected');
+    } else {
+      btn.classList.remove('selected');
+    }
+  });
+}
+
+// Загрузить текущие настройки напоминаний
+async function loadMatchReminders() {
+  if (!currentUser || !currentEventId) return;
+  
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/event/${currentEventId}/reminders`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.hours_before) {
+        selectedReminderHours = data.hours_before;
+        
+        // Выделяем соответствующую кнопку
+        document.querySelectorAll('.reminder-time-btn').forEach(btn => {
+          if (parseInt(btn.dataset.hours) === data.hours_before) {
+            btn.classList.add('selected');
+          }
+        });
+        
+        // Показываем кнопку удаления
+        const deleteBtn = document.getElementById('deleteReminderBtn');
+        if (deleteBtn) {
+          deleteBtn.style.display = 'block';
+        }
+      } else {
+        // Скрываем кнопку удаления если напоминаний нет
+        const deleteBtn = document.getElementById('deleteReminderBtn');
+        if (deleteBtn) {
+          deleteBtn.style.display = 'none';
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки настроек напоминаний:', error);
+  }
+}
+
+// Сохранить настройки напоминаний
+async function saveMatchReminders() {
+  if (!currentUser || !currentEventId) return;
+  
+  if (!selectedReminderHours) {
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Выберите время напоминания', 'Ошибка', '⚠️');
+    }
+    return;
+  }
+  
+  // Проверяем привязку Telegram
+  if (!currentUser.telegram_username) {
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(
+        'Для получения напоминаний необходимо привязать Telegram аккаунт.\n\nПерейдите в настройки профиля и свяжите свой аккаунт с ботом.',
+        'Telegram не привязан',
+        '📱'
+      );
+    }
+    closeMatchRemindersModal();
+    return;
+  }
+  
+  // Проверяем включены ли уведомления
+  if (currentUser.telegram_notifications_enabled !== 1) {
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(
+        'У вас отключено получение личных сообщений от бота.\n\nВключите уведомления в настройках профиля чтобы получать напоминания.',
+        'Уведомления отключены',
+        '🔕'
+      );
+    }
+    closeMatchRemindersModal();
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/event/${currentEventId}/reminders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hours_before: selectedReminderHours })
+    });
+    
+    if (response.ok) {
+      if (typeof showCustomAlert === 'function') {
+        await showCustomAlert(
+          `Напоминания настроены! Вы будете получать уведомления за ${selectedReminderHours} ${selectedReminderHours === 1 ? 'час' : selectedReminderHours < 5 ? 'часа' : 'часов'} до начала матчей турнира.`,
+          'Успешно',
+          '✅'
+        );
+      }
+      closeMatchRemindersModal();
+    } else {
+      const error = await response.json();
+      if (typeof showCustomAlert === 'function') {
+        await showCustomAlert(
+          error.error || 'Не удалось сохранить настройки напоминаний',
+          'Ошибка',
+          '❌'
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка сохранения настроек напоминаний:', error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(
+        'Произошла ошибка при сохранении настроек',
+        'Ошибка',
+        '❌'
+      );
+    }
+  }
+}
+
+// Удалить настройки напоминаний
+async function deleteMatchReminders() {
+  if (!currentUser || !currentEventId) return;
+  
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/event/${currentEventId}/reminders`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      if (typeof showCustomAlert === 'function') {
+        await showCustomAlert(
+          'Напоминания для этого турнира отключены',
+          'Успешно',
+          '✅'
+        );
+      }
+      closeMatchRemindersModal();
+    } else {
+      if (typeof showCustomAlert === 'function') {
+        await showCustomAlert(
+          'Не удалось удалить настройки напоминаний',
+          'Ошибка',
+          '❌'
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка удаления настроек напоминаний:', error);
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert(
+        'Произошла ошибка при удалении настроек',
+        'Ошибка',
+        '❌'
+      );
+    }
+  }
+}

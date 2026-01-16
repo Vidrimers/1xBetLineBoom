@@ -746,6 +746,116 @@ export function notifyTelegramLinked(
   }
 }
 
+// Функция для отправки уведомления о включении напоминаний
+// Функция для отправки уведомления о включении напоминаний
+export async function notifyReminderEnabled(username, telegramUsername, eventName, hoursBefore) {
+  try {
+    if (!bot) {
+      console.error("❌ Бот еще не инициализирован!");
+      return;
+    }
+
+    const Database = (await import("better-sqlite3")).default;
+    const db = new Database("1xBetLineBoom.db");
+    
+    // Получаем chat_id пользователя
+    const telegramUser = db.prepare(`
+      SELECT chat_id FROM telegram_users 
+      WHERE LOWER(telegram_username) = LOWER(?)
+    `).get(telegramUsername);
+    
+    db.close();
+    
+    if (!telegramUser || !telegramUser.chat_id) {
+      console.warn(`⚠️ Chat ID не найден для @${telegramUsername}`);
+      return;
+    }
+
+    const hoursText = hoursBefore === 1 ? 'час' : 
+                      hoursBefore < 5 ? 'часа' : 'часов';
+
+    // Сообщение пользователю
+    const userMessage = 
+      `✅ <b>Напоминания включены!</b>\n\n` +
+      `🏆 Турнир: <b>${eventName}</b>\n` +
+      `⏰ Время: за ${hoursBefore} ${hoursText} до матча\n\n` +
+      `Теперь ты будешь получать уведомления перед началом матчей этого турнира! 🔔`;
+
+    await sendMessageWithThread(telegramUser.chat_id, userMessage, {
+      parse_mode: "HTML",
+    });
+    
+    console.log(`✅ Уведомление о включении напоминаний отправлено @${telegramUsername}`);
+    
+    // Уведомление админу
+    const adminMessage = 
+      `🔔 <b>НАПОМИНАНИЯ ВКЛЮЧЕНЫ</b>\n\n` +
+      `👤 Пользователь: <b>${username}</b> (@${telegramUsername})\n` +
+      `🏆 Турнир: <b>${eventName}</b>\n` +
+      `⏰ За ${hoursBefore} ${hoursText} до матча\n` +
+      `🕐 ${new Date().toLocaleString("ru-RU")}`;
+    
+    await sendAdminNotification(adminMessage);
+  } catch (error) {
+    console.error(
+      "❌ Ошибка при отправке уведомления о включении напоминаний:",
+      error.message
+    );
+  }
+}
+
+// Функция для отправки уведомления об удалении напоминаний
+export async function notifyReminderDeleted(username, telegramUsername, eventName) {
+  try {
+    if (!bot) {
+      console.error("❌ Бот еще не инициализирован!");
+      return;
+    }
+
+    const Database = (await import("better-sqlite3")).default;
+    const db = new Database("1xBetLineBoom.db");
+    
+    // Получаем chat_id пользователя
+    const telegramUser = db.prepare(`
+      SELECT chat_id FROM telegram_users 
+      WHERE LOWER(telegram_username) = LOWER(?)
+    `).get(telegramUsername);
+    
+    db.close();
+    
+    if (!telegramUser || !telegramUser.chat_id) {
+      console.warn(`⚠️ Chat ID не найден для @${telegramUsername}`);
+      return;
+    }
+
+    // Сообщение пользователю
+    const userMessage = 
+      `🔕 <b>Напоминания отключены</b>\n\n` +
+      `🏆 Турнир: <b>${eventName}</b>\n\n` +
+      `Ты больше не будешь получать напоминания о матчах этого турнира.`;
+
+    await sendMessageWithThread(telegramUser.chat_id, userMessage, {
+      parse_mode: "HTML",
+    });
+    
+    console.log(`✅ Уведомление об удалении напоминаний отправлено @${telegramUsername}`);
+    
+    // Уведомление админу
+    const adminMessage = 
+      `🔕 <b>НАПОМИНАНИЯ ОТКЛЮЧЕНЫ</b>\n\n` +
+      `👤 Пользователь: <b>${username}</b> (@${telegramUsername})\n` +
+      `🏆 Турнир: <b>${eventName}</b>\n` +
+      `🕐 ${new Date().toLocaleString("ru-RU")}`;
+    
+    await sendAdminNotification(adminMessage);
+  } catch (error) {
+    console.error(
+      "❌ Ошибка при отправке уведомления об удалении напоминаний:",
+      error.message
+    );
+  }
+}
+
 // ===== ИНИЦИАЛИЗАЦИЯ И ЗАПУСК БОТА =====
 
 export function startBot() {
@@ -2004,3 +2114,99 @@ export function stopBot() {
     botStarted = false;
   }
 }
+
+
+// Функция для отправки напоминаний о предстоящих матчах
+async function sendMatchReminders() {
+  try {
+    const db = require("better-sqlite3")("1xBetLineBoom.db");
+    
+    // Получаем все настройки напоминаний
+    const reminders = db.prepare(`
+      SELECT 
+        er.user_id,
+        er.event_id,
+        er.hours_before,
+        u.telegram_username,
+        e.name as event_name
+      FROM event_reminders er
+      JOIN users u ON er.user_id = u.id
+      JOIN events e ON er.event_id = e.id
+      WHERE u.telegram_notifications_enabled = 1
+        AND u.telegram_username IS NOT NULL
+    `).all();
+    
+    if (reminders.length === 0) {
+      return;
+    }
+    
+    const now = new Date();
+    
+    // Для каждой настройки напоминания
+    for (const reminder of reminders) {
+      // Получаем матчи турнира которые начнутся через N часов
+      const matches = db.prepare(`
+        SELECT id, team1, team2, match_date
+        FROM matches
+        WHERE event_id = ?
+          AND status != 'finished'
+          AND match_date IS NOT NULL
+      `).all(reminder.event_id);
+      
+      for (const match of matches) {
+        const matchDate = new Date(match.match_date + 'Z'); // UTC время
+        const timeDiff = (matchDate - now) / (1000 * 60 * 60); // разница в часах
+        
+        // Если матч начнется через указанное количество часов (±15 минут)
+        if (timeDiff >= reminder.hours_before - 0.25 && timeDiff <= reminder.hours_before + 0.25) {
+          // Проверяем не отправляли ли уже напоминание
+          const sent = db.prepare(`
+            SELECT id FROM sent_reminders 
+            WHERE match_id = ? AND user_id = ?
+          `).get(match.id, reminder.user_id);
+          
+          if (!sent) {
+            // Получаем chat_id пользователя
+            const telegramUser = db.prepare(`
+              SELECT chat_id FROM telegram_users 
+              WHERE LOWER(telegram_username) = LOWER(?)
+            `).get(reminder.telegram_username);
+            
+            if (telegramUser && telegramUser.chat_id) {
+              const hoursText = reminder.hours_before === 1 ? 'час' : 
+                                reminder.hours_before < 5 ? 'часа' : 'часов';
+              
+              const message = `🔔 Напоминание о матче!\n\n` +
+                `🏆 Турнир: ${reminder.event_name}\n` +
+                `⚽ Матч: ${match.team1} vs ${match.team2}\n` +
+                `🕐 Начало через ${reminder.hours_before} ${hoursText}\n\n` +
+                `Не забудь сделать ставку! 🎯`;
+              
+              try {
+                await bot.sendMessage(telegramUser.chat_id, message);
+                
+                // Сохраняем что напоминание отправлено
+                db.prepare(`
+                  INSERT INTO sent_reminders (match_id, user_id, sent_at)
+                  VALUES (?, ?, CURRENT_TIMESTAMP)
+                `).run(match.id, reminder.user_id);
+                
+                console.log(`✅ Напоминание отправлено: ${reminder.telegram_username} о матче ${match.id}`);
+              } catch (error) {
+                console.error(`❌ Ошибка отправки напоминания ${reminder.telegram_username}:`, error);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    db.close();
+  } catch (error) {
+    console.error('❌ Ошибка в sendMatchReminders:', error);
+  }
+}
+
+// Запускаем проверку напоминаний каждые 15 минут
+setInterval(sendMatchReminders, 15 * 60 * 1000);
+console.log('✅ Система напоминаний о матчах запущена (проверка каждые 15 минут)');

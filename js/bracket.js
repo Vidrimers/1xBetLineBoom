@@ -623,9 +623,9 @@ function renderBracketModal(isClosed) {
     <div class="modal-content bracket-modal-content ${isEditingBracket ? 'editing-mode' : ''}" onclick="event.stopPropagation()" style="${isEditingBracket ? 'border: 3px solid #f44336; box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);' : ''}">
       <div class="modal-header" style="position: relative;">
         <div style="display: flex; flex-direction: column; gap: 4px;">
-          <div style="display: flex; align-items: center; gap: 15px;">
+          <div id="bracket-title" class="bracket-title">
             <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
-            <button onclick="showBracketHelp(event)" style="background: transparent; border: 1px solid #3a7bd5; border-radius: 50%; width: 28px; height: 28px; font-size: 1em; cursor: pointer; color: #b0b8c8; display: flex; align-items: center; justify-content: center; padding: 0;" title="Справка о сетке плей-офф">
+            <button onclick="showBracketHelp(event)" style="background: transparent; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 1em; cursor: pointer; color: #b0b8c8; display: flex; align-items: center; justify-content: center; padding: 0;" title="Справка о сетке плей-офф">
               ❓
             </button>
           </div>
@@ -2345,3 +2345,4 @@ function showBracketHelp(event) {
     alert('Сетка плей-офф — это турнирная таблица на выбывание. Прогнозируйте победителей матчей и зарабатывайте очки!');
   }
 }
+

@@ -863,7 +863,8 @@ button:active {
 }
 
 .match-row.has-user-bet {
-  background: rgba(80, 60, 40, 0.7);
+  /* background: rgba(80, 60, 40, 0.7); */
+  background: rgba(20, 40, 70, 0.4);
   border-left-color: #ffb81c;
   /* box-shadow: 0 0 12px rgba(255, 184, 28, 0.2); */
 }
@@ -3274,6 +3275,10 @@ input:checked + .slider:before {
   width: 1400px;
 }
 
+#bracket-title{
+  display: flex; align-items: center; gap: 15px;
+}
+
 .bracket-container {
   /* padding: 20px; */
   overflow-x: auto;
@@ -3725,4 +3730,31 @@ input:checked + .slider:before {
   color: #2196f3;
   margin-top: 5px;
   font-weight: 500;
+}
+
+
+/* Кнопки выбора времени напоминаний */
+.reminder-time-btn {
+  padding: 10px;
+  background: rgba(40, 44, 54, 0.9);
+  border: 1px solid rgba(90, 159, 212, 0.5);
+  border-radius: 6px;
+  color: #b0b8c8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95em;
+  font-weight: 500;
+}
+
+.reminder-time-btn:hover {
+  background: rgba(90, 159, 212, 0.2);
+  border-color: #5a9fd4;
+  transform: translateY(-2px);
+}
+
+.reminder-time-btn.selected {
+  background: rgba(90, 159, 212, 0.3);
+  border-color: #5a9fd4;
+  color: #5a9fd4;
+  font-weight: 600;
 }

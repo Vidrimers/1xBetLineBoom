@@ -17,6 +17,8 @@ import {
   sendUserMessage,
   sendGroupNotification,
   notifyTelegramLinked,
+  notifyReminderEnabled,
+  notifyReminderDeleted,
   stopBot,
 } from "./OnexBetLineBoombot.js";
 
@@ -1628,6 +1630,14 @@ db.exec(`
   )
 `);
 
+// Миграция: добавляем user_id в sent_reminders если его нет
+try {
+  db.exec(`ALTER TABLE sent_reminders ADD COLUMN user_id INTEGER`);
+  console.log("✅ Колонка user_id добавлена в таблицу sent_reminders");
+} catch (e) {
+  // Колонка уже существует
+}
+
 // Таблица для отслеживания отправленных уведомлений за 3 часа до матча
 db.exec(`
   CREATE TABLE IF NOT EXISTS sent_3hour_reminders (
@@ -1742,6 +1752,20 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (bracket_id) REFERENCES brackets(id),
     UNIQUE(bracket_id, stage, match_index)
+  )
+`);
+
+// Таблица настроек напоминаний о матчах турнира
+db.exec(`
+  CREATE TABLE IF NOT EXISTS event_reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    event_id INTEGER NOT NULL,
+    hours_before INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (event_id) REFERENCES events(id),
+    UNIQUE(user_id, event_id)
   )
 `);
 
@@ -6476,6 +6500,99 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
     }
 
     res.json({ success: true, show_bets });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/user/:userId/event/:eventId/reminders - Получить настройки напоминаний для турнира
+app.get("/api/user/:userId/event/:eventId/reminders", (req, res) => {
+  try {
+    const { userId, eventId } = req.params;
+    
+    const reminder = db.prepare(`
+      SELECT hours_before FROM event_reminders 
+      WHERE user_id = ? AND event_id = ?
+    `).get(userId, eventId);
+    
+    res.json({ 
+      enabled: !!reminder,
+      hours_before: reminder ? reminder.hours_before : null 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/event/:eventId/reminders - Сохранить настройки напоминаний для турнира
+app.post("/api/user/:userId/event/:eventId/reminders", async (req, res) => {
+  try {
+    const { userId, eventId } = req.params;
+    const { hours_before } = req.body;
+    
+    if (!hours_before || hours_before < 1 || hours_before > 12) {
+      return res.status(400).json({ error: "hours_before должно быть от 1 до 12" });
+    }
+    
+    // Проверяем существование пользователя и турнира
+    const user = db.prepare("SELECT id, username, telegram_username FROM users WHERE id = ?").get(userId);
+    const event = db.prepare("SELECT id, name FROM events WHERE id = ?").get(eventId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+    
+    // Сохраняем или обновляем настройку
+    db.prepare(`
+      INSERT INTO event_reminders (user_id, event_id, hours_before)
+      VALUES (?, ?, ?)
+      ON CONFLICT(user_id, event_id) 
+      DO UPDATE SET hours_before = excluded.hours_before
+    `).run(userId, eventId, hours_before);
+    
+    // Отправляем уведомление пользователю в Telegram
+    if (user.telegram_username) {
+      try {
+        await notifyReminderEnabled(user.username, user.telegram_username, event.name, hours_before);
+      } catch (error) {
+        console.error("Ошибка отправки уведомления о включении напоминаний:", error);
+      }
+    }
+    
+    res.json({ success: true, hours_before });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/user/:userId/event/:eventId/reminders - Удалить настройки напоминаний для турнира
+app.delete("/api/user/:userId/event/:eventId/reminders", async (req, res) => {
+  try {
+    const { userId, eventId } = req.params;
+    
+    // Получаем информацию о пользователе и турнире перед удалением
+    const user = db.prepare("SELECT id, username, telegram_username FROM users WHERE id = ?").get(userId);
+    const event = db.prepare("SELECT id, name FROM events WHERE id = ?").get(eventId);
+    
+    db.prepare(`
+      DELETE FROM event_reminders 
+      WHERE user_id = ? AND event_id = ?
+    `).run(userId, eventId);
+    
+    // Отправляем уведомление пользователю в Telegram
+    if (user && user.telegram_username && event) {
+      try {
+        await notifyReminderDeleted(user.username, user.telegram_username, event.name);
+      } catch (error) {
+        console.error("Ошибка отправки уведомления об удалении напоминаний:", error);
+      }
+    }
+    
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
