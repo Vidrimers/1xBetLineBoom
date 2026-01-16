@@ -8025,8 +8025,11 @@ async function openCreateMatchModal() {
   // Загружаем существующие туры
   loadRoundsForModal("create", currentEventId);
   
-  // Загружаем команды и инициализируем автодополнение
-  await loadMatchTeams();
+  // Загружаем словарь команд из текущего турнира
+  const currentEvent = events.find(e => e.id === currentEventId);
+  const eventTeamFile = currentEvent?.team_file || selectedMatchTeamFile;
+  
+  await loadMatchTeams(eventTeamFile);
   initTeamAutocomplete('matchTeam1');
   initTeamAutocomplete('matchTeam2');
 
@@ -8266,6 +8269,98 @@ async function selectMatchTeamFile(filePath, mode) {
 // Закрыть модалку выбора файла
 function closeMatchTeamFileSelector() {
   const modal = document.getElementById('matchTeamFileSelectorModal');
+  if (modal) {
+    modal.remove();
+  }
+  unlockBodyScroll();
+}
+
+// ===== СЛОВАРЬ КОМАНД ДЛЯ ТУРНИРОВ =====
+
+// Открыть модалку выбора файла команд для турнира
+async function openEventTeamFileSelector(mode) {
+  try {
+    const response = await fetch('/api/team-files');
+    if (!response.ok) throw new Error('Не удалось загрузить список файлов');
+    
+    const files = await response.json();
+    
+    if (!files || files.length === 0) {
+      alert('Не найдено файлов команд в папке names');
+      return;
+    }
+    
+    // Получаем текущий выбранный файл из формы
+    const currentFile = mode === 'create' 
+      ? document.getElementById('eventTeamFile').value 
+      : document.getElementById('editEventTeamFile').value;
+    
+    const fileListHtml = files.map(file => {
+      const isSelected = file.path === currentFile;
+      const icon = file.name.endsWith('.json') ? '📄' : file.name.endsWith('.txt') ? '📝' : '📜';
+      return `
+        <div class="team-file-item ${isSelected ? 'selected' : ''}" 
+             onclick="selectEventTeamFile('${file.path}', '${mode}')" 
+             style="padding: 12px; margin: 8px 0; background: ${isSelected ? 'rgba(90, 159, 212, 0.2)' : 'rgba(40, 44, 54, 0.5)'}; 
+                    border: 1px solid ${isSelected ? 'rgba(90, 159, 212, 0.5)' : 'rgba(90, 159, 212, 0.2)'}; 
+                    border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5em;">${icon}</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 500; color: #e0e6f0;">${file.name}</div>
+              <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 2px;">${file.path}</div>
+            </div>
+            ${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;">✓</span>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    const modalHtml = `
+      <div id="eventTeamFileSelectorModal" class="modal" style="display: flex;" onclick="closeEventTeamFileSelector()">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+          <div class="modal-header">
+            <h2>📥 Выбор словаря команд для турнира</h2>
+            <button class="modal-close" onclick="closeEventTeamFileSelector()">&times;</button>
+          </div>
+          <div style="padding: 20px;">
+            <p style="color: #b0b8c8; margin-bottom: 15px;">
+              Этот словарь будет использоваться по умолчанию при создании матчей в этом турнире:
+            </p>
+            ${fileListHtml}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    const existingModal = document.getElementById('eventTeamFileSelectorModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    lockBodyScroll();
+  } catch (error) {
+    console.error('Ошибка при открытии выбора файла:', error);
+    alert('Не удалось загрузить список файлов');
+  }
+}
+
+// Выбрать файл команд для турнира
+function selectEventTeamFile(filePath, mode) {
+  if (mode === 'create') {
+    document.getElementById('eventTeamFile').value = filePath;
+  } else if (mode === 'edit') {
+    document.getElementById('editEventTeamFile').value = filePath;
+  }
+  
+  closeEventTeamFileSelector();
+  alert(`Словарь команд выбран: ${filePath.split('/').pop()}\n\nОн будет использоваться по умолчанию при создании матчей в этом турнире.`);
+}
+
+// Закрыть модалку выбора файла для турнира
+function closeEventTeamFileSelector() {
+  const modal = document.getElementById('eventTeamFileSelectorModal');
   if (modal) {
     modal.remove();
   }
@@ -8704,8 +8799,11 @@ async function openEditMatchModal(id, team1, team2, date, round) {
     toggleFinalMatch("edit");
   }
   
-  // Загружаем команды и инициализируем автодополнение
-  await loadMatchTeams();
+  // Загружаем словарь команд из текущего турнира
+  const currentEvent = events.find(e => e.id === currentEventId);
+  const eventTeamFile = currentEvent?.team_file || selectedMatchTeamFile;
+  
+  await loadMatchTeams(eventTeamFile);
   initTeamAutocomplete('editMatchTeam1');
   initTeamAutocomplete('editMatchTeam2');
 
@@ -11134,6 +11232,9 @@ function openEditEventModal(eventId) {
       // Устанавливаем цвет фона
       document.getElementById("editEventBackgroundColor").value =
         event.background_color || "transparent";
+      
+      // Устанавливаем team_file
+      document.getElementById("editEventTeamFile").value = event.team_file || "";
 
       // Показываем модальное окно
       const modal = document.getElementById("editEventModal");
@@ -11206,6 +11307,7 @@ async function submitCreateEvent(event) {
     description: document.getElementById("eventDescription").value,
     start_date: document.getElementById("eventDate").value || null,
     end_date: document.getElementById("eventEndDate").value || null,
+    team_file: document.getElementById("eventTeamFile").value || null,
   };
 
   // Определяем иконку
@@ -11253,6 +11355,7 @@ async function submitEditEvent(event) {
     description: document.getElementById("editEventDescription").value.trim(),
     start_date: document.getElementById("editEventDate").value || null,
     end_date: document.getElementById("editEventEndDate").value || null,
+    team_file: document.getElementById("editEventTeamFile").value || null,
   };
 
   // Проверяем обязательные поля

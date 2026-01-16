@@ -1290,12 +1290,17 @@
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
             <h2>➕ Создать новый турнир</h2>
+            <button type="button" onclick="openEventTeamFileSelector('create')" 
+                    style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;">
+              📥
+            </button>
             <button class="modal-close" onclick="closeCreateEventModal()">
               &times;
             </button>
           </div>
           <div class="modal-body">
             <form id="createEventForm" onsubmit="submitCreateEvent(event)">
+              <input type="hidden" id="eventTeamFile" value="" />
               <div class="form-group">
                 <label for="eventName">Название турнира *</label>
                 <input
@@ -1424,6 +1429,10 @@
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
             <h2>✏️ Редактировать турнир</h2>
+            <button type="button" onclick="openEventTeamFileSelector('edit')" 
+                    style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;">
+              📥
+            </button>
             <button class="modal-close" onclick="closeEditEventModal()">
               &times;
             </button>
@@ -1431,6 +1440,7 @@
           <div class="modal-body edit-event">
             <form id="editEventForm" onsubmit="submitEditEvent(event)">
               <input type="hidden" id="editEventId" />
+              <input type="hidden" id="editEventTeamFile" value="" />
               <div class="form-group edit-event-name">
                 <label for="editEventName">Название турнира *</label>
                 <input

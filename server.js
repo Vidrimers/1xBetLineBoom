@@ -1447,6 +1447,13 @@ try {
   // Колонка уже существует, это нормально
 }
 
+// Добавляем колонку team_file если её нет (для словаря команд турнира)
+try {
+  db.prepare("ALTER TABLE events ADD COLUMN team_file TEXT").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
 // Добавляем колонку result если её нет (для результата матча)
 try {
   db.prepare("ALTER TABLE matches ADD COLUMN result TEXT").run();
@@ -6886,6 +6893,7 @@ app.post("/api/admin/events", (req, res) => {
     end_date,
     icon,
     background_color,
+    team_file,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -6903,8 +6911,8 @@ app.post("/api/admin/events", (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO events (name, description, start_date, end_date, icon, background_color)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO events (name, description, start_date, end_date, icon, background_color, team_file)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `
       )
       .run(
@@ -6913,7 +6921,8 @@ app.post("/api/admin/events", (req, res) => {
         start_date || null,
         end_date || null,
         icon || null,
-        background_color || null
+        background_color || null,
+        team_file || null
       );
 
     res.json({
@@ -6924,6 +6933,7 @@ app.post("/api/admin/events", (req, res) => {
       end_date,
       icon,
       background_color,
+      team_file,
       message: "Событие успешно создано",
     });
   } catch (error) {
@@ -6948,6 +6958,7 @@ app.put("/api/admin/events/:eventId", (req, res) => {
     end_date,
     icon,
     background_color,
+    team_file,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -6966,7 +6977,7 @@ app.put("/api/admin/events/:eventId", (req, res) => {
       .prepare(
         `
       UPDATE events
-      SET name = ?, description = ?, start_date = ?, end_date = ?, icon = ?, background_color = ?
+      SET name = ?, description = ?, start_date = ?, end_date = ?, icon = ?, background_color = ?, team_file = ?
       WHERE id = ?
     `
       )
@@ -6977,6 +6988,7 @@ app.put("/api/admin/events/:eventId", (req, res) => {
         end_date || null,
         icon || null,
         background_color || null,
+        team_file || null,
         eventId
       );
 
@@ -6992,6 +7004,7 @@ app.put("/api/admin/events/:eventId", (req, res) => {
       end_date,
       icon,
       background_color,
+      team_file,
       message: "Событие успешно обновлено",
     });
   } catch (error) {
