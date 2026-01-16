@@ -623,7 +623,12 @@ function renderBracketModal(isClosed) {
     <div class="modal-content bracket-modal-content ${isEditingBracket ? 'editing-mode' : ''}" onclick="event.stopPropagation()" style="${isEditingBracket ? 'border: 3px solid #f44336; box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);' : ''}">
       <div class="modal-header" style="position: relative;">
         <div style="display: flex; flex-direction: column; gap: 4px;">
-          <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
+            <button onclick="showBracketHelp(event)" style="background: transparent; border: 1px solid #3a7bd5; border-radius: 50%; width: 28px; height: 28px; font-size: 1em; cursor: pointer; color: #b0b8c8; display: flex; align-items: center; justify-content: center; padding: 0;" title="Справка о сетке плей-офф">
+              ❓
+            </button>
+          </div>
           ${isEditingBracket ? '<div style="color: #f44336; font-size: 0.9em; font-weight: 600;">✏️ РЕЖИМ РЕДАКТИРОВАНИЯ</div>' : ''}
           ${statusBadge}
           ${lockReasonText}
@@ -2305,5 +2310,38 @@ function closeBracketAdminButtons() {
         delete container._clickHandler;
       }
     }, 200); // Ждем завершения анимации
+  }
+}
+
+
+// Показать справку о сетке плей-офф
+function showBracketHelp(event) {
+  event.stopPropagation();
+  
+  const helpText = `
+    <div style="text-align: left; line-height: 1.6;">
+      <h3 style="margin-top: 0; color: #5a9fd4;">Что такое сетка плей-офф?</h3>
+      <p>Сетка плей-офф нужна для того чтобы попытаться угадать какая команда пройдет до финала и победит, также для получения дополнительных очков</p>
+      
+      <h3 style="color: #5a9fd4;">Как это работает?</h3>
+      <ul style="padding-left: 20px;">
+        <li><strong>Прогнозируйте победителей</strong> — выберите команду, которая, по вашему мнению, выиграет матч и турнир</li>
+        <li><strong>Следите за результатами</strong> — после завершения реальных матчей система автоматически проверит ваши прогнозы</li>
+        <li><strong>Зарабатывайте очки</strong> — за каждый правильный прогноз вы получаете очки в турнире</li>
+      </ul>
+      
+      <h3 style="color: #5a9fd4;">Важно знать:</h3>
+      <ul style="padding-left: 20px;">
+        <li>Прогнозы можно делать только до начала плей-офф</li>
+        <li>После наступления даты сетка блокируется автоматически</li>
+        <li>Чем дальше команда проходит по прогнозу, тем больше очков можно получить</li>
+      </ul>
+    </div>
+  `;
+  
+  if (typeof showCustomAlert === 'function') {
+    showCustomAlert(helpText, 'Сетка плей-офф', '❓');
+  } else {
+    alert('Сетка плей-офф — это турнирная таблица на выбывание. Прогнозируйте победителей матчей и зарабатывайте очки!');
   }
 }
