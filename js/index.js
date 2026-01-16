@@ -5655,8 +5655,9 @@ async function loadDevicesList() {
       const isCurrentDevice = session.session_token === currentSessionToken;
       const isTrusted = session.is_trusted === 1;
       const deviceIcon = getDeviceIcon(session.device_info, session.os);
-      const lastActivity = new Date(session.last_activity).toLocaleString("ru-RU");
-      const createdAt = new Date(session.created_at).toLocaleString("ru-RU");
+      // Добавляем 'Z' чтобы указать что время в UTC, затем конвертируем в локальное
+      const lastActivity = new Date(session.last_activity + 'Z').toLocaleString("ru-RU");
+      const createdAt = new Date(session.created_at + 'Z').toLocaleString("ru-RU");
 
       return `
         <div class="device-item ${isCurrentDevice ? 'current-device' : ''} ${isTrusted ? 'trusted-device' : ''}">
