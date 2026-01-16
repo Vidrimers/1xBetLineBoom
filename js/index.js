@@ -11114,3 +11114,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
+
+// Wrapper для fetch с автоматической отправкой session_token
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+  const [url, options = {}] = args;
+  
+  // Добавляем session_token в заголовки если он есть
+  const sessionToken = localStorage.getItem("sessionToken");
+  if (sessionToken) {
+    options.headers = {
+      ...options.headers,
+      'x-session-token': sessionToken
+    };
+  }
+  
+  return originalFetch(url, options);
+};
