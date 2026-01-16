@@ -1039,8 +1039,11 @@ async function initUser() {
     return;
   }
 
-  // Преобразуем первую букву в заглавную
-  username = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
+  // Преобразуем первую букву каждого слова в заглавную
+  username = username
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 
   // Проверяем, пытается ли кто-то логиниться под ADMIN_DB_NAME
   if (username === ADMIN_DB_NAME) {
