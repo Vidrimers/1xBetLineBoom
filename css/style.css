@@ -3758,3 +3758,40 @@ input:checked + .slider:before {
   color: #5a9fd4;
   font-weight: 600;
 }
+
+/* Автодополнение команд */
+.team-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(30, 34, 45, 0.98);
+  border: 1px solid rgba(90, 159, 212, 0.3);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.team-suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #e0e6f0;
+  transition: background 0.2s;
+  border-bottom: 1px solid rgba(90, 159, 212, 0.1);
+}
+
+.team-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.team-suggestion-item:hover,
+.team-suggestion-item.active {
+  background: rgba(90, 159, 212, 0.2);
+}
+
+.team-suggestion-item.active {
+  background: rgba(90, 159, 212, 0.3);
+}
