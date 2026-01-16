@@ -4678,7 +4678,6 @@ function hasPermission(permission) {
 // Проверить, может ли пользователь управлять матчами
 function canManageMatches() {
   const result = hasPermission('manage_matches');
-  console.log("🔐 canManageMatches():", result, "| isAdmin:", isAdmin(), "| isModerator:", isModerator(), "| permissions:", currentUser?.moderatorPermissions);
   return result;
 }
 
