@@ -1530,6 +1530,20 @@ async function selectEvent(eventId, eventName) {
     }
   }
 
+  // Скрываем/показываем кнопку напоминаний в зависимости от статуса турнира
+  const matchRemindersBtn = document.getElementById('matchRemindersBtn');
+  if (matchRemindersBtn) {
+    // Показываем только для активных турниров (не завершенных и не предстоящих)
+    const isLocked = event && event.locked_reason;
+    const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
+    
+    if (isLocked || isUpcoming) {
+      matchRemindersBtn.style.display = 'none';
+    } else {
+      matchRemindersBtn.style.display = 'flex';
+    }
+  }
+
   // Скрываем контейнер админских кнопок при переключении турнира
   const adminButtonsContainer = document.getElementById('adminButtonsContainer');
   if (adminButtonsContainer) {
