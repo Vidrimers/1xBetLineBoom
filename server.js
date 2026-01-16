@@ -1247,6 +1247,33 @@ db.pragma("foreign_keys = OFF");
 app.use(express.json({ limit: "50mb" })); // Увеличиваем лимит для аватаров
 app.use(express.static(".")); // Раздаем статические файлы (HTML, CSS, JS)
 
+// Middleware для обновления last_activity при каждом запросе
+app.use((req, res, next) => {
+  // Пропускаем статические файлы
+  if (req.path.startsWith('/css/') || req.path.startsWith('/js/') || req.path.startsWith('/img/') || req.path.endsWith('.html')) {
+    return next();
+  }
+  
+  // Получаем session_token из заголовка или cookies
+  const sessionToken = req.headers['x-session-token'] || req.cookies?.session_token;
+  
+  if (sessionToken) {
+    try {
+      // Обновляем last_activity для этой сессии
+      db.prepare(`
+        UPDATE sessions 
+        SET last_activity = CURRENT_TIMESTAMP 
+        WHERE session_token = ?
+      `).run(sessionToken);
+    } catch (error) {
+      // Игнорируем ошибки обновления, чтобы не ломать запрос
+      console.error('Ошибка обновления last_activity:', error);
+    }
+  }
+  
+  next();
+});
+
 // ===== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ =====
 
 // Таблица пользователей
