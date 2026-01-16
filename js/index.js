@@ -3648,16 +3648,22 @@ async function displayTournaments(events) {
     return;
   }
 
-  // Сортируем события: активные в начале, заблокированные в конце
-  const sortedEvents = events.sort((a, b) => {
-    const aLocked = a.locked_reason ? 1 : 0;
-    const bLocked = b.locked_reason ? 1 : 0;
-    return aLocked - bLocked;
+  const now = new Date();
+
+  // Разделяем события на категории
+  const upcomingEvents = events.filter((event) => {
+    if (event.locked_reason) return false;
+    if (!event.start_date) return true; // Если нет даты начала, считаем предстоящим
+    return new Date(event.start_date) > now;
   });
 
-  // Разделяем события на активные и заблокированные
-  const activeEvents = sortedEvents.filter((e) => !e.locked_reason);
-  const lockedEvents = sortedEvents.filter((e) => e.locked_reason);
+  const activeEvents = events.filter((event) => {
+    if (event.locked_reason) return false;
+    if (!event.start_date) return false;
+    return new Date(event.start_date) <= now;
+  });
+
+  const lockedEvents = events.filter((event) => event.locked_reason);
 
   // Для каждого события загружаем дополнительные данные если оно заблокировано
   const activeCards = await Promise.all(
@@ -3672,6 +3678,29 @@ async function displayTournaments(events) {
     }, '${event.name.replace(/'/g, "\\'")}')">
       <div class="event-card-title">${iconHtml} ${event.name}</div>
       <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
+    </div>
+  `;
+    })
+  );
+
+  const upcomingCards = await Promise.all(
+    upcomingEvents.map(async (event) => {
+      const iconHtml =
+        event.icon && event.icon.startsWith("img/")
+          ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
+          : event.icon || "🏆";
+      
+      const startDateText = event.start_date 
+        ? `<div class="event-card-start-date">📅 Начало: ${new Date(event.start_date).toLocaleDateString('ru-RU')}</div>`
+        : '';
+      
+      return `
+    <div class="event-card upcoming" onclick="loadTournamentParticipants(${
+      event.id
+    }, '${event.name.replace(/'/g, "\\'")}')">
+      <div class="event-card-title">${iconHtml} ${event.name}</div>
+      <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
+      ${startDateText}
     </div>
   `;
     })
@@ -3725,6 +3754,12 @@ async function displayTournaments(events) {
     html +=
       '<div class="tournaments-section-divider">ДЕЙСТВУЮЩИЕ ТУРНИРЫ</div>';
     html += activeCards.join("");
+  }
+
+  if (upcomingCards.length > 0) {
+    html +=
+      '<div class="tournaments-section-divider">ПРЕДСТОЯЩИЕ ТУРНИРЫ</div>';
+    html += upcomingCards.join("");
   }
 
   if (lockedCards.length > 0) {

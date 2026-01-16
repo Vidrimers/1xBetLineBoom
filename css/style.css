@@ -3699,3 +3699,30 @@ input:checked + .slider:before {
     transform: scale(0.3) translate(var(--modal-translate-x, 0), var(--modal-translate-y, 0));
   }
 }
+
+
+/* Стили для предстоящих турниров */
+.event-card.upcoming {
+  background: linear-gradient(
+    135deg,
+    rgba(33, 150, 243, 0.1),
+    rgba(33, 150, 243, 0.05)
+  );
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.event-card.upcoming:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(33, 150, 243, 0.15),
+    rgba(33, 150, 243, 0.08)
+  );
+  border-color: rgba(33, 150, 243, 0.5);
+}
+
+.event-card-start-date {
+  font-size: 0.85em;
+  color: #2196f3;
+  margin-top: 5px;
+  font-weight: 500;
+}
