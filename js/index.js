@@ -825,7 +825,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (savedUser) {
     const user = JSON.parse(savedUser);
     currentUser = user;
-    console.log("✅ currentUser установлен:", currentUser);
 
     // Проверяем валидность сессии
     const sessionToken = localStorage.getItem("sessionToken");
@@ -1539,8 +1538,13 @@ async function selectEvent(eventId, eventName) {
     
     if (isLocked || isUpcoming) {
       matchRemindersBtn.style.display = 'none';
+      updateReminderIndicator(false);
     } else {
       matchRemindersBtn.style.display = 'flex';
+      // Загружаем настройки напоминаний для обновления индикатора
+      if (currentUser) {
+        loadMatchReminders();
+      }
     }
   }
 
@@ -4621,7 +4625,6 @@ function isAdmin() {
 
 // Загрузить права модератора для текущего пользователя
 async function loadModeratorPermissions() {
-  console.log("🔍 Загрузка прав модератора для пользователя:", currentUser);
   
   if (!currentUser) {
     console.log("❌ currentUser не определен");
@@ -6658,6 +6661,17 @@ function loadCounting() {
     countingContainer.innerHTML =
       '<div class="empty-message">Функция в разработке</div>';
   }
+}
+
+// Отправить результаты подсчета
+function sendCountingResults() {
+  if (!isAdmin()) {
+    alert("У вас нет прав");
+    return;
+  }
+
+  // Здесь будет функционал для отправки результатов
+  alert("Функция отправки результатов в разработке");
 }
 
 // Закрыть модальное окно при клике вне его
@@ -11222,6 +11236,14 @@ function selectReminderTime(hours) {
   });
 }
 
+// Обновить индикатор напоминаний
+function updateReminderIndicator(hasReminder) {
+  const indicator = document.getElementById('reminderIndicator');
+  if (indicator) {
+    indicator.style.display = hasReminder ? 'block' : 'none';
+  }
+}
+
 // Загрузить текущие настройки напоминаний
 async function loadMatchReminders() {
   if (!currentUser || !currentEventId) return;
@@ -11247,12 +11269,18 @@ async function loadMatchReminders() {
         if (deleteBtn) {
           deleteBtn.style.display = 'block';
         }
+        
+        // Показываем индикатор
+        updateReminderIndicator(true);
       } else {
         // Скрываем кнопку удаления если напоминаний нет
         const deleteBtn = document.getElementById('deleteReminderBtn');
         if (deleteBtn) {
           deleteBtn.style.display = 'none';
         }
+        
+        // Скрываем индикатор
+        updateReminderIndicator(false);
       }
     }
   } catch (error) {
@@ -11305,6 +11333,9 @@ async function saveMatchReminders() {
     });
     
     if (response.ok) {
+      // Показываем индикатор
+      updateReminderIndicator(true);
+      
       if (typeof showCustomAlert === 'function') {
         await showCustomAlert(
           `Напоминания настроены! Вы будете получать уведомления за ${selectedReminderHours} ${selectedReminderHours === 1 ? 'час' : selectedReminderHours < 5 ? 'часа' : 'часов'} до начала матчей турнира.`,
@@ -11345,6 +11376,9 @@ async function deleteMatchReminders() {
     });
     
     if (response.ok) {
+      // Скрываем индикатор
+      updateReminderIndicator(false);
+      
       if (typeof showCustomAlert === 'function') {
         await showCustomAlert(
           'Напоминания для этого турнира отключены',
