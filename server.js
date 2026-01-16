@@ -8606,6 +8606,140 @@ app.delete("/api/admin/rounds/:roundName", (req, res) => {
   }
 });
 
+// POST /api/admin/send-counting-results - Отправить результаты подсчета в группу
+app.post("/api/admin/send-counting-results", async (req, res) => {
+  const { dateFrom, dateTo } = req.body;
+
+  try {
+    if (!dateFrom || !dateTo) {
+      return res.status(400).json({ error: "Не указаны даты" });
+    }
+
+    // Получаем все турниры
+    const events = db.prepare("SELECT id, name FROM events").all();
+
+    // Для каждого турнира считаем очки пользователей за период
+    const tournamentResults = [];
+
+    for (const event of events) {
+      // Получаем завершенные матчи в указанном периоде
+      const matches = db.prepare(`
+        SELECT id, team1_name, team2_name, winner, match_date
+        FROM matches
+        WHERE event_id = ? 
+          AND winner IS NOT NULL
+          AND DATE(match_date) >= DATE(?)
+          AND DATE(match_date) <= DATE(?)
+      `).all(event.id, dateFrom, dateTo);
+
+      if (matches.length === 0) continue;
+
+      // Получаем ставки на эти матчи
+      const matchIds = matches.map(m => m.id);
+      const placeholders = matchIds.map(() => '?').join(',');
+      
+      const bets = db.prepare(`
+        SELECT b.user_id, b.match_id, b.prediction, m.winner, u.username, u.telegram_username
+        FROM bets b
+        JOIN matches m ON b.match_id = m.id
+        JOIN users u ON b.user_id = u.id
+        WHERE b.match_id IN (${placeholders})
+      `).all(...matchIds);
+
+      // Подсчитываем очки для каждого пользователя
+      const userPoints = {};
+
+      for (const bet of bets) {
+        if (!userPoints[bet.user_id]) {
+          userPoints[bet.user_id] = {
+            username: bet.username,
+            telegram_username: bet.telegram_username,
+            points: 0
+          };
+        }
+
+        // Проверяем правильность ставки
+        const isCorrect = 
+          (bet.prediction === 'team1' && bet.winner === 'team1') ||
+          (bet.prediction === 'team2' && bet.winner === 'team2') ||
+          (bet.prediction === 'draw' && bet.winner === 'draw');
+
+        if (isCorrect) {
+          userPoints[bet.user_id].points++;
+        }
+      }
+
+      // Сортируем по очкам
+      const sortedUsers = Object.values(userPoints).sort((a, b) => b.points - a.points);
+
+      if (sortedUsers.length > 0) {
+        tournamentResults.push({
+          eventName: event.name,
+          users: sortedUsers
+        });
+      }
+    }
+
+    if (tournamentResults.length === 0) {
+      return res.status(404).json({ error: "Нет результатов за указанный период" });
+    }
+
+    // Формируем сообщение для Telegram
+    const dateFromFormatted = new Date(dateFrom).toLocaleDateString('ru-RU');
+    const dateToFormatted = new Date(dateTo).toLocaleDateString('ru-RU');
+    
+    let message = `📊 <b>Результаты за период</b>\n`;
+    message += `📅 ${dateFromFormatted} - ${dateToFormatted}\n\n`;
+
+    for (const tournament of tournamentResults) {
+      message += `🏆 <b>${tournament.eventName}</b>\n\n`;
+
+      // Получаем пользователей которые есть в группе
+      const usersInGroup = [];
+      for (const user of tournament.users) {
+        if (user.telegram_username) {
+          const telegramUser = db.prepare(`
+            SELECT chat_id FROM telegram_users 
+            WHERE LOWER(telegram_username) = LOWER(?)
+          `).get(user.telegram_username);
+          
+          if (telegramUser) {
+            usersInGroup.push(user);
+          }
+        }
+      }
+
+      // Показываем результаты только тех кто в группе
+      if (usersInGroup.length > 0) {
+        for (let i = 0; i < usersInGroup.length; i++) {
+          const user = usersInGroup[i];
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '▪️';
+          message += `${medal} ${user.username}: <b>${user.points}</b> ${user.points === 1 ? 'очко' : user.points < 5 ? 'очка' : 'очков'}\n`;
+        }
+
+        // Лучший за период
+        if (usersInGroup.length > 0) {
+          const winner = usersInGroup[0];
+          message += `\n👑 <b>Лучший за период:</b>\n`;
+          message += `Поздравляем ${winner.username}, малютка! 🎉\n`;
+        }
+      } else {
+        message += `Нет участников из группы\n`;
+      }
+
+      message += `\n`;
+    }
+
+    // Отправляем в группу
+    await sendGroupNotification(message);
+
+    res.json({ success: true, message: "Результаты отправлены в группу" });
+  } catch (error) {
+    console.error("❌ Ошибка отправки результатов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/clear-logs - Очистить файл логов (только для админа)
 app.post("/api/admin/clear-logs", (req, res) => {
   const { username } = req.body;

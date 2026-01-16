@@ -6664,14 +6664,37 @@ function loadCounting() {
 }
 
 // Отправить результаты подсчета
-function sendCountingResults() {
+async function sendCountingResults() {
   if (!isAdmin()) {
     alert("У вас нет прав");
     return;
   }
 
-  // Здесь будет функционал для отправки результатов
-  alert("Функция отправки результатов в разработке");
+  const dateFrom = document.getElementById("countingDateFrom")?.value;
+  const dateTo = document.getElementById("countingDateTo")?.value;
+
+  if (!dateFrom || !dateTo) {
+    alert("Выберите период дат");
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/admin/send-counting-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dateFrom, dateTo })
+    });
+
+    if (response.ok) {
+      alert("Результаты отправлены в группу!");
+    } else {
+      const error = await response.json();
+      alert("Ошибка: " + (error.error || "Не удалось отправить результаты"));
+    }
+  } catch (error) {
+    console.error("Ошибка отправки результатов:", error);
+    alert("Ошибка при отправке результатов");
+  }
 }
 
 // Закрыть модальное окно при клике вне его
