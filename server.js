@@ -1409,6 +1409,21 @@ db.exec(`
   )
 `);
 
+// Таблица прогнозов на счет
+db.exec(`
+  CREATE TABLE IF NOT EXISTS score_predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    match_id INTEGER NOT NULL,
+    score_team1 INTEGER NOT NULL,
+    score_team2 INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (match_id) REFERENCES matches(id),
+    UNIQUE(user_id, match_id)
+  )
+`);
+
 // ===== DATABASE MIGRATIONS =====
 // Добавляем колонку match_date если её нет
 try {
@@ -1450,6 +1465,13 @@ try {
 // Добавляем колонку team_file если её нет (для словаря команд турнира)
 try {
   db.prepare("ALTER TABLE events ADD COLUMN team_file TEXT").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
+// Добавляем колонку score_prediction_enabled если её нет (для прогноза на счет)
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN score_prediction_enabled INTEGER DEFAULT 0").run();
 } catch (error) {
   // Колонка уже существует, это нормально
 }
@@ -4211,10 +4233,13 @@ app.get("/api/user/:userId/bets", (req, res) => {
              e.name as event_name, 
              e.status as event_status,
              e.start_date as event_start_date,
-             e.locked_reason as event_locked_reason
+             e.locked_reason as event_locked_reason,
+             sp.score_team1,
+             sp.score_team2
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
+      LEFT JOIN score_predictions sp ON sp.user_id = b.user_id AND sp.match_id = b.match_id
       WHERE b.user_id = ?
       ORDER BY b.created_at DESC
     `
@@ -4478,6 +4503,94 @@ app.delete("/api/bets/:betId", async (req, res) => {
 
     res.json({ message: "Ставка удалена" });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== ПРОГНОЗЫ НА СЧЕТ =====
+
+// POST /api/score-predictions - Создать/обновить прогноз на счет
+app.post("/api/score-predictions", async (req, res) => {
+  try {
+    const { user_id, match_id, score_team1, score_team2 } = req.body;
+
+    // Проверяем матч
+    const match = db
+      .prepare(
+        "SELECT m.status, m.match_date, m.winner, m.team1_name, m.team2_name, m.score_prediction_enabled FROM matches m WHERE m.id = ?"
+      )
+      .get(match_id);
+
+    if (!match) {
+      return res.status(404).json({ error: "Матч не найден" });
+    }
+
+    if (!match.score_prediction_enabled) {
+      return res.status(400).json({ error: "Прогноз на счет не включен для этого матча" });
+    }
+
+    // Проверяем статус матча
+    const now = new Date();
+    const matchDate = match.match_date ? new Date(match.match_date) : null;
+
+    if (matchDate && matchDate <= now) {
+      return res.status(400).json({ error: "Матч уже начался" });
+    }
+
+    if (match.winner) {
+      return res.status(400).json({ error: "Матч уже завершен" });
+    }
+
+    // Проверяем корректность счета
+    if (score_team1 < 0 || score_team2 < 0) {
+      return res.status(400).json({ error: "Счет не может быть отрицательным" });
+    }
+
+    // Проверяем существует ли уже прогноз
+    const existingPrediction = db
+      .prepare("SELECT id FROM score_predictions WHERE user_id = ? AND match_id = ?")
+      .get(user_id, match_id);
+
+    if (existingPrediction) {
+      // Обновляем существующий прогноз
+      db.prepare(
+        "UPDATE score_predictions SET score_team1 = ?, score_team2 = ? WHERE user_id = ? AND match_id = ?"
+      ).run(score_team1, score_team2, user_id, match_id);
+    } else {
+      // Создаем новый прогноз
+      db.prepare(
+        "INSERT INTO score_predictions (user_id, match_id, score_team1, score_team2) VALUES (?, ?, ?, ?)"
+      ).run(user_id, match_id, score_team1, score_team2);
+    }
+
+    res.json({ message: "Прогноз на счет сохранен" });
+  } catch (error) {
+    console.error("Ошибка при сохранении прогноза на счет:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/score-predictions/:matchId - Удалить прогноз на счет
+app.delete("/api/score-predictions/:matchId", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { user_id } = req.body;
+
+    // Проверяем существует ли прогноз
+    const prediction = db
+      .prepare("SELECT id FROM score_predictions WHERE user_id = ? AND match_id = ?")
+      .get(user_id, matchId);
+
+    if (!prediction) {
+      return res.status(404).json({ error: "Прогноз не найден" });
+    }
+
+    db.prepare("DELETE FROM score_predictions WHERE user_id = ? AND match_id = ?")
+      .run(user_id, matchId);
+
+    res.json({ message: "Прогноз на счет удален" });
+  } catch (error) {
+    console.error("Ошибка при удалении прогноза на счет:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -7049,6 +7162,7 @@ app.post("/api/admin/matches", async (req, res) => {
     match_date,
     round,
     is_final,
+    score_prediction_enabled,
     show_exact_score,
     show_yellow_cards,
     show_red_cards,
@@ -7103,10 +7217,10 @@ app.post("/api/admin/matches", async (req, res) => {
         `
       INSERT INTO matches (
         event_id, team1_name, team2_name, match_date, round,
-        is_final, show_exact_score, show_yellow_cards, show_red_cards,
+        is_final, score_prediction_enabled, show_exact_score, show_yellow_cards, show_red_cards,
         show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
       )
       .run(
@@ -7116,6 +7230,7 @@ app.post("/api/admin/matches", async (req, res) => {
         match_date || null,
         round || null,
         is_final ? 1 : 0,
+        score_prediction_enabled ? 1 : 0,
         show_exact_score ? 1 : 0,
         show_yellow_cards ? 1 : 0,
         show_red_cards ? 1 : 0,
@@ -7232,6 +7347,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
     match_date,
     round,
     is_final,
+    score_prediction_enabled,
     show_exact_score,
     show_yellow_cards,
     show_red_cards,
@@ -7303,6 +7419,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
       match_date !== undefined ||
       round !== undefined ||
       is_final !== undefined ||
+      score_prediction_enabled !== undefined ||
       show_exact_score !== undefined ||
       show_yellow_cards !== undefined ||
       show_red_cards !== undefined ||
@@ -7315,7 +7432,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
       const currentMatch = db
         .prepare(
           `SELECT team1_name, team2_name, match_date, round, 
-                   is_final, show_exact_score, show_yellow_cards, show_red_cards,
+                   is_final, score_prediction_enabled, show_exact_score, show_yellow_cards, show_red_cards,
                    show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end 
            FROM matches WHERE id = ?`
         )
@@ -7349,6 +7466,7 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
           match_date = ?, 
           round = ?,
           is_final = ?,
+          score_prediction_enabled = ?,
           show_exact_score = ?,
           show_yellow_cards = ?,
           show_red_cards = ?,
@@ -7363,6 +7481,11 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
         match_date !== undefined ? match_date : currentMatch.match_date,
         round !== undefined ? round : currentMatch.round,
         is_final !== undefined ? (is_final ? 1 : 0) : currentMatch.is_final,
+        score_prediction_enabled !== undefined
+          ? score_prediction_enabled
+            ? 1
+            : 0
+          : currentMatch.score_prediction_enabled,
         show_exact_score !== undefined
           ? show_exact_score
             ? 1
