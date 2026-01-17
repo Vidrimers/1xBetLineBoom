@@ -3822,22 +3822,42 @@ function showMobileSection(section) {
   // Убираем активный класс со всех кнопок
   navButtons.forEach(btn => btn.classList.remove('active'));
 
-  // Скрываем все секции
-  if (tournaments) tournaments.style.display = 'none';
-  if (matches) matches.style.display = 'none';
-  if (bets) bets.style.display = 'none';
+  // Скрываем все секции с fade out
+  [tournaments, matches, bets].forEach(el => {
+    if (el && el.style.display !== 'none') {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.style.display = 'none';
+      }, 300);
+    }
+  });
 
-  // Показываем нужную секцию и активируем кнопку
-  if (section === 'tournaments' && tournaments) {
-    tournaments.style.display = 'block';
-    navButtons[0].classList.add('active');
-  } else if (section === 'matches' && matches) {
-    matches.style.display = 'block';
-    navButtons[1].classList.add('active');
-  } else if (section === 'bets' && bets) {
-    bets.style.display = 'block';
-    navButtons[2].classList.add('active');
-  }
+  // Показываем нужную секцию с fade in
+  setTimeout(() => {
+    let targetSection = null;
+    let activeButtonIndex = -1;
+
+    if (section === 'tournaments') {
+      targetSection = tournaments;
+      activeButtonIndex = 0;
+    } else if (section === 'matches') {
+      targetSection = matches;
+      activeButtonIndex = 1;
+    } else if (section === 'bets') {
+      targetSection = bets;
+      activeButtonIndex = 2;
+    }
+
+    if (targetSection) {
+      targetSection.style.display = 'block';
+      setTimeout(() => {
+        targetSection.style.opacity = '1';
+      }, 10);
+      if (activeButtonIndex >= 0) {
+        navButtons[activeButtonIndex].classList.add('active');
+      }
+    }
+  }, 300);
 }
 
 // Закрытие мобильного меню при клике вне его
@@ -3856,6 +3876,22 @@ document.addEventListener('click', (e) => {
 
 // ===== ВКЛАДКИ =====
 function switchTab(tabName) {
+  // Управление кнопками навигации на мобильных
+  if (window.innerWidth <= 768) {
+    const navButtons = document.querySelector('.mobile-nav-buttons');
+    if (navButtons) {
+      if (tabName === 'allbets') {
+        // Показываем кнопки навигации
+        navButtons.style.opacity = '1';
+        navButtons.style.pointerEvents = 'auto';
+      } else {
+        // Скрываем кнопки навигации
+        navButtons.style.opacity = '0';
+        navButtons.style.pointerEvents = 'none';
+      }
+    }
+  }
+
   // Скрываем все содержимое вкладок
   document
     .getElementById("allbets-content")

@@ -114,8 +114,6 @@
   #matchesSection,
   .bet-section-bets {
     display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
   }
 
   /* Ограничиваем высоту секций */
@@ -124,25 +122,8 @@
   .bet-section-bets {
     max-height: 85vh;
     overflow-y: auto;
-  }
-
-  /* Когда турнир выбран - скрываем турниры и ставки, показываем только матчи */
-  .tournament-selected .bet-section-tournaments,
-  .tournament-selected .bet-section-bets {
-    display: none;
-  }
-
-  .tournament-selected #matchesSection {
-    display: block;
+    transition: opacity 0.3s ease;
     opacity: 1;
-  }
-
-  /* Показываем секции через JavaScript навигацию */
-  .bet-section-tournaments[style*="display: block"],
-  #matchesSection[style*="display: block"],
-  .bet-section-bets[style*="display: block"] {
-    display: block !important;
-    opacity: 1 !important;
   }
 
   header {
@@ -234,6 +215,9 @@
     left: 0;
     transform: translateY(-50%);
     z-index: 999;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
   }
 
   .mobile-nav-btn {
