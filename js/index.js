@@ -9600,17 +9600,43 @@ function closeFinalMatchResultModal(event) {
 
 // ===== МОДАЛКА РЕЗУЛЬТАТА МАТЧА С ПРОГНОЗОМ НА СЧЕТ =====
 let currentScoreMatchId = null;
+let currentScoreMatchResult = null;
 
 function openScoreMatchResultModal(matchId, team1Name, team2Name) {
   currentScoreMatchId = matchId;
+  currentScoreMatchResult = null;
   
   // Устанавливаем названия команд
   document.getElementById('scoreModalTeam1Name').textContent = team1Name;
   document.getElementById('scoreModalTeam2Name').textContent = team2Name;
   
+  // Создаем кнопки выбора победителя
+  const buttonsContainer = document.getElementById('scoreResultButtonsContainer');
+  buttonsContainer.innerHTML = `
+    <button id="scoreResult_team1" onclick="setScoreResult('team1')" 
+      style="flex: 1; padding: 12px; background: transparent; border: 2px solid #5a9fd4; color: #5a9fd4; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+      ${team1Name}
+    </button>
+    <button id="scoreResult_draw" onclick="setScoreResult('draw')" 
+      style="flex: 1; padding: 12px; background: transparent; border: 2px solid #ff9800; color: #ff9800; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+      Ничья
+    </button>
+    <button id="scoreResult_team2" onclick="setScoreResult('team2')" 
+      style="flex: 1; padding: 12px; background: transparent; border: 2px solid #4caf50; color: #4caf50; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+      ${team2Name}
+    </button>
+  `;
+  
   // Сбрасываем значения
   document.getElementById('scoreModalTeam1').value = '0';
   document.getElementById('scoreModalTeam2').value = '0';
+  
+  // Добавляем обработчики синхронизации для инпутов
+  const input1 = document.getElementById('scoreModalTeam1');
+  const input2 = document.getElementById('scoreModalTeam2');
+  
+  input1.addEventListener('input', syncScoreModalInputs);
+  input2.addEventListener('input', syncScoreModalInputs);
   
   // Показываем модалку
   const modal = document.getElementById('scoreMatchResultModal');
@@ -9618,28 +9644,61 @@ function openScoreMatchResultModal(matchId, team1Name, team2Name) {
   lockBodyScroll();
 }
 
+function syncScoreModalInputs(event) {
+  // Синхронизируем инпуты только если выбрана ничья
+  if (currentScoreMatchResult !== 'draw') return;
+  
+  const input1 = document.getElementById('scoreModalTeam1');
+  const input2 = document.getElementById('scoreModalTeam2');
+  
+  if (event.target === input1) {
+    input2.value = input1.value;
+  } else if (event.target === input2) {
+    input1.value = input2.value;
+  }
+}
+
+function setScoreResult(result) {
+  currentScoreMatchResult = result;
+  
+  // Обновляем визуальное отображение
+  const btn1 = document.getElementById('scoreResult_team1');
+  const btnDraw = document.getElementById('scoreResult_draw');
+  const btn2 = document.getElementById('scoreResult_team2');
+  
+  if (btn1) btn1.style.background = result === 'team1' ? 'rgba(90, 159, 212, 0.6)' : 'transparent';
+  if (btnDraw) btnDraw.style.background = result === 'draw' ? 'rgba(255, 152, 0, 0.6)' : 'transparent';
+  if (btn2) btn2.style.background = result === 'team2' ? 'rgba(76, 175, 80, 0.6)' : 'transparent';
+  
+  // Если выбрана ничья, синхронизируем инпуты
+  if (result === 'draw') {
+    const input1 = document.getElementById('scoreModalTeam1');
+    const input2 = document.getElementById('scoreModalTeam2');
+    // Синхронизируем значения (берем большее)
+    const maxValue = Math.max(parseInt(input1.value) || 0, parseInt(input2.value) || 0);
+    input1.value = maxValue;
+    input2.value = maxValue;
+  }
+}
+
 function closeScoreMatchResultModal() {
   const modal = document.getElementById('scoreMatchResultModal');
   modal.style.display = 'none';
   unlockBodyScroll();
   currentScoreMatchId = null;
+  currentScoreMatchResult = null;
 }
 
 async function saveScoreMatchResult() {
   if (!currentScoreMatchId) return;
   
+  if (!currentScoreMatchResult) {
+    alert('Выберите победителя');
+    return;
+  }
+  
   const scoreTeam1 = parseInt(document.getElementById('scoreModalTeam1').value) || 0;
   const scoreTeam2 = parseInt(document.getElementById('scoreModalTeam2').value) || 0;
-  
-  // Определяем победителя
-  let winner;
-  if (scoreTeam1 > scoreTeam2) {
-    winner = 'team1';
-  } else if (scoreTeam2 > scoreTeam1) {
-    winner = 'team2';
-  } else {
-    winner = 'draw';
-  }
   
   try {
     const response = await fetch(`/api/admin/matches/${currentScoreMatchId}`, {
@@ -9649,7 +9708,7 @@ async function saveScoreMatchResult() {
       },
       body: JSON.stringify({
         status: 'finished',
-        winner: winner,
+        winner: currentScoreMatchResult,
         username: currentUser?.username,
         score_team1: scoreTeam1,
         score_team2: scoreTeam2,
