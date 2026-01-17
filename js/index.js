@@ -2530,12 +2530,11 @@ async function displayMatches() {
                 ${
                   match.round || match.score_prediction_enabled
                     ? `<div class="match-round-row">
-                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam1_${match.id}" class="score-input score-input-left" min="0" value="${userBetOnMatch?.score_team1 !== undefined ? userBetOnMatch.score_team1 : ''}" placeholder="0" ${effectiveStatus !== "pending" ? "disabled" : ""}>` : `<div class="score-placeholder"></div>`}
+                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam1_${match.id}" class="score-input score-input-left" min="0" value="${userBetOnMatch?.score_team1 != null ? userBetOnMatch.score_team1 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="showScoreButtons(${match.id})">` : ""}
                       ${match.round ? `<div class="match-round">${match.round}</div>` : ""}
-                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam2_${match.id}" class="score-input score-input-right" min="0" value="${userBetOnMatch?.score_team2 !== undefined ? userBetOnMatch.score_team2 : ''}" placeholder="0" ${effectiveStatus !== "pending" ? "disabled" : ""}>` : `<div class="score-placeholder"></div>`}
-                      ${match.score_prediction_enabled ? `<div class="score-action-btns">
-                        <button class="score-confirm-btn" onclick="placeScorePrediction(${match.id})" ${effectiveStatus !== "pending" ? "disabled" : ""}>✅</button>
-                        <button class="score-cancel-btn" onclick="cancelScorePrediction(${match.id})" ${effectiveStatus !== "pending" || (userBetOnMatch?.score_team1 === undefined && userBetOnMatch?.score_team2 === undefined) ? "disabled" : ""}>❌</button>
+                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam2_${match.id}" class="score-input score-input-right" min="0" value="${userBetOnMatch?.score_team2 != null ? userBetOnMatch.score_team2 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="showScoreButtons(${match.id})">` : ""}
+                      ${match.score_prediction_enabled && userBetOnMatch?.prediction && effectiveStatus === "pending" && !(userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? `<div class="score-action-btns" id="scoreButtons_${match.id}">
+                        <button class="score-confirm-btn" onclick="placeScorePrediction(${match.id})">✅</button>
                       </div>` : ""}
                     </div>`
                     : ""
@@ -2827,7 +2826,7 @@ async function placeBet(matchId, teamName, prediction) {
         (!bet.is_final_bet || bet.is_final_bet === 0)
     );
 
-    // Если уже есть обычная ставка на этот матч - удаляем её
+    // Если уже есть обычная ставка на этот матч - удаляем её и прогноз на счет
     if (existingBet) {
       await fetch(`/api/bets/${existingBet.id}`, {
         method: "DELETE",
@@ -2838,6 +2837,21 @@ async function placeBet(matchId, teamName, prediction) {
           user_id: currentUser.id,
         }),
       });
+      
+      // Удаляем прогноз на счет
+      try {
+        await fetch(`/api/score-predictions/${matchId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+          }),
+        });
+      } catch (error) {
+        console.log("Прогноз на счет не найден или уже удален");
+      }
     }
 
     // Создаём новую ставку
@@ -2866,6 +2880,13 @@ async function placeBet(matchId, teamName, prediction) {
 }
 
 // ===== ПРОГНОЗ НА СЧЕТ =====
+function showScoreButtons(matchId) {
+  const buttonsDiv = document.getElementById(`scoreButtons_${matchId}`);
+  if (buttonsDiv) {
+    buttonsDiv.style.display = 'flex';
+  }
+}
+
 async function placeScorePrediction(matchId) {
   if (!currentUser) {
     alert("Сначала введите ваше имя");
@@ -2875,8 +2896,9 @@ async function placeScorePrediction(matchId) {
   const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
   const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
   
-  const scoreTeam1 = parseInt(scoreTeam1Input.value);
-  const scoreTeam2 = parseInt(scoreTeam2Input.value);
+  // Если поле пустое, считаем как 0
+  const scoreTeam1 = scoreTeam1Input.value === '' ? 0 : parseInt(scoreTeam1Input.value);
+  const scoreTeam2 = scoreTeam2Input.value === '' ? 0 : parseInt(scoreTeam2Input.value);
 
   if (isNaN(scoreTeam1) || isNaN(scoreTeam2) || scoreTeam1 < 0 || scoreTeam2 < 0) {
     alert("Введите корректный счет (0 или больше)");
@@ -2908,7 +2930,16 @@ async function placeScorePrediction(matchId) {
     });
 
     if (response.ok) {
-      alert("Прогноз на счет сохранен!");
+      // Скрываем кнопки и блокируем инпуты
+      const buttonsDiv = document.getElementById(`scoreButtons_${matchId}`);
+      if (buttonsDiv) {
+        buttonsDiv.style.display = 'none';
+      }
+      const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
+      const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
+      if (scoreTeam1Input) scoreTeam1Input.disabled = true;
+      if (scoreTeam2Input) scoreTeam2Input.disabled = true;
+      
       loadMyBets();
     } else {
       const error = await response.json();
@@ -2942,9 +2973,24 @@ async function cancelScorePrediction(matchId) {
     });
 
     if (response.ok) {
-      // Очищаем поля ввода
-      document.getElementById(`scoreTeam1_${matchId}`).value = "";
-      document.getElementById(`scoreTeam2_${matchId}`).value = "";
+      // Очищаем поля ввода и разблокируем их
+      const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
+      const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
+      if (scoreTeam1Input) {
+        scoreTeam1Input.value = "";
+        scoreTeam1Input.disabled = false;
+      }
+      if (scoreTeam2Input) {
+        scoreTeam2Input.value = "";
+        scoreTeam2Input.disabled = false;
+      }
+      
+      // Показываем кнопки снова
+      const buttonsDiv = document.getElementById(`scoreButtons_${matchId}`);
+      if (buttonsDiv) {
+        buttonsDiv.style.display = 'flex';
+      }
+      
       alert("Прогноз на счет удален");
       loadMyBets();
     } else {
@@ -3573,6 +3619,23 @@ async function deleteBet(betId) {
 
     // Удаляем ставку из userBets массива
     userBets = userBets.filter((b) => b.id !== betId);
+
+    // Если это была обычная ставка (не финальная) - удаляем прогноз на счет
+    if (!isFinalBet && matchId) {
+      try {
+        await fetch(`/api/score-predictions/${matchId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+          }),
+        });
+      } catch (error) {
+        console.log("Прогноз на счет не найден или уже удален");
+      }
+    }
 
     // Если это была final bet - разблокируем параметр
     if (isFinalBet && matchId && parameterType) {
@@ -8896,6 +8959,8 @@ async function openEditMatchModal(id, team1, team2, date, round) {
       match.show_extra_time || false;
     document.getElementById("editShowPenaltiesAtEnd").checked =
       match.show_penalties_at_end || false;
+    document.getElementById("editMatchScorePrediction").checked =
+      match.score_prediction_enabled || false;
 
     // Обновим состояние тура и параметров в зависимости от is_final
     toggleFinalMatch("edit");

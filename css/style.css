@@ -863,8 +863,8 @@ button:active {
 }
 
 .match-row.has-user-bet {
-  /* background: rgba(80, 60, 40, 0.7); */
-  background: rgba(20, 40, 70, 0.4);
+  /* background: rgba(20, 40, 70, 0.4); */
+  background: rgba(80, 60, 40, 0.7);
   border-left-color: #ffb81c;
   /* box-shadow: 0 0 12px rgba(255, 184, 28, 0.2); */
 }
