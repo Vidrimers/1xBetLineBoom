@@ -2881,6 +2881,25 @@ async function placeBet(matchId, teamName, prediction) {
 
     if (response.ok) {
       loadMyBets();
+      
+      // Если ставка на ничью, синхронизируем инпуты счета
+      if (prediction === 'draw') {
+        // Даем время на перерисовку DOM
+        setTimeout(() => {
+          const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
+          const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
+          
+          if (scoreTeam1Input && scoreTeam2Input) {
+            // Синхронизируем значения (берем большее или 0)
+            const maxValue = Math.max(
+              parseInt(scoreTeam1Input.value) || 0,
+              parseInt(scoreTeam2Input.value) || 0
+            );
+            scoreTeam1Input.value = maxValue || '';
+            scoreTeam2Input.value = maxValue || '';
+          }
+        }, 100);
+      }
     } else {
       alert("Ошибка при создании ставки");
     }
@@ -2925,13 +2944,20 @@ function syncScoreInputs(matchId, prediction) {
   const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
   const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
   
+  if (!scoreTeam1Input || !scoreTeam2Input) return;
+  
   // Если ставка на ничью, синхронизируем инпуты
   if (prediction === 'draw') {
-    // Определяем какой инпут изменился
-    if (document.activeElement === scoreTeam1Input) {
+    // Определяем какой инпут изменился (тот который в фокусе или последний измененный)
+    const activeElement = document.activeElement;
+    
+    if (activeElement === scoreTeam1Input) {
       scoreTeam2Input.value = scoreTeam1Input.value;
-    } else if (document.activeElement === scoreTeam2Input) {
+    } else if (activeElement === scoreTeam2Input) {
       scoreTeam1Input.value = scoreTeam2Input.value;
+    } else {
+      // Если ни один не в фокусе, синхронизируем по первому инпуту
+      scoreTeam2Input.value = scoreTeam1Input.value;
     }
   }
 }
@@ -3420,6 +3446,22 @@ function displayMyBets(bets) {
     return;
   }
 
+  // Логируем ставки для отладки
+  console.log("📊 Отображаем ставки:", bets.length);
+  bets.forEach((bet, index) => {
+    if (bet.score_team1 != null || bet.score_team2 != null || bet.actual_score_team1 != null || bet.actual_score_team2 != null) {
+      console.log(`Ставка ${index + 1}:`, {
+        id: bet.id,
+        match: `${bet.team1_name} vs ${bet.team2_name}`,
+        prediction: bet.prediction,
+        winner: bet.winner,
+        score_prediction: `${bet.score_team1}-${bet.score_team2}`,
+        actual_score: `${bet.actual_score_team1}-${bet.actual_score_team2}`,
+        match_status: bet.match_status
+      });
+    }
+  });
+
   // Сначала определяем статус для ВСЕХ ставок
   const betsWithStatus = bets.map((bet) => {
     let statusClass = "pending";
@@ -3652,14 +3694,14 @@ function displayMyBets(bets) {
               bet.score_team1 != null && bet.score_team2 != null
                 ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
                     Счет: <span style="${
-                      bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                      bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.match_status === 'finished'
                         ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
                           ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
                           : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
                         : ''
                     }">${bet.score_team1}-${bet.score_team2}</span>
                     ${
-                      bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                      bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.match_status === 'finished'
                         ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
                         : ""
                     }
@@ -3691,6 +3733,30 @@ async function deleteBet(betId) {
     const parameterType = bet?.parameter_type;
     const isFinalBet = bet?.is_final_bet;
 
+    // Если это была обычная ставка (не финальная) - СНАЧАЛА удаляем прогноз на счет
+    if (!isFinalBet && matchId) {
+      try {
+        const deleteScoreResponse = await fetch(`/api/score-predictions/${matchId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+          }),
+        });
+        
+        if (deleteScoreResponse.ok) {
+          console.log("✅ Прогноз на счет удален");
+        } else {
+          console.log("⚠️ Прогноз на счет не найден или уже удален");
+        }
+      } catch (error) {
+        console.log("⚠️ Ошибка при удалении прогноза на счет:", error);
+      }
+    }
+
+    // ПОТОМ удаляем ставку
     const response = await fetch(`/api/bets/${betId}`, {
       method: "DELETE",
       headers: {
@@ -3709,38 +3775,14 @@ async function deleteBet(betId) {
       return;
     }
 
-    // Удаляем ставку из userBets массива
-    userBets = userBets.filter((b) => b.id !== betId);
-
-    // Если это была обычная ставка (не финальная) - удаляем прогноз на счет
-    if (!isFinalBet && matchId) {
-      try {
-        await fetch(`/api/score-predictions/${matchId}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_id: currentUser.id,
-          }),
-        });
-      } catch (error) {
-        console.log("Прогноз на счет не найден или уже удален");
-      }
-    }
-
     // Если это была final bet - разблокируем параметр
     if (isFinalBet && matchId && parameterType) {
       unlockFinalParameter(matchId, parameterType);
     }
 
     // 🔄 Полностью перезагружаем список ставок с БД
+    // loadMyBets уже вызывает displayMatches внутри, поэтому не нужно вызывать его отдельно
     await loadMyBets();
-
-    // 🔄 Обновляем карточки матчей, чтобы убрать подсветку
-    if (currentEventId) {
-      displayMatches();
-    }
   } catch (error) {
     console.error("Ошибка при удалении ставки:", error);
     alert("Ошибка при удалении ставки");
@@ -4532,14 +4574,14 @@ function displayTournamentParticipantBets(bets) {
           bet.score_team1 != null && bet.score_team2 != null
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
                 Счет: <span style="${
-                  bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                  bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
                     ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
                       : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
                     : ''
                 }">${bet.score_team1}-${bet.score_team2}</span>
                 ${
-                  bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                  bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
                     ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
                     : ""
                 }
