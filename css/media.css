@@ -247,9 +247,10 @@
   }
 
   .mobile-nav-btn.active {
-    background: rgba(58, 123, 213, 0.9);
-    color: #e0e6f0;
-    transform: translate(-50%, 0);
+    background: rgba(58, 123, 213, 0.9) !important;
+    color: #e0e6f0 !important;
+    transform: translate(-30%, 0);
+    box-shadow: 4px 0 20px rgba(58, 123, 213, 0.6) !important;
   }
 
   /* Скрываем навигацию если не залогинен */
