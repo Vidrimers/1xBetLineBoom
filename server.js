@@ -8999,15 +8999,28 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
 
       if (matches.length === 0) continue;
 
-      // Получаем ставки на эти матчи
+      // Получаем ставки на эти матчи с прогнозами на счет
       const matchIds = matches.map(m => m.id);
       const placeholders = matchIds.map(() => '?').join(',');
       
       const bets = db.prepare(`
-        SELECT b.user_id, b.match_id, b.prediction, m.winner, u.username, u.telegram_username
+        SELECT 
+          b.user_id, 
+          b.match_id, 
+          b.prediction, 
+          m.winner, 
+          m.is_final,
+          u.username, 
+          u.telegram_username,
+          sp.score_team1 as predicted_score1,
+          sp.score_team2 as predicted_score2,
+          ms.score_team1 as actual_score1,
+          ms.score_team2 as actual_score2
         FROM bets b
         JOIN matches m ON b.match_id = m.id
         JOIN users u ON b.user_id = u.id
+        LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+        LEFT JOIN match_scores ms ON b.match_id = ms.match_id
         WHERE b.match_id IN (${placeholders})
       `).all(...matchIds);
 
@@ -9019,18 +9032,37 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           userPoints[bet.user_id] = {
             username: bet.username,
             telegram_username: bet.telegram_username,
-            points: 0
+            points: 0,
+            correctResults: 0,
+            correctScores: 0
           };
         }
 
-        // Проверяем правильность ставки
+        // Проверяем правильность ставки на результат
         const isCorrect = 
           (bet.prediction === 'team1' && bet.winner === 'team1') ||
           (bet.prediction === 'team2' && bet.winner === 'team2') ||
           (bet.prediction === 'draw' && bet.winner === 'draw');
 
         if (isCorrect) {
-          userPoints[bet.user_id].points++;
+          // Очки за результат (1 или 3 для финала)
+          const resultPoints = bet.is_final ? 3 : 1;
+          userPoints[bet.user_id].points += resultPoints;
+          userPoints[bet.user_id].correctResults++;
+
+          // Проверяем прогноз на счет
+          if (bet.predicted_score1 !== null && bet.predicted_score2 !== null &&
+              bet.actual_score1 !== null && bet.actual_score2 !== null) {
+            const scoreCorrect = 
+              bet.predicted_score1 === bet.actual_score1 && 
+              bet.predicted_score2 === bet.actual_score2;
+            
+            if (scoreCorrect) {
+              // Дополнительное очко за угаданный счет
+              userPoints[bet.user_id].points++;
+              userPoints[bet.user_id].correctScores++;
+            }
+          }
         }
       }
 
@@ -9079,7 +9111,15 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
         for (let i = 0; i < usersInGroup.length; i++) {
           const user = usersInGroup[i];
           const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '▪️';
-          message += `${medal} ${user.username}: <b>${user.points}</b> ${user.points === 1 ? 'очко' : user.points < 5 ? 'очка' : 'очков'}\n`;
+          
+          let userLine = `${medal} ${user.username}: <b>${user.points}</b> ${user.points === 1 ? 'очко' : user.points < 5 ? 'очка' : 'очков'}`;
+          
+          // Добавляем статистику по счетам если есть
+          if (user.correctScores > 0) {
+            userLine += ` (🎯 ${user.correctScores})`;
+          }
+          
+          message += userLine + '\n';
         }
 
         // Лучший за период
@@ -9087,6 +9127,11 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           const winner = usersInGroup[0];
           message += `\n👑 <b>Лучший за период:</b>\n`;
           message += `Поздравляем ${winner.username}, малютка! 🎉\n`;
+          
+          // Если есть угаданные счета, показываем
+          if (winner.correctScores > 0) {
+            message += `🎯 Угадано счетов: ${winner.correctScores}\n`;
+          }
         }
       } else {
         message += `Нет участников из группы\n`;
