@@ -101,10 +101,13 @@
   .container {
     max-width: 95%;
     padding: 10px;
+    position: relative;
+    overflow-x: hidden;
   }
 
   body {
     padding: 10px;
+    overflow-x: hidden;
   }
 
   header {
@@ -124,9 +127,78 @@
     font-size: 0.6em;
   }
 
+  /* Мобильное меню */
   .user-section {
-    max-width: 100%;
-    padding: 8px;
+    display: flex;
+    position: fixed;
+    flex-direction: column;
+    margin-right: 30px;
+    top: 50%;
+    right: -100%;
+    transform: translateY(-50%);
+    width: 100%;
+    width: 40%;
+    /* max-width: 100%; */
+    height: auto;
+    height: 50vh;
+    padding: 20px;
+    background: rgba(30, 34, 44, 0.98);
+    z-index: 1000;
+    transition: right 0.3s ease, transform 0.3s ease;
+    overflow-y: auto;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.5);
+    visibility: hidden;
+    justify-content: space-between;
+  }
+
+  .user-section.active {
+    right: 0;
+    transform: translateY(-50%);
+    visibility: visible;
+  }
+
+  
+
+  .mobile-menu-toggle {
+    display: block;
+    position: fixed;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 150px;
+    background: rgba(30, 34, 44, 0.9);
+    /* color: #e0e6f0; */
+    color: #4b525f;
+    border: none;
+    border-radius: 5px 0 0 5px;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-size: 0.8em;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 999;
+    transition: all 0.3s ease;
+    padding: 10px 2px;
+    letter-spacing: 2px;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.5);
+  }
+
+  /* .mobile-menu-toggle:hover {
+    background: rgba(58, 123, 213, 1);
+    width: 22px;
+  } */
+
+  .mobile-menu-toggle.active {
+    display: block;
+    background: inherit;
+    box-shadow: 0 4px 12px rgba(58, 123, 213, 0.5);
+  }
+
+   .mobile-menu-toggle:hover {
+    background: inherit !important;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.5);
+
   }
 
   .user-input {
@@ -230,12 +302,16 @@
 
   .tabs {
     padding: 0 10px;
-    gap: 5px;
+    gap: 10px;
+    flex-direction: column;
+    justify-content: space-between;
   }
 
   .tab-btn {
-    padding: 7px 12px;
-    font-size: 0.8em;
+    /* padding: 7px 12px; */
+    /* font-size: 0.8em; */
+    padding: 12px 12px;
+    font-size: 1.2em;
   }
 
   .modal-content {

@@ -3773,6 +3773,39 @@ async function deleteBet(betId) {
   }
 }
 
+// ===== МОБИЛЬНОЕ МЕНЮ =====
+function toggleMobileMenu() {
+  const userSection = document.querySelector('.user-section');
+  const toggleBtn = document.getElementById('mobileMenuToggle');
+  
+  userSection.classList.toggle('active');
+  toggleBtn.classList.toggle('active');
+  
+  // Закрываем меню при клике на вкладку
+  if (userSection.classList.contains('active')) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        userSection.classList.remove('active');
+        toggleBtn.classList.remove('active');
+      }, { once: true });
+    });
+  }
+}
+
+// Закрытие мобильного меню при клике вне его
+document.addEventListener('click', (e) => {
+  const userSection = document.querySelector('.user-section');
+  const toggleBtn = document.getElementById('mobileMenuToggle');
+  
+  if (userSection && toggleBtn && 
+      userSection.classList.contains('active') &&
+      !userSection.contains(e.target) && 
+      !toggleBtn.contains(e.target)) {
+    userSection.classList.remove('active');
+    toggleBtn.classList.remove('active');
+  }
+});
+
 // ===== ВКЛАДКИ =====
 function switchTab(tabName) {
   // Скрываем все содержимое вкладок

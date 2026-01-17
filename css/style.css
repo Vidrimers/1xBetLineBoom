@@ -331,6 +331,11 @@ header h1 {
   margin: 0 auto 10px;
 }
 
+/* Кнопка мобильного меню (скрыта на десктопе) */
+.mobile-menu-toggle {
+  display: none;
+}
+
 .user-input {
   display: flex;
   gap: 10px;

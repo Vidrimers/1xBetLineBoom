@@ -916,3 +916,109 @@ button,
   background: #ff9900;
   color: #000;
 }
+
+/* === Мобильная кнопка меню в темах === */
+body.theme-hacker-green .mobile-menu-toggle {
+  background: rgba(0, 17, 0, 0.9) !important;
+  color: #00ff00 !important;
+  border: 1px solid #00ff00 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.6) !important;
+}
+
+body.theme-hacker-green .mobile-menu-toggle:hover {
+  background: rgba(0, 17, 0, 1) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.8) !important;
+}
+
+body.theme-solarized .mobile-menu-toggle {
+  background: rgba(7, 54, 66, 0.9) !important;
+  color: #268bd2 !important;
+  border: 1px solid #268bd2 !important;
+  box-shadow: 0 0 15px rgba(38, 139, 210, 0.6) !important;
+}
+
+body.theme-solarized .mobile-menu-toggle:hover {
+  background: rgba(7, 54, 66, 1) !important;
+  box-shadow: 0 0 20px rgba(38, 139, 210, 0.8) !important;
+}
+
+body.theme-matrix .mobile-menu-toggle {
+  background: rgba(0, 10, 0, 0.9) !important;
+  color: #00ff41 !important;
+  border: 2px solid #00ff41 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.6) !important;
+}
+
+body.theme-matrix .mobile-menu-toggle:hover {
+  background: rgba(0, 10, 0, 1) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.8) !important;
+}
+
+body.theme-cyberpunk .mobile-menu-toggle {
+  background: rgba(10, 0, 20, 0.9) !important;
+  color: #ff00ff !important;
+  border: 2px solid #ff00ff !important;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.7) !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.theme-cyberpunk .mobile-menu-toggle:hover {
+  background: rgba(10, 0, 20, 1) !important;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.8) !important;
+}
+
+body.theme-leagueChampions .mobile-menu-toggle {
+  background: rgba(22, 36, 71, 0.9) !important;
+  color: #1b9ce5 !important;
+  border: 2px solid #1b9ce5 !important;
+  box-shadow: 0 0 15px rgba(27, 156, 229, 0.5) !important;
+}
+
+body.theme-leagueChampions .mobile-menu-toggle:hover {
+  background: rgba(22, 36, 71, 1) !important;
+  box-shadow: 0 0 20px rgba(27, 156, 229, 0.7) !important;
+}
+
+body.theme-leagueEurope .mobile-menu-toggle {
+  background: rgba(26, 31, 46, 0.9) !important;
+  color: #ffd700 !important;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+}
+
+body.theme-leagueEurope .mobile-menu-toggle:hover {
+  background: rgba(26, 31, 46, 1) !important;
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.8) !important;
+}
+
+/* === user-section в темах (мобильное меню) === */
+body.theme-hacker-green .user-section {
+  background: rgba(0, 17, 0, 0.98) !important;
+  border-left: 3px solid #00ff00 !important;
+}
+
+body.theme-solarized .user-section {
+  background: rgba(7, 54, 66, 0.98) !important;
+  border-left: 3px solid #268bd2 !important;
+}
+
+body.theme-matrix .user-section {
+  background: rgba(0, 10, 0, 0.98) !important;
+  border-left: 3px solid #00ff41 !important;
+}
+
+body.theme-cyberpunk .user-section {
+  background: rgba(10, 0, 20, 0.98) !important;
+  border-left: 3px solid #ff00ff !important;
+  box-shadow: -4px 0 30px rgba(255, 0, 255, 0.5) !important;
+}
+
+body.theme-leagueChampions .user-section {
+  background: rgba(22, 36, 71, 0.98) !important;
+  border-left: 3px solid #1b9ce5 !important;
+}
+
+body.theme-leagueEurope .user-section {
+  background: rgba(26, 31, 46, 0.98) !important;
+  border-left: 3px solid #ffd700 !important;
+}
