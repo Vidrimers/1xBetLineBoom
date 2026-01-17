@@ -341,6 +341,11 @@ header h1 {
   display: none;
 }
 
+/* Боковые кнопки навигации (скрыты на десктопе) */
+.mobile-nav-buttons {
+  display: none;
+}
+
 .user-input {
   display: flex;
   gap: 10px;

@@ -3810,6 +3810,36 @@ function toggleMobileMenu() {
   }
 }
 
+// Переключение секций на мобильных
+function showMobileSection(section) {
+  if (window.innerWidth > 768) return; // Работает только на мобильных
+
+  const tournaments = document.querySelector('.bet-section-tournaments');
+  const matches = document.getElementById('matchesSection');
+  const bets = document.querySelector('.bet-section-bets');
+  const navButtons = document.querySelectorAll('.mobile-nav-btn');
+
+  // Убираем активный класс со всех кнопок
+  navButtons.forEach(btn => btn.classList.remove('active'));
+
+  // Скрываем все секции
+  if (tournaments) tournaments.style.display = 'none';
+  if (matches) matches.style.display = 'none';
+  if (bets) bets.style.display = 'none';
+
+  // Показываем нужную секцию и активируем кнопку
+  if (section === 'tournaments' && tournaments) {
+    tournaments.style.display = 'block';
+    navButtons[0].classList.add('active');
+  } else if (section === 'matches' && matches) {
+    matches.style.display = 'block';
+    navButtons[1].classList.add('active');
+  } else if (section === 'bets' && bets) {
+    bets.style.display = 'block';
+    navButtons[2].classList.add('active');
+  }
+}
+
 // Закрытие мобильного меню при клике вне его
 document.addEventListener('click', (e) => {
   const userSection = document.querySelector('.user-section');

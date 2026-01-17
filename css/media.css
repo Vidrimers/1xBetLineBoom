@@ -113,7 +113,7 @@
   /* Скрываем секции матчей и ставок по умолчанию на мобильных */
   #matchesSection,
   .bet-section-bets {
-    display: none !important;
+    display: none;
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -121,12 +121,20 @@
   /* Когда турнир выбран - скрываем турниры и ставки, показываем только матчи */
   .tournament-selected .bet-section-tournaments,
   .tournament-selected .bet-section-bets {
-    display: none !important;
+    display: none;
   }
 
   .tournament-selected #matchesSection {
-    display: block !important;
+    display: block;
     opacity: 1;
+  }
+
+  /* Показываем секции через JavaScript навигацию */
+  .bet-section-tournaments[style*="display: block"],
+  #matchesSection[style*="display: block"],
+  .bet-section-bets[style*="display: block"] {
+    display: block !important;
+    opacity: 1 !important;
   }
 
   header {
@@ -205,6 +213,53 @@
 
   /* Скрываем кнопку меню если не залогинен */
   .container.not-logged-in .mobile-menu-toggle {
+    display: none;
+  }
+
+  /* Боковые кнопки навигации (мобильные) */
+  .mobile-nav-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: fixed;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    z-index: 999;
+  }
+
+  .mobile-nav-btn {
+    display: block;
+    width: 20px;
+    height: 150px;
+    background: rgba(30, 34, 44, 0.9);
+    color: #4b525f;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-size: 0.6em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 10px 2px;
+    letter-spacing: 0.5px;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+  }
+
+  .mobile-nav-btn:hover {
+    background: inherit !important;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+  }
+
+  .mobile-nav-btn.active {
+    background: rgba(58, 123, 213, 0.9);
+    color: #e0e6f0;
+    transform: translate(-50%, 0);
+  }
+
+  /* Скрываем навигацию если не залогинен */
+  .container.not-logged-in .mobile-nav-buttons {
     display: none;
   }
 

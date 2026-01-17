@@ -97,6 +97,19 @@
         МЕНЮ
       </button>
 
+      <!-- Боковые кнопки навигации (мобильные) -->
+      <div class="mobile-nav-buttons">
+        <button class="mobile-nav-btn active" onclick="showMobileSection('tournaments')" title="Турниры">
+          📅 Турниры
+        </button>
+        <button class="mobile-nav-btn" onclick="showMobileSection('matches')" title="Матчи">
+          ⚽ Матчи
+        </button>
+        <button class="mobile-nav-btn" onclick="showMobileSection('bets')" title="Мои ставки">
+          💰 Мои ставки
+        </button>
+      </div>
+
       <!-- Содержимое вкладки Ставки (двухколонная структура) -->
       <div class="content" id="allbets-content" style="margin-top: -5px">
         <!-- Турниры -->
