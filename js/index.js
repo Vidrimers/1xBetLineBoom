@@ -2530,11 +2530,11 @@ async function displayMatches() {
                 ${
                   match.round || match.score_prediction_enabled
                     ? `<div class="match-round-row">
-                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam1_${match.id}" class="score-input score-input-left" min="0" value="${userBetOnMatch?.score_team1 != null ? userBetOnMatch.score_team1 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="showScoreButtons(${match.id})">` : ""}
+                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam1_${match.id}" class="score-input score-input-left" min="0" value="${userBetOnMatch?.score_team1 != null ? userBetOnMatch.score_team1 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="syncScoreInputs(${match.id}, '${userBetOnMatch?.prediction || ''}')">` : ""}
                       ${match.round ? `<div class="match-round">${match.round}</div>` : ""}
-                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam2_${match.id}" class="score-input score-input-right" min="0" value="${userBetOnMatch?.score_team2 != null ? userBetOnMatch.score_team2 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="showScoreButtons(${match.id})">` : ""}
+                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam2_${match.id}" class="score-input score-input-right" min="0" value="${userBetOnMatch?.score_team2 != null ? userBetOnMatch.score_team2 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="syncScoreInputs(${match.id}, '${userBetOnMatch?.prediction || ''}')">` : ""}
                       ${match.score_prediction_enabled && userBetOnMatch?.prediction && effectiveStatus === "pending" && !(userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? `<div class="score-action-btns" id="scoreButtons_${match.id}">
-                        <button class="score-confirm-btn" onclick="placeScorePrediction(${match.id})">✅</button>
+                        <button class="score-confirm-btn" onclick="placeScorePrediction(${match.id}, '${userBetOnMatch?.prediction || ''}')">✅</button>
                       </div>` : ""}
                     </div>`
                     : ""
@@ -2880,14 +2880,52 @@ async function placeBet(matchId, teamName, prediction) {
 }
 
 // ===== ПРОГНОЗ НА СЧЕТ =====
-function showScoreButtons(matchId) {
-  const buttonsDiv = document.getElementById(`scoreButtons_${matchId}`);
-  if (buttonsDiv) {
-    buttonsDiv.style.display = 'flex';
+function showScoreAlert(message) {
+  // Создаем overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'score-alert-overlay';
+  
+  // Создаем алерт
+  const alert = document.createElement('div');
+  alert.className = 'score-alert';
+  alert.innerHTML = `
+    <div class="score-alert-content">
+      <div class="score-alert-icon">⚠️</div>
+      <div class="score-alert-message">${message}</div>
+      <button class="score-alert-button" onclick="closeScoreAlert()">Понятно</button>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  document.body.appendChild(alert);
+  
+  // Закрытие по клику на overlay
+  overlay.onclick = closeScoreAlert;
+}
+
+function closeScoreAlert() {
+  const overlay = document.querySelector('.score-alert-overlay');
+  const alert = document.querySelector('.score-alert');
+  if (overlay) overlay.remove();
+  if (alert) alert.remove();
+}
+
+function syncScoreInputs(matchId, prediction) {
+  const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
+  const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
+  
+  // Если ставка на ничью, синхронизируем инпуты
+  if (prediction === 'draw') {
+    // Определяем какой инпут изменился
+    if (document.activeElement === scoreTeam1Input) {
+      scoreTeam2Input.value = scoreTeam1Input.value;
+    } else if (document.activeElement === scoreTeam2Input) {
+      scoreTeam1Input.value = scoreTeam2Input.value;
+    }
   }
 }
 
-async function placeScorePrediction(matchId) {
+async function placeScorePrediction(matchId, prediction) {
   if (!currentUser) {
     alert("Сначала введите ваше имя");
     return;
@@ -2902,6 +2940,22 @@ async function placeScorePrediction(matchId) {
 
   if (isNaN(scoreTeam1) || isNaN(scoreTeam2) || scoreTeam1 < 0 || scoreTeam2 < 0) {
     alert("Введите корректный счет (0 или больше)");
+    return;
+  }
+
+  // Валидация: прогноз на счет должен соответствовать ставке
+  if (prediction === 'team1' && scoreTeam1 <= scoreTeam2) {
+    showScoreAlert("Вы поставили на победу первой команды, но счет не соответствует вашей ставке");
+    return;
+  }
+  
+  if (prediction === 'team2' && scoreTeam2 <= scoreTeam1) {
+    showScoreAlert("Вы поставили на победу второй команды, но счет не соответствует вашей ставке");
+    return;
+  }
+  
+  if (prediction === 'draw' && scoreTeam1 !== scoreTeam2) {
+    showScoreAlert("Вы поставили на ничью, но счет не соответствует вашей ставке");
     return;
   }
 
