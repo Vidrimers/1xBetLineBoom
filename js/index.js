@@ -1032,7 +1032,14 @@ function getDeviceInfo() {
 }
 
 async function initUser() {
+  // Получаем значение из обоих инпутов
   let username = document.getElementById("username").value.trim();
+  const usernameMobile = document.getElementById("username-mobile")?.value.trim();
+  
+  // Используем значение из мобильного инпута если основной пустой
+  if (!username && usernameMobile) {
+    username = usernameMobile;
+  }
 
   if (!username) {
     await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "⚠️");
@@ -1056,6 +1063,9 @@ async function initUser() {
 
     await showCustomAlert("Ну, ты давай не охуевай совсем, малютка", "Доступ запрещен", "🚫");
     document.getElementById("username").value = "";
+    if (document.getElementById("username-mobile")) {
+      document.getElementById("username-mobile").value = "";
+    }
     return;
   }
 
@@ -1063,8 +1073,11 @@ async function initUser() {
   let usernameToSend = username === ADMIN_LOGIN ? ADMIN_DB_NAME : username;
   let isAdminUser = username === ADMIN_LOGIN;
 
-  // Обновляем input с правильным логином
+  // Обновляем оба input с правильным логином
   document.getElementById("username").value = usernameToSend;
+  if (document.getElementById("username-mobile")) {
+    document.getElementById("username-mobile").value = usernameToSend;
+  }
 
   // Получаем информацию об устройстве
   const deviceData = getDeviceInfo();

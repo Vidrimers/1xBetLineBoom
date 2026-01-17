@@ -189,6 +189,35 @@
     display: none;
   }
 
+  /* Дополнительный user-input для мобильных (не залогинен) */
+  .user-input-mobile {
+    display: none;
+    position: relative;
+    z-index: 1001;
+    /* background: rgba(30, 34, 44, 0.98); */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    flex-direction: column;
+    gap: 10px;
+    /* width: 100%; */
+    max-width: 100%;
+    margin: 10px auto;
+  }
+
+  .container.not-logged-in .user-input-mobile {
+    display: flex;
+  }
+
+  .user-input-mobile input {
+    width: 100%;
+    text-align: center;
+  }
+
+  .user-input-mobile button {
+    width: 100%;
+  }
+
   /* .mobile-menu-toggle:hover {
     background: rgba(58, 123, 213, 1);
     width: 22px;
@@ -1695,6 +1724,7 @@
     width: 50%;
     flex: 1;
     padding: 10px 0;
+    height: 40vh;
     /* max-width: 100%;
     padding: 4px;
     margin: 0 auto 5px;

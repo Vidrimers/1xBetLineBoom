@@ -79,6 +79,19 @@
         </p>
       </div>
 
+      <!-- Дополнительный user-input для not-logged-in (мобильная версия) -->
+      <div class="user-input-mobile">
+        <input
+          type="text"
+          id="username-mobile"
+          placeholder="Логин"
+          onkeypress="if(event.key === 'Enter') initUser()"
+        />
+        <button class="auth-btn" onclick="initUser()">
+          Войти
+        </button>
+      </div>
+
       <!-- Кнопка мобильного меню -->
       <button id="mobileMenuToggle" class="mobile-menu-toggle logged-in" onclick="toggleMobileMenu()">
         МЕНЮ
