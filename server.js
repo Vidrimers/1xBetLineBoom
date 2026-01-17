@@ -2168,7 +2168,16 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
                        (b.prediction = 'draw' AND m.winner = 'draw') OR
                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
                        (b.prediction = m.team2_name AND m.winner = 'team2') THEN
-                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END
+                       -- Базовое очко за угаданный результат (3 за финал, 1 за обычный матч)
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+                       -- Дополнительное очко за угаданный счет
+                       CASE 
+                         WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+                         THEN 1 
+                         ELSE 0 
+                       END
                   ELSE 0 
                 END
               -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
@@ -2231,6 +2240,8 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
       INNER JOIN bets b ON u.id = b.user_id
       INNER JOIN matches m ON b.match_id = m.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN match_scores ms ON b.match_id = ms.match_id
       WHERE m.event_id = ?
       GROUP BY u.id, u.username, u.avatar, u.show_bets
       HAVING COUNT(DISTINCT b.id) > 0
@@ -4642,7 +4653,16 @@ app.get("/api/participants", (req, res) => {
                        (b.prediction = 'draw' AND m.winner = 'draw') OR
                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
                        (b.prediction = m.team2_name AND m.winner = 'team2') THEN
-                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END
+                       -- Базовое очко за угаданный результат (3 за финал, 1 за обычный матч)
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+                       -- Дополнительное очко за угаданный счет
+                       CASE 
+                         WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+                         THEN 1 
+                         ELSE 0 
+                       END
                   ELSE 0 
                 END
               -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
@@ -4729,6 +4749,8 @@ app.get("/api/participants", (req, res) => {
       LEFT JOIN bets b ON u.id = b.user_id
       LEFT JOIN matches m ON b.match_id = m.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN match_scores ms ON b.match_id = ms.match_id
       GROUP BY u.id, u.username, u.avatar
       ORDER BY COUNT(b.id) DESC
     `
@@ -4855,7 +4877,16 @@ app.get("/api/user/:userId/profile", (req, res) => {
                        (b.prediction = 'draw' AND m.winner = 'draw') OR
                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
                        (b.prediction = m.team2_name AND m.winner = 'team2') THEN
-                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END
+                       -- Базовое очко за угаданный результат (3 за финал, 1 за обычный матч)
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+                       -- Дополнительное очко за угаданный счет
+                       CASE 
+                         WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+                         THEN 1 
+                         ELSE 0 
+                       END
                   ELSE 0 
                 END
               -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
@@ -4941,6 +4972,8 @@ app.get("/api/user/:userId/profile", (req, res) => {
       FROM bets b
       LEFT JOIN matches m ON b.match_id = m.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN match_scores ms ON b.match_id = ms.match_id
       WHERE b.user_id = ?
     `
       )
@@ -9482,6 +9515,82 @@ process.on("SIGTERM", () => {
   console.log("\n🛑 Получен SIGTERM, останавливаем сервер...");
   stopBot();
   process.exit(0);
+});
+
+// Тестовый endpoint для проверки начисления очков за счет
+app.get("/api/test/score-points/:userId", (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Получаем все завершенные ставки пользователя с прогнозом на счет
+    const betsWithScore = db.prepare(`
+      SELECT 
+        b.id as bet_id,
+        b.prediction,
+        m.team1_name,
+        m.team2_name,
+        m.winner,
+        m.is_final,
+        sp.score_team1 as predicted_score1,
+        sp.score_team2 as predicted_score2,
+        ms.score_team1 as actual_score1,
+        ms.score_team2 as actual_score2,
+        CASE 
+          WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+               (b.prediction = 'team2' AND m.winner = 'team2') OR
+               (b.prediction = 'draw' AND m.winner = 'draw') OR
+               (b.prediction = m.team1_name AND m.winner = 'team1') OR
+               (b.prediction = m.team2_name AND m.winner = 'team2') 
+          THEN 1 
+          ELSE 0 
+        END as result_correct,
+        CASE 
+          WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+               sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+          THEN 1 
+          ELSE 0 
+        END as score_correct,
+        CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END as base_points,
+        CASE 
+          WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+               (b.prediction = 'team2' AND m.winner = 'team2') OR
+               (b.prediction = 'draw' AND m.winner = 'draw') OR
+               (b.prediction = m.team1_name AND m.winner = 'team1') OR
+               (b.prediction = m.team2_name AND m.winner = 'team2') 
+          THEN 
+            CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+            CASE 
+              WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                   ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                   sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+              THEN 1 
+              ELSE 0 
+            END
+          ELSE 0 
+        END as total_points
+      FROM bets b
+      JOIN matches m ON b.match_id = m.id
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+      WHERE b.user_id = ? 
+        AND b.is_final_bet = 0 
+        AND m.winner IS NOT NULL
+      ORDER BY b.id DESC
+      LIMIT 20
+    `).all(userId);
+    
+    const totalPoints = betsWithScore.reduce((sum, bet) => sum + bet.total_points, 0);
+    
+    res.json({
+      user_id: userId,
+      total_points: totalPoints,
+      bets: betsWithScore
+    });
+  } catch (error) {
+    console.error("Ошибка в тестовом endpoint:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Запуск сервера
