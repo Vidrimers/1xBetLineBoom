@@ -1751,9 +1751,9 @@ function getMatchStatusByDate(match) {
 
 async function loadMatches(eventId) {
   try {
-    // Добавляем класс для показа секций на мобильных (768px)
+    // На мобильных переключаемся на секцию матчей
     if (window.innerWidth <= 768) {
-      document.querySelector('.container')?.classList.add('tournament-selected');
+      showMobileSection('matches');
     }
 
     // Сохраняем выбранный турнир в localStorage
