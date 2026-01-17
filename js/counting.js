@@ -441,6 +441,8 @@ async function confirmMatchesFromCounting(results) {
           username: adminUsername,
           status: "finished",
           result: resultKey,
+          score_team1: homeScore,
+          score_team2: awayScore,
         }),
       });
 
@@ -448,6 +450,8 @@ async function confirmMatchesFromCounting(results) {
         console.warn(
           `Не удалось подтвердить матч ${matchId}: ${response.status}`
         );
+      } else {
+        console.log(`✅ Матч ${matchId} подтвержден со счетом ${homeScore}-${awayScore}`);
       }
     } catch (error) {
       console.error(`Ошибка подтверждения матча ${matchId}:`, error);
@@ -514,7 +518,7 @@ function checkBetsResults(bets, fdMatches) {
         result = "draw";
       }
 
-      // Определяем выиграла ли ставка
+      // Определяем выиграла ли ставка на результат
       let isWon = false;
       if (bet.prediction === "draw" && result === "draw") {
         isWon = true;
@@ -524,12 +528,23 @@ function checkBetsResults(bets, fdMatches) {
         isWon = true;
       }
 
+      // Проверяем прогноз на счет если есть
+      let scoreIsWon = false;
+      let hasScorePrediction = false;
+      if (bet.score_team1 != null && bet.score_team2 != null) {
+        hasScorePrediction = true;
+        scoreIsWon = (bet.score_team1 === homeScore && bet.score_team2 === awayScore);
+      }
+
       results.push({
         ...bet,
         fdMatch: matchedFdMatch,
         result: result,
         isWon: isWon,
         score: `${homeScore}:${awayScore}`,
+        hasScorePrediction: hasScorePrediction,
+        scoreIsWon: scoreIsWon,
+        actualScore: { home: homeScore, away: awayScore }
       });
     } else {
       results.push({
@@ -537,6 +552,8 @@ function checkBetsResults(bets, fdMatches) {
         result: "not_found",
         isWon: false,
         score: "Матч не найден",
+        hasScorePrediction: bet.score_team1 != null && bet.score_team2 != null,
+        scoreIsWon: false,
       });
     }
   });
@@ -560,6 +577,8 @@ function displayCalculationResults(results, originalBets) {
         won: 0,
         lost: 0,
         notFound: 0,
+        scoreWon: 0,
+        scoreLost: 0,
         bets: [],
       };
     }
@@ -573,6 +592,15 @@ function displayCalculationResults(results, originalBets) {
       grouped[key].lost++;
     }
 
+    // Подсчитываем прогнозы на счет
+    if (result.hasScorePrediction && result.result !== "not_found") {
+      if (result.scoreIsWon) {
+        grouped[key].scoreWon++;
+      } else {
+        grouped[key].scoreLost++;
+      }
+    }
+
     grouped[key].bets.push(result);
   });
 
@@ -584,14 +612,18 @@ function displayCalculationResults(results, originalBets) {
       group.total > 0
         ? ((group.won / (group.total - group.notFound)) * 100).toFixed(1)
         : 0;
+    
+    const scoreTotal = group.scoreWon + group.scoreLost;
+    const scoreRate = scoreTotal > 0 ? ((group.scoreWon / scoreTotal) * 100).toFixed(1) : 0;
 
     html += `
       <div style="background: rgba(90, 159, 212, .1); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #5a9fd4;">
-        <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 12px; font-size: 1.05em;">
+        <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 8px; font-size: 1.05em;">
           👤 ${group.username}
-          <span style="color: #4db8a8; margin-left: 15px;">📊 Выигрыши: ${
-            group.won
-          }/${group.total - group.notFound} (${winRate}%)</span>
+        </div>
+        <div style="display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap;">
+          <span style="color: #4db8a8;">📊 Результаты: ${group.won}/${group.total - group.notFound} (${winRate}%)</span>
+          ${scoreTotal > 0 ? `<span style="color: #ffa726;">🎯 Счет: ${group.scoreWon}/${scoreTotal} (${scoreRate}%)</span>` : ''}
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
     `;
@@ -623,10 +655,25 @@ function displayCalculationResults(results, originalBets) {
           ? bet.team1_name
           : bet.team2_name;
 
+      // Информация о прогнозе на счет
+      let scorePredictionHtml = '';
+      if (bet.hasScorePrediction && bet.result !== "not_found") {
+        const scoreStyle = bet.scoreIsWon 
+          ? 'color: #4caf50; font-weight: 600;' 
+          : 'color: #f44336;';
+        const scoreIcon = bet.scoreIsWon ? '✅' : '❌';
+        scorePredictionHtml = `
+          <div style="${scoreStyle} font-size: 0.85em; margin-bottom: 4px;">
+            ${scoreIcon} Прогноз: ${bet.score_team1}-${bet.score_team2}
+          </div>
+        `;
+      }
+
       html += `
         <div style="background: ${backgroundColor}; padding: 12px; border-radius: 6px; border-left: 2px solid ${borderColor};">
           <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 8px;">${matchInfo}</div>
           <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">📌 ${betDisplay}</div>
+          ${scorePredictionHtml}
           ${
             bet.result !== "not_found"
               ? `<div style="color: #ccc; font-size: 0.85em; margin-bottom: 4px;">Счет: ${bet.score}</div>`
