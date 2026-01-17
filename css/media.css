@@ -114,12 +114,19 @@
   #matchesSection,
   .bet-section-bets {
     display: none !important;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
 
-  /* Показываем когда турнир выбран */
-  .tournament-selected #matchesSection,
+  /* Когда турнир выбран - скрываем турниры и ставки, показываем только матчи */
+  .tournament-selected .bet-section-tournaments,
   .tournament-selected .bet-section-bets {
+    display: none !important;
+  }
+
+  .tournament-selected #matchesSection {
     display: block !important;
+    opacity: 1;
   }
 
   header {
