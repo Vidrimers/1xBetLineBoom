@@ -4650,46 +4650,49 @@ app.post("/api/score-predictions", async (req, res) => {
     }
 
     // Отправляем уведомление в Telegram только для новых прогнозов
-    if (isNewPrediction && user.telegram_notifications_enabled && user.telegram_username && userBet) {
+    if (isNewPrediction && userBet) {
       try {
-        const cleanUsername = user.telegram_username.toLowerCase();
-        const tgUser = db
-          .prepare(
-            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
-          )
-          .get(cleanUsername);
-
-        if (tgUser?.chat_id) {
-          // Определяем текст прогноза на результат
-          let predictionText = userBet.prediction === "draw" ? "Ничья" : userBet.prediction;
-          
-          if (userBet.prediction === "team1" || userBet.prediction === match.team1_name) {
-            predictionText = match.team1_name;
-          } else if (userBet.prediction === "team2" || userBet.prediction === match.team2_name) {
-            predictionText = match.team2_name;
-          }
-
-          const scoreMessage =
-            `📊 <b>НОВЫЙ ПРОГНОЗ НА СЧЕТ!</b>\n\n` +
-            `⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>\n` +
-            `🎯 Прогноз: <b>${predictionText}</b>\n` +
-            `🎯 Прогноз счета: <b>${score_team1}-${score_team2}</b>\n` +
-            `🏆 Турнир: ${match.event_name || "Неизвестный"}\n` +
-            `⏰ ${new Date().toLocaleString("ru-RU")}`;
-
-          await sendUserMessage(tgUser.chat_id, scoreMessage);
-          
-          // Отправляем уведомление админу
-          await notifyNewScorePrediction(
-            user.username,
-            match.team1_name,
-            match.team2_name,
-            predictionText,
-            score_team1,
-            score_team2,
-            match.event_name
-          );
+        // Определяем текст прогноза на результат
+        let predictionText = userBet.prediction === "draw" ? "Ничья" : userBet.prediction;
+        
+        if (userBet.prediction === "team1" || userBet.prediction === match.team1_name) {
+          predictionText = match.team1_name;
+        } else if (userBet.prediction === "team2" || userBet.prediction === match.team2_name) {
+          predictionText = match.team2_name;
         }
+
+        // Отправляем уведомление пользователю (если у него включены уведомления)
+        if (user.telegram_notifications_enabled && user.telegram_username) {
+          const cleanUsername = user.telegram_username.toLowerCase();
+          const tgUser = db
+            .prepare(
+              "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+            )
+            .get(cleanUsername);
+
+          if (tgUser?.chat_id) {
+            const scoreMessage =
+              `📊 <b>НОВЫЙ ПРОГНОЗ НА СЧЕТ!</b>\n\n` +
+              `⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>\n` +
+              `🎯 Прогноз: <b>${predictionText}</b>\n` +
+              `🎯 Прогноз счета: <b>${score_team1}-${score_team2}</b>\n` +
+              `🏆 Турнир: ${match.event_name || "Неизвестный"}\n` +
+              `⏰ ${new Date().toLocaleString("ru-RU")}`;
+
+            await sendUserMessage(tgUser.chat_id, scoreMessage);
+          }
+        }
+        
+        // Отправляем уведомление админу ВСЕГДА
+        await notifyNewScorePrediction(
+          user.username,
+          match.team1_name,
+          match.team2_name,
+          predictionText,
+          score_team1,
+          score_team2,
+          match.event_name
+        );
       } catch (err) {
         console.error(
           "⚠️ Ошибка отправки уведомления о прогнозе на счет в Telegram:",
