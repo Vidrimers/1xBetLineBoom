@@ -2442,6 +2442,17 @@ async function displayMatches() {
                   📝
                 </button>
                 `
+                    : match.score_prediction_enabled
+                    ? `
+                <button
+                  onclick="openScoreMatchResultModal(${match.id}, '${match.team1_name}', '${match.team2_name}')"
+                  style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.8em;"
+                  onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
+                  onmouseout="this.style.background='transparent'; this.style.color='rgb(224, 230, 240)'"
+                  title="Установить результат матча">
+                  📝
+                </button>
+                `
                     : `
                 <button
                   class="match-result-toggle"
@@ -9533,6 +9544,77 @@ function closeFinalMatchResultModal(event) {
   if (btn1) btn1.style.background = "transparent";
   if (btnDraw) btnDraw.style.background = "transparent";
   if (btn2) btn2.style.background = "transparent";
+}
+
+// ===== МОДАЛКА РЕЗУЛЬТАТА МАТЧА С ПРОГНОЗОМ НА СЧЕТ =====
+let currentScoreMatchId = null;
+
+function openScoreMatchResultModal(matchId, team1Name, team2Name) {
+  currentScoreMatchId = matchId;
+  
+  // Устанавливаем названия команд
+  document.getElementById('scoreModalTeam1Name').textContent = team1Name;
+  document.getElementById('scoreModalTeam2Name').textContent = team2Name;
+  
+  // Сбрасываем значения
+  document.getElementById('scoreModalTeam1').value = '0';
+  document.getElementById('scoreModalTeam2').value = '0';
+  
+  // Показываем модалку
+  const modal = document.getElementById('scoreMatchResultModal');
+  modal.style.display = 'flex';
+  lockBodyScroll();
+}
+
+function closeScoreMatchResultModal() {
+  const modal = document.getElementById('scoreMatchResultModal');
+  modal.style.display = 'none';
+  unlockBodyScroll();
+  currentScoreMatchId = null;
+}
+
+async function saveScoreMatchResult() {
+  if (!currentScoreMatchId) return;
+  
+  const scoreTeam1 = parseInt(document.getElementById('scoreModalTeam1').value) || 0;
+  const scoreTeam2 = parseInt(document.getElementById('scoreModalTeam2').value) || 0;
+  
+  // Определяем победителя
+  let winner;
+  if (scoreTeam1 > scoreTeam2) {
+    winner = 'team1';
+  } else if (scoreTeam2 > scoreTeam1) {
+    winner = 'team2';
+  } else {
+    winner = 'draw';
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/matches/${currentScoreMatchId}/result`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        winner: winner,
+        username: currentUser?.username,
+        score_team1: scoreTeam1,
+        score_team2: scoreTeam2,
+      }),
+    });
+    
+    if (response.ok) {
+      closeScoreMatchResultModal();
+      displayMatches();
+      loadMyBets();
+    } else {
+      const error = await response.json();
+      alert('Ошибка при сохранении результата: ' + error.error);
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении результата матча:', error);
+    alert('Ошибка при сохранении результата матча');
+  }
 }
 
 /**

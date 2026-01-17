@@ -1424,6 +1424,18 @@ db.exec(`
   )
 `);
 
+// Таблица фактических счетов матчей
+db.exec(`
+  CREATE TABLE IF NOT EXISTS match_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL UNIQUE,
+    score_team1 INTEGER NOT NULL,
+    score_team2 INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (match_id) REFERENCES matches(id)
+  )
+`);
+
 // ===== DATABASE MIGRATIONS =====
 // Добавляем колонку match_date если её нет
 try {
@@ -7392,13 +7404,31 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
         };
         winner = winnerMap[result] || null;
       }
+      
+      // Если передан winner напрямую (из модалки с прогнозом на счет), используем его
+      if (req.body.winner) {
+        winner = req.body.winner;
+      }
 
       console.log("✓ Обновляем матч:", {
         matchId,
         status,
         result: result || null,
         winner,
+        score_team1: req.body.score_team1,
+        score_team2: req.body.score_team2,
       });
+
+      // Если есть счет, сохраняем его в таблице match_scores
+      if (req.body.score_team1 !== undefined && req.body.score_team2 !== undefined) {
+        try {
+          db.prepare(
+            "INSERT OR REPLACE INTO match_scores (match_id, score_team1, score_team2) VALUES (?, ?, ?)"
+          ).run(matchId, req.body.score_team1, req.body.score_team2);
+        } catch (error) {
+          console.error("Ошибка при сохранении счета:", error);
+        }
+      }
 
       db.prepare(
         "UPDATE matches SET status = ?, result = ?, winner = ? WHERE id = ?"
