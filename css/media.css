@@ -1172,6 +1172,10 @@
     font-size: 1.5em;
   }
 
+  .mobile-menu-toggle{
+    opacity: .7;
+  }
+
   .user-section {
     /* padding: 5px;
     margin-bottom: 6px;
