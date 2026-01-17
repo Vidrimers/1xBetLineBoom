@@ -655,16 +655,24 @@ function displayCalculationResults(results, originalBets) {
           ? bet.team1_name
           : bet.team2_name;
 
+      // Определяем фактический результат
+      let actualResultDisplay = '';
+      if (bet.result !== "not_found") {
+        const actualResult = bet.result === "home" ? bet.team1_name :
+                            bet.result === "away" ? bet.team2_name :
+                            "Ничья";
+        actualResultDisplay = ` | Результат: <strong>${actualResult}</strong>`;
+      }
+
       // Информация о прогнозе на счет
       let scorePredictionHtml = '';
       if (bet.hasScorePrediction && bet.result !== "not_found") {
         const scoreStyle = bet.scoreIsWon 
-          ? 'color: #4caf50; font-weight: 600;' 
-          : 'color: #f44336;';
-        const scoreIcon = bet.scoreIsWon ? '✅' : '❌';
+          ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;' 
+          : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;';
         scorePredictionHtml = `
-          <div style="${scoreStyle} font-size: 0.85em; margin-bottom: 4px;">
-            ${scoreIcon} Прогноз: ${bet.score_team1}-${bet.score_team2}
+          <div style="color: #999; font-size: 0.85em; margin-bottom: 4px;">
+            Прогноз: <span style="${scoreStyle}">${bet.score_team1}-${bet.score_team2}</span> | Результат: <strong>${bet.actualScore.home}-${bet.actualScore.away}</strong>
           </div>
         `;
       }
@@ -672,13 +680,8 @@ function displayCalculationResults(results, originalBets) {
       html += `
         <div style="background: ${backgroundColor}; padding: 12px; border-radius: 6px; border-left: 2px solid ${borderColor};">
           <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 8px;">${matchInfo}</div>
-          <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">📌 ${betDisplay}</div>
+          <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">Ставка: <strong>${betDisplay}</strong>${actualResultDisplay}</div>
           ${scorePredictionHtml}
-          ${
-            bet.result !== "not_found"
-              ? `<div style="color: #ccc; font-size: 0.85em; margin-bottom: 4px;">Счет: ${bet.score}</div>`
-              : ""
-          }
           <div style="color: #4db8a8; font-weight: 600; font-size: 0.9em;">${resultText}</div>
         </div>
       `;
