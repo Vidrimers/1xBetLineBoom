@@ -3916,9 +3916,12 @@ function switchTab(tabName) {
 
   // Показываем нужное содержимое и отмечаем кнопку как активную
   if (tabName === "allbets") {
-    document
-      .getElementById("allbets-content")
-      .style.setProperty("display", "grid", "important");
+    const content = document.getElementById("allbets-content");
+    content.style.setProperty("display", "grid", "important");
+    content.style.opacity = "0";
+    setTimeout(() => {
+      content.style.opacity = "1";
+    }, 10);
     document.querySelectorAll(".tab-btn")[0].classList.add("active");
     loadEventsList();
     if (currentEventId) {
@@ -3926,27 +3929,39 @@ function switchTab(tabName) {
     }
     loadMyBets();
   } else if (tabName === "participants") {
-    document
-      .getElementById("participants-content")
-      .style.setProperty("display", "flex", "important");
+    const content = document.getElementById("participants-content");
+    content.style.setProperty("display", "flex", "important");
+    content.style.opacity = "0";
+    setTimeout(() => {
+      content.style.opacity = "1";
+    }, 10);
     document.querySelectorAll(".tab-btn")[1].classList.add("active");
     loadTournamentsList();
   } else if (tabName === "profile") {
-    document
-      .getElementById("profile-content")
-      .style.setProperty("display", "flex", "important");
+    const content = document.getElementById("profile-content");
+    content.style.setProperty("display", "flex", "important");
+    content.style.opacity = "0";
+    setTimeout(() => {
+      content.style.opacity = "1";
+    }, 10);
     document.querySelectorAll(".tab-btn")[2].classList.add("active");
     loadProfile();
   } else if (tabName === "settings") {
-    document
-      .getElementById("settings-content")
-      .style.setProperty("display", "flex", "important");
+    const content = document.getElementById("settings-content");
+    content.style.setProperty("display", "flex", "important");
+    content.style.opacity = "0";
+    setTimeout(() => {
+      content.style.opacity = "1";
+    }, 10);
     document.querySelectorAll(".tab-btn")[3].classList.add("active");
     loadSettings();
   } else if (tabName === "counting") {
-    document
-      .getElementById("counting-content")
-      .style.setProperty("display", "flex", "important");
+    const content = document.getElementById("counting-content");
+    content.style.setProperty("display", "flex", "important");
+    content.style.opacity = "0";
+    setTimeout(() => {
+      content.style.opacity = "1";
+    }, 10);
     loadCounting();
   }
 }

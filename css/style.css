@@ -1265,10 +1265,13 @@ button:active {
 
 #allbets-content,
 #participants-content,
-#profile-content {
+#profile-content,
+#settings-content,
+#counting-content {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  transition: opacity 0.3s ease;
 }
 
 #allbets-content {
