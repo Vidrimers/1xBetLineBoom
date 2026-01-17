@@ -619,6 +619,28 @@ export async function notifyNewBet(
   await sendAdminNotification(message);
 }
 
+// Функция для отправки уведомления админу о новом прогнозе на счет
+export async function notifyNewScorePrediction(
+  username,
+  team1,
+  team2,
+  prediction,
+  scoreTeam1,
+  scoreTeam2,
+  eventName
+) {
+  const message =
+    `📊 <b>НОВЫЙ ПРОГНОЗ НА СЧЕТ!</b>\n\n` +
+    `👤 Пользователь: <b>${username}</b>\n` +
+    `⚽ Матч: <b>${team1}</b> vs <b>${team2}</b>\n` +
+    `🎯 Прогноз: <b>${prediction}</b>\n` +
+    `🎯 Прогноз счета: <b>${scoreTeam1}-${scoreTeam2}</b>\n` +
+    `🏆 Турнир: ${eventName || "Неизвестный"}\n` +
+    `⏰ ${new Date().toLocaleString("ru-RU")}`;
+
+  await sendAdminNotification(message);
+}
+
 // Функция для отправки уведомления админу об удалении ставки
 export async function notifyBetDeleted(
   username,

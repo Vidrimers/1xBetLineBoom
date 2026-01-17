@@ -10,6 +10,7 @@ import {
   startBot,
   notifyIllegalBet,
   notifyNewBet,
+  notifyNewScorePrediction,
   notifyBetDeleted,
   getNotificationQueue,
   flushQueueNow,
@@ -4546,10 +4547,22 @@ app.post("/api/score-predictions", async (req, res) => {
   try {
     const { user_id, match_id, score_team1, score_team2 } = req.body;
 
+    // Получаем информацию о пользователе
+    const user = db
+      .prepare("SELECT username, telegram_username, telegram_notifications_enabled FROM users WHERE id = ?")
+      .get(user_id);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
     // Проверяем матч
     const match = db
       .prepare(
-        "SELECT m.status, m.match_date, m.winner, m.team1_name, m.team2_name, m.score_prediction_enabled FROM matches m WHERE m.id = ?"
+        `SELECT m.status, m.match_date, m.winner, m.team1_name, m.team2_name, m.score_prediction_enabled, e.name as event_name 
+         FROM matches m 
+         LEFT JOIN events e ON m.event_id = e.id 
+         WHERE m.id = ?`
       )
       .get(match_id);
 
@@ -4578,10 +4591,17 @@ app.post("/api/score-predictions", async (req, res) => {
       return res.status(400).json({ error: "Счет не может быть отрицательным" });
     }
 
+    // Получаем ставку пользователя на этот матч
+    const userBet = db
+      .prepare("SELECT prediction FROM bets WHERE user_id = ? AND match_id = ? AND is_final_bet = 0")
+      .get(user_id, match_id);
+
     // Проверяем существует ли уже прогноз
     const existingPrediction = db
       .prepare("SELECT id FROM score_predictions WHERE user_id = ? AND match_id = ?")
       .get(user_id, match_id);
+
+    const isNewPrediction = !existingPrediction;
 
     if (existingPrediction) {
       // Обновляем существующий прогноз
@@ -4593,6 +4613,56 @@ app.post("/api/score-predictions", async (req, res) => {
       db.prepare(
         "INSERT INTO score_predictions (user_id, match_id, score_team1, score_team2) VALUES (?, ?, ?, ?)"
       ).run(user_id, match_id, score_team1, score_team2);
+    }
+
+    // Отправляем уведомление в Telegram только для новых прогнозов
+    if (isNewPrediction && user.telegram_notifications_enabled && user.telegram_username && userBet) {
+      try {
+        const cleanUsername = user.telegram_username.toLowerCase();
+        const tgUser = db
+          .prepare(
+            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+          )
+          .get(cleanUsername);
+
+        if (tgUser?.chat_id) {
+          // Определяем текст прогноза на результат
+          let predictionText = userBet.prediction === "draw" ? "Ничья" : userBet.prediction;
+          
+          if (userBet.prediction === "team1" || userBet.prediction === match.team1_name) {
+            predictionText = match.team1_name;
+          } else if (userBet.prediction === "team2" || userBet.prediction === match.team2_name) {
+            predictionText = match.team2_name;
+          }
+
+          const scoreMessage =
+            `📊 <b>НОВЫЙ ПРОГНОЗ НА СЧЕТ!</b>\n\n` +
+            `⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>\n` +
+            `🎯 Прогноз: <b>${predictionText}</b>\n` +
+            `🎯 Прогноз счета: <b>${score_team1}-${score_team2}</b>\n` +
+            `🏆 Турнир: ${match.event_name || "Неизвестный"}\n` +
+            `⏰ ${new Date().toLocaleString("ru-RU")}`;
+
+          await sendUserMessage(tgUser.chat_id, scoreMessage);
+          
+          // Отправляем уведомление админу
+          await notifyNewScorePrediction(
+            user.username,
+            match.team1_name,
+            match.team2_name,
+            predictionText,
+            score_team1,
+            score_team2,
+            match.event_name
+          );
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления о прогнозе на счет в Telegram:",
+          err.message
+        );
+        // Не прерываем процесс сохранения прогноза если ошибка в отправке уведомления
+      }
     }
 
     res.json({ message: "Прогноз на счет сохранен" });
