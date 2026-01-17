@@ -110,6 +110,18 @@
     overflow-x: hidden;
   }
 
+  /* Скрываем секции матчей и ставок по умолчанию на мобильных */
+  #matchesSection,
+  .bet-section-bets {
+    display: none !important;
+  }
+
+  /* Показываем когда турнир выбран */
+  .tournament-selected #matchesSection,
+  .tournament-selected .bet-section-bets {
+    display: block !important;
+  }
+
   header {
     gap: 8px;
     margin-bottom: 8px;
@@ -570,7 +582,7 @@
   }
 
   .section.bet-section {
-    /* max-height: 55vh; */
+    max-height: 85vh;
   }
 
   .modal-content {
@@ -1572,7 +1584,7 @@
   }
 
   .section.bet-section {
-    max-height: 80vh;
+    max-height: 90vh;
     /* margin: 5px 25px 0; */
     margin: 5px 15px 0 15px;
   }

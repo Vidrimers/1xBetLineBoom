@@ -336,6 +336,11 @@ header h1 {
   display: none;
 }
 
+/* Мобильный user-input (скрыт на десктопе) */
+.user-input-mobile {
+  display: none;
+}
+
 .user-input {
   display: flex;
   gap: 10px;

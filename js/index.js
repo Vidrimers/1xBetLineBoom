@@ -1293,8 +1293,8 @@ async function loadEventsList() {
     events = await response.json();
     displayEvents();
 
-    // При первой загрузке выбираем турнир
-    if (!currentEventId && events.length > 0) {
+    // При первой загрузке выбираем турнир (только на десктопе)
+    if (!currentEventId && events.length > 0 && window.innerWidth > 768) {
       // Пытаемся восстановить последний выбранный турнир из localStorage
       const savedEventId = localStorage.getItem('selectedEventId');
       const savedEvent = savedEventId ? events.find(e => e.id === parseInt(savedEventId)) : null;
@@ -1751,6 +1751,11 @@ function getMatchStatusByDate(match) {
 
 async function loadMatches(eventId) {
   try {
+    // Добавляем класс для показа секций на мобильных (768px)
+    if (window.innerWidth <= 768) {
+      document.querySelector('.container')?.classList.add('tournament-selected');
+    }
+
     // Сохраняем выбранный турнир в localStorage
     localStorage.setItem('selectedEventId', eventId);
     
