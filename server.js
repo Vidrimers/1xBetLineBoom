@@ -475,6 +475,12 @@ function writeBetLog(action, data) {
         }</span>`;
       }
 
+      // Добавляем прогноз на счет если есть
+      let scoreSpan = "";
+      if (data.score_team1 != null && data.score_team2 != null) {
+        scoreSpan = `<span class="score-prediction"><div class="log-label">Прогноз счета</div>📊 ${data.score_team1}-${data.score_team2}</span>`;
+      }
+
       logEntry = `
     <div class="log-entry bet-placed">
       <div class="log-time">🕐 ${time}</div>
@@ -484,6 +490,7 @@ function writeBetLog(action, data) {
           data.username
         }</span>
         <span class="prediction"><div class="log-label">Ставка</div>🎯 ${predictionText}</span>
+        ${scoreSpan}
         <span class="match"><div class="log-label">Матч</div>⚽ ${
           data.team1
         } vs ${data.team2}</span>
@@ -528,6 +535,12 @@ function writeBetLog(action, data) {
         }</span>`;
       }
 
+      // Добавляем прогноз на счет если есть
+      let scoreSpan = "";
+      if (data.score_team1 != null && data.score_team2 != null) {
+        scoreSpan = `<span class="score-prediction"><div class="log-label">Прогноз счета</div>📊 ${data.score_team1}-${data.score_team2}</span>`;
+      }
+
       logEntry = `
     <div class="log-entry bet-deleted">
       <div class="log-time">🕐 ${time}</div>
@@ -537,6 +550,7 @@ function writeBetLog(action, data) {
           data.username
         }</span>
         <span class="prediction"><div class="log-label">Ставка</div>🎯 ${predictionText}</span>
+        ${scoreSpan}
         <span class="match"><div class="log-label">Матч</div>⚽ ${
           data.team1
         } vs ${data.team2}</span>
@@ -4158,6 +4172,14 @@ app.post("/api/bets", async (req, res) => {
         parameter_type || null
       );
 
+    // Получаем прогноз на счет если есть
+    let scorePrediction = null;
+    if (!is_final_bet) {
+      scorePrediction = db
+        .prepare("SELECT score_team1, score_team2 FROM score_predictions WHERE user_id = ? AND match_id = ?")
+        .get(user_id, match_id);
+    }
+
     // Записываем лог ставки
     writeBetLog("placed", {
       username: user?.username || "неизвестный",
@@ -4169,6 +4191,8 @@ app.post("/api/bets", async (req, res) => {
       parameter_type: parameter_type,
       is_final_match: match.is_final,
       round: match.round,
+      score_team1: scorePrediction?.score_team1,
+      score_team2: scorePrediction?.score_team2,
     });
 
     // Отправляем уведомление админу о новой ставке
@@ -4446,6 +4470,14 @@ app.delete("/api/bets/:betId", async (req, res) => {
       }
     }
 
+    // Получаем прогноз на счет если есть (до удаления ставки)
+    let scorePrediction = null;
+    if (!bet.is_final_bet) {
+      scorePrediction = db
+        .prepare("SELECT score_team1, score_team2 FROM score_predictions WHERE user_id = ? AND match_id = ?")
+        .get(bet.user_id, bet.match_id);
+    }
+
     // Записываем лог удаления ставки
     writeBetLog("deleted", {
       username: betUser?.username || "неизвестный",
@@ -4457,6 +4489,8 @@ app.delete("/api/bets/:betId", async (req, res) => {
       parameter_type: bet.parameter_type,
       is_final_match: match?.is_final,
       round: match?.round,
+      score_team1: scorePrediction?.score_team1,
+      score_team2: scorePrediction?.score_team2,
     });
 
     // Отправляем уведомление админу об удалении ставки
@@ -4663,6 +4697,37 @@ app.post("/api/score-predictions", async (req, res) => {
         );
         // Не прерываем процесс сохранения прогноза если ошибка в отправке уведомления
       }
+    }
+
+    // Записываем лог прогноза на счет только для новых прогнозов
+    if (isNewPrediction && userBet) {
+      // Определяем текст прогноза на результат
+      let predictionText = userBet.prediction === "draw" ? "Ничья" : userBet.prediction;
+      
+      if (userBet.prediction === "team1" || userBet.prediction === match.team1_name) {
+        predictionText = match.team1_name;
+      } else if (userBet.prediction === "team2" || userBet.prediction === match.team2_name) {
+        predictionText = match.team2_name;
+      }
+
+      // Получаем полную информацию о матче включая тур
+      const fullMatch = db
+        .prepare("SELECT round FROM matches WHERE id = ?")
+        .get(match_id);
+
+      writeBetLog("placed", {
+        username: user.username,
+        prediction: predictionText,
+        team1: match.team1_name,
+        team2: match.team2_name,
+        eventName: match.event_name,
+        is_final_bet: false,
+        parameter_type: null,
+        is_final_match: false,
+        round: fullMatch?.round,
+        score_team1: score_team1,
+        score_team2: score_team2,
+      });
     }
 
     res.json({ message: "Прогноз на счет сохранен" });

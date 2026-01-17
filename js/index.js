@@ -3446,22 +3446,6 @@ function displayMyBets(bets) {
     return;
   }
 
-  // Логируем ставки для отладки
-  console.log("📊 Отображаем ставки:", bets.length);
-  bets.forEach((bet, index) => {
-    if (bet.score_team1 != null || bet.score_team2 != null || bet.actual_score_team1 != null || bet.actual_score_team2 != null) {
-      console.log(`Ставка ${index + 1}:`, {
-        id: bet.id,
-        match: `${bet.team1_name} vs ${bet.team2_name}`,
-        prediction: bet.prediction,
-        winner: bet.winner,
-        score_prediction: `${bet.score_team1}-${bet.score_team2}`,
-        actual_score: `${bet.actual_score_team1}-${bet.actual_score_team2}`,
-        match_status: bet.match_status
-      });
-    }
-  });
-
   // Сначала определяем статус для ВСЕХ ставок
   const betsWithStatus = bets.map((bet) => {
     let statusClass = "pending";
