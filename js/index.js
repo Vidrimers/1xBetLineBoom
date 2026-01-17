@@ -3610,7 +3610,7 @@ function displayMyBets(bets) {
                 <span class="bet-match">${bet.team1_name} vs ${bet.team2_name}</span>
                 <span class="bet-status ${statusClass}">${statusText}</span>
             </div>
-            <div class="bet-info" style="font-size: 0.9em; color: #b0b8c8;">
+            <div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
                 <span class="bet-stake">Ставка: <strong>${(() => {
                   // Если это финальная ставка на параметр
                   if (bet.is_final_bet) {
@@ -3638,7 +3638,34 @@ function displayMyBets(bets) {
                     }
                   }
                 })()}</strong></span>
+                ${
+                  bet.winner
+                    ? ` | Результат: <strong>${
+                        bet.winner === 'team1' ? bet.team1_name :
+                        bet.winner === 'team2' ? bet.team2_name :
+                        'Ничья'
+                      }</strong>`
+                    : ""
+                }
             </div>
+            ${
+              bet.score_team1 != null && bet.score_team2 != null
+                ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
+                    Счет: <span style="${
+                      bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                        ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
+                          ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
+                          : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
+                        : ''
+                    }">${bet.score_team1}-${bet.score_team2}</span>
+                    ${
+                      bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                        ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
+                        : ""
+                    }
+                  </div>`
+                : ""
+            }
             <div class="bet-round" style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
                 ${bet.is_final ? "🏆 ФИНАЛ" : bet.round ? `${bet.round}` : ""}
             </div>
@@ -4439,6 +4466,13 @@ function displayTournamentParticipantBets(bets) {
     return;
   }
 
+  // Логируем первую ставку для проверки данных
+  if (bets.length > 0) {
+    console.log("Пример ставки:", bets[0]);
+    console.log("Прогноз на счет:", bets[0].score_team1, "-", bets[0].score_team2);
+    console.log("Фактический счет:", bets[0].actual_score_team1, "-", bets[0].actual_score_team2);
+  }
+
   betsList.innerHTML = bets
     .map(
       (bet) => {
@@ -4493,7 +4527,25 @@ function displayTournamentParticipantBets(bets) {
               ? ` | Результат: <strong>${bet.actual_result}</strong>`
               : ""
           }
-        </div>`
+        </div>
+        ${
+          bet.score_team1 != null && bet.score_team2 != null
+            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+                Счет: <span style="${
+                  bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                    ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
+                      ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
+                      : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
+                    : ''
+                }">${bet.score_team1}-${bet.score_team2}</span>
+                ${
+                  bet.actual_score_team1 != null && bet.actual_score_team2 != null
+                    ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
+                    : ""
+                }
+              </div>`
+            : ""
+        }`
       }
       ${
         bet.round
@@ -9590,12 +9642,13 @@ async function saveScoreMatchResult() {
   }
   
   try {
-    const response = await fetch(`/api/admin/matches/${currentScoreMatchId}/result`, {
+    const response = await fetch(`/api/admin/matches/${currentScoreMatchId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        status: 'finished',
         winner: winner,
         username: currentUser?.username,
         score_team1: scoreTeam1,
@@ -9608,12 +9661,13 @@ async function saveScoreMatchResult() {
       displayMatches();
       loadMyBets();
     } else {
-      const error = await response.json();
-      alert('Ошибка при сохранении результата: ' + error.error);
+      const errorText = await response.text();
+      console.error('Ошибка ответа сервера:', errorText);
+      alert('Ошибка при сохранении результата: ' + errorText);
     }
   } catch (error) {
     console.error('Ошибка при сохранении результата матча:', error);
-    alert('Ошибка при сохранении результата матча');
+    alert('Ошибка при сохранении результата матча: ' + error.message);
   }
 }
 

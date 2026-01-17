@@ -3323,6 +3323,10 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
           m.round as round,
           m.match_date,
           0 as is_final_bet,
+          sp.score_team1,
+          sp.score_team2,
+          ms.score_team1 as actual_score_team1,
+          ms.score_team2 as actual_score_team2,
           CASE 
             WHEN b.prediction = 'team1' THEN m.team1_name
             WHEN b.prediction = 'team2' THEN m.team2_name
@@ -3346,6 +3350,8 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
           END as actual_result
         FROM bets b
         JOIN matches m ON b.match_id = m.id
+        LEFT JOIN score_predictions sp ON sp.user_id = b.user_id AND sp.match_id = b.match_id
+        LEFT JOIN match_scores ms ON ms.match_id = b.match_id
         WHERE m.event_id = ? AND b.user_id = ? AND b.is_final_bet = 0
         ORDER BY m.id ASC
       `
@@ -4247,11 +4253,14 @@ app.get("/api/user/:userId/bets", (req, res) => {
              e.start_date as event_start_date,
              e.locked_reason as event_locked_reason,
              sp.score_team1,
-             sp.score_team2
+             sp.score_team2,
+             ms.score_team1 as actual_score_team1,
+             ms.score_team2 as actual_score_team2
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
       LEFT JOIN score_predictions sp ON sp.user_id = b.user_id AND sp.match_id = b.match_id
+      LEFT JOIN match_scores ms ON ms.match_id = b.match_id
       WHERE b.user_id = ?
       ORDER BY b.created_at DESC
     `
