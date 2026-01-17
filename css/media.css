@@ -223,14 +223,16 @@
   .mobile-nav-btn {
     display: block;
     width: 20px;
-    height: 150px;
+    /* height: 150px; */
+    height: 200px;
     background: rgba(30, 34, 44, 0.9);
     color: #4b525f;
     border: none;
     border-radius: 0 5px 5px 0;
     writing-mode: vertical-rl;
     text-orientation: upright;
-    font-size: 0.6em;
+    /* font-size: 0.6em; */
+    font-size: 0.7em;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
