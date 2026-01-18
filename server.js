@@ -3705,7 +3705,7 @@ app.get("/api/moderators", (req, res) => {
 });
 
 // 5.3 Назначить нового модератора
-app.post("/api/moderators", (req, res) => {
+app.post("/api/moderators", async (req, res) => {
   try {
     const { user_id, permissions } = req.body;
 
@@ -3714,7 +3714,7 @@ app.post("/api/moderators", (req, res) => {
     }
 
     // Проверяем существует ли пользователь
-    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(user_id);
+    const user = db.prepare("SELECT id, username, telegram_id FROM users WHERE id = ?").get(user_id);
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
@@ -3733,6 +3733,45 @@ app.post("/api/moderators", (req, res) => {
     const result = db
       .prepare("INSERT INTO moderators (user_id, permissions) VALUES (?, ?)")
       .run(user_id, JSON.stringify(permissions));
+
+    // Отправляем уведомление пользователю в Telegram если у него есть telegram_id
+    if (user.telegram_id) {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      
+      const permissionsText = permissions.map(p => {
+        const permMap = {
+          'manage_matches': '⚽ Управление матчами',
+          'view_users': '👥 Просмотр пользователей',
+          'edit_users': '✏️ Редактирование пользователей',
+          'check_bot': '🤖 Проверка контакта с ботом'
+        };
+        return permMap[p] || p;
+      }).join('\n');
+
+      const message = `🎉 ПОЗДРАВЛЯЕМ!
+
+Вы назначены модератором 1xBetLineBoom!
+
+🛡️ Ваши права:
+${permissionsText}
+
+Теперь вы можете помогать в управлении системой.`;
+
+      try {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: user.telegram_id,
+            text: message,
+            parse_mode: "HTML"
+          })
+        });
+        console.log(`✅ Уведомление о назначении модератором отправлено пользователю ${user.username}`);
+      } catch (error) {
+        console.error(`❌ Ошибка отправки уведомления модератору ${user.username}:`, error);
+      }
+    }
 
     res.json({
       success: true,
