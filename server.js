@@ -7435,7 +7435,6 @@ app.get("/api/user/:userId/show-bets", (req, res) => {
     }
 
     const showBets = user.show_bets || 'always';
-    console.log(`📤 GET /api/user/${userId}/show-bets -> ${showBets}`);
 
     res.json({
       show_bets: showBets,
@@ -7573,7 +7572,6 @@ app.get("/api/user/:userId/show-lucky-button", (req, res) => {
     }
 
     const showLuckyButton = user.show_lucky_button !== undefined ? user.show_lucky_button : 1;
-    console.log(`📤 GET /api/user/${userId}/show-lucky-button -> ${showLuckyButton}`);
 
     res.json({
       show_lucky_button: showLuckyButton,
