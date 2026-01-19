@@ -820,7 +820,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Проверяем, есть ли пользователь в localStorage
   const savedUser = localStorage.getItem("currentUser");
-  console.log("💾 savedUser из localStorage:", savedUser);
+  // console.log("💾 savedUser из localStorage:", savedUser); // Отладочный лог (отключен)
 
   if (savedUser) {
     const user = JSON.parse(savedUser);
@@ -10483,11 +10483,17 @@ async function submitEditMatch(event) {
 
 async function deleteMatch(id) {
   if (!canManageMatches()) {
-    alert("❌ Только администратор или модератор может удалять матчи");
+    await showCustomAlert("Только администратор или модератор может удалять матчи", "Недостаточно прав", "❌");
     return;
   }
 
-  if (!confirm("⚠️ Вы уверены, что хотите удалить этот матч?")) {
+  const confirmed = await showCustomConfirm(
+    "Вы уверены, что хотите удалить этот матч?\n\nВсе ставки на этот матч также будут удалены.",
+    "Удаление матча",
+    "⚠️"
+  );
+  
+  if (!confirmed) {
     return;
   }
 
@@ -10540,11 +10546,11 @@ async function deleteMatch(id) {
         displayMatches();
       }
     } else {
-      alert(`❌ Ошибка: ${result.error}`);
+      await showCustomAlert(`Ошибка: ${result.error}`, "Ошибка удаления", "❌");
     }
   } catch (error) {
     console.error("Ошибка при удалении матча:", error);
-    alert("❌ Ошибка при удалении матча");
+    await showCustomAlert("Ошибка при удалении матча", "Ошибка", "❌");
   }
 }
 
