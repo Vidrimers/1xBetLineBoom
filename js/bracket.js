@@ -354,9 +354,13 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     // Загружаем прогнозы пользователя (целевого или текущего)
     if (targetUserId) {
-      // Передаем viewerId для проверки настроек приватности
+      // Передаем viewerId и viewerUsername для проверки настроек приватности и уведомлений
       const currentUserId = currentUser ? currentUser.id : null;
-      const url = `/api/brackets/${bracketId}/predictions/${targetUserId}${currentUserId ? `?viewerId=${currentUserId}` : ''}`;
+      const currentUsername = currentUser ? currentUser.username : null;
+      const params = new URLSearchParams();
+      if (currentUserId) params.append('viewerId', currentUserId);
+      if (currentUsername) params.append('viewerUsername', currentUsername);
+      const url = `/api/brackets/${bracketId}/predictions/${targetUserId}${params.toString() ? `?${params.toString()}` : ''}`;
       const predictionsResponse = await fetch(url);
       
       if (predictionsResponse.ok) {

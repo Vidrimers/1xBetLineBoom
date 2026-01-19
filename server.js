@@ -1655,6 +1655,14 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// Миграция: добавляем show_lucky_button если её нет
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN show_lucky_button INTEGER DEFAULT 1`);
+  console.log("✅ Колонка show_lucky_button добавлена в таблицу users");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
 // Таблица для связки telegram username → chat_id (для отправки личных сообщений)
 db.exec(`
   CREATE TABLE IF NOT EXISTS telegram_users (
@@ -2816,19 +2824,49 @@ app.get("/api/brackets/:bracketId", (req, res) => {
 });
 
 // Получить прогнозы пользователя для сетки
-app.get("/api/brackets/:bracketId/predictions/:userId", (req, res) => {
+app.get("/api/brackets/:bracketId/predictions/:userId", async (req, res) => {
   try {
     const { bracketId, userId } = req.params;
-    const { viewerId } = req.query; // ID пользователя, который просматривает
+    const { viewerId, viewerUsername } = req.query; // ID и имя пользователя, который просматривает
     
     // Если просматривает не владелец прогнозов, проверяем настройки приватности
     if (viewerId && parseInt(viewerId) !== parseInt(userId)) {
       const targetUser = db
-        .prepare("SELECT show_bets FROM users WHERE id = ?")
+        .prepare("SELECT show_bets, username FROM users WHERE id = ?")
         .get(userId);
       
       if (!targetUser) {
         return res.status(404).json({ error: "Пользователь не найден" });
+      }
+      
+      // Отправляем уведомление админу
+      if (viewerUsername) {
+        const bracket = db.prepare("SELECT b.*, e.name as event_name FROM brackets b LEFT JOIN events e ON b.event_id = e.id WHERE b.id = ?").get(bracketId);
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+        
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+          const message = `🎯 ПРОСМОТР СЕТКИ
+
+👤 Кто смотрит: ${viewerUsername}
+🎯 Чью сетку: ${targetUser.username}
+🏆 Турнир: ${bracket?.event_name || 'Неизвестно'}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+          try {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: message,
+              }),
+            });
+          } catch (error) {
+            console.error("⚠️ Не удалось отправить уведомление о просмотре сетки:", error);
+          }
+        }
       }
       
       const showBets = targetUser.show_bets || 'always';
@@ -3569,11 +3607,12 @@ app.post("/api/events/:eventId/award", (req, res) => {
 });
 
 // Получить ставки участника в турнире
-app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
+app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
   try {
     const eventId = parseInt(req.params.eventId);
     const userId = parseInt(req.params.userId);
     const viewerUserId = req.query.viewerId ? parseInt(req.query.viewerId) : null;
+    const viewerUsername = req.query.viewerUsername || null;
 
     // Получаем название турнира
     const event = db
@@ -3582,11 +3621,40 @@ app.get("/api/event/:eventId/participant/:userId/bets", (req, res) => {
 
     // Получаем настройку show_bets пользователя
     const userSettings = db
-      .prepare("SELECT show_bets FROM users WHERE id = ?")
+      .prepare("SELECT show_bets, username FROM users WHERE id = ?")
       .get(userId);
     
     const showBets = userSettings?.show_bets || 'always';
     const isOwner = viewerUserId === userId;
+    
+    // Отправляем уведомление админу если кто-то смотрит чужие ставки
+    if (!isOwner && viewerUserId && viewerUsername && userSettings) {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+      
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const message = `📊 ПРОСМОТР СТАВОК
+
+👤 Кто смотрит: ${viewerUsername}
+🎯 Чьи ставки: ${userSettings.username}
+🏆 Турнир: ${event?.name || 'Неизвестно'}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+        try {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          });
+        } catch (error) {
+          console.error("⚠️ Не удалось отправить уведомление о просмотре ставок:", error);
+        }
+      }
+    }
 
     // Получаем все туры для этого события (из таблицы matches)
     const rounds = db
@@ -4071,7 +4139,7 @@ app.post("/api/moderators", async (req, res) => {
       return permMap[p] || p;
     }).join('\n');
 
-    const message = `🛡️ Вы назначены модератором 1xBetLineBoom!
+    const message = `🛡️ Вы назначены модераптором 1xBetLineBoom!
 
 Ваши права:
 ${permissionsText}`;
@@ -4782,9 +4850,42 @@ app.post("/api/bets", async (req, res) => {
 });
 
 // 7. Получить ставки пользователя
-app.get("/api/user/:userId/bets", (req, res) => {
+app.get("/api/user/:userId/bets", async (req, res) => {
   try {
     const { userId } = req.params;
+    const viewerUsername = req.query.viewerUsername; // Кто смотрит ставки
+    
+    // Получаем информацию о пользователе, чьи ставки смотрят
+    const targetUser = db.prepare("SELECT username FROM users WHERE id = ?").get(userId);
+    
+    // Отправляем уведомление админу если кто-то смотрит чужие ставки
+    if (viewerUsername && targetUser && viewerUsername !== targetUser.username) {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+      
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const message = `📊 ПРОСМОТР СТАВОК
+
+👤 Кто смотрит: ${viewerUsername}
+🎯 Чьи ставки: ${targetUser.username}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+        try {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          });
+        } catch (error) {
+          console.error("⚠️ Не удалось отправить уведомление о просмотре ставок:", error);
+        }
+      }
+    }
+    
     const bets = db
       .prepare(
         `
@@ -5493,14 +5594,43 @@ app.get("/api/participants", (req, res) => {
 });
 
 // 9. Получить профиль пользователя
-app.get("/api/user/:userId/profile", (req, res) => {
+app.get("/api/user/:userId/profile", async (req, res) => {
   try {
     const { userId } = req.params;
+    const viewerUsername = req.query.viewerUsername; // Кто смотрит профиль
 
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    
+    // Отправляем уведомление админу если кто-то смотрит чужой профиль
+    if (viewerUsername && viewerUsername !== user.username) {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+      
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const message = `👁️ ПРОСМОТР ПРОФИЛЯ
+
+👤 Кто смотрит: ${viewerUsername}
+🎯 Чей профиль: ${user.username}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+        try {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: message,
+            }),
+          });
+        } catch (error) {
+          console.error("⚠️ Не удалось отправить уведомление о просмотре профиля:", error);
+        }
+      }
     }
 
     const bets = db
@@ -7341,6 +7471,93 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
     }
 
     res.json({ success: true, show_bets });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/user/:userId/show-lucky-button - Получить настройку показа кнопки "Мне повезет"
+app.get("/api/user/:userId/show-lucky-button", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = db
+      .prepare("SELECT show_lucky_button FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({
+      show_lucky_button: user.show_lucky_button !== undefined ? user.show_lucky_button : 1,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/user/:userId/show-lucky-button - Сохранить настройку показа кнопки "Мне повезет"
+app.put("/api/user/:userId/show-lucky-button", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { show_lucky_button } = req.body;
+
+    if (show_lucky_button === undefined || ![0, 1].includes(show_lucky_button)) {
+      return res.status(400).json({ error: "Неверное значение show_lucky_button" });
+    }
+
+    const user = db
+      .prepare("SELECT username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    db.prepare("UPDATE users SET show_lucky_button = ? WHERE id = ?").run(show_lucky_button, userId);
+
+    // Отправляем уведомление админу
+    try {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+        const time = new Date().toLocaleString("ru-RU", {
+          timeZone: "Europe/Moscow",
+        });
+
+        const showLuckyButtonNames = {
+          1: 'Показывать',
+          0: 'Скрыть'
+        };
+
+        const adminMessage = `🎲 ИЗМЕНЕНИЕ НАСТРОЙКИ КНОПКИ "МНЕ ПОВЕЗЕТ"
+
+👤 Пользователь: ${user.username}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Новая настройка: ${showLuckyButtonNames[show_lucky_button] || show_lucky_button}
+🕐 Время: ${time}`;
+
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_ID,
+              text: adminMessage,
+            }),
+          }
+        );
+      }
+    } catch (err) {
+      console.error(
+        "⚠️ Ошибка отправки уведомления админу об изменении настройки кнопки Мне повезет:",
+        err.message
+      );
+    }
+
+    res.json({ success: true, show_lucky_button });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -9634,6 +9851,58 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
     res.json({ success: true, message: "Уведомление отправлено" });
   } catch (error) {
     console.error("Ошибка при отправке уведомления о случайной ставке:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/notify-database-access - Уведомить админа об открытии панели управления БД модератором
+app.post("/api/admin/notify-database-access", async (req, res) => {
+  const { username, userId } = req.body;
+
+  try {
+    if (!username) {
+      return res.status(400).json({ error: "Не указано имя пользователя" });
+    }
+
+    // Формируем сообщение для админа
+    const message = `🗄️ ДОСТУП К УПРАВЛЕНИЮ БД
+
+👤 Модератор: ${username}
+🆔 ID: ${userId}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}
+
+⚠️ Модератор открыл панель управления базой данных`;
+
+    // Отправляем сообщение админу
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+      console.log("⚠️ Telegram не настроен, уведомление не отправлено");
+      return res.json({ success: true, message: "Telegram не настроен" });
+    }
+
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_ADMIN_ID,
+          text: message,
+        }),
+      }
+    );
+
+    if (!telegramResponse.ok) {
+      throw new Error("Ошибка отправки в Telegram");
+    }
+
+    console.log(`✅ Уведомление об открытии панели БД модератором ${username} отправлено админу`);
+    res.json({ success: true, message: "Уведомление отправлено" });
+  } catch (error) {
+    console.error("Ошибка при отправке уведомления об открытии панели БД:", error);
     res.status(500).json({ error: error.message });
   }
 });

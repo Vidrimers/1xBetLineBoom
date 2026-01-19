@@ -933,6 +933,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Загружаем тему с сервера после установки currentUser
     await loadSavedTheme();
+    
+    // Обновляем видимость кнопки "Мне повезет"
+    updateLuckyButtonVisibility();
 
     loadEventsList();
     await loadMyBets();
@@ -4488,9 +4491,13 @@ async function showTournamentParticipantBets(userId, username, eventId) {
   try {
     console.log("Загружаем ставки для юзера:", userId, "в турнире:", eventId);
 
-    // Получаем ставки участника в турнире, передаем viewerId
+    // Получаем ставки участника в турнире, передаем viewerId и viewerUsername
     const viewerId = currentUser?.id || null;
-    const url = `/api/event/${eventId}/participant/${userId}/bets${viewerId ? `?viewerId=${viewerId}` : ''}`;
+    const viewerUsername = currentUser?.username || null;
+    const params = new URLSearchParams();
+    if (viewerId) params.append('viewerId', viewerId);
+    if (viewerUsername) params.append('viewerUsername', viewerUsername);
+    const url = `/api/event/${eventId}/participant/${userId}/bets${params.toString() ? `?${params.toString()}` : ''}`;
     const response = await fetch(url);
 
     console.log("Статус ответа:", response.status);
@@ -4772,7 +4779,7 @@ async function loadProfile() {
   }
 
   try {
-    const response = await fetch(`/api/user/${currentUser.id}/profile`);
+    const response = await fetch(`/api/user/${currentUser.id}/profile?viewerUsername=${encodeURIComponent(currentUser.username)}`);
     const profile = await response.json();
     displayProfile(profile);
   } catch (error) {
@@ -5473,6 +5480,22 @@ async function openDatabaseModal() {
   if (!canAccessDatabasePanel() && !isAdmin()) {
     await showCustomAlert("У вас нет прав для управления БД", "Ошибка", "❌");
     return;
+  }
+  
+  // Отправляем уведомление админу если модератор открыл панель управления БД
+  if (currentUser && !isAdmin()) {
+    try {
+      await fetch('/api/admin/notify-database-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser.username,
+          userId: currentUser.id
+        })
+      });
+    } catch (error) {
+      console.error('⚠️ Не удалось отправить уведомление о доступе к БД:', error);
+    }
   }
 
   // Блокируем скролл body
@@ -8710,6 +8733,9 @@ async function loadSettings() {
 
     // Загружаем настройку показа ставок
     await loadShowBetsSettings();
+    
+    // Загружаем настройку кнопки "Мне повезет"
+    await loadLuckyButtonSettings();
   } catch (error) {
     console.error("Ошибка при загрузке настроек:", error);
     // Не очищаем контейнер, чтобы статический HTML остался видимым
@@ -9169,6 +9195,31 @@ async function loadShowBetsSettings() {
   }
 }
 
+// Загрузить настройку "Кнопка Мне повезет"
+async function loadLuckyButtonSettings() {
+  try {
+    if (!currentUser) return;
+
+    const response = await fetch(`/api/user/${currentUser.id}/show-lucky-button`);
+    const data = await response.json();
+
+    if (response.ok) {
+      const select = document.getElementById("showLuckyButtonSelect");
+      if (select) {
+        const showLuckyButton = data.show_lucky_button !== undefined ? data.show_lucky_button : 1;
+        select.value = showLuckyButton.toString();
+        currentUser.show_lucky_button = showLuckyButton;
+        console.log(`✅ Настройка "Кнопка Мне повезет" загружена: ${showLuckyButton}`);
+        
+        // Обновляем видимость кнопки
+        updateLuckyButtonVisibility();
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка при загрузке настройки кнопки Мне повезет:", error);
+  }
+}
+
 // Сохранить часовой пояс пользователя
 async function saveTimezoneSettings() {
   try {
@@ -9287,6 +9338,70 @@ async function saveShowBetsSettings() {
     const btn = event.target;
     btn.textContent = "💾 Сохранить";
     btn.disabled = false;
+  }
+}
+
+// Сохранить настройку "Кнопка Мне повезет"
+async function saveLuckyButtonSettings() {
+  try {
+    if (!currentUser) {
+      alert("Сначала войдите в систему");
+      return;
+    }
+
+    const select = document.getElementById("showLuckyButtonSelect");
+    const showLuckyButton = parseInt(select.value);
+
+    const btn = event.target;
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    const response = await fetch(`/api/user/${currentUser.id}/show-lucky-button`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        show_lucky_button: showLuckyButton,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      currentUser.show_lucky_button = showLuckyButton;
+      
+      // Обновляем localStorage
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      
+      // Обновляем видимость кнопки
+      updateLuckyButtonVisibility();
+      
+      btn.textContent = "✅ Сохранено!";
+      console.log(`✅ Настройка "Кнопка Мне повезет" сохранена: ${showLuckyButton}`);
+
+      setTimeout(() => {
+        btn.textContent = "💾 Сохранить";
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      alert("Ошибка: " + result.error);
+      btn.textContent = "💾 Сохранить";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении настройки:", error);
+    alert("Ошибка при сохранении");
+    const btn = event.target;
+    btn.textContent = "💾 Сохранить";
+    btn.disabled = false;
+  }
+}
+
+// Обновить видимость кнопки "Мне повезет"
+function updateLuckyButtonVisibility() {
+  const luckyBtnContainer = document.getElementById("luckyBtnContainer");
+  if (luckyBtnContainer && currentUser) {
+    const showLuckyButton = currentUser.show_lucky_button !== undefined ? currentUser.show_lucky_button : 1;
+    luckyBtnContainer.style.display = showLuckyButton === 1 ? "block" : "none";
   }
 }
 
@@ -11326,7 +11441,7 @@ async function submitImportMatches(event) {
 // Показать профиль пользователя
 async function showUserProfile(userId, username) {
   try {
-    const response = await fetch(`/api/user/${userId}/profile`);
+    const response = await fetch(`/api/user/${userId}/profile?viewerUsername=${encodeURIComponent(currentUser.username)}`);
     const userData = await response.json();
 
     if (!response.ok) {
