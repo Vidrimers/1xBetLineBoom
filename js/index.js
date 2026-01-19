@@ -9252,35 +9252,117 @@ function showSaveStatus(containerId, status) {
   
   if (!statusContainer) return;
   
+  // Находим общий родительский контейнер (settings-item-content-wrapper или просто div)
+  const parentContainer = descriptionContainer ? descriptionContainer.parentElement : statusContainer.parentElement;
+  
+  // Находим flex-контейнер (для карточек с чекбоксами)
+  const flexContainer = parentContainer ? parentContainer.parentElement : null;
+  
   if (status === 'saving') {
-    // Скрываем описание
-    if (descriptionContainer) {
-      descriptionContainer.style.display = 'none';
+    // Запоминаем и фиксируем высоту обоих контейнеров
+    if (parentContainer && descriptionContainer) {
+      const parentHeight = parentContainer.offsetHeight;
+      parentContainer.style.minHeight = parentHeight + 'px';
+      
+      // Если есть flex-контейнер, фиксируем и его высоту
+      if (flexContainer && flexContainer.style.display === 'flex') {
+        const flexHeight = flexContainer.offsetHeight;
+        flexContainer.style.minHeight = flexHeight + 'px';
+      }
+      
+      // Плавно скрываем описание
+      descriptionContainer.style.transition = 'opacity 0.3s ease';
+      descriptionContainer.style.opacity = '0';
+      
+      setTimeout(() => {
+        descriptionContainer.style.display = 'none';
+        
+        // Показываем статус сохранения с плавным появлением
+        statusContainer.innerHTML = '<p style="margin: 0; color: #ff9800; font-size: 14px;">⏳ Идет сохранение...</p>';
+        statusContainer.style.transition = 'opacity 0.3s ease';
+        statusContainer.style.opacity = '0';
+        statusContainer.style.display = 'block';
+        
+        setTimeout(() => {
+          statusContainer.style.opacity = '1';
+        }, 50);
+      }, 300);
     }
-    // Показываем статус сохранения
-    statusContainer.innerHTML = '<p style="margin: 0; color: #ff9800; font-size: 14px;">⏳ Идет сохранение...</p>';
-    statusContainer.style.display = 'block';
+    
   } else if (status === 'saved') {
-    // Показываем успешное сохранение
-    statusContainer.innerHTML = '<p style="margin: 0; color: #4caf50; font-size: 14px;">✅ Сохранено</p>';
-    statusContainer.style.display = 'block';
+    // Плавно меняем текст статуса
+    statusContainer.style.opacity = '0';
+    
+    setTimeout(() => {
+      statusContainer.innerHTML = '<p style="margin: 0; color: #4caf50; font-size: 14px;">✅ Сохранено</p>';
+      statusContainer.style.opacity = '1';
+    }, 300);
+    
     // Через 2 секунды возвращаем описание
     setTimeout(() => {
-      statusContainer.style.display = 'none';
-      if (descriptionContainer) {
-        descriptionContainer.style.display = 'block';
-      }
+      // Плавно скрываем статус
+      statusContainer.style.opacity = '0';
+      
+      setTimeout(() => {
+        statusContainer.style.display = 'none';
+        
+        // Плавно показываем описание
+        if (descriptionContainer) {
+          descriptionContainer.style.display = 'block';
+          descriptionContainer.style.opacity = '0';
+          
+          setTimeout(() => {
+            descriptionContainer.style.opacity = '1';
+            // Убираем minHeight после анимации
+            setTimeout(() => {
+              if (parentContainer) {
+                parentContainer.style.minHeight = '';
+              }
+              if (flexContainer && flexContainer.style.display === 'flex') {
+                flexContainer.style.minHeight = '';
+              }
+            }, 300);
+          }, 50);
+        }
+      }, 300);
     }, 2000);
+    
   } else if (status === 'error') {
-    // Показываем ошибку
-    statusContainer.innerHTML = '<p style="margin: 0; color: #f44336; font-size: 14px;">❌ Ошибка сохранения</p>';
-    statusContainer.style.display = 'block';
+    // Плавно меняем текст статуса
+    statusContainer.style.opacity = '0';
+    
+    setTimeout(() => {
+      statusContainer.innerHTML = '<p style="margin: 0; color: #f44336; font-size: 14px;">❌ Ошибка сохранения</p>';
+      statusContainer.style.opacity = '1';
+    }, 300);
+    
     // Через 3 секунды возвращаем описание
     setTimeout(() => {
-      statusContainer.style.display = 'none';
-      if (descriptionContainer) {
-        descriptionContainer.style.display = 'block';
-      }
+      // Плавно скрываем статус
+      statusContainer.style.opacity = '0';
+      
+      setTimeout(() => {
+        statusContainer.style.display = 'none';
+        
+        // Плавно показываем описание
+        if (descriptionContainer) {
+          descriptionContainer.style.display = 'block';
+          descriptionContainer.style.opacity = '0';
+          
+          setTimeout(() => {
+            descriptionContainer.style.opacity = '1';
+            // Убираем minHeight после анимации
+            setTimeout(() => {
+              if (parentContainer) {
+                parentContainer.style.minHeight = '';
+              }
+              if (flexContainer && flexContainer.style.display === 'flex') {
+                flexContainer.style.minHeight = '';
+              }
+            }, 300);
+          }, 50);
+        }
+      }, 300);
     }, 3000);
   }
 }
