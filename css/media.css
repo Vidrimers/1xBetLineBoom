@@ -3287,6 +3287,42 @@
 }
 
 @media (max-width: 480px) {
+  /* Модалка управления БД */
+  #databaseModal .modal-content {
+    max-height: 90vh !important;
+  }
+
+  #databaseModal .modal-body {
+    max-height: calc(90vh - 60px) !important;
+  }
+
+  /* Кнопки управления - уменьшаем padding чтобы влезли в строку */
+  #databaseModal .modal-body > div:first-child button {
+    padding: 8px 12px !important;
+    font-size: 0.85em !important;
+  }
+
+  /* Предупреждение - уменьшаем */
+  #databaseModal .modal-body > div:nth-child(2) {
+    padding: 10px !important;
+    margin-bottom: 15px !important;
+  }
+
+  #databaseModal .modal-body > div:nth-child(2) strong {
+    font-size: 0.9em !important;
+  }
+
+  #databaseModal .modal-body > div:nth-child(2) p {
+    font-size: 0.85em !important;
+    margin: 8px 0 0 0 !important;
+  }
+
+  /* Список бэкапов - скроллится */
+  #databaseBackupsList {
+    max-height: calc(90vh - 350px) !important;
+  }
+
+  /* Карточки бэкапов */
   .backup-item {
     padding: 12px !important;
   }
