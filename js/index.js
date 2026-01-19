@@ -905,6 +905,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("adminBtn").style.display = "inline-block";
       }
       
+      // Кнопка подсчета результатов
+      if (canViewCounting()) {
+        document.getElementById("countingBtn").style.display = "inline-block";
+      }
+      
       // Панель модератора в настройках
       if (hasAdminPanelAccess()) {
         console.log("✅ Пользователь - модератор, показываем панель модератора");
@@ -1229,6 +1234,9 @@ async function initUser() {
       // Показываем кнопки модератора если есть права
       if (canCreateTournaments()) {
         document.getElementById("adminBtn").style.display = "inline-block";
+      }
+      if (canViewCounting()) {
+        document.getElementById("countingBtn").style.display = "inline-block";
       }
     }
 
@@ -1577,14 +1585,14 @@ async function selectEvent(eventId, eventName) {
 
   // Показываем кнопку настроек админа если есть права
   const adminSettingsBtn = document.getElementById('adminSettingsBtn');
-  if (adminSettingsBtn && (canManageMatches() || canManageTournaments() || (currentUser && currentUser.isAdmin))) {
+  if (adminSettingsBtn && (canCreateMatches() || canManageTournaments() || (currentUser && currentUser.isAdmin))) {
     adminSettingsBtn.style.display = 'inline-block';
     
     // Заполняем контейнер админских кнопок
     if (adminButtonsContainer) {
       let buttonsHTML = '';
       
-      if (canManageMatches()) {
+      if (canCreateMatches()) {
         buttonsHTML += `
           <button id="addMatchBtn" onclick="openCreateMatchModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Добавить матч">
             ➕
@@ -1608,7 +1616,7 @@ async function selectEvent(eventId, eventName) {
         `;
       }
       
-      if (canManageMatches()) {
+      if (canCreateMatches()) {
         buttonsHTML += `
           <button id="importMatchesBtn" onclick="openImportMatchesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Импортировать матчи">
             📥
@@ -2525,7 +2533,7 @@ async function displayMatches() {
                   `
                       : ""
                   }
-                  <button onclick="openEditMatchModal(${match.id}, '${
+                  ${canEditMatches() ? `<button onclick="openEditMatchModal(${match.id}, '${
                     match.team1_name
                   }', '${match.team2_name}', '${match.match_date || ""}', '${
                     match.round || ""
@@ -2534,7 +2542,7 @@ async function displayMatches() {
                     onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
                     onmouseout="this.style.background='transparent'; this.style.color='#7ab0e0'">
                     ✏️
-                  </button>
+                  </button>` : ''}
                   ${canDeleteMatches() ? `<button onclick="deleteMatch(${match.id})"
                     style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                     onmouseover="this.style.background='#f44336'; this.style.color='white'"
@@ -5125,6 +5133,16 @@ function canManageMatches() {
   return result;
 }
 
+// Проверить, может ли пользователь создавать матчи
+function canCreateMatches() {
+  return hasPermission('create_matches');
+}
+
+// Проверить, может ли пользователь редактировать матчи
+function canEditMatches() {
+  return hasPermission('edit_matches');
+}
+
 // Проверить, может ли пользователь удалять матчи
 function canDeleteMatches() {
   return hasPermission('delete_matches');
@@ -5158,6 +5176,11 @@ function canCreateTournaments() {
 // Проверить, может ли пользователь просматривать логи
 function canViewLogs() {
   return hasPermission('view_logs');
+}
+
+// Проверить, может ли пользователь просматривать подсчет результатов
+function canViewCounting() {
+  return hasPermission('view_counting');
 }
 
 // Проверить, может ли пользователь создавать бэкапы
@@ -6007,12 +6030,9 @@ async function loadModeratorsList() {
         align-items: center;
       ">
         <div style="flex: 1;">
-          <div style="color: #e0e0e0; font-weight: bold; margin-bottom: 5px">${
+          <div style="color: #e0e0e0; font-weight: bold;">${
             mod.username
           }</div>
-          <div style="color: #b0b0b0; font-size: 0.9em">
-            Разрешения: ${getPermissionsText(mod.permissions || [])}
-          </div>
         </div>
         <div style="display: flex; gap: 8px;">
           <button
@@ -6113,6 +6133,8 @@ async function loadUsersList() {
 function getPermissionsText(permissions) {
   const permText = {
     manage_matches: "матчи",
+    create_matches: "создание матчей",
+    edit_matches: "редактирование матчей",
     delete_matches: "удаление матчей",
     manage_results: "результаты",
     manage_tournaments: "турниры (блокировка)",
@@ -6120,6 +6142,7 @@ function getPermissionsText(permissions) {
     delete_tournaments: "удаление турниров",
     create_tournaments: "создание турниров",
     view_logs: "логи",
+    view_counting: "подсчет результатов",
     manage_db: "управление БД",
     backup_db: "создание бэкапов",
     download_backup: "скачивание бэкапов",
@@ -6152,6 +6175,10 @@ async function assignModerator() {
   const permissions = [];
   if (document.getElementById("permManageMatches").checked)
     permissions.push("manage_matches");
+  if (document.getElementById("permCreateMatches").checked)
+    permissions.push("create_matches");
+  if (document.getElementById("permEditMatches").checked)
+    permissions.push("edit_matches");
   if (document.getElementById("permDeleteMatches").checked)
     permissions.push("delete_matches");
   if (document.getElementById("permManageResults").checked)
@@ -6166,6 +6193,8 @@ async function assignModerator() {
     permissions.push("create_tournaments");
   if (document.getElementById("permViewLogs").checked)
     permissions.push("view_logs");
+  if (document.getElementById("permViewCounting").checked)
+    permissions.push("view_counting");
   if (document.getElementById("permManageDB").checked)
     permissions.push("manage_db");
   if (document.getElementById("permBackupDB").checked)
@@ -6214,6 +6243,8 @@ async function assignModerator() {
       // Очищаем форму
       document.getElementById("userSelectForModerator").value = "";
       document.getElementById("permManageMatches").checked = false;
+      document.getElementById("permCreateMatches").checked = false;
+      document.getElementById("permEditMatches").checked = false;
       document.getElementById("permDeleteMatches").checked = false;
       document.getElementById("permManageResults").checked = false;
       document.getElementById("permManageTournaments").checked = false;
@@ -6221,6 +6252,7 @@ async function assignModerator() {
       document.getElementById("permDeleteTournaments").checked = false;
       document.getElementById("permCreateTournaments").checked = false;
       document.getElementById("permViewLogs").checked = false;
+      document.getElementById("permViewCounting").checked = false;
       document.getElementById("permManageDB").checked = false;
       document.getElementById("permBackupDB").checked = false;
       document.getElementById("permDownloadBackup").checked = false;
@@ -6234,6 +6266,9 @@ async function assignModerator() {
       document.getElementById("permEditUsers").checked = false;
       document.getElementById("permDeleteUsers").checked = false;
       document.getElementById("userSubPermissions").style.display = "none";
+      document.getElementById("dbSubPermissions").style.display = "none";
+      document.getElementById("matchesSubPermissions").style.display = "none";
+      document.getElementById("tournamentsSubPermissions").style.display = "none";
 
       // Перезагружаем список
       loadModeratorsList();
@@ -6285,6 +6320,8 @@ function openEditModeratorModal(moderatorId, username, permissions) {
   
   // Очищаем все чекбоксы
   document.getElementById("editPermManageMatches").checked = false;
+  document.getElementById("editPermCreateMatches").checked = false;
+  document.getElementById("editPermEditMatches").checked = false;
   document.getElementById("editPermDeleteMatches").checked = false;
   document.getElementById("editPermManageResults").checked = false;
   document.getElementById("editPermManageTournaments").checked = false;
@@ -6292,6 +6329,7 @@ function openEditModeratorModal(moderatorId, username, permissions) {
   document.getElementById("editPermDeleteTournaments").checked = false;
   document.getElementById("editPermCreateTournaments").checked = false;
   document.getElementById("editPermViewLogs").checked = false;
+  document.getElementById("editPermViewCounting").checked = false;
   document.getElementById("editPermManageDB").checked = false;
   document.getElementById("editPermBackupDB").checked = false;
   document.getElementById("editPermDownloadBackup").checked = false;
@@ -6306,11 +6344,20 @@ function openEditModeratorModal(moderatorId, username, permissions) {
   document.getElementById("editPermDeleteUsers").checked = false;
   document.getElementById("editUserSubPermissions").style.display = "none";
   document.getElementById("editDBSubPermissions").style.display = "none";
+  document.getElementById("editMatchesSubPermissions").style.display = "none";
+  document.getElementById("editTournamentsSubPermissions").style.display = "none";
   
   // Устанавливаем текущие права
   if (Array.isArray(permissions)) {
     if (permissions.includes("manage_matches")) {
       document.getElementById("editPermManageMatches").checked = true;
+      document.getElementById("editMatchesSubPermissions").style.display = "block";
+    }
+    if (permissions.includes("create_matches")) {
+      document.getElementById("editPermCreateMatches").checked = true;
+    }
+    if (permissions.includes("edit_matches")) {
+      document.getElementById("editPermEditMatches").checked = true;
     }
     if (permissions.includes("delete_matches")) {
       document.getElementById("editPermDeleteMatches").checked = true;
@@ -6320,6 +6367,7 @@ function openEditModeratorModal(moderatorId, username, permissions) {
     }
     if (permissions.includes("manage_tournaments")) {
       document.getElementById("editPermManageTournaments").checked = true;
+      document.getElementById("editTournamentsSubPermissions").style.display = "block";
     }
     if (permissions.includes("edit_tournaments")) {
       document.getElementById("editPermEditTournaments").checked = true;
@@ -6332,6 +6380,9 @@ function openEditModeratorModal(moderatorId, username, permissions) {
     }
     if (permissions.includes("view_logs")) {
       document.getElementById("editPermViewLogs").checked = true;
+    }
+    if (permissions.includes("view_counting")) {
+      document.getElementById("editPermViewCounting").checked = true;
     }
     if (permissions.includes("manage_db")) {
       document.getElementById("editPermManageDB").checked = true;
@@ -6390,6 +6441,12 @@ function toggleUserSubPermissions() {
   
   if (viewUsersCheckbox.checked) {
     subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("permCheckBot").checked = true;
+    document.getElementById("permViewSettings").checked = true;
+    document.getElementById("permSyncTelegramIds").checked = true;
+    document.getElementById("permEditUsers").checked = true;
+    document.getElementById("permDeleteUsers").checked = true;
   } else {
     subPermissionsDiv.style.display = "none";
     // Снимаем все подчекбоксы
@@ -6408,12 +6465,58 @@ function toggleDBSubPermissions() {
   
   if (manageDBCheckbox.checked) {
     subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("permBackupDB").checked = true;
+    document.getElementById("permDownloadBackup").checked = true;
+    document.getElementById("permRestoreDB").checked = true;
+    document.getElementById("permDeleteBackup").checked = true;
   } else {
     subPermissionsDiv.style.display = "none";
     // Снимаем все подчекбоксы
     document.getElementById("permBackupDB").checked = false;
+    document.getElementById("permDownloadBackup").checked = false;
     document.getElementById("permRestoreDB").checked = false;
     document.getElementById("permDeleteBackup").checked = false;
+  }
+}
+
+// Переключить видимость подчекбоксов матчей (форма назначения)
+function toggleMatchesSubPermissions() {
+  const manageMatchesCheckbox = document.getElementById("permManageMatches");
+  const subPermissionsDiv = document.getElementById("matchesSubPermissions");
+  
+  if (manageMatchesCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("permCreateMatches").checked = true;
+    document.getElementById("permEditMatches").checked = true;
+    document.getElementById("permDeleteMatches").checked = true;
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("permCreateMatches").checked = false;
+    document.getElementById("permEditMatches").checked = false;
+    document.getElementById("permDeleteMatches").checked = false;
+  }
+}
+
+// Переключить видимость подчекбоксов турниров (форма назначения)
+function toggleTournamentsSubPermissions() {
+  const manageTournamentsCheckbox = document.getElementById("permManageTournaments");
+  const subPermissionsDiv = document.getElementById("tournamentsSubPermissions");
+  
+  if (manageTournamentsCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("permEditTournaments").checked = true;
+    document.getElementById("permDeleteTournaments").checked = true;
+    document.getElementById("permCreateTournaments").checked = true;
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("permEditTournaments").checked = false;
+    document.getElementById("permDeleteTournaments").checked = false;
+    document.getElementById("permCreateTournaments").checked = false;
   }
 }
 
@@ -6424,6 +6527,12 @@ function toggleEditUserSubPermissions() {
   
   if (viewUsersCheckbox.checked) {
     subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("editPermCheckBot").checked = true;
+    document.getElementById("editPermViewSettings").checked = true;
+    document.getElementById("editPermSyncTelegramIds").checked = true;
+    document.getElementById("editPermEditUsers").checked = true;
+    document.getElementById("editPermDeleteUsers").checked = true;
   } else {
     subPermissionsDiv.style.display = "none";
     // Снимаем все подчекбоксы
@@ -6442,12 +6551,58 @@ function toggleEditDBSubPermissions() {
   
   if (manageDBCheckbox.checked) {
     subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("editPermBackupDB").checked = true;
+    document.getElementById("editPermDownloadBackup").checked = true;
+    document.getElementById("editPermRestoreDB").checked = true;
+    document.getElementById("editPermDeleteBackup").checked = true;
   } else {
     subPermissionsDiv.style.display = "none";
     // Снимаем все подчекбоксы
     document.getElementById("editPermBackupDB").checked = false;
+    document.getElementById("editPermDownloadBackup").checked = false;
     document.getElementById("editPermRestoreDB").checked = false;
     document.getElementById("editPermDeleteBackup").checked = false;
+  }
+}
+
+// Переключить видимость подчекбоксов матчей (форма редактирования)
+function toggleEditMatchesSubPermissions() {
+  const manageMatchesCheckbox = document.getElementById("editPermManageMatches");
+  const subPermissionsDiv = document.getElementById("editMatchesSubPermissions");
+  
+  if (manageMatchesCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("editPermCreateMatches").checked = true;
+    document.getElementById("editPermEditMatches").checked = true;
+    document.getElementById("editPermDeleteMatches").checked = true;
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("editPermCreateMatches").checked = false;
+    document.getElementById("editPermEditMatches").checked = false;
+    document.getElementById("editPermDeleteMatches").checked = false;
+  }
+}
+
+// Переключить видимость подчекбоксов турниров (форма редактирования)
+function toggleEditTournamentsSubPermissions() {
+  const manageTournamentsCheckbox = document.getElementById("editPermManageTournaments");
+  const subPermissionsDiv = document.getElementById("editTournamentsSubPermissions");
+  
+  if (manageTournamentsCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+    // Автоматически выбираем все подчекбоксы
+    document.getElementById("editPermEditTournaments").checked = true;
+    document.getElementById("editPermDeleteTournaments").checked = true;
+    document.getElementById("editPermCreateTournaments").checked = true;
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("editPermEditTournaments").checked = false;
+    document.getElementById("editPermDeleteTournaments").checked = false;
+    document.getElementById("editPermCreateTournaments").checked = false;
   }
 }
 
@@ -6462,6 +6617,10 @@ async function saveModeratorPermissions() {
   const permissions = [];
   if (document.getElementById("editPermManageMatches").checked)
     permissions.push("manage_matches");
+  if (document.getElementById("editPermCreateMatches").checked)
+    permissions.push("create_matches");
+  if (document.getElementById("editPermEditMatches").checked)
+    permissions.push("edit_matches");
   if (document.getElementById("editPermDeleteMatches").checked)
     permissions.push("delete_matches");
   if (document.getElementById("editPermManageResults").checked)
@@ -6476,6 +6635,8 @@ async function saveModeratorPermissions() {
     permissions.push("create_tournaments");
   if (document.getElementById("editPermViewLogs").checked)
     permissions.push("view_logs");
+  if (document.getElementById("editPermViewCounting").checked)
+    permissions.push("view_counting");
   if (document.getElementById("editPermManageDB").checked)
     permissions.push("manage_db");
   if (document.getElementById("editPermBackupDB").checked)
@@ -9166,7 +9327,7 @@ async function openCreateMatchModal() {
     return;
   }
 
-  if (!canManageMatches()) {
+  if (!canCreateMatches()) {
     alert("У вас нет прав для создания матчей");
     return;
   }
@@ -9911,7 +10072,7 @@ async function submitCreateMatch(event) {
 // ===== РЕДАКТИРОВАНИЕ И УДАЛЕНИЕ МАТЧЕЙ =====
 
 async function openEditMatchModal(id, team1, team2, date, round) {
-  if (!canManageMatches()) {
+  if (!canEditMatches()) {
     alert("❌ Только администратор или модератор может редактировать матчи");
     return;
   }

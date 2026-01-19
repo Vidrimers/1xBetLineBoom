@@ -3758,6 +3758,8 @@ app.post("/api/moderators", async (req, res) => {
     const permissionsText = permissions.map(p => {
       const permMap = {
         'manage_matches': '⚽ Управление матчами',
+        'create_matches': '➕ Создание матчей',
+        'edit_matches': '✏️ Редактирование матчей',
         'delete_matches': '🗑️ Удаление матчей',
         'manage_results': '📊 Управление результатами',
         'manage_tournaments': '🎯 Управление турнирами',
@@ -3765,6 +3767,7 @@ app.post("/api/moderators", async (req, res) => {
         'delete_tournaments': '🗑️ Удаление турниров',
         'create_tournaments': '➕ Создание турниров',
         'view_logs': '📋 Просмотр логов',
+        'view_counting': '📊 Подсчет результатов',
         'manage_db': '💾 Управление базой данных',
         'backup_db': '➕ Создание бэкапов',
         'download_backup': '💾 Скачивание бэкапов',
@@ -3886,6 +3889,8 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
         const permissionsText = permissions.map(p => {
           const permMap = {
             'manage_matches': '⚽ Управление матчами',
+            'create_matches': '➕ Создание матчей',
+            'edit_matches': '✏️ Редактирование матчей',
             'delete_matches': '🗑️ Удаление матчей',
             'manage_results': '📊 Управление результатами',
             'manage_tournaments': '🎯 Управление турнирами',
@@ -3893,6 +3898,7 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
             'delete_tournaments': '🗑️ Удаление турниров',
             'create_tournaments': '➕ Создание турниров',
             'view_logs': '📋 Просмотр логов',
+            'view_counting': '📊 Подсчет результатов',
             'manage_db': '💾 Управление базой данных',
             'backup_db': '➕ Создание бэкапов',
             'download_backup': '💾 Скачивание бэкапов',
@@ -7547,7 +7553,7 @@ app.post("/api/admin/matches", async (req, res) => {
     
     if (moderator) {
       const permissions = JSON.parse(moderator.permissions || "[]");
-      isModerator = permissions.includes("manage_matches");
+      isModerator = permissions.includes("create_matches");
     }
     
     if (!isModerator) {
@@ -7697,7 +7703,7 @@ app.post("/api/matches/bulk-create", (req, res) => {
   }
 });
 
-// PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (только для админа)
+// PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (для админа и модераторов с правами)
 app.put("/api/admin/matches/:matchId", async (req, res) => {
   const { matchId } = req.params;
   const {
@@ -7726,10 +7732,38 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
     result,
   });
 
-  // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
-    console.log("❌ Пользователь не админ:", username);
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем права
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  let hasEditPermission = false;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = true;
+      
+      // Для редактирования матча нужно право edit_matches
+      if (team1_name || team2_name || match_date !== undefined || round !== undefined || 
+          is_final !== undefined || score_prediction_enabled !== undefined) {
+        hasEditPermission = permissions.includes("edit_matches");
+      }
+      
+      // Для установки результата нужно право manage_results
+      if (status) {
+        hasEditPermission = permissions.includes("manage_results");
+      }
+    }
+    
+    if (!isModerator || !hasEditPermission) {
+      console.log("❌ Пользователь не имеет прав:", username);
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   try {
@@ -10042,19 +10076,32 @@ console.log(
   "🔔 Фоновая задача уведомления за 3 часа до матча запущена (интервал: 5 минут)"
 );
 
-// GET /api/admin/orphaned-data - Проверить orphaned данные (только для админа)
+// GET /api/admin/orphaned-data - Проверить orphaned данные (для админа и модераторов с правами)
 app.get("/api/admin/orphaned-data", (req, res) => {
   const username = req.query.username;
 
   console.log(`🔍 Запрос orphaned-data от пользователя: "${username}"`);
-  console.log(`🔐 ADMIN_DB_NAME: "${process.env.ADMIN_DB_NAME}"`);
 
-  // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
-    console.log(
-      `❌ Доступ запрещён: "${username}" !== "${process.env.ADMIN_DB_NAME}"`
-    );
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем права
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("manage_orphaned");
+    }
+    
+    if (!isModerator) {
+      console.log(`❌ Доступ запрещён: пользователь "${username}" не имеет прав`);
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   try {

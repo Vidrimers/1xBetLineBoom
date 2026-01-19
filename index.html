@@ -2026,11 +2026,33 @@
                     type="checkbox"
                     id="permManageMatches"
                     style="margin-right: 8px; cursor: pointer"
+                    onchange="toggleMatchesSubPermissions()"
                   />
-                  <span>⚽ Управление матчами (создание, редактирование)</span>
+                  <span>⚽ Управление матчами</span>
+                </label>
+                <div id="matchesSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
+                <label
+                  style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
+                >
+                  <input
+                    type="checkbox"
+                    id="permCreateMatches"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>➕ Создание матчей</span>
                 </label>
                 <label
-                  style="display: flex; align-items: center; cursor: pointer"
+                  style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
+                >
+                  <input
+                    type="checkbox"
+                    id="permEditMatches"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>✏️ Редактирование матчей</span>
+                </label>
+                <label
+                  style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
                 >
                   <input
                     type="checkbox"
@@ -2039,6 +2061,7 @@
                   />
                   <span>🗑️ Удаление матчей</span>
                 </label>
+                </div>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
                 >
@@ -2056,11 +2079,13 @@
                     type="checkbox"
                     id="permManageTournaments"
                     style="margin-right: 8px; cursor: pointer"
+                    onchange="toggleTournamentsSubPermissions()"
                   />
                   <span>🎯 Управление турнирами (блокировка)</span>
                 </label>
+                <div id="tournamentsSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
                 <label
-                  style="display: flex; align-items: center; cursor: pointer"
+                  style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
                 >
                   <input
                     type="checkbox"
@@ -2070,7 +2095,7 @@
                   <span>✏️ Редактирование турниров</span>
                 </label>
                 <label
-                  style="display: flex; align-items: center; cursor: pointer"
+                  style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
                 >
                   <input
                     type="checkbox"
@@ -2080,7 +2105,7 @@
                   <span>🗑️ Удаление турниров</span>
                 </label>
                 <label
-                  style="display: flex; align-items: center; cursor: pointer"
+                  style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
                 >
                   <input
                     type="checkbox"
@@ -2089,6 +2114,7 @@
                   />
                   <span>➕ Создание турниров</span>
                 </label>
+                </div>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
                 >
@@ -2098,6 +2124,16 @@
                     style="margin-right: 8px; cursor: pointer"
                   />
                   <span>📋 Просмотр логов</span>
+                </label>
+                <label
+                  style="display: flex; align-items: center; cursor: pointer"
+                >
+                  <input
+                    type="checkbox"
+                    id="permViewCounting"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>📊 Подсчет результатов</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
@@ -2264,11 +2300,33 @@
                   type="checkbox"
                   id="editPermManageMatches"
                   style="margin-right: 8px; cursor: pointer"
+                  onchange="toggleEditMatchesSubPermissions()"
                 />
-                <span>⚽ Управление матчами (создание, редактирование)</span>
+                <span>⚽ Управление матчами</span>
+              </label>
+              <div id="editMatchesSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
+              <label
+                style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermCreateMatches"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>➕ Создание матчей</span>
               </label>
               <label
-                style="display: flex; align-items: center; cursor: pointer"
+                style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermEditMatches"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>✏️ Редактирование матчей</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
               >
                 <input
                   type="checkbox"
@@ -2277,6 +2335,7 @@
                 />
                 <span>🗑️ Удаление матчей</span>
               </label>
+              </div>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
               >
@@ -2294,11 +2353,13 @@
                   type="checkbox"
                   id="editPermManageTournaments"
                   style="margin-right: 8px; cursor: pointer"
+                  onchange="toggleEditTournamentsSubPermissions()"
                 />
                 <span>🎯 Управление турнирами (блокировка)</span>
               </label>
+              <div id="editTournamentsSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
               <label
-                style="display: flex; align-items: center; cursor: pointer"
+                style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
               >
                 <input
                   type="checkbox"
@@ -2308,7 +2369,7 @@
                 <span>✏️ Редактирование турниров</span>
               </label>
               <label
-                style="display: flex; align-items: center; cursor: pointer"
+                style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
               >
                 <input
                   type="checkbox"
@@ -2318,7 +2379,7 @@
                 <span>🗑️ Удаление турниров</span>
               </label>
               <label
-                style="display: flex; align-items: center; cursor: pointer"
+                style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
               >
                 <input
                   type="checkbox"
@@ -2327,6 +2388,7 @@
                 />
                 <span>➕ Создание турниров</span>
               </label>
+              </div>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
               >
@@ -2336,6 +2398,16 @@
                   style="margin-right: 8px; cursor: pointer"
                 />
                 <span>📋 Просмотр логов</span>
+              </label>
+              <label
+                style="display: flex; align-items: center; cursor: pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="editPermViewCounting"
+                  style="margin-right: 8px; cursor: pointer"
+                />
+                <span>📊 Подсчет результатов</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
