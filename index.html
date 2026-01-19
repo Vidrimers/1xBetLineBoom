@@ -463,21 +463,24 @@
                   justify-content: space-between;
                   flex-wrap: wrap;
                   gap: 15px;
+                  min-height: 105px;
                 "
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
                     📱 Получение личных сообщений в ТГ
                   </h3>
-                  <div id="telegramNotificationsDescription">
-                    <p style="margin: 0 0 5px 0; color: #aaa; font-size: 14px">
-                      Получайте уведомления о ставках и результатах прямо в ТГ
-                    </p>
-                    <p style="margin: 0; color: #4caf50; font-size: 12px">
-                      ℹ️ Коды подтверждения (2FA, изменение Telegram и т.д.) будут приходить всегда
-                    </p>
+                  <div style="min-height: 65px;">
+                    <div id="telegramNotificationsDescription">
+                      <p style="margin: 0 0 5px 0; color: #aaa; font-size: 14px">
+                        Получайте уведомления о ставках и результатах прямо в ТГ
+                      </p>
+                      <p style="margin: 0; color: #4caf50; font-size: 12px">
+                        ℹ️ Коды подтверждения (2FA, изменение Telegram и т.д.) будут приходить всегда
+                      </p>
+                    </div>
+                    <div id="telegramNotificationsStatus" style="display: none;"></div>
                   </div>
-                  <div id="telegramNotificationsStatus" style="display: none;"></div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
                   <label class="switch">
@@ -506,19 +509,22 @@
                   justify-content: space-between;
                   flex-wrap: wrap;
                   gap: 15px;
+                  min-height: 90px;
                 "
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
                     👥 Напоминания в группе ТГ
                   </h3>
-                  <div id="groupRemindersDescription">
-                    <p style="margin: 0; color: #aaa; font-size: 14px">
-                      Разрешить боту упоминать вас в напоминаниях о голосовании в
-                      группе <a href="https://t.me/+Vq1jSTK5EhQyOTQy" target="_blank" style="color: #5a9fd4; text-decoration: none;">1xBetLineBoom</a>
-                    </p>
+                  <div style="min-height: 50px;">
+                    <div id="groupRemindersDescription">
+                      <p style="margin: 0; color: #aaa; font-size: 14px">
+                        Разрешить боту упоминать вас в напоминаниях о голосовании в
+                        группе <a href="https://t.me/+Vq1jSTK5EhQyOTQy" target="_blank" style="color: #5a9fd4; text-decoration: none;">1xBetLineBoom</a>
+                      </p>
+                    </div>
+                    <div id="groupRemindersStatus" style="display: none;"></div>
                   </div>
-                  <div id="groupRemindersStatus" style="display: none;"></div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
                   <label class="switch">
@@ -547,23 +553,26 @@
                   justify-content: space-between;
                   flex-wrap: wrap;
                   gap: 15px;
+                  min-height: 105px;
                 "
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
                     🔐 Подтверждение логина через бота
                   </h3>
-                  <div id="login2faDescription">
-                    <p style="margin: 0 0 8px 0; color: #aaa; font-size: 14px">
-                      Требовать код подтверждения из Telegram при каждом входе для дополнительной безопасности
-                    </p>
-                    <p style="margin: 0; color: #888; font-size: 12px">
-                      ⚠️ Для работы необходимо: 1) Привязать Telegram в настройках выше 2) Написать боту 
-                      <a href="https://t.me/OnexBetLineBoomBot" target="_blank" style="color: #5a9fd4; text-decoration: none;">@OnexBetLineBoomBot</a> 
-                      команду /start
-                    </p>
+                  <div style="min-height: 75px;">
+                    <div id="login2faDescription">
+                      <p style="margin: 0 0 8px 0; color: #aaa; font-size: 14px">
+                        Требовать код подтверждения из Telegram при каждом входе для дополнительной безопасности
+                      </p>
+                      <p style="margin: 0; color: #888; font-size: 12px">
+                        ⚠️ Для работы необходимо: 1) Привязать Telegram в настройках выше 2) Написать боту 
+                        <a href="https://t.me/OnexBetLineBoomBot" target="_blank" style="color: #5a9fd4; text-decoration: none;">@OnexBetLineBoomBot</a> 
+                        команду /start
+                      </p>
+                    </div>
+                    <div id="login2faStatus" style="display: none;"></div>
                   </div>
-                  <div id="login2faStatus" style="display: none;"></div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
                   <label class="switch">
@@ -592,19 +601,22 @@
                   justify-content: space-between;
                   flex-wrap: wrap;
                   gap: 15px;
+                  min-height: 80px;
                 "
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
                     🏆 Показ победителя на завершённых турнирах
                   </h3>
-                  <div id="tournamentWinnerDescription">
-                    <p style="margin: 0; color: #aaa; font-size: 14px">
-                      Включить/выключить отображение карточки победителя вместо
-                      матчей
-                    </p>
+                  <div style="min-height: 50px;">
+                    <div id="tournamentWinnerDescription">
+                      <p style="margin: 0; color: #aaa; font-size: 14px">
+                        Включить/выключить отображение карточки победителя вместо
+                        матчей
+                      </p>
+                    </div>
+                    <div id="tournamentWinnerStatus" style="display: none;"></div>
                   </div>
-                  <div id="tournamentWinnerStatus" style="display: none;"></div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
                   <label class="switch">
@@ -635,12 +647,14 @@
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
                   🎨 Темы
                 </h3>
-                <div id="themeDescription">
-                  <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
-                    Выберите тему оформления
-                  </p>
+                <div style="min-height: 45px; margin-bottom: 15px;">
+                  <div id="themeDescription">
+                    <p style="margin: 0; color: #aaa; font-size: 14px">
+                      Выберите тему оформления
+                    </p>
+                  </div>
+                  <div id="themeStatus" style="display: none;"></div>
                 </div>
-                <div id="themeStatus" style="display: none; margin-bottom: 15px;"></div>
                 <select
                   id="themeSelect"
                   onchange="saveTheme()"
@@ -684,13 +698,15 @@
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
                   🕐 Часовой пояс
                 </h3>
-                <div id="timezoneDescription">
-                  <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
-                    Выберите ваш часовой пояс для корректного отображения времени
-                    матчей
-                  </p>
+                <div style="min-height: 45px; margin-bottom: 15px;">
+                  <div id="timezoneDescription">
+                    <p style="margin: 0; color: #aaa; font-size: 14px">
+                      Выберите ваш часовой пояс для корректного отображения времени
+                      матчей
+                    </p>
+                  </div>
+                  <div id="timezoneStatus" style="display: none;"></div>
                 </div>
-                <div id="timezoneStatus" style="display: none; margin-bottom: 15px;"></div>
                 <select
                   id="timezoneSelect"
                   onchange="saveTimezoneSettings()"
@@ -725,12 +741,14 @@
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
                   👁️ Показывать ставки другим
                 </h3>
-                <div id="showBetsDescription">
-                  <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
-                    Выберите, когда другие пользователи смогут видеть ваши ставки
-                  </p>
+                <div style="min-height: 45px; margin-bottom: 15px;">
+                  <div id="showBetsDescription">
+                    <p style="margin: 0; color: #aaa; font-size: 14px">
+                      Выберите, когда другие пользователи смогут видеть ваши ставки
+                    </p>
+                  </div>
+                  <div id="showBetsStatus" style="display: none;"></div>
                 </div>
-                <div id="showBetsStatus" style="display: none; margin-bottom: 15px;"></div>
                 <select
                   id="showBetsSelect"
                   onchange="saveShowBetsSettings()"
@@ -766,12 +784,14 @@
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
                   🎲 "Мне повезет"
                 </h3>
-                <div id="luckyButtonDescription">
-                  <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
-                    Включить/выключить кнопку случайных ставок на турах
-                  </p>
+                <div style="min-height: 45px; margin-bottom: 15px;">
+                  <div id="luckyButtonDescription">
+                    <p style="margin: 0; color: #aaa; font-size: 14px">
+                      Включить/выключить кнопку случайных ставок на турах
+                    </p>
+                  </div>
+                  <div id="luckyButtonStatus" style="display: none;"></div>
                 </div>
-                <div id="luckyButtonStatus" style="display: none; margin-bottom: 15px;"></div>
                 <select
                   id="showLuckyButtonSelect"
                   onchange="saveLuckyButtonSettings()"

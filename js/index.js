@@ -9252,22 +9252,16 @@ function showSaveStatus(containerId, status) {
   
   if (!statusContainer) return;
   
-  // Находим общий родительский контейнер (settings-item-content-wrapper или просто div)
-  const parentContainer = descriptionContainer ? descriptionContainer.parentElement : statusContainer.parentElement;
-  
-  // Находим flex-контейнер (для карточек с чекбоксами)
-  const flexContainer = parentContainer ? parentContainer.parentElement : null;
-  
   if (status === 'saving') {
-    // Запоминаем и фиксируем высоту обоих контейнеров
-    if (parentContainer && descriptionContainer) {
-      const parentHeight = parentContainer.offsetHeight;
-      parentContainer.style.minHeight = parentHeight + 'px';
+    if (descriptionContainer) {
+      // Получаем родительский контейнер с min-height
+      const wrapper = descriptionContainer.parentElement;
       
-      // Если есть flex-контейнер, фиксируем и его высоту
-      if (flexContainer && flexContainer.style.display === 'flex') {
-        const flexHeight = flexContainer.offsetHeight;
-        flexContainer.style.minHeight = flexHeight + 'px';
+      // Измеряем реальную высоту описания и устанавливаем точную высоту
+      const actualHeight = descriptionContainer.offsetHeight;
+      if (wrapper && actualHeight > 0) {
+        wrapper.style.height = actualHeight + 'px';
+        wrapper.style.minHeight = actualHeight + 'px';
       }
       
       // Плавно скрываем описание
@@ -9300,26 +9294,24 @@ function showSaveStatus(containerId, status) {
     
     // Через 2 секунды возвращаем описание
     setTimeout(() => {
-      // Плавно скрываем статус
       statusContainer.style.opacity = '0';
       
       setTimeout(() => {
         statusContainer.style.display = 'none';
         
-        // Плавно показываем описание
         if (descriptionContainer) {
           descriptionContainer.style.display = 'block';
           descriptionContainer.style.opacity = '0';
           
           setTimeout(() => {
             descriptionContainer.style.opacity = '1';
-            // Убираем minHeight после анимации
+            
+            // Убираем фиксированную высоту после анимации
             setTimeout(() => {
-              if (parentContainer) {
-                parentContainer.style.minHeight = '';
-              }
-              if (flexContainer && flexContainer.style.display === 'flex') {
-                flexContainer.style.minHeight = '';
+              const wrapper = descriptionContainer.parentElement;
+              if (wrapper) {
+                wrapper.style.height = '';
+                wrapper.style.minHeight = '';
               }
             }, 300);
           }, 50);
@@ -9338,26 +9330,24 @@ function showSaveStatus(containerId, status) {
     
     // Через 3 секунды возвращаем описание
     setTimeout(() => {
-      // Плавно скрываем статус
       statusContainer.style.opacity = '0';
       
       setTimeout(() => {
         statusContainer.style.display = 'none';
         
-        // Плавно показываем описание
         if (descriptionContainer) {
           descriptionContainer.style.display = 'block';
           descriptionContainer.style.opacity = '0';
           
           setTimeout(() => {
             descriptionContainer.style.opacity = '1';
-            // Убираем minHeight после анимации
+            
+            // Убираем фиксированную высоту после анимации
             setTimeout(() => {
-              if (parentContainer) {
-                parentContainer.style.minHeight = '';
-              }
-              if (flexContainer && flexContainer.style.display === 'flex') {
-                flexContainer.style.minHeight = '';
+              const wrapper = descriptionContainer.parentElement;
+              if (wrapper) {
+                wrapper.style.height = '';
+                wrapper.style.minHeight = '';
               }
             }, 300);
           }, 50);
