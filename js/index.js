@@ -8118,14 +8118,14 @@ async function sendCountingResults() {
     });
 
     if (response.ok) {
-      alert("Результаты отправлены в группу!");
+      await showCustomAlert("Результаты отправлены в группу!", "Успешно", "✅");
     } else {
       const error = await response.json();
-      alert("Ошибка: " + (error.error || "Не удалось отправить результаты"));
+      await showCustomAlert(error.error || "Не удалось отправить результаты", "Ошибка", "❌");
     }
   } catch (error) {
     console.error("Ошибка отправки результатов:", error);
-    alert("Ошибка при отправке результатов");
+    await showCustomAlert("Ошибка при отправке результатов", "Ошибка", "❌");
   }
 }
 
