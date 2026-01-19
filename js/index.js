@@ -5719,7 +5719,7 @@ function downloadSelectedBackup() {
     return;
   }
   
-  window.location.href = `/download-backup/${selectedBackupFilename}`;
+  window.location.href = `/download-backup/${selectedBackupFilename}?username=${encodeURIComponent(currentUser.username)}`;
 }
 
 // Заблокировать/разблокировать бэкап (только для админа)

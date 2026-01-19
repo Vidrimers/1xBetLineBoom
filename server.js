@@ -732,6 +732,17 @@ function writeBetLog(action, data) {
         <span class="backup"><div class="log-label">Файл</div>📦 ${data.filename}</span>
       </div>
     </div>`;
+    } else if (action === "backup_downloaded") {
+      logEntry = `
+    <div class="log-entry backup-downloaded">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action backup-downloaded">💾 БЭКАП СКАЧАН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="backup"><div class="log-label">Файл</div>📦 ${data.filename}</span>
+        <span class="backup"><div class="log-label">Размер</div>📊 ${data.size}</span>
+      </div>
+    </div>`;
     } else if (action === "telegram_synced") {
       logEntry = `
     <div class="log-entry telegram-synced">
@@ -750,6 +761,27 @@ function writeBetLog(action, data) {
       <div class="log-details">
         <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
         <span class="details"><div class="log-label">Удалено</div>${data.details}</span>
+      </div>
+    </div>`;
+    } else if (action === "user_renamed") {
+      logEntry = `
+    <div class="log-entry user-renamed">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action user-renamed">✏️ ПОЛЬЗОВАТЕЛЬ ПЕРЕИМЕНОВАН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="details"><div class="log-label">Изменение</div>👤 ${data.oldName} → ${data.newName}</span>
+      </div>
+    </div>`;
+    } else if (action === "user_deleted") {
+      logEntry = `
+    <div class="log-entry user-deleted">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action user-deleted">🗑️ ПОЛЬЗОВАТЕЛЬ УДАЛЕН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="details"><div class="log-label">Пользователь</div>👤 ${data.username}</span>
+        ${data.betsDeleted ? `<span class="details"><div class="log-label">Удалено ставок</div>📊 ${data.betsDeleted}</span>` : ''}
       </div>
     </div>`;
     }
@@ -1412,8 +1444,11 @@ function resetLogFile() {
     .log-entry.backup-created { border-left-color: #00bcd4; }
     .log-entry.backup-restored { border-left-color: #ff5722; }
     .log-entry.backup-deleted { border-left-color: #f44336; }
+    .log-entry.backup-downloaded { border-left-color: #4caf50; }
     .log-entry.telegram-synced { border-left-color: #03a9f4; }
     .log-entry.orphaned-cleaned { border-left-color: #607d8b; }
+    .log-entry.user-renamed { border-left-color: #ffc107; }
+    .log-entry.user-deleted { border-left-color: #f44336; }
     .log-time { color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px; }
     .log-action { font-weight: bold; margin-bottom: 8px; }
     .log-action.placed { color: #4caf50; }
@@ -1432,8 +1467,11 @@ function resetLogFile() {
     .log-action.backup-created { color: #00bcd4; }
     .log-action.backup-restored { color: #ff5722; }
     .log-action.backup-deleted { color: #f44336; }
+    .log-action.backup-downloaded { color: #4caf50; }
     .log-action.telegram-synced { color: #03a9f4; }
     .log-action.orphaned-cleaned { color: #607d8b; }
+    .log-action.user-renamed { color: #ffc107; }
+    .log-action.user-deleted { color: #f44336; }
     .log-details {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -8791,6 +8829,13 @@ ${isAdminUser ? 'Администратор' : 'Модератор'} измен�
 🔓 Разлогинен со всех устройств (удалено сессий: ${deletedSessions.changes})`;
       
       await notifyModeratorAction(adminUsername, "Переименование пользователя", details);
+      
+      // Запись в логи
+      writeBetLog("user_renamed", {
+        moderator: adminUsername,
+        oldName: oldUser.username,
+        newName: capitalizedNewUsername
+      });
     }
 
     res.json({ 
@@ -9091,6 +9136,13 @@ ${userInfo.telegram_username ? `📱 Telegram: @${userInfo.telegram_username}` :
 📊 Удалено ставок: ${betsCount.count}`;
       
       await notifyModeratorAction(adminUsername, "Удаление пользователя", details);
+      
+      // Запись в логи
+      writeBetLog("user_deleted", {
+        moderator: adminUsername,
+        username: userInfo.username,
+        betsDeleted: betsCount.count
+      });
     }
 
     res.json({ message: "Пользователь успешно удален" });
@@ -10058,12 +10110,34 @@ app.post("/api/backup", async (req, res) => {
 });
 
 // GET /download-backup/:filename - Скачать бэкап БД
-app.get("/download-backup/:filename", (req, res) => {
+app.get("/download-backup/:filename", async (req, res) => {
   try {
     const filename = req.params.filename;
+    const username = req.query.username; // Получаем username из query параметров
+
+    // Проверяем права
+    const isAdminUser = username === process.env.ADMIN_DB_NAME;
+    let isModerator = false;
+    
+    if (!isAdminUser) {
+      // Проверяем права модератора
+      const moderator = db.prepare(`
+        SELECT permissions FROM moderators 
+        WHERE user_id = (SELECT id FROM users WHERE username = ?)
+      `).get(username);
+      
+      if (moderator) {
+        const permissions = JSON.parse(moderator.permissions || "[]");
+        isModerator = permissions.includes("download_backup");
+      }
+      
+      if (!isModerator) {
+        return res.status(403).json({ error: "Недостаточно прав для скачивания бэкапов" });
+      }
+    }
 
     // Проверяем что имя файла содержит только допустимые символы (безопасность)
-    if (!/^1xBetLineBoom_backup_[\dT\-]+\.db$/.test(filename)) {
+    if (!/^1xBetLineBoom_backup_(before_restore_)?[\dT\-]+\.db$/.test(filename)) {
       return res.status(400).json({ error: "Неверное имя файла" });
     }
 
@@ -10074,12 +10148,28 @@ app.get("/download-backup/:filename", (req, res) => {
       return res.status(404).json({ error: "Файл бэкапа не найден" });
     }
 
+    // Уведомление админу если это модератор
+    if (isModerator && username) {
+      const fileSize = (fs.statSync(backupPath).size / 1024 / 1024).toFixed(2);
+      const details = `💾 Файл: ${filename}
+📦 Размер: ${fileSize} MB`;
+      
+      await notifyModeratorAction(username, "Скачивание бэкапа БД", details);
+      
+      // Запись в логи
+      writeBetLog("backup_downloaded", {
+        moderator: username,
+        filename: filename,
+        size: `${fileSize} MB`
+      });
+    }
+
     // Отправляем файл
     res.download(backupPath, filename, (err) => {
       if (err) {
         console.error("❌ Ошибка при скачивании файла:", err);
       } else {
-        console.log(`✓ Бэкап БД скачан: ${filename}`);
+        console.log(`✓ Бэкап БД скачан: ${filename} (пользователь: ${username || 'неизвестен'})`);
       }
     });
   } catch (error) {
