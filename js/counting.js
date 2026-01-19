@@ -4,7 +4,7 @@
 let selectedCompetition = "CL"; // По умолчанию Champions League
 
 function loadCounting() {
-  if (!isAdmin()) {
+  if (!canViewCounting()) {
     alert("У вас нет прав");
     return;
   }
@@ -406,7 +406,7 @@ async function calculateCountingResults() {
 }
 
 async function confirmMatchesFromCounting(results) {
-  if (!isAdmin() || !currentUser) {
+  if (!canViewCounting() || !currentUser) {
     return;
   }
 

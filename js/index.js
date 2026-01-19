@@ -8081,7 +8081,7 @@ function closeAdminModal() {
 
 // Загрузить подсчет результатов
 function loadCounting() {
-  if (!isAdmin()) {
+  if (!canViewCounting()) {
     alert("У вас нет прав");
     return;
   }
@@ -8097,7 +8097,7 @@ function loadCounting() {
 
 // Отправить результаты подсчета
 async function sendCountingResults() {
-  if (!isAdmin()) {
+  if (!canViewCounting()) {
     alert("У вас нет прав");
     return;
   }

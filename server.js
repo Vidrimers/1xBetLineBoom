@@ -8467,9 +8467,9 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
         console.log("   ✓ Есть право edit_matches");
       }
       
-      if (isSettingResult && (permissions.includes("manage_results") || permissions.includes("edit_matches"))) {
+      if (isSettingResult && (permissions.includes("manage_results") || permissions.includes("edit_matches") || permissions.includes("view_counting"))) {
         hasPermission = true;
-        console.log("   ✓ Есть право manage_results или edit_matches");
+        console.log("   ✓ Есть право manage_results, edit_matches или view_counting");
       }
     }
     
@@ -10363,9 +10363,16 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           
           let userLine = `${medal} ${user.username}: <b>${user.points}</b> ${user.points === 1 ? 'очко' : user.points < 5 ? 'очка' : 'очков'}`;
           
-          // Добавляем статистику по счетам если есть
+          // Добавляем статистику по результатам и счетам
+          const stats = [];
+          if (user.correctResults > 0) {
+            stats.push(`✅ ${user.correctResults}`);
+          }
           if (user.correctScores > 0) {
-            userLine += ` (🎯 ${user.correctScores})`;
+            stats.push(`🎯 ${user.correctScores}`);
+          }
+          if (stats.length > 0) {
+            userLine += ` (${stats.join(', ')})`;
           }
           
           message += userLine + '\n';
@@ -11457,42 +11464,73 @@ app.post("/api/notify-counting-results", async (req, res) => {
 
     // Группируем результаты по пользователям и считаем очки
     const userStats = {};
-    let maxPoints = 0;
-    let winner = null;
 
     results.forEach((result) => {
       const username = result.username;
       if (!userStats[username]) {
-        userStats[username] = 0;
+        userStats[username] = {
+          points: 0,
+          correctResults: 0,
+          correctScores: 0
+        };
       }
+      
       if (result.isWon) {
-        userStats[username]++;
+        // Базовое очко за результат
+        userStats[username].points++;
+        userStats[username].correctResults++;
+        
+        // Проверяем угаданный счет
+        if (result.scoreIsWon) {
+          userStats[username].points++;
+          userStats[username].correctScores++;
+        }
       }
     });
 
     // Находим победителя (максимальное количество очков)
-    Object.entries(userStats).forEach(([username, points]) => {
-      if (points > maxPoints) {
-        maxPoints = points;
+    let maxPoints = 0;
+    let winner = null;
+    Object.entries(userStats).forEach(([username, stats]) => {
+      if (stats.points > maxPoints) {
+        maxPoints = stats.points;
         winner = username;
       }
     });
+
+    // Форматируем даты в дд.мм.гггг
+    const formatDate = (dateStr) => {
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    };
 
     // Формируем сообщение
     const dateStr = new Date().toLocaleDateString("ru-RU");
     let message = `📊 <b>Результаты подсчета ставок</b>\n\n`;
     message += `📅 Дата: ${dateStr}\n`;
-    message += `📆 Период: ${dateFrom} - ${dateTo}\n\n`;
+    message += `📆 Период: ${formatDate(dateFrom)} - ${formatDate(dateTo)}\n\n`;
 
     if (winner) {
-      message += `🏆 Победитель дня: <b>${winner}</b> (${maxPoints} очков)\n\n`;
+      const winnerStats = userStats[winner];
+      message += `🏆 Победитель дня: <b>${winner}</b> (${winnerStats.points} ${winnerStats.points === 1 ? 'очко' : winnerStats.points < 5 ? 'очка' : 'очков'})\n\n`;
     }
 
     message += `📈 Статистика участников:\n`;
     Object.entries(userStats)
-      .sort(([, a], [, b]) => b - a)
-      .forEach(([username, points]) => {
-        message += `• ${username}: ${points} очков\n`;
+      .sort(([, a], [, b]) => b.points - a.points)
+      .forEach(([username, stats]) => {
+        const statsText = [];
+        if (stats.correctResults > 0) {
+          statsText.push(`✅ ${stats.correctResults}`);
+        }
+        if (stats.correctScores > 0) {
+          statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
+        message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
       });
 
     // Отправляем сообщение в Telegram
