@@ -919,7 +919,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (canViewLogs()) {
           document.getElementById("modViewLogsBtn").style.display = "inline-block";
         }
-        if (canBackupDB()) {
+        if (canAccessDatabasePanel()) {
           document.getElementById("modBackupDBBtn").style.display = "inline-block";
         }
         if (canManageOrphaned()) {
@@ -5188,6 +5188,26 @@ function canBackupDB() {
   return hasPermission('backup_db');
 }
 
+// Проверить, может ли пользователь скачивать бэкапы
+function canDownloadBackup() {
+  return hasPermission('download_backup');
+}
+
+// Проверить, может ли пользователь восстанавливать БД
+function canRestoreDB() {
+  return hasPermission('restore_db');
+}
+
+// Проверить, может ли пользователь удалять бэкапы
+function canDeleteBackup() {
+  return hasPermission('delete_backup');
+}
+
+// Проверить, есть ли у пользователя хоть какое-то право на управление БД
+function canAccessDatabasePanel() {
+  return canBackupDB() || canDownloadBackup() || canRestoreDB() || canDeleteBackup();
+}
+
 // Проверить, может ли пользователь управлять orphaned данными
 function canManageOrphaned() {
   return hasPermission('manage_orphaned');
@@ -5223,7 +5243,7 @@ function hasAdminPanelAccess() {
   if (isAdmin()) return true;
   if (!isModerator()) return false;
   
-  const adminPanelPerms = ['view_logs', 'backup_db', 'manage_orphaned', 'view_users'];
+  const adminPanelPerms = ['view_logs', 'backup_db', 'download_backup', 'restore_db', 'delete_backup', 'manage_orphaned', 'view_users'];
   return currentUser.moderatorPermissions.some(perm => adminPanelPerms.includes(perm));
 }
 
@@ -5450,7 +5470,7 @@ let selectedBackupIsProtected = false;
 
 // Открыть модальное окно управления БД
 async function openDatabaseModal() {
-  if (!canBackupDB() && !isAdmin()) {
+  if (!canAccessDatabasePanel() && !isAdmin()) {
     await showCustomAlert("У вас нет прав для управления БД", "Ошибка", "❌");
     return;
   }
@@ -5552,6 +5572,16 @@ async function openDatabaseModal() {
     }
 
     document.getElementById("databaseModal").style.display = "flex";
+    
+    // Скрываем кнопку "Создать бэкап" если нет прав
+    const createBackupBtn = document.querySelector('[onclick="backupDatabase()"]');
+    if (createBackupBtn) {
+      if (!canBackupDB()) {
+        createBackupBtn.style.display = 'none';
+      } else {
+        createBackupBtn.style.display = 'inline-block';
+      }
+    }
   } catch (error) {
     console.error("Ошибка при загрузке списка бэкапов:", error);
     await showCustomAlert("Ошибка при загрузке списка бэкапов", "Ошибка", "❌");
@@ -5611,55 +5641,86 @@ function updateBackupButtons() {
   const downloadBtn = document.getElementById('downloadBackupBtn');
   const deleteBtn = document.getElementById('deleteBackupBtn');
   
+  // Проверяем права и скрываем кнопки если нет прав
+  if (!canRestoreDB()) {
+    restoreBtn.style.display = 'none';
+  } else {
+    restoreBtn.style.display = 'inline-block';
+  }
+  
+  if (!canDownloadBackup()) {
+    downloadBtn.style.display = 'none';
+  } else {
+    downloadBtn.style.display = 'inline-block';
+  }
+  
+  if (!canDeleteBackup()) {
+    deleteBtn.style.display = 'none';
+  } else {
+    deleteBtn.style.display = 'inline-block';
+  }
+  
   if (selectedBackupFilename) {
-    // Активируем кнопки
-    restoreBtn.disabled = false;
-    restoreBtn.style.background = 'rgba(255, 152, 0, 0.7)';
-    restoreBtn.style.color = '#fff';
-    restoreBtn.style.border = '1px solid #ff9800';
-    restoreBtn.style.cursor = 'pointer';
+    // Активируем кнопки если есть права
+    if (canRestoreDB()) {
+      restoreBtn.disabled = false;
+      restoreBtn.style.background = 'rgba(255, 152, 0, 0.7)';
+      restoreBtn.style.color = '#fff';
+      restoreBtn.style.border = '1px solid #ff9800';
+      restoreBtn.style.cursor = 'pointer';
+    }
     
-    downloadBtn.disabled = false;
-    downloadBtn.style.background = 'rgba(90, 159, 212, 0.7)';
-    downloadBtn.style.color = '#e0e6f0';
-    downloadBtn.style.border = '1px solid #3a7bd5';
-    downloadBtn.style.cursor = 'pointer';
+    if (canDownloadBackup()) {
+      downloadBtn.disabled = false;
+      downloadBtn.style.background = 'rgba(90, 159, 212, 0.7)';
+      downloadBtn.style.color = '#e0e6f0';
+      downloadBtn.style.border = '1px solid #3a7bd5';
+      downloadBtn.style.cursor = 'pointer';
+    }
     
-    // Кнопка удаления - блокируем если бэкап защищен
-    if (selectedBackupIsProtected) {
+    // Кнопка удаления - блокируем если бэкап защищен или нет прав
+    if (canDeleteBackup()) {
+      if (selectedBackupIsProtected) {
+        deleteBtn.disabled = true;
+        deleteBtn.style.background = 'rgba(244, 67, 54, 0.3)';
+        deleteBtn.style.color = '#999';
+        deleteBtn.style.border = '1px solid #666';
+        deleteBtn.style.cursor = 'not-allowed';
+        deleteBtn.title = 'Этот бэкап защищен от удаления';
+      } else {
+        deleteBtn.disabled = false;
+        deleteBtn.style.background = 'rgba(244, 67, 54, 0.7)';
+        deleteBtn.style.color = '#ffb3b3';
+        deleteBtn.style.border = '1px solid #f44336';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.title = '';
+      }
+    }
+  } else {
+    // Деактивируем кнопки
+    if (canRestoreDB()) {
+      restoreBtn.disabled = true;
+      restoreBtn.style.background = 'rgba(255, 152, 0, 0.3)';
+      restoreBtn.style.color = '#999';
+      restoreBtn.style.border = '1px solid #666';
+      restoreBtn.style.cursor = 'not-allowed';
+    }
+    
+    if (canDownloadBackup()) {
+      downloadBtn.disabled = true;
+      downloadBtn.style.background = 'rgba(90, 159, 212, 0.3)';
+      downloadBtn.style.color = '#999';
+      downloadBtn.style.border = '1px solid #666';
+      downloadBtn.style.cursor = 'not-allowed';
+    }
+    
+    if (canDeleteBackup()) {
       deleteBtn.disabled = true;
       deleteBtn.style.background = 'rgba(244, 67, 54, 0.3)';
       deleteBtn.style.color = '#999';
       deleteBtn.style.border = '1px solid #666';
       deleteBtn.style.cursor = 'not-allowed';
-      deleteBtn.title = 'Этот бэкап защищен от удаления';
-    } else {
-      deleteBtn.disabled = false;
-      deleteBtn.style.background = 'rgba(244, 67, 54, 0.7)';
-      deleteBtn.style.color = '#ffb3b3';
-      deleteBtn.style.border = '1px solid #f44336';
-      deleteBtn.style.cursor = 'pointer';
-      deleteBtn.title = '';
     }
-  } else {
-    // Деактивируем кнопки
-    restoreBtn.disabled = true;
-    restoreBtn.style.background = 'rgba(255, 152, 0, 0.3)';
-    restoreBtn.style.color = '#999';
-    restoreBtn.style.border = '1px solid #666';
-    restoreBtn.style.cursor = 'not-allowed';
-    
-    downloadBtn.disabled = true;
-    downloadBtn.style.background = 'rgba(90, 159, 212, 0.3)';
-    downloadBtn.style.color = '#999';
-    downloadBtn.style.border = '1px solid #666';
-    downloadBtn.style.cursor = 'not-allowed';
-    
-    deleteBtn.disabled = true;
-    deleteBtn.style.background = 'rgba(244, 67, 54, 0.3)';
-    deleteBtn.style.color = '#999';
-    deleteBtn.style.border = '1px solid #666';
-    deleteBtn.style.cursor = 'not-allowed';
   }
 }
 
