@@ -3668,7 +3668,7 @@ app.post("/api/user/login/confirm", async (req, res) => {
 app.get("/api/users", (req, res) => {
   try {
     const users = db
-      .prepare("SELECT id, username FROM users ORDER BY username ASC")
+      .prepare("SELECT id, username, telegram_username FROM users ORDER BY username ASC")
       .all();
     res.json(users);
   } catch (error) {
@@ -3722,6 +3722,20 @@ app.post("/api/moderators", async (req, res) => {
 
     console.log(`📋 Назначение модератора: user_id=${user_id}, username=${user.username}, telegram_username=${user.telegram_username}`);
 
+    // Проверяем, что пользователь связал профиль с ботом
+    if (!user.telegram_username) {
+      return res.status(400).json({ error: "Пользователь не привязал Telegram к профилю" });
+    }
+
+    // Проверяем, что пользователь писал боту (есть в telegram_users)
+    const telegramUser = db.prepare(
+      "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = LOWER(?)"
+    ).get(user.telegram_username);
+
+    if (!telegramUser) {
+      return res.status(400).json({ error: "Пользователь не писал боту. Попросите его написать боту /start" });
+    }
+
     // Проверяем, не является ли уже модератором
     const existingMod = db
       .prepare("SELECT id FROM moderators WHERE user_id = ?")
@@ -3738,66 +3752,46 @@ app.post("/api/moderators", async (req, res) => {
 
     console.log(`✅ Модератор добавлен в БД`);
 
-    // Отправляем уведомление пользователю в Telegram если у него есть telegram_username
-    if (user.telegram_username) {
-      console.log(`🔍 Ищу chat_id для telegram_username: ${user.telegram_username}`);
-      
-      // Для отладки: показываем все записи из telegram_users
-      const allTelegramUsers = db.prepare("SELECT telegram_username, chat_id FROM telegram_users").all();
-      console.log(`📋 Все записи в telegram_users:`, allTelegramUsers);
-      
-      const telegramUser = db.prepare(
-        "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = LOWER(?)"
-      ).get(user.telegram_username);
+    // Отправляем уведомление пользователю в Telegram
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    
+    const permissionsText = permissions.map(p => {
+      const permMap = {
+        'manage_matches': '⚽ Управление матчами',
+        'view_users': '👥 Просмотр пользователей',
+        'edit_users': '✏️ Редактирование пользователей',
+        'check_bot': '🤖 Проверка контакта с ботом'
+      };
+      return permMap[p] || p;
+    }).join('\n');
 
-      if (telegramUser) {
-        console.log(`✅ Найден chat_id: ${telegramUser.chat_id}`);
-        
-        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-        
-        const permissionsText = permissions.map(p => {
-          const permMap = {
-            'manage_matches': '⚽ Управление матчами',
-            'view_users': '👥 Просмотр пользователей',
-            'edit_users': '✏️ Редактирование пользователей',
-            'check_bot': '🤖 Проверка контакта с ботом'
-          };
-          return permMap[p] || p;
-        }).join('\n');
-
-        const message = `🛡️ Вы назначены модератором 1xBetLineBoom!
+    const message = `🛡️ Вы назначены модератором 1xBetLineBoom!
 
 Ваши права:
 ${permissionsText}`;
 
-        console.log(`📤 Отправляю уведомление модератору...`);
+    console.log(`📤 Отправляю уведомление модератору...`);
 
-        try {
-          const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: telegramUser.chat_id,
-              text: message,
-              parse_mode: "HTML"
-            })
-          });
-          
-          const responseData = await response.json();
-          
-          if (responseData.ok) {
-            console.log(`✅ Уведомление о назначении модератором отправлено пользователю ${user.username}`);
-          } else {
-            console.error(`❌ Telegram API вернул ошибку:`, responseData);
-          }
-        } catch (error) {
-          console.error(`❌ Ошибка отправки уведомления модератору ${user.username}:`, error);
-        }
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: telegramUser.chat_id,
+          text: message,
+          parse_mode: "HTML"
+        })
+      });
+      
+      const responseData = await response.json();
+      
+      if (responseData.ok) {
+        console.log(`✅ Уведомление о назначении модератором отправлено пользователю ${user.username}`);
       } else {
-        console.log(`⚠️ chat_id не найден для telegram_username: ${user.telegram_username}`);
+        console.error(`❌ Telegram API вернул ошибку:`, responseData);
       }
-    } else {
-      console.log(`⚠️ У пользователя ${user.username} не указан telegram_username`);
+    } catch (error) {
+      console.error(`❌ Ошибка отправки уведомления модератору ${user.username}:`, error);
     }
 
     res.json({
@@ -8526,13 +8520,15 @@ ${userInfo.telegram_username ? `📱 Telegram: @${userInfo.telegram_username}` :
   }
 });
 
-// POST /api/admin/user-settings/:userId - Отправить настройки пользователя админу в Telegram
+// POST /api/admin/user-settings/:userId - Отправить настройки пользователя админу/модератору в Telegram
 app.post("/api/admin/user-settings/:userId", async (req, res) => {
   const { userId } = req.params;
   const { username: adminUsername } = req.body;
 
   // Проверяем, является ли пользователь админом
   const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  let moderatorChatId = null;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -8548,6 +8544,23 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
     const permissions = JSON.parse(moderator.permissions || "[]");
     if (!permissions.includes("view_settings")) {
       return res.status(403).json({ error: "Недостаточно прав для просмотра настроек пользователей" });
+    }
+    
+    isModerator = true;
+    
+    // Получаем chat_id модератора
+    const moderatorUser = db.prepare(`
+      SELECT telegram_username FROM users WHERE username = ?
+    `).get(adminUsername);
+    
+    if (moderatorUser && moderatorUser.telegram_username) {
+      const telegramUser = db.prepare(`
+        SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = LOWER(?)
+      `).get(moderatorUser.telegram_username);
+      
+      if (telegramUser) {
+        moderatorChatId = telegramUser.chat_id;
+      }
     }
   }
 
@@ -8597,7 +8610,7 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
     // Форматируем настройки для отправки
     const settingsMessage = `⚙️ НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
 
-👤 Пользователь: ${user.username}
+� ПРользователь: ${user.username}
 🆔 ID: ${user.id}
 ${user.email ? `📧 Email: ${user.email}` : ""}
 ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : "📱 Telegram: не привязан"}
@@ -8619,12 +8632,24 @@ ${user.telegram_username ? `🤖 Писал боту: ${hasBotContact ? "✅ Д�
 🔒 ПРИВАТНОСТЬ:
 • Показывать ставки: ${user.show_bets === "always" ? "Всегда" : user.show_bets === "after_start" ? "После начала матча" : "Не установлено"}`;
 
-    // Отправляем сообщение админу
+    // Определяем кому отправлять сообщение
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+    let targetChatId;
+    
+    if (isModerator && moderatorChatId) {
+      // Отправляем модератору
+      targetChatId = moderatorChatId;
+    } else {
+      // Отправляем админу
+      targetChatId = process.env.TELEGRAM_ADMIN_ID;
+    }
 
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
-      return res.status(500).json({ error: "Telegram не настроен" });
+    if (!TELEGRAM_BOT_TOKEN || !targetChatId) {
+      return res.status(500).json({ 
+        error: isModerator && !moderatorChatId 
+          ? "Ваш Telegram не привязан или вы не писали боту" 
+          : "Telegram не настроен" 
+      });
     }
 
     const telegramResponse = await fetch(
@@ -8633,7 +8658,7 @@ ${user.telegram_username ? `🤖 Писал боту: ${hasBotContact ? "✅ Д�
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chat_id: TELEGRAM_ADMIN_ID,
+          chat_id: targetChatId,
           text: settingsMessage,
         }),
       }
@@ -8643,7 +8668,8 @@ ${user.telegram_username ? `🤖 Писал боту: ${hasBotContact ? "✅ Д�
       throw new Error("Ошибка отправки в Telegram");
     }
 
-    console.log(`✅ Настройки пользователя ${user.username} отправлены админу`);
+    const recipient = isModerator ? `модератору ${adminUsername}` : "админу";
+    console.log(`✅ Настройки пользователя ${user.username} отправлены ${recipient}`);
     res.json({ success: true, message: "Настройки отправлены в Telegram" });
   } catch (error) {
     console.error("Ошибка при отправке настроек:", error);

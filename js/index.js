@@ -5486,6 +5486,11 @@ async function loadUsersList() {
         return; // Пропускаем если уже модератор
       }
 
+      // Исключаем пользователей без telegram_username (не связали профиль с ботом)
+      if (!user.telegram_username) {
+        return; // Пропускаем если не привязан Telegram
+      }
+
       const option = document.createElement("option");
       option.value = user.id;
       option.textContent = user.username;
