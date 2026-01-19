@@ -7429,6 +7429,18 @@ app.put("/api/user/:userId/show-bets", async (req, res) => {
 
     db.prepare("UPDATE users SET show_bets = ? WHERE id = ?").run(show_bets, userId);
 
+    // Записываем в логи
+    const showBetsNames = {
+      'always': 'Да (всегда показывать)',
+      'after_start': 'Только после начала матча'
+    };
+    
+    writeBetLog("settings", {
+      username: user.username,
+      setting: "Показывать ставки другим",
+      newValue: showBetsNames[show_bets] || show_bets
+    });
+
     // Отправляем уведомление админу
     try {
       const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -7515,6 +7527,18 @@ app.put("/api/user/:userId/show-lucky-button", async (req, res) => {
     }
 
     db.prepare("UPDATE users SET show_lucky_button = ? WHERE id = ?").run(show_lucky_button, userId);
+
+    // Записываем в логи
+    const showLuckyButtonNames = {
+      1: 'Показывать',
+      0: 'Скрыть'
+    };
+    
+    writeBetLog("settings", {
+      username: user.username,
+      setting: "'Мне повезет'",
+      newValue: showLuckyButtonNames[show_lucky_button]
+    });
 
     // Отправляем уведомление админу
     try {
