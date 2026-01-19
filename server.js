@@ -10411,8 +10411,46 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
       message += `\n`;
     }
 
-    // Отправляем в группу
-    await sendGroupNotification(message);
+    // Отправляем в группу напрямую через Telegram API (без топика)
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      console.error("❌ Telegram токен или chat ID не настроены");
+      return res.status(500).json({ error: "Telegram не настроен" });
+    }
+
+    const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
+
+    for (const chatId of chatIds) {
+      try {
+        const response = await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          console.error(
+            `❌ Ошибка отправки в чат ${chatId}:`,
+            response.statusText
+          );
+        } else {
+          console.log(`✅ Результаты отправлены в чат ${chatId}`);
+        }
+      } catch (error) {
+        console.error(`❌ Ошибка отправки результатов в чат ${chatId}:`, error);
+      }
+    }
 
     res.json({ success: true, message: "Результаты отправлены в группу" });
   } catch (error) {
