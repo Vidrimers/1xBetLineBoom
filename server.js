@@ -10364,7 +10364,19 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           const user = usersInGroup[i];
           const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '▪️';
           
-          let userLine = `${medal} ${user.username}: <b>${user.points}</b> ${user.points === 1 ? 'очко' : user.points < 5 ? 'очка' : 'очков'}`;
+          // Правильное склонение для очков
+          let pointsWord;
+          if (user.points === 0) {
+            pointsWord = 'очков';
+          } else if (user.points === 1) {
+            pointsWord = 'очко';
+          } else if (user.points >= 2 && user.points <= 4) {
+            pointsWord = 'очка';
+          } else {
+            pointsWord = 'очков';
+          }
+          
+          let userLine = `${medal} ${user.username}: <b>${user.points}</b> ${pointsWord}`;
           
           // Добавляем статистику по результатам и счетам
           const stats = [];
@@ -10384,8 +10396,8 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
         // Лучший за период
         if (usersInGroup.length > 0) {
           const winner = usersInGroup[0];
-          message += `\n👑 <b>Лучший за период:</b>\n`;
-          message += `Поздравляем ${winner.username}, малютка! 🎉\n`;
+          message += `\n👑 <b>Лучший за период ${dateFromFormatted} - ${dateToFormatted}:</b>\n`;
+          message += `Поздравляем, малютка ${winner.username}! 🎉\n`;
           
           // Если есть угаданные счета, показываем
           if (winner.correctScores > 0) {
