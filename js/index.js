@@ -1225,6 +1225,11 @@ async function initUser() {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
       document.getElementById("adminSettingsPanel").style.display = "block";
+    } else if (isModerator()) {
+      // Показываем кнопки модератора если есть права
+      if (canCreateTournaments()) {
+        document.getElementById("adminBtn").style.display = "inline-block";
+      }
     }
 
     // Загружаем турниры, матчи и ставки пользователя
@@ -1413,17 +1418,17 @@ function generateEventHTML(
           canManageTournaments()
             ? `<div class="event-admin-actions">
           <div class="event-admin-controls" data-event-id="${event.id}">
-            <button onclick="openEditEventModal(${
+            ${canEditTournaments() ? `<button onclick="openEditEventModal(${
               event.id
-            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>
+            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>` : ''}
             ${
               isCompleted
                 ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
                 : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'">🔒</button>`
             }
-            <button class="event-delete-btn" onclick="deleteEvent(${
+            ${canDeleteTournaments() ? `<button class="event-delete-btn" onclick="deleteEvent(${
               event.id
-            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'">✕</button>
+            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'">✕</button>` : ''}
           </div>
           <button class="event-admin-toggle" data-event-id="${
             event.id
@@ -2530,12 +2535,12 @@ async function displayMatches() {
                     onmouseout="this.style.background='transparent'; this.style.color='#7ab0e0'">
                     ✏️
                   </button>
-                  <button onclick="deleteMatch(${match.id})"
+                  ${canDeleteMatches() ? `<button onclick="deleteMatch(${match.id})"
                     style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                     onmouseover="this.style.background='#f44336'; this.style.color='white'"
                     onmouseout="this.style.background='transparent'; this.style.color='#f44336'">
                     ✕
-                  </button>
+                  </button>` : ''}
                 </div>
                 <button
                   class="match-admin-toggle"
@@ -5120,6 +5125,11 @@ function canManageMatches() {
   return result;
 }
 
+// Проверить, может ли пользователь удалять матчи
+function canDeleteMatches() {
+  return hasPermission('delete_matches');
+}
+
 // Проверить, может ли пользователь управлять результатами
 function canManageResults() {
   return hasPermission('manage_results');
@@ -5128,6 +5138,16 @@ function canManageResults() {
 // Проверить, может ли пользователь управлять турнирами
 function canManageTournaments() {
   return hasPermission('manage_tournaments');
+}
+
+// Проверить, может ли пользователь редактировать турниры
+function canEditTournaments() {
+  return hasPermission('edit_tournaments');
+}
+
+// Проверить, может ли пользователь удалять турниры
+function canDeleteTournaments() {
+  return hasPermission('delete_tournaments');
 }
 
 // Проверить, может ли пользователь создавать турниры
@@ -6093,8 +6113,11 @@ async function loadUsersList() {
 function getPermissionsText(permissions) {
   const permText = {
     manage_matches: "матчи",
+    delete_matches: "удаление матчей",
     manage_results: "результаты",
-    manage_tournaments: "турниры (редактирование)",
+    manage_tournaments: "турниры (блокировка)",
+    edit_tournaments: "редактирование турниров",
+    delete_tournaments: "удаление турниров",
     create_tournaments: "создание турниров",
     view_logs: "логи",
     manage_db: "управление БД",
@@ -6129,10 +6152,16 @@ async function assignModerator() {
   const permissions = [];
   if (document.getElementById("permManageMatches").checked)
     permissions.push("manage_matches");
+  if (document.getElementById("permDeleteMatches").checked)
+    permissions.push("delete_matches");
   if (document.getElementById("permManageResults").checked)
     permissions.push("manage_results");
   if (document.getElementById("permManageTournaments").checked)
     permissions.push("manage_tournaments");
+  if (document.getElementById("permEditTournaments").checked)
+    permissions.push("edit_tournaments");
+  if (document.getElementById("permDeleteTournaments").checked)
+    permissions.push("delete_tournaments");
   if (document.getElementById("permCreateTournaments").checked)
     permissions.push("create_tournaments");
   if (document.getElementById("permViewLogs").checked)
@@ -6185,8 +6214,11 @@ async function assignModerator() {
       // Очищаем форму
       document.getElementById("userSelectForModerator").value = "";
       document.getElementById("permManageMatches").checked = false;
+      document.getElementById("permDeleteMatches").checked = false;
       document.getElementById("permManageResults").checked = false;
       document.getElementById("permManageTournaments").checked = false;
+      document.getElementById("permEditTournaments").checked = false;
+      document.getElementById("permDeleteTournaments").checked = false;
       document.getElementById("permCreateTournaments").checked = false;
       document.getElementById("permViewLogs").checked = false;
       document.getElementById("permManageDB").checked = false;
@@ -6253,8 +6285,11 @@ function openEditModeratorModal(moderatorId, username, permissions) {
   
   // Очищаем все чекбоксы
   document.getElementById("editPermManageMatches").checked = false;
+  document.getElementById("editPermDeleteMatches").checked = false;
   document.getElementById("editPermManageResults").checked = false;
   document.getElementById("editPermManageTournaments").checked = false;
+  document.getElementById("editPermEditTournaments").checked = false;
+  document.getElementById("editPermDeleteTournaments").checked = false;
   document.getElementById("editPermCreateTournaments").checked = false;
   document.getElementById("editPermViewLogs").checked = false;
   document.getElementById("editPermManageDB").checked = false;
@@ -6277,11 +6312,20 @@ function openEditModeratorModal(moderatorId, username, permissions) {
     if (permissions.includes("manage_matches")) {
       document.getElementById("editPermManageMatches").checked = true;
     }
+    if (permissions.includes("delete_matches")) {
+      document.getElementById("editPermDeleteMatches").checked = true;
+    }
     if (permissions.includes("manage_results")) {
       document.getElementById("editPermManageResults").checked = true;
     }
     if (permissions.includes("manage_tournaments")) {
       document.getElementById("editPermManageTournaments").checked = true;
+    }
+    if (permissions.includes("edit_tournaments")) {
+      document.getElementById("editPermEditTournaments").checked = true;
+    }
+    if (permissions.includes("delete_tournaments")) {
+      document.getElementById("editPermDeleteTournaments").checked = true;
     }
     if (permissions.includes("create_tournaments")) {
       document.getElementById("editPermCreateTournaments").checked = true;
@@ -6418,10 +6462,16 @@ async function saveModeratorPermissions() {
   const permissions = [];
   if (document.getElementById("editPermManageMatches").checked)
     permissions.push("manage_matches");
+  if (document.getElementById("editPermDeleteMatches").checked)
+    permissions.push("delete_matches");
   if (document.getElementById("editPermManageResults").checked)
     permissions.push("manage_results");
   if (document.getElementById("editPermManageTournaments").checked)
     permissions.push("manage_tournaments");
+  if (document.getElementById("editPermEditTournaments").checked)
+    permissions.push("edit_tournaments");
+  if (document.getElementById("editPermDeleteTournaments").checked)
+    permissions.push("delete_tournaments");
   if (document.getElementById("editPermCreateTournaments").checked)
     permissions.push("create_tournaments");
   if (document.getElementById("editPermViewLogs").checked)

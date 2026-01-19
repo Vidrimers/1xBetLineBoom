@@ -3758,8 +3758,11 @@ app.post("/api/moderators", async (req, res) => {
     const permissionsText = permissions.map(p => {
       const permMap = {
         'manage_matches': '⚽ Управление матчами',
+        'delete_matches': '🗑️ Удаление матчей',
         'manage_results': '📊 Управление результатами',
-        'manage_tournaments': '🏆 Редактирование турниров',
+        'manage_tournaments': '🎯 Управление турнирами',
+        'edit_tournaments': '✏️ Редактирование турниров',
+        'delete_tournaments': '🗑️ Удаление турниров',
         'create_tournaments': '➕ Создание турниров',
         'view_logs': '📋 Просмотр логов',
         'manage_db': '💾 Управление базой данных',
@@ -3883,8 +3886,11 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
         const permissionsText = permissions.map(p => {
           const permMap = {
             'manage_matches': '⚽ Управление матчами',
+            'delete_matches': '🗑️ Удаление матчей',
             'manage_results': '📊 Управление результатами',
-            'manage_tournaments': '🏆 Редактирование турниров',
+            'manage_tournaments': '🎯 Управление турнирами',
+            'edit_tournaments': '✏️ Редактирование турниров',
+            'delete_tournaments': '🗑️ Удаление турниров',
             'create_tournaments': '➕ Создание турниров',
             'view_logs': '📋 Просмотр логов',
             'manage_db': '💾 Управление базой данных',
@@ -7328,7 +7334,7 @@ app.post("/api/football-data/sync-results", async (req, res) => {
 // ===== АДМИН ФУНКЦИИ =====
 
 // POST /api/admin/events - Создать новое событие (только для админа)
-app.post("/api/admin/events", (req, res) => {
+app.post("/api/admin/events", async (req, res) => {
   const {
     username,
     name,
@@ -7341,9 +7347,25 @@ app.post("/api/admin/events", (req, res) => {
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
-  // Проверяем, является ли пользователь админом
-  if (username !== ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем права
+  const isAdminUser = username === ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("create_tournaments");
+    }
+    
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   // Проверяем обязательные поля
@@ -7368,6 +7390,15 @@ app.post("/api/admin/events", (req, res) => {
         background_color || null,
         team_file || null
       );
+
+    // Уведомление админу если это модератор
+    if (isModerator && username) {
+      const details = `🏆 Турнир: ${name}
+📝 Описание: ${description || 'не указано'}
+📅 Даты: ${start_date || 'не указана'} - ${end_date || 'не указана'}`;
+      
+      await notifyModeratorAction(username, "Создание турнира", details);
+    }
 
     res.json({
       id: result.lastInsertRowid,
@@ -7913,17 +7944,37 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
   }
 });
 
-// DELETE /api/admin/events/:eventId - Удалить событие (только для админа)
-app.delete("/api/admin/events/:eventId", (req, res) => {
+// DELETE /api/admin/events/:eventId - Удалить событие (для админа и модераторов с правами)
+app.delete("/api/admin/events/:eventId", async (req, res) => {
   const { eventId } = req.params;
   const username = req.body.username;
 
-  // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем права
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("delete_tournaments");
+    }
+    
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   try {
+    // Получаем информацию о турнире для уведомления
+    const event = db.prepare("SELECT name FROM events WHERE id = ?").get(eventId);
+    const eventName = event ? event.name : `ID: ${eventId}`;
+
     // Получаем все матчи этого события чтобы удалить их параметры финала
     const matchIds = db
       .prepare("SELECT id FROM matches WHERE event_id = ?")
@@ -7980,6 +8031,12 @@ app.delete("/api/admin/events/:eventId", (req, res) => {
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    // Отправляем уведомление админу, если действие выполнил модератор
+    if (isModerator) {
+      const detailsText = `Турнир: ${eventName}\nID: ${eventId}`;
+      await notifyModeratorAction(username, "Удаление турнира", detailsText);
     }
 
     res.json({ message: "Событие успешно удалено" });
@@ -8113,14 +8170,30 @@ app.put("/api/admin/events/:eventId/unlock", (req, res) => {
   }
 });
 
-// PUT /api/admin/events/:eventId - Редактировать турнир (только для админа)
-app.put("/api/admin/events/:eventId", (req, res) => {
+// PUT /api/admin/events/:eventId - Редактировать турнир (для админа и модераторов с правами)
+app.put("/api/admin/events/:eventId", async (req, res) => {
   const { eventId } = req.params;
   const { username, name, description, start_date, end_date } = req.body;
 
-  // Проверяем, является ли пользователем админом
-  if (username !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем права
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("edit_tournaments");
+    }
+    
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   // Проверяем обязательные поля
@@ -8143,6 +8216,12 @@ app.put("/api/admin/events/:eventId", (req, res) => {
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Событие не найдено" });
+    }
+
+    // Отправляем уведомление админу, если действие выполнил модератор
+    if (isModerator) {
+      const detailsText = `Турнир: ${name}\nID: ${eventId}`;
+      await notifyModeratorAction(username, "Редактирование турнира", detailsText);
     }
 
     res.json({
@@ -9123,15 +9202,35 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
 });
 
 // DELETE /api/admin/matches/:matchId - Удалить матч
-app.delete("/api/admin/matches/:matchId", (req, res) => {
+app.delete("/api/admin/matches/:matchId", async (req, res) => {
   const { matchId } = req.params;
   const { username } = req.body;
 
-  if (username !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем права
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("delete_matches");
+    }
+    
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   try {
+    // Получаем информацию о матче для уведомления
+    const match = db.prepare("SELECT team1_name, team2_name, match_date, round FROM matches WHERE id = ?").get(matchId);
+    
     // Сначала удаляем все ставки, связанные с матчем (из таблицы bets)
     db.prepare("DELETE FROM bets WHERE match_id = ?").run(matchId);
 
@@ -9153,6 +9252,15 @@ app.delete("/api/admin/matches/:matchId", (req, res) => {
 
     // Затем удаляем сам матч
     db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
+
+    // Уведомление админу если это модератор
+    if (isModerator && username && match) {
+      const details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}
+📅 Дата: ${match.match_date || 'не указана'}
+🔢 Тур: ${match.round || 'не указан'}`;
+      
+      await notifyModeratorAction(username, "Удаление матча", details);
+    }
 
     res.json({ success: true, message: "Матч успешно удален" });
   } catch (error) {
