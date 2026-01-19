@@ -10778,8 +10778,19 @@ app.get("/api/admin/backups", (req, res) => {
     const files = fs.readdirSync(BACKUPS_DIR);
     let metadataUpdated = false;
     
-    const backups = files
-      .filter(file => file.endsWith('.db'))
+    // Получаем список существующих .db файлов
+    const existingFiles = files.filter(file => file.endsWith('.db'));
+    
+    // Удаляем из metadata записи для несуществующих файлов
+    for (const key in metadata) {
+      if (!existingFiles.includes(key)) {
+        console.log(`🗑️ Удаление записи из metadata для несуществующего файла: ${key}`);
+        delete metadata[key];
+        metadataUpdated = true;
+      }
+    }
+    
+    const backups = existingFiles
       .map(file => {
         const filePath = path.join(BACKUPS_DIR, file);
         const stats = fs.statSync(filePath);
