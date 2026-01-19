@@ -10523,12 +10523,26 @@ app.get("/api/admin/backups", (req, res) => {
     }
 
     const files = fs.readdirSync(BACKUPS_DIR);
+    let metadataUpdated = false;
+    
     const backups = files
       .filter(file => file.endsWith('.db'))
       .map(file => {
         const filePath = path.join(BACKUPS_DIR, file);
         const stats = fs.statSync(filePath);
-        const fileMetadata = metadata[file] || {};
+        let fileMetadata = metadata[file];
+        
+        // Если метаданных нет для этого файла - создаем их
+        if (!fileMetadata) {
+          fileMetadata = {
+            createdBy: 'unknown',
+            isAdmin: false,
+            createdAt: stats.birthtime.toISOString(),
+            isLocked: false
+          };
+          metadata[file] = fileMetadata;
+          metadataUpdated = true;
+        }
         
         return {
           filename: file,
@@ -10541,6 +10555,16 @@ app.get("/api/admin/backups", (req, res) => {
         };
       })
       .sort((a, b) => b.created - a.created); // Сортируем по дате, новые первые
+
+    // Сохраняем обновленные метаданные если были изменения
+    if (metadataUpdated) {
+      try {
+        fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+        console.log('✅ Метаданные бэкапов обновлены');
+      } catch (err) {
+        console.error('⚠️ Ошибка сохранения метаданных:', err);
+      }
+    }
 
     res.json(backups);
   } catch (error) {
