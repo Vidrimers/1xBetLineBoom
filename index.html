@@ -953,6 +953,27 @@
               "
             >
               <button
+                onclick="migrateLogs()"
+                style="
+                  background: rgba(255, 152, 0, 0.7);
+                  color: #fff;
+                  border: 1px solid #ff9800;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 140px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Обновить файл логов без удаления содержимого"
+              >
+                🔄 Обновить логи
+              </button>
+              <button
                 onclick="clearLogs()"
                 style="
                   background: rgba(244, 67, 54, 0.7);

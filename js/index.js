@@ -11215,6 +11215,41 @@ console.log(
   "color: #9c27b0; font-size: 12px;"
 );
 
+// Обновить файл логов без удаления содержимого (миграция)
+async function migrateLogs() {
+  if (!isAdmin()) {
+    alert("Недостаточно прав");
+    return;
+  }
+
+  if (!confirm("Обновить файл логов, добавив код отображения размера файла?\n\nСодержимое логов НЕ будет удалено.")) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/migrate-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: currentUser.username }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      if (result.alreadyMigrated) {
+        alert("ℹ️ " + result.message);
+      } else {
+        alert("✅ " + result.message + "\n\nОбновите страницу логов чтобы увидеть изменения.");
+      }
+    } else {
+      alert("Ошибка: " + result.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при обновлении логов:", error);
+    alert("Ошибка при обновлении логов");
+  }
+}
+
 // Очистка логов
 async function clearLogs() {
   if (!canViewLogs()) {

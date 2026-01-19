@@ -10258,6 +10258,94 @@ app.post("/api/admin/clear-logs", (req, res) => {
   }
 });
 
+// POST /api/admin/migrate-logs - Обновить файл логов без удаления содержимого (добавить недостающий код)
+app.post("/api/admin/migrate-logs", (req, res) => {
+  const { username } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (username !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    if (!fs.existsSync(LOG_FILE_PATH)) {
+      return res.status(404).json({ error: "Файл логов не найден" });
+    }
+
+    // Читаем текущий файл
+    let content = fs.readFileSync(LOG_FILE_PATH, 'utf-8');
+
+    // Проверяем, есть ли уже код для отображения размера файла
+    if (content.includes('logFileInfo')) {
+      return res.json({ message: "Файл логов уже содержит код отображения размера", alreadyMigrated: true });
+    }
+
+    // Находим закрывающий тег </p> после "История всех ставок и удалений"
+    const headerEndRegex = /<p>История всех ставок и удалений<\/p>/;
+    
+    if (!headerEndRegex.test(content)) {
+      return res.status(400).json({ error: "Не удалось найти заголовок в файле логов" });
+    }
+
+    // Добавляем код для отображения размера файла после заголовка
+    const logFileInfoDiv = `
+    <div id="logFileInfo" style="margin-top: 10px; font-size: 0.85em; color: #999;">
+      Загрузка информации о файле...
+    </div>`;
+
+    content = content.replace(
+      /<p>История всех ставок и удалений<\/p>/,
+      `<p>История всех ставок и удалений</p>${logFileInfoDiv}`
+    );
+
+    // Проверяем, есть ли уже скрипт для загрузки информации
+    if (!content.includes('loadLogFileInfo')) {
+      // Находим закрывающий тег </body>
+      const scriptCode = `
+  <script>
+    // Загрузить информацию о размере файла логов
+    async function loadLogFileInfo() {
+      try {
+        const response = await fetch('/api/bet-logs-info');
+        const data = await response.json();
+        
+        if (data.success) {
+          const infoDiv = document.getElementById('logFileInfo');
+          const percentColor = data.percentUsed > 80 ? '#f44336' : data.percentUsed > 50 ? '#ff9800' : '#4caf50';
+          
+          infoDiv.innerHTML = \`
+            📊 Размер файла: <strong style="color: #5a9fd4;">\${data.sizeFormatted}</strong> / \${data.maxSizeFormatted}
+            <span style="color: \${percentColor}; margin-left: 10px;">(\${data.percentUsed}% использовано)</span>
+          \`;
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки информации о файле:', error);
+        document.getElementById('logFileInfo').innerHTML = '⚠️ Не удалось загрузить информацию о файле';
+      }
+    }
+    
+    // Загружаем информацию при загрузке страницы
+    loadLogFileInfo();
+    
+    // Обновляем каждые 30 секунд
+    setInterval(loadLogFileInfo, 30000);
+  </script>`;
+
+      content = content.replace('</body>', `${scriptCode}
+</body>`);
+    }
+
+    // Сохраняем обновленный файл
+    fs.writeFileSync(LOG_FILE_PATH, content, 'utf-8');
+    
+    console.log("✅ Файл логов успешно обновлен (миграция)");
+    res.json({ message: "Файл логов успешно обновлен", migrated: true });
+  } catch (error) {
+    console.error("❌ Ошибка миграции файла логов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/final-parameters-results - Установить результаты финальных параметров
 app.post("/api/admin/final-parameters-results", (req, res) => {
   const {
