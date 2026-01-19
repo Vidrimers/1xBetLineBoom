@@ -3758,9 +3758,17 @@ app.post("/api/moderators", async (req, res) => {
     const permissionsText = permissions.map(p => {
       const permMap = {
         'manage_matches': '⚽ Управление матчами',
+        'manage_results': '📊 Управление результатами',
+        'manage_tournaments': '🏆 Редактирование турниров',
+        'create_tournaments': '➕ Создание турниров',
+        'view_logs': '📋 Просмотр логов',
+        'backup_db': '💾 Создание бэкапов',
+        'manage_orphaned': '🗑️ Управление orphaned данными',
         'view_users': '👥 Просмотр пользователей',
+        'check_bot': '🤖 Проверка контакта с ботом',
+        'view_settings': '⚙️ Просмотр настроек пользователей',
         'edit_users': '✏️ Редактирование пользователей',
-        'check_bot': '🤖 Проверка контакта с ботом'
+        'delete_users': '❌ Удаление пользователей'
       };
       return permMap[p] || p;
     }).join('\n');
@@ -3829,7 +3837,7 @@ app.delete("/api/moderators/:moderatorId", (req, res) => {
 });
 
 // 5.5 Обновить разрешения модератора
-app.put("/api/moderators/:moderatorId/permissions", (req, res) => {
+app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
   try {
     const { moderatorId } = req.params;
     const { permissions } = req.body;
@@ -3838,12 +3846,75 @@ app.put("/api/moderators/:moderatorId/permissions", (req, res) => {
       return res.status(400).json({ error: "Разрешения должны быть массивом" });
     }
 
+    // Получаем информацию о модераторе
+    const moderator = db.prepare(`
+      SELECT m.id, m.user_id, u.username, u.telegram_username
+      FROM moderators m
+      JOIN users u ON m.user_id = u.id
+      WHERE m.id = ?
+    `).get(moderatorId);
+
+    if (!moderator) {
+      return res.status(404).json({ error: "Модератор не найден" });
+    }
+
     const result = db
       .prepare("UPDATE moderators SET permissions = ? WHERE id = ?")
       .run(JSON.stringify(permissions), moderatorId);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Модератор не найден" });
+    }
+
+    // Отправляем уведомление модератору о изменении прав
+    if (moderator.telegram_username) {
+      const telegramUser = db.prepare(
+        "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = LOWER(?)"
+      ).get(moderator.telegram_username);
+
+      if (telegramUser) {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        
+        const permissionsText = permissions.map(p => {
+          const permMap = {
+            'manage_matches': '⚽ Управление матчами',
+            'manage_results': '📊 Управление результатами',
+            'manage_tournaments': '🏆 Редактирование турниров',
+            'create_tournaments': '➕ Создание турниров',
+            'view_logs': '📋 Просмотр логов',
+            'backup_db': '💾 Создание бэкапов',
+            'manage_orphaned': '🗑️ Управление orphaned данными',
+            'view_users': '👥 Просмотр пользователей',
+            'check_bot': '🤖 Проверка контакта с ботом',
+            'view_settings': '⚙️ Просмотр настроек пользователей',
+            'edit_users': '✏️ Редактирование пользователей',
+            'delete_users': '❌ Удаление пользователей'
+          };
+          return permMap[p] || p;
+        }).join('\n');
+
+        const message = permissions.length > 0 
+          ? `🔄 Ваши права модератора обновлены!
+
+Текущие права:
+${permissionsText}`
+          : `⚠️ Все ваши права модератора были отозваны`;
+
+        try {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: telegramUser.chat_id,
+              text: message,
+              parse_mode: "HTML"
+            })
+          });
+          console.log(`✅ Уведомление об обновлении прав отправлено модератору ${moderator.username}`);
+        } catch (error) {
+          console.error(`❌ Ошибка отправки уведомления модератору ${moderator.username}:`, error);
+        }
+      }
     }
 
     res.json({
@@ -8610,7 +8681,7 @@ app.post("/api/admin/user-settings/:userId", async (req, res) => {
     // Форматируем настройки для отправки
     const settingsMessage = `⚙️ НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
 
-� ПРользователь: ${user.username}
+👤 Пользователь: ${user.username}
 🆔 ID: ${user.id}
 ${user.email ? `📧 Email: ${user.email}` : ""}
 ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : "📱 Telegram: не привязан"}
