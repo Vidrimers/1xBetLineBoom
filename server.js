@@ -7667,7 +7667,7 @@ app.post("/api/matches/bulk-create", (req, res) => {
 });
 
 // PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (только для админа)
-app.put("/api/admin/matches/:matchId", (req, res) => {
+app.put("/api/admin/matches/:matchId", async (req, res) => {
   const { matchId } = req.params;
   const {
     username,
@@ -7752,6 +7752,17 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
       db.prepare(
         "UPDATE matches SET status = ?, result = ?, winner = ? WHERE id = ?"
       ).run(status, result || null, winner, matchId);
+
+      // Уведомление админу если это модератор
+      if (isModerator && username) {
+        const match = db.prepare("SELECT team1_name, team2_name FROM matches WHERE id = ?").get(matchId);
+        const resultText = result === 'team1_win' ? match.team1_name : result === 'team2_win' ? match.team2_name : 'Ничья';
+        const details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}
+📊 Результат: ${resultText}
+${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${req.body.score_team2}` : ''}`;
+        
+        await notifyModeratorAction(username, "Установка результата матча", details);
+      }
 
       return res.json({
         message: "Статус матча успешно изменен",
@@ -7872,6 +7883,15 @@ app.put("/api/admin/matches/:matchId", (req, res) => {
           : currentMatch.show_penalties_at_end,
         matchId
       );
+
+      // Уведомление админу если это модератор
+      if (isModerator && username) {
+        const details = `⚽ Матч: ${team1_name || currentMatch.team1_name} vs ${team2_name || currentMatch.team2_name}
+📅 Дата: ${match_date || currentMatch.match_date || 'не указана'}
+🔢 Тур: ${round || currentMatch.round || 'не указан'}`;
+        
+        await notifyModeratorAction(username, "Редактирование матча", details);
+      }
 
       return res.json({
         success: true,
@@ -8406,7 +8426,7 @@ app.get("/api/admin/users/:userId/bot-contact-check", (req, res) => {
 });
 
 // POST /api/admin/sync-telegram-ids - Синхронизировать telegram_id для всех пользователей
-app.post("/api/admin/sync-telegram-ids", (req, res) => {
+app.post("/api/admin/sync-telegram-ids", async (req, res) => {
   const { username } = req.body;
   
   // Проверяем, является ли пользователь админом
@@ -8495,6 +8515,15 @@ app.post("/api/admin/sync-telegram-ids", (req, res) => {
       without_telegram: usersWithoutTelegram.length,
       without_telegram_users: usersWithoutTelegram
     });
+
+    // Уведомление админу если это модератор
+    if (!isAdminUser && username && updated > 0) {
+      const detailsText = `🔄 Обновлено: ${updated}
+⏭️ Пропущено: ${skipped}
+❌ Не найдено: ${notFound}`;
+      
+      await notifyModeratorAction(username, "Синхронизация Telegram ID", detailsText);
+    }
   } catch (error) {
     console.error("❌ Ошибка синхронизации:", error);
     res.status(500).json({ error: error.message });
@@ -9482,7 +9511,7 @@ app.get("/api/final-parameters-results", (req, res) => {
 });
 
 // POST /api/backup - Создать бэкап базы данных
-app.post("/api/backup", (req, res) => {
+app.post("/api/backup", async (req, res) => {
   try {
     const { username } = req.body;
     
@@ -9522,6 +9551,17 @@ app.post("/api/backup", (req, res) => {
     fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
 
     console.log(`✓ Бэкап БД создан: ${backupFilename} (пользователь: ${username})`);
+
+    // Уведомление админу если это модератор
+    if (!isAdminUser && username) {
+      const isModerator = db.prepare("SELECT id FROM moderators WHERE user_id = (SELECT id FROM users WHERE username = ?)").get(username);
+      if (isModerator) {
+        const details = `💾 Файл: ${backupFilename}
+📦 Размер: ${(fs.statSync(backupPath).size / 1024 / 1024).toFixed(2)} MB`;
+        
+        await notifyModeratorAction(username, "Создание бэкапа БД", details);
+      }
+    }
 
     res.json({
       success: true,
@@ -9616,7 +9656,7 @@ app.get("/api/admin/backups", (req, res) => {
 });
 
 // POST /api/admin/restore-backup - Восстановить БД из бэкапа
-app.post("/api/admin/restore-backup", (req, res) => {
+app.post("/api/admin/restore-backup", async (req, res) => {
   const { filename, username } = req.body;
 
   // Проверяем права
@@ -9683,6 +9723,14 @@ app.post("/api/admin/restore-backup", (req, res) => {
     db = new Database("./1xBetLineBoom.db");
     db.pragma("journal_mode = WAL");
 
+    // Уведомление админу если это модератор
+    if (!isAdminUser && username) {
+      const details = `📥 Восстановлено из: ${filename}
+💾 Создан бэкап текущей БД: ${currentBackupFilename}`;
+      
+      await notifyModeratorAction(username, "Восстановление БД", details);
+    }
+
     res.json({
       success: true,
       message: "БД успешно восстановлена",
@@ -9696,7 +9744,7 @@ app.post("/api/admin/restore-backup", (req, res) => {
 });
 
 // POST /api/admin/delete-backup - Удалить бэкап
-app.post("/api/admin/delete-backup", (req, res) => {
+app.post("/api/admin/delete-backup", async (req, res) => {
   const { filename, username } = req.body;
 
   // Проверяем права
@@ -9770,6 +9818,13 @@ app.post("/api/admin/delete-backup", (req, res) => {
     }
     
     console.log(`✓ Бэкап удален: ${filename} (пользователь: ${username})`);
+
+    // Уведомление админу если это модератор
+    if (!isAdminUser && username) {
+      const details = `🗑️ Файл: ${filename}`;
+      
+      await notifyModeratorAction(username, "Удаление бэкапа БД", details);
+    }
 
     res.json({
       success: true,
@@ -9984,12 +10039,28 @@ app.get("/api/admin/orphaned-data", (req, res) => {
 });
 
 // POST /api/admin/cleanup-orphaned-data - Удалить orphaned данные (только для админа)
-app.post("/api/admin/cleanup-orphaned-data", (req, res) => {
+app.post("/api/admin/cleanup-orphaned-data", async (req, res) => {
   const { username, dataType } = req.body;
 
-  // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем, является ли пользователь админом или модератором с правами
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("manage_orphaned");
+    }
+    
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   try {
@@ -10060,6 +10131,15 @@ app.post("/api/admin/cleanup-orphaned-data", (req, res) => {
       message: "✅ Orphaned данные успешно удалены",
       deleted: deletedCounts,
     });
+
+    // Уведомление админу если это модератор
+    if (isModerator && username) {
+      const totalDeleted = Object.values(deletedCounts).reduce((sum, count) => sum + count, 0);
+      const detailsText = `🗑️ Всего удалено: ${totalDeleted}
+${Object.entries(deletedCounts).map(([key, count]) => `  • ${key}: ${count}`).join('\n')}`;
+      
+      await notifyModeratorAction(username, "Очистка orphaned данных", detailsText);
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
