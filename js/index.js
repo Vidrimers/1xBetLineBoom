@@ -9246,23 +9246,41 @@ async function saveTimezoneSettings() {
 
 // Показать статус сохранения настройки
 function showSaveStatus(containerId, status) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+  const statusContainer = document.getElementById(containerId);
+  const descriptionId = containerId.replace('Status', 'Description');
+  const descriptionContainer = document.getElementById(descriptionId);
+  
+  if (!statusContainer) return;
   
   if (status === 'saving') {
-    container.innerHTML = '<span style="color: #ff9800; font-size: 14px;">⏳ Идет сохранение...</span>';
-    container.style.display = 'block';
+    // Скрываем описание
+    if (descriptionContainer) {
+      descriptionContainer.style.display = 'none';
+    }
+    // Показываем статус сохранения
+    statusContainer.innerHTML = '<p style="margin: 0; color: #ff9800; font-size: 14px;">⏳ Идет сохранение...</p>';
+    statusContainer.style.display = 'block';
   } else if (status === 'saved') {
-    container.innerHTML = '<span style="color: #4caf50; font-size: 14px;">✅ Сохранено</span>';
-    container.style.display = 'block';
+    // Показываем успешное сохранение
+    statusContainer.innerHTML = '<p style="margin: 0; color: #4caf50; font-size: 14px;">✅ Сохранено</p>';
+    statusContainer.style.display = 'block';
+    // Через 2 секунды возвращаем описание
     setTimeout(() => {
-      container.style.display = 'none';
+      statusContainer.style.display = 'none';
+      if (descriptionContainer) {
+        descriptionContainer.style.display = 'block';
+      }
     }, 2000);
   } else if (status === 'error') {
-    container.innerHTML = '<span style="color: #f44336; font-size: 14px;">❌ Ошибка сохранения</span>';
-    container.style.display = 'block';
+    // Показываем ошибку
+    statusContainer.innerHTML = '<p style="margin: 0; color: #f44336; font-size: 14px;">❌ Ошибка сохранения</p>';
+    statusContainer.style.display = 'block';
+    // Через 3 секунды возвращаем описание
     setTimeout(() => {
-      container.style.display = 'none';
+      statusContainer.style.display = 'none';
+      if (descriptionContainer) {
+        descriptionContainer.style.display = 'block';
+      }
     }, 3000);
   }
 }
