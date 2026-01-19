@@ -573,6 +573,53 @@ function writeBetLog(action, data) {
       }${data.newValue || "удалено"}</span>
       </div>
     </div>`;
+    } else if (action === "moderator_assigned") {
+      logEntry = `
+    <div class="log-entry moderator-assigned">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action moderator">🛡️ МОДЕРАТОР НАЗНАЧЕН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 ${data.username}</span>
+        <span class="permissions"><div class="log-label">Выданные права</div>📋 ${data.permissions.replace(/\n/g, '<br>')}</span>
+      </div>
+    </div>`;
+    } else if (action === "moderator_removed") {
+      logEntry = `
+    <div class="log-entry moderator-removed">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action moderator-removed">🗑️ МОДЕРАТОР УДАЛЕН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 ${data.username}</span>
+      </div>
+    </div>`;
+    } else if (action === "moderator_permissions_changed") {
+      let changesHtml = '';
+      
+      // Форматируем добавленные права с зеленым цветом
+      if (data.added) {
+        const addedLines = data.added.split('\n').map(line => 
+          `<div style="color: #81c784; margin: 2px 0;">➕ ${line}</div>`
+        ).join('');
+        changesHtml += addedLines;
+      }
+      
+      // Форматируем удаленные права с красным цветом
+      if (data.removed) {
+        const removedLines = data.removed.split('\n').map(line => 
+          `<div style="color: #ef5350; margin: 2px 0;">➖ ${line}</div>`
+        ).join('');
+        changesHtml += removedLines;
+      }
+      
+      logEntry = `
+    <div class="log-entry moderator-permissions-changed">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action moderator-changed">🔄 ПРАВА МОДЕРАТОРА ИЗМЕНЕНЫ</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Пользователь</div>👤 ${data.username}</span>
+        <div class="permissions-changes"><div class="log-label">Изменения</div>${changesHtml}</div>
+      </div>
+    </div>`;
     }
 
     // Читаем файл и вставляем новый лог после <!-- LOGS_START -->
@@ -1220,11 +1267,17 @@ function resetLogFile() {
     .log-entry.bet-placed { border-left-color: #4caf50; }
     .log-entry.bet-deleted { border-left-color: #f44336; }
     .log-entry.settings-changed { border-left-color: #ff9800; }
+    .log-entry.moderator-assigned { border-left-color: #9c27b0; }
+    .log-entry.moderator-removed { border-left-color: #f44336; }
+    .log-entry.moderator-permissions-changed { border-left-color: #ff9800; }
     .log-time { color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px; }
     .log-action { font-weight: bold; margin-bottom: 8px; }
     .log-action.placed { color: #4caf50; }
     .log-action.deleted { color: #f44336; }
     .log-action.settings { color: #ff9800; }
+    .log-action.moderator { color: #9c27b0; }
+    .log-action.moderator-removed { color: #f44336; }
+    .log-action.moderator-changed { color: #ff9800; }
     .log-details {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1237,6 +1290,8 @@ function resetLogFile() {
     .log-details .match { color: #81c784; }
     .log-details .event { color: #ce93d8; }
     .log-details .setting { color: #ffcc80; }
+    .log-details .permissions { color: #ba68c8; grid-column: 1 / -1; }
+    .log-details .permissions-changes { grid-column: 1 / -1; padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -3813,6 +3868,12 @@ ${permissionsText}`;
       console.error(`❌ Ошибка отправки уведомления модератору ${user.username}:`, error);
     }
 
+    // Записываем в лог
+    writeBetLog("moderator_assigned", {
+      username: user.username,
+      permissions: permissionsText,
+    });
+
     res.json({
       success: true,
       message: "Модератор успешно назначен",
@@ -3829,6 +3890,18 @@ app.delete("/api/moderators/:moderatorId", (req, res) => {
   try {
     const { moderatorId } = req.params;
 
+    // Получаем информацию о модераторе перед удалением
+    const moderator = db.prepare(`
+      SELECT m.id, m.permissions, u.username
+      FROM moderators m
+      JOIN users u ON m.user_id = u.id
+      WHERE m.id = ?
+    `).get(moderatorId);
+
+    if (!moderator) {
+      return res.status(404).json({ error: "Модератор не найден" });
+    }
+
     const result = db
       .prepare("DELETE FROM moderators WHERE id = ?")
       .run(moderatorId);
@@ -3836,6 +3909,11 @@ app.delete("/api/moderators/:moderatorId", (req, res) => {
     if (result.changes === 0) {
       return res.status(404).json({ error: "Модератор не найден" });
     }
+
+    // Записываем в лог
+    writeBetLog("moderator_removed", {
+      username: moderator.username,
+    });
 
     res.json({
       success: true,
@@ -3859,7 +3937,7 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
 
     // Получаем информацию о модераторе
     const moderator = db.prepare(`
-      SELECT m.id, m.user_id, u.username, u.telegram_username
+      SELECT m.id, m.user_id, m.permissions, u.username, u.telegram_username
       FROM moderators m
       JOIN users u ON m.user_id = u.id
       WHERE m.id = ?
@@ -3869,12 +3947,58 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
       return res.status(404).json({ error: "Модератор не найден" });
     }
 
+    // Получаем старые права для сравнения
+    const oldPermissions = JSON.parse(moderator.permissions || "[]");
+
     const result = db
       .prepare("UPDATE moderators SET permissions = ? WHERE id = ?")
       .run(JSON.stringify(permissions), moderatorId);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Модератор не найден" });
+    }
+
+    // Определяем добавленные и удаленные права
+    const addedPermissions = permissions.filter(p => !oldPermissions.includes(p));
+    const removedPermissions = oldPermissions.filter(p => !permissions.includes(p));
+
+    // Функция для форматирования прав
+    const formatPermissions = (perms) => {
+      const permMap = {
+        'manage_matches': '⚽ Управление матчами',
+        'create_matches': '➕ Создание матчей',
+        'edit_matches': '✏️ Редактирование матчей',
+        'delete_matches': '🗑️ Удаление матчей',
+        'manage_results': '📊 Управление результатами',
+        'manage_tournaments': '🎯 Управление турнирами',
+        'edit_tournaments': '✏️ Редактирование турниров',
+        'delete_tournaments': '🗑️ Удаление турниров',
+        'create_tournaments': '➕ Создание турниров',
+        'view_logs': '📋 Просмотр логов',
+        'view_counting': '📊 Подсчет результатов',
+        'manage_db': '💾 Управление базой данных',
+        'backup_db': '➕ Создание бэкапов',
+        'download_backup': '💾 Скачивание бэкапов',
+        'restore_db': '📥 Восстановление БД',
+        'delete_backup': '🗑️ Удаление бэкапов',
+        'manage_orphaned': '🗑️ Управление orphaned данными',
+        'view_users': '👥 Просмотр пользователей',
+        'check_bot': '🤖 Проверка контакта с ботом',
+        'view_settings': '⚙️ Просмотр настроек пользователей',
+        'sync_telegram_ids': '🔄 Синхронизация Telegram ID',
+        'edit_users': '✏️ Редактирование пользователей',
+        'delete_users': '❌ Удаление пользователей'
+      };
+      return perms.map(p => permMap[p] || p).join('\n');
+    };
+
+    // Записываем в лог если были изменения
+    if (addedPermissions.length > 0 || removedPermissions.length > 0) {
+      writeBetLog("moderator_permissions_changed", {
+        username: moderator.username,
+        added: addedPermissions.length > 0 ? formatPermissions(addedPermissions) : null,
+        removed: removedPermissions.length > 0 ? formatPermissions(removedPermissions) : null,
+      });
     }
 
     // Отправляем уведомление модератору о изменении прав
