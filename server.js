@@ -8455,7 +8455,7 @@ ${isAdminUser ? 'Администратор' : 'Модератор'} измен�
 ➡️ Новое имя: ${capitalizedNewUsername}
 🔓 Разлогинен со всех устройств (удалено сессий: ${deletedSessions.changes})`;
       
-      notifyModeratorAction(adminUsername, "Переименование пользователя", details);
+      await notifyModeratorAction(adminUsername, "Переименование пользователя", details);
     }
 
     res.json({ 
@@ -8650,6 +8650,7 @@ app.delete("/api/admin/users/:userId", async (req, res) => {
 
   // Проверяем, является ли пользователь админом или модератором с правами
   const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -8658,13 +8659,13 @@ app.delete("/api/admin/users/:userId", async (req, res) => {
       WHERE user_id = (SELECT id FROM users WHERE username = ?)
     `).get(adminUsername);
     
-    if (!moderator) {
-      return res.status(403).json({ error: "Недостаточно прав" });
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("delete_users");
     }
     
-    const permissions = JSON.parse(moderator.permissions || "[]");
-    if (!permissions.includes("view_users")) {
-      return res.status(403).json({ error: "Недостаточно прав" });
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав для удаления пользователей" });
     }
   }
 
@@ -8741,37 +8742,13 @@ app.delete("/api/admin/users/:userId", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    // Отправляем уведомление админу
-    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
-
-    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
-      const time = new Date().toLocaleString("ru-RU");
-      const actionBy = isAdminUser ? "Администратор" : `Модератор: ${adminUsername}`;
+    // Отправляем уведомление админу если это модератор
+    if (isModerator) {
+      const details = `👤 Пользователь: ${userInfo.username}
+${userInfo.telegram_username ? `📱 Telegram: @${userInfo.telegram_username}` : ''}
+📊 Удалено ставок: ${betsCount.count}`;
       
-      const message = `🗑️ УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
-
-${!isAdminUser ? `🛡️ ${actionBy}\n` : ""}👤 Пользователь: ${userInfo.username}
-${userInfo.telegram_username ? `📱 Telegram: @${userInfo.telegram_username}` : ""}
-📊 Удалено ставок: ${betsCount.count}
-✏️ Действие: удален из системы
-🕐 Время: ${time}`;
-
-      try {
-        await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: TELEGRAM_ADMIN_ID,
-              text: message,
-            }),
-          }
-        );
-      } catch (err) {
-        console.error("❌ Ошибка отправки уведомления админу:", err);
-      }
+      await notifyModeratorAction(adminUsername, "Удаление пользователя", details);
     }
 
     res.json({ message: "Пользователь успешно удален" });
