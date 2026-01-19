@@ -9254,16 +9254,6 @@ function showSaveStatus(containerId, status) {
   
   if (status === 'saving') {
     if (descriptionContainer) {
-      // Получаем родительский контейнер с min-height
-      const wrapper = descriptionContainer.parentElement;
-      
-      // Измеряем реальную высоту описания и устанавливаем точную высоту
-      const actualHeight = descriptionContainer.offsetHeight;
-      if (wrapper && actualHeight > 0) {
-        wrapper.style.height = actualHeight + 'px';
-        wrapper.style.minHeight = actualHeight + 'px';
-      }
-      
       // Плавно скрываем описание
       descriptionContainer.style.transition = 'opacity 0.3s ease';
       descriptionContainer.style.opacity = '0';
@@ -9305,15 +9295,6 @@ function showSaveStatus(containerId, status) {
           
           setTimeout(() => {
             descriptionContainer.style.opacity = '1';
-            
-            // Убираем фиксированную высоту после анимации
-            setTimeout(() => {
-              const wrapper = descriptionContainer.parentElement;
-              if (wrapper) {
-                wrapper.style.height = '';
-                wrapper.style.minHeight = '';
-              }
-            }, 300);
           }, 50);
         }
       }, 300);
@@ -9341,15 +9322,6 @@ function showSaveStatus(containerId, status) {
           
           setTimeout(() => {
             descriptionContainer.style.opacity = '1';
-            
-            // Убираем фиксированную высоту после анимации
-            setTimeout(() => {
-              const wrapper = descriptionContainer.parentElement;
-              if (wrapper) {
-                wrapper.style.height = '';
-                wrapper.style.minHeight = '';
-              }
-            }, 300);
           }, 50);
         }
       }, 300);
