@@ -2074,11 +2074,46 @@
                 >
                   <input
                     type="checkbox"
+                    id="permManageDB"
+                    style="margin-right: 8px; cursor: pointer"
+                    onchange="toggleDBSubPermissions()"
+                  />
+                  <span>💾 Управление базой данных</span>
+                </label>
+                <div id="dbSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
                     id="permBackupDB"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>💾 Создание бэкапов БД</span>
+                  <span>➕ Создание бэкапов</span>
                 </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permDownloadBackup"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>💾 Скачивание бэкапов</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permRestoreDB"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>📥 Восстановление БД</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permDeleteBackup"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🗑️ Удаление бэкапов</span>
+                </label>
+                </div>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
                 >
@@ -2124,14 +2159,6 @@
                     style="margin-right: 8px; cursor: pointer"
                   />
                   <span>🔄 Синхронизация Telegram ID</span>
-                </label>
-                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
-                  <input
-                    type="checkbox"
-                    id="permRestoreDB"
-                    style="margin-right: 8px; cursor: pointer"
-                  />
-                  <span>📥 Восстановление БД из бэкапа</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2255,11 +2282,46 @@
               >
                 <input
                   type="checkbox"
-                  id="editPermBackupDB"
+                  id="editPermManageDB"
                   style="margin-right: 8px; cursor: pointer"
+                  onchange="toggleEditDBSubPermissions()"
                 />
-                <span>💾 Создание бэкапов БД</span>
+                <span>💾 Управление базой данных</span>
               </label>
+              <div id="editDBSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermBackupDB"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>➕ Создание бэкапов</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermDownloadBackup"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>💾 Скачивание бэкапов</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermRestoreDB"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>📥 Восстановление БД</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermDeleteBackup"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🗑️ Удаление бэкапов</span>
+                </label>
+              </div>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
               >
@@ -2305,14 +2367,6 @@
                     style="margin-right: 8px; cursor: pointer"
                   />
                   <span>🔄 Синхронизация Telegram ID</span>
-                </label>
-                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
-                  <input
-                    type="checkbox"
-                    id="editPermRestoreDB"
-                    style="margin-right: 8px; cursor: pointer"
-                  />
-                  <span>📥 Восстановление БД из бэкапа</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input

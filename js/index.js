@@ -5207,6 +5207,10 @@ async function backupDatabase() {
 
     const response = await fetch("/api/backup", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        username: currentUser.username 
+      })
     });
 
     if (!response.ok) {
@@ -5243,13 +5247,16 @@ async function backupDatabase() {
         if (backups.length === 0) {
           backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
         } else {
-          backupsList.innerHTML = backups.map(backup => {
+          backupsList.innerHTML = backups.map((backup, index) => {
             const isNew = backup.filename === lastCreatedBackupFilename;
+            const isLocked = backup.isLocked || false;
+            
             return `
             <div 
               class="backup-item${isNew ? ' new-backup' : ''}"
               data-filename="${backup.filename}"
-              onclick="selectBackup('${backup.filename}')"
+              data-locked="${isLocked}"
+              onclick="selectBackup('${backup.filename}', ${isLocked})"
               style="
                 padding: 15px;
                 margin-bottom: 10px;
@@ -5263,12 +5270,41 @@ async function backupDatabase() {
               onmouseover="if(!this.classList.contains('selected')) this.style.borderColor='${isNew ? 'rgba(76, 175, 80, 0.8)' : 'rgba(90, 159, 212, 0.6)'}'"
               onmouseout="if(!this.classList.contains('selected')) this.style.borderColor='${isNew ? 'rgba(76, 175, 80, 0.6)' : 'rgba(90, 159, 212, 0.3)'}'"
             >
-              ${isNew ? '<div style="position: absolute; top: 10px; right: 10px; background: rgba(76, 175, 80, 0.9); color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 0.75em; font-weight: bold; animation: pulse 2s infinite;">NEW</div>' : ''}
-              <div style="font-weight: bold; color: ${isNew ? '#4caf50' : '#5a9fd4'}; margin-bottom: 5px;">
-                ${backup.filename}
-              </div>
-              <div style="font-size: 0.9em; color: #999;">
-                📅 ${new Date(backup.created).toLocaleString('ru-RU')} | 💾 ${backup.sizeFormatted}
+              <div style="display: flex; justify-content: space-between; align-items: start; gap: 10px;">
+                <div style="flex: 1;">
+                  ${isNew ? '<div style="position: absolute; top: 10px; right: 10px; background: rgba(76, 175, 80, 0.9); color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 0.75em; font-weight: bold; animation: pulse 2s infinite;">NEW</div>' : ''}
+                  <div style="font-weight: bold; color: ${isNew ? '#4caf50' : '#5a9fd4'}; margin-bottom: 5px;">
+                    ${backup.filename}
+                  </div>
+                  <div style="font-size: 0.9em; color: #999;">
+                    📅 ${new Date(backup.created).toLocaleString('ru-RU')} | 💾 ${backup.sizeFormatted}
+                  </div>
+                  ${backup.createdBy !== 'unknown' ? `<div style="font-size: 0.85em; color: #888; margin-top: 3px;">👤 ${backup.createdBy}</div>` : ''}
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                  ${isLocked ? '<div style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; white-space: nowrap;">🔒 Заблокирован</div>' : ''}
+                  ${isAdmin() ? `<button 
+                    class="backup-lock-btn"
+                    onclick="event.stopPropagation(); toggleBackupLock('${backup.filename}', ${isLocked})"
+                    style="
+                      background: ${isLocked ? 'rgba(76, 175, 80, 0.7)' : 'transparent'};
+                      color: ${isLocked ? '#fff' : 'rgb(255, 255, 255)'};
+                      border: ${isLocked ? '1px solid #4caf50' : 'medium'};
+                      padding: 4px 10px;
+                      border-radius: 6px;
+                      cursor: pointer;
+                      font-size: ${isLocked ? '0.7em' : '0.75em'};
+                      transition: ${isLocked ? 'all 0.3s ease' : '0.3s'};
+                      white-space: nowrap;
+                      opacity: 0;
+                      box-shadow: none;
+                      pointer-events: none;
+                    "
+                    title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}"
+                  >
+                    ${isLocked ? '🔓 Разблокировать' : '🔒'}
+                  </button>` : ''}
+                </div>
               </div>
             </div>
           `}).join('');
@@ -5366,6 +5402,8 @@ function closeRestoreDBModal() {
 let selectedBackupFilename = null;
 // Переменная для хранения последнего созданного бэкапа
 let lastCreatedBackupFilename = null;
+// Переменная для хранения статуса защиты выбранного бэкапа
+let selectedBackupIsProtected = false;
 
 // Открыть модальное окно управления БД
 async function openDatabaseModal() {
@@ -5407,13 +5445,16 @@ async function openDatabaseModal() {
         </div>
       `;
       
-      backupsList.innerHTML = backups.map(backup => {
+      backupsList.innerHTML = backups.map((backup, index) => {
         const isNew = backup.filename === lastCreatedBackupFilename;
+        const isLocked = backup.isLocked || false;
+        
         return `
         <div 
           class="backup-item${isNew ? ' new-backup' : ''}"
           data-filename="${backup.filename}"
-          onclick="selectBackup('${backup.filename}')"
+          data-locked="${isLocked}"
+          onclick="selectBackup('${backup.filename}', ${isLocked})"
           style="
             padding: 15px;
             margin-bottom: 10px;
@@ -5427,12 +5468,41 @@ async function openDatabaseModal() {
           onmouseover="if(!this.classList.contains('selected')) this.style.borderColor='${isNew ? 'rgba(76, 175, 80, 0.8)' : 'rgba(90, 159, 212, 0.6)'}'"
           onmouseout="if(!this.classList.contains('selected')) this.style.borderColor='${isNew ? 'rgba(76, 175, 80, 0.6)' : 'rgba(90, 159, 212, 0.3)'}'"
         >
-          ${isNew ? '<div style="position: absolute; top: 10px; right: 10px; background: rgba(76, 175, 80, 0.9); color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 0.75em; font-weight: bold; animation: pulse 2s infinite;">NEW</div>' : ''}
-          <div style="font-weight: bold; color: ${isNew ? '#4caf50' : '#5a9fd4'}; margin-bottom: 5px;">
-            ${backup.filename}
-          </div>
-          <div style="font-size: 0.9em; color: #999;">
-            📅 ${new Date(backup.created).toLocaleString('ru-RU')} | 💾 ${backup.sizeFormatted}
+          <div style="display: flex; justify-content: space-between; align-items: start; gap: 10px;">
+            <div style="flex: 1;">
+              ${isNew ? '<div style="position: absolute; top: 10px; right: 10px; background: rgba(76, 175, 80, 0.9); color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 0.75em; font-weight: bold; animation: pulse 2s infinite;">NEW</div>' : ''}
+              <div style="font-weight: bold; color: ${isNew ? '#4caf50' : '#5a9fd4'}; margin-bottom: 5px;">
+                ${backup.filename}
+              </div>
+              <div style="font-size: 0.9em; color: #999;">
+                📅 ${new Date(backup.created).toLocaleString('ru-RU')} | 💾 ${backup.sizeFormatted}
+              </div>
+              ${backup.createdBy !== 'unknown' ? `<div style="font-size: 0.85em; color: #888; margin-top: 3px;">👤 ${backup.createdBy}</div>` : ''}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+              ${isLocked ? '<div style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; white-space: nowrap;">🔒 Заблокирован</div>' : ''}
+              ${isAdmin() ? `<button 
+                class="backup-lock-btn"
+                onclick="event.stopPropagation(); toggleBackupLock('${backup.filename}', ${isLocked})"
+                style="
+                  background: ${isLocked ? 'rgba(76, 175, 80, 0.7)' : 'transparent'};
+                  color: ${isLocked ? '#fff' : 'rgb(255, 255, 255)'};
+                  border: ${isLocked ? '1px solid #4caf50' : 'medium'};
+                  padding: 4px 10px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: ${isLocked ? '0.7em' : '0.9em'};
+                  transition: ${isLocked ? 'all 0.3s ease' : '0.3s'};
+                  white-space: nowrap;
+                  opacity: 0;
+                  box-shadow: none;
+                  pointer-events: none;
+                "
+                title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}"
+              >
+                ${isLocked ? '🔓 Разблокировать' : '🔒'}
+              </button>` : ''}
+            </div>
           </div>
         </div>
       `}).join('');
@@ -5456,22 +5526,37 @@ function closeDatabaseModal() {
 }
 
 // Выбрать бэкап
-function selectBackup(filename) {
+function selectBackup(filename, isLocked = false) {
   selectedBackupFilename = filename;
+  selectedBackupIsProtected = isLocked;
   
-  // Убираем выделение со всех элементов
+  // Убираем выделение со всех элементов и скрываем кнопки блокировки
   document.querySelectorAll('.backup-item').forEach(item => {
     item.classList.remove('selected');
     item.style.borderColor = 'rgba(90, 159, 212, 0.3)';
     item.style.background = 'rgba(30, 34, 44, 0.6)';
+    
+    // Скрываем кнопку блокировки
+    const lockBtn = item.querySelector('.backup-lock-btn');
+    if (lockBtn) {
+      lockBtn.style.opacity = '0';
+      lockBtn.style.pointerEvents = 'none';
+    }
   });
   
-  // Выделяем выбранный элемент
+  // Выделяем выбранный элемент и показываем кнопку блокировки
   const selectedItem = document.querySelector(`[data-filename="${filename}"]`);
   if (selectedItem) {
     selectedItem.classList.add('selected');
     selectedItem.style.borderColor = '#5a9fd4';
     selectedItem.style.background = 'rgba(90, 159, 212, 0.2)';
+    
+    // Показываем кнопку блокировки
+    const lockBtn = selectedItem.querySelector('.backup-lock-btn');
+    if (lockBtn) {
+      lockBtn.style.opacity = '1';
+      lockBtn.style.pointerEvents = 'auto';
+    }
   }
   
   updateBackupButtons();
@@ -5497,11 +5582,22 @@ function updateBackupButtons() {
     downloadBtn.style.border = '1px solid #3a7bd5';
     downloadBtn.style.cursor = 'pointer';
     
-    deleteBtn.disabled = false;
-    deleteBtn.style.background = 'rgba(244, 67, 54, 0.7)';
-    deleteBtn.style.color = '#ffb3b3';
-    deleteBtn.style.border = '1px solid #f44336';
-    deleteBtn.style.cursor = 'pointer';
+    // Кнопка удаления - блокируем если бэкап защищен
+    if (selectedBackupIsProtected) {
+      deleteBtn.disabled = true;
+      deleteBtn.style.background = 'rgba(244, 67, 54, 0.3)';
+      deleteBtn.style.color = '#999';
+      deleteBtn.style.border = '1px solid #666';
+      deleteBtn.style.cursor = 'not-allowed';
+      deleteBtn.title = 'Этот бэкап защищен от удаления';
+    } else {
+      deleteBtn.disabled = false;
+      deleteBtn.style.background = 'rgba(244, 67, 54, 0.7)';
+      deleteBtn.style.color = '#ffb3b3';
+      deleteBtn.style.border = '1px solid #f44336';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.title = '';
+    }
   } else {
     // Деактивируем кнопки
     restoreBtn.disabled = true;
@@ -5583,10 +5679,58 @@ function downloadSelectedBackup() {
   window.location.href = `/download-backup/${selectedBackupFilename}`;
 }
 
+// Заблокировать/разблокировать бэкап (только для админа)
+async function toggleBackupLock(filename, currentLockStatus) {
+  if (!isAdmin()) {
+    await showCustomAlert("Только админ может блокировать/разблокировать бэкапы", "Ошибка", "❌");
+    return;
+  }
+
+  const action = currentLockStatus ? 'разблокировать' : 'заблокировать';
+  const confirmed = await showCustomConfirm(
+    `Вы уверены что хотите ${action} бэкап?\n\n<strong style="color: #5a9fd4;">${filename}</strong>\n\n${currentLockStatus ? '<div style="color: #4caf50; margin-top: 10px;">После разблокировки бэкап можно будет удалить.</div>' : '<div style="color: #ffc107; margin-top: 10px;">⚠️ Заблокированный бэкап нельзя будет удалить до разблокировки.</div>'}`,
+    currentLockStatus ? "Разблокировка бэкапа" : "Блокировка бэкапа",
+    "🔒"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/toggle-backup-lock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        filename: filename,
+        username: currentUser.username 
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Перезагружаем список бэкапов
+      await openDatabaseModal();
+    } else {
+      await showCustomAlert(data.error, "Ошибка при изменении блокировки", "❌");
+    }
+  } catch (error) {
+    console.error("Ошибка при изменении блокировки бэкапа:", error);
+    await showCustomAlert(error.message, "Ошибка при изменении блокировки бэкапа", "❌");
+  }
+}
+
 // Удалить выбранный бэкап
 async function deleteSelectedBackup() {
   if (!selectedBackupFilename) {
     await showCustomAlert("Выберите бэкап для удаления", "Ошибка", "❌");
+    return;
+  }
+  
+  // Проверяем права
+  if (!isAdmin() && !hasPermission('delete_backup')) {
+    await showCustomAlert("У вас нет прав для удаления бэкапов", "Ошибка", "❌");
     return;
   }
   
@@ -5953,13 +6097,16 @@ function getPermissionsText(permissions) {
     manage_tournaments: "турниры (редактирование)",
     create_tournaments: "создание турниров",
     view_logs: "логи",
-    backup_db: "бэкапы",
+    manage_db: "управление БД",
+    backup_db: "создание бэкапов",
+    download_backup: "скачивание бэкапов",
+    restore_db: "восстановление БД",
+    delete_backup: "удаление бэкапов",
     manage_orphaned: "orphaned данные",
     view_users: "пользователи",
     check_bot: "проверка бота",
     view_settings: "настройки пользователей",
     sync_telegram_ids: "синхронизация Telegram ID",
-    restore_db: "восстановление БД",
     edit_users: "редактирование пользователей",
     delete_users: "удаление пользователей",
   };
@@ -5990,8 +6137,16 @@ async function assignModerator() {
     permissions.push("create_tournaments");
   if (document.getElementById("permViewLogs").checked)
     permissions.push("view_logs");
+  if (document.getElementById("permManageDB").checked)
+    permissions.push("manage_db");
   if (document.getElementById("permBackupDB").checked)
     permissions.push("backup_db");
+  if (document.getElementById("permDownloadBackup").checked)
+    permissions.push("download_backup");
+  if (document.getElementById("permRestoreDB").checked)
+    permissions.push("restore_db");
+  if (document.getElementById("permDeleteBackup").checked)
+    permissions.push("delete_backup");
   if (document.getElementById("permManageOrphaned").checked)
     permissions.push("manage_orphaned");
   if (document.getElementById("permViewUsers").checked)
@@ -6002,8 +6157,6 @@ async function assignModerator() {
     permissions.push("view_settings");
   if (document.getElementById("permSyncTelegramIds").checked)
     permissions.push("sync_telegram_ids");
-  if (document.getElementById("permRestoreDB").checked)
-    permissions.push("restore_db");
   if (document.getElementById("permEditUsers").checked)
     permissions.push("edit_users");
   if (document.getElementById("permDeleteUsers").checked)
@@ -6036,13 +6189,16 @@ async function assignModerator() {
       document.getElementById("permManageTournaments").checked = false;
       document.getElementById("permCreateTournaments").checked = false;
       document.getElementById("permViewLogs").checked = false;
+      document.getElementById("permManageDB").checked = false;
       document.getElementById("permBackupDB").checked = false;
+      document.getElementById("permDownloadBackup").checked = false;
+      document.getElementById("permRestoreDB").checked = false;
+      document.getElementById("permDeleteBackup").checked = false;
       document.getElementById("permManageOrphaned").checked = false;
       document.getElementById("permViewUsers").checked = false;
       document.getElementById("permCheckBot").checked = false;
       document.getElementById("permViewSettings").checked = false;
       document.getElementById("permSyncTelegramIds").checked = false;
-      document.getElementById("permRestoreDB").checked = false;
       document.getElementById("permEditUsers").checked = false;
       document.getElementById("permDeleteUsers").checked = false;
       document.getElementById("userSubPermissions").style.display = "none";
@@ -6101,16 +6257,20 @@ function openEditModeratorModal(moderatorId, username, permissions) {
   document.getElementById("editPermManageTournaments").checked = false;
   document.getElementById("editPermCreateTournaments").checked = false;
   document.getElementById("editPermViewLogs").checked = false;
+  document.getElementById("editPermManageDB").checked = false;
   document.getElementById("editPermBackupDB").checked = false;
+  document.getElementById("editPermDownloadBackup").checked = false;
+  document.getElementById("editPermRestoreDB").checked = false;
+  document.getElementById("editPermDeleteBackup").checked = false;
   document.getElementById("editPermManageOrphaned").checked = false;
   document.getElementById("editPermViewUsers").checked = false;
   document.getElementById("editPermCheckBot").checked = false;
   document.getElementById("editPermViewSettings").checked = false;
   document.getElementById("editPermSyncTelegramIds").checked = false;
-  document.getElementById("editPermRestoreDB").checked = false;
   document.getElementById("editPermEditUsers").checked = false;
   document.getElementById("editPermDeleteUsers").checked = false;
   document.getElementById("editUserSubPermissions").style.display = "none";
+  document.getElementById("editDBSubPermissions").style.display = "none";
   
   // Устанавливаем текущие права
   if (Array.isArray(permissions)) {
@@ -6129,8 +6289,21 @@ function openEditModeratorModal(moderatorId, username, permissions) {
     if (permissions.includes("view_logs")) {
       document.getElementById("editPermViewLogs").checked = true;
     }
+    if (permissions.includes("manage_db")) {
+      document.getElementById("editPermManageDB").checked = true;
+      document.getElementById("editDBSubPermissions").style.display = "block";
+    }
     if (permissions.includes("backup_db")) {
       document.getElementById("editPermBackupDB").checked = true;
+    }
+    if (permissions.includes("download_backup")) {
+      document.getElementById("editPermDownloadBackup").checked = true;
+    }
+    if (permissions.includes("restore_db")) {
+      document.getElementById("editPermRestoreDB").checked = true;
+    }
+    if (permissions.includes("delete_backup")) {
+      document.getElementById("editPermDeleteBackup").checked = true;
     }
     if (permissions.includes("manage_orphaned")) {
       document.getElementById("editPermManageOrphaned").checked = true;
@@ -6147,9 +6320,6 @@ function openEditModeratorModal(moderatorId, username, permissions) {
     }
     if (permissions.includes("sync_telegram_ids")) {
       document.getElementById("editPermSyncTelegramIds").checked = true;
-    }
-    if (permissions.includes("restore_db")) {
-      document.getElementById("editPermRestoreDB").checked = true;
     }
     if (permissions.includes("edit_users")) {
       document.getElementById("editPermEditUsers").checked = true;
@@ -6182,9 +6352,24 @@ function toggleUserSubPermissions() {
     document.getElementById("permCheckBot").checked = false;
     document.getElementById("permViewSettings").checked = false;
     document.getElementById("permSyncTelegramIds").checked = false;
-    document.getElementById("permRestoreDB").checked = false;
     document.getElementById("permEditUsers").checked = false;
     document.getElementById("permDeleteUsers").checked = false;
+  }
+}
+
+// Переключить видимость подчекбоксов БД (форма назначения)
+function toggleDBSubPermissions() {
+  const manageDBCheckbox = document.getElementById("permManageDB");
+  const subPermissionsDiv = document.getElementById("dbSubPermissions");
+  
+  if (manageDBCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("permBackupDB").checked = false;
+    document.getElementById("permRestoreDB").checked = false;
+    document.getElementById("permDeleteBackup").checked = false;
   }
 }
 
@@ -6201,9 +6386,24 @@ function toggleEditUserSubPermissions() {
     document.getElementById("editPermCheckBot").checked = false;
     document.getElementById("editPermViewSettings").checked = false;
     document.getElementById("editPermSyncTelegramIds").checked = false;
-    document.getElementById("editPermRestoreDB").checked = false;
     document.getElementById("editPermEditUsers").checked = false;
     document.getElementById("editPermDeleteUsers").checked = false;
+  }
+}
+
+// Переключить видимость подчекбоксов БД (форма редактирования)
+function toggleEditDBSubPermissions() {
+  const manageDBCheckbox = document.getElementById("editPermManageDB");
+  const subPermissionsDiv = document.getElementById("editDBSubPermissions");
+  
+  if (manageDBCheckbox.checked) {
+    subPermissionsDiv.style.display = "block";
+  } else {
+    subPermissionsDiv.style.display = "none";
+    // Снимаем все подчекбоксы
+    document.getElementById("editPermBackupDB").checked = false;
+    document.getElementById("editPermRestoreDB").checked = false;
+    document.getElementById("editPermDeleteBackup").checked = false;
   }
 }
 
@@ -6226,8 +6426,16 @@ async function saveModeratorPermissions() {
     permissions.push("create_tournaments");
   if (document.getElementById("editPermViewLogs").checked)
     permissions.push("view_logs");
+  if (document.getElementById("editPermManageDB").checked)
+    permissions.push("manage_db");
   if (document.getElementById("editPermBackupDB").checked)
     permissions.push("backup_db");
+  if (document.getElementById("editPermDownloadBackup").checked)
+    permissions.push("download_backup");
+  if (document.getElementById("editPermRestoreDB").checked)
+    permissions.push("restore_db");
+  if (document.getElementById("editPermDeleteBackup").checked)
+    permissions.push("delete_backup");
   if (document.getElementById("editPermManageOrphaned").checked)
     permissions.push("manage_orphaned");
   if (document.getElementById("editPermViewUsers").checked)
@@ -6238,8 +6446,6 @@ async function saveModeratorPermissions() {
     permissions.push("view_settings");
   if (document.getElementById("editPermSyncTelegramIds").checked)
     permissions.push("sync_telegram_ids");
-  if (document.getElementById("editPermRestoreDB").checked)
-    permissions.push("restore_db");
   if (document.getElementById("editPermEditUsers").checked)
     permissions.push("edit_users");
   if (document.getElementById("editPermDeleteUsers").checked)

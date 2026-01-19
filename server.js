@@ -3762,7 +3762,11 @@ app.post("/api/moderators", async (req, res) => {
         'manage_tournaments': '🏆 Редактирование турниров',
         'create_tournaments': '➕ Создание турниров',
         'view_logs': '📋 Просмотр логов',
-        'backup_db': '💾 Создание бэкапов',
+        'manage_db': '💾 Управление базой данных',
+        'backup_db': '➕ Создание бэкапов',
+        'download_backup': '💾 Скачивание бэкапов',
+        'restore_db': '📥 Восстановление БД',
+        'delete_backup': '🗑️ Удаление бэкапов',
         'manage_orphaned': '🗑️ Управление orphaned данными',
         'view_users': '👥 Просмотр пользователей',
         'check_bot': '🤖 Проверка контакта с ботом',
@@ -3883,7 +3887,11 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
             'manage_tournaments': '🏆 Редактирование турниров',
             'create_tournaments': '➕ Создание турниров',
             'view_logs': '📋 Просмотр логов',
-            'backup_db': '💾 Создание бэкапов',
+            'manage_db': '💾 Управление базой данных',
+            'backup_db': '➕ Создание бэкапов',
+            'download_backup': '💾 Скачивание бэкапов',
+            'restore_db': '📥 Восстановление БД',
+            'delete_backup': '🗑️ Удаление бэкапов',
             'manage_orphaned': '🗑️ Управление orphaned данными',
             'view_users': '👥 Просмотр пользователей',
             'check_bot': '🤖 Проверка контакта с ботом',
@@ -9476,8 +9484,10 @@ app.get("/api/final-parameters-results", (req, res) => {
 // POST /api/backup - Создать бэкап базы данных
 app.post("/api/backup", (req, res) => {
   try {
-    // Проверяем что юзер админ (базовая проверка)
-    // В реальной системе нужна проверка авторизации
+    const { username } = req.body;
+    
+    // Проверяем что юзер админ или модератор с правами
+    const isAdminUser = username === process.env.ADMIN_DB_NAME;
 
     const timestamp = new Date()
       .toISOString()
@@ -9490,7 +9500,28 @@ app.post("/api/backup", (req, res) => {
     // Копируем файл БД
     fs.copyFileSync(dbPath, backupPath);
 
-    console.log(`✓ Бэкап БД создан: ${backupFilename}`);
+    // Сохраняем метаданные бэкапа
+    const metadataPath = path.join(BACKUPS_DIR, 'backups-metadata.json');
+    let metadata = {};
+    
+    if (fs.existsSync(metadataPath)) {
+      try {
+        metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+      } catch (err) {
+        console.error('Ошибка чтения метаданных:', err);
+      }
+    }
+    
+    metadata[backupFilename] = {
+      createdBy: username || 'unknown',
+      isAdmin: isAdminUser,
+      createdAt: new Date().toISOString(),
+      isLocked: false
+    };
+    
+    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+
+    console.log(`✓ Бэкап БД создан: ${backupFilename} (пользователь: ${username})`);
 
     res.json({
       success: true,
@@ -9545,17 +9576,34 @@ app.get("/api/admin/backups", (req, res) => {
       return res.json([]);
     }
 
+    // Загружаем метаданные
+    const metadataPath = path.join(BACKUPS_DIR, 'backups-metadata.json');
+    let metadata = {};
+    
+    if (fs.existsSync(metadataPath)) {
+      try {
+        metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+      } catch (err) {
+        console.error('Ошибка чтения метаданных:', err);
+      }
+    }
+
     const files = fs.readdirSync(BACKUPS_DIR);
     const backups = files
       .filter(file => file.endsWith('.db'))
       .map(file => {
         const filePath = path.join(BACKUPS_DIR, file);
         const stats = fs.statSync(filePath);
+        const fileMetadata = metadata[file] || {};
+        
         return {
           filename: file,
           size: stats.size,
-          created: stats.birthtime, // Используем birthtime вместо mtime
-          sizeFormatted: (stats.size / 1024 / 1024).toFixed(2) + ' MB'
+          created: stats.birthtime,
+          sizeFormatted: (stats.size / 1024 / 1024).toFixed(2) + ' MB',
+          createdBy: fileMetadata.createdBy || 'unknown',
+          isAdminBackup: fileMetadata.isAdmin || false,
+          isLocked: fileMetadata.isLocked || false
         };
       })
       .sort((a, b) => b.created - a.created); // Сортируем по дате, новые первые
@@ -9666,7 +9714,7 @@ app.post("/api/admin/delete-backup", (req, res) => {
     }
     
     const permissions = JSON.parse(moderator.permissions || "[]");
-    if (!permissions.includes("backup_db")) {
+    if (!permissions.includes("delete_backup")) {
       return res.status(403).json({ error: "Недостаточно прав для удаления бэкапов" });
     }
   }
@@ -9691,8 +9739,36 @@ app.post("/api/admin/delete-backup", (req, res) => {
       return res.status(404).json({ error: "Файл бэкапа не найден" });
     }
 
+    // Загружаем метаданные
+    const metadataPath = path.join(BACKUPS_DIR, 'backups-metadata.json');
+    let metadata = {};
+    
+    if (fs.existsSync(metadataPath)) {
+      try {
+        metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+      } catch (err) {
+        console.error('Ошибка чтения метаданных:', err);
+      }
+    }
+
+    // Проверка: Бэкап заблокирован?
+    const fileMetadata = metadata[filename];
+    if (fileMetadata && fileMetadata.isLocked) {
+      return res.status(403).json({ 
+        error: "Этот бэкап заблокирован и не может быть удален",
+        isLocked: true
+      });
+    }
+
     // Удаляем файл
     fs.unlinkSync(backupPath);
+    
+    // Удаляем метаданные
+    if (metadata[filename]) {
+      delete metadata[filename];
+      fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+    }
+    
     console.log(`✓ Бэкап удален: ${filename} (пользователь: ${username})`);
 
     res.json({
@@ -9702,6 +9778,80 @@ app.post("/api/admin/delete-backup", (req, res) => {
     });
   } catch (error) {
     console.error("❌ Ошибка при удалении бэкапа:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/toggle-backup-lock - Заблокировать/разблокировать бэкап (только для админа)
+app.post("/api/admin/toggle-backup-lock", (req, res) => {
+  const { filename, username } = req.body;
+
+  // Проверяем что пользователь админ
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    return res.status(403).json({ error: "Только админ может блокировать/разблокировать бэкапы" });
+  }
+
+  try {
+    if (!filename) {
+      return res.status(400).json({ error: "Имя файла не указано" });
+    }
+
+    console.log(`🔍 Попытка изменения блокировки бэкапа: "${filename}"`);
+
+    // Проверяем что имя файла содержит только допустимые символы (безопасность)
+    if (!/^1xBetLineBoom_backup_(before_restore_)?[\dT\-]+\.db$/.test(filename)) {
+      console.log(`❌ Имя файла не прошло проверку: "${filename}"`);
+      return res.status(400).json({ error: "Неверное имя файла" });
+    }
+
+    const backupPath = path.join(BACKUPS_DIR, filename);
+
+    // Проверяем что файл бэкапа существует
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: "Файл бэкапа не найден" });
+    }
+
+    // Загружаем метаданные
+    const metadataPath = path.join(BACKUPS_DIR, 'backups-metadata.json');
+    let metadata = {};
+    
+    if (fs.existsSync(metadataPath)) {
+      try {
+        metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+      } catch (err) {
+        console.error('Ошибка чтения метаданных:', err);
+      }
+    }
+
+    // Инициализируем метаданные если их нет
+    if (!metadata[filename]) {
+      metadata[filename] = {
+        createdBy: 'unknown',
+        isAdmin: false,
+        createdAt: new Date().toISOString(),
+        isLocked: false
+      };
+    }
+
+    // Переключаем статус блокировки
+    const newLockStatus = !metadata[filename].isLocked;
+    metadata[filename].isLocked = newLockStatus;
+    
+    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+    
+    const statusText = newLockStatus ? 'заблокирован' : 'разблокирован';
+    console.log(`✓ Бэкап ${statusText}: ${filename} (пользователь: ${username})`);
+
+    res.json({
+      success: true,
+      message: `Бэкап успешно ${statusText}`,
+      filename: filename,
+      isLocked: newLockStatus
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при изменении блокировки бэкапа:", error);
     res.status(500).json({ error: error.message });
   }
 });
