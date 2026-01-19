@@ -8349,7 +8349,7 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
   // Проверяем права
   const isAdminUser = username === process.env.ADMIN_DB_NAME;
   let isModerator = false;
-  let hasEditPermission = false;
+  let hasPermission = false;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -8362,20 +8362,31 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
       const permissions = JSON.parse(moderator.permissions || "[]");
       isModerator = true;
       
-      // Для редактирования матча нужно право edit_matches
-      if (team1_name || team2_name || match_date !== undefined || round !== undefined || 
-          is_final !== undefined || score_prediction_enabled !== undefined) {
-        hasEditPermission = permissions.includes("edit_matches");
+      console.log("   Права модератора:", permissions);
+      
+      // Определяем какое действие выполняется
+      const isEditingMatch = team1_name || team2_name || match_date !== undefined || 
+                             round !== undefined || is_final !== undefined || 
+                             score_prediction_enabled !== undefined;
+      const isSettingResult = status !== undefined;
+      
+      console.log("   Действия: редактирование =", isEditingMatch, ", установка результата =", isSettingResult);
+      
+      // Проверяем соответствующие права
+      if (isEditingMatch && permissions.includes("edit_matches")) {
+        hasPermission = true;
+        console.log("   ✓ Есть право edit_matches");
       }
       
-      // Для установки результата нужно право manage_results
-      if (status) {
-        hasEditPermission = permissions.includes("manage_results");
+      if (isSettingResult && (permissions.includes("manage_results") || permissions.includes("edit_matches"))) {
+        hasPermission = true;
+        console.log("   ✓ Есть право manage_results или edit_matches");
       }
     }
     
-    if (!isModerator || !hasEditPermission) {
+    if (!isModerator || !hasPermission) {
       console.log("❌ Пользователь не имеет прав:", username);
+      console.log("   Модератор:", isModerator, "Права:", hasPermission);
       return res.status(403).json({ error: "Недостаточно прав" });
     }
   }
