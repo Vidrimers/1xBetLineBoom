@@ -5227,6 +5227,19 @@ async function backupDatabase() {
         const backups = await response.json();
         const backupsList = document.getElementById("databaseBackupsList");
         
+        // Вычисляем общий размер всех бэкапов
+        const totalSize = backups.reduce((sum, backup) => sum + backup.size, 0);
+        const totalSizeFormatted = (totalSize / 1024 / 1024).toFixed(2) + ' MB';
+        
+        // Обновляем заголовок с общим размером
+        document.getElementById("backupsListHeader").innerHTML = `
+          <h3 style="color: #5a9fd4; margin: 0;">📦 Доступные бэкапы (выберите один):</h3>
+          <div style="color: #999; font-size: 0.9em;">
+            Всего: <strong style="color: #5a9fd4;">${backups.length}</strong> | 
+            Общий размер: <strong style="color: #5a9fd4;">${totalSizeFormatted}</strong>
+          </div>
+        `;
+        
         if (backups.length === 0) {
           backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
         } else {
@@ -5374,9 +5387,26 @@ async function openDatabaseModal() {
 
     const backupsList = document.getElementById("databaseBackupsList");
     
+    // Вычисляем общий размер всех бэкапов
+    const totalSize = backups.reduce((sum, backup) => sum + backup.size, 0);
+    const totalSizeFormatted = (totalSize / 1024 / 1024).toFixed(2) + ' MB';
+    
     if (backups.length === 0) {
       backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
+      // Обновляем заголовок без общего размера
+      document.getElementById("backupsListHeader").innerHTML = `
+        <h3 style="color: #5a9fd4; margin: 0;">📦 Доступные бэкапы (выберите один):</h3>
+      `;
     } else {
+      // Обновляем заголовок с общим размером
+      document.getElementById("backupsListHeader").innerHTML = `
+        <h3 style="color: #5a9fd4; margin: 0;">📦 Доступные бэкапы (выберите один):</h3>
+        <div style="color: #999; font-size: 0.9em;">
+          Всего: <strong style="color: #5a9fd4;">${backups.length}</strong> | 
+          Общий размер: <strong style="color: #5a9fd4;">${totalSizeFormatted}</strong>
+        </div>
+      `;
+      
       backupsList.innerHTML = backups.map(backup => {
         const isNew = backup.filename === lastCreatedBackupFilename;
         return `
@@ -5583,11 +5613,7 @@ async function deleteSelectedBackup() {
     const data = await response.json();
 
     if (data.success) {
-      await showCustomAlert(
-        `Бэкап успешно удален:\n<strong style="color: #5a9fd4;">${selectedBackupFilename}</strong>`,
-        "Успешно",
-        "✅"
-      );
+      // Убираем алерт об успешном удалении
       selectedBackupFilename = null;
       // Перезагружаем список бэкапов
       openDatabaseModal();
