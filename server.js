@@ -620,6 +620,138 @@ function writeBetLog(action, data) {
         <div class="permissions-changes"><div class="log-label">Изменения</div>${changesHtml}</div>
       </div>
     </div>`;
+    } else if (action === "match_created") {
+      logEntry = `
+    <div class="log-entry match-created">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action match-created">⚽ МАТЧ СОЗДАН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="teams"><div class="log-label">Команды</div>⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="tournament"><div class="log-label">Турнир</div>🏆 ${data.tournament}</span>
+        <span class="round"><div class="log-label">Тур</div>📅 ${data.round}</span>
+        ${data.is_final ? '<span class="round"><div class="log-label">Тип</div>🏅 Финальный матч</span>' : ''}
+      </div>
+    </div>`;
+    } else if (action === "match_edited") {
+      logEntry = `
+    <div class="log-entry match-edited">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action match-edited">✏️ МАТЧ ОТРЕДАКТИРОВАН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="teams"><div class="log-label">Команды</div>⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="tournament"><div class="log-label">Турнир</div>🏆 ${data.tournament}</span>
+        <span class="round"><div class="log-label">Тур</div>📅 ${data.round}</span>
+      </div>
+    </div>`;
+    } else if (action === "match_deleted") {
+      logEntry = `
+    <div class="log-entry match-deleted">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action match-deleted">🗑️ МАТЧ УДАЛЕН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="teams"><div class="log-label">Команды</div>⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="tournament"><div class="log-label">Турнир</div>🏆 ${data.tournament}</span>
+        <span class="round"><div class="log-label">Тур</div>📅 ${data.round}</span>
+      </div>
+    </div>`;
+    } else if (action === "match_result_set") {
+      logEntry = `
+    <div class="log-entry match-result-set">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action match-result">📊 РЕЗУЛЬТАТ МАТЧА УСТАНОВЛЕН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="teams"><div class="log-label">Команды</div>⚽ ${data.team1} vs ${data.team2}</span>
+        <span class="score"><div class="log-label">Счет</div>⚽ ${data.score}</span>
+        <span class="tournament"><div class="log-label">Турнир</div>🏆 ${data.tournament}</span>
+      </div>
+    </div>`;
+    } else if (action === "tournament_created") {
+      logEntry = `
+    <div class="log-entry tournament-created">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action tournament-created">🏆 ТУРНИР СОЗДАН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="tournament"><div class="log-label">Название</div>🏆 ${data.name}</span>
+        ${data.dates ? `<span class="details"><div class="log-label">Даты</div>📅 ${data.dates}</span>` : ''}
+      </div>
+    </div>`;
+    } else if (action === "tournament_edited") {
+      logEntry = `
+    <div class="log-entry tournament-edited">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action tournament-edited">✏️ ТУРНИР ОТРЕДАКТИРОВАН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="tournament"><div class="log-label">Название</div>🏆 ${data.name}</span>
+      </div>
+    </div>`;
+    } else if (action === "tournament_deleted") {
+      logEntry = `
+    <div class="log-entry tournament-deleted">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action tournament-deleted">🗑️ ТУРНИР УДАЛЕН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="tournament"><div class="log-label">Название</div>🏆 ${data.name}</span>
+      </div>
+    </div>`;
+    } else if (action === "backup_created") {
+      logEntry = `
+    <div class="log-entry backup-created">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action backup-created">💾 БЭКАП СОЗДАН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="backup"><div class="log-label">Файл</div>📦 ${data.filename}</span>
+        <span class="backup"><div class="log-label">Размер</div>📊 ${data.size}</span>
+      </div>
+    </div>`;
+    } else if (action === "backup_restored") {
+      logEntry = `
+    <div class="log-entry backup-restored">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action backup-restored">📥 БАЗА ДАННЫХ ВОССТАНОВЛЕНА</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="backup"><div class="log-label">Из файла</div>📦 ${data.filename}</span>
+        ${data.currentBackup ? `<span class="backup"><div class="log-label">Создан бэкап</div>💾 ${data.currentBackup}</span>` : ''}
+      </div>
+    </div>`;
+    } else if (action === "backup_deleted") {
+      logEntry = `
+    <div class="log-entry backup-deleted">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action backup-deleted">🗑️ БЭКАП УДАЛЕН</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="backup"><div class="log-label">Файл</div>📦 ${data.filename}</span>
+      </div>
+    </div>`;
+    } else if (action === "telegram_synced") {
+      logEntry = `
+    <div class="log-entry telegram-synced">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action telegram-synced">🔄 СИНХРОНИЗАЦИЯ TELEGRAM ID</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="details"><div class="log-label">Результат</div>✅ Обновлено: ${data.updated} | ❌ Не найдено: ${data.notFound}</span>
+      </div>
+    </div>`;
+    } else if (action === "orphaned_cleaned") {
+      logEntry = `
+    <div class="log-entry orphaned-cleaned">
+      <div class="log-time">🕐 ${time}</div>
+      <div class="log-action orphaned-cleaned">🗑️ ОЧИСТКА ORPHANED ДАННЫХ</div>
+      <div class="log-details">
+        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="details"><div class="log-label">Удалено</div>${data.details}</span>
+      </div>
+    </div>`;
     }
 
     // Читаем файл и вставляем новый лог после <!-- LOGS_START -->
@@ -1270,6 +1402,18 @@ function resetLogFile() {
     .log-entry.moderator-assigned { border-left-color: #9c27b0; }
     .log-entry.moderator-removed { border-left-color: #f44336; }
     .log-entry.moderator-permissions-changed { border-left-color: #ff9800; }
+    .log-entry.match-created { border-left-color: #4caf50; }
+    .log-entry.match-edited { border-left-color: #2196f3; }
+    .log-entry.match-deleted { border-left-color: #f44336; }
+    .log-entry.match-result-set { border-left-color: #ff9800; }
+    .log-entry.tournament-created { border-left-color: #9c27b0; }
+    .log-entry.tournament-edited { border-left-color: #673ab7; }
+    .log-entry.tournament-deleted { border-left-color: #f44336; }
+    .log-entry.backup-created { border-left-color: #00bcd4; }
+    .log-entry.backup-restored { border-left-color: #ff5722; }
+    .log-entry.backup-deleted { border-left-color: #f44336; }
+    .log-entry.telegram-synced { border-left-color: #03a9f4; }
+    .log-entry.orphaned-cleaned { border-left-color: #607d8b; }
     .log-time { color: #b0b8c8; font-size: 0.85em; margin-bottom: 5px; }
     .log-action { font-weight: bold; margin-bottom: 8px; }
     .log-action.placed { color: #4caf50; }
@@ -1278,6 +1422,18 @@ function resetLogFile() {
     .log-action.moderator { color: #9c27b0; }
     .log-action.moderator-removed { color: #f44336; }
     .log-action.moderator-changed { color: #ff9800; }
+    .log-action.match-created { color: #4caf50; }
+    .log-action.match-edited { color: #2196f3; }
+    .log-action.match-deleted { color: #f44336; }
+    .log-action.match-result { color: #ff9800; }
+    .log-action.tournament-created { color: #9c27b0; }
+    .log-action.tournament-edited { color: #673ab7; }
+    .log-action.tournament-deleted { color: #f44336; }
+    .log-action.backup-created { color: #00bcd4; }
+    .log-action.backup-restored { color: #ff5722; }
+    .log-action.backup-deleted { color: #f44336; }
+    .log-action.telegram-synced { color: #03a9f4; }
+    .log-action.orphaned-cleaned { color: #607d8b; }
     .log-details {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1292,6 +1448,12 @@ function resetLogFile() {
     .log-details .setting { color: #ffcc80; }
     .log-details .permissions { color: #ba68c8; grid-column: 1 / -1; }
     .log-details .permissions-changes { grid-column: 1 / -1; padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+    .log-details .tournament { color: #ba68c8; }
+    .log-details .teams { color: #81c784; }
+    .log-details .round { color: #ffb74d; }
+    .log-details .score { color: #ff9800; }
+    .log-details .backup { color: #00bcd4; }
+    .log-details .details { color: #b0b8c8; grid-column: 1 / -1; }
   </style>
 </head>
 <body>
@@ -7528,6 +7690,13 @@ app.post("/api/admin/events", async (req, res) => {
 📅 Даты: ${start_date || 'не указана'} - ${end_date || 'не указана'}`;
       
       await notifyModeratorAction(username, "Создание турнира", details);
+      
+      // Запись в логи
+      writeBetLog("tournament_created", {
+        moderator: username,
+        name: name,
+        dates: start_date && end_date ? `${start_date} - ${end_date}` : null
+      });
     }
 
     res.json({
@@ -7743,6 +7912,16 @@ app.post("/api/admin/matches", async (req, res) => {
 🔢 Тур: ${round || "не указан"}${is_final ? "\n🏅 Финальный матч" : ""}`;
 
       await notifyModeratorAction(username, "Создание матча", details);
+      
+      // Запись в логи
+      writeBetLog("match_created", {
+        moderator: username,
+        team1: team1,
+        team2: team2,
+        tournament: event?.name || "Неизвестно",
+        round: round || "не указан",
+        is_final: is_final
+      });
     }
 
     res.json({
@@ -7945,12 +8124,22 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
       // Уведомление админу если это модератор
       if (isModerator && username) {
         const match = db.prepare("SELECT team1_name, team2_name FROM matches WHERE id = ?").get(matchId);
+        const event = db.prepare("SELECT e.name FROM events e JOIN matches m ON m.event_id = e.id WHERE m.id = ?").get(matchId);
         const resultText = result === 'team1_win' ? match.team1_name : result === 'team2_win' ? match.team2_name : 'Ничья';
         const details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}
 📊 Результат: ${resultText}
 ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${req.body.score_team2}` : ''}`;
         
         await notifyModeratorAction(username, "Установка результата матча", details);
+        
+        // Запись в логи
+        writeBetLog("match_result_set", {
+          moderator: username,
+          team1: match.team1_name,
+          team2: match.team2_name,
+          score: req.body.score_team1 !== undefined ? `${req.body.score_team1}:${req.body.score_team2}` : resultText,
+          tournament: event?.name || "Неизвестно"
+        });
       }
 
       return res.json({
@@ -8075,11 +8264,21 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
 
       // Уведомление админу если это модератор
       if (isModerator && username) {
+        const event = db.prepare("SELECT e.name FROM events e JOIN matches m ON m.event_id = e.id WHERE m.id = ?").get(matchId);
         const details = `⚽ Матч: ${team1_name || currentMatch.team1_name} vs ${team2_name || currentMatch.team2_name}
 📅 Дата: ${match_date || currentMatch.match_date || 'не указана'}
 🔢 Тур: ${round || currentMatch.round || 'не указан'}`;
         
         await notifyModeratorAction(username, "Редактирование матча", details);
+        
+        // Запись в логи
+        writeBetLog("match_edited", {
+          moderator: username,
+          team1: team1_name || currentMatch.team1_name,
+          team2: team2_name || currentMatch.team2_name,
+          tournament: event?.name || "Неизвестно",
+          round: round || currentMatch.round || 'не указан'
+        });
       }
 
       return res.json({
@@ -8195,6 +8394,12 @@ app.delete("/api/admin/events/:eventId", async (req, res) => {
     if (isModerator) {
       const detailsText = `Турнир: ${eventName}\nID: ${eventId}`;
       await notifyModeratorAction(username, "Удаление турнира", detailsText);
+      
+      // Запись в логи
+      writeBetLog("tournament_deleted", {
+        moderator: username,
+        name: eventName
+      });
     }
 
     res.json({ message: "Событие успешно удалено" });
@@ -8380,6 +8585,12 @@ app.put("/api/admin/events/:eventId", async (req, res) => {
     if (isModerator) {
       const detailsText = `Турнир: ${name}\nID: ${eventId}`;
       await notifyModeratorAction(username, "Редактирование турнира", detailsText);
+      
+      // Запись в логи
+      writeBetLog("tournament_edited", {
+        moderator: username,
+        name: name
+      });
     }
 
     res.json({
@@ -8760,6 +8971,13 @@ app.post("/api/admin/sync-telegram-ids", async (req, res) => {
 ❌ Не найдено: ${notFound}`;
       
       await notifyModeratorAction(username, "Синхронизация Telegram ID", detailsText);
+      
+      // Запись в логи
+      writeBetLog("telegram_synced", {
+        moderator: username,
+        updated: updated,
+        notFound: notFound
+      });
     }
   } catch (error) {
     console.error("❌ Ошибка синхронизации:", error);
@@ -9390,11 +9608,21 @@ app.delete("/api/admin/matches/:matchId", async (req, res) => {
 
     // Уведомление админу если это модератор
     if (isModerator && username && match) {
+      const event = db.prepare("SELECT e.name FROM events e JOIN matches m ON m.event_id = e.id WHERE m.id = ?").get(matchId);
       const details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}
 📅 Дата: ${match.match_date || 'не указана'}
 🔢 Тур: ${match.round || 'не указан'}`;
       
       await notifyModeratorAction(username, "Удаление матча", details);
+      
+      // Запись в логи
+      writeBetLog("match_deleted", {
+        moderator: username,
+        team1: match.team1_name,
+        team2: match.team2_name,
+        tournament: event?.name || "Неизвестно",
+        round: match.round || 'не указан'
+      });
     }
 
     res.json({ success: true, message: "Матч успешно удален" });
@@ -9799,10 +10027,18 @@ app.post("/api/backup", async (req, res) => {
     if (!isAdminUser && username) {
       const isModerator = db.prepare("SELECT id FROM moderators WHERE user_id = (SELECT id FROM users WHERE username = ?)").get(username);
       if (isModerator) {
+        const fileSize = (fs.statSync(backupPath).size / 1024 / 1024).toFixed(2);
         const details = `💾 Файл: ${backupFilename}
-📦 Размер: ${(fs.statSync(backupPath).size / 1024 / 1024).toFixed(2)} MB`;
+📦 Размер: ${fileSize} MB`;
         
         await notifyModeratorAction(username, "Создание бэкапа БД", details);
+        
+        // Запись в логи
+        writeBetLog("backup_created", {
+          moderator: username,
+          filename: backupFilename,
+          size: `${fileSize} MB`
+        });
       }
     }
 
@@ -9972,6 +10208,13 @@ app.post("/api/admin/restore-backup", async (req, res) => {
 💾 Создан бэкап текущей БД: ${currentBackupFilename}`;
       
       await notifyModeratorAction(username, "Восстановление БД", details);
+      
+      // Запись в логи
+      writeBetLog("backup_restored", {
+        moderator: username,
+        filename: filename,
+        currentBackup: currentBackupFilename
+      });
     }
 
     res.json({
@@ -10067,6 +10310,12 @@ app.post("/api/admin/delete-backup", async (req, res) => {
       const details = `🗑️ Файл: ${filename}`;
       
       await notifyModeratorAction(username, "Удаление бэкапа БД", details);
+      
+      // Запись в логи
+      writeBetLog("backup_deleted", {
+        moderator: username,
+        filename: filename
+      });
     }
 
     res.json({
@@ -10395,6 +10644,16 @@ app.post("/api/admin/cleanup-orphaned-data", async (req, res) => {
 ${Object.entries(deletedCounts).map(([key, count]) => `  • ${key}: ${count}`).join('\n')}`;
       
       await notifyModeratorAction(username, "Очистка orphaned данных", detailsText);
+      
+      // Запись в логи
+      const detailsFormatted = Object.entries(deletedCounts)
+        .map(([key, count]) => `${key}: ${count}`)
+        .join(', ');
+      
+      writeBetLog("orphaned_cleaned", {
+        moderator: username,
+        details: detailsFormatted
+      });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
