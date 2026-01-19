@@ -10957,12 +10957,40 @@ async function saveScoreMatchResult() {
   if (!currentScoreMatchId) return;
   
   if (!currentScoreMatchResult) {
-    alert('Выберите победителя');
+    await showCustomAlert('Выберите победителя', 'Ошибка', '⚠️');
     return;
   }
   
   const scoreTeam1 = parseInt(document.getElementById('scoreModalTeam1').value) || 0;
   const scoreTeam2 = parseInt(document.getElementById('scoreModalTeam2').value) || 0;
+  
+  // Валидация: проверяем соответствие счета и выбранного победителя
+  if (currentScoreMatchResult === 'team1' && scoreTeam1 <= scoreTeam2) {
+    await showCustomAlert(
+      `Счет не соответствует выбранному победителю!\n\nВы выбрали победу первой команды, но счет ${scoreTeam1}:${scoreTeam2}`,
+      'Ошибка валидации',
+      '❌'
+    );
+    return;
+  }
+  
+  if (currentScoreMatchResult === 'team2' && scoreTeam2 <= scoreTeam1) {
+    await showCustomAlert(
+      `Счет не соответствует выбранному победителю!\n\nВы выбрали победу второй команды, но счет ${scoreTeam1}:${scoreTeam2}`,
+      'Ошибка валидации',
+      '❌'
+    );
+    return;
+  }
+  
+  if (currentScoreMatchResult === 'draw' && scoreTeam1 !== scoreTeam2) {
+    await showCustomAlert(
+      `Счет не соответствует ничьей!\n\nВы выбрали ничью, но счет ${scoreTeam1}:${scoreTeam2}`,
+      'Ошибка валидации',
+      '❌'
+    );
+    return;
+  }
   
   try {
     const response = await fetch(`/api/admin/matches/${currentScoreMatchId}`, {
@@ -10986,11 +11014,11 @@ async function saveScoreMatchResult() {
     } else {
       const errorText = await response.text();
       console.error('Ошибка ответа сервера:', errorText);
-      alert('Ошибка при сохранении результата: ' + errorText);
+      await showCustomAlert('Ошибка при сохранении результата: ' + errorText, 'Ошибка', '❌');
     }
   } catch (error) {
     console.error('Ошибка при сохранении результата матча:', error);
-    alert('Ошибка при сохранении результата матча: ' + error.message);
+    await showCustomAlert('Ошибка при сохранении результата матча: ' + error.message, 'Ошибка', '❌');
   }
 }
 
