@@ -3314,6 +3314,12 @@
   /* Список бэкапов - скроллится */
   #databaseBackupsList {
     max-height: calc(90vh - 350px) !important;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  /* Скрытие скроллбара для WebKit браузеров (Chrome, Safari, Edge) */
+  #databaseBackupsList::-webkit-scrollbar {
+    display: none;
   }
 
   /* Карточки бэкапов */
