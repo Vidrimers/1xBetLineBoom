@@ -3987,3 +3987,15 @@ input:checked + .slider:before {
 button[onclick^="toggleTeamDropdown"]:hover {
   color: #7ab0e0 !important;
 }
+
+/* Анимация пульсации для бейджа NEW */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}

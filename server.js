@@ -9554,7 +9554,7 @@ app.get("/api/admin/backups", (req, res) => {
         return {
           filename: file,
           size: stats.size,
-          created: stats.mtime,
+          created: stats.birthtime, // Используем birthtime вместо mtime
           sizeFormatted: (stats.size / 1024 / 1024).toFixed(2) + ' MB'
         };
       })
@@ -9643,6 +9643,65 @@ app.post("/api/admin/restore-backup", (req, res) => {
     });
   } catch (error) {
     console.error("❌ Ошибка при восстановлении БД:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/delete-backup - Удалить бэкап
+app.post("/api/admin/delete-backup", (req, res) => {
+  const { filename, username } = req.body;
+
+  // Проверяем права
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("backup_db")) {
+      return res.status(403).json({ error: "Недостаточно прав для удаления бэкапов" });
+    }
+  }
+
+  try {
+    if (!filename) {
+      return res.status(400).json({ error: "Имя файла не указано" });
+    }
+
+    console.log(`🔍 Попытка удаления бэкапа: "${filename}"`);
+
+    // Проверяем что имя файла содержит только допустимые символы (безопасность)
+    if (!/^1xBetLineBoom_backup_(before_restore_)?[\dT\-]+\.db$/.test(filename)) {
+      console.log(`❌ Имя файла не прошло проверку: "${filename}"`);
+      return res.status(400).json({ error: "Неверное имя файла" });
+    }
+
+    const backupPath = path.join(BACKUPS_DIR, filename);
+
+    // Проверяем что файл бэкапа существует
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: "Файл бэкапа не найден" });
+    }
+
+    // Удаляем файл
+    fs.unlinkSync(backupPath);
+    console.log(`✓ Бэкап удален: ${filename} (пользователь: ${username})`);
+
+    res.json({
+      success: true,
+      message: "Бэкап успешно удален",
+      deleted_file: filename
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при удалении бэкапа:", error);
     res.status(500).json({ error: error.message });
   }
 });
