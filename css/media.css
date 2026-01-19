@@ -3270,19 +3270,13 @@
     justify-content: flex-start !important;
     align-items: center !important;
     gap: 10px !important;
+    position: relative !important;
   }
 
-  /* Кнопка блокировки - делаем видимой на мобильных */
+  /* Кнопка блокировки - делаем видимой на мобильных, но сохраняем absolute */
   .backup-lock-btn {
     opacity: 1 !important;
     pointer-events: auto !important;
-  }
-
-  /* NEW бейдж - уменьшаем и переносим */
-  .backup-item > div > div:first-child > div[style*="position: absolute"] {
-    position: static !important;
-    display: inline-block !important;
-    margin-bottom: 8px !important;
   }
 }
 

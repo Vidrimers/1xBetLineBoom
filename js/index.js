@@ -5370,7 +5370,7 @@ async function backupDatabase() {
                   </div>
                   ${backup.createdBy !== 'unknown' ? `<div style="font-size: 0.85em; color: #888; margin-top: 3px;">👤 ${backup.createdBy}</div>` : ''}
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; position: relative;">
                   ${isLocked ? '<div style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; white-space: nowrap;">🔒 Заблокирован</div>' : ''}
                   ${isAdmin() ? `<button 
                     class="backup-lock-btn"
@@ -5388,6 +5388,9 @@ async function backupDatabase() {
                       opacity: 0;
                       box-shadow: none;
                       pointer-events: none;
+                      position: absolute;
+                      right: 0;
+                      bottom: 0;
                     "
                     title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}"
                   >
@@ -5584,7 +5587,7 @@ async function openDatabaseModal() {
               </div>
               ${backup.createdBy !== 'unknown' ? `<div style="font-size: 0.85em; color: #888; margin-top: 3px;">👤 ${backup.createdBy}</div>` : ''}
             </div>
-            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; position: relative;">
               ${isLocked ? '<div style="background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; white-space: nowrap;">🔒 Заблокирован</div>' : ''}
               ${isAdmin() ? `<button 
                 class="backup-lock-btn"
@@ -5602,6 +5605,9 @@ async function openDatabaseModal() {
                   opacity: 0;
                   box-shadow: none;
                   pointer-events: none;
+                  position: absolute;
+                  right: 0;
+                  bottom: 0;
                 "
                 title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}"
               >
