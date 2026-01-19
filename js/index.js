@@ -826,6 +826,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const user = JSON.parse(savedUser);
     currentUser = user;
     
+    console.log(`🔍 Пользователь из localStorage:`, {
+      id: user.id,
+      username: user.username,
+      show_lucky_button: user.show_lucky_button,
+      show_bets: user.show_bets
+    });
+    
     // Загружаем настройку show_lucky_button с сервера
     try {
       const response = await fetch(`/api/user/${user.id}/show-lucky-button`);
@@ -833,12 +840,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         const data = await response.json();
         currentUser.show_lucky_button = data.show_lucky_button !== undefined ? data.show_lucky_button : 1;
         localStorage.setItem("currentUser", JSON.stringify(currentUser));
-        console.log(`✅ Настройка show_lucky_button загружена: ${currentUser.show_lucky_button}`);
+        console.log(`✅ Настройка show_lucky_button загружена из БД: ${currentUser.show_lucky_button}`);
       }
     } catch (err) {
       console.error("⚠️ Ошибка загрузки настройки show_lucky_button:", err);
       // По умолчанию показываем кнопку
       currentUser.show_lucky_button = 1;
+    }
+    
+    // Загружаем настройку show_bets с сервера
+    try {
+      const response = await fetch(`/api/user/${user.id}/show-bets`);
+      if (response.ok) {
+        const data = await response.json();
+        currentUser.show_bets = data.show_bets || "always";
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        console.log(`✅ Настройка show_bets загружена из БД: ${currentUser.show_bets}`);
+      }
+    } catch (err) {
+      console.error("⚠️ Ошибка загрузки настройки show_bets:", err);
+      // По умолчанию всегда показываем
+      currentUser.show_bets = "always";
     }
     
     // Обновляем видимость кнопки сразу после загрузки настройки
@@ -1353,6 +1375,9 @@ async function loadEventsList() {
         }
       }
     }
+    
+    // Обновляем видимость кнопки "Мне повезет" после загрузки турниров
+    updateLuckyButtonVisibility();
   } catch (error) {
     console.error("Ошибка при загрузке событий:", error);
     document.getElementById("eventsList").innerHTML =
@@ -1562,22 +1587,8 @@ async function selectEvent(eventId, eventName) {
     matchesBracketButtons.innerHTML = '';
   }
 
-  // Скрываем/показываем кнопку "Мне повезет" в зависимости от статуса турнира и настроек пользователя
-  const luckyBtnContainer = document.getElementById('luckyBtnContainer');
-  if (luckyBtnContainer) {
-    // Проверяем настройку пользователя
-    const userWantsButton = !currentUser || currentUser.show_lucky_button === undefined || currentUser.show_lucky_button === 1;
-    
-    // Показываем только если пользователь включил кнопку И турнир активный (не завершен и не предстоящий)
-    const isLocked = event && event.locked_reason;
-    const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
-    
-    if (!userWantsButton || isLocked || isUpcoming) {
-      luckyBtnContainer.style.display = 'none';
-    } else {
-      luckyBtnContainer.style.display = 'block';
-    }
-  }
+  // Обновляем видимость кнопки "Мне повезет"
+  updateLuckyButtonVisibility();
 
   // Скрываем/показываем кнопку напоминаний в зависимости от статуса турнира
   const matchRemindersBtn = document.getElementById('matchRemindersBtn');
@@ -1819,6 +1830,9 @@ async function loadMatches(eventId) {
     matches = await response.json();
     currentRoundFilter = "all"; // Сбрасываем фильтр при загрузке нового турнира
     displayMatches();
+    
+    // Обновляем видимость кнопки "Мне повезет"
+    updateLuckyButtonVisibility();
   } catch (error) {
     console.error("Ошибка при загрузке матчей:", error);
     document.getElementById("matchesContainer").innerHTML =
@@ -5804,7 +5818,12 @@ async function restoreSelectedBackup() {
         "✅"
       );
       closeDatabaseModal();
-      setTimeout(() => window.location.reload(), 1000);
+      
+      // Полностью очищаем localStorage, чтобы все данные загрузились из восстановленной БД
+      // Пользователь должен будет заново войти
+      localStorage.clear();
+      
+      setTimeout(() => window.location.reload(), 500);
     } else {
       await showCustomAlert(data.error, "Ошибка при восстановлении БД", "❌");
     }
@@ -9198,14 +9217,18 @@ async function loadShowBetsSettings() {
   try {
     if (!currentUser) return;
 
+    console.log(`🔍 Загрузка настройки show_bets для пользователя ${currentUser.id}...`);
     const response = await fetch(`/api/user/${currentUser.id}/show-bets`);
     const data = await response.json();
 
     if (response.ok) {
       const select = document.getElementById("showBetsSelect");
       if (select) {
-        select.value = data.show_bets || "always";
-        console.log(`✅ Настройка "Показывать ставки" загружена: ${data.show_bets}`);
+        const showBets = data.show_bets || "always";
+        select.value = showBets;
+        currentUser.show_bets = showBets;
+        console.log(`✅ Настройка "Показывать ставки" загружена из БД: ${showBets}`);
+        console.log(`   Значение установлено в селект: ${select.value}`);
       }
     }
   } catch (error) {
@@ -9218,6 +9241,7 @@ async function loadLuckyButtonSettings() {
   try {
     if (!currentUser) return;
 
+    console.log(`🔍 Загрузка настройки show_lucky_button для пользователя ${currentUser.id}...`);
     const response = await fetch(`/api/user/${currentUser.id}/show-lucky-button`);
     const data = await response.json();
 
@@ -9227,7 +9251,8 @@ async function loadLuckyButtonSettings() {
         const showLuckyButton = data.show_lucky_button !== undefined ? data.show_lucky_button : 1;
         select.value = showLuckyButton.toString();
         currentUser.show_lucky_button = showLuckyButton;
-        console.log(`✅ Настройка "Кнопка Мне повезет" загружена: ${showLuckyButton}`);
+        console.log(`✅ Настройка "Кнопка Мне повезет" загружена из БД: ${showLuckyButton}`);
+        console.log(`   Значение установлено в селект: ${select.value}`);
         
         // Обновляем видимость кнопки
         updateLuckyButtonVisibility();
@@ -9318,9 +9343,11 @@ async function saveShowBetsSettings() {
     const select = document.getElementById("showBetsSelect");
     const showBets = select.value;
 
-    const btn = event.target;
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    const btn = document.querySelector('[onclick="saveShowBetsSettings()"]');
+    if (btn) {
+      btn.textContent = "Сохранение...";
+      btn.disabled = true;
+    }
 
     const response = await fetch(`/api/user/${currentUser.id}/show-bets`, {
       method: "PUT",
@@ -9338,24 +9365,32 @@ async function saveShowBetsSettings() {
       // Обновляем localStorage
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
       
-      btn.textContent = "✅ Сохранено!";
+      if (btn) {
+        btn.textContent = "✅ Сохранено!";
+      }
       console.log(`✅ Настройка "Показывать ставки" сохранена: ${showBets}`);
 
       setTimeout(() => {
-        btn.textContent = "💾 Сохранить";
-        btn.disabled = false;
+        if (btn) {
+          btn.textContent = "💾 Сохранить";
+          btn.disabled = false;
+        }
       }, 2000);
     } else {
       alert("Ошибка: " + result.error);
-      btn.textContent = "💾 Сохранить";
-      btn.disabled = false;
+      if (btn) {
+        btn.textContent = "💾 Сохранить";
+        btn.disabled = false;
+      }
     }
   } catch (error) {
     console.error("Ошибка при сохранении настройки:", error);
     alert("Ошибка при сохранении");
-    const btn = event.target;
-    btn.textContent = "💾 Сохранить";
-    btn.disabled = false;
+    const btn = document.querySelector('[onclick="saveShowBetsSettings()"]');
+    if (btn) {
+      btn.textContent = "💾 Сохранить";
+      btn.disabled = false;
+    }
   }
 }
 
@@ -9370,9 +9405,11 @@ async function saveLuckyButtonSettings() {
     const select = document.getElementById("showLuckyButtonSelect");
     const showLuckyButton = parseInt(select.value);
 
-    const btn = event.target;
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    const btn = document.querySelector('[onclick="saveLuckyButtonSettings()"]');
+    if (btn) {
+      btn.textContent = "Сохранение...";
+      btn.disabled = true;
+    }
 
     const response = await fetch(`/api/user/${currentUser.id}/show-lucky-button`, {
       method: "PUT",
@@ -9393,24 +9430,32 @@ async function saveLuckyButtonSettings() {
       // Обновляем видимость кнопки
       updateLuckyButtonVisibility();
       
-      btn.textContent = "✅ Сохранено!";
+      if (btn) {
+        btn.textContent = "✅ Сохранено!";
+      }
       console.log(`✅ Настройка "Кнопка Мне повезет" сохранена: ${showLuckyButton}`);
 
       setTimeout(() => {
-        btn.textContent = "💾 Сохранить";
-        btn.disabled = false;
+        if (btn) {
+          btn.textContent = "💾 Сохранить";
+          btn.disabled = false;
+        }
       }, 2000);
     } else {
       alert("Ошибка: " + result.error);
-      btn.textContent = "💾 Сохранить";
-      btn.disabled = false;
+      if (btn) {
+        btn.textContent = "💾 Сохранить";
+        btn.disabled = false;
+      }
     }
   } catch (error) {
     console.error("Ошибка при сохранении настройки:", error);
     alert("Ошибка при сохранении");
-    const btn = event.target;
-    btn.textContent = "💾 Сохранить";
-    btn.disabled = false;
+    const btn = document.querySelector('[onclick="saveLuckyButtonSettings()"]');
+    if (btn) {
+      btn.textContent = "💾 Сохранить";
+      btn.disabled = false;
+    }
   }
 }
 

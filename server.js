@@ -1583,6 +1583,85 @@ app.use((req, res, next) => {
 
 // ===== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ =====
 
+// Функция для запуска миграций таблицы users
+function runUsersMigrations() {
+  console.log("🔄 Запуск миграций для таблицы users...");
+  
+  // Миграция: добавляем telegram_username если его нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN telegram_username TEXT`);
+    console.log("✅ Колонка telegram_username добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем avatar если его нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN avatar LONGTEXT`);
+    console.log("✅ Колонка avatar добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем telegram_notifications_enabled если её нет
+  try {
+    db.exec(
+      `ALTER TABLE users ADD COLUMN telegram_notifications_enabled INTEGER DEFAULT 1`
+    );
+    console.log(
+      "✅ Колонка telegram_notifications_enabled добавлена в таблицу users"
+    );
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем telegram_group_reminders_enabled если её нет
+  try {
+    db.exec(
+      `ALTER TABLE users ADD COLUMN telegram_group_reminders_enabled INTEGER DEFAULT 1`
+    );
+    console.log(
+      "✅ Колонка telegram_group_reminders_enabled добавлена в таблицу users"
+    );
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем avatar_path если её нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN avatar_path TEXT`);
+    console.log("✅ Колонка avatar_path добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем theme если её нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN theme TEXT DEFAULT 'theme-default'`);
+    console.log("✅ Колонка theme добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем show_bets если её нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN show_bets TEXT DEFAULT 'always'`);
+    console.log("✅ Колонка show_bets добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем show_lucky_button если её нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN show_lucky_button INTEGER DEFAULT 1`);
+    console.log("✅ Колонка show_lucky_button добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+  
+  console.log("✅ Миграции для таблицы users завершены");
+}
+
 // Таблица пользователей
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -1594,77 +1673,8 @@ db.exec(`
   )
 `);
 
-// Миграция: добавляем telegram_username если его нет
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN telegram_username TEXT`);
-  console.log("✅ Колонка telegram_username добавлена в таблицу users");
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
-
-// Миграция: добавляем avatar если его нет
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN avatar LONGTEXT`);
-  console.log("✅ Колонка avatar добавлена в таблицу users");
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
-
-// Миграция: добавляем telegram_notifications_enabled если её нет
-try {
-  db.exec(
-    `ALTER TABLE users ADD COLUMN telegram_notifications_enabled INTEGER DEFAULT 1`
-  );
-  console.log(
-    "✅ Колонка telegram_notifications_enabled добавлена в таблицу users"
-  );
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
-
-// Миграция: добавляем telegram_group_reminders_enabled если её нет
-try {
-  db.exec(
-    `ALTER TABLE users ADD COLUMN telegram_group_reminders_enabled INTEGER DEFAULT 1`
-  );
-  console.log(
-    "✅ Колонка telegram_group_reminders_enabled добавлена в таблицу users"
-  );
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
-
-// Миграция: добавляем avatar_path если её нет
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN avatar_path TEXT`);
-  console.log("✅ Колонка avatar_path добавлена в таблицу users");
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
-
-// Миграция: добавляем theme если её нет
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN theme TEXT DEFAULT 'theme-default'`);
-  console.log("✅ Колонка theme добавлена в таблицу users");
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
-
-// Миграция: добавляем show_bets если её нет
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN show_bets TEXT DEFAULT 'always'`);
-  console.log("✅ Колонка show_bets добавлена в таблицу users");
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
-
-// Миграция: добавляем show_lucky_button если её нет
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN show_lucky_button INTEGER DEFAULT 1`);
-  console.log("✅ Колонка show_lucky_button добавлена в таблицу users");
-} catch (e) {
-  // Колонка уже существует, игнорируем
-}
+// Запускаем миграции для таблицы users
+runUsersMigrations();
 
 // Таблица для связки telegram username → chat_id (для отправки личных сообщений)
 db.exec(`
@@ -7396,18 +7406,42 @@ app.get("/api/user/:userId/notifications", (req, res) => {
 app.get("/api/user/:userId/show-bets", (req, res) => {
   try {
     const { userId } = req.params;
-    const user = db
-      .prepare("SELECT show_bets FROM users WHERE id = ?")
-      .get(userId);
+    
+    let user;
+    
+    // Пытаемся получить пользователя
+    try {
+      user = db
+        .prepare("SELECT show_bets FROM users WHERE id = ?")
+        .get(userId);
+    } catch (error) {
+      // Если колонка не существует, добавляем её
+      if (error.message.includes("no such column: show_bets")) {
+        console.log("⚠️ Колонка show_bets отсутствует, добавляем...");
+        db.exec(`ALTER TABLE users ADD COLUMN show_bets TEXT DEFAULT 'always'`);
+        console.log("✅ Колонка show_bets добавлена в таблицу users");
+        
+        // Повторно получаем пользователя
+        user = db
+          .prepare("SELECT show_bets FROM users WHERE id = ?")
+          .get(userId);
+      } else {
+        throw error;
+      }
+    }
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    const showBets = user.show_bets || 'always';
+    console.log(`📤 GET /api/user/${userId}/show-bets -> ${showBets}`);
+
     res.json({
-      show_bets: user.show_bets || 'always',
+      show_bets: showBets,
     });
   } catch (error) {
+    console.error("❌ Ошибка при получении настройки show_bets:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -7430,7 +7464,22 @@ app.put("/api/user/:userId/show-bets", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    db.prepare("UPDATE users SET show_bets = ? WHERE id = ?").run(show_bets, userId);
+    // Проверяем существование колонки и добавляем если нужно
+    try {
+      db.prepare("UPDATE users SET show_bets = ? WHERE id = ?").run(show_bets, userId);
+    } catch (error) {
+      // Если колонка не существует, добавляем её
+      if (error.message.includes("no such column: show_bets")) {
+        console.log("⚠️ Колонка show_bets отсутствует, добавляем...");
+        db.exec(`ALTER TABLE users ADD COLUMN show_bets TEXT DEFAULT 'always'`);
+        console.log("✅ Колонка show_bets добавлена в таблицу users");
+        
+        // Повторяем UPDATE
+        db.prepare("UPDATE users SET show_bets = ? WHERE id = ?").run(show_bets, userId);
+      } else {
+        throw error;
+      }
+    }
 
     // Записываем в логи
     const showBetsNames = {
@@ -7495,18 +7544,42 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
 app.get("/api/user/:userId/show-lucky-button", (req, res) => {
   try {
     const { userId } = req.params;
-    const user = db
-      .prepare("SELECT show_lucky_button FROM users WHERE id = ?")
-      .get(userId);
+    
+    let user;
+    
+    // Пытаемся получить пользователя
+    try {
+      user = db
+        .prepare("SELECT show_lucky_button FROM users WHERE id = ?")
+        .get(userId);
+    } catch (error) {
+      // Если колонка не существует, добавляем её
+      if (error.message.includes("no such column: show_lucky_button")) {
+        console.log("⚠️ Колонка show_lucky_button отсутствует, добавляем...");
+        db.exec(`ALTER TABLE users ADD COLUMN show_lucky_button INTEGER DEFAULT 1`);
+        console.log("✅ Колонка show_lucky_button добавлена в таблицу users");
+        
+        // Повторно получаем пользователя
+        user = db
+          .prepare("SELECT show_lucky_button FROM users WHERE id = ?")
+          .get(userId);
+      } else {
+        throw error;
+      }
+    }
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
+    const showLuckyButton = user.show_lucky_button !== undefined ? user.show_lucky_button : 1;
+    console.log(`📤 GET /api/user/${userId}/show-lucky-button -> ${showLuckyButton}`);
+
     res.json({
-      show_lucky_button: user.show_lucky_button !== undefined ? user.show_lucky_button : 1,
+      show_lucky_button: showLuckyButton,
     });
   } catch (error) {
+    console.error("❌ Ошибка при получении настройки show_lucky_button:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -7529,7 +7602,22 @@ app.put("/api/user/:userId/show-lucky-button", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    db.prepare("UPDATE users SET show_lucky_button = ? WHERE id = ?").run(show_lucky_button, userId);
+    // Проверяем существование колонки и добавляем если нужно
+    try {
+      db.prepare("UPDATE users SET show_lucky_button = ? WHERE id = ?").run(show_lucky_button, userId);
+    } catch (error) {
+      // Если колонка не существует, добавляем её
+      if (error.message.includes("no such column: show_lucky_button")) {
+        console.log("⚠️ Колонка show_lucky_button отсутствует, добавляем...");
+        db.exec(`ALTER TABLE users ADD COLUMN show_lucky_button INTEGER DEFAULT 1`);
+        console.log("✅ Колонка show_lucky_button добавлена в таблицу users");
+        
+        // Повторяем UPDATE
+        db.prepare("UPDATE users SET show_lucky_button = ? WHERE id = ?").run(show_lucky_button, userId);
+      } else {
+        throw error;
+      }
+    }
 
     // Записываем в логи
     const showLuckyButtonNames = {
@@ -10535,6 +10623,10 @@ app.post("/api/backup", async (req, res) => {
     const backupPath = path.join(BACKUPS_DIR, backupFilename);
     const dbPath = path.join(__dirname, "1xBetLineBoom.db");
 
+    // ВАЖНО: Записываем все изменения из WAL в основной файл БД перед копированием
+    db.pragma("wal_checkpoint(FULL)");
+    console.log("✓ WAL checkpoint выполнен перед созданием бэкапа");
+
     // Копируем файл БД
     fs.copyFileSync(dbPath, backupPath);
 
@@ -10801,6 +10893,11 @@ app.post("/api/admin/restore-backup", async (req, res) => {
     // Переоткрываем соединение с БД
     db = new Database("./1xBetLineBoom.db");
     db.pragma("journal_mode = WAL");
+
+    // Запускаем миграции для восстановленной БД
+    console.log("🔄 Запуск миграций после восстановления БД...");
+    runUsersMigrations();
+    console.log("✅ Миграции после восстановления завершены");
 
     // Уведомление админу если это модератор
     if (!isAdminUser && username) {
