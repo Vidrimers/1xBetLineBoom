@@ -478,27 +478,10 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
                   <label class="switch">
-                    <input type="checkbox" id="telegramNotificationsCheckbox" />
+                    <input type="checkbox" id="telegramNotificationsCheckbox" onchange="saveTelegramNotificationSettings()" />
                     <span class="slider"></span>
                   </label>
-                  <button
-                    onclick="saveTelegramNotificationSettings()"
-                    id="saveTgNotificationsBtn"
-                    style="
-                      padding: 8px 16px;
-                      background: #0088cc;
-                      color: white;
-                      border: none;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-weight: 500;
-                      transition: all 0.3s;
-                    "
-                    onmouseover="this.style.background='#0073b0'"
-                    onmouseout="this.style.background='#0088cc'"
-                  >
-                    Сохранить
-                  </button>
+                  <div id="telegramNotificationsStatus" style="display: none; min-width: 150px;"></div>
                 </div>
               </div>
             </div>
@@ -534,27 +517,10 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
                   <label class="switch">
-                    <input type="checkbox" id="groupRemindersCheckbox" />
+                    <input type="checkbox" id="groupRemindersCheckbox" onchange="saveGroupRemindersSettings()" />
                     <span class="slider"></span>
                   </label>
-                  <button
-                    onclick="saveGroupRemindersSettings()"
-                    id="saveGroupRemindersBtn"
-                    style="
-                      padding: 8px 16px;
-                      background: #00b894;
-                      color: white;
-                      border: none;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-weight: 500;
-                      transition: all 0.3s;
-                    "
-                    onmouseover="this.style.background='#009a72'"
-                    onmouseout="this.style.background='#00b894'"
-                  >
-                    Сохранить
-                  </button>
+                  <div id="groupRemindersStatus" style="display: none; min-width: 150px;"></div>
                 </div>
               </div>
             </div>
@@ -594,27 +560,10 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
                   <label class="switch">
-                    <input type="checkbox" id="login2faCheckbox" />
+                    <input type="checkbox" id="login2faCheckbox" onchange="saveLogin2faSettings()" />
                     <span class="slider"></span>
                   </label>
-                  <button
-                    onclick="saveLogin2faSettings()"
-                    id="saveLogin2faBtn"
-                    style="
-                      padding: 8px 16px;
-                      background: #e74c3c;
-                      color: white;
-                      border: none;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-weight: 500;
-                      transition: all 0.3s;
-                    "
-                    onmouseover="this.style.background='#c0392b'"
-                    onmouseout="this.style.background='#e74c3c'"
-                  >
-                    Сохранить
-                  </button>
+                  <div id="login2faStatus" style="display: none; min-width: 150px;"></div>
                 </div>
               </div>
             </div>
@@ -654,27 +603,11 @@
                       type="checkbox"
                       id="showTournamentWinnerCheckbox"
                       checked
+                      onchange="saveShowTournamentWinnerSettings()"
                     />
                     <span class="slider"></span>
                   </label>
-                  <button
-                    onclick="saveShowTournamentWinnerSettings()"
-                    id="saveTournamentWinnerBtn"
-                    style="
-                      padding: 8px 16px;
-                      background: #ffc107;
-                      color: #222;
-                      border: none;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-weight: 500;
-                      transition: all 0.3s;
-                    "
-                    onmouseover="this.style.background='#ffb300'"
-                    onmouseout="this.style.background='#ffc107'"
-                  >
-                    Сохранить
-                  </button>
+                  <div id="tournamentWinnerStatus" style="display: none; min-width: 150px;"></div>
                 </div>
               </div>
             </div>
@@ -699,7 +632,7 @@
                 </p>
                 <select
                   id="themeSelect"
-                  onchange="previewTheme(this.value)"
+                  onchange="saveTheme()"
                   style="
                     width: 100%;
                     padding: 12px;
@@ -723,25 +656,7 @@
                   <option value="theme-leagueChampions">🏆 League Champions</option>
                   <option value="theme-leagueEurope">⭐ League Europe</option>
                 </select>
-                <button
-                  id="saveThemeBtn"
-                  onclick="saveTheme()"
-                  style="
-                    width: 100%;
-                    padding: 10px;
-                    background: rgba(76, 175, 80, 0.7);
-                    color: #c8e6c9;
-                    border: 1px solid #4caf50;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: all 0.3s ease;
-                  "
-                  onmouseover="this.style.background='rgba(76, 175, 80, 0.9)'"
-                  onmouseout="this.style.background='rgba(76, 175, 80, 0.7)'"
-                >
-                  Сохранить
-                </button>
+                <div id="themeStatus" style="display: none; min-width: 150px; text-align: center;"></div>
               </div>
             </div>
 
@@ -766,6 +681,7 @@
                 </p>
                 <select
                   id="timezoneSelect"
+                  onchange="saveTimezoneSettings()"
                   style="
                     width: 100%;
                     padding: 10px;
@@ -780,21 +696,7 @@
                 >
                   <option value="">⏳ Загрузка...</option>
                 </select>
-                <button
-                  onclick="saveTimezoneSettings()"
-                  style="
-                    padding: 10px 20px;
-                    background: #00bcd4;
-                    color: #fff;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-weight: bold;
-                    width: 100%;
-                  "
-                >
-                  💾 Сохранить часовой пояс
-                </button>
+                <div id="timezoneStatus" style="display: none; min-width: 150px; text-align: center;"></div>
               </div>
             </div>
 
@@ -834,21 +736,7 @@
                   <option value="always">Да (всегда показывать)</option>
                   <option value="after_start">Только после начала матча</option>
                 </select>
-                <button
-                  onclick="saveShowBetsSettings()"
-                  style="
-                    padding: 10px 20px;
-                    background: #9c27b0;
-                    color: #fff;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-weight: bold;
-                    width: 100%;
-                  "
-                >
-                  💾 Сохранить
-                </button>
+                <div id="showBetsStatus" style="display: none; margin-top: 10px; text-align: center;"></div>
               </div>
             </div>
 
@@ -888,21 +776,7 @@
                   <option value="1">Показывать</option>
                   <option value="0">Скрыть</option>
                 </select>
-                <button
-                  onclick="saveLuckyButtonSettings()"
-                  style="
-                    padding: 10px 20px;
-                    background: #ff9800;
-                    color: #fff;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-weight: bold;
-                    width: 100%;
-                  "
-                >
-                  💾 Сохранить
-                </button>
+                <div id="luckyButtonStatus" style="display: none; margin-top: 10px; text-align: center;"></div>
               </div>
             </div>
 

@@ -445,12 +445,9 @@ async function saveTheme() {
 
   const themeSelect = document.getElementById("themeSelect");
   const themeName = themeSelect.value;
-  const btn = document.getElementById("saveThemeBtn");
 
   try {
-    // Визуальная обратная связь
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    showSaveStatus('themeStatus', 'saving');
 
     const response = await fetch(`/api/user/${currentUser.id}/settings`, {
       method: "PUT",
@@ -459,28 +456,27 @@ async function saveTheme() {
     });
 
     if (response.ok) {
-      // Сохраняем в localStorage
       localStorage.setItem("selectedTheme", themeName);
       
-      // Показываем успешное сохранение
-      btn.textContent = "✅ Сохранено!";
-      setTimeout(() => {
-        btn.textContent = "Сохранить";
-        btn.disabled = false;
-      }, 2000);
+      // Применяем тему
+      document.body.classList.remove(
+        "theme-default",
+        "theme-hacker-green",
+        "theme-solarized",
+        "theme-matrix",
+        "theme-cyberpunk",
+        "theme-leagueChampions",
+        "theme-leagueEurope"
+      );
+      document.body.classList.add(themeName);
       
-      console.log(`✅ Тема ${themeName} сохранена на сервере`);
+      showSaveStatus('themeStatus', 'saved');
     } else {
       throw new Error("Ошибка сохранения");
     }
   } catch (error) {
     console.error("❌ Ошибка сохранения темы на сервере:", error);
-    btn.textContent = "❌ Ошибка";
-    setTimeout(() => {
-      btn.textContent = "Сохранить";
-      btn.disabled = false;
-    }, 2000);
-    alert("Ошибка при сохранении темы");
+    showSaveStatus('themeStatus', 'error');
   }
 }
 
@@ -8939,11 +8935,8 @@ async function saveTelegramNotificationSettings() {
   try {
     const checkbox = document.getElementById("telegramNotificationsCheckbox");
     const isEnabled = checkbox.checked;
-    const btn = document.getElementById("saveTgNotificationsBtn");
 
-    // Добавляем визуальную обратную связь
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    showSaveStatus('telegramNotificationsStatus', 'saving');
 
     const response = await fetch(`/api/user/${currentUser.id}/settings`, {
       method: "PUT",
@@ -8954,26 +8947,16 @@ async function saveTelegramNotificationSettings() {
     const result = await response.json();
 
     if (response.ok) {
-      // Обновляем currentUser
       currentUser.telegram_notifications_enabled = isEnabled ? 1 : 0;
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      
-      // Показываем успешное сохранение
-      btn.textContent = "✅ Сохранено!";
-      setTimeout(() => {
-        btn.textContent = "Сохранить";
-        btn.disabled = false;
-      }, 2000);
+      showSaveStatus('telegramNotificationsStatus', 'saved');
     } else {
-      alert("Ошибка: " + result.error);
-      btn.textContent = "Сохранить";
-      btn.disabled = false;
+      showSaveStatus('telegramNotificationsStatus', 'error');
+      console.error("Ошибка:", result.error);
     }
   } catch (error) {
     console.error("Ошибка при сохранении уведомлений:", error);
-    alert("Ошибка при сохранении");
-    btn.textContent = "Сохранить";
-    btn.disabled = false;
+    showSaveStatus('telegramNotificationsStatus', 'error');
   }
 }
 
@@ -8987,11 +8970,8 @@ async function saveGroupRemindersSettings() {
   try {
     const checkbox = document.getElementById("groupRemindersCheckbox");
     const isEnabled = checkbox.checked;
-    const btn = document.getElementById("saveGroupRemindersBtn");
 
-    // Добавляем визуальную обратную связь
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    showSaveStatus('groupRemindersStatus', 'saving');
 
     const response = await fetch(`/api/user/${currentUser.id}/settings`, {
       method: "PUT",
@@ -9002,22 +8982,14 @@ async function saveGroupRemindersSettings() {
     const result = await response.json();
 
     if (response.ok) {
-      // Показываем успешное сохранение
-      btn.textContent = "✅ Сохранено!";
-      setTimeout(() => {
-        btn.textContent = "Сохранить";
-        btn.disabled = false;
-      }, 2000);
+      showSaveStatus('groupRemindersStatus', 'saved');
     } else {
-      alert("Ошибка: " + result.error);
-      btn.textContent = "Сохранить";
-      btn.disabled = false;
+      showSaveStatus('groupRemindersStatus', 'error');
+      console.error("Ошибка:", result.error);
     }
   } catch (error) {
     console.error("Ошибка при сохранении напоминаний в группе:", error);
-    alert("Ошибка при сохранении");
-    btn.textContent = "Сохранить";
-    btn.disabled = false;
+    showSaveStatus('groupRemindersStatus', 'error');
   }
 }
 
@@ -9031,7 +9003,6 @@ async function saveLogin2faSettings() {
   try {
     const checkbox = document.getElementById("login2faCheckbox");
     const isEnabled = checkbox.checked;
-    const btn = document.getElementById("saveLogin2faBtn");
 
     // Проверяем, привязан ли Telegram
     if (isEnabled && !currentUser.telegram_username) {
@@ -9040,9 +9011,7 @@ async function saveLogin2faSettings() {
       return;
     }
 
-    // Добавляем визуальную обратную связь
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    showSaveStatus('login2faStatus', 'saving');
 
     const response = await fetch(`/api/user/${currentUser.id}/settings`, {
       method: "PUT",
@@ -9053,27 +9022,16 @@ async function saveLogin2faSettings() {
     const result = await response.json();
 
     if (response.ok) {
-      // Обновляем в currentUser
       currentUser.require_login_2fa = isEnabled ? 1 : 0;
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
-
-      // Показываем успешное сохранение
-      btn.textContent = "✅ Сохранено!";
-      setTimeout(() => {
-        btn.textContent = "Сохранить";
-        btn.disabled = false;
-      }, 2000);
+      showSaveStatus('login2faStatus', 'saved');
     } else {
-      alert("Ошибка: " + result.error);
-      btn.textContent = "Сохранить";
-      btn.disabled = false;
+      showSaveStatus('login2faStatus', 'error');
+      console.error("Ошибка:", result.error);
     }
   } catch (error) {
     console.error("Ошибка при сохранении настройки 2FA:", error);
-    alert("Ошибка при сохранении");
-    const btn = document.getElementById("saveLogin2faBtn");
-    btn.textContent = "Сохранить";
-    btn.disabled = false;
+    showSaveStatus('login2faStatus', 'error');
   }
 }
 
@@ -9082,11 +9040,8 @@ async function saveShowTournamentWinnerSettings() {
   try {
     const checkbox = document.getElementById("showTournamentWinnerCheckbox");
     const showWinner = checkbox.checked;
-    const btn = document.getElementById("saveTournamentWinnerBtn");
 
-    // Добавляем визуальную обратную связь
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    showSaveStatus('tournamentWinnerStatus', 'saving');
 
     const response = await fetch("/api/settings/show-tournament-winner", {
       method: "POST",
@@ -9101,22 +9056,14 @@ async function saveShowTournamentWinnerSettings() {
     const result = await response.json();
 
     if (response.ok) {
-      // Показываем успешное сохранение
-      btn.textContent = "✅ Сохранено!";
-      setTimeout(() => {
-        btn.textContent = "Сохранить";
-        btn.disabled = false;
-      }, 2000);
+      showSaveStatus('tournamentWinnerStatus', 'saved');
     } else {
-      alert("Ошибка: " + result.error);
-      btn.textContent = "Сохранить";
-      btn.disabled = false;
+      showSaveStatus('tournamentWinnerStatus', 'error');
+      console.error("Ошибка:", result.error);
     }
   } catch (error) {
     console.error("Ошибка при сохранении настройки показа победителя:", error);
-    alert("Ошибка при сохранении");
-    btn.textContent = "Сохранить";
-    btn.disabled = false;
+    showSaveStatus('tournamentWinnerStatus', 'error');
   }
 }
 
@@ -9264,9 +9211,7 @@ async function saveTimezoneSettings() {
       return;
     }
 
-    const btn = event.target;
-    btn.textContent = "Сохранение...";
-    btn.disabled = true;
+    showSaveStatus('timezoneStatus', 'saving');
 
     const response = await fetch("/api/user/timezone", {
       method: "POST",
@@ -9280,40 +9225,45 @@ async function saveTimezoneSettings() {
     const result = await response.json();
 
     if (response.ok) {
-      // Обновляем часовой пояс в currentUser
       currentUser.timezone = timezone;
-      
-      // ВАЖНО: Обновляем localStorage чтобы при перезагрузке страницы использовался новый timezone
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
-      console.log(`🕐 Часовой пояс обновлен: ${timezone}`);
-      console.log(`🕐 currentUser.timezone = ${currentUser.timezone}`);
-      console.log(`💾 localStorage обновлен`);
+      showSaveStatus('timezoneStatus', 'saved');
 
-      btn.textContent = "✅ Сохранено!";
-      console.log(`✅ Часовой пояс сохранен: ${timezone}`);
-
-      // Добавляем небольшую задержку перед перезагрузкой матчей
+      // Перезагружаем матчи с новым часовым поясом
       setTimeout(() => {
-        console.log(`🔄 Перезагружаем матчи...`);
         displayMatches();
-        console.log(`✅ Матчи перезагружены`);
       }, 300);
-
-      setTimeout(() => {
-        btn.textContent = "💾 Сохранить часовой пояс";
-        btn.disabled = false;
-      }, 2000);
     } else {
-      alert("Ошибка: " + result.error);
-      btn.textContent = "💾 Сохранить часовой пояс";
-      btn.disabled = false;
+      showSaveStatus('timezoneStatus', 'error');
+      console.error("Ошибка:", result.error);
     }
   } catch (error) {
     console.error("Ошибка при сохранении часового пояса:", error);
-    alert("Ошибка при сохранении");
-    btn.textContent = "💾 Сохранить часовой пояс";
-    btn.disabled = false;
+    showSaveStatus('timezoneStatus', 'error');
+  }
+}
+
+// Показать статус сохранения настройки
+function showSaveStatus(containerId, status) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  if (status === 'saving') {
+    container.innerHTML = '<span style="color: #ff9800; font-size: 14px;">⏳ Идет сохранение...</span>';
+    container.style.display = 'block';
+  } else if (status === 'saved') {
+    container.innerHTML = '<span style="color: #4caf50; font-size: 14px;">✅ Сохранено</span>';
+    container.style.display = 'block';
+    setTimeout(() => {
+      container.style.display = 'none';
+    }, 2000);
+  } else if (status === 'error') {
+    container.innerHTML = '<span style="color: #f44336; font-size: 14px;">❌ Ошибка сохранения</span>';
+    container.style.display = 'block';
+    setTimeout(() => {
+      container.style.display = 'none';
+    }, 3000);
   }
 }
 
@@ -9328,11 +9278,7 @@ async function saveShowBetsSettings() {
     const select = document.getElementById("showBetsSelect");
     const showBets = select.value;
 
-    const btn = document.querySelector('[onclick="saveShowBetsSettings()"]');
-    if (btn) {
-      btn.textContent = "Сохранение...";
-      btn.disabled = true;
-    }
+    showSaveStatus('showBetsStatus', 'saving');
 
     const response = await fetch(`/api/user/${currentUser.id}/show-bets`, {
       method: "PUT",
@@ -9346,36 +9292,15 @@ async function saveShowBetsSettings() {
 
     if (response.ok) {
       currentUser.show_bets = showBets;
-      
-      // Обновляем localStorage
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      
-      if (btn) {
-        btn.textContent = "✅ Сохранено!";
-      }
-      console.log(`✅ Настройка "Показывать ставки" сохранена: ${showBets}`);
-
-      setTimeout(() => {
-        if (btn) {
-          btn.textContent = "💾 Сохранить";
-          btn.disabled = false;
-        }
-      }, 2000);
+      showSaveStatus('showBetsStatus', 'saved');
     } else {
-      alert("Ошибка: " + result.error);
-      if (btn) {
-        btn.textContent = "💾 Сохранить";
-        btn.disabled = false;
-      }
+      showSaveStatus('showBetsStatus', 'error');
+      console.error("Ошибка:", result.error);
     }
   } catch (error) {
     console.error("Ошибка при сохранении настройки:", error);
-    alert("Ошибка при сохранении");
-    const btn = document.querySelector('[onclick="saveShowBetsSettings()"]');
-    if (btn) {
-      btn.textContent = "💾 Сохранить";
-      btn.disabled = false;
-    }
+    showSaveStatus('showBetsStatus', 'error');
   }
 }
 
@@ -9390,11 +9315,7 @@ async function saveLuckyButtonSettings() {
     const select = document.getElementById("showLuckyButtonSelect");
     const showLuckyButton = parseInt(select.value);
 
-    const btn = document.querySelector('[onclick="saveLuckyButtonSettings()"]');
-    if (btn) {
-      btn.textContent = "Сохранение...";
-      btn.disabled = true;
-    }
+    showSaveStatus('luckyButtonStatus', 'saving');
 
     const response = await fetch(`/api/user/${currentUser.id}/show-lucky-button`, {
       method: "PUT",
@@ -9408,39 +9329,16 @@ async function saveLuckyButtonSettings() {
 
     if (response.ok) {
       currentUser.show_lucky_button = showLuckyButton;
-      
-      // Обновляем localStorage
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      
-      // Обновляем видимость кнопки
       updateLuckyButtonVisibility();
-      
-      if (btn) {
-        btn.textContent = "✅ Сохранено!";
-      }
-      console.log(`✅ Настройка "Кнопка Мне повезет" сохранена: ${showLuckyButton}`);
-
-      setTimeout(() => {
-        if (btn) {
-          btn.textContent = "💾 Сохранить";
-          btn.disabled = false;
-        }
-      }, 2000);
+      showSaveStatus('luckyButtonStatus', 'saved');
     } else {
-      alert("Ошибка: " + result.error);
-      if (btn) {
-        btn.textContent = "💾 Сохранить";
-        btn.disabled = false;
-      }
+      showSaveStatus('luckyButtonStatus', 'error');
+      console.error("Ошибка:", result.error);
     }
   } catch (error) {
     console.error("Ошибка при сохранении настройки:", error);
-    alert("Ошибка при сохранении");
-    const btn = document.querySelector('[onclick="saveLuckyButtonSettings()"]');
-    if (btn) {
-      btn.textContent = "💾 Сохранить";
-      btn.disabled = false;
-    }
+    showSaveStatus('luckyButtonStatus', 'error');
   }
 }
 
