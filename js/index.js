@@ -11008,9 +11008,30 @@ async function saveScoreMatchResult() {
     });
     
     if (response.ok) {
+      // Обновляем матч локально для мгновенного обновления UI
+      const match = matches.find((m) => m.id === currentScoreMatchId);
+      if (match) {
+        match.status = "finished";
+        match.winner = currentScoreMatchResult; // team1, draw, team2
+        
+        // Также обновляем result для совместимости
+        const resultMap = {
+          team1: "team1_win",
+          draw: "draw",
+          team2: "team2_win",
+        };
+        match.result = resultMap[currentScoreMatchResult];
+        
+        console.log(`✓ Матч ${match.team1_name} vs ${match.team2_name} завершен с результатом: ${currentScoreMatchResult} (${scoreTeam1}:${scoreTeam2})`);
+      }
+      
       closeScoreMatchResultModal();
       displayMatches();
-      loadMyBets();
+      
+      // Обновляем ставки чтобы показать новые цвета (с небольшой задержкой для синхронизации с БД)
+      setTimeout(() => {
+        loadMyBets();
+      }, 300);
     } else {
       const errorText = await response.text();
       console.error('Ошибка ответа сервера:', errorText);
