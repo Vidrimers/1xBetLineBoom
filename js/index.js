@@ -5630,6 +5630,7 @@ async function removeModerator(moderatorId) {
     if (data.success) {
       alert("✅ Модератор удален");
       loadModeratorsList();
+      loadUsersList(); // Обновляем селект пользователей
     } else {
       alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
     }
