@@ -5099,6 +5099,14 @@ function isModerator() {
   return currentUser && currentUser.isModerator === true;
 }
 
+// Проверить, есть ли у модератора определенное право
+function hasModeratorPermission(permission) {
+  if (!currentUser) return false;
+  if (currentUser.isAdmin) return true; // Админ имеет все права
+  if (!currentUser.isModerator) return false;
+  return currentUser.moderatorPermissions && currentUser.moderatorPermissions.includes(permission);
+}
+
 // Проверить, есть ли у пользователя конкретное право
 function hasPermission(permission) {
   if (isAdmin()) return true; // Админ имеет все права
@@ -5224,6 +5232,112 @@ async function backupDatabase() {
       backupBtn.textContent = "💾 Бэкап БД";
       backupBtn.disabled = false;
     }
+  }
+}
+
+// Открыть модальное окно восстановления БД
+async function openRestoreDBModal() {
+  if (!isAdmin() && !hasModeratorPermission('restore_db')) {
+    alert("❌ У вас нет прав для восстановления БД");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/backups");
+    const backups = await response.json();
+
+    const backupsList = document.getElementById("backupsList");
+    
+    if (backups.length === 0) {
+      backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
+    } else {
+      backupsList.innerHTML = backups.map(backup => `
+        <div style="
+          padding: 15px;
+          margin-bottom: 10px;
+          background: rgba(30, 34, 44, 0.6);
+          border: 1px solid rgba(90, 159, 212, 0.3);
+          border-radius: 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <div style="font-weight: bold; color: #5a9fd4; margin-bottom: 5px;">
+              ${backup.filename}
+            </div>
+            <div style="font-size: 0.9em; color: #999;">
+              📅 ${new Date(backup.created).toLocaleString('ru-RU')} | 💾 ${backup.sizeFormatted}
+            </div>
+          </div>
+          <button
+            onclick="restoreBackup('${backup.filename}')"
+            style="
+              background: rgba(255, 152, 0, 0.7);
+              color: #fff;
+              border: 1px solid #ff9800;
+              padding: 8px 16px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 0.9em;
+              transition: all 0.3s ease;
+            "
+            onmouseover="this.style.background='rgba(255, 152, 0, 1)'"
+            onmouseout="this.style.background='rgba(255, 152, 0, 0.7)'"
+          >
+            📥 Восстановить
+          </button>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById("restoreDBModal").style.display = "flex";
+  } catch (error) {
+    console.error("Ошибка при загрузке списка бэкапов:", error);
+    alert("❌ Ошибка при загрузке списка бэкапов");
+  }
+}
+
+// Закрыть модальное окно восстановления БД
+function closeRestoreDBModal() {
+  document.getElementById("restoreDBModal").style.display = "none";
+}
+
+// Восстановить БД из бэкапа
+async function restoreBackup(filename) {
+  const confirmed = confirm(
+    `⚠️ ВНИМАНИЕ!\n\nВы уверены что хотите восстановить БД из бэкапа?\n\n${filename}\n\nТекущая БД будет заменена. Все текущие данные будут потеряны!\n\nПеред восстановлением будет создан бэкап текущей БД.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/restore-backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        filename,
+        username: currentUser.username 
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert(
+        `✅ БД успешно восстановлена!\n\nВосстановлено из: ${data.restored_from}\nСоздан бэкап текущей БД: ${data.backup_created}\n\nСтраница будет перезагружена.`
+      );
+      closeRestoreDBModal();
+      // Перезагружаем страницу чтобы обновить данные
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      alert(`❌ Ошибка при восстановлении БД: ${data.error}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при восстановлении БД:", error);
+    alert(`❌ Ошибка при восстановлении БД:\n${error.message}`);
   }
 }
 
@@ -5514,6 +5628,8 @@ function getPermissionsText(permissions) {
     view_users: "пользователи",
     check_bot: "проверка бота",
     view_settings: "настройки пользователей",
+    sync_telegram_ids: "синхронизация Telegram ID",
+    restore_db: "восстановление БД",
     edit_users: "редактирование пользователей",
     delete_users: "удаление пользователей",
   };
@@ -5554,14 +5670,10 @@ async function assignModerator() {
     permissions.push("check_bot");
   if (document.getElementById("permViewSettings").checked)
     permissions.push("view_settings");
-  if (document.getElementById("permEditUsers").checked)
-    permissions.push("edit_users");
-  if (document.getElementById("permDeleteUsers").checked)
-    permissions.push("delete_users");
-  if (document.getElementById("permCheckBot").checked)
-    permissions.push("check_bot");
-  if (document.getElementById("permViewSettings").checked)
-    permissions.push("view_settings");
+  if (document.getElementById("permSyncTelegramIds").checked)
+    permissions.push("sync_telegram_ids");
+  if (document.getElementById("permRestoreDB").checked)
+    permissions.push("restore_db");
   if (document.getElementById("permEditUsers").checked)
     permissions.push("edit_users");
   if (document.getElementById("permDeleteUsers").checked)
@@ -5599,17 +5711,15 @@ async function assignModerator() {
       document.getElementById("permViewUsers").checked = false;
       document.getElementById("permCheckBot").checked = false;
       document.getElementById("permViewSettings").checked = false;
-      document.getElementById("permEditUsers").checked = false;
-      document.getElementById("permDeleteUsers").checked = false;
-      document.getElementById("userSubPermissions").style.display = "none";
-      document.getElementById("permCheckBot").checked = false;
-      document.getElementById("permViewSettings").checked = false;
+      document.getElementById("permSyncTelegramIds").checked = false;
+      document.getElementById("permRestoreDB").checked = false;
       document.getElementById("permEditUsers").checked = false;
       document.getElementById("permDeleteUsers").checked = false;
       document.getElementById("userSubPermissions").style.display = "none";
 
       // Перезагружаем список
       loadModeratorsList();
+      loadUsersList();
     } else {
       alert(`❌ Ошибка: ${data.error || "Неизвестная ошибка"}`);
     }
@@ -5666,6 +5776,8 @@ function openEditModeratorModal(moderatorId, username, permissions) {
   document.getElementById("editPermViewUsers").checked = false;
   document.getElementById("editPermCheckBot").checked = false;
   document.getElementById("editPermViewSettings").checked = false;
+  document.getElementById("editPermSyncTelegramIds").checked = false;
+  document.getElementById("editPermRestoreDB").checked = false;
   document.getElementById("editPermEditUsers").checked = false;
   document.getElementById("editPermDeleteUsers").checked = false;
   document.getElementById("editUserSubPermissions").style.display = "none";
@@ -5703,6 +5815,12 @@ function openEditModeratorModal(moderatorId, username, permissions) {
     if (permissions.includes("view_settings")) {
       document.getElementById("editPermViewSettings").checked = true;
     }
+    if (permissions.includes("sync_telegram_ids")) {
+      document.getElementById("editPermSyncTelegramIds").checked = true;
+    }
+    if (permissions.includes("restore_db")) {
+      document.getElementById("editPermRestoreDB").checked = true;
+    }
     if (permissions.includes("edit_users")) {
       document.getElementById("editPermEditUsers").checked = true;
     }
@@ -5733,6 +5851,8 @@ function toggleUserSubPermissions() {
     // Снимаем все подчекбоксы
     document.getElementById("permCheckBot").checked = false;
     document.getElementById("permViewSettings").checked = false;
+    document.getElementById("permSyncTelegramIds").checked = false;
+    document.getElementById("permRestoreDB").checked = false;
     document.getElementById("permEditUsers").checked = false;
     document.getElementById("permDeleteUsers").checked = false;
   }
@@ -5750,6 +5870,8 @@ function toggleEditUserSubPermissions() {
     // Снимаем все подчекбоксы
     document.getElementById("editPermCheckBot").checked = false;
     document.getElementById("editPermViewSettings").checked = false;
+    document.getElementById("editPermSyncTelegramIds").checked = false;
+    document.getElementById("editPermRestoreDB").checked = false;
     document.getElementById("editPermEditUsers").checked = false;
     document.getElementById("editPermDeleteUsers").checked = false;
   }
@@ -5784,6 +5906,10 @@ async function saveModeratorPermissions() {
     permissions.push("check_bot");
   if (document.getElementById("editPermViewSettings").checked)
     permissions.push("view_settings");
+  if (document.getElementById("editPermSyncTelegramIds").checked)
+    permissions.push("sync_telegram_ids");
+  if (document.getElementById("editPermRestoreDB").checked)
+    permissions.push("restore_db");
   if (document.getElementById("editPermEditUsers").checked)
     permissions.push("edit_users");
   if (document.getElementById("editPermDeleteUsers").checked)
@@ -7064,6 +7190,17 @@ async function loadAdminUsers() {
     );
     adminUsers = await response.json();
     displayAdminUsersModal();
+    
+    // Показываем/скрываем кнопку синхронизации в зависимости от прав
+    const syncBtn = document.getElementById('syncTelegramIdsBtn');
+    if (syncBtn) {
+      if (isAdmin() || hasModeratorPermission('sync_telegram_ids')) {
+        syncBtn.style.display = 'inline-block';
+      } else {
+        syncBtn.style.display = 'none';
+      }
+    }
+    
     // Блокируем скролл body
     document.body.style.overflow = 'hidden';
     document.getElementById("adminModal").style.display = "flex";
@@ -7291,7 +7428,7 @@ async function checkUserBotContact(userId, username) {
 
 // Синхронизировать telegram_id для всех пользователей
 async function syncAllTelegramIds() {
-  if (!isAdmin()) {
+  if (!isAdmin() && !hasModeratorPermission('sync_telegram_ids')) {
     await showCustomAlert("У вас нет прав", "Ошибка", "❌");
     return;
   }
@@ -7309,7 +7446,8 @@ async function syncAllTelegramIds() {
   try {
     const response = await fetch('/api/admin/sync-telegram-ids', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUser.username })
     });
 
     const result = await response.json();

@@ -963,6 +963,26 @@
               >
                 💾 Бэкап БД
               </button>
+              <button
+                onclick="openRestoreDBModal()"
+                style="
+                  background: rgba(255, 152, 0, 0.7);
+                  color: #fff;
+                  border: 1px solid #ff9800;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 140px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+              >
+                📥 Восстановить БД
+              </button>
               <a
                 id="notificationsQueueLink"
                 href="/admin/notifications"
@@ -1269,6 +1289,7 @@
             <h2>👥 Управление пользователями</h2>
             <button 
               class="modal-action-btn" 
+              id="syncTelegramIdsBtn"
               onclick="syncAllTelegramIds()"
               title="Синхронизировать telegram_id для всех пользователей"
               style="
@@ -1281,6 +1302,7 @@
                 font-size: 14px;
                 transition: all 0.3s ease;
                 margin-right: 10px;
+                display: none;
               "
               onmouseover="this.style.background='rgba(0, 188, 212, 1)'"
               onmouseout="this.style.background='rgba(0, 188, 212, 0.8)'"
@@ -2099,38 +2121,54 @@
                   <span>👥 Просмотр пользователей</span>
                 </label>
                 <div id="userSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(90, 159, 212, 0.3);">
-                  <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
-                    <input
-                      type="checkbox"
-                      id="permCheckBot"
-                      style="margin-right: 8px; cursor: pointer"
-                    />
-                    <span>🤖 Проверка контакта с ботом</span>
-                  </label>
-                  <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
-                    <input
-                      type="checkbox"
-                      id="permViewSettings"
-                      style="margin-right: 8px; cursor: pointer"
-                    />
-                    <span>⚙️ Просмотр настроек пользователя</span>
-                  </label>
-                  <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
-                    <input
-                      type="checkbox"
-                      id="permEditUsers"
-                      style="margin-right: 8px; cursor: pointer"
-                    />
-                    <span>✏️ Переименование пользователей</span>
-                  </label>
-                  <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input
-                      type="checkbox"
-                      id="permDeleteUsers"
-                      style="margin-right: 8px; cursor: pointer"
-                    />
-                    <span>🗑️ Удаление пользователей</span>
-                  </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permCheckBot"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🤖 Проверка контакта с ботом</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permViewSettings"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>⚙️ Просмотр настроек пользователя</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permSyncTelegramIds"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🔄 Синхронизация Telegram ID</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permRestoreDB"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>📥 Восстановление БД из бэкапа</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="permEditUsers"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>✏️ Переименование пользователей</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input
+                    type="checkbox"
+                    id="permDeleteUsers"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🗑️ Удаление пользователей</span>
+                </label>
                 </div>
               </div>
             </div>
@@ -2283,6 +2321,22 @@
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
                     type="checkbox"
+                    id="editPermSyncTelegramIds"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>🔄 Синхронизация Telegram ID</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
+                    id="editPermRestoreDB"
+                    style="margin-right: 8px; cursor: pointer"
+                  />
+                  <span>📥 Восстановление БД из бэкапа</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                  <input
+                    type="checkbox"
                     id="editPermEditUsers"
                     style="margin-right: 8px; cursor: pointer"
                   />
@@ -2318,6 +2372,38 @@
           >
             ✅ Сохранить изменения
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Restore Database -->
+    <div
+      id="restoreDBModal"
+      class="modal"
+      style="display: none"
+      onclick="if(event.target.id === 'restoreDBModal') closeRestoreDBModal()"
+    >
+      <div class="modal-content" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>📥 Восстановление БД из бэкапа</h2>
+          <button class="modal-close" onclick="closeRestoreDBModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #ff9800; border-radius: 4px;">
+            <strong style="color: #ff9800;">⚠️ ВНИМАНИЕ!</strong>
+            <p style="margin: 10px 0 0 0; color: #e0e0e0;">
+              Восстановление БД заменит текущую базу данных на выбранный бэкап. Все текущие данные будут потеряны!
+            </p>
+          </div>
+
+          <div style="margin-bottom: 20px">
+            <h3 style="color: #5a9fd4; margin-bottom: 15px">Доступные бэкапы:</h3>
+            <div id="backupsList" style="max-height: 400px; overflow-y: auto">
+              <div class="empty-message">Загружаем список бэкапов...</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

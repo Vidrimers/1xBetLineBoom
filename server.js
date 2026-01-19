@@ -1255,7 +1255,7 @@ function resetLogFile() {
 }
 
 // Инициализируем базу данных
-const db = new Database("1xBetLineBoom.db");
+let db = new Database("1xBetLineBoom.db");
 
 // Отключаем FOREIGN KEY constraints для упрощения операций удаления
 db.pragma("foreign_keys = OFF");
@@ -3767,6 +3767,7 @@ app.post("/api/moderators", async (req, res) => {
         'view_users': '👥 Просмотр пользователей',
         'check_bot': '🤖 Проверка контакта с ботом',
         'view_settings': '⚙️ Просмотр настроек пользователей',
+        'sync_telegram_ids': '🔄 Синхронизация Telegram ID',
         'edit_users': '✏️ Редактирование пользователей',
         'delete_users': '❌ Удаление пользователей'
       };
@@ -3867,7 +3868,7 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
     }
 
     // Отправляем уведомление модератору о изменении прав
-    if (moderator.telegram_username) {
+    if (moderator.telegram_username && permissions.length > 0) {
       const telegramUser = db.prepare(
         "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = LOWER(?)"
       ).get(moderator.telegram_username);
@@ -3887,18 +3888,17 @@ app.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
             'view_users': '👥 Просмотр пользователей',
             'check_bot': '🤖 Проверка контакта с ботом',
             'view_settings': '⚙️ Просмотр настроек пользователей',
+            'sync_telegram_ids': '🔄 Синхронизация Telegram ID',
             'edit_users': '✏️ Редактирование пользователей',
             'delete_users': '❌ Удаление пользователей'
           };
           return permMap[p] || p;
         }).join('\n');
 
-        const message = permissions.length > 0 
-          ? `🔄 Ваши права модератора обновлены!
+        const message = `🔄 Ваши права модератора обновлены!
 
 Текущие права:
-${permissionsText}`
-          : `⚠️ Все ваши права модератора были отозваны`;
+${permissionsText}`;
 
         try {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -8134,8 +8134,17 @@ app.put("/api/admin/events/:eventId", (req, res) => {
 app.get("/api/admin/users", (req, res) => {
   const username = req.query.username;
 
+  console.log(`📋 Запрос списка пользователей от: ${username}`);
+
+  if (!username) {
+    console.log(`❌ Username не передан`);
+    return res.status(400).json({ error: "Username не передан" });
+  }
+
   // Проверяем, является ли пользователь админом
   const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  
+  console.log(`🔍 Проверка прав: isAdmin=${isAdminUser}, ADMIN_DB_NAME=${process.env.ADMIN_DB_NAME}`);
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -8144,12 +8153,18 @@ app.get("/api/admin/users", (req, res) => {
       WHERE user_id = (SELECT id FROM users WHERE username = ?)
     `).get(username);
     
+    console.log(`🔍 Модератор найден:`, moderator);
+    
     if (!moderator) {
+      console.log(`❌ Модератор не найден для username: ${username}`);
       return res.status(403).json({ error: "Недостаточно прав" });
     }
     
     const permissions = JSON.parse(moderator.permissions || "[]");
+    console.log(`🔍 Права модератора:`, permissions);
+    
     if (!permissions.includes("view_users")) {
+      console.log(`❌ У модератора нет права view_users`);
       return res.status(403).json({ error: "Недостаточно прав для просмотра пользователей" });
     }
   }
@@ -8173,8 +8188,10 @@ app.get("/api/admin/users", (req, res) => {
       )
       .all();
 
+    console.log(`✅ Возвращено пользователей: ${users.length}`);
     res.json(users);
   } catch (error) {
+    console.error(`❌ Ошибка при получении пользователей:`, error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -8382,6 +8399,28 @@ app.get("/api/admin/users/:userId/bot-contact-check", (req, res) => {
 
 // POST /api/admin/sync-telegram-ids - Синхронизировать telegram_id для всех пользователей
 app.post("/api/admin/sync-telegram-ids", (req, res) => {
+  const { username } = req.body;
+  
+  // Проверяем, является ли пользователь админом
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("sync_telegram_ids")) {
+      return res.status(403).json({ error: "Недостаточно прав для синхронизации Telegram ID" });
+    }
+  }
+  
   try {
     // Получаем всех пользователей с привязанным Telegram
     const users = db.prepare(`
@@ -9474,7 +9513,7 @@ app.get("/download-backup/:filename", (req, res) => {
     const filename = req.params.filename;
 
     // Проверяем что имя файла содержит только допустимые символы (безопасность)
-    if (!/^1xBetLineBoom_backup_[\d\-]+\.db$/.test(filename)) {
+    if (!/^1xBetLineBoom_backup_[\dT\-]+\.db$/.test(filename)) {
       return res.status(400).json({ error: "Неверное имя файла" });
     }
 
@@ -9495,6 +9534,115 @@ app.get("/download-backup/:filename", (req, res) => {
     });
   } catch (error) {
     console.error("❌ Ошибка при скачивании бэкапа:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/backups - Получить список бэкапов
+app.get("/api/admin/backups", (req, res) => {
+  try {
+    if (!fs.existsSync(BACKUPS_DIR)) {
+      return res.json([]);
+    }
+
+    const files = fs.readdirSync(BACKUPS_DIR);
+    const backups = files
+      .filter(file => file.endsWith('.db'))
+      .map(file => {
+        const filePath = path.join(BACKUPS_DIR, file);
+        const stats = fs.statSync(filePath);
+        return {
+          filename: file,
+          size: stats.size,
+          created: stats.mtime,
+          sizeFormatted: (stats.size / 1024 / 1024).toFixed(2) + ' MB'
+        };
+      })
+      .sort((a, b) => b.created - a.created); // Сортируем по дате, новые первые
+
+    res.json(backups);
+  } catch (error) {
+    console.error("❌ Ошибка при получении списка бэкапов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/restore-backup - Восстановить БД из бэкапа
+app.post("/api/admin/restore-backup", (req, res) => {
+  const { filename, username } = req.body;
+
+  // Проверяем права
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  
+  if (!isAdminUser) {
+    // Проверяем права модератора
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("restore_db")) {
+      return res.status(403).json({ error: "Недостаточно прав для восстановления БД" });
+    }
+  }
+
+  try {
+    if (!filename) {
+      return res.status(400).json({ error: "Имя файла не указано" });
+    }
+
+    console.log(`🔍 Проверка имени файла для восстановления: "${filename}"`);
+
+    // Проверяем что имя файла содержит только допустимые символы (безопасность)
+    // Разрешаем как обычные бэкапы, так и бэкапы before_restore
+    if (!/^1xBetLineBoom_backup_(before_restore_)?[\dT\-]+\.db$/.test(filename)) {
+      console.log(`❌ Имя файла не прошло проверку: "${filename}"`);
+      return res.status(400).json({ error: "Неверное имя файла" });
+    }
+
+    const backupPath = path.join(BACKUPS_DIR, filename);
+    const dbPath = path.join(__dirname, "1xBetLineBoom.db");
+
+    // Проверяем что файл бэкапа существует
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: "Файл бэкапа не найден" });
+    }
+
+    // Создаем бэкап текущей БД перед восстановлением
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, -5);
+    const currentBackupFilename = `1xBetLineBoom_backup_before_restore_${timestamp}.db`;
+    const currentBackupPath = path.join(BACKUPS_DIR, currentBackupFilename);
+    
+    fs.copyFileSync(dbPath, currentBackupPath);
+    console.log(`✓ Создан бэкап текущей БД: ${currentBackupFilename}`);
+
+    // Закрываем текущее соединение с БД
+    db.close();
+
+    // Копируем бэкап на место текущей БД
+    fs.copyFileSync(backupPath, dbPath);
+    console.log(`✓ БД восстановлена из бэкапа: ${filename} (пользователь: ${username})`);
+
+    // Переоткрываем соединение с БД
+    db = new Database("./1xBetLineBoom.db");
+    db.pragma("journal_mode = WAL");
+
+    res.json({
+      success: true,
+      message: "БД успешно восстановлена",
+      restored_from: filename,
+      backup_created: currentBackupFilename
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при восстановлении БД:", error);
     res.status(500).json({ error: error.message });
   }
 });
