@@ -825,6 +825,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (savedUser) {
     const user = JSON.parse(savedUser);
     currentUser = user;
+    
+    // Загружаем настройку show_lucky_button с сервера
+    try {
+      const response = await fetch(`/api/user/${user.id}/show-lucky-button`);
+      if (response.ok) {
+        const data = await response.json();
+        currentUser.show_lucky_button = data.show_lucky_button !== undefined ? data.show_lucky_button : 1;
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        console.log(`✅ Настройка show_lucky_button загружена: ${currentUser.show_lucky_button}`);
+      }
+    } catch (err) {
+      console.error("⚠️ Ошибка загрузки настройки show_lucky_button:", err);
+      // По умолчанию показываем кнопку
+      currentUser.show_lucky_button = 1;
+    }
+    
+    // Обновляем видимость кнопки сразу после загрузки настройки
+    updateLuckyButtonVisibility();
 
     // Проверяем валидность сессии
     const sessionToken = localStorage.getItem("sessionToken");
@@ -933,9 +951,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Загружаем тему с сервера после установки currentUser
     await loadSavedTheme();
-    
-    // Обновляем видимость кнопки "Мне повезет"
-    updateLuckyButtonVisibility();
 
     loadEventsList();
     await loadMyBets();
@@ -1547,14 +1562,17 @@ async function selectEvent(eventId, eventName) {
     matchesBracketButtons.innerHTML = '';
   }
 
-  // Скрываем/показываем кнопку "Мне повезет" в зависимости от статуса турнира
+  // Скрываем/показываем кнопку "Мне повезет" в зависимости от статуса турнира и настроек пользователя
   const luckyBtnContainer = document.getElementById('luckyBtnContainer');
   if (luckyBtnContainer) {
-    // Показываем только для активных турниров (не завершенных и не предстоящих)
+    // Проверяем настройку пользователя
+    const userWantsButton = !currentUser || currentUser.show_lucky_button === undefined || currentUser.show_lucky_button === 1;
+    
+    // Показываем только если пользователь включил кнопку И турнир активный (не завершен и не предстоящий)
     const isLocked = event && event.locked_reason;
     const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
     
-    if (isLocked || isUpcoming) {
+    if (!userWantsButton || isLocked || isUpcoming) {
       luckyBtnContainer.style.display = 'none';
     } else {
       luckyBtnContainer.style.display = 'block';
@@ -9401,7 +9419,28 @@ function updateLuckyButtonVisibility() {
   const luckyBtnContainer = document.getElementById("luckyBtnContainer");
   if (luckyBtnContainer && currentUser) {
     const showLuckyButton = currentUser.show_lucky_button !== undefined ? currentUser.show_lucky_button : 1;
-    luckyBtnContainer.style.display = showLuckyButton === 1 ? "block" : "none";
+    
+    // Если пользователь отключил кнопку - скрываем всегда
+    if (showLuckyButton === 0) {
+      luckyBtnContainer.style.display = "none";
+      return;
+    }
+    
+    // Если включена - проверяем статус турнира
+    const event = events.find(e => e.id === currentEventId);
+    if (event) {
+      const isLocked = event.locked_reason;
+      const isUpcoming = event.start_date && new Date(event.start_date) > new Date();
+      
+      if (isLocked || isUpcoming) {
+        luckyBtnContainer.style.display = "none";
+      } else {
+        luckyBtnContainer.style.display = "block";
+      }
+    } else {
+      // Если турнир не выбран - показываем кнопку
+      luckyBtnContainer.style.display = "block";
+    }
   }
 }
 
