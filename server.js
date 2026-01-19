@@ -17,6 +17,7 @@ import {
   writeNotificationQueue,
   sendUserMessage,
   sendGroupNotification,
+  sendAdminNotification,
   notifyTelegramLinked,
   notifyReminderEnabled,
   notifyReminderDeleted,
@@ -691,13 +692,15 @@ function writeBetLog(action, data) {
       </div>
     </div>`;
     } else if (action === "tournament_deleted") {
+      const userLabel = data.is_moderator ? "Модератор" : "Администратор";
       logEntry = `
     <div class="log-entry tournament-deleted">
       <div class="log-time">🕐 ${time}</div>
       <div class="log-action tournament-deleted">🗑️ ТУРНИР УДАЛЕН</div>
       <div class="log-details">
-        <span class="user"><div class="log-label">Модератор</div>👤 ${data.moderator}</span>
+        <span class="user"><div class="log-label">${userLabel}</div>👤 ${data.user}</span>
         <span class="tournament"><div class="log-label">Название</div>🏆 ${data.name}</span>
+        <span class="tournament"><div class="log-label">ID</div>🔢 ${data.event_id}</span>
       </div>
     </div>`;
     } else if (action === "backup_created") {
@@ -8693,6 +8696,54 @@ app.delete("/api/admin/events/:eventId", async (req, res) => {
       console.warn(`⚠️ Не удалось удалить напоминания: ${e.message}`);
     }
 
+    // Удаляем напоминания за 3 часа до матчей
+    try {
+      db.prepare(
+        "DELETE FROM sent_3hour_reminders WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)"
+      ).run(eventId);
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить 3-часовые напоминания: ${e.message}`);
+    }
+
+    // Удаляем настройки напоминаний пользователей для этого турнира
+    try {
+      db.prepare("DELETE FROM event_reminders WHERE event_id = ?").run(eventId);
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить настройки напоминаний: ${e.message}`);
+    }
+
+    // Удаляем автоматические награды за турнир
+    try {
+      db.prepare("DELETE FROM awards WHERE event_id = ?").run(eventId);
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить автоматические награды: ${e.message}`);
+    }
+
+    // Удаляем прогнозы на сетки плей-офф для этого турнира
+    try {
+      db.prepare(
+        "DELETE FROM bracket_predictions WHERE bracket_id IN (SELECT id FROM brackets WHERE event_id = ?)"
+      ).run(eventId);
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить прогнозы на сетки: ${e.message}`);
+    }
+
+    // Удаляем результаты сеток плей-офф для этого турнира
+    try {
+      db.prepare(
+        "DELETE FROM bracket_results WHERE bracket_id IN (SELECT id FROM brackets WHERE event_id = ?)"
+      ).run(eventId);
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить результаты сеток: ${e.message}`);
+    }
+
+    // Удаляем сетки плей-офф для этого турнира
+    try {
+      db.prepare("DELETE FROM brackets WHERE event_id = ?").run(eventId);
+    } catch (e) {
+      console.warn(`⚠️ Не удалось удалить сетки плей-офф: ${e.message}`);
+    }
+
     // Удаляем связанные матчи
     db.prepare("DELETE FROM matches WHERE event_id = ?").run(eventId);
 
@@ -8712,16 +8763,27 @@ app.delete("/api/admin/events/:eventId", async (req, res) => {
       return res.status(404).json({ error: "Событие не найдено" });
     }
 
-    // Отправляем уведомление админу, если действие выполнил модератор
+    // Запись в логи
+    writeBetLog("tournament_deleted", {
+      user: username,
+      name: eventName,
+      event_id: eventId,
+      is_moderator: isModerator
+    });
+
+    // Отправляем уведомление админу
     if (isModerator) {
+      // Если удалил модератор - отправляем через notifyModeratorAction
       const detailsText = `Турнир: ${eventName}\nID: ${eventId}`;
       await notifyModeratorAction(username, "Удаление турнира", detailsText);
-      
-      // Запись в логи
-      writeBetLog("tournament_deleted", {
-        moderator: username,
-        name: eventName
-      });
+    } else {
+      // Если удалил админ - отправляем обычное уведомление
+      const message = 
+        `🗑️ <b>Турнир удалён</b>\n\n` +
+        `👤 Администратор: ${username}\n` +
+        `🏆 Турнир: ${eventName}\n` +
+        `🔢 ID: ${eventId}`;
+      await sendAdminNotification(message);
     }
 
     res.json({ message: "Событие успешно удалено" });

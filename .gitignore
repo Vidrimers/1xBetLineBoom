@@ -3,6 +3,7 @@ temp/
 .vscode/
 .DS_Store
 npm/
+backups/
 package-lock.json
 .env
 .env copy
@@ -16,6 +17,7 @@ replacements.txt
 *.db
 *.db-wal
 *.db-shm
+backups/
 reset-db.js
 add-timezone-column.js
 log.html

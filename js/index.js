@@ -10132,7 +10132,13 @@ async function submitLockEvent(event) {
 
 // Разблокировать турнир
 async function unlockEvent(eventId) {
-  if (!confirm("Вы уверены, что хотите разблокировать этот турнир?")) {
+  const confirmed = await showCustomConfirm(
+    "Вы уверены, что хотите разблокировать этот турнир?",
+    "Разблокировка турнира",
+    "⚠️"
+  );
+  
+  if (!confirmed) {
     return;
   }
   
@@ -10152,11 +10158,69 @@ async function unlockEvent(eventId) {
     if (response.ok) {
       loadEventsList();
     } else {
-      alert("Ошибка при разблокировке турнира: " + (result.error || response.status));
+      await showCustomAlert(`Ошибка при разблокировке турнира: ${result.error || response.status}`, "Ошибка", "❌");
     }
   } catch (error) {
     console.error("❌ Ошибка:", error);
-    alert("Ошибка при разблокировке турнира: " + error.message);
+    await showCustomAlert(`Ошибка при разблокировке турнира: ${error.message}`, "Ошибка", "❌");
+  }
+}
+
+// Удалить турнир
+async function deleteEvent(eventId) {
+  if (!canDeleteTournaments()) {
+    await showCustomAlert("Только администратор или модератор с правами может удалять турниры", "Недостаточно прав", "❌");
+    return;
+  }
+
+  const confirmed = await showCustomConfirm(
+    "Вы уверены, что хотите удалить этот турнир?\n\nВсе матчи и ставки этого турнира также будут удалены.",
+    "Удаление турнира",
+    "⚠️"
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: currentUser.username }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Сначала находим ID всех матчей этого турнира
+      const eventMatchIds = matches
+        .filter((m) => m.event_id === eventId)
+        .map((m) => m.id);
+      
+      // Удаляем все ставки на матчи этого турнира
+      userBets = userBets.filter((bet) => !eventMatchIds.includes(bet.match_id));
+      
+      // Удаляем все матчи этого турнира
+      matches = matches.filter((m) => m.event_id !== eventId);
+      
+      // Удаляем турнир из локального массива
+      events = events.filter((e) => e.id !== eventId);
+      
+      // Перезагружаем список турниров
+      await loadEventsList();
+      
+      // Если удалённый турнир был выбран, очищаем выбор
+      if (currentEventId === eventId) {
+        currentEventId = null;
+        displayMatches();
+      }
+    } else {
+      await showCustomAlert(`Ошибка: ${result.error}`, "Ошибка удаления", "❌");
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при удалении турнира:", error);
+    await showCustomAlert("Ошибка при удалении турнира", "Ошибка", "❌");
   }
 }
 
