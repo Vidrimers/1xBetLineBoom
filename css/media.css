@@ -3246,3 +3246,83 @@
   }
 }
 
+
+
+/* ===== АДАПТИВ ДЛЯ БЭКАПОВ ===== */
+@media (max-width: 768px) {
+  /* Основной контейнер backup-item */
+  .backup-item > div[style*="display: flex"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 15px !important;
+  }
+
+  /* Левая часть (информация) */
+  .backup-item > div > div:first-child {
+    flex: 1 !important;
+    width: 100% !important;
+  }
+
+  /* Правая часть (статус + кнопка) */
+  .backup-item > div > div:last-child {
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  /* Кнопка блокировки - делаем видимой на мобильных */
+  .backup-lock-btn {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* NEW бейдж - уменьшаем и переносим */
+  .backup-item > div > div:first-child > div[style*="position: absolute"] {
+    position: static !important;
+    display: inline-block !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .backup-item {
+    padding: 12px !important;
+  }
+
+  .backup-item > div[style*="display: flex"] {
+    gap: 12px !important;
+  }
+
+  /* Уменьшаем шрифты */
+  .backup-item > div > div:first-child > div:first-of-type {
+    font-size: 0.9em !important;
+  }
+
+  .backup-item > div > div:first-child > div:nth-of-type(2) {
+    font-size: 0.8em !important;
+  }
+
+  .backup-item > div > div:first-child > div:nth-of-type(3) {
+    font-size: 0.75em !important;
+  }
+
+  /* Правая часть */
+  .backup-item > div > div:last-child {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  /* Статус блокировки */
+  .backup-item > div > div:last-child > div {
+    font-size: 0.7em !important;
+    padding: 2px 6px !important;
+  }
+
+  /* Кнопка блокировки */
+  .backup-lock-btn {
+    font-size: 0.65em !important;
+    padding: 3px 8px !important;
+  }
+}
