@@ -1498,11 +1498,43 @@ function resetLogFile() {
   <div class="header">
     <h1>📋 Логи ставок</h1>
     <p>История всех ставок и удалений</p>
+    <div id="logFileInfo" style="margin-top: 10px; font-size: 0.85em; color: #999;">
+      Загрузка информации о файле...
+    </div>
   </div>
   <div class="logs-container">
 <!-- LOGS_START -->
 <!-- LOGS_END -->
   </div>
+  
+  <script>
+    // Загрузить информацию о размере файла логов
+    async function loadLogFileInfo() {
+      try {
+        const response = await fetch('/api/bet-logs-info');
+        const data = await response.json();
+        
+        if (data.success) {
+          const infoDiv = document.getElementById('logFileInfo');
+          const percentColor = data.percentUsed > 80 ? '#f44336' : data.percentUsed > 50 ? '#ff9800' : '#4caf50';
+          
+          infoDiv.innerHTML = \`
+            📊 Размер файла: <strong style="color: #5a9fd4;">\${data.sizeFormatted}</strong> / \${data.maxSizeFormatted}
+            <span style="color: \${percentColor}; margin-left: 10px;">(\${data.percentUsed}% использовано)</span>
+          \`;
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки информации о файле:', error);
+        document.getElementById('logFileInfo').innerHTML = '⚠️ Не удалось загрузить информацию о файле';
+      }
+    }
+    
+    // Загружаем информацию при загрузке страницы
+    loadLogFileInfo();
+    
+    // Обновляем каждые 30 секунд
+    setInterval(loadLogFileInfo, 30000);
+  </script>
 </body>
 </html>`;
   fs.writeFileSync(LOG_FILE_PATH, template, "utf-8");
@@ -10751,6 +10783,41 @@ ${Object.entries(deletedCounts).map(([key, count]) => `  • ${key}: ${count}`).
 });
 
 // ===== API ENDPOINTS ДЛЯ ТЕРМИНАЛА =====
+
+// GET /api/bet-logs-info - получить информацию о файле логов ставок
+app.get("/api/bet-logs-info", (req, res) => {
+  try {
+    if (fs.existsSync(LOG_FILE_PATH)) {
+      const stats = fs.statSync(LOG_FILE_PATH);
+      const sizeInMB = (stats.size / 1024 / 1024).toFixed(2);
+      const maxSizeInMB = (MAX_LOG_SIZE / 1024 / 1024).toFixed(0);
+      const percentUsed = ((stats.size / MAX_LOG_SIZE) * 100).toFixed(1);
+      
+      res.json({
+        success: true,
+        size: stats.size,
+        sizeFormatted: `${sizeInMB} MB`,
+        maxSize: MAX_LOG_SIZE,
+        maxSizeFormatted: `${maxSizeInMB} MB`,
+        percentUsed: percentUsed
+      });
+    } else {
+      res.json({
+        success: true,
+        size: 0,
+        sizeFormatted: "0 MB",
+        maxSize: MAX_LOG_SIZE,
+        maxSizeFormatted: "10 MB",
+        percentUsed: "0"
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // GET /api/terminal-logs - получить логи терминала
 app.get("/api/terminal-logs", (req, res) => {
