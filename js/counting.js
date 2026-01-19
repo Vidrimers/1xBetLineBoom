@@ -223,11 +223,22 @@ function displayCountingBets(bets, dateFrom, dateTo) {
           })
         : "Дата неизвестна";
 
+      // Проверяем есть ли прогноз на счет
+      let scorePredictionHtml = '';
+      if (bet.score_team1 !== null && bet.score_team2 !== null) {
+        scorePredictionHtml = `
+          <div style="color: #ffa726; font-size: 0.85em; margin-top: 4px; padding: 4px 6px; background: rgba(255, 167, 38, 0.2); border-radius: 4px; border-left: 2px solid #ffa726;">
+            🎯 Прогноз счета: <strong>${bet.score_team1}:${bet.score_team2}</strong>
+          </div>
+        `;
+      }
+
       html += `
         <div style="background: rgba(58, 123, 213, 0.2); padding: 12px; border-radius: 6px; border-left: 2px solid #4db8a8;">
           <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 8px;">${matchInfo}</div>
           <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">📌 ${betDisplay}</div>
-          <div style="color: #999; font-size: 0.8em;">
+          ${scorePredictionHtml}
+          <div style="color: #999; font-size: 0.8em; margin-top: 4px;">
             ${formattedMatchDate}
           </div>
         </div>
@@ -666,15 +677,24 @@ function displayCalculationResults(results, originalBets) {
 
       // Информация о прогнозе на счет
       let scorePredictionHtml = '';
-      if (bet.hasScorePrediction && bet.result !== "not_found") {
-        const scoreStyle = bet.scoreIsWon 
-          ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;' 
-          : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;';
-        scorePredictionHtml = `
-          <div style="color: #999; font-size: 0.85em; margin-bottom: 4px;">
-            Прогноз: <span style="${scoreStyle}">${bet.score_team1}-${bet.score_team2}</span> | Результат: <strong>${bet.actualScore.home}-${bet.actualScore.away}</strong>
-          </div>
-        `;
+      if (bet.hasScorePrediction) {
+        if (bet.result !== "not_found") {
+          const scoreIcon = bet.scoreIsWon ? '🎯' : '❌';
+          const scoreColor = bet.scoreIsWon ? '#4caf50' : '#f44336';
+          const scoreBg = bet.scoreIsWon ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
+          scorePredictionHtml = `
+            <div style="font-size: 0.85em; margin-bottom: 4px; padding: 4px 6px; background: ${scoreBg}; border-radius: 4px; border-left: 2px solid ${scoreColor};">
+              ${scoreIcon} Прогноз счета: <strong style="color: ${scoreColor};">${bet.score_team1}:${bet.score_team2}</strong> | Факт: <strong>${bet.actualScore.home}:${bet.actualScore.away}</strong>
+            </div>
+          `;
+        } else {
+          // Матч не найден, но прогноз был
+          scorePredictionHtml = `
+            <div style="font-size: 0.85em; margin-bottom: 4px; padding: 4px 6px; background: rgba(255, 152, 0, 0.2); border-radius: 4px; border-left: 2px solid #ff9800;">
+              🎯 Прогноз счета: <strong>${bet.score_team1}:${bet.score_team2}</strong>
+            </div>
+          `;
+        }
       }
 
       html += `

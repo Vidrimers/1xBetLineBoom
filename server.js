@@ -5004,11 +5004,14 @@ app.get("/api/counting-bets", (req, res) => {
         m.round,
         m.is_final,
         m.match_date,
-        e.name as event_name
+        e.name as event_name,
+        sp.score_team1,
+        sp.score_team2
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       WHERE m.winner IS NULL
         AND DATE(m.match_date) >= DATE(?)
         AND DATE(m.match_date) <= DATE(?)
