@@ -5199,9 +5199,11 @@ async function backupDatabase() {
   try {
     // Показываем индикатор загрузки
     const backupBtn = document.querySelector('[onclick="backupDatabase()"]');
-    const originalText = backupBtn.textContent;
-    backupBtn.textContent = "⏳ Создание бэкапа...";
-    backupBtn.disabled = true;
+    const originalText = backupBtn ? backupBtn.textContent : null;
+    if (backupBtn) {
+      backupBtn.textContent = "⏳ Создание бэкапа...";
+      backupBtn.disabled = true;
+    }
 
     const response = await fetch("/api/backup", {
       method: "POST",
@@ -5217,6 +5219,82 @@ async function backupDatabase() {
       alert(
         `✅ Бэкап БД успешно создан:\n${data.filename}\n\nФайл сохранен в папке /backups/`
       );
+      
+      // Обновляем список бэкапов в модалке если она открыта
+      const databaseModal = document.getElementById("databaseModal");
+      if (databaseModal && databaseModal.style.display === "flex") {
+        // Перезагружаем список бэкапов
+        const response = await fetch("/api/admin/backups");
+        const backups = await response.json();
+        const backupsList = document.getElementById("databaseBackupsList");
+        
+        if (backups.length === 0) {
+          backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
+        } else {
+          backupsList.innerHTML = backups.map(backup => `
+            <div style="
+              padding: 15px;
+              margin-bottom: 10px;
+              background: rgba(30, 34, 44, 0.6);
+              border: 1px solid rgba(90, 159, 212, 0.3);
+              border-radius: 8px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              flex-wrap: wrap;
+              gap: 10px;
+            ">
+              <div style="flex: 1; min-width: 200px;">
+                <div style="font-weight: bold; color: #5a9fd4; margin-bottom: 5px;">
+                  ${backup.filename}
+                </div>
+                <div style="font-size: 0.9em; color: #999;">
+                  📅 ${new Date(backup.created).toLocaleString('ru-RU')} | 💾 ${backup.sizeFormatted}
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button
+                  onclick="restoreBackupFromModal('${backup.filename}')"
+                  style="
+                    background: rgba(255, 152, 0, 0.7);
+                    color: #fff;
+                    border: 1px solid #ff9800;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                    transition: all 0.3s ease;
+                  "
+                  onmouseover="this.style.background='rgba(255, 152, 0, 1)'"
+                  onmouseout="this.style.background='rgba(255, 152, 0, 0.7)'"
+                >
+                  📥 Восстановить
+                </button>
+                <a
+                  href="/download-backup/${backup.filename}"
+                  download
+                  style="
+                    background: rgba(90, 159, 212, 0.7);
+                    color: #e0e6f0;
+                    border: 1px solid #3a7bd5;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                    transition: all 0.3s ease;
+                    text-decoration: none;
+                    display: inline-block;
+                  "
+                  onmouseover="this.style.background='rgba(90, 159, 212, 1)'"
+                  onmouseout="this.style.background='rgba(90, 159, 212, 0.7)'"
+                >
+                  💾 Скачать
+                </a>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
     } else {
       alert(
         `❌ Ошибка при создании бэкапа: ${data.error || "Неизвестная ошибка"}`
@@ -5229,7 +5307,7 @@ async function backupDatabase() {
     // Восстанавливаем кнопку
     const backupBtn = document.querySelector('[onclick="backupDatabase()"]');
     if (backupBtn) {
-      backupBtn.textContent = "💾 Бэкап БД";
+      backupBtn.textContent = "➕ Создать новый бэкап";
       backupBtn.disabled = false;
     }
   }
@@ -5302,6 +5380,137 @@ async function openRestoreDBModal() {
 function closeRestoreDBModal() {
   document.getElementById("restoreDBModal").style.display = "none";
 }
+
+// Открыть модальное окно управления БД
+async function openDatabaseModal() {
+  if (!canBackupDB() && !isAdmin()) {
+    alert("❌ У вас нет прав для управления БД");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/backups");
+    const backups = await response.json();
+
+    const backupsList = document.getElementById("databaseBackupsList");
+    
+    if (backups.length === 0) {
+      backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
+    } else {
+      backupsList.innerHTML = backups.map(backup => `
+        <div style="
+          padding: 15px;
+          margin-bottom: 10px;
+          background: rgba(30, 34, 44, 0.6);
+          border: 1px solid rgba(90, 159, 212, 0.3);
+          border-radius: 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 10px;
+        ">
+          <div style="flex: 1; min-width: 200px;">
+            <div style="font-weight: bold; color: #5a9fd4; margin-bottom: 5px;">
+              ${backup.filename}
+            </div>
+            <div style="font-size: 0.9em; color: #999;">
+              📅 ${new Date(backup.created).toLocaleString('ru-RU')} | 💾 ${backup.sizeFormatted}
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button
+              onclick="restoreBackupFromModal('${backup.filename}')"
+              style="
+                background: rgba(255, 152, 0, 0.7);
+                color: #fff;
+                border: 1px solid #ff9800;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.9em;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.background='rgba(255, 152, 0, 1)'"
+              onmouseout="this.style.background='rgba(255, 152, 0, 0.7)'"
+            >
+              📥 Восстановить
+            </button>
+            <a
+              href="/download-backup/${backup.filename}"
+              download
+              style="
+                background: rgba(90, 159, 212, 0.7);
+                color: #e0e6f0;
+                border: 1px solid #3a7bd5;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.9em;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                display: inline-block;
+              "
+              onmouseover="this.style.background='rgba(90, 159, 212, 1)'"
+              onmouseout="this.style.background='rgba(90, 159, 212, 0.7)'"
+            >
+              💾 Скачать
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById("databaseModal").style.display = "flex";
+  } catch (error) {
+    console.error("Ошибка при загрузке списка бэкапов:", error);
+    alert("❌ Ошибка при загрузке списка бэкапов");
+  }
+}
+
+// Закрыть модальное окно управления БД
+function closeDatabaseModal() {
+  document.getElementById("databaseModal").style.display = "none";
+}
+
+// Восстановить БД из модалки управления БД
+async function restoreBackupFromModal(filename) {
+  const confirmed = confirm(
+    `⚠️ ВНИМАНИЕ!\n\nВы уверены что хотите восстановить БД из бэкапа?\n\n${filename}\n\nТекущая БД будет заменена. Все текущие данные будут потеряны!\n\nПеред восстановлением будет создан бэкап текущей БД.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/admin/restore-backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        filename,
+        username: currentUser.username 
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert(
+        `✅ БД успешно восстановлена!\n\nВосстановлено из: ${data.restored_from}\nСоздан бэкап текущей БД: ${data.backup_created}\n\nСтраница будет перезагружена.`
+      );
+      closeDatabaseModal();
+      // Перезагружаем страницу чтобы обновить данные
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      alert(`❌ Ошибка при восстановлении БД: ${data.error}`);
+    }
+  } catch (error) {
+    console.error("Ошибка при восстановлении БД:", error);
+    alert(`❌ Ошибка при восстановлении БД:\n${error.message}`);
+  }
+}
+
 
 // Восстановить БД из бэкапа
 async function restoreBackup(filename) {

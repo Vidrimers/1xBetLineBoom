@@ -944,7 +944,7 @@
                 📋 Открыть логи
               </a>
               <button
-                onclick="backupDatabase()"
+                onclick="openDatabaseModal()"
                 style="
                   background: rgba(76, 175, 80, 0.7);
                   color: #c8e6c9;
@@ -961,27 +961,7 @@
                 onmouseover="this.style.transform='scale(1.05)'"
                 onmouseout="this.style.transform='scale(1)'"
               >
-                💾 Бэкап БД
-              </button>
-              <button
-                onclick="openRestoreDBModal()"
-                style="
-                  background: rgba(255, 152, 0, 0.7);
-                  color: #fff;
-                  border: 1px solid #ff9800;
-                  padding: 12px 20px;
-                  border-radius: 8px;
-                  cursor: pointer;
-                  font-size: 0.95em;
-                  transition: all 0.3s ease;
-                  white-space: nowrap;
-                  flex: 1 1 auto;
-                  min-width: 140px;
-                "
-                onmouseover="this.style.transform='scale(1.05)'"
-                onmouseout="this.style.transform='scale(1)'"
-              >
-                📥 Восстановить БД
+                💾 База данных
               </button>
               <a
                 id="notificationsQueueLink"
@@ -1183,7 +1163,7 @@
               </button>
               <button
                 id="modBackupDBBtn"
-                onclick="backupDatabase()"
+                onclick="openDatabaseModal()"
                 style="
                   display: none;
                   background: rgba(76, 175, 80, 0.7);
@@ -1201,7 +1181,7 @@
                 onmouseover="this.style.transform='scale(1.05)'"
                 onmouseout="this.style.transform='scale(1)'"
               >
-                💾 Бэкап БД
+                💾 База данных
               </button>
               <button
                 id="modOrphanedBtn"
@@ -2372,6 +2352,62 @@
           >
             ✅ Сохранить изменения
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Database Management -->
+    <div
+      id="databaseModal"
+      class="modal"
+      style="display: none"
+      onclick="if(event.target.id === 'databaseModal') closeDatabaseModal()"
+    >
+      <div class="modal-content" style="max-width: 700px">
+        <div class="modal-header">
+          <h2>💾 Управление базой данных</h2>
+          <button class="modal-close" onclick="closeDatabaseModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Кнопка создания бэкапа -->
+          <div style="margin-bottom: 25px; text-align: center;">
+            <button
+              onclick="backupDatabase()"
+              style="
+                background: rgba(76, 175, 80, 0.7);
+                color: #c8e6c9;
+                border: 1px solid #4caf50;
+                padding: 15px 30px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1.1em;
+                transition: all 0.3s ease;
+                font-weight: bold;
+              "
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              ➕ Создать новый бэкап
+            </button>
+          </div>
+
+          <!-- Предупреждение -->
+          <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #ff9800; border-radius: 4px;">
+            <strong style="color: #ff9800;">⚠️ ВНИМАНИЕ!</strong>
+            <p style="margin: 10px 0 0 0; color: #e0e0e0;">
+              Восстановление БД заменит текущую базу данных на выбранный бэкап. Все текущие данные будут потеряны!
+            </p>
+          </div>
+
+          <!-- Список бэкапов -->
+          <div style="margin-bottom: 20px">
+            <h3 style="color: #5a9fd4; margin-bottom: 15px">📦 Доступные бэкапы:</h3>
+            <div id="databaseBackupsList" style="max-height: 400px; overflow-y: auto">
+              <div class="empty-message">Загружаем список бэкапов...</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
