@@ -14466,6 +14466,9 @@ function toggleFavoriteMatch(matchId, event) {
     // Убрать из избранного
     favorites.splice(index, 1);
     removeFavoriteMatchData(matchId); // Удаляем данные матча
+    
+    // Очищаем флаг удаленного завершенного матча (если пользователь снова добавит - покажем)
+    deletedFinishedMatches.delete(matchId);
   } else {
     // Добавить в избранное (максимум 10)
     if (favorites.length >= 10) {
@@ -14611,6 +14614,9 @@ const matchScores = {};
 
 // Хранилище времени окончания матчей (для автоудаления через 1 минуту)
 const matchFinishTimes = {};
+
+// Список матчей, которые были завершены и удалены (не показывать их снова)
+const deletedFinishedMatches = new Set();
 
 // Очередь уведомлений
 const notificationQueue = [];
@@ -14827,6 +14833,12 @@ function processMatches(matches, favorites, isDesktop) {
       const isFinished = match.status === 'Finished' || match.status === 'finished' || 
                         match.status === 'Full Time' || match.status === 'FT';
       
+      // Если матч был завершен и удален - не показываем его снова
+      if (deletedFinishedMatches.has(match.id)) {
+        console.log(`⏭️ Пропускаем матч ${match.id} - уже был удален после завершения`);
+        return;
+      }
+      
       // Если матч только что завершился - запоминаем время
       if (isFinished && !matchFinishTimes[match.id]) {
         matchFinishTimes[match.id] = Date.now();
@@ -14843,6 +14855,8 @@ function processMatches(matches, favorites, isDesktop) {
               setTimeout(() => notification.remove(), 300);
             }
           }
+          // Помечаем матч как удаленный (не показывать снова)
+          deletedFinishedMatches.add(match.id);
           // Очищаем данные
           delete matchFinishTimes[match.id];
           delete matchScores[match.id];
@@ -14884,6 +14898,7 @@ function processMatches(matches, favorites, isDesktop) {
           // Очищаем данные
           delete matchFinishTimes[matchId];
           delete matchScores[matchId];
+          // НЕ очищаем deletedFinishedMatches - это делается в toggleFavoriteMatch
         }
       });
     }
