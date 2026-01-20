@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "loc": "set TELEGRAM_BOT_POLLING=false&& node server.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.5.0",
