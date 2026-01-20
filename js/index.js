@@ -13996,12 +13996,11 @@ async function loadLiveMatches() {
       const hasLiveMatches = liveMatchesCount > 0;
       
       html += `
-        <div class="live-event-card ${hasLiveMatches ? 'has-live' : ''}" onclick="selectEvent(${event.id}); switchTab('allbets');" style="
+        <div class="live-event-card ${hasLiveMatches ? 'has-live' : ''}" style="
           background: rgba(255, 255, 255, 0.05);
           border: 2px solid ${hasLiveMatches ? '#f44336' : 'rgba(90, 159, 212, 0.5)'};
           border-radius: 8px;
           padding: 20px;
-          cursor: pointer;
           transition: all 0.3s ease;
           position: relative;
           overflow: hidden;
@@ -14033,17 +14032,17 @@ async function loadLiveMatches() {
           ` : ''}
           
           ${hasLiveMatches ? `
-            <div style="text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.2); border-radius: 5px; border: 1px solid #f44336;">
+            <button onclick="selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.2); border-radius: 5px; border: 1px solid #f44336; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.4)'" onmouseout="this.style.background='rgba(244, 67, 54, 0.2)'">
               <span style="color: #f44336; font-weight: 700; font-size: 1.1em;">
                 🔴 ${liveMatchesCount} ${liveMatchesCount === 1 ? 'матч' : liveMatchesCount < 5 ? 'матча' : 'матчей'} LIVE
               </span>
-            </div>
+            </button>
           ` : `
-            <div style="text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3);">
+            <button onclick="selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'">
               <span style="color: #7ab0e0; font-weight: 600; font-size: 0.95em;">
-                ⚽ Активный турнир
+                ⚽ К ставкам
               </span>
-            </div>
+            </button>
           `}
         </div>
       `;
