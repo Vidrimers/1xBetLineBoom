@@ -13983,44 +13983,21 @@ async function loadLiveMatches() {
       return;
     }
     
-    // Получаем все матчи для подсчета live матчей
-    let allMatches = [];
-    try {
-      const matchesResponse = await fetch('/api/matches');
-      allMatches = await matchesResponse.json();
-    } catch (error) {
-      console.warn('Не удалось загрузить матчи для подсчета live:', error);
-    }
-    
     // Отображаем карточки турниров в виде сетки
     let html = '<div class="live-events-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">';
     
     for (const event of activeEvents) {
-      // Считаем количество live матчей в турнире
-      const liveMatchesCount = allMatches.filter(m => 
-        m.event_id === event.id && 
-        (m.status === 'live' || m.status === 'in_progress' || m.status === 'LIVE')
-      ).length;
-      
-      const hasLiveMatches = liveMatchesCount > 0;
-      
       html += `
-        <div class="live-event-card ${hasLiveMatches ? 'has-live' : ''}" onclick="showLiveEventMatches(${event.id})" style="
+        <div class="live-event-card" onclick="showLiveEventMatches(${event.id})" style="
           background: rgba(255, 255, 255, 0.05);
-          border: 2px solid ${hasLiveMatches ? '#f44336' : 'rgba(90, 159, 212, 0.5)'};
+          border: 2px solid rgba(90, 159, 212, 0.5);
           border-radius: 8px;
           padding: 20px;
           cursor: pointer;
           transition: all 0.3s ease;
           position: relative;
           overflow: hidden;
-        " onmouseover="this.style.background='${hasLiveMatches ? 'rgba(244, 67, 54, 0.1)' : 'rgba(90, 159, 212, 0.1)'}'; this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${hasLiveMatches ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-          
-          ${hasLiveMatches ? `
-            <div class="live-pulse" style="position: absolute; top: 10px; right: 10px;">
-              <span class="live-indicator" style="position: static; transform: none;"></span>
-            </div>
-          ` : ''}
+        " onmouseover="this.style.background='rgba(90, 159, 212, 0.1)'; this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(90, 159, 212, 0.3)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
           
           <div style="text-align: center; margin-bottom: 15px;">
             ${event.icon ? (
@@ -14041,19 +14018,11 @@ async function loadLiveMatches() {
             </p>
           ` : ''}
           
-          ${hasLiveMatches ? `
-            <button onclick="event.stopPropagation(); selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.2); border-radius: 5px; border: 1px solid #f44336; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.4)'" onmouseout="this.style.background='rgba(244, 67, 54, 0.2)'">
-              <span style="color: #f44336; font-weight: 700; font-size: 1.1em;">
-                🔴 ${liveMatchesCount} ${liveMatchesCount === 1 ? 'матч' : liveMatchesCount < 5 ? 'матча' : 'матчей'} LIVE
-              </span>
-            </button>
-          ` : `
-            <button onclick="event.stopPropagation(); selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'">
-              <span style="color: #7ab0e0; font-weight: 600; font-size: 0.95em;">
-                ⚽ К ставкам
-              </span>
-            </button>
-          `}
+          <button onclick="event.stopPropagation(); selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'">
+            <span style="color: #7ab0e0; font-weight: 600; font-size: 0.95em;">
+              ⚽ К ставкам
+            </span>
+          </button>
         </div>
       `;
     }

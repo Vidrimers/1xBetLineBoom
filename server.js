@@ -5180,7 +5180,20 @@ app.get("/api/live-matches", async (req, res) => {
       return res.json({ matches: [] });
     }
     
-    const year = new Date().getFullYear();
+    // Определяем год для запроса
+    // Для сезонных турниров используем текущий сезон
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    
+    console.log(`🗓️ Текущая дата: ${now.toISOString()}, год: ${currentYear}, месяц: ${currentMonth}`);
+    
+    // Если сейчас январь-июль, то сезон начался в прошлом году
+    // Например, январь 2026 = сезон 2025/2026, используем Year=2025
+    const year = currentMonth <= 7 ? currentYear - 1 : currentYear;
+    
+    console.log(`🎯 Определен год для запроса: ${year} (логика: месяц ${currentMonth} <= 7 ? ${currentYear - 1} : ${currentYear})`);
+    
     const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&Year=${year}`;
     
     console.log(`📊 SStats API запрос live матчей для ${event.name}: ${url}`);
@@ -5207,15 +5220,25 @@ app.get("/api/live-matches", async (req, res) => {
     // Получаем сегодняшнюю дату
     const today = new Date().toISOString().slice(0, 10); // "2026-01-20"
     
-    // Фильтруем матчи: только на сегодня и не завершенные
+    console.log(`📅 Ищем матчи на дату: ${today}`);
+    console.log(`📊 Всего матчей получено: ${sstatsData.data?.length || 0}`);
+    
+    // Фильтруем матчи: только на сегодня (показываем все - и live, и предстоящие, и завершенные)
     const todayMatches = (sstatsData.data || []).filter(game => {
       // Проверяем что матч на сегодня
-      if (!game.date || !game.date.startsWith(today)) return false;
-      
-      // Исключаем "Not Started" и "Finished"
-      // Оставляем все остальные статусы (live, half-time и т.д.)
-      return game.statusName !== 'Not Started' && game.statusName !== 'Finished';
+      if (!game.date) return false;
+      const matchDate = game.date.slice(0, 10);
+      return matchDate === today;
     });
+    
+    console.log(`✅ Матчей на сегодня: ${todayMatches.length}`);
+    if (todayMatches.length > 0) {
+      console.log('Примеры матчей:', todayMatches.slice(0, 3).map(g => ({
+        date: g.date,
+        teams: `${g.homeTeam?.name} vs ${g.awayTeam?.name}`,
+        status: g.statusName
+      })));
+    }
     
     // Преобразуем в формат нашего приложения
     const matches = todayMatches.map(game => ({
