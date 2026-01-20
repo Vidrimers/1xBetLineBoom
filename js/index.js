@@ -14387,6 +14387,7 @@ function showGoalNotification(match) {
   
   const notification = document.createElement('div');
   notification.className = 'goal-notification';
+  notification.setAttribute('data-match-id', match.id);
   notification.innerHTML = `
     <div class="goal-notification-header">
       <span class="goal-notification-icon">⚽</span>
@@ -14403,15 +14404,24 @@ function showGoalNotification(match) {
     playGoalSound();
   }
   
-  // Удаляем уведомление через 6 секунд
-  setTimeout(() => {
-    notification.classList.add('removing');
+  // Проверяем размер экрана
+  const isDesktop = window.innerWidth > 1400;
+  
+  if (isDesktop) {
+    // На десктопе уведомления остаются постоянно
+    isShowingNotification = false;
+    processNotificationQueue();
+  } else {
+    // На мобильной удаляем через 6 секунд
     setTimeout(() => {
-      notification.remove();
-      isShowingNotification = false;
-      processNotificationQueue();
-    }, 300);
-  }, 6000);
+      notification.classList.add('removing');
+      setTimeout(() => {
+        notification.remove();
+        isShowingNotification = false;
+        processNotificationQueue();
+      }, 300);
+    }, 6000);
+  }
 }
 
 // Обработать очередь уведомлений
@@ -14460,7 +14470,12 @@ async function pollFavoriteMatches() {
   if (!currentUser) return;
   
   const favorites = getFavoriteMatches();
-  if (favorites.length === 0) return;
+  if (favorites.length === 0) {
+    // Очищаем контейнер если нет избранных
+    const container = document.getElementById('goalNotifications');
+    if (container) container.innerHTML = '';
+    return;
+  }
   
   try {
     const response = await fetch('/api/favorite-matches', {
@@ -14482,14 +14497,25 @@ async function pollFavoriteMatches() {
       updateFavoriteStars();
     }
     
+    const isDesktop = window.innerWidth > 1400;
+    
     // Проверяем изменения счета
     matches.forEach(match => {
       if (match.status === 'live' && match.score) {
         const previousScore = matchScores[match.id];
         
         if (previousScore && previousScore !== match.score) {
-          // Счет изменился - показываем уведомление
-          addNotificationToQueue(match);
+          // Счет изменился
+          if (isDesktop) {
+            // На десктопе обновляем существующую карточку или создаем новую
+            updateDesktopNotification(match);
+          } else {
+            // На мобильной добавляем в очередь
+            addNotificationToQueue(match);
+          }
+        } else if (!previousScore && isDesktop) {
+          // Первый раз видим этот матч на десктопе - показываем карточку
+          updateDesktopNotification(match);
         }
         
         // Сохраняем текущий счет
@@ -14497,8 +14523,52 @@ async function pollFavoriteMatches() {
       }
     });
     
+    // На десктопе удаляем карточки матчей, которых больше нет в избранном
+    if (isDesktop) {
+      const container = document.getElementById('goalNotifications');
+      if (container) {
+        const existingNotifications = container.querySelectorAll('.goal-notification');
+        existingNotifications.forEach(notification => {
+          const matchId = parseInt(notification.getAttribute('data-match-id'));
+          if (!activeMatchIds.includes(matchId)) {
+            notification.remove();
+          }
+        });
+      }
+    }
+    
   } catch (error) {
     console.error('Ошибка polling избранных матчей:', error);
+  }
+}
+
+// Обновить или создать уведомление на десктопе
+function updateDesktopNotification(match) {
+  const container = document.getElementById('goalNotifications');
+  if (!container) return;
+  
+  // Ищем существующую карточку
+  let notification = container.querySelector(`[data-match-id="${match.id}"]`);
+  
+  if (notification) {
+    // Обновляем счет в существующей карточке
+    const scoreElement = notification.querySelector('.goal-notification-score');
+    if (scoreElement) {
+      scoreElement.textContent = match.score;
+      // Добавляем анимацию обновления
+      scoreElement.style.animation = 'none';
+      setTimeout(() => {
+        scoreElement.style.animation = 'goalBounce 0.6s ease-out';
+      }, 10);
+    }
+  } else {
+    // Создаем новую карточку
+    showGoalNotification(match);
+  }
+  
+  // Воспроизводим звук при обновлении счета
+  if (currentUser && currentUser.live_sound === 1) {
+    playGoalSound();
   }
 }
 
