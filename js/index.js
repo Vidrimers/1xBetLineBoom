@@ -13987,9 +13987,24 @@ async function loadLiveMatches() {
     // Отображаем карточки турниров в виде сетки
     let html = '<div class="live-events-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">';
     
+    // Проверяем каждый турнир на наличие live матчей
     for (const event of activeEvents) {
+      // Проверяем есть ли live матчи в этом турнире
+      let hasLiveMatches = false;
+      try {
+        const matchesResponse = await fetch(`/api/live-matches?eventId=${event.id}`);
+        if (matchesResponse.ok) {
+          const matchesData = await matchesResponse.json();
+          const matches = matchesData.matches || [];
+          // Проверяем есть ли хотя бы один live матч
+          hasLiveMatches = matches.some(m => m.status === 'live' || m.status === 'in_progress');
+        }
+      } catch (e) {
+        console.warn(`Не удалось проверить live матчи для ${event.name}`);
+      }
+      
       html += `
-        <div class="live-event-card" onclick="showLiveEventMatches(${event.id})" style="
+        <div class="live-event-card ${hasLiveMatches ? 'has-live' : ''}" onclick="showLiveEventMatches(${event.id})" style="
           background: rgba(255, 255, 255, 0.05);
           border: 2px solid rgba(90, 159, 212, 0.5);
           border-radius: 8px;
@@ -13998,7 +14013,9 @@ async function loadLiveMatches() {
           transition: all 0.3s ease;
           position: relative;
           overflow: hidden;
-        " onmouseover="this.style.background='rgba(90, 159, 212, 0.1)'; this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px rgba(90, 159, 212, 0.3)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+        " onmouseover="this.style.background='rgba(90, 159, 212, 0.1)'; this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${hasLiveMatches ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+          
+          ${hasLiveMatches ? '<span class="live-indicator" style="position: absolute; top: 20px; right: 20px; width: 10px; height: 10px;"></span>' : ''}
           
           <div style="text-align: center; margin-bottom: 15px;">
             ${event.icon ? (
