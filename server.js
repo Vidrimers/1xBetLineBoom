@@ -5028,6 +5028,78 @@ app.get("/api/fd-matches", async (req, res) => {
   }
 });
 
+// GET /api/sstats-teams - Получить список команд из SStats для маппинга
+app.get("/api/sstats-teams", async (req, res) => {
+  try {
+    const { competition, season } = req.query;
+    
+    if (!competition) {
+      return res.status(400).json({ error: "Требуется параметр competition" });
+    }
+
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+
+    const leagueId = SSTATS_LEAGUE_MAPPING[competition];
+    if (!leagueId) {
+      return res.status(400).json({ error: `Неизвестный турнир: ${competition}` });
+    }
+
+    const year = season || new Date().getFullYear();
+    
+    // Запрос к SStats API для получения команд лиги
+    const url = `${SSTATS_API_BASE}/Leagues/${leagueId}/Standings?year=${year}`;
+    
+    console.log(`📊 SStats API запрос команд: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-Key": apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ SStats API ошибка: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ error: errorText || response.statusText });
+    }
+
+    const sstatsData = await response.json();
+    
+    if (sstatsData.status !== "OK") {
+      console.error(`❌ SStats API статус не OK:`, sstatsData);
+      return res.status(500).json({ error: "SStats API вернул ошибку" });
+    }
+
+    // Извлекаем уникальные названия команд
+    const teams = new Set();
+    if (sstatsData.data && Array.isArray(sstatsData.data)) {
+      sstatsData.data.forEach(standing => {
+        if (standing.team && standing.team.name) {
+          teams.add(standing.team.name);
+        }
+      });
+    }
+
+    const teamsList = Array.from(teams).sort();
+    
+    console.log(`✅ SStats API: получено ${teamsList.length} команд для ${competition}`);
+
+    res.json({ 
+      competition,
+      leagueId,
+      year,
+      teams: teamsList 
+    });
+
+  } catch (error) {
+    console.error("❌ /api/sstats-teams ошибка:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/counting-bets", (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;

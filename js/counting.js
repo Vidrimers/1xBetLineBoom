@@ -3,6 +3,55 @@
 // Переменная для хранения выбранной лиги
 let selectedCompetition = "CL"; // По умолчанию Champions League
 
+// Маппинг команд из JSON файлов (русское название -> английское из API)
+let teamMappings = {};
+
+// Загрузить маппинг команд для турнира
+async function loadTeamMapping(competition) {
+  const mappingFiles = {
+    'SA': '/names/SerieA.json',
+    'PL': '/names/PremierLeague.json',
+    'BL1': '/names/Bundesliga.json',
+    'PD': '/names/LaLiga.json',
+    'FL1': '/names/Ligue1.json',
+    'DED': '/names/Eredivisie.json',
+    'CL': '/names/LeagueOfChampionsTeams.json',
+    // Добавьте другие турниры по необходимости
+  };
+
+  const filePath = mappingFiles[competition];
+  if (!filePath) {
+    console.warn(`⚠️ Нет файла маппинга для турнира ${competition}`);
+    return {};
+  }
+
+  try {
+    const response = await fetch(filePath);
+    if (!response.ok) {
+      console.warn(`⚠️ Не удалось загрузить ${filePath}`);
+      return {};
+    }
+
+    const data = await response.json();
+    
+    // Поддержка старого формата (массив) и нового (объект)
+    if (Array.isArray(data.teams)) {
+      // Старый формат - возвращаем пустой маппинг
+      console.log(`ℹ️ Файл ${filePath} использует старый формат (массив)`);
+      return {};
+    } else if (typeof data.teams === 'object') {
+      // Новый формат - возвращаем маппинг
+      console.log(`✅ Загружен маппинг команд для ${competition}: ${Object.keys(data.teams).length} команд`);
+      return data.teams;
+    }
+
+    return {};
+  } catch (error) {
+    console.error(`❌ Ошибка загрузки маппинга для ${competition}:`, error);
+    return {};
+  }
+}
+
 function loadCounting() {
   if (!canViewCounting()) {
     alert("У вас нет прав");
@@ -299,6 +348,13 @@ function setCountingToday() {
 // Выбрать соревнование
 function selectCompetition(code) {
   selectedCompetition = code;
+  
+  // Загружаем маппинг команд для выбранного турнира
+  loadTeamMapping(code).then(mapping => {
+    teamMappings = mapping;
+    console.log(`📋 Маппинг команд для ${code} загружен`);
+  });
+  
   const competitionNames = {
     WC: "World Cup",
     CL: "Champions League",
