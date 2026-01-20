@@ -5136,26 +5136,35 @@ app.get("/api/sstats-teams", async (req, res) => {
 
 // GET /api/live-matches - Получить live матчи для турнира на сегодня
 app.get("/api/live-matches", async (req, res) => {
+  console.log(`🔍 /api/live-matches запрос получен, eventId: ${req.query.eventId}`);
+  
   try {
     const { eventId } = req.query;
     
     if (!eventId) {
+      console.error(`❌ eventId не указан`);
       return res.status(400).json({ error: "Не указан eventId" });
     }
     
     const apiKey = process.env.SSTATS_API_KEY;
     if (!apiKey) {
+      console.error(`❌ SSTATS_API_KEY не задан в переменных окружения`);
       return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
     }
     
     // Получаем информацию о турнире из БД
+    console.log(`📊 Получение турнира из БД, eventId: ${eventId}`);
     const event = db.prepare("SELECT * FROM events WHERE id = ?").get(eventId);
     if (!event) {
+      console.error(`❌ Турнир не найден в БД, eventId: ${eventId}`);
       return res.status(404).json({ error: "Турнир не найден" });
     }
     
+    console.log(`✅ Турнир найден: ${event.name}`);
+    
     // Определяем код турнира (например, из названия или отдельного поля)
     // Пока используем простое сопоставление по названию
+    console.log(`🔍 Определение кода турнира для: "${event.name}"`);
     let competition = null;
     const eventName = event.name.toLowerCase();
     
@@ -5179,12 +5188,18 @@ app.get("/api/live-matches", async (req, res) => {
       competition = 'RPL';
     }
     
+    console.log(`🎯 Определен код турнира: ${competition || 'НЕ ОПРЕДЕЛЕН'}`);
+    
     if (!competition) {
+      console.warn(`⚠️ Турнир не поддерживается: ${event.name}`);
       return res.json({ matches: [] }); // Если турнир не поддерживается, возвращаем пустой массив
     }
     
     const leagueId = SSTATS_LEAGUE_MAPPING[competition];
+    console.log(`🆔 League ID для ${competition}: ${leagueId}`);
+    
     if (!leagueId) {
+      console.warn(`⚠️ League ID не найден для ${competition}`);
       return res.json({ matches: [] });
     }
     
@@ -5206,18 +5221,29 @@ app.get("/api/live-matches", async (req, res) => {
     const mappingFile = mappingFiles[competition];
     if (mappingFile) {
       try {
-        const mappingData = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
-        teamMapping = mappingData.teams || {};
+        console.log(`📂 Попытка загрузить словарь: ${mappingFile}`);
         
-        // Создаем обратный маппинг: Английское -> Русское
-        reverseMapping = {};
-        for (const [russian, english] of Object.entries(teamMapping)) {
-          reverseMapping[english.toLowerCase()] = russian;
+        // Проверяем существование файла
+        if (!fs.existsSync(mappingFile)) {
+          console.warn(`⚠️ Файл словаря не найден: ${mappingFile}`);
+        } else {
+          const fileContent = fs.readFileSync(mappingFile, 'utf8');
+          const mappingData = JSON.parse(fileContent);
+          teamMapping = mappingData.teams || mappingData || {};
+          
+          // Создаем обратный маппинг: Английское -> Русское
+          reverseMapping = {};
+          for (const [russian, english] of Object.entries(teamMapping)) {
+            if (english && typeof english === 'string') {
+              reverseMapping[english.toLowerCase()] = russian;
+            }
+          }
+          
+          console.log(`📖 Загружен словарь команд для ${competition}: ${Object.keys(teamMapping).length} команд`);
         }
-        
-        console.log(`📖 Загружен словарь команд для ${competition}: ${Object.keys(teamMapping).length} команд`);
       } catch (error) {
-        console.warn(`⚠️ Не удалось загрузить словарь для ${competition}:`, error.message);
+        console.error(`❌ Ошибка загрузки словаря для ${competition}:`, error.message);
+        console.error(`❌ Stack trace:`, error.stack);
       }
     }
     
@@ -5360,8 +5386,17 @@ app.get("/api/live-matches", async (req, res) => {
     res.json({ matches });
     
   } catch (error) {
-    console.error("❌ /api/live-matches ошибка:", error);
-    res.status(500).json({ error: error.message });
+    console.error("❌ /api/live-matches критическая ошибка:", error.message);
+    console.error("❌ Stack trace:", error.stack);
+    console.error("❌ Error details:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
