@@ -1,0 +1,22 @@
+{
+  "tournament": "Russian Premier League 2025/26",
+  "description": "Команды турнира Russian Premier League",
+  "teams": {
+    "Akhmat": "Akhmat",
+    "Akron": "Akron",
+    "CSKA Moscow": "CSKA Moscow",
+    "Dinamo Makhachkala": "Dinamo Makhachkala",
+    "Dynamo": "Dynamo",
+    "FC Krasnodar": "FC Krasnodar",
+    "FC Orenburg": "FC Orenburg",
+    "FC Rostov": "FC Rostov",
+    "Fakel": "Fakel",
+    "Khimki": "Khimki",
+    "Krylia Sovetov": "Krylia Sovetov",
+    "Lokomotiv": "Lokomotiv",
+    "Nizhny Novgorod": "Nizhny Novgorod",
+    "Rubin": "Rubin",
+    "Spartak Moscow": "Spartak Moscow",
+    "Zenit": "Zenit"
+  }
+}

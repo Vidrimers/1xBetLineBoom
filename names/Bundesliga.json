@@ -1,24 +1,24 @@
 {
   "tournament": "Bundesliga 2025/26",
-  "description": "Команды немецкой Бундеслиги",
-  "teams": [
-    "Аугсбург",
-    "Бавария",
-    "Байер",
-    "Боруссия Дортмунд",
-    "Боруссия Мёнхенгладбах",
-    "Айнтрахт Франкфурт",
-    "Фрайбург",
-    "Хайденхайм",
-    "Хоффенхайм",
-    "Кёльн",
-    "Лейпциг",
-    "Майнц",
-    "Санкт-Паули",
-    "Унион Берлин",
-    "Штутгарт",
-    "Вердер",
-    "Вольфсбург",
-    "Бохум"
-  ]
+  "description": "Команды турнира Bundesliga",
+  "teams": {
+    "1. FC Heidenheim": "1. FC Heidenheim",
+    "1899 Hoffenheim": "1899 Hoffenheim",
+    "Байер": "Bayer Leverkusen",
+    "Bayern München": "Bayern München",
+    "Боруссия Дортмунд": "Borussia Dortmund",
+    "Borussia Mönchengladbach": "Borussia Mönchengladbach",
+    "Айнтрахт Франкфурт": "Eintracht Frankfurt",
+    "FC Augsburg": "FC Augsburg",
+    "FC St. Pauli": "FC St. Pauli",
+    "FSV Mainz 05": "FSV Mainz 05",
+    "Holstein Kiel": "Holstein Kiel",
+    "Лейпциг": "RB Leipzig",
+    "SC Freiburg": "SC Freiburg",
+    "Унион Берлин": "Union Berlin",
+    "VfB Stuttgart": "VfB Stuttgart",
+    "VfL Bochum": "VfL Bochum",
+    "VfL Wolfsburg": "VfL Wolfsburg",
+    "Вердер": "Werder Bremen"
+  }
 }

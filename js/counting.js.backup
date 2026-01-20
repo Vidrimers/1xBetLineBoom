@@ -550,33 +550,16 @@ function fixSpaces(value) {
 }
 
 function normalizeForComparison(name) {
-  // Сначала проверяем маппинг из JSON файла
-  if (teamMappings && Object.keys(teamMappings).length > 0) {
-    // Ищем точное совпадение (регистронезависимое)
-    const nameLower = (name || "").toLowerCase().trim();
-    for (const [russianName, englishName] of Object.entries(teamMappings)) {
-      if (russianName.toLowerCase() === nameLower || englishName.toLowerCase() === nameLower) {
-        // Нормализуем найденное английское название
-        return fixSpaces(removeDiacritics(englishName))
-          .toLowerCase()
-          .replace(/[''`]/g, "")
-          .replace(/[^a-z0-9\u0400-\u04FF\s-]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-      }
-    }
-  }
-  
-  // Если не нашли в маппинге, используем старую логику через dict.js
   const mappedName =
     typeof mapTeamName === "function" ? mapTeamName(name) : name || "";
   return fixSpaces(removeDiacritics(mappedName))
     .toLowerCase()
-    .replace(/[''`]/g, "")
+    .replace(/[’'`]/g, "")
     .replace(/[^a-z0-9\u0400-\u04FF\s-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
+
 function checkBetsResults(bets, fdMatches) {
   const results = [];
 

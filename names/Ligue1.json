@@ -1,24 +1,24 @@
 {
   "tournament": "Ligue 1 2025/26",
-  "description": "Команды французской Лиги 1",
-  "teams": [
-    "Анже",
-    "Осер",
-    "Брест",
-    "Гавр",
-    "Ланс",
-    "Лилль",
-    "Лион",
-    "Марсель",
-    "Монако",
-    "Монпелье",
-    "Нант",
-    "Ницца",
-    "ПСЖ",
-    "Ренн",
-    "Реймс",
-    "Сент-Этьен",
-    "Страсбург",
-    "Тулуза"
-  ]
+  "description": "Команды турнира Ligue 1",
+  "teams": {
+    "Анже": "Angers",
+    "Осер": "Auxerre",
+    "Гавр": "Le Havre",
+    "Ланс": "Lens",
+    "Лилль": "Lille",
+    "Лион": "Lyon",
+    "Марсель": "Marseille",
+    "Монако": "Monaco",
+    "Монпелье": "Montpellier",
+    "Нант": "Nantes",
+    "Ницца": "Nice",
+    "Paris Saint Germain": "Paris Saint Germain",
+    "Реймс": "Reims",
+    "Ренн": "Rennes",
+    "Saint Etienne": "Saint Etienne",
+    "Stade Brestois 29": "Stade Brestois 29",
+    "Страсбург": "Strasbourg",
+    "Тулуза": "Toulouse"
+  }
 }

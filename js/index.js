@@ -9687,8 +9687,12 @@ async function loadMatchTeams(filePath) {
           });
         }
       });
+    } else if (data.teams && typeof data.teams === 'object' && !Array.isArray(data.teams)) {
+      // Новый формат с маппингом (объект): { "Ювентус": "Juventus" }
+      // Берем ключи (русские названия)
+      matchTeamsList = Object.keys(data.teams);
     } else if (data.teams && Array.isArray(data.teams)) {
-      // Формат с массивом teams
+      // Старый формат с массивом teams
       matchTeamsList = data.teams.map(t => typeof t === 'string' ? t : t.name).filter(Boolean);
     } else if (Array.isArray(data)) {
       // Простой массив строк (как LeagueOfnames.json)

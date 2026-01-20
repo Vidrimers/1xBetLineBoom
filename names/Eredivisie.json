@@ -1,24 +1,24 @@
 {
   "tournament": "Eredivisie 2025/26",
-  "description": "Команды голландской Эредивизи",
-  "teams": [
-    "Аякс",
-    "АЗ Алкмар",
-    "Фейеноорд",
-    "ПСВ",
-    "Твенте",
-    "Утрехт",
-    "Гоу Эхед Иглз",
-    "Херенвен",
-    "НЕК",
-    "Спарта",
-    "Фортуна Ситтард",
-    "Гронинген",
-    "Виллем II",
-    "Зволле",
-    "Алмере Сити",
-    "Волендам",
-    "Камбюр",
-    "Эксельсиор"
-  ]
+  "description": "Команды турнира Eredivisie",
+  "teams": {
+    "АЗ Алкмар": "AZ Alkmaar",
+    "Аякс": "Ajax",
+    "Almere City FC": "Almere City FC",
+    "Фейеноорд": "Feyenoord",
+    "Фортуна Ситтард": "Fortuna Sittard",
+    "GO Ahead Eagles": "GO Ahead Eagles",
+    "Гронинген": "Groningen",
+    "Херенвен": "Heerenveen",
+    "Heracles": "Heracles",
+    "NAC Breda": "NAC Breda",
+    "NEC Nijmegen": "NEC Nijmegen",
+    "PEC Zwolle": "PEC Zwolle",
+    "PSV Eindhoven": "PSV Eindhoven",
+    "Спарта": "Sparta Rotterdam",
+    "Твенте": "Twente",
+    "Утрехт": "Utrecht",
+    "Waalwijk": "Waalwijk",
+    "Виллем II": "Willem II"
+  }
 }

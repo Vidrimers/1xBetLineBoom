@@ -127,6 +127,16 @@ async function loadTeams(filePath = null) {
             });
           }
         });
+      } else if (data.teams && typeof data.teams === 'object' && !Array.isArray(data.teams)) {
+        // Новый формат с маппингом (объект): { "Ювентус": "Juventus" }
+        // Берем ключи (русские названия)
+        allTeams = Object.keys(data.teams);
+      } else if (data.teams && Array.isArray(data.teams)) {
+        // Старый формат с массивом teams
+        allTeams = data.teams.map(t => typeof t === 'string' ? t : t.name).filter(Boolean);
+      } else if (Array.isArray(data)) {
+        // Простой массив строк
+        allTeams = data.filter(item => typeof item === 'string' && item.trim());
       }
     } else if (ext === 'txt') {
       // TXT формат - команды с новой строки
