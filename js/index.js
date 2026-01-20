@@ -14271,6 +14271,23 @@ async function showLiveEventMatches(eventId) {
       html += '</div>';
     }
     
+    // Добавляем кнопку для показа завершенных матчей предыдущего дня
+    html += `
+      <div id="yesterdayMatchesSection" style="margin-top: 30px;">
+        <p onclick="toggleYesterdayMatches(${eventId})" id="toggleYesterdayBtn" style="
+          color: #b0b8c8;
+          font-size: 0.9em;
+          margin-bottom: 0;
+          cursor: pointer;
+          transition: color 0.3s ease;
+          user-select: none;
+        " onmouseover="this.style.color='#e0e6f0'" onmouseout="this.style.color='#b0b8c8'">
+          <span id="yesterdayBtnIcon">▼</span> 📅 Завершенные матчи: <span id="yesterdayBtnText">${new Date(new Date().setDate(new Date().getDate() - 1)).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+        </p>
+        <div id="yesterdayMatchesContainer" style="display: none; margin-top: 15px;"></div>
+      </div>
+    `;
+    
     // Кнопка назад внизу
     html += `
       <div style="margin-top: 30px; text-align: center;">
@@ -14315,6 +14332,108 @@ function backToLiveEvents() {
   // Очищаем сохраненный турнир из localStorage
   localStorage.removeItem('currentLiveEventId');
   loadLiveMatches();
+}
+
+// Показать/скрыть завершенные матчи предыдущего дня
+let yesterdayMatchesLoaded = false;
+async function toggleYesterdayMatches(eventId) {
+  const container = document.getElementById('yesterdayMatchesContainer');
+  const btn = document.getElementById('toggleYesterdayBtn');
+  const icon = document.getElementById('yesterdayBtnIcon');
+  
+  if (container.style.display === 'none') {
+    // Показываем
+    container.style.display = 'block';
+    icon.textContent = '▲';
+    
+    // Загружаем матчи если еще не загружены
+    if (!yesterdayMatchesLoaded) {
+      container.innerHTML = '<div style="text-align: center; padding: 20px; color: #b0b8c8;">Загрузка...</div>';
+      
+      try {
+        const response = await fetch(`/api/yesterday-matches?eventId=${eventId}`);
+        if (!response.ok) {
+          throw new Error(`Ошибка: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const matches = data.matches || [];
+        
+        if (matches.length === 0) {
+          container.innerHTML = '<div style="text-align: center; padding: 20px; color: #b0b8c8;">Нет завершенных матчей за предыдущий день</div>';
+        } else {
+          let html = '<div class="live-matches-grid">';
+          
+          for (const match of matches) {
+            const matchTime = new Date(match.match_time);
+            const timeStr = matchTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            
+            // Проверяем есть ли ставка на этот матч
+            let betTeam = null;
+            if (currentUser && currentUser.bets) {
+              const bet = currentUser.bets.find(b => b.match_id === match.id);
+              if (bet) {
+                betTeam = bet.prediction;
+              }
+            }
+            
+            const isDraw = betTeam && (betTeam.toLowerCase() === 'ничья' || betTeam.toLowerCase() === 'draw');
+            const shouldUnderlineTeam1 = (betTeam === match.team1 || isDraw);
+            const shouldUnderlineTeam2 = (betTeam === match.team2 || isDraw);
+            
+            html += `
+              <div class="live-match-card" style="
+                background: rgba(255, 255, 255, 0.05);
+                border: 2px solid #4caf50;
+                border-radius: 8px;
+                padding: 15px;
+                transition: all 0.3s ease;
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                min-height: 180px;
+                opacity: 0.8;
+              " onmouseover="this.style.transform='translateY(-5px)'; this.style.opacity='1';" onmouseout="this.style.transform='translateY(0)'; this.style.opacity='0.8';">
+                
+                <div style="text-align: center; margin-bottom: 10px;">
+                  <div style="color: #4caf50; font-size: 0.85em; font-weight: 600;">
+                    ✅ Завершен • ${timeStr}
+                  </div>
+                </div>
+                
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                  <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: 5px; line-height: 1.3;">
+                    ${shouldUnderlineTeam1 ? `<span style="position: relative; display: inline-block;">${match.team1}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team1}
+                  </div>
+                  
+                  <div style="color: #4caf50; font-size: 1.3em; font-weight: 700; margin-bottom: 5px;">
+                    ${match.score || '0:0'}
+                  </div>
+                  
+                  <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; line-height: 1.3;">
+                    ${shouldUnderlineTeam2 ? `<span style="position: relative; display: inline-block;">${match.team2}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team2}
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+          
+          html += '</div>';
+          container.innerHTML = html;
+        }
+        
+        yesterdayMatchesLoaded = true;
+      } catch (error) {
+        console.error('Ошибка загрузки завершенных матчей:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #f44336;">Ошибка загрузки матчей</div>';
+      }
+    }
+  } else {
+    // Скрываем
+    container.style.display = 'none';
+    icon.textContent = '▼';
+  }
 }
 
 // ===== АВТООБНОВЛЕНИЕ LIVE МАТЧЕЙ =====
