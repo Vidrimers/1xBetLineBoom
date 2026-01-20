@@ -3365,3 +3365,18 @@
     padding: 3px 8px !important;
   }
 }
+
+
+/* ===== LIVE MATCHES GRID АДАПТИВ ===== */
+.live-matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+/* От 480px и ниже - 2 карточки в ряду */
+@media (max-width: 480px) {
+  .live-matches-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

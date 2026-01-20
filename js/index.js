@@ -14085,12 +14085,12 @@ async function showLiveEventMatches(eventId) {
     if (todayMatches.length === 0) {
       html += `
         <div class="empty-message">
-          <p>На сегодня нет матчей в этом турнире</p>
+          <p>Сегодня ничего нет, уходи</p>
         </div>
       `;
     } else {
       // Отображаем матчи в виде квадратных карточек
-      html += '<div class="live-matches-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">';
+      html += '<div class="live-matches-grid">';
       
       for (const match of todayMatches) {
         const matchTime = new Date(match.match_time);
