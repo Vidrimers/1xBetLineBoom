@@ -13834,22 +13834,47 @@ async function loadAndDisplayBetStats(matchId) {
         percentWrapper.className = 'bet-percent-wrapper';
         percentWrapper.style.cssText = `
           opacity: 0;
-          transition: opacity 0.5s ease;
+          transition: opacity 0.3s ease;
         `;
-        percentWrapper.textContent = `${percent}%`;
+        percentWrapper.textContent = '0%';
         
         // Очищаем содержимое кнопки и добавляем обертку
         button.textContent = '';
         button.appendChild(percentWrapper);
+        
+        // Плавно показываем обертку
+        setTimeout(() => {
+          percentWrapper.style.opacity = '1';
+          // Запускаем анимацию счетчика
+          animateCounter(percentWrapper, 0, percent, 800);
+        }, 50);
       } else {
-        // Обновляем текст
-        percentWrapper.textContent = `${percent}%`;
+        // Обновляем с анимацией
+        const currentValue = parseInt(percentWrapper.textContent) || 0;
+        animateCounter(percentWrapper, currentValue, percent, 800);
+      }
+    }
+    
+    // Функция анимации счетчика
+    function animateCounter(element, start, end, duration) {
+      const startTime = performance.now();
+      
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function (ease-out)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(start + (end - start) * easeOut);
+        
+        element.textContent = `${current}%`;
+        
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
       }
       
-      // Плавно показываем проценты
-      setTimeout(() => {
-        percentWrapper.style.opacity = '1';
-      }, 50);
+      requestAnimationFrame(update);
     }
     
     // Обновляем кнопки с процентами
