@@ -14385,6 +14385,12 @@ async function updateLiveIndicator() {
     
     // Получаем все активные турниры
     const eventsResponse = await fetch('/api/events');
+    if (!eventsResponse.ok) {
+      console.error('❌ Ошибка загрузки турниров для индикатора');
+      indicator.classList.add('static');
+      return;
+    }
+    
     const allEvents = await eventsResponse.json();
     
     const now = new Date();
@@ -14435,11 +14441,9 @@ async function updateLiveIndicator() {
 }
 
 // Вызываем обновление индикатора при загрузке страницы и каждые 30 секунд
-// Только для залогиненных пользователей
-if (currentUser) {
-  updateLiveIndicator();
-  setInterval(updateLiveIndicator, 30000);
-}
+// Работает для всех пользователей (залогиненных и нет)
+updateLiveIndicator();
+setInterval(updateLiveIndicator, 30000);
 
 
 // ===== СИСТЕМА УВЕДОМЛЕНИЙ О ГОЛАХ =====
