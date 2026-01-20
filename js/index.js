@@ -14469,6 +14469,7 @@ function toggleFavoriteMatch(matchId, event) {
     
     // Очищаем флаг удаленного завершенного матча (если пользователь снова добавит - покажем)
     deletedFinishedMatches.delete(matchId);
+    saveDeletedFinishedMatches(); // Сохраняем в localStorage
   } else {
     // Добавить в избранное (максимум 10)
     if (favorites.length >= 10) {
@@ -14616,7 +14617,36 @@ const matchScores = {};
 const matchFinishTimes = {};
 
 // Список матчей, которые были завершены и удалены (не показывать их снова)
-const deletedFinishedMatches = new Set();
+// Загружаем из localStorage при инициализации
+const deletedFinishedMatches = new Set(
+  JSON.parse(localStorage.getItem('deletedFinishedMatches') || '[]')
+);
+
+// Функция для сохранения deletedFinishedMatches в localStorage
+function saveDeletedFinishedMatches() {
+  localStorage.setItem('deletedFinishedMatches', JSON.stringify([...deletedFinishedMatches]));
+}
+
+// Закрыть карточку уведомления вручную
+function closeGoalNotification(matchId) {
+  const container = document.getElementById('goalNotifications');
+  if (!container) return;
+  
+  const notification = container.querySelector(`[data-match-id="${matchId}"]`);
+  if (notification) {
+    console.log(`🗑️ Ручное закрытие карточки матча ${matchId}`);
+    notification.classList.add('removing');
+    setTimeout(() => notification.remove(), 300);
+    
+    // Помечаем как удаленный
+    deletedFinishedMatches.add(matchId);
+    saveDeletedFinishedMatches();
+    
+    // Очищаем данные
+    delete matchFinishTimes[matchId];
+    delete matchScores[matchId];
+  }
+}
 
 // Очередь уведомлений
 const notificationQueue = [];
@@ -14652,6 +14682,7 @@ function showGoalNotification(match) {
     <div class="goal-notification-header">
       <span class="goal-notification-icon">⚽</span>
       <span class="goal-notification-title">LIVE</span>
+      <button onclick="closeGoalNotification(${match.id})" style="margin-left: auto; background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;" title="Закрыть">✕</button>
     </div>
     <div class="goal-notification-teams">
       ${team1Html} - ${team2Html}
@@ -14738,6 +14769,19 @@ async function pollFavoriteMatches() {
   
   const favorites = getFavoriteMatches();
   console.log(`🔄 Polling избранных матчей: ${favorites.length} в списке`, favorites);
+  
+  // Очищаем deletedFinishedMatches от матчей, которых больше нет в избранном
+  let needsSave = false;
+  deletedFinishedMatches.forEach(matchId => {
+    if (!favorites.includes(matchId)) {
+      deletedFinishedMatches.delete(matchId);
+      needsSave = true;
+    }
+  });
+  if (needsSave) {
+    saveDeletedFinishedMatches();
+    console.log('🧹 Очищены старые записи из deletedFinishedMatches');
+  }
   
   if (favorites.length === 0) {
     // Очищаем контейнер если нет избранных
@@ -14829,9 +14873,20 @@ function processMatches(matches, favorites, isDesktop) {
       const previousScore = matchScores[match.id];
       const currentScore = match.score || '0:0';
       
-      // Проверяем статус матча
-      const isFinished = match.status === 'Finished' || match.status === 'finished' || 
-                        match.status === 'Full Time' || match.status === 'FT';
+      // Проверяем статус матча (расширенный список возможных статусов)
+      const isFinished = match.status === 'Finished' || 
+                        match.status === 'finished' || 
+                        match.status === 'Full Time' || 
+                        match.status === 'FT' ||
+                        match.status === 'Completed' ||
+                        match.status === 'completed' ||
+                        match.status === 'FINISHED' ||
+                        match.status === 'COMPLETED';
+      
+      // Логируем статус для отладки
+      if (match.status && match.status !== 'live' && match.status !== 'LIVE' && match.status !== 'in_progress') {
+        console.log(`🔍 Матч ${match.id} (${match.team1} - ${match.team2}): статус = "${match.status}", isFinished = ${isFinished}`);
+      }
       
       // Если матч был завершен и удален - не показываем его снова
       if (deletedFinishedMatches.has(match.id)) {
@@ -14857,6 +14912,7 @@ function processMatches(matches, favorites, isDesktop) {
           }
           // Помечаем матч как удаленный (не показывать снова)
           deletedFinishedMatches.add(match.id);
+          saveDeletedFinishedMatches(); // Сохраняем в localStorage
           // Очищаем данные
           delete matchFinishTimes[match.id];
           delete matchScores[match.id];

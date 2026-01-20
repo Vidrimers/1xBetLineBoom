@@ -1096,3 +1096,265 @@ body.theme-leagueEurope .mobile-nav-btn:hover {
   background: rgba(26, 31, 46, 1) !important;
   box-shadow: 0 0 25px rgba(255, 215, 0, 0.8) !important;
 }
+
+
+/* ========================================
+   СТИЛИ ДЛЯ GOAL-NOTIFICATION ПО ТЕМАМ
+   ======================================== */
+
+/* === THEME HACKER GREEN === */
+body.theme-hacker-green .goal-notification {
+  background: linear-gradient(135deg, rgba(0, 50, 0, 0.95) 0%, rgba(0, 100, 0, 0.95) 100%) !important;
+  border: 2px solid #00ff00 !important;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.6), inset 0 0 20px rgba(0, 255, 0, 0.1) !important;
+}
+
+body.theme-hacker-green .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.3), transparent);
+}
+
+body.theme-hacker-green .goal-notification-icon {
+  color: #00ff00 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+}
+
+body.theme-hacker-green .goal-notification-title {
+  color: #00ff00 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
+}
+
+body.theme-hacker-green .goal-notification-teams {
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green .goal-notification-score {
+  color: #00ff00 !important;
+  text-shadow: 0 0 15px rgba(0, 255, 0, 0.9);
+}
+
+body.theme-hacker-green .goal-notification-header button {
+  color: rgba(0, 255, 0, 0.7) !important;
+}
+
+body.theme-hacker-green .goal-notification-header button:hover {
+  color: #00ff00 !important;
+}
+
+/* === THEME SOLARIZED === */
+body.theme-solarized .goal-notification {
+  background: linear-gradient(135deg, rgba(7, 54, 66, 0.95) 0%, rgba(13, 74, 95, 0.95) 100%) !important;
+  border: 2px solid #268bd2 !important;
+  box-shadow: 0 0 25px rgba(38, 139, 210, 0.5), inset 0 0 15px rgba(42, 161, 152, 0.1) !important;
+}
+
+body.theme-solarized .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(38, 139, 210, 0.3), transparent);
+}
+
+body.theme-solarized .goal-notification-icon {
+  color: #2aa198 !important;
+}
+
+body.theme-solarized .goal-notification-title {
+  color: #268bd2 !important;
+}
+
+body.theme-solarized .goal-notification-teams {
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .goal-notification-score {
+  color: #2aa198 !important;
+  text-shadow: 0 0 10px rgba(42, 161, 152, 0.5);
+}
+
+body.theme-solarized .goal-notification-header button {
+  color: rgba(147, 161, 161, 0.7) !important;
+}
+
+body.theme-solarized .goal-notification-header button:hover {
+  color: #93a1a1 !important;
+}
+
+/* === THEME MATRIX === */
+body.theme-matrix .goal-notification {
+  background: linear-gradient(135deg, rgba(0, 26, 0, 0.95) 0%, rgba(0, 34, 0, 0.95) 100%) !important;
+  border: 2px solid #00ff41 !important;
+  box-shadow: 0 0 35px rgba(0, 255, 65, 0.7), inset 0 0 25px rgba(0, 255, 65, 0.15) !important;
+}
+
+body.theme-matrix .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.4), transparent);
+}
+
+body.theme-matrix .goal-notification-icon {
+  color: #00ff41 !important;
+  text-shadow: 0 0 15px rgba(0, 255, 65, 0.9);
+  animation: matrixPulse 2s ease-in-out infinite;
+}
+
+body.theme-matrix .goal-notification-title {
+  color: #00ff41 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.7);
+  font-family: "Courier New", monospace;
+}
+
+body.theme-matrix .goal-notification-teams {
+  color: #00ff41 !important;
+  font-family: "Courier New", monospace;
+}
+
+body.theme-matrix .goal-notification-score {
+  color: #00ff41 !important;
+  text-shadow: 0 0 20px rgba(0, 255, 65, 1);
+  font-family: "Courier New", monospace;
+}
+
+body.theme-matrix .goal-notification-header button {
+  color: rgba(0, 255, 65, 0.7) !important;
+}
+
+body.theme-matrix .goal-notification-header button:hover {
+  color: #00ff41 !important;
+}
+
+@keyframes matrixPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* === THEME CYBERPUNK === */
+body.theme-cyberpunk .goal-notification {
+  background: linear-gradient(135deg, rgba(22, 33, 62, 0.95) 0%, rgba(45, 27, 78, 0.95) 100%) !important;
+  border: 2px solid #ff00ff !important;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.7), 0 0 15px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(255, 0, 255, 0.1) !important;
+}
+
+body.theme-cyberpunk .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.4), rgba(0, 255, 255, 0.4), transparent);
+}
+
+body.theme-cyberpunk .goal-notification-icon {
+  color: #ff00ff !important;
+  text-shadow: 0 0 15px rgba(255, 0, 255, 0.9), 0 0 5px rgba(0, 255, 255, 0.5);
+  animation: cyberpunkGlow 1.5s ease-in-out infinite;
+}
+
+body.theme-cyberpunk .goal-notification-title {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+}
+
+body.theme-cyberpunk .goal-notification-teams {
+  color: #00ffff !important;
+}
+
+body.theme-cyberpunk .goal-notification-score {
+  background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.8));
+}
+
+body.theme-cyberpunk .goal-notification-header button {
+  color: rgba(0, 255, 255, 0.7) !important;
+}
+
+body.theme-cyberpunk .goal-notification-header button:hover {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+}
+
+@keyframes cyberpunkGlow {
+  0%, 100% { 
+    text-shadow: 0 0 15px rgba(255, 0, 255, 0.9), 0 0 5px rgba(0, 255, 255, 0.5);
+  }
+  50% { 
+    text-shadow: 0 0 25px rgba(255, 0, 255, 1), 0 0 10px rgba(0, 255, 255, 0.8);
+  }
+}
+
+
+/* === THEME LEAGUE CHAMPIONS === */
+body.theme-leagueChampions .goal-notification {
+  background: linear-gradient(135deg, rgba(31, 64, 104, 0.95) 0%, rgba(42, 92, 138, 0.95) 100%) !important;
+  border: 2px solid #1b9ce5 !important;
+  box-shadow: 0 0 30px rgba(27, 156, 229, 0.6), inset 0 0 20px rgba(0, 217, 255, 0.1) !important;
+}
+
+body.theme-leagueChampions .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(27, 156, 229, 0.4), transparent);
+}
+
+body.theme-leagueChampions .goal-notification-icon {
+  color: #00d9ff !important;
+  text-shadow: 0 0 15px rgba(0, 217, 255, 0.9);
+}
+
+body.theme-leagueChampions .goal-notification-title {
+  color: #1b9ce5 !important;
+  text-shadow: 0 0 10px rgba(27, 156, 229, 0.7);
+  font-weight: bold;
+}
+
+body.theme-leagueChampions .goal-notification-teams {
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .goal-notification-score {
+  color: #00d9ff !important;
+  text-shadow: 0 0 20px rgba(0, 217, 255, 0.9);
+  font-weight: bold;
+}
+
+body.theme-leagueChampions .goal-notification-header button {
+  color: rgba(232, 232, 232, 0.7) !important;
+}
+
+body.theme-leagueChampions .goal-notification-header button:hover {
+  color: #00d9ff !important;
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.7);
+}
+
+/* === THEME LEAGUE EUROPE === */
+body.theme-leagueEurope .goal-notification {
+  background: linear-gradient(135deg, rgba(255, 87, 34, 0.2) 0%, rgba(255, 152, 0, 0.3) 100%) !important;
+  border: 2px solid #ff9800 !important;
+  box-shadow: 0 0 30px rgba(255, 152, 0, 0.6), inset 0 0 20px rgba(255, 87, 34, 0.1) !important;
+}
+
+body.theme-leagueEurope .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 152, 0, 0.4), transparent);
+}
+
+body.theme-leagueEurope .goal-notification-icon {
+  color: #ff9800 !important;
+  text-shadow: 0 0 15px rgba(255, 152, 0, 0.9);
+}
+
+body.theme-leagueEurope .goal-notification-title {
+  color: #ff5722 !important;
+  text-shadow: 0 0 10px rgba(255, 87, 34, 0.7);
+  font-weight: bold;
+}
+
+body.theme-leagueEurope .goal-notification-teams {
+  color: #e0e6f0 !important;
+}
+
+body.theme-leagueEurope .goal-notification-score {
+  color: #ff9800 !important;
+  text-shadow: 0 0 20px rgba(255, 152, 0, 0.9);
+  font-weight: bold;
+}
+
+body.theme-leagueEurope .goal-notification-header button {
+  color: rgba(224, 230, 240, 0.7) !important;
+}
+
+body.theme-leagueEurope .goal-notification-header button:hover {
+  color: #ff9800 !important;
+  text-shadow: 0 0 10px rgba(255, 152, 0, 0.7);
+}

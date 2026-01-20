@@ -166,46 +166,46 @@ function loadCounting() {
       </div>
 
       <div class="countTournaments" style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; justify-content: center;">
-        <button id="comp-WC" onclick="selectCompetition('WC')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="World Cup">
+        <button id="comp-WC" onclick="selectCompetition('WC')" title="World Cup">
           <img src="img/cups/world-cup.png" alt="WC" style="width: 20px; height: 20px; object-fit: contain;" />
           World Cup
         </button>
-        <button id="comp-CL" onclick="selectCompetition('CL')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Champions League">
+        <button id="comp-CL" onclick="selectCompetition('CL')" title="Champions League">
           <img src="img/cups/champions-league.png" alt="CL" style="width: 20px; height: 20px; object-fit: contain;" />
           Champions League
         </button>
-        <button id="comp-EL" onclick="selectCompetition('EL')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Europa League">
+        <button id="comp-EL" onclick="selectCompetition('EL')" title="Europa League">
           <img src="img/cups/european-league.png" alt="EL" style="width: 20px; height: 20px; object-fit: contain;" />
           Europa League
         </button>
-        <button id="comp-EC" onclick="selectCompetition('EC')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Euro">
+        <button id="comp-EC" onclick="selectCompetition('EC')" title="Euro">
           <img src="img/cups/uefa-euro.png" alt="EC" style="width: 20px; height: 20px; object-fit: contain;" />
           Euro
         </button>
-        <button id="comp-BL1" onclick="selectCompetition('BL1')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Bundesliga">
+        <button id="comp-BL1" onclick="selectCompetition('BL1')" title="Bundesliga">
           <img src="img/cups/bundesliga.png" alt="BL1" style="width: 20px; height: 20px; object-fit: contain;" />
           Bundesliga
         </button>
-        <button id="comp-DED" onclick="selectCompetition('DED')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Eredivisie">
+        <button id="comp-DED" onclick="selectCompetition('DED')" title="Eredivisie">
           🇳🇱 Eredivisie
         </button>
-        <button id="comp-PD" onclick="selectCompetition('PD')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="La Liga">
+        <button id="comp-PD" onclick="selectCompetition('PD')" title="La Liga">
           <img src="img/cups/spain-la-liga.png" alt="PD" style="width: 20px; height: 20px; object-fit: contain;" />
           La Liga
         </button>
-        <button id="comp-FL1" onclick="selectCompetition('FL1')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Ligue 1">
+        <button id="comp-FL1" onclick="selectCompetition('FL1')" title="Ligue 1">
           <img src="img/cups/france-league-ligue-1.png" alt="FL1" style="width: 20px; height: 20px; object-fit: contain;" />
           Ligue 1
         </button>
-        <button id="comp-PL" onclick="selectCompetition('PL')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Premier League">
+        <button id="comp-PL" onclick="selectCompetition('PL')" title="Premier League">
           <img src="img/cups/england-premier-league.png" alt="PL" style="width: 20px; height: 20px; object-fit: contain;" />
           Premier League
         </button>
-        <button id="comp-RPL" onclick="selectCompetition('RPL')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Russian Premier League">
+        <button id="comp-RPL" onclick="selectCompetition('RPL')" title="Russian Premier League">
           <img src="img/cups/rpl.png" alt="RPL" style="width: 20px; height: 20px; object-fit: contain;" />
           РПЛ
         </button>
-        <button id="comp-SA" onclick="selectCompetition('SA')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em; display: flex; align-items: center; gap: 6px;" title="Serie A">
+        <button id="comp-SA" onclick="selectCompetition('SA')" title="Serie A">
           <img src="img/cups/serie-a.png" alt="SA" style="width: 20px; height: 20px; object-fit: contain;" />
           Serie A
         </button>
@@ -412,19 +412,13 @@ function selectCompetition(code) {
   // Убираем выделение со всех кнопок
   const allButtons = document.querySelectorAll("[id^='comp-']");
   allButtons.forEach((btn) => {
-    btn.style.background = "rgba(100, 100, 100, 0.7)";
-    btn.style.color = "#e0e6f0";
-    btn.style.border = "1px solid #666";
-    btn.style.fontWeight = "normal";
+    btn.classList.remove('active');
   });
 
   // Выделяем выбранную кнопку
   const selectedBtn = document.getElementById(`comp-${code}`);
   if (selectedBtn) {
-    selectedBtn.style.background = "rgba(76, 175, 80, 0.9)";
-    selectedBtn.style.color = "#ffffff";
-    selectedBtn.style.border = "2px solid #4caf50";
-    selectedBtn.style.fontWeight = "bold";
+    selectedBtn.classList.add('active');
   }
 
   console.log("Выбрана лига:", competitionNames[code]);

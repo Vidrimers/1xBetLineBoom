@@ -4338,3 +4338,124 @@ background: linear-gradient(90deg, rgba(76, 175, 80, 0.5), rgba(139, 195, 74, 0.
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   margin: 8px 0;
 }
+
+
+/* === СТИЛИ ДЛЯ КНОПОК ТУРНИРОВ В ПОДСЧЕТЕ === */
+.countTournaments button {
+  padding: 6px 12px;
+  background: rgba(100, 100, 100, 0.7);
+  color: #e0e6f0;
+  border: 1px solid #666;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.countTournaments button:hover {
+  background: rgba(120, 120, 120, 0.8);
+  border-color: #888;
+}
+
+.countTournaments button.active {
+  background: rgba(76, 175, 80, 0.95) !important;
+  color: #ffffff !important;
+  border: 3px solid #4caf50 !important;
+  font-weight: bold !important;
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.05);
+}
+
+/* Темы для активной кнопки турнира */
+body.theme-hacker-green .countTournaments button {
+  background: rgba(0, 50, 0, 0.7);
+  color: #00ff00;
+  border: 1px solid #00aa00;
+}
+
+body.theme-hacker-green .countTournaments button:hover {
+  background: rgba(0, 70, 0, 0.8);
+  border-color: #00cc00;
+}
+
+body.theme-hacker-green .countTournaments button.active {
+  background: #00ff00 !important;
+  color: #000000 !important;
+  border: 3px solid #00ff00 !important;
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.8), inset 0 0 15px rgba(0, 255, 0, 0.3) !important;
+  font-weight: bold !important;
+  transform: scale(1.05);
+}
+
+body.theme-solarized .countTournaments button {
+  background: rgba(7, 54, 66, 0.7);
+  color: #93a1a1;
+  border: 1px solid #586e75;
+}
+
+body.theme-solarized .countTournaments button:hover {
+  background: rgba(7, 54, 66, 0.9);
+  border-color: #657b83;
+}
+
+body.theme-solarized .countTournaments button.active {
+  background: linear-gradient(135deg, #268bd2 0%, #2aa198 100%) !important;
+  color: #fdf6e3 !important;
+  border: 3px solid #268bd2 !important;
+  box-shadow: 0 0 25px rgba(38, 139, 210, 0.7), inset 0 0 15px rgba(42, 161, 152, 0.3) !important;
+  font-weight: bold !important;
+  transform: scale(1.05);
+}
+
+body.theme-matrix .countTournaments button {
+  background: rgba(0, 26, 0, 0.7);
+  color: #00ff41;
+  border: 1px solid #00aa00;
+}
+
+body.theme-matrix .countTournaments button:hover {
+  background: rgba(0, 34, 0, 0.8);
+  border-color: #00cc00;
+}
+
+body.theme-matrix .countTournaments button.active {
+  background: linear-gradient(135deg, #00dd33 0%, #00ff41 100%) !important;
+  color: #000000 !important;
+  border: 3px solid #00ff41 !important;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.9), inset 0 0 20px rgba(0, 255, 65, 0.4) !important;
+  font-weight: bold !important;
+  transform: scale(1.05);
+  text-shadow: 0 0 5px rgba(0, 255, 65, 0.8);
+}
+
+body.theme-cyberpunk .countTournaments button {
+  background: rgba(22, 33, 62, 0.7);
+  color: #00ffff;
+  border: 1px solid #ff00ff;
+}
+
+body.theme-cyberpunk .countTournaments button:hover {
+  background: rgba(22, 33, 62, 0.9);
+  border-color: #ff00ff;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+}
+
+body.theme-cyberpunk .countTournaments button.active {
+  background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%) !important;
+  color: #ffffff !important;
+  border: 3px solid #ff00ff !important;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.9), 0 0 15px rgba(0, 255, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2) !important;
+  font-weight: bold !important;
+  transform: scale(1.05);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+
+/* Кнопка закрытия в goal-notification */
+.goal-notification-header button:hover {
+  color: rgba(255, 255, 255, 1) !important;
+  transform: scale(1.2);
+}
