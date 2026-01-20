@@ -5441,6 +5441,17 @@ app.post("/api/favorite-matches", async (req, res) => {
         
         const game = gameData.data;
         
+        // Логируем данные игры для отладки
+        console.log(`📊 Данные матча ${matchId}:`, {
+          id: game.id,
+          homeTeam: game.homeTeam?.name,
+          awayTeam: game.awayTeam?.name,
+          homeResult: game.homeResult,
+          awayResult: game.awayResult,
+          statusName: game.statusName,
+          elapsed: game.elapsed
+        });
+        
         // Определяем статус матча
         let status = 'scheduled';
         if (game.statusName === 'Finished') {
@@ -5454,13 +5465,18 @@ app.post("/api/favorite-matches", async (req, res) => {
           continue;
         }
         
+        // Формируем счет только если оба результата определены
+        let score = null;
+        if (game.homeResult !== undefined && game.homeResult !== null && 
+            game.awayResult !== undefined && game.awayResult !== null) {
+          score = `${game.homeResult}:${game.awayResult}`;
+        }
+        
         results.push({
           id: game.id,
           team1: game.homeTeam?.name || 'Команда 1',
           team2: game.awayTeam?.name || 'Команда 2',
-          score: game.homeResult !== null && game.awayResult !== null 
-            ? `${game.homeResult}:${game.awayResult}` 
-            : null,
+          score: score,
           status: status,
           elapsed: game.elapsed || null,
           statusName: game.statusName
