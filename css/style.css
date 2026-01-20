@@ -4054,6 +4054,50 @@ button[onclick^="toggleTeamDropdown"]:hover {
   width: 100%;
 }
 
+.live-events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.live-event-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.live-event-card:hover {
+  background: rgba(244, 67, 54, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
+}
+
+.live-event-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f44336, #ff6b6b, #f44336);
+  background-size: 200% 100%;
+  animation: live-gradient 2s linear infinite;
+}
+
+@keyframes live-gradient {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
 .live-event-section {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;

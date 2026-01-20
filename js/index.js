@@ -13948,96 +13948,115 @@ async function loadLiveMatches() {
   const container = document.getElementById('liveMatchesContainer');
   
   try {
-    // Получаем все матчи
-    const response = await fetch('/api/matches');
-    const matches = await response.json();
+    // Получаем все турниры
+    const eventsResponse = await fetch('/api/events');
+    const allEvents = await eventsResponse.json();
     
-    // Фильтруем только live матчи (статус 'live' или 'in_progress')
-    const liveMatches = matches.filter(match => 
-      match.status === 'live' || 
-      match.status === 'in_progress' ||
-      match.status === 'LIVE'
-    );
+    // Получаем текущую дату
+    const now = new Date();
     
-    if (liveMatches.length === 0) {
+    // Фильтруем только активные турниры (та же логика что в displayEvents)
+    const activeEvents = allEvents.filter((event) => {
+      if (event.locked_reason) return false; // Не завершенные
+      if (!event.start_date) return false; // Должна быть дата начала
+      return new Date(event.start_date) <= now; // Уже начались
+    });
+    
+    if (activeEvents.length === 0) {
       container.innerHTML = `
         <div class="empty-message">
-          <p>🔴 Сейчас нет live матчей</p>
+          <p>Нет активных турниров</p>
           <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
-            Live матчи появятся здесь, когда начнутся игры
+            Активные турниры появятся здесь после начала
           </p>
         </div>
       `;
       return;
     }
     
-    // Группируем матчи по турнирам
-    const matchesByEvent = {};
-    for (const match of liveMatches) {
-      if (!matchesByEvent[match.event_id]) {
-        matchesByEvent[match.event_id] = {
-          eventName: match.event_name || 'Турнир',
-          matches: []
-        };
-      }
-      matchesByEvent[match.event_id].matches.push(match);
+    // Получаем все матчи для подсчета live матчей
+    let allMatches = [];
+    try {
+      const matchesResponse = await fetch('/api/matches');
+      allMatches = await matchesResponse.json();
+    } catch (error) {
+      console.warn('Не удалось загрузить матчи для подсчета live:', error);
     }
     
-    // Отображаем матчи
-    let html = '';
-    for (const eventId in matchesByEvent) {
-      const eventData = matchesByEvent[eventId];
-      html += `
-        <div class="live-event-section" style="margin-bottom: 30px;">
-          <h3 style="color: #7ab0e0; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-            <span>${eventData.eventName}</span>
-            <span class="live-indicator" style="position: static; transform: none;"></span>
-          </h3>
-          <div class="live-matches-list">
-      `;
+    // Отображаем карточки турниров в виде сетки
+    let html = '<div class="live-events-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">';
+    
+    for (const event of activeEvents) {
+      // Считаем количество live матчей в турнире
+      const liveMatchesCount = allMatches.filter(m => 
+        m.event_id === event.id && 
+        (m.status === 'live' || m.status === 'in_progress' || m.status === 'LIVE')
+      ).length;
       
-      for (const match of eventData.matches) {
-        const matchTime = match.match_time ? new Date(match.match_time).toLocaleString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        }) : '';
-        
-        html += `
-          <div class="match-row live-match" style="border-left: 3px solid #f44336;">
-            <div class="match-info">
-              <div class="match-time" style="color: #f44336; font-weight: 600;">
-                🔴 LIVE ${matchTime ? '• ' + matchTime : ''}
-              </div>
-              <div class="match-teams">
-                <span class="team-name">${match.team1 || 'Команда 1'}</span>
-                <span class="vs">vs</span>
-                <span class="team-name">${match.team2 || 'Команда 2'}</span>
-              </div>
-              ${match.score ? `
-                <div class="match-score" style="color: #4caf50; font-weight: 700; font-size: 1.1em; margin-top: 5px;">
-                  Счёт: ${match.score}
-                </div>
-              ` : ''}
+      const hasLiveMatches = liveMatchesCount > 0;
+      
+      html += `
+        <div class="live-event-card ${hasLiveMatches ? 'has-live' : ''}" onclick="selectEvent(${event.id}); switchTab('allbets');" style="
+          background: rgba(255, 255, 255, 0.05);
+          border: 2px solid ${hasLiveMatches ? '#f44336' : 'rgba(90, 159, 212, 0.5)'};
+          border-radius: 8px;
+          padding: 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        " onmouseover="this.style.background='${hasLiveMatches ? 'rgba(244, 67, 54, 0.1)' : 'rgba(90, 159, 212, 0.1)'}'; this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${hasLiveMatches ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+          
+          ${hasLiveMatches ? `
+            <div class="live-pulse" style="position: absolute; top: 10px; right: 10px;">
+              <span class="live-indicator" style="position: static; transform: none;"></span>
             </div>
+          ` : ''}
+          
+          <div style="text-align: center; margin-bottom: 15px;">
+            ${event.icon ? (
+              event.icon.startsWith('img/') || event.icon.startsWith('http') 
+                ? `<img src="${event.icon}" alt="иконка" style="width: 60px; height: 60px; object-fit: contain; background: ${event.background_color === 'transparent' || !event.background_color ? 'rgba(224, 230, 240, .4)' : event.background_color}; padding: 5px; border-radius: 5px;">`
+                : `<span style="font-size: 3em; display: block; background: ${event.background_color === 'transparent' || !event.background_color ? 'rgba(224, 230, 240, .4)' : event.background_color}; width: 60px; height: 60px; line-height: 60px; margin: 0 auto; border-radius: 5px;">${event.icon}</span>`
+            ) : ''}
           </div>
-        `;
-      }
-      
-      html += `
-          </div>
+          
+          <h3 style="color: #e0e6f0; margin: 0 0 15px 0; font-size: 1.1em; text-align: center;">
+            ${event.name}
+          </h3>
+          
+          ${event.start_date || event.end_date ? `
+            <p style="color: #b0b8c8; font-size: 0.85em; margin: 0 0 15px 0; text-align: center; opacity: 0.6;">
+              ${event.start_date ? `📅 с ${new Date(event.start_date).toLocaleDateString('ru-RU')}` : ''}
+              ${event.end_date ? ` по ${new Date(event.end_date).toLocaleDateString('ru-RU')}` : ''}
+            </p>
+          ` : ''}
+          
+          ${hasLiveMatches ? `
+            <div style="text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.2); border-radius: 5px; border: 1px solid #f44336;">
+              <span style="color: #f44336; font-weight: 700; font-size: 1.1em;">
+                🔴 ${liveMatchesCount} ${liveMatchesCount === 1 ? 'матч' : liveMatchesCount < 5 ? 'матча' : 'матчей'} LIVE
+              </span>
+            </div>
+          ` : `
+            <div style="text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3);">
+              <span style="color: #7ab0e0; font-weight: 600; font-size: 0.95em;">
+                ⚽ Активный турнир
+              </span>
+            </div>
+          `}
         </div>
       `;
     }
     
+    html += '</div>';
     container.innerHTML = html;
     
   } catch (error) {
-    console.error('Ошибка при загрузке live матчей:', error);
+    console.error('Ошибка при загрузке live турниров:', error);
     container.innerHTML = `
       <div class="empty-message" style="color: #f44336;">
-        Ошибка при загрузке live матчей
+        Ошибка при загрузке турниров: ${error.message}
       </div>
     `;
   }
