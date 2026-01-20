@@ -14106,14 +14106,34 @@ async function showLiveEventMatches(eventId) {
         </div>
       `;
     } else {
+      // Сортируем матчи: сначала live, потом предстоящие, в конце завершенные
+      const sortedMatches = todayMatches.sort((a, b) => {
+        const aIsLive = a.status === 'live' || a.status === 'in_progress';
+        const bIsLive = b.status === 'live' || b.status === 'in_progress';
+        const aIsFinished = a.status === 'finished' || a.status === 'completed';
+        const bIsFinished = b.status === 'finished' || b.status === 'completed';
+        
+        // Live матчи в самом начале
+        if (aIsLive && !bIsLive) return -1;
+        if (!aIsLive && bIsLive) return 1;
+        
+        // Завершенные в самом конце
+        if (aIsFinished && !bIsFinished) return 1;
+        if (!aIsFinished && bIsFinished) return -1;
+        
+        // Остальные (предстоящие) по времени
+        return new Date(a.match_time) - new Date(b.match_time);
+      });
+      
       // Отображаем матчи в виде квадратных карточек
       html += '<div class="live-matches-grid">';
       
-      for (const match of todayMatches) {
+      for (const match of sortedMatches) {
         const matchTime = new Date(match.match_time);
         const timeStr = formatMatchTimeOnly(match.match_time);
         const isLive = match.status === 'live' || match.status === 'in_progress' || match.status === 'LIVE';
         const isFinished = match.status === 'finished' || match.status === 'completed';
+        const hasStarted = isLive || isFinished;
         
         html += `
           <div class="live-match-card ${isLive ? 'is-live' : ''}" style="
@@ -14142,26 +14162,24 @@ async function showLiveEventMatches(eventId) {
             </div>
             
             <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center;">
-              <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: 8px; line-height: 1.3;">
+              <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: ${hasStarted && match.score ? '5px' : '8px'}; line-height: 1.3;">
                 ${match.team1}
               </div>
               
-              <div style="color: #7ab0e0; font-size: 0.8em; margin-bottom: 8px;">
-                vs
-              </div>
+              ${hasStarted && match.score ? `
+                <div style="color: #4caf50; font-size: 1.3em; font-weight: 700; margin-bottom: 5px;">
+                  ${match.score}
+                </div>
+              ` : `
+                <div style="color: #7ab0e0; font-size: 0.8em; margin-bottom: 8px;">
+                  vs
+                </div>
+              `}
               
               <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; line-height: 1.3;">
                 ${match.team2}
               </div>
             </div>
-            
-            ${match.score ? `
-              <div style="text-align: center; padding: 8px; background: rgba(76, 175, 80, 0.2); border-radius: 5px; border: 1px solid #4caf50; margin-top: 10px;">
-                <span style="color: #4caf50; font-weight: 700; font-size: 1.2em;">
-                  ${match.score}
-                </span>
-              </div>
-            ` : ''}
           </div>
         `;
       }
