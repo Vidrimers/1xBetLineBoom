@@ -4293,6 +4293,23 @@ button[onclick^="toggleTeamDropdown"]:hover {
   }
 }
 
+@keyframes goalShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+.goal-notification.shake {
+  animation: goalShake 0.5s ease-in-out;
+  animation-iteration-count: 12; /* 12 раз по 0.5 сек = 6 секунд */
+}
+
 .goal-notification-title {
   font-size: 14px;
   font-weight: bold;

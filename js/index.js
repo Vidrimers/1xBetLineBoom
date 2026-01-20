@@ -14888,11 +14888,22 @@ function updateDesktopNotification(match) {
     if (scoreElement && scoreElement.textContent !== match.score) {
       console.log(`📊 Обновление счета: ${scoreElement.textContent} → ${match.score}`);
       scoreElement.textContent = match.score;
-      // Добавляем анимацию обновления
+      
+      // Добавляем анимацию обновления счета
       scoreElement.style.animation = 'none';
       setTimeout(() => {
         scoreElement.style.animation = 'goalBounce 0.6s ease-out';
       }, 10);
+      
+      // Добавляем анимацию тряски карточки на 6 секунд (только на десктопе)
+      const isDesktop = window.innerWidth > 1400;
+      if (isDesktop) {
+        notification.classList.add('shake');
+        // Убираем класс через 6 секунд
+        setTimeout(() => {
+          notification.classList.remove('shake');
+        }, 6000);
+      }
     }
   } else {
     console.log('🆕 Создаем новую карточку');
