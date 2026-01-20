@@ -113,7 +113,7 @@ function loadCounting() {
         </button>
       </div>
 
-      <div style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; justify-content: center;">
+      <div class="countTournaments" style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; justify-content: center;">
         <button id="comp-WC" onclick="selectCompetition('WC')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="World Cup">🌍 World Cup</button>
         <button id="comp-CL" onclick="selectCompetition('CL')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Champions League">🏆 Champions League</button>
         <button id="comp-EC" onclick="selectCompetition('EC')" style="padding: 6px 12px; background: rgba(100, 100, 100, 0.7); color: #e0e6f0; border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 0.85em;" title="Euro">🇪🇺 Euro</button>
