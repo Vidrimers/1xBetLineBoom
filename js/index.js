@@ -14204,8 +14204,22 @@ async function showLiveEventMatches(eventId) {
         const isFinished = match.status === 'finished' || match.status === 'completed';
         const hasStarted = isLive || isFinished;
         
+        // Проверяем есть ли ставка на этот матч и на какую команду
+        let betTeam = null;
+        if (currentUser && currentUser.bets) {
+          const bet = currentUser.bets.find(b => b.match_id === match.id);
+          if (bet) {
+            betTeam = bet.prediction; // Название команды на которую поставили или "Ничья"
+          }
+        }
+        
+        // Определяем нужно ли подчеркивать команды
+        const isDraw = betTeam && (betTeam.toLowerCase() === 'ничья' || betTeam.toLowerCase() === 'draw');
+        const shouldUnderlineTeam1 = (betTeam === match.team1 || isDraw);
+        const shouldUnderlineTeam2 = (betTeam === match.team2 || isDraw);
+        
         html += `
-          <div class="live-match-card ${isLive ? 'is-live' : ''}" style="
+          <div class="live-match-card ${isLive ? 'is-live' : ''}" data-match-id="${match.id}" style="
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid ${isLive ? '#f44336' : isFinished ? '#4caf50' : 'rgba(90, 159, 212, 0.5)'};
             border-radius: 8px;
@@ -14233,7 +14247,7 @@ async function showLiveEventMatches(eventId) {
             
             <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center;">
               <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: ${hasStarted && match.score ? '5px' : '8px'}; line-height: 1.3;">
-                ${match.team1}
+                ${shouldUnderlineTeam1 ? `<span style="position: relative; display: inline-block;">${match.team1}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team1}
               </div>
               
               ${hasStarted && match.score ? `
@@ -14247,7 +14261,7 @@ async function showLiveEventMatches(eventId) {
               `}
               
               <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; line-height: 1.3;">
-                ${match.team2}
+                ${shouldUnderlineTeam2 ? `<span style="position: relative; display: inline-block;">${match.team2}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team2}
               </div>
             </div>
           </div>
@@ -14416,12 +14430,22 @@ function updateFavoriteMatchesData(liveMatches) {
   favorites.forEach(matchId => {
     const match = liveMatches.find(m => m.id === matchId);
     if (match) {
+      // Проверяем есть ли ставка на этот матч
+      let betTeam = null;
+      if (currentUser && currentUser.bets) {
+        const bet = currentUser.bets.find(b => b.match_id === matchId);
+        if (bet) {
+          betTeam = bet.prediction;
+        }
+      }
+      
       const matchData = {
         id: match.id,
         team1: match.team1,
         team2: match.team2,
         score: match.score || '0:0',
         status: match.status,
+        betTeam: betTeam, // Добавляем информацию о ставке
         updatedAt: new Date().toISOString()
       };
       
@@ -14456,11 +14480,21 @@ function toggleFavoriteMatch(matchId, event) {
       const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
       const scoreDiv = matchCard.querySelector('div[style*="font-size: 1.3em"][style*="color: #4caf50"]');
       
+      // Проверяем есть ли ставка на этот матч
+      let betTeam = null;
+      if (currentUser && currentUser.bets) {
+        const bet = currentUser.bets.find(b => b.match_id === matchId);
+        if (bet) {
+          betTeam = bet.prediction;
+        }
+      }
+      
       const matchData = {
         id: matchId,
         team1: teamDivs[0]?.textContent.trim() || 'Команда 1',
         team2: teamDivs[1]?.textContent.trim() || 'Команда 2',
         score: scoreDiv?.textContent.trim() || '0:0',
+        betTeam: betTeam, // Добавляем информацию о ставке
         addedAt: new Date().toISOString()
       };
       
@@ -14586,12 +14620,27 @@ function showGoalNotification(match) {
   const notification = document.createElement('div');
   notification.className = 'goal-notification';
   notification.setAttribute('data-match-id', match.id);
+  
+  // Определяем нужно ли подчеркивать команды
+  const isDraw = match.betTeam && (match.betTeam.toLowerCase() === 'ничья' || match.betTeam.toLowerCase() === 'draw');
+  const shouldUnderlineTeam1 = (match.betTeam === match.team1 || isDraw);
+  const shouldUnderlineTeam2 = (match.betTeam === match.team2 || isDraw);
+  
+  const team1Html = shouldUnderlineTeam1 
+    ? `<span style="position: relative; display: inline-block;">${match.team1}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #fff;"></span></span>`
+    : match.team1;
+  const team2Html = shouldUnderlineTeam2 
+    ? `<span style="position: relative; display: inline-block;">${match.team2}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #fff;"></span></span>`
+    : match.team2;
+  
   notification.innerHTML = `
     <div class="goal-notification-header">
       <span class="goal-notification-icon">⚽</span>
       <span class="goal-notification-title">LIVE</span>
     </div>
-    <div class="goal-notification-teams">${match.team1} - ${match.team2}</div>
+    <div class="goal-notification-teams">
+      ${team1Html} - ${team2Html}
+    </div>
     <div class="goal-notification-score">${match.score}</div>
   `;
   
@@ -14686,7 +14735,50 @@ async function pollFavoriteMatches() {
   const isDesktop = window.innerWidth > 1400;
   console.log(`💻 Режим: ${isDesktop ? 'ДЕСКТОП' : 'МОБИЛЬНАЯ'} (ширина: ${window.innerWidth}px)`);
   
-  // Загружаем данные из localStorage
+  // Загружаем актуальные данные через API для обновления localStorage
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/live-matches-by-ids`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ matchIds: favorites })
+    });
+    
+    if (response.ok) {
+      const apiMatches = await response.json();
+      console.log(`📡 Получено ${apiMatches.length} матчей через API`);
+      
+      // Обновляем данные в localStorage
+      apiMatches.forEach(match => {
+        // Проверяем есть ли ставка на этот матч
+        let betTeam = null;
+        if (currentUser && currentUser.bets) {
+          const bet = currentUser.bets.find(b => b.match_id === match.id);
+          if (bet) {
+            betTeam = bet.prediction;
+          }
+        }
+        
+        const matchData = {
+          id: match.id,
+          team1: match.team1 || match.homeTeam,
+          team2: match.team2 || match.awayTeam,
+          score: match.score || `${match.homeResult || 0}:${match.awayResult || 0}`,
+          status: match.status || match.statusName,
+          betTeam: betTeam, // Добавляем информацию о ставке
+          updatedAt: new Date().toISOString()
+        };
+        saveFavoriteMatchData(match.id, matchData);
+      });
+      
+      console.log('✅ Данные в localStorage обновлены');
+    }
+  } catch (error) {
+    console.log('⚠️ Не удалось обновить через API, используем данные из localStorage:', error.message);
+  }
+  
+  // Загружаем данные из localStorage для отображения
   const matches = [];
   favorites.forEach(matchId => {
     const matchData = getFavoriteMatchData(matchId);
@@ -14697,6 +14789,7 @@ async function pollFavoriteMatches() {
         team2: matchData.team2,
         score: matchData.score || '0:0',
         status: matchData.status || 'live',
+        betTeam: matchData.betTeam || null, // Добавляем информацию о ставке
         elapsed: null
       });
     }

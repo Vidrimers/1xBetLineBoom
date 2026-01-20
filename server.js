@@ -5506,6 +5506,103 @@ app.post("/api/favorite-matches", async (req, res) => {
   }
 });
 
+// POST /api/live-matches-by-ids - Получить актуальные данные LIVE матчей по их ID из SSTATS API
+app.post("/api/live-matches-by-ids", async (req, res) => {
+  try {
+    const { matchIds } = req.body;
+    
+    console.log('📥 /api/live-matches-by-ids запрос:', matchIds);
+    
+    if (!Array.isArray(matchIds) || matchIds.length === 0) {
+      return res.json([]);
+    }
+    
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      console.error(`❌ SSTATS_API_KEY не задан`);
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+    
+    // Получаем все активные турниры
+    const activeEvents = db.prepare(`
+      SELECT * FROM events 
+      WHERE status = 'active' 
+      ORDER BY name
+    `).all();
+    
+    console.log(`📊 Найдено ${activeEvents.length} активных турниров`);
+    
+    const allMatches = [];
+    
+    // Проходим по каждому турниру и ищем матчи
+    for (const event of activeEvents) {
+      // Определяем код турнира
+      let competition = null;
+      const eventName = event.name.toLowerCase();
+      
+      if (eventName.includes('champions') || eventName.includes('лига чемпионов')) {
+        competition = 'CL';
+      } else if (eventName.includes('europa') || eventName.includes('лига европы')) {
+        competition = 'EL';
+      } else if (eventName.includes('serie a') || eventName.includes('серия а')) {
+        competition = 'SA';
+      } else if (eventName.includes('premier') && eventName.includes('england')) {
+        competition = 'PL';
+      } else if (eventName.includes('bundesliga') || eventName.includes('бундеслига')) {
+        competition = 'BL1';
+      } else if (eventName.includes('la liga') || eventName.includes('ла лига')) {
+        competition = 'PD';
+      } else if (eventName.includes('ligue 1') || eventName.includes('лига 1')) {
+        competition = 'FL1';
+      } else if (eventName.includes('eredivisie') || eventName.includes('эредивизи')) {
+        competition = 'DED';
+      } else if (eventName.includes('рпл') || (eventName.includes('премьер') && eventName.includes('росс'))) {
+        competition = 'RPL';
+      }
+      
+      if (!competition) continue;
+      
+      const leagueId = SSTATS_LEAGUE_MAPPING[competition];
+      if (!leagueId) continue;
+      
+      try {
+        // Получаем матчи из SSTATS API
+        const url = `https://api.sstats.one/api/v1/leagues/${leagueId}/matches?apiKey=${apiKey}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) continue;
+        
+        const data = await response.json();
+        if (!data.data || !Array.isArray(data.data)) continue;
+        
+        // Фильтруем только нужные матчи
+        const filteredMatches = data.data
+          .filter(match => matchIds.includes(match.id))
+          .map(match => ({
+            id: match.id,
+            team1: match.homeTeam,
+            team2: match.awayTeam,
+            score: `${match.homeResult || 0}:${match.awayResult || 0}`,
+            status: match.statusName || 'live',
+            elapsed: match.elapsed
+          }));
+        
+        allMatches.push(...filteredMatches);
+        
+      } catch (error) {
+        console.error(`⚠️ Ошибка загрузки матчей для ${event.name}:`, error.message);
+      }
+    }
+    
+    console.log(`✅ Найдено ${allMatches.length} матчей из ${matchIds.length} запрошенных`);
+    res.json(allMatches);
+    
+  } catch (error) {
+    console.error("❌ /api/live-matches-by-ids ошибка:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/counting-bets", (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
