@@ -4,23 +4,23 @@
   "teams": {
     "Аталанта": "Atalanta",
     "Болонья": "Bologna",
-    "Кальяри": "Cagliari",
-    "Комо": "Como",
-    "Эмполи": "Empoli",
-    "Фиорентина": "Fiorentina",
+    "Верона": "Verona",
     "Дженоа": "Genoa",
     "Интер": "Inter",
-    "Ювентус": "Juventus",
+    "Кальяри": "Cagliari",
+    "Комо": "Como",
+    "Кремонезе": "Cremonese",
     "Лацио": "Lazio",
     "Лечче": "Lecce",
     "Милан": "AC Milan",
-    "Монца": "Monza",
     "Наполи": "Napoli",
     "Парма": "Parma",
-    "Рома": "Roma",
+    "Пиза": "Pisa",
+    "Рома": "AS Roma",
+    "Сассуоло": "Sassuolo",
     "Торино": "Torino",
     "Удинезе": "Udinese",
-    "Венеция": "Venezia",
-    "Верона": "Verona"
+    "Фиорентина": "Fiorentina",
+    "Ювентус": "Juventus"
   }
 }
