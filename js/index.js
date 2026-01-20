@@ -963,6 +963,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     loadEventsList();
     await loadMyBets();
+    
+    // Запускаем обновление индикатора LIVE и polling избранных матчей
+    updateLiveIndicator();
+    pollFavoriteMatches();
   } else {
     setAuthButtonToLoginState();
     loadEventsList();
@@ -1270,6 +1274,10 @@ async function initUser() {
     // Загружаем турниры, матчи и ставки пользователя
     loadEventsList();
     loadMyBets();
+    
+    // Запускаем обновление индикатора LIVE и polling избранных матчей
+    updateLiveIndicator();
+    pollFavoriteMatches();
   } catch (error) {
     console.error("Ошибка при входе:", error);
     alert("Ошибка при входе: " + (error.message || error));
