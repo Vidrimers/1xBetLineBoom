@@ -37,15 +37,17 @@ const SSTATS_API_BASE = "https://api.sstats.net";
 
 // Маппинг кодов турниров на SStats League IDs
 const SSTATS_LEAGUE_MAPPING = {
-  'CL': 2,    // UEFA Champions League
-  'PL': 17,   // Premier League (нужно уточнить)
-  'BL1': 35,  // Bundesliga (нужно уточнить)
-  'PD': 8,    // La Liga (нужно уточнить)
-  'SA': 23,   // Serie A (нужно уточнить)
-  'FL1': 34,  // Ligue 1 (нужно уточнить)
-  'DED': 37,  // Eredivisie (нужно уточнить)
-  'WC': 1,    // World Cup
-  'EC': 4     // Euro Championship
+  'CL': 2,    // UEFA Champions League ✅
+  'EL': 3,    // UEFA Europa League ✅
+  'PL': 39,   // Premier League ✅
+  'BL1': 78,  // Bundesliga ✅
+  'PD': 140,  // La Liga ✅
+  'SA': 135,  // Serie A ✅
+  'FL1': 61,  // Ligue 1 ✅
+  'DED': 88,  // Eredivisie ✅
+  'RPL': 235, // Russian Premier League ✅
+  'WC': 1,    // World Cup ✅
+  'EC': 4     // Euro Championship ✅
 };
 const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
 
