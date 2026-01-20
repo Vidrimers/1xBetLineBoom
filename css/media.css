@@ -3384,17 +3384,77 @@
 
 /* ===== АДАПТИВ ДЛЯ УВЕДОМЛЕНИЙ О ГОЛАХ ===== */
 
-/* Десктоп версия (>1400px) - компактные карточки слева */
+/* Десктоп версия (>1400px) - grid в два ряда */
 @media (min-width: 1400px) {
   #goalNotifications {
     top: 80px;
     left: 20px;
-    max-width: 320px;
+    max-width: 680px; /* 2 колонки по 320px + gap 10px */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
   
   .goal-notification {
-    min-width: 260px;
-    max-width: 320px;
+    min-width: auto;
+    max-width: none;
+    width: 100%;
+    padding: 10px 14px;
+  }
+  
+  .goal-notification-icon {
+    font-size: 18px;
+  }
+  
+  .goal-notification-title {
+    font-size: 11px;
+  }
+  
+  .goal-notification-teams {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  
+  .goal-notification-score {
+    font-size: 22px;
+    margin: 4px 0;
+  }
+}
+
+/* Средний десктоп (1400px-1600px) - уменьшаем если мало места */
+@media (min-width: 1400px) and (max-width: 1600px) {
+  #goalNotifications {
+    max-width: 580px; /* 2 колонки по 280px + gap */
+  }
+  
+  .goal-notification {
+    padding: 8px 12px;
+  }
+  
+  .goal-notification-icon {
+    font-size: 16px;
+  }
+  
+  .goal-notification-title {
+    font-size: 10px;
+  }
+  
+  .goal-notification-teams {
+    font-size: 12px;
+  }
+  
+  .goal-notification-score {
+    font-size: 20px;
+  }
+}
+
+/* Большой десктоп (>1800px) - можно увеличить */
+@media (min-width: 1800px) {
+  #goalNotifications {
+    max-width: 720px; /* 2 колонки по 350px + gap */
+  }
+  
+  .goal-notification {
     padding: 12px 16px;
   }
   
@@ -3412,7 +3472,6 @@
   
   .goal-notification-score {
     font-size: 24px;
-    margin: 6px 0;
   }
 }
 

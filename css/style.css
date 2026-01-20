@@ -4297,6 +4297,7 @@ button[onclick^="toggleTeamDropdown"]:hover {
   color: #fff;
   margin-bottom: 6px;
   line-height: 1.3;
+  word-wrap: break-word;
 }
 
 .goal-notification-score {
