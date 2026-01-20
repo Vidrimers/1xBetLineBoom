@@ -14108,14 +14108,8 @@ async function showLiveEventMatches(eventId) {
     // Сортируем по времени
     todayMatches.sort((a, b) => new Date(a.match_time) - new Date(b.match_time));
     
-    // Заголовок с кнопкой назад
+    // Заголовок
     let html = `
-      <div style="margin-bottom: 20px;">
-        <button onclick="backToLiveEvents()" style="padding: 8px 16px; background: rgba(90, 159, 212, 0.2); color: #7ab0e0; border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 5px; cursor: pointer; font-size: 0.9em; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'">
-          ← Назад к турнирам
-        </button>
-      </div>
-      
       <h2 style="color: #e0e6f0; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
         ${event.icon ? (
           event.icon.startsWith('img/') || event.icon.startsWith('http')
@@ -14200,6 +14194,15 @@ async function showLiveEventMatches(eventId) {
       html += '</div>';
     }
     
+    // Кнопка назад внизу
+    html += `
+      <div style="margin-top: 30px; text-align: center;">
+        <button onclick="backToLiveEvents()" style="padding: 10px 20px; background: rgba(90, 159, 212, 0.2); color: #7ab0e0; border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 5px; cursor: pointer; font-size: 1em; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'">
+          ← Назад к LIVE турнирам
+        </button>
+      </div>
+    `;
+    
     container.innerHTML = html;
     
   } catch (error) {
@@ -14207,6 +14210,12 @@ async function showLiveEventMatches(eventId) {
     container.innerHTML = `
       <div class="empty-message" style="color: #f44336;">
         Ошибка при загрузке матчей: ${error.message}
+      </div>
+      
+      <div style="margin-top: 30px; text-align: center;">
+        <button onclick="backToLiveEvents()" style="padding: 10px 20px; background: rgba(90, 159, 212, 0.2); color: #7ab0e0; border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 5px; cursor: pointer; font-size: 1em; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'">
+          ← Назад к LIVE турнирам
+        </button>
       </div>
     `;
   }
