@@ -8775,6 +8775,12 @@ async function loadSettings() {
       login2faCheckbox.checked = currentUser.require_login_2fa !== 0; // По умолчанию включено
     }
 
+    // Загружаем настройку звука в LIVE матчах
+    const liveSoundCheckbox = document.getElementById("liveSoundCheckbox");
+    if (liveSoundCheckbox) {
+      liveSoundCheckbox.checked = notifData.live_sound === true; // По умолчанию выключено
+    }
+
     // Загружаем настройку показа победителя
     await loadShowTournamentWinnerSetting();
 
@@ -9058,6 +9064,41 @@ async function saveLogin2faSettings() {
   } catch (error) {
     console.error("Ошибка при сохранении настройки 2FA:", error);
     showSaveStatus('login2faStatus', 'error');
+  }
+}
+
+// Сохранить настройку звука в LIVE матчах
+async function saveLiveSoundSettings() {
+  if (!currentUser) {
+    alert("Сначала войдите в систему");
+    return;
+  }
+
+  try {
+    const checkbox = document.getElementById("liveSoundCheckbox");
+    const isEnabled = checkbox.checked;
+
+    showSaveStatus('liveSoundStatus', 'saving');
+
+    const response = await fetch(`/api/user/${currentUser.id}/settings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ live_sound: isEnabled ? 1 : 0 }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      currentUser.live_sound = isEnabled ? 1 : 0;
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      showSaveStatus('liveSoundStatus', 'saved');
+    } else {
+      showSaveStatus('liveSoundStatus', 'error');
+      console.error("Ошибка:", result.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении настройки звука LIVE:", error);
+    showSaveStatus('liveSoundStatus', 'error');
   }
 }
 
@@ -14329,3 +14370,140 @@ if (currentUser) {
   setInterval(updateLiveIndicator, 30000);
 }
 
+
+// ===== СИСТЕМА УВЕДОМЛЕНИЙ О ГОЛАХ =====
+
+// Хранилище текущих счетов матчей
+const matchScores = {};
+
+// Очередь уведомлений
+const notificationQueue = [];
+let isShowingNotification = false;
+
+// Показать уведомление о голе
+function showGoalNotification(match) {
+  const container = document.getElementById('goalNotifications');
+  if (!container) return;
+  
+  const notification = document.createElement('div');
+  notification.className = 'goal-notification';
+  notification.innerHTML = `
+    <div class="goal-notification-header">
+      <span class="goal-notification-icon">⚽</span>
+      <span class="goal-notification-title">ГОЛ!</span>
+    </div>
+    <div class="goal-notification-teams">${match.team1} - ${match.team2}</div>
+    <div class="goal-notification-score">${match.score}</div>
+  `;
+  
+  container.appendChild(notification);
+  
+  // Воспроизводим звук если включено
+  if (currentUser && currentUser.live_sound === 1) {
+    playGoalSound();
+  }
+  
+  // Удаляем уведомление через 6 секунд
+  setTimeout(() => {
+    notification.classList.add('removing');
+    setTimeout(() => {
+      notification.remove();
+      isShowingNotification = false;
+      processNotificationQueue();
+    }, 300);
+  }, 6000);
+}
+
+// Обработать очередь уведомлений
+function processNotificationQueue() {
+  if (isShowingNotification || notificationQueue.length === 0) return;
+  
+  isShowingNotification = true;
+  const match = notificationQueue.shift();
+  showGoalNotification(match);
+}
+
+// Добавить уведомление в очередь
+function addNotificationToQueue(match) {
+  notificationQueue.push(match);
+  if (!isShowingNotification) {
+    processNotificationQueue();
+  }
+}
+
+// Воспроизвести звук гола
+function playGoalSound() {
+  try {
+    // Создаем простой звуковой сигнал через Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  } catch (error) {
+    console.error('Ошибка воспроизведения звука:', error);
+  }
+}
+
+// Polling избранных матчей
+async function pollFavoriteMatches() {
+  if (!currentUser) return;
+  
+  const favorites = getFavoriteMatches();
+  if (favorites.length === 0) return;
+  
+  try {
+    const response = await fetch('/api/favorite-matches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchIds: favorites })
+    });
+    
+    if (!response.ok) return;
+    
+    const data = await response.json();
+    const matches = data.matches || [];
+    
+    // Обновляем список избранных (удаляем завершенные)
+    const activeMatchIds = matches.map(m => m.id);
+    const updatedFavorites = favorites.filter(id => activeMatchIds.includes(id));
+    if (updatedFavorites.length !== favorites.length) {
+      saveFavoriteMatches(updatedFavorites);
+      updateFavoriteStars();
+    }
+    
+    // Проверяем изменения счета
+    matches.forEach(match => {
+      if (match.status === 'live' && match.score) {
+        const previousScore = matchScores[match.id];
+        
+        if (previousScore && previousScore !== match.score) {
+          // Счет изменился - показываем уведомление
+          addNotificationToQueue(match);
+        }
+        
+        // Сохраняем текущий счет
+        matchScores[match.id] = match.score;
+      }
+    });
+    
+  } catch (error) {
+    console.error('Ошибка polling избранных матчей:', error);
+  }
+}
+
+// Запускаем polling каждые 30 секунд
+if (currentUser) {
+  pollFavoriteMatches(); // Первый запуск
+  setInterval(pollFavoriteMatches, 30000);
+}

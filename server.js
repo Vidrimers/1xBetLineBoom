@@ -1674,6 +1674,14 @@ function runUsersMigrations() {
     // Колонка уже существует, игнорируем
   }
   
+  // Миграция: добавляем live_sound если её нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN live_sound INTEGER DEFAULT 0`);
+    console.log("✅ Колонка live_sound добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+  
   console.log("✅ Миграции для таблицы users завершены");
 }
 
@@ -5357,6 +5365,85 @@ app.get("/api/live-matches", async (req, res) => {
   }
 });
 
+// POST /api/favorite-matches - Получить данные избранных матчей
+app.post("/api/favorite-matches", async (req, res) => {
+  try {
+    const { matchIds } = req.body;
+    
+    if (!Array.isArray(matchIds) || matchIds.length === 0) {
+      return res.json({ matches: [] });
+    }
+    
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+    
+    const results = [];
+    
+    // Для каждого matchId получаем данные
+    for (const matchId of matchIds) {
+      try {
+        const url = `${SSTATS_API_BASE}/games/${matchId}`;
+        
+        const response = await fetch(url, {
+          headers: {
+            "X-API-Key": apiKey,
+          },
+        });
+        
+        if (!response.ok) {
+          console.warn(`⚠️ Не удалось получить данные для матча ${matchId}`);
+          continue;
+        }
+        
+        const gameData = await response.json();
+        
+        if (gameData.status !== "OK" || !gameData.data) {
+          console.warn(`⚠️ Некорректные данные для матча ${matchId}`);
+          continue;
+        }
+        
+        const game = gameData.data;
+        
+        // Определяем статус матча
+        let status = 'scheduled';
+        if (game.statusName === 'Finished') {
+          status = 'finished';
+        } else if (game.statusName !== 'Not Started') {
+          status = 'live';
+        }
+        
+        // Если матч завершен, пропускаем его (автоудаление)
+        if (status === 'finished') {
+          continue;
+        }
+        
+        results.push({
+          id: game.id,
+          team1: game.homeTeam?.name || 'Команда 1',
+          team2: game.awayTeam?.name || 'Команда 2',
+          score: game.homeResult !== null && game.awayResult !== null 
+            ? `${game.homeResult}:${game.awayResult}` 
+            : null,
+          status: status,
+          elapsed: game.elapsed || null,
+          statusName: game.statusName
+        });
+        
+      } catch (error) {
+        console.error(`❌ Ошибка при получении данных матча ${matchId}:`, error);
+      }
+    }
+    
+    res.json({ matches: results });
+    
+  } catch (error) {
+    console.error("❌ /api/favorite-matches ошибка:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/counting-bets", (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
@@ -7537,7 +7624,7 @@ app.post("/api/user/:userId/sessions/:sessionToken/confirm-trust", async (req, r
 app.put("/api/user/:userId/settings", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { telegram_notifications_enabled, telegram_group_reminders_enabled, theme, require_login_2fa } =
+    const { telegram_notifications_enabled, telegram_group_reminders_enabled, theme, require_login_2fa, live_sound } =
       req.body;
 
     // Проверяем существование пользователя
@@ -7809,12 +7896,69 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
       }
     }
 
+    // Обновляем настройку звука в LIVE матчах (если передана)
+    if (live_sound !== undefined) {
+      const liveSoundEnabled = live_sound ? 1 : 0;
+      
+      // Получаем старое значение
+      const oldValue = db.prepare("SELECT live_sound FROM users WHERE id = ?").get(userId);
+      
+      db.prepare(
+        "UPDATE users SET live_sound = ? WHERE id = ?"
+      ).run(liveSoundEnabled, userId);
+
+      // Записываем в лог изменение настройки
+      writeBetLog("settings", {
+        username: user.username,
+        setting: "Live Sound",
+        oldValue: oldValue?.live_sound ? "Включен" : "Отключен",
+        newValue: liveSoundEnabled ? "Включен" : "Отключен",
+      });
+
+      // Отправляем уведомление админу об изменении настройки звука
+      try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+          const time = new Date().toLocaleString("ru-RU");
+          const statusIcon = liveSoundEnabled ? '🔊' : '🔇';
+          const statusText = liveSoundEnabled ? 'Включен' : 'Отключен';
+
+          const adminMessage = `${statusIcon} ИЗМЕНЕНИЕ НАСТРОЙКИ ЗВУКА LIVE
+
+👤 Пользователь: ${user.username}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+✏️ Звук в LIVE матчах: ${statusText}
+🕐 Время: ${time}`;
+
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_ADMIN_ID,
+                text: adminMessage,
+              }),
+            }
+          );
+        }
+      } catch (err) {
+        console.error(
+          "⚠️ Ошибка отправки уведомления админу об изменении звука LIVE:",
+          err.message
+        );
+      }
+    }
+
     res.json({
       success: true,
       message: "Настройки сохранены",
       telegram_notifications_enabled: telegram_notifications_enabled,
       telegram_group_reminders_enabled: telegram_group_reminders_enabled,
       theme: theme,
+      live_sound: live_sound,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -7827,7 +7971,7 @@ app.get("/api/user/:userId/notifications", (req, res) => {
     const { userId } = req.params;
     const user = db
       .prepare(
-        "SELECT telegram_notifications_enabled, telegram_group_reminders_enabled, theme FROM users WHERE id = ?"
+        "SELECT telegram_notifications_enabled, telegram_group_reminders_enabled, theme, live_sound FROM users WHERE id = ?"
       )
       .get(userId);
 
@@ -7840,6 +7984,7 @@ app.get("/api/user/:userId/notifications", (req, res) => {
       telegram_group_reminders_enabled:
         user.telegram_group_reminders_enabled === 1,
       theme: user.theme || 'theme-default',
+      live_sound: user.live_sound === 1,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

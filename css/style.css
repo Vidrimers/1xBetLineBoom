@@ -4183,3 +4183,128 @@ button[onclick^="toggleTeamDropdown"]:hover {
     transform: scale(1.15);
   }
 }
+
+/* ===== УВЕДОМЛЕНИЯ О ГОЛАХ ===== */
+#goalNotifications {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.goal-notification {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.95) 0%, rgba(56, 142, 60, 0.95) 100%);
+  border: 2px solid #4caf50;
+  border-radius: 12px;
+  padding: 15px 20px;
+  min-width: 280px;
+  max-width: 350px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(76, 175, 80, 0.3);
+  animation: slideInLeft 0.4s ease-out;
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.goal-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4caf50, #8bc34a, #4caf50);
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.goal-notification.removing {
+  animation: slideOutLeft 0.3s ease-in forwards;
+}
+
+.goal-notification-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.goal-notification-icon {
+  font-size: 24px;
+  animation: goalBounce 0.6s ease-out;
+}
+
+@keyframes goalBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  75% {
+    transform: scale(1.1);
+  }
+}
+
+.goal-notification-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.goal-notification-teams {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.goal-notification-score {
+  font-size: 28px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 8px 0;
+}
