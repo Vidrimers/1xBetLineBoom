@@ -3923,8 +3923,8 @@ function switchTab(tabName) {
   if (window.innerWidth <= 768) {
     const navButtons = document.querySelector('.mobile-nav-buttons');
     if (navButtons) {
-      if (tabName === 'allbets') {
-        // Показываем кнопки навигации
+      if (tabName === 'allbets' || tabName === 'live') {
+        // Показываем кнопки навигации для allbets и live
         navButtons.style.opacity = '1';
         navButtons.style.pointerEvents = 'auto';
       } else {
@@ -3938,6 +3938,9 @@ function switchTab(tabName) {
   // Скрываем все содержимое вкладок
   document
     .getElementById("allbets-content")
+    .style.setProperty("display", "none", "important");
+  document
+    .getElementById("live-content")
     .style.setProperty("display", "none", "important");
   document
     .getElementById("participants-content")
@@ -3965,12 +3968,21 @@ function switchTab(tabName) {
     setTimeout(() => {
       content.style.opacity = "1";
     }, 10);
-    document.querySelectorAll(".tab-btn")[0].classList.add("active");
+    document.querySelectorAll(".tab-btn")[1].classList.add("active");
     loadEventsList();
     if (currentEventId) {
       loadMatches(currentEventId);
     }
     loadMyBets();
+  } else if (tabName === "live") {
+    const content = document.getElementById("live-content");
+    content.style.setProperty("display", "flex", "important");
+    content.style.opacity = "0";
+    setTimeout(() => {
+      content.style.opacity = "1";
+    }, 10);
+    document.querySelectorAll(".tab-btn")[0].classList.add("active");
+    loadLiveMatches();
   } else if (tabName === "participants") {
     const content = document.getElementById("participants-content");
     content.style.setProperty("display", "flex", "important");
@@ -3978,7 +3990,7 @@ function switchTab(tabName) {
     setTimeout(() => {
       content.style.opacity = "1";
     }, 10);
-    document.querySelectorAll(".tab-btn")[1].classList.add("active");
+    document.querySelectorAll(".tab-btn")[2].classList.add("active");
     loadTournamentsList();
   } else if (tabName === "profile") {
     const content = document.getElementById("profile-content");
@@ -3987,7 +3999,7 @@ function switchTab(tabName) {
     setTimeout(() => {
       content.style.opacity = "1";
     }, 10);
-    document.querySelectorAll(".tab-btn")[2].classList.add("active");
+    document.querySelectorAll(".tab-btn")[3].classList.add("active");
     loadProfile();
   } else if (tabName === "settings") {
     const content = document.getElementById("settings-content");
@@ -3996,7 +4008,7 @@ function switchTab(tabName) {
     setTimeout(() => {
       content.style.opacity = "1";
     }, 10);
-    document.querySelectorAll(".tab-btn")[3].classList.add("active");
+    document.querySelectorAll(".tab-btn")[4].classList.add("active");
     loadSettings();
   } else if (tabName === "counting") {
     const content = document.getElementById("counting-content");
@@ -13927,5 +13939,106 @@ async function loadAndDisplayBetStats(matchId, forceAnimate = false) {
     
   } catch (error) {
     console.error('Ошибка при загрузке статистики ставок:', error);
+  }
+}
+
+
+// ===== LIVE МАТЧИ =====
+async function loadLiveMatches() {
+  const container = document.getElementById('liveMatchesContainer');
+  
+  try {
+    // Получаем все матчи
+    const response = await fetch('/api/matches');
+    const matches = await response.json();
+    
+    // Фильтруем только live матчи (статус 'live' или 'in_progress')
+    const liveMatches = matches.filter(match => 
+      match.status === 'live' || 
+      match.status === 'in_progress' ||
+      match.status === 'LIVE'
+    );
+    
+    if (liveMatches.length === 0) {
+      container.innerHTML = `
+        <div class="empty-message">
+          <p>🔴 Сейчас нет live матчей</p>
+          <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
+            Live матчи появятся здесь, когда начнутся игры
+          </p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Группируем матчи по турнирам
+    const matchesByEvent = {};
+    for (const match of liveMatches) {
+      if (!matchesByEvent[match.event_id]) {
+        matchesByEvent[match.event_id] = {
+          eventName: match.event_name || 'Турнир',
+          matches: []
+        };
+      }
+      matchesByEvent[match.event_id].matches.push(match);
+    }
+    
+    // Отображаем матчи
+    let html = '';
+    for (const eventId in matchesByEvent) {
+      const eventData = matchesByEvent[eventId];
+      html += `
+        <div class="live-event-section" style="margin-bottom: 30px;">
+          <h3 style="color: #7ab0e0; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>${eventData.eventName}</span>
+            <span class="live-indicator" style="position: static; transform: none;"></span>
+          </h3>
+          <div class="live-matches-list">
+      `;
+      
+      for (const match of eventData.matches) {
+        const matchTime = match.match_time ? new Date(match.match_time).toLocaleString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '';
+        
+        html += `
+          <div class="match-row live-match" style="border-left: 3px solid #f44336;">
+            <div class="match-info">
+              <div class="match-time" style="color: #f44336; font-weight: 600;">
+                🔴 LIVE ${matchTime ? '• ' + matchTime : ''}
+              </div>
+              <div class="match-teams">
+                <span class="team-name">${match.team1 || 'Команда 1'}</span>
+                <span class="vs">vs</span>
+                <span class="team-name">${match.team2 || 'Команда 2'}</span>
+              </div>
+              ${match.score ? `
+                <div class="match-score" style="color: #4caf50; font-weight: 700; font-size: 1.1em; margin-top: 5px;">
+                  Счёт: ${match.score}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }
+      
+      html += `
+          </div>
+        </div>
+      `;
+    }
+    
+    container.innerHTML = html;
+    
+  } catch (error) {
+    console.error('Ошибка при загрузке live матчей:', error);
+    container.innerHTML = `
+      <div class="empty-message" style="color: #f44336;">
+        Ошибка при загрузке live матчей
+      </div>
+    `;
   }
 }

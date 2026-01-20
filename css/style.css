@@ -4041,3 +4041,63 @@ button[onclick^="toggleTeamDropdown"]:hover {
     transform: scale(1.05);
   }
 }
+
+
+/* ===== LIVE СЕКЦИЯ ===== */
+#live-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.live-matches-container {
+  width: 100%;
+}
+
+.live-event-section {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(90, 159, 212, 0.2);
+}
+
+.live-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.match-row.live-match {
+  animation: pulse-border 2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.match-row.live-match::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: #f44336;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-left-color: #f44336;
+  }
+  50% {
+    border-left-color: #ff6b6b;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px #f44336;
+  }
+  50% {
+    box-shadow: 0 0 15px #f44336;
+  }
+}
