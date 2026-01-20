@@ -32,8 +32,21 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 1984;
 const SERVER_IP = process.env.SERVER_IP || "localhost";
-const FD_API_TOKEN = process.env.FD_API_TOKEN;
-const FD_API_BASE = "https://api.football-data.org/v4";
+const SSTATS_API_KEY = process.env.SSTATS_API_KEY;
+const SSTATS_API_BASE = "https://api.sstats.net";
+
+// Маппинг кодов турниров на SStats League IDs
+const SSTATS_LEAGUE_MAPPING = {
+  'CL': 2,    // UEFA Champions League
+  'PL': 17,   // Premier League (нужно уточнить)
+  'BL1': 35,  // Bundesliga (нужно уточнить)
+  'PD': 8,    // La Liga (нужно уточнить)
+  'SA': 23,   // Serie A (нужно уточнить)
+  'FL1': 34,  // Ligue 1 (нужно уточнить)
+  'DED': 37,  // Eredivisie (нужно уточнить)
+  'WC': 1,    // World Cup
+  'EC': 4     // Euro Championship
+};
 const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
 
 if (!fs.existsSync(AWARD_IMAGE_UPLOAD_DIR)) {
@@ -4929,16 +4942,7 @@ app.get("/api/user/:userId/bets", async (req, res) => {
   }
 });
 
-// GET /api/fd-token - Получить токен Football-Data API
-app.get("/api/fd-token", (req, res) => {
-  const token = process.env.FD_API_TOKEN;
-  if (!token) {
-    return res.status(500).json({ error: "FD_API_TOKEN не установлен" });
-  }
-  res.json({ token });
-});
-
-// GET /api/counting-bets - Получить все ставки в статусе "pending" за период
+// GET /api/fd-matches - Получить матчи через SStats API (замена Football-Data)
 app.get("/api/fd-matches", async (req, res) => {
   try {
     const { competition, dateFrom, dateTo } = req.query;
@@ -4948,34 +4952,76 @@ app.get("/api/fd-matches", async (req, res) => {
         .json({ error: "Отсутствуют параметры competition/dateFrom/dateTo" });
     }
 
-    const token = process.env.FD_API_TOKEN;
-    if (!token) {
-      return res.status(500).json({ error: "FD_API_TOKEN не задан" });
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
     }
 
-    const url = `https://api.football-data.org/v4/competitions/${encodeURIComponent(
-      competition
-    )}/matches?status=FINISHED&dateFrom=${encodeURIComponent(
-      dateFrom
-    )}&dateTo=${encodeURIComponent(dateTo)}`;
+    // Получаем League ID из маппинга
+    const leagueId = SSTATS_LEAGUE_MAPPING[competition];
+    if (!leagueId) {
+      return res.status(400).json({ error: `Неизвестный турнир: ${competition}` });
+    }
 
+    // Получаем год из dateFrom
+    const year = new Date(dateFrom).getFullYear();
+
+    // Запрос списка матчей к SStats API
+    const url = `${SSTATS_API_BASE}/Games/list?leagueid=${leagueId}&year=${year}&from=${dateFrom}&to=${dateTo}&ended=true`;
+    
+    console.log(`📊 SStats API запрос: ${url}`);
+    
     const response = await fetch(url, {
       headers: {
-        "X-Auth-Token": token,
+        "X-API-Key": apiKey,
       },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`❌ SStats API ошибка: ${response.status} - ${errorText}`);
       return res
         .status(response.status)
         .json({ error: errorText || response.statusText });
     }
 
-    const data = await response.json();
-    res.json(data);
+    const sstatsData = await response.json();
+    
+    if (sstatsData.status !== "OK") {
+      console.error(`❌ SStats API статус не OK:`, sstatsData);
+      return res.status(500).json({ error: "SStats API вернул ошибку" });
+    }
+
+    console.log(`✅ SStats API: получено ${sstatsData.count} матчей`);
+
+    // Преобразуем в формат Football-Data для совместимости с фронтом
+    const matches = (sstatsData.data || []).map(game => ({
+      id: game.id,
+      utcDate: game.date,
+      status: 'FINISHED',
+      homeTeam: {
+        id: game.homeTeam.id,
+        name: game.homeTeam.name,
+        shortName: game.homeTeam.name
+      },
+      awayTeam: {
+        id: game.awayTeam.id,
+        name: game.awayTeam.name,
+        shortName: game.awayTeam.name
+      },
+      score: {
+        fullTime: {
+          home: game.homeFTResult,
+          away: game.awayFTResult
+        }
+      }
+    }));
+
+    // Возвращаем в том же формате что и Football-Data
+    res.json({ matches });
+
   } catch (error) {
-    console.error("/api/fd-matches", error);
+    console.error("❌ /api/fd-matches ошибка:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -7899,132 +7945,6 @@ app.post("/api/seed-data", (req, res) => {
 });
 
 // ===== FOOTBALL-DATA.ORG API ENDPOINTS =====
-
-// Вспомогательные функции для работы с API
-async function fetchFromFootballData(endpoint) {
-  try {
-    const response = await fetch(`${FD_API_BASE}${endpoint}`, {
-      headers: { "X-Auth-Token": FD_API_TOKEN },
-    });
-
-    if (response.status === 429) {
-      console.warn("Football-data.org API: Rate limit exceeded");
-      return null;
-    }
-
-    if (!response.ok) {
-      console.error(`Football-data.org API error: ${response.status}`);
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Football-data.org API fetch error:", error.message);
-    return null;
-  }
-}
-
-// Получить финальные матчи Лиги чемпионов за дату
-app.get("/api/football-data/cl-matches", async (req, res) => {
-  try {
-    const { dateFrom, dateTo } = req.query;
-
-    let endpoint = "/competitions/CL/matches?status=FINISHED";
-    if (dateFrom) endpoint += `&dateFrom=${dateFrom}`;
-    if (dateTo) endpoint += `&dateTo=${dateTo}`;
-
-    const data = await fetchFromFootballData(endpoint);
-
-    if (!data || !data.matches) {
-      return res.json({ matches: [] });
-    }
-
-    const matches = data.matches.map((match) => ({
-      date: match.utcDate.slice(0, 10),
-      homeTeam: match.homeTeam.name,
-      awayTeam: match.awayTeam.name,
-      homeScore: match.score.fullTime.home,
-      awayScore: match.score.fullTime.away,
-      winner:
-        match.score.fullTime.home > match.score.fullTime.away
-          ? match.homeTeam.name
-          : match.score.fullTime.home < match.score.fullTime.away
-          ? match.awayTeam.name
-          : "Draw",
-    }));
-
-    res.json({ matches });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Синхронизировать результаты матчей в базу данных
-app.post("/api/football-data/sync-results", async (req, res) => {
-  try {
-    const { dateFrom, dateTo } = req.body;
-
-    let endpoint = "/competitions/CL/matches?status=FINISHED";
-    if (dateFrom) endpoint += `&dateFrom=${dateFrom}`;
-    if (dateTo) endpoint += `&dateTo=${dateTo}`;
-
-    const data = await fetchFromFootballData(endpoint);
-
-    if (!data || !data.matches) {
-      return res.json({ synced: 0, message: "Нет данных для синхронизации" });
-    }
-
-    let synced = 0;
-
-    data.matches.forEach((match) => {
-      const winner =
-        match.score.fullTime.home > match.score.fullTime.away
-          ? match.homeTeam.name
-          : match.score.fullTime.home < match.score.fullTime.away
-          ? match.awayTeam.name
-          : "Ничья";
-
-      try {
-        db.prepare(
-          `
-          UPDATE matches 
-          SET status = 'finished', winner = ?
-          WHERE team1_name = ? AND team2_name = ? AND status = 'pending'
-        `
-        ).run(winner, match.homeTeam.name, match.awayTeam.name);
-
-        synced++;
-      } catch (err) {
-        console.error("Error updating match result:", err.message);
-      }
-    });
-
-    // Обновляем статусы ставок
-    try {
-      const unfinishedBets = db
-        .prepare(
-          `
-        SELECT DISTINCT b.id, b.match_id, b.prediction, m.winner
-        FROM bets b
-        JOIN matches m ON b.match_id = m.id
-        WHERE b.status = 'pending' AND m.status = 'finished'
-      `
-        )
-        .all();
-
-      unfinishedBets.forEach((bet) => {
-        const won = bet.prediction === bet.winner ? "won" : "lost";
-        db.prepare("UPDATE bets SET status = ? WHERE id = ?").run(won, bet.id);
-      });
-    } catch (err) {
-      console.error("Error updating bet statuses:", err.message);
-    }
-
-    res.json({ synced, message: `Синхронизировано ${synced} матчей` });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // ===== АДМИН ФУНКЦИИ =====
 
