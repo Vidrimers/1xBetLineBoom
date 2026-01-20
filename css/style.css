@@ -4152,3 +4152,34 @@ button[onclick^="toggleTeamDropdown"]:hover {
     box-shadow: 0 0 15px #f44336;
   }
 }
+
+
+/* ===== ИЗБРАННЫЕ LIVE МАТЧИ ===== */
+.favorite-star {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  user-select: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.favorite-star:hover {
+  transform: scale(1.2);
+}
+
+.favorite-star.active {
+  animation: star-pulse 1s ease-in-out infinite;
+}
+
+@keyframes star-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}

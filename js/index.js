@@ -14150,6 +14150,7 @@ async function showLiveEventMatches(eventId) {
           " onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${isLive ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
             
             ${isLive ? `
+              <span class="favorite-star" data-match-id="${match.id}" onclick="toggleFavoriteMatch(${match.id}, event)">☆</span>
               <div style="position: absolute; top: 10px; right: 10px;">
                 <span class="live-indicator" style="position: static; transform: none;"></span>
               </div>
@@ -14198,6 +14199,9 @@ async function showLiveEventMatches(eventId) {
     
     container.innerHTML = html;
     
+    // Обновляем звездочки после отрисовки
+    updateFavoriteStars();
+    
   } catch (error) {
     console.error('Ошибка при загрузке матчей турнира:', error);
     container.innerHTML = `
@@ -14217,6 +14221,57 @@ async function showLiveEventMatches(eventId) {
 function backToLiveEvents() {
   currentLiveEventId = null;
   loadLiveMatches();
+}
+
+// ===== ИЗБРАННЫЕ LIVE МАТЧИ =====
+
+// Получить список избранных матчей из localStorage
+function getFavoriteMatches() {
+  const favorites = localStorage.getItem('favoriteMatches');
+  return favorites ? JSON.parse(favorites) : [];
+}
+
+// Сохранить список избранных матчей в localStorage
+function saveFavoriteMatches(favorites) {
+  localStorage.setItem('favoriteMatches', JSON.stringify(favorites));
+}
+
+// Переключить статус избранного для матча
+function toggleFavoriteMatch(matchId, event) {
+  event.stopPropagation(); // Предотвращаем клик по карточке
+  
+  let favorites = getFavoriteMatches();
+  const index = favorites.indexOf(matchId);
+  
+  if (index > -1) {
+    // Убрать из избранного
+    favorites.splice(index, 1);
+  } else {
+    // Добавить в избранное (максимум 10)
+    if (favorites.length >= 10) {
+      showCustomAlert('Максимум 10 избранных матчей одновременно', 'Ограничение', '⚠️');
+      return;
+    }
+    favorites.push(matchId);
+  }
+  
+  saveFavoriteMatches(favorites);
+  updateFavoriteStars();
+}
+
+// Обновить отображение звездочек на всех карточках
+function updateFavoriteStars() {
+  const favorites = getFavoriteMatches();
+  document.querySelectorAll('.favorite-star').forEach(star => {
+    const matchId = parseInt(star.getAttribute('data-match-id'));
+    if (favorites.includes(matchId)) {
+      star.textContent = '⭐';
+      star.classList.add('active');
+    } else {
+      star.textContent = '☆';
+      star.classList.remove('active');
+    }
+  });
 }
 
 // Проверка наличия live матчей и обновление индикатора на кнопке LIVE
