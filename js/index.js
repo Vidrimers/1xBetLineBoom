@@ -14505,6 +14505,12 @@ function toggleFavoriteMatch(matchId, event) {
   
   saveFavoriteMatches(favorites);
   updateFavoriteStars();
+  
+  // Сразу обновляем карточки уведомлений
+  if (index > -1) {
+    // Если убрали из избранного - сразу запускаем polling для удаления карточки
+    pollFavoriteMatches();
+  }
 }
 
 // Обновить отображение звездочек на всех карточках
@@ -14602,6 +14608,9 @@ if (currentUser) {
 
 // Хранилище текущих счетов матчей
 const matchScores = {};
+
+// Хранилище времени окончания матчей (для автоудаления через 1 минуту)
+const matchFinishTimes = {};
 
 // Очередь уведомлений
 const notificationQueue = [];
@@ -14814,7 +14823,33 @@ function processMatches(matches, favorites, isDesktop) {
       const previousScore = matchScores[match.id];
       const currentScore = match.score || '0:0';
       
-      // Всегда показываем/обновляем карточку на десктопе
+      // Проверяем статус матча
+      const isFinished = match.status === 'Finished' || match.status === 'finished' || 
+                        match.status === 'Full Time' || match.status === 'FT';
+      
+      // Если матч только что завершился - запоминаем время
+      if (isFinished && !matchFinishTimes[match.id]) {
+        matchFinishTimes[match.id] = Date.now();
+        console.log(`⏱️ Матч ${match.id} завершен, запускаем таймер на 1 минуту`);
+        
+        // Удаляем карточку через 1 минуту
+        setTimeout(() => {
+          const container = document.getElementById('goalNotifications');
+          if (container) {
+            const notification = container.querySelector(`[data-match-id="${match.id}"]`);
+            if (notification) {
+              console.log(`⏰ 1 минута прошла, удаляем карточку матча ${match.id}`);
+              notification.classList.add('removing');
+              setTimeout(() => notification.remove(), 300);
+            }
+          }
+          // Очищаем данные
+          delete matchFinishTimes[match.id];
+          delete matchScores[match.id];
+        }, 60000); // 60 секунд = 1 минута
+      }
+      
+      // Показываем/обновляем карточку на десктопе
       updateDesktopNotification({
         id: match.id,
         team1: match.team1,
@@ -14843,8 +14878,12 @@ function processMatches(matches, favorites, isDesktop) {
       existingNotifications.forEach(notification => {
         const matchId = parseInt(notification.getAttribute('data-match-id'));
         if (!foundMatchIds.includes(matchId)) {
-          console.log(`🗑️ Удаляем карточку уведомления для матча ${matchId}`);
-          notification.remove();
+          console.log(`🗑️ Удаляем карточку уведомления для матча ${matchId} (убран из избранного)`);
+          notification.classList.add('removing');
+          setTimeout(() => notification.remove(), 300);
+          // Очищаем данные
+          delete matchFinishTimes[matchId];
+          delete matchScores[matchId];
         }
       });
     }
