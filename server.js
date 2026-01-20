@@ -5175,7 +5175,7 @@ app.get("/api/live-matches", async (req, res) => {
       competition = 'FL1';
     } else if (eventName.includes('eredivisie') || eventName.includes('эредивизи')) {
       competition = 'DED';
-    } else if (eventName.includes('рпл') || eventName.includes('премьер') && eventName.includes('росс')) {
+    } else if (eventName.includes('рпл') || (eventName.includes('премьер') && eventName.includes('росс'))) {
       competition = 'RPL';
     }
     
