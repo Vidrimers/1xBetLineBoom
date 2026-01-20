@@ -1373,6 +1373,13 @@ button.tab-btn:hover {
   animation: pulse-live 2s ease-in-out infinite;
 }
 
+/* Статичный синий индикатор (когда нет live матчей) */
+.live-indicator.static {
+  background: #5a9fd4;
+  animation: none;
+  opacity: 0.6;
+}
+
 @keyframes pulse-live {
   0%, 100% {
     opacity: 1;

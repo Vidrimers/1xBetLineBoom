@@ -14201,4 +14201,58 @@ function backToLiveEvents() {
   loadLiveMatches();
 }
 
+// Проверка наличия live матчей и обновление индикатора на кнопке LIVE
+async function updateLiveIndicator() {
+  const indicator = document.getElementById('liveTabIndicator');
+  if (!indicator) return;
+  
+  try {
+    // Получаем все активные турниры
+    const eventsResponse = await fetch('/api/events');
+    const allEvents = await eventsResponse.json();
+    
+    const now = new Date();
+    const activeEvents = allEvents.filter((event) => {
+      if (event.locked_reason) return false;
+      if (!event.start_date) return false;
+      return new Date(event.start_date) <= now;
+    });
+    
+    // Проверяем есть ли хотя бы один live матч в любом турнире
+    let hasAnyLiveMatches = false;
+    
+    for (const event of activeEvents) {
+      try {
+        const matchesResponse = await fetch(`/api/live-matches?eventId=${event.id}`);
+        if (matchesResponse.ok) {
+          const matchesData = await matchesResponse.json();
+          const matches = matchesData.matches || [];
+          if (matches.some(m => m.status === 'live' || m.status === 'in_progress')) {
+            hasAnyLiveMatches = true;
+            break;
+          }
+        }
+      } catch (e) {
+        // Игнорируем ошибки отдельных турниров
+      }
+    }
+    
+    // Обновляем индикатор
+    if (hasAnyLiveMatches) {
+      indicator.classList.remove('static');
+    } else {
+      indicator.classList.add('static');
+    }
+  } catch (error) {
+    console.error('Ошибка обновления live индикатора:', error);
+    // При ошибке показываем статичный индикатор
+    indicator.classList.add('static');
+  }
+}
+
+// Вызываем обновление индикатора при загрузке страницы и каждые 30 секунд
+if (currentUser) {
+  updateLiveIndicator();
+  setInterval(updateLiveIndicator, 30000);
+}
 
