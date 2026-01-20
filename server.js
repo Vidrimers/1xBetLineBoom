@@ -5535,6 +5535,70 @@ app.delete("/api/score-predictions/:matchId", async (req, res) => {
   }
 });
 
+// GET /api/match-bet-stats/:matchId - Получить статистику ставок по матчу
+app.get("/api/match-bet-stats/:matchId", (req, res) => {
+  try {
+    const { matchId } = req.params;
+
+    // Получаем все ставки на этот матч (только обычные, не финальные)
+    const bets = db
+      .prepare(
+        `SELECT prediction FROM bets 
+         WHERE match_id = ? AND (is_final_bet = 0 OR is_final_bet IS NULL)`
+      )
+      .all(matchId);
+
+    if (bets.length === 0) {
+      return res.json({
+        total: 0,
+        team1: 0,
+        draw: 0,
+        team2: 0,
+        team1Percent: 0,
+        drawPercent: 0,
+        team2Percent: 0,
+      });
+    }
+
+    // Подсчитываем количество ставок на каждый исход
+    const stats = {
+      team1: 0,
+      draw: 0,
+      team2: 0,
+    };
+
+    bets.forEach((bet) => {
+      if (bet.prediction === "team1") {
+        stats.team1++;
+      } else if (bet.prediction === "draw") {
+        stats.draw++;
+      } else if (bet.prediction === "team2") {
+        stats.team2++;
+      }
+    });
+
+    const total = bets.length;
+
+    // Вычисляем проценты
+    const team1Percent = Math.round((stats.team1 / total) * 100);
+    const drawPercent = Math.round((stats.draw / total) * 100);
+    const team2Percent = Math.round((stats.team2 / total) * 100);
+
+    res.json({
+      total,
+      team1: stats.team1,
+      draw: stats.draw,
+      team2: stats.team2,
+      team1Percent,
+      drawPercent,
+      team2Percent,
+    });
+  } catch (error) {
+    console.error("Ошибка при получении статистики ставок:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 8. Получить всех участников с количеством ставок
 app.get("/api/participants", (req, res) => {
   try {

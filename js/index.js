@@ -2833,6 +2833,19 @@ async function displayMatches() {
   initMatchResultToggles();
   initAdminActionToggles();
   initMatchRowClickHandlers();
+  
+  // Загружаем статистику ставок для матчей, где пользователь уже сделал ставку
+  if (currentUser) {
+    sortedMatches.forEach(match => {
+      const userBetOnMatch = userBets.find(
+        (bet) => bet.match_id === match.id && !bet.is_final_bet
+      );
+      if (userBetOnMatch) {
+        // Загружаем статистику для этого матча
+        loadAndDisplayBetStats(match.id);
+      }
+    });
+  }
 }
 
 // ===== СТАВКИ =====
@@ -2934,6 +2947,9 @@ async function placeBet(matchId, teamName, prediction) {
 
     if (response.ok) {
       loadMyBets();
+      
+      // Загружаем и отображаем статистику ставок
+      await loadAndDisplayBetStats(matchId);
       
       // Если ставка на ничью, синхронизируем инпуты счета
       if (prediction === 'draw') {
@@ -13772,5 +13788,76 @@ async function deleteMatchReminders() {
         '❌'
       );
     }
+  }
+}
+
+// ===== СТАТИСТИКА СТАВОК =====
+
+// Загрузить и отобразить статистику ставок по матчу
+async function loadAndDisplayBetStats(matchId) {
+  try {
+    const response = await fetch(`/api/match-bet-stats/${matchId}`);
+    if (!response.ok) {
+      console.error('Ошибка загрузки статистики ставок');
+      return;
+    }
+    
+    const stats = await response.json();
+    
+    // Если нет ставок, не показываем статистику
+    if (stats.total === 0) {
+      return;
+    }
+    
+    // Находим кнопки ставок для этого матча
+    const matchRow = document.querySelector(`.match-row[data-match-id="${matchId}"]`);
+    if (!matchRow) return;
+    
+    const team1Btn = matchRow.querySelector('.bet-btn.team1');
+    const drawBtn = matchRow.querySelector('.bet-btn.draw');
+    const team2Btn = matchRow.querySelector('.bet-btn.team2');
+    
+    // Функция для обновления кнопки с процентами
+    function updateButtonWithPercent(button, percent) {
+      if (!button) return;
+      
+      // Сохраняем оригинальный текст если его еще нет
+      if (!button.dataset.originalText) {
+        button.dataset.originalText = button.textContent.trim();
+      }
+      
+      // Создаем обертку для процентов если ее нет
+      let percentWrapper = button.querySelector('.bet-percent-wrapper');
+      
+      if (!percentWrapper) {
+        percentWrapper = document.createElement('div');
+        percentWrapper.className = 'bet-percent-wrapper';
+        percentWrapper.style.cssText = `
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        `;
+        percentWrapper.textContent = `${percent}%`;
+        
+        // Очищаем содержимое кнопки и добавляем обертку
+        button.textContent = '';
+        button.appendChild(percentWrapper);
+      } else {
+        // Обновляем текст
+        percentWrapper.textContent = `${percent}%`;
+      }
+      
+      // Плавно показываем проценты
+      setTimeout(() => {
+        percentWrapper.style.opacity = '1';
+      }, 50);
+    }
+    
+    // Обновляем кнопки с процентами
+    updateButtonWithPercent(team1Btn, stats.team1Percent);
+    updateButtonWithPercent(drawBtn, stats.drawPercent);
+    updateButtonWithPercent(team2Btn, stats.team2Percent);
+    
+  } catch (error) {
+    console.error('Ошибка при загрузке статистики ставок:', error);
   }
 }

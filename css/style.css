@@ -1142,6 +1142,15 @@ button:active {
   transform: scale(0.97);
 }
 
+/* Стиль для процентов в кнопках ставок (вместо названий команд) */
+.bet-percent-wrapper {
+  font-size: 1.1em;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  color: rgba(255, 255, 255, 0.95);
+}
+
 /* .bet-btn.selected::after {
   content: " ✓";
 } */
