@@ -5429,11 +5429,13 @@ app.post("/api/favorite-matches", async (req, res) => {
   try {
     const { matchIds } = req.body;
     
+    console.log('📥 /api/favorite-matches запрос:', matchIds);
+    
     if (!Array.isArray(matchIds) || matchIds.length === 0) {
       return res.json({ matches: [] });
     }
     
-    // Получаем матчи из базы данных
+    // Получаем матчи из базы данных (синхронно, т.к. better-sqlite3)
     const placeholders = matchIds.map(() => '?').join(',');
     const query = `
       SELECT 
@@ -5444,36 +5446,62 @@ app.post("/api/favorite-matches", async (req, res) => {
       WHERE m.id IN (${placeholders})
     `;
     
-    db.all(query, matchIds, (err, matches) => {
-      if (err) {
-        console.error("❌ Ошибка получения избранных матчей:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      
-      // Фильтруем только LIVE матчи и форматируем данные
-      const results = matches
-        .filter(match => {
-          const status = getMatchStatus(match);
-          return status === 'ongoing'; // Только идущие матчи
-        })
-        .map(match => {
-          return {
-            id: match.id,
-            team1: match.team1_name,
-            team2: match.team2_name,
-            score: match.score || '0:0',
-            status: 'live',
-            elapsed: null,
-            event_name: match.event_name
-          };
-        });
-      
-      console.log(`✅ Найдено ${results.length} LIVE матчей из ${matchIds.length} избранных`);
-      res.json({ matches: results });
-    });
+    console.log('🔍 SQL запрос для', matchIds.length, 'матчей');
+    
+    const matches = db.prepare(query).all(...matchIds);
+    
+    console.log(`📊 Получено ${matches ? matches.length : 0} матчей из БД`);
+    
+    if (!matches || matches.length === 0) {
+      return res.json({ matches: [] });
+    }
+    
+    const now = new Date();
+    
+    // Фильтруем только LIVE матчи и форматируем данные
+    const results = matches
+      .filter(match => {
+        // Если есть результат - матч завершен
+        if (match.winner) {
+          console.log(`  Матч ${match.id}: завершен (есть winner)`);
+          return false;
+        }
+        
+        // Если нет даты - пропускаем
+        if (!match.match_date) {
+          console.log(`  Матч ${match.id}: нет даты`);
+          return false;
+        }
+        
+        const matchDate = new Date(match.match_date);
+        
+        // Если дата в будущем - ожидает
+        if (matchDate > now) {
+          console.log(`  Матч ${match.id}: в будущем`);
+          return false;
+        }
+        
+        // Если дата прошла, но нет результата - идет (LIVE)
+        console.log(`  Матч ${match.id}: LIVE ✅`);
+        return true;
+      })
+      .map(match => {
+        return {
+          id: match.id,
+          team1: match.team1_name,
+          team2: match.team2_name,
+          score: match.score || '0:0',
+          status: 'live',
+          elapsed: null,
+          event_name: match.event_name
+        };
+      });
+    
+    console.log(`✅ Найдено ${results.length} LIVE матчей из ${matchIds.length} избранных`);
+    res.json({ matches: results });
     
   } catch (error) {
-    console.error("❌ /api/favorite-matches ошибка:", error);
+    console.error("❌ /api/favorite-matches общая ошибка:", error);
     res.status(500).json({ error: error.message });
   }
 });
