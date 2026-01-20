@@ -5198,7 +5198,6 @@ app.get("/api/live-matches", async (req, res) => {
     const mappingFile = mappingFiles[competition];
     if (mappingFile) {
       try {
-        const fs = require('fs');
         const mappingData = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
         teamMapping = mappingData.teams || {};
         
