@@ -14577,3 +14577,69 @@ if (currentUser) {
   pollFavoriteMatches(); // Первый запуск
   setInterval(pollFavoriteMatches, 30000);
 }
+
+// ===== ПЛАВНОЕ СЛЕДОВАНИЕ ИЗБРАННЫХ ЗА СКРОЛЛОМ (ДЕСКТОП) =====
+let scrollTimeout;
+let targetScrollY = 0;
+let currentScrollY = 0;
+
+function smoothScrollNotifications() {
+  const isDesktop = window.innerWidth > 1400;
+  if (!isDesktop) return;
+  
+  const container = document.getElementById('goalNotifications');
+  if (!container) return;
+  
+  // Плавная интерполяция к целевой позиции
+  const diff = targetScrollY - currentScrollY;
+  if (Math.abs(diff) > 0.5) {
+    currentScrollY += diff * 0.15; // Коэффициент плавности (0.15 = медленное следование)
+    container.style.transform = `translateY(${currentScrollY}px)`;
+    requestAnimationFrame(smoothScrollNotifications);
+  } else {
+    currentScrollY = targetScrollY;
+    container.style.transform = `translateY(${currentScrollY}px)`;
+  }
+}
+
+function handleScroll() {
+  const isDesktop = window.innerWidth > 1400;
+  if (!isDesktop) return;
+  
+  targetScrollY = window.scrollY;
+  
+  // Запускаем плавную анимацию
+  requestAnimationFrame(smoothScrollNotifications);
+  
+  // Сбрасываем таймаут для возврата в исходную позицию
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    // Возвращаем в viewport после остановки скролла
+    const viewportHeight = window.innerHeight;
+    const containerHeight = document.getElementById('goalNotifications')?.offsetHeight || 0;
+    
+    // Если контейнер вышел за пределы viewport, возвращаем его
+    if (targetScrollY > 0 && containerHeight > 0) {
+      const maxScroll = Math.max(0, targetScrollY - (viewportHeight - containerHeight - 100));
+      targetScrollY = Math.min(targetScrollY, maxScroll);
+      requestAnimationFrame(smoothScrollNotifications);
+    }
+  }, 1000); // Задержка 1 секунда после остановки скролла
+}
+
+// Добавляем обработчик скролла только на десктопе
+if (window.innerWidth > 1400) {
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  
+  // Обновляем при изменении размера окна
+  window.addEventListener('resize', () => {
+    const isDesktop = window.innerWidth > 1400;
+    const container = document.getElementById('goalNotifications');
+    if (!isDesktop && container) {
+      container.style.transform = 'translateY(0)';
+      currentScrollY = 0;
+      targetScrollY = 0;
+    }
+  });
+}
+

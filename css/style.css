@@ -4194,6 +4194,16 @@ button[onclick^="toggleTeamDropdown"]:hover {
   flex-direction: column;
   gap: 10px;
   pointer-events: none;
+  transition: transform 0.3s ease-out;
+}
+
+/* Плавное следование за скроллом на десктопе */
+@media (min-width: 1400px) {
+  #goalNotifications {
+    position: absolute;
+    top: 80px;
+    will-change: transform;
+  }
 }
 
 .goal-notification {
