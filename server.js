@@ -10962,25 +10962,10 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
     for (const tournament of tournamentResults) {
       message += `🏆 <b>${tournament.eventName}</b>\n\n`;
 
-      // Получаем пользователей которые есть в группе
-      const usersInGroup = [];
-      for (const user of tournament.users) {
-        if (user.telegram_username) {
-          const telegramUser = db.prepare(`
-            SELECT chat_id FROM telegram_users 
-            WHERE LOWER(telegram_username) = LOWER(?)
-          `).get(user.telegram_username);
-          
-          if (telegramUser) {
-            usersInGroup.push(user);
-          }
-        }
-      }
-
-      // Показываем результаты только тех кто в группе
-      if (usersInGroup.length > 0) {
-        for (let i = 0; i < usersInGroup.length; i++) {
-          const user = usersInGroup[i];
+      // Показываем результаты всех пользователей
+      if (tournament.users.length > 0) {
+        for (let i = 0; i < tournament.users.length; i++) {
+          const user = tournament.users[i];
           const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '▪️';
           
           // Правильное склонение для очков
@@ -11013,8 +10998,8 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
         }
 
         // Лучший за период
-        if (usersInGroup.length > 0) {
-          const winner = usersInGroup[0];
+        if (tournament.users.length > 0) {
+          const winner = tournament.users[0];
           message += `\n👑 <b>Лучший за период ${dateFromFormatted} - ${dateToFormatted}:</b>\n`;
           message += `Поздравляем, малютка ${winner.username}! 🎉\n`;
           
@@ -11024,7 +11009,7 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           }
         }
       } else {
-        message += `Нет участников из группы\n`;
+        message += `Нет участников\n`;
       }
 
       message += `\n`;
