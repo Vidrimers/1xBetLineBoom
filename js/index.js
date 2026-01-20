@@ -2834,18 +2834,10 @@ async function displayMatches() {
   initAdminActionToggles();
   initMatchRowClickHandlers();
   
-  // Загружаем статистику ставок для матчей, где пользователь уже сделал ставку
-  if (currentUser) {
-    sortedMatches.forEach(match => {
-      const userBetOnMatch = userBets.find(
-        (bet) => bet.match_id === match.id && !bet.is_final_bet
-      );
-      if (userBetOnMatch) {
-        // Загружаем статистику для этого матча
-        loadAndDisplayBetStats(match.id);
-      }
-    });
-  }
+  // Загружаем статистику для всех матчей БЕЗ анимации
+  filteredMatches.forEach(match => {
+    loadAndDisplayBetStats(match.id, false);
+  });
 }
 
 // ===== СТАВКИ =====
@@ -2946,20 +2938,20 @@ async function placeBet(matchId, teamName, prediction) {
     });
 
     if (response.ok) {
-      loadMyBets();
+      // Обновляем список ставок (это перерисует DOM)
+      await loadMyBets();
       
-      // Загружаем и отображаем статистику ставок
-      await loadAndDisplayBetStats(matchId);
+      // Загружаем статистику с анимацией
+      // НЕ очищаем кэш, чтобы сохранить старые значения для анимации
+      await loadAndDisplayBetStats(matchId, true);
       
       // Если ставка на ничью, синхронизируем инпуты счета
       if (prediction === 'draw') {
-        // Даем время на перерисовку DOM
         setTimeout(() => {
           const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
           const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
           
           if (scoreTeam1Input && scoreTeam2Input) {
-            // Синхронизируем значения (берем большее или 0)
             const maxValue = Math.max(
               parseInt(scoreTeam1Input.value) || 0,
               parseInt(scoreTeam2Input.value) || 0
@@ -13793,8 +13785,36 @@ async function deleteMatchReminders() {
 
 // ===== СТАТИСТИКА СТАВОК =====
 
+// Кэш для хранения уже показанных процентов (чтобы не анимировать повторно)
+const displayedBetStats = new Map();
+
+// Флаг для блокировки автозагрузки статистики из displayMatches
+let blockAutoLoadStats = false;
+
+// Функция анимации счетчика
+function animateCounter(element, start, end, duration) {
+  const startTime = performance.now();
+  
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Easing function (ease-out)
+    const easeOut = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(start + (end - start) * easeOut);
+    
+    element.textContent = `${current}%`;
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+  
+  requestAnimationFrame(update);
+}
+
 // Загрузить и отобразить статистику ставок по матчу
-async function loadAndDisplayBetStats(matchId) {
+async function loadAndDisplayBetStats(matchId, forceAnimate = false) {
   try {
     const response = await fetch(`/api/match-bet-stats/${matchId}`);
     if (!response.ok) {
@@ -13817,8 +13837,23 @@ async function loadAndDisplayBetStats(matchId) {
     const drawBtn = matchRow.querySelector('.bet-btn.draw');
     const team2Btn = matchRow.querySelector('.bet-btn.team2');
     
+    // Проверяем, есть ли у пользователя ставка на этот матч
+    const userBet = userBets.find(bet => bet.match_id === matchId && (!bet.is_final_bet || bet.is_final_bet === 0));
+    
+    // Если у пользователя нет ставки, не показываем проценты
+    if (!userBet) {
+      return;
+    }
+    
+    // Проверяем, были ли уже показаны проценты для этого матча
+    const wasDisplayed = displayedBetStats.has(matchId);
+    
+    // Если forceAnimate = true, всегда анимируем
+    // Если forceAnimate = false и уже было показано, не анимируем
+    const shouldAnimate = forceAnimate;
+    
     // Функция для обновления кнопки с процентами
-    function updateButtonWithPercent(button, percent) {
+    function updateButtonWithPercent(button, percent, animate) {
       if (!button) return;
       
       // Сохраняем оригинальный текст если его еще нет
@@ -13826,61 +13861,69 @@ async function loadAndDisplayBetStats(matchId) {
         button.dataset.originalText = button.textContent.trim();
       }
       
-      // Создаем обертку для процентов если ее нет
+      // Проверяем, есть ли уже обертка для процентов
       let percentWrapper = button.querySelector('.bet-percent-wrapper');
       
       if (!percentWrapper) {
+        // Создаем новую обертку
         percentWrapper = document.createElement('div');
-        percentWrapper.className = 'bet-percent-wrapper';
-        percentWrapper.style.cssText = `
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        `;
-        percentWrapper.textContent = '0%';
+        percentWrapper.className = 'bet-percent-wrapper visible';
+        
+        // Определяем начальное значение для анимации
+        let startValue = 0;
+        if (animate && wasDisplayed) {
+          // Если анимируем и уже были данные в кэше, берем старое значение
+          const cachedStats = displayedBetStats.get(matchId);
+          if (cachedStats) {
+            // Определяем, какой процент был у этой кнопки
+            if (button.classList.contains('team1')) {
+              startValue = cachedStats.team1Percent || 0;
+            } else if (button.classList.contains('draw')) {
+              startValue = cachedStats.drawPercent || 0;
+            } else if (button.classList.contains('team2')) {
+              startValue = cachedStats.team2Percent || 0;
+            }
+          }
+        }
+        
+        percentWrapper.textContent = `${startValue}%`;
         
         // Очищаем содержимое кнопки и добавляем обертку
         button.textContent = '';
         button.appendChild(percentWrapper);
         
-        // Плавно показываем обертку
-        setTimeout(() => {
-          percentWrapper.style.opacity = '1';
-          // Запускаем анимацию счетчика
-          animateCounter(percentWrapper, 0, percent, 800);
-        }, 50);
+        // Запускаем анимацию или сразу показываем значение
+        if (animate) {
+          setTimeout(() => {
+            animateCounter(percentWrapper, startValue, percent, 1000);
+          }, 100);
+        } else {
+          percentWrapper.textContent = `${percent}%`;
+        }
       } else {
-        // Обновляем с анимацией
-        const currentValue = parseInt(percentWrapper.textContent) || 0;
-        animateCounter(percentWrapper, currentValue, percent, 800);
-      }
-    }
-    
-    // Функция анимации счетчика
-    function animateCounter(element, start, end, duration) {
-      const startTime = performance.now();
-      
-      function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Easing function (ease-out)
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        const current = Math.round(start + (end - start) * easeOut);
-        
-        element.textContent = `${current}%`;
-        
-        if (progress < 1) {
-          requestAnimationFrame(update);
+        // Обертка уже существует
+        if (animate) {
+          const currentValue = parseInt(percentWrapper.textContent) || 0;
+          if (currentValue !== percent) {
+            animateCounter(percentWrapper, currentValue, percent, 1000);
+          }
+        } else {
+          percentWrapper.textContent = `${percent}%`;
         }
       }
-      
-      requestAnimationFrame(update);
     }
     
     // Обновляем кнопки с процентами
-    updateButtonWithPercent(team1Btn, stats.team1Percent);
-    updateButtonWithPercent(drawBtn, stats.drawPercent);
-    updateButtonWithPercent(team2Btn, stats.team2Percent);
+    updateButtonWithPercent(team1Btn, stats.team1Percent, shouldAnimate);
+    updateButtonWithPercent(drawBtn, stats.drawPercent, shouldAnimate);
+    updateButtonWithPercent(team2Btn, stats.team2Percent, shouldAnimate);
+    
+    // Сохраняем в кэш ПОСЛЕ обновления кнопок
+    displayedBetStats.set(matchId, {
+      team1Percent: stats.team1Percent,
+      drawPercent: stats.drawPercent,
+      team2Percent: stats.team2Percent
+    });
     
   } catch (error) {
     console.error('Ошибка при загрузке статистики ставок:', error);

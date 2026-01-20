@@ -1151,6 +1151,10 @@ button:active {
   color: rgba(255, 255, 255, 0.95);
 }
 
+.bet-percent-wrapper.visible {
+  opacity: 1;
+}
+
 /* .bet-btn.selected::after {
   content: " ✓";
 } */
