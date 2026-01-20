@@ -354,10 +354,13 @@ function setCountingToday() {
 function selectCompetition(code) {
   selectedCompetition = code;
   
+  console.log(`🏆 Выбран турнир: ${code}`);
+  
   // Загружаем маппинг команд для выбранного турнира
   loadTeamMapping(code).then(mapping => {
     teamMappings = mapping;
-    console.log(`📋 Маппинг команд для ${code} загружен`);
+    console.log(`📋 Маппинг команд для ${code} загружен:`, mapping);
+    console.log(`📊 Количество команд в маппинге: ${Object.keys(mapping).length}`);
   });
   
   const competitionNames = {
@@ -587,6 +590,16 @@ function checkBetsResults(bets, fdMatches) {
       const awayTeamNormalized = normalizeForComparison(m.awayTeam.name);
       const betTeam1Normalized = normalizeForComparison(bet.team1_name);
       const betTeam2Normalized = normalizeForComparison(bet.team2_name);
+
+      // Отладочный лог для первого матча
+      if (fdMatches.indexOf(m) === 0 && bets.indexOf(bet) === 0) {
+        console.log('🔍 Отладка сопоставления:');
+        console.log('API команды:', m.homeTeam.name, 'vs', m.awayTeam.name);
+        console.log('API нормализовано:', homeTeamNormalized, 'vs', awayTeamNormalized);
+        console.log('Ставка команды:', bet.team1_name, 'vs', bet.team2_name);
+        console.log('Ставка нормализовано:', betTeam1Normalized, 'vs', betTeam2Normalized);
+        console.log('teamMappings:', teamMappings);
+      }
 
       return (
         (homeTeamNormalized === betTeam1Normalized &&

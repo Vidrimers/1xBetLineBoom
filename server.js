@@ -4965,11 +4965,20 @@ app.get("/api/fd-matches", async (req, res) => {
       return res.status(400).json({ error: `Неизвестный турнир: ${competition}` });
     }
 
-    // Получаем год из dateFrom
-    const year = new Date(dateFrom).getFullYear();
+    // Для сезонных турниров используем год начала сезона
+    // Например, для сезона 2025/26 используем Year=2025
+    const dateFromObj = new Date(dateFrom);
+    let year = dateFromObj.getFullYear();
+    
+    // Если дата в первой половине года (январь-июль), возможно это продолжение сезона
+    // который начался в прошлом году, поэтому используем предыдущий год
+    if (dateFromObj.getMonth() < 7) {
+      year = year - 1;
+    }
 
-    // Запрос списка матчей к SStats API
-    const url = `${SSTATS_API_BASE}/Games/list?leagueid=${leagueId}&year=${year}&from=${dateFrom}&to=${dateTo}&ended=true`;
+    // Запрос списка матчей к SStats API (параметры с большой буквы!)
+    // Получаем весь сезон, фильтрацию по датам делаем на сервере
+    const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&Year=${year}`;
     
     console.log(`📊 SStats API запрос: ${url}`);
     
@@ -4994,10 +5003,22 @@ app.get("/api/fd-matches", async (req, res) => {
       return res.status(500).json({ error: "SStats API вернул ошибку" });
     }
 
-    console.log(`✅ SStats API: получено ${sstatsData.count} матчей`);
+    console.log(`✅ SStats API: получено ${sstatsData.count} матчей за сезон`);
+
+    // Фильтруем по датам и статусу на сервере
+    const filteredGames = (sstatsData.data || []).filter(game => {
+      // Проверяем что матч завершен (status: 8 = Finished)
+      if (game.status !== 8) return false;
+      
+      // Проверяем что дата матча в нужном диапазоне
+      const gameDate = game.date.split('T')[0]; // Берем только дату без времени
+      return gameDate >= dateFrom && gameDate <= dateTo;
+    });
+    
+    console.log(`✅ Из них завершенных в диапазоне ${dateFrom} - ${dateTo}: ${filteredGames.length} матчей`);
 
     // Преобразуем в формат Football-Data для совместимости с фронтом
-    const matches = (sstatsData.data || []).map(game => ({
+    const matches = filteredGames.map(game => ({
       id: game.id,
       utcDate: game.date,
       status: 'FINISHED',
@@ -5013,8 +5034,8 @@ app.get("/api/fd-matches", async (req, res) => {
       },
       score: {
         fullTime: {
-          home: game.homeFTResult,
-          away: game.awayFTResult
+          home: game.homeResult,
+          away: game.awayResult
         }
       }
     }));
