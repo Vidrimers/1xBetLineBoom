@@ -14093,7 +14093,7 @@ async function showLiveEventMatches(eventId) {
       
       for (const match of todayMatches) {
         const matchTime = new Date(match.match_time);
-        const timeStr = matchTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const timeStr = formatMatchTimeOnly(match.match_time);
         const isLive = match.status === 'live' || match.status === 'in_progress' || match.status === 'LIVE';
         const isFinished = match.status === 'finished' || match.status === 'completed';
         
