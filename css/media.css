@@ -3390,7 +3390,7 @@
     position: absolute;
     top: 80px;
     left: 20px;
-    max-width: 680px; /* 2 колонки по 320px + gap 10px */
+    max-width: 480px; /* 2 колонки по 230px + gap 10px */
     max-height: calc(100vh - 100px); /* Ограничиваем высоту viewport */
     overflow-y: auto; /* Скролл если много карточек */
     display: grid;
@@ -3422,36 +3422,7 @@
     min-width: auto;
     max-width: none;
     width: 100%;
-    padding: 10px 14px;
-  }
-  
-  .goal-notification-icon {
-    font-size: 18px;
-  }
-  
-  .goal-notification-title {
-    font-size: 11px;
-  }
-  
-  .goal-notification-teams {
-    font-size: 13px;
-    margin-bottom: 4px;
-  }
-  
-  .goal-notification-score {
-    font-size: 22px;
-    margin: 4px 0;
-  }
-}
-
-/* Средний десктоп (1400px-1600px) - уменьшаем если мало места */
-@media (min-width: 1400px) and (max-width: 1600px) {
-  #goalNotifications {
-    max-width: 580px; /* 2 колонки по 280px + gap */
-  }
-  
-  .goal-notification {
-    padding: 8px 12px;
+    padding: 8px 10px;
   }
   
   .goal-notification-icon {
@@ -3463,38 +3434,67 @@
   }
   
   .goal-notification-teams {
-    font-size: 12px;
+    font-size: 11px;
+    margin-bottom: 3px;
   }
   
   .goal-notification-score {
-    font-size: 20px;
+    font-size: 18px;
+    margin: 3px 0;
+  }
+}
+
+/* Средний десктоп (1400px-1600px) - уменьшаем если мало места */
+@media (min-width: 1400px) and (max-width: 1600px) {
+  #goalNotifications {
+    max-width: 420px; /* 2 колонки по 200px + gap */
+  }
+  
+  .goal-notification {
+    padding: 7px 9px;
+  }
+  
+  .goal-notification-icon {
+    font-size: 14px;
+  }
+  
+  .goal-notification-title {
+    font-size: 9px;
+  }
+  
+  .goal-notification-teams {
+    font-size: 10px;
+  }
+  
+  .goal-notification-score {
+    font-size: 16px;
   }
 }
 
 /* Большой десктоп (>1800px) - можно увеличить */
 @media (min-width: 1800px) {
   #goalNotifications {
-    max-width: 720px; /* 2 колонки по 350px + gap */
+    max-width: 540px; /* 2 колонки по 260px + gap */
   }
   
   .goal-notification {
-    padding: 12px 16px;
+    padding: 10px 12px;
   }
   
   .goal-notification-icon {
-    font-size: 20px;
+    font-size: 18px;
   }
   
   .goal-notification-title {
-    font-size: 12px;
+    font-size: 11px;
   }
   
   .goal-notification-teams {
-    font-size: 14px;
+    font-size: 12px;
   }
   
   .goal-notification-score {
-    font-size: 24px;
+    font-size: 20px;
   }
 }
 
