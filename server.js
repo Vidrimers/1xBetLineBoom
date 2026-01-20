@@ -5400,6 +5400,30 @@ app.get("/api/live-matches", async (req, res) => {
   }
 });
 
+// Вспомогательная функция для определения статуса матча
+function getMatchStatus(match) {
+  const now = new Date();
+  const matchDate = match.match_date ? new Date(match.match_date) : null;
+  
+  // Если есть результат - матч завершен
+  if (match.winner) {
+    return 'finished';
+  }
+  
+  // Если нет даты - считаем ожидающим
+  if (!matchDate) {
+    return 'pending';
+  }
+  
+  // Если дата в будущем - ожидает
+  if (matchDate > now) {
+    return 'pending';
+  }
+  
+  // Если дата прошла, но нет результата - идет
+  return 'ongoing';
+}
+
 // POST /api/favorite-matches - Получить данные избранных матчей
 app.post("/api/favorite-matches", async (req, res) => {
   try {
@@ -5453,30 +5477,6 @@ app.post("/api/favorite-matches", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-// Вспомогательная функция для определения статуса матча
-function getMatchStatus(match) {
-  const now = new Date();
-  const matchDate = match.match_date ? new Date(match.match_date) : null;
-  
-  // Если есть результат - матч завершен
-  if (match.winner) {
-    return 'finished';
-  }
-  
-  // Если нет даты - считаем ожидающим
-  if (!matchDate) {
-    return 'pending';
-  }
-  
-  // Если дата в будущем - ожидает
-  if (matchDate > now) {
-    return 'pending';
-  }
-  
-  // Если дата прошла, но нет результата - идет
-  return 'ongoing';
-}
 
 app.get("/api/counting-bets", (req, res) => {
   try {
