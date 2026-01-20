@@ -13944,6 +13944,7 @@ async function loadAndDisplayBetStats(matchId, forceAnimate = false) {
 
 
 // ===== LIVE МАТЧИ =====
+
 let currentLiveEventId = null;
 
 async function loadLiveMatches() {
@@ -14182,3 +14183,5 @@ function backToLiveEvents() {
   currentLiveEventId = null;
   loadLiveMatches();
 }
+
+

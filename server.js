@@ -5193,37 +5193,69 @@ app.get("/api/live-matches", async (req, res) => {
       'RPL': './names/RussianPremierLeague.json'
     };
     
-    let teamMapping = {};
+    let teamMapping = {}; // Русское -> Английское
+    let reverseMapping = {}; // Английское -> Русское
     const mappingFile = mappingFiles[competition];
     if (mappingFile) {
       try {
         const fs = require('fs');
         const mappingData = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
         teamMapping = mappingData.teams || {};
+        
+        // Создаем обратный маппинг: Английское -> Русское
+        reverseMapping = {};
+        for (const [russian, english] of Object.entries(teamMapping)) {
+          reverseMapping[english.toLowerCase()] = russian;
+        }
+        
         console.log(`📖 Загружен словарь команд для ${competition}: ${Object.keys(teamMapping).length} команд`);
       } catch (error) {
         console.warn(`⚠️ Не удалось загрузить словарь для ${competition}:`, error.message);
       }
     }
     
-    // Функция для поиска перевода команды
+    // Функция для перевода английского названия в русское
     const translateTeam = (teamName) => {
       if (!teamName) return 'Команда';
       
-      // Ищем точное совпадение (регистронезависимое)
-      const exactMatch = Object.keys(teamMapping).find(
-        key => key.toLowerCase() === teamName.toLowerCase()
-      );
-      if (exactMatch) return teamMapping[exactMatch];
+      const nameLower = teamName.toLowerCase().trim();
       
-      // Ищем частичное совпадение
-      const partialMatch = Object.keys(teamMapping).find(
-        key => teamName.toLowerCase().includes(key.toLowerCase()) ||
-               key.toLowerCase().includes(teamName.toLowerCase())
-      );
-      if (partialMatch) return teamMapping[partialMatch];
+      // 1. Ищем точное совпадение в обратном маппинге
+      if (reverseMapping[nameLower]) {
+        return reverseMapping[nameLower];
+      }
       
-      // Если не нашли, возвращаем оригинал
+      // 2. Убираем распространенные суффиксы/префиксы и ищем снова
+      const cleanName = nameLower
+        .replace(/\b(fc|ac|as|us|ss|afc|bsc|fk|gk|gnk|sk|cf|cd|rc|rcd|ud|sd)\b/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (reverseMapping[cleanName]) {
+        return reverseMapping[cleanName];
+      }
+      
+      // 3. Ищем частичное совпадение (команда содержит ключевое слово)
+      for (const [englishLower, russian] of Object.entries(reverseMapping)) {
+        const cleanEnglish = englishLower
+          .replace(/\b(fc|ac|as|us|ss|afc|bsc|fk|gk|gnk|sk|cf|cd|rc|rcd|ud|sd)\b/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        // Проверяем точное совпадение очищенных названий
+        if (cleanName === cleanEnglish) {
+          return russian;
+        }
+        
+        // Проверяем вхождение (для длинных названий)
+        if (cleanName.length > 4 && cleanEnglish.length > 4) {
+          if (cleanName.includes(cleanEnglish) || cleanEnglish.includes(cleanName)) {
+            return russian;
+          }
+        }
+      }
+      
+      // 4. Если не нашли в JSON, возвращаем оригинал (он будет обработан dict.js на клиенте)
       return teamName;
     };
     
