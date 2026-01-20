@@ -5409,91 +5409,74 @@ app.post("/api/favorite-matches", async (req, res) => {
       return res.json({ matches: [] });
     }
     
-    const apiKey = process.env.SSTATS_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
-    }
+    // Получаем матчи из базы данных
+    const placeholders = matchIds.map(() => '?').join(',');
+    const query = `
+      SELECT 
+        m.*,
+        e.name as event_name
+      FROM matches m
+      LEFT JOIN events e ON m.event_id = e.id
+      WHERE m.id IN (${placeholders})
+    `;
     
-    const results = [];
-    
-    // Для каждого matchId получаем данные
-    for (const matchId of matchIds) {
-      try {
-        const url = `${SSTATS_API_BASE}/games/${matchId}`;
-        
-        const response = await fetch(url, {
-          headers: {
-            "X-API-Key": apiKey,
-          },
-        });
-        
-        if (!response.ok) {
-          console.warn(`⚠️ Не удалось получить данные для матча ${matchId}`);
-          continue;
-        }
-        
-        const gameData = await response.json();
-        
-        if (gameData.status !== "OK" || !gameData.data) {
-          console.warn(`⚠️ Некорректные данные для матча ${matchId}`);
-          continue;
-        }
-        
-        const game = gameData.data;
-        
-        // Логируем данные игры для отладки
-        console.log(`📊 Данные матча ${matchId}:`, {
-          id: game.id,
-          homeTeam: game.homeTeam?.name,
-          awayTeam: game.awayTeam?.name,
-          homeResult: game.homeResult,
-          awayResult: game.awayResult,
-          statusName: game.statusName,
-          elapsed: game.elapsed
-        });
-        
-        // Определяем статус матча
-        let status = 'scheduled';
-        if (game.statusName === 'Finished') {
-          status = 'finished';
-        } else if (game.statusName !== 'Not Started') {
-          status = 'live';
-        }
-        
-        // Если матч завершен, пропускаем его (автоудаление)
-        if (status === 'finished') {
-          continue;
-        }
-        
-        // Формируем счет только если оба результата определены
-        let score = null;
-        if (game.homeResult !== undefined && game.homeResult !== null && 
-            game.awayResult !== undefined && game.awayResult !== null) {
-          score = `${game.homeResult}:${game.awayResult}`;
-        }
-        
-        results.push({
-          id: game.id,
-          team1: game.homeTeam?.name || 'Команда 1',
-          team2: game.awayTeam?.name || 'Команда 2',
-          score: score,
-          status: status,
-          elapsed: game.elapsed || null,
-          statusName: game.statusName
-        });
-        
-      } catch (error) {
-        console.error(`❌ Ошибка при получении данных матча ${matchId}:`, error);
+    db.all(query, matchIds, (err, matches) => {
+      if (err) {
+        console.error("❌ Ошибка получения избранных матчей:", err);
+        return res.status(500).json({ error: err.message });
       }
-    }
-    
-    res.json({ matches: results });
+      
+      // Фильтруем только LIVE матчи и форматируем данные
+      const results = matches
+        .filter(match => {
+          const status = getMatchStatus(match);
+          return status === 'ongoing'; // Только идущие матчи
+        })
+        .map(match => {
+          return {
+            id: match.id,
+            team1: match.team1_name,
+            team2: match.team2_name,
+            score: match.score || '0:0',
+            status: 'live',
+            elapsed: null,
+            event_name: match.event_name
+          };
+        });
+      
+      console.log(`✅ Найдено ${results.length} LIVE матчей из ${matchIds.length} избранных`);
+      res.json({ matches: results });
+    });
     
   } catch (error) {
     console.error("❌ /api/favorite-matches ошибка:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
+// Вспомогательная функция для определения статуса матча
+function getMatchStatus(match) {
+  const now = new Date();
+  const matchDate = match.match_date ? new Date(match.match_date) : null;
+  
+  // Если есть результат - матч завершен
+  if (match.winner) {
+    return 'finished';
+  }
+  
+  // Если нет даты - считаем ожидающим
+  if (!matchDate) {
+    return 'pending';
+  }
+  
+  // Если дата в будущем - ожидает
+  if (matchDate > now) {
+    return 'pending';
+  }
+  
+  // Если дата прошла, но нет результата - идет
+  return 'ongoing';
+}
 
 app.get("/api/counting-bets", (req, res) => {
   try {
