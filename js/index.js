@@ -13944,9 +13944,18 @@ async function loadAndDisplayBetStats(matchId, forceAnimate = false) {
 
 
 // ===== LIVE МАТЧИ =====
+let currentLiveEventId = null;
+
 async function loadLiveMatches() {
   const container = document.getElementById('liveMatchesContainer');
   
+  // Если выбран турнир, показываем его матчи
+  if (currentLiveEventId) {
+    await showLiveEventMatches(currentLiveEventId);
+    return;
+  }
+  
+  // Иначе показываем список турниров
   try {
     // Получаем все турниры
     const eventsResponse = await fetch('/api/events');
@@ -13996,11 +14005,12 @@ async function loadLiveMatches() {
       const hasLiveMatches = liveMatchesCount > 0;
       
       html += `
-        <div class="live-event-card ${hasLiveMatches ? 'has-live' : ''}" style="
+        <div class="live-event-card ${hasLiveMatches ? 'has-live' : ''}" onclick="showLiveEventMatches(${event.id})" style="
           background: rgba(255, 255, 255, 0.05);
           border: 2px solid ${hasLiveMatches ? '#f44336' : 'rgba(90, 159, 212, 0.5)'};
           border-radius: 8px;
           padding: 20px;
+          cursor: pointer;
           transition: all 0.3s ease;
           position: relative;
           overflow: hidden;
@@ -14032,13 +14042,13 @@ async function loadLiveMatches() {
           ` : ''}
           
           ${hasLiveMatches ? `
-            <button onclick="selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.2); border-radius: 5px; border: 1px solid #f44336; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.4)'" onmouseout="this.style.background='rgba(244, 67, 54, 0.2)'">
+            <button onclick="event.stopPropagation(); selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(244, 67, 54, 0.2); border-radius: 5px; border: 1px solid #f44336; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.4)'" onmouseout="this.style.background='rgba(244, 67, 54, 0.2)'">
               <span style="color: #f44336; font-weight: 700; font-size: 1.1em;">
                 🔴 ${liveMatchesCount} ${liveMatchesCount === 1 ? 'матч' : liveMatchesCount < 5 ? 'матча' : 'матчей'} LIVE
               </span>
             </button>
           ` : `
-            <button onclick="selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'">
+            <button onclick="event.stopPropagation(); selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'">
               <span style="color: #7ab0e0; font-weight: 600; font-size: 0.95em;">
                 ⚽ К ставкам
               </span>
@@ -14059,4 +14069,150 @@ async function loadLiveMatches() {
       </div>
     `;
   }
+}
+
+async function showLiveEventMatches(eventId) {
+  currentLiveEventId = eventId;
+  const container = document.getElementById('liveMatchesContainer');
+  
+  try {
+    // Получаем информацию о турнире
+    const eventsResponse = await fetch('/api/events');
+    const allEvents = await eventsResponse.json();
+    const event = allEvents.find(e => e.id === eventId);
+    
+    if (!event) {
+      container.innerHTML = '<div class="empty-message">Турнир не найден</div>';
+      return;
+    }
+    
+    // Получаем все матчи турнира
+    const matchesResponse = await fetch('/api/matches');
+    const allMatches = await matchesResponse.json();
+    
+    // Получаем сегодняшнюю дату (начало и конец дня)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Фильтруем матчи: только этого турнира и на сегодня
+    const todayMatches = allMatches.filter(match => {
+      if (match.event_id !== eventId) return false;
+      if (!match.match_time) return false;
+      
+      const matchDate = new Date(match.match_time);
+      return matchDate >= today && matchDate < tomorrow;
+    });
+    
+    // Сортируем по времени
+    todayMatches.sort((a, b) => new Date(a.match_time) - new Date(b.match_time));
+    
+    // Заголовок с кнопкой назад
+    let html = `
+      <div style="margin-bottom: 20px;">
+        <button onclick="backToLiveEvents()" style="padding: 8px 16px; background: rgba(90, 159, 212, 0.2); color: #7ab0e0; border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 5px; cursor: pointer; font-size: 0.9em; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'">
+          ← Назад к турнирам
+        </button>
+      </div>
+      
+      <h2 style="color: #e0e6f0; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+        ${event.icon ? (
+          event.icon.startsWith('img/') || event.icon.startsWith('http')
+            ? `<img src="${event.icon}" alt="иконка" style="width: 40px; height: 40px; object-fit: contain; background: ${event.background_color === 'transparent' || !event.background_color ? 'rgba(224, 230, 240, .4)' : event.background_color}; padding: 3px; border-radius: 5px;">`
+            : `<span style="font-size: 1.5em;">${event.icon}</span>`
+        ) : ''}
+        <span>${event.name}</span>
+      </h2>
+      
+      <p style="color: #b0b8c8; font-size: 0.9em; margin-bottom: 20px;">
+        📅 Матчи на сегодня: ${today.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}
+      </p>
+    `;
+    
+    if (todayMatches.length === 0) {
+      html += `
+        <div class="empty-message">
+          <p>На сегодня нет матчей в этом турнире</p>
+        </div>
+      `;
+    } else {
+      // Отображаем матчи в виде квадратных карточек
+      html += '<div class="live-matches-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">';
+      
+      for (const match of todayMatches) {
+        const matchTime = new Date(match.match_time);
+        const timeStr = matchTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const isLive = match.status === 'live' || match.status === 'in_progress' || match.status === 'LIVE';
+        const isFinished = match.status === 'finished' || match.status === 'completed';
+        
+        html += `
+          <div class="live-match-card ${isLive ? 'is-live' : ''}" style="
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid ${isLive ? '#f44336' : isFinished ? '#4caf50' : 'rgba(90, 159, 212, 0.5)'};
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 180px;
+          " onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${isLive ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            
+            ${isLive ? `
+              <div style="position: absolute; top: 10px; right: 10px;">
+                <span class="live-indicator" style="position: static; transform: none;"></span>
+              </div>
+            ` : ''}
+            
+            <div style="text-align: center; margin-bottom: 10px;">
+              <div style="color: ${isLive ? '#f44336' : '#b0b8c8'}; font-size: 0.85em; font-weight: 600;">
+                ${isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '🕐 ' + timeStr}
+              </div>
+            </div>
+            
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+              <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: 8px; line-height: 1.3;">
+                ${match.team1 || 'Команда 1'}
+              </div>
+              
+              <div style="color: #7ab0e0; font-size: 0.8em; margin-bottom: 8px;">
+                vs
+              </div>
+              
+              <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; line-height: 1.3;">
+                ${match.team2 || 'Команда 2'}
+              </div>
+            </div>
+            
+            ${match.score ? `
+              <div style="text-align: center; padding: 8px; background: rgba(76, 175, 80, 0.2); border-radius: 5px; border: 1px solid #4caf50; margin-top: 10px;">
+                <span style="color: #4caf50; font-weight: 700; font-size: 1.2em;">
+                  ${match.score}
+                </span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+      
+      html += '</div>';
+    }
+    
+    container.innerHTML = html;
+    
+  } catch (error) {
+    console.error('Ошибка при загрузке матчей турнира:', error);
+    container.innerHTML = `
+      <div class="empty-message" style="color: #f44336;">
+        Ошибка при загрузке матчей: ${error.message}
+      </div>
+    `;
+  }
+}
+
+function backToLiveEvents() {
+  currentLiveEventId = null;
+  loadLiveMatches();
 }
