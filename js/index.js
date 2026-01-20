@@ -14086,29 +14086,17 @@ async function showLiveEventMatches(eventId) {
       return;
     }
     
-    // Получаем все матчи турнира
-    const matchesResponse = await fetch('/api/matches');
-    const allMatches = await matchesResponse.json();
+    // Получаем матчи турнира на сегодня через новый API
+    const matchesResponse = await fetch(`/api/live-matches?eventId=${eventId}`);
+    if (!matchesResponse.ok) {
+      throw new Error(`Ошибка загрузки матчей: ${matchesResponse.status} ${matchesResponse.statusText}`);
+    }
     
-    // Получаем сегодняшнюю дату (начало и конец дня)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    // Фильтруем матчи: только этого турнира и на сегодня
-    const todayMatches = allMatches.filter(match => {
-      if (match.event_id !== eventId) return false;
-      if (!match.match_time) return false;
-      
-      const matchDate = new Date(match.match_time);
-      return matchDate >= today && matchDate < tomorrow;
-    });
-    
-    // Сортируем по времени
-    todayMatches.sort((a, b) => new Date(a.match_time) - new Date(b.match_time));
+    const matchesData = await matchesResponse.json();
+    const todayMatches = matchesData.matches || [];
     
     // Заголовок
+    const today = new Date();
     let html = `
       <h2 style="color: #e0e6f0; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
         ${event.icon ? (

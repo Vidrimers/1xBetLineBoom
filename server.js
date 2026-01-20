@@ -5126,6 +5126,123 @@ app.get("/api/sstats-teams", async (req, res) => {
   }
 });
 
+// GET /api/live-matches - Получить live матчи для турнира на сегодня
+app.get("/api/live-matches", async (req, res) => {
+  try {
+    const { eventId } = req.query;
+    
+    if (!eventId) {
+      return res.status(400).json({ error: "Не указан eventId" });
+    }
+    
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+    
+    // Получаем информацию о турнире из БД
+    const event = db.prepare("SELECT * FROM events WHERE id = ?").get(eventId);
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+    
+    // Определяем код турнира (например, из названия или отдельного поля)
+    // Пока используем простое сопоставление по названию
+    let competition = null;
+    const eventName = event.name.toLowerCase();
+    
+    if (eventName.includes('champions') || eventName.includes('лига чемпионов')) {
+      competition = 'CL';
+    } else if (eventName.includes('europa') || eventName.includes('лига европы')) {
+      competition = 'EL';
+    } else if (eventName.includes('serie a') || eventName.includes('серия а')) {
+      competition = 'SA';
+    } else if (eventName.includes('premier') && eventName.includes('england')) {
+      competition = 'PL';
+    } else if (eventName.includes('bundesliga') || eventName.includes('бундеслига')) {
+      competition = 'BL1';
+    } else if (eventName.includes('la liga') || eventName.includes('ла лига')) {
+      competition = 'PD';
+    } else if (eventName.includes('ligue 1') || eventName.includes('лига 1')) {
+      competition = 'FL1';
+    } else if (eventName.includes('eredivisie') || eventName.includes('эредивизи')) {
+      competition = 'DED';
+    } else if (eventName.includes('рпл') || eventName.includes('премьер') && eventName.includes('росс')) {
+      competition = 'RPL';
+    }
+    
+    if (!competition) {
+      return res.json({ matches: [] }); // Если турнир не поддерживается, возвращаем пустой массив
+    }
+    
+    const leagueId = SSTATS_LEAGUE_MAPPING[competition];
+    if (!leagueId) {
+      return res.json({ matches: [] });
+    }
+    
+    const year = new Date().getFullYear();
+    const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&Year=${year}`;
+    
+    console.log(`📊 SStats API запрос live матчей для ${event.name}: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-Key": apiKey,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ SStats API ошибка: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ error: errorText || response.statusText });
+    }
+    
+    const sstatsData = await response.json();
+    
+    if (sstatsData.status !== "OK") {
+      console.error(`❌ SStats API статус не OK:`, sstatsData);
+      return res.status(500).json({ error: "SStats API вернул ошибку" });
+    }
+    
+    // Получаем сегодняшнюю дату
+    const today = new Date().toISOString().slice(0, 10); // "2026-01-20"
+    
+    // Фильтруем матчи: только на сегодня и не завершенные
+    const todayMatches = (sstatsData.data || []).filter(game => {
+      // Проверяем что матч на сегодня
+      if (!game.date || !game.date.startsWith(today)) return false;
+      
+      // Исключаем "Not Started" и "Finished"
+      // Оставляем все остальные статусы (live, half-time и т.д.)
+      return game.statusName !== 'Not Started' && game.statusName !== 'Finished';
+    });
+    
+    // Преобразуем в формат нашего приложения
+    const matches = todayMatches.map(game => ({
+      id: game.id,
+      event_id: parseInt(eventId),
+      team1: game.homeTeam?.name || 'Команда 1',
+      team2: game.awayTeam?.name || 'Команда 2',
+      match_time: game.date,
+      status: game.statusName === 'Finished' ? 'finished' : 
+              game.statusName === 'Not Started' ? 'scheduled' : 'live',
+      score: game.homeResult !== null && game.awayResult !== null 
+        ? `${game.homeResult}:${game.awayResult}` 
+        : null,
+      elapsed: game.elapsed || null,
+      statusName: game.statusName
+    }));
+    
+    console.log(`✅ Найдено ${matches.length} матчей на сегодня для ${event.name}`);
+    
+    res.json({ matches });
+    
+  } catch (error) {
+    console.error("❌ /api/live-matches ошибка:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/counting-bets", (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
