@@ -14271,6 +14271,9 @@ async function showLiveEventMatches(eventId) {
     // Обновляем звездочки после отрисовки
     updateFavoriteStars();
     
+    // Обновляем сохраненные данные избранных матчей из загруженных карточек
+    updateFavoriteMatchesData(todayMatches);
+    
     // Запускаем polling избранных матчей после загрузки карточек
     if (currentUser) {
       console.log('🔄 Запуск polling после загрузки LIVE матчей');
@@ -14404,6 +14407,28 @@ function saveFavoriteMatchData(matchId, matchData) {
 // Удалить данные избранного матча из localStorage
 function removeFavoriteMatchData(matchId) {
   localStorage.removeItem(`favoriteMatch_${matchId}`);
+}
+
+// Обновить данные избранных матчей из загруженных LIVE матчей
+function updateFavoriteMatchesData(liveMatches) {
+  const favorites = getFavoriteMatches();
+  
+  favorites.forEach(matchId => {
+    const match = liveMatches.find(m => m.id === matchId);
+    if (match) {
+      const matchData = {
+        id: match.id,
+        team1: match.team1,
+        team2: match.team2,
+        score: match.score || '0:0',
+        status: match.status,
+        updatedAt: new Date().toISOString()
+      };
+      
+      saveFavoriteMatchData(matchId, matchData);
+      console.log(`💾 Обновлены данные матча ${matchId}:`, matchData);
+    }
+  });
 }
 
 // Переключить статус избранного для матча
@@ -14661,131 +14686,27 @@ async function pollFavoriteMatches() {
   const isDesktop = window.innerWidth > 1400;
   console.log(`💻 Режим: ${isDesktop ? 'ДЕСКТОП' : 'МОБИЛЬНАЯ'} (ширина: ${window.innerWidth}px)`);
   
-  // Загружаем данные через API
-  try {
-    const response = await fetch('/api/favorite-matches', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matchIds: favorites })
-    });
-    
-    if (!response.ok) {
-      console.error('❌ Ошибка загрузки избранных матчей:', response.status);
-      return;
-    }
-    
-    const data = await response.json();
-    const matches = data.matches || [];
-    
-    console.log(`✅ Загружено ${matches.length} LIVE матчей через API`);
-    
-    // Если API не вернул матчи, используем сохраненные данные из localStorage
-    if (matches.length === 0) {
-      console.log('⚠️ API не вернул матчи, используем сохраненные данные из localStorage');
-      
-      const savedMatches = [];
-      favorites.forEach(matchId => {
-        const matchData = getFavoriteMatchData(matchId);
-        if (matchData) {
-          savedMatches.push({
-            id: matchData.id,
-            team1: matchData.team1,
-            team2: matchData.team2,
-            score: matchData.score || '0:0',
-            status: 'live',
-            elapsed: null
-          });
-        }
-      });
-      
-      console.log(`📦 Загружено ${savedMatches.length} матчей из localStorage`);
-      
-      if (savedMatches.length > 0) {
-        // Обрабатываем сохраненные матчи
-        processMatches(savedMatches, favorites, isDesktop);
-      }
-      
-      return;
-    }
-    
-    // Удаляем завершенные матчи из избранного
-    if (matches.length < favorites.length) {
-      const liveMatchIds = matches.map(m => m.id);
-      const updatedFavorites = favorites.filter(id => liveMatchIds.includes(id));
-      
-      if (updatedFavorites.length !== favorites.length) {
-        console.log(`🗑️ Удаляем ${favorites.length - updatedFavorites.length} завершенных матчей из избранного`);
-        saveFavoriteMatches(updatedFavorites);
-        updateFavoriteStars();
-      }
-    }
-    
-    const foundMatchIds = matches.map(m => m.id);
-    
-    // На десктопе показываем все избранные матчи постоянно
-    if (isDesktop) {
-      console.log('🖥️ ДЕСКТОП: Обработка матчей через API...');
-      matches.forEach(match => {
-        console.log(`⚽ Матч ${match.id}:`, match);
-        
-        const previousScore = matchScores[match.id];
-        const currentScore = match.score || '0:0';
-        console.log(`  → Предыдущий счет: ${previousScore || 'нет'}, текущий: ${currentScore}`);
-        
-        // Всегда показываем/обновляем карточку на десктопе
-        updateDesktopNotification({
-          id: match.id,
-          team1: match.team1,
-          team2: match.team2,
-          score: currentScore,
-          status: match.status,
-          elapsed: match.elapsed
-        });
-        
-        // Если счет изменился - воспроизводим звук
-        if (previousScore && previousScore !== currentScore) {
-          console.log('🔊 Счет изменился! Воспроизведение звука...');
-          if (currentUser && currentUser.live_sound === 1) {
-            playGoalSound();
-          }
-        }
-        
-        // Сохраняем текущий счет
-        matchScores[match.id] = currentScore;
-      });
-      
-      // Удаляем карточки матчей, которых больше нет в избранном
-      const container = document.getElementById('goalNotifications');
-      if (container) {
-        const existingNotifications = container.querySelectorAll('.goal-notification');
-        existingNotifications.forEach(notification => {
-          const matchId = parseInt(notification.getAttribute('data-match-id'));
-          if (!foundMatchIds.includes(matchId)) {
-            console.log(`🗑️ Удаляем карточку уведомления для матча ${matchId}`);
-            notification.remove();
-          }
-        });
-      }
-    } else {
-      // На мобильной показываем только при изменении счета
-      console.log('📱 МОБИЛЬНАЯ: Проверка изменений счета...');
-      matches.forEach(match => {
-        if (match.score) {
-          const previousScore = matchScores[match.id];
-          
-          if (previousScore && previousScore !== match.score) {
-            console.log(`🎯 Счет изменился для матча ${match.id}: ${previousScore} → ${match.score}`);
-            // Счет изменился - добавляем в очередь уведомлений
-            addNotificationToQueue(match);
-          }
-          
-          // Сохраняем текущий счет
-          matchScores[match.id] = match.score;
-        }
+  // Загружаем данные из localStorage
+  const matches = [];
+  favorites.forEach(matchId => {
+    const matchData = getFavoriteMatchData(matchId);
+    if (matchData) {
+      matches.push({
+        id: matchData.id,
+        team1: matchData.team1,
+        team2: matchData.team2,
+        score: matchData.score || '0:0',
+        status: matchData.status || 'live',
+        elapsed: null
       });
     }
-  } catch (error) {
-    console.error('❌ Ошибка в pollFavoriteMatches:', error);
+  });
+  
+  console.log(`📦 Загружено ${matches.length} матчей из localStorage`);
+  
+  if (matches.length > 0) {
+    // Обрабатываем матчи
+    processMatches(matches, favorites, isDesktop);
   }
 }
 
