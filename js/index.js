@@ -3919,6 +3919,11 @@ document.addEventListener('click', (e) => {
 
 // ===== ВКЛАДКИ =====
 function switchTab(tabName) {
+  // Останавливаем автообновление LIVE матчей при переключении на другую вкладку
+  if (tabName !== 'live') {
+    stopLiveMatchesAutoUpdate();
+  }
+  
   // Управление кнопками навигации на мобильных
   if (window.innerWidth <= 768) {
     const navButtons = document.querySelector('.mobile-nav-buttons');
@@ -3983,6 +3988,8 @@ function switchTab(tabName) {
     }, 10);
     document.querySelectorAll(".tab-btn")[0].classList.add("active");
     loadLiveMatches();
+    // Запускаем автообновление LIVE матчей
+    startLiveMatchesAutoUpdate();
   } else if (tabName === "participants") {
     const content = document.getElementById("participants-content");
     content.style.setProperty("display", "flex", "important");
@@ -14264,6 +14271,48 @@ function backToLiveEvents() {
   loadLiveMatches();
 }
 
+// ===== АВТООБНОВЛЕНИЕ LIVE МАТЧЕЙ =====
+let liveMatchesUpdateInterval = null;
+
+// Запустить автообновление live матчей
+function startLiveMatchesAutoUpdate() {
+  // Очищаем предыдущий интервал если есть
+  if (liveMatchesUpdateInterval) {
+    clearInterval(liveMatchesUpdateInterval);
+  }
+  
+  // Обновляем каждые 30 секунд
+  liveMatchesUpdateInterval = setInterval(() => {
+    // Проверяем что мы все еще на вкладке LIVE
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (!activeTab || !activeTab.textContent.includes('LIVE')) {
+      stopLiveMatchesAutoUpdate();
+      return;
+    }
+    
+    // Если открыт конкретный турнир - обновляем его матчи
+    if (currentLiveEventId) {
+      console.log('🔄 Автообновление матчей турнира:', currentLiveEventId);
+      showLiveEventMatches(currentLiveEventId);
+    } else {
+      // Иначе обновляем список турниров
+      console.log('🔄 Автообновление списка LIVE турниров');
+      loadLiveMatches();
+    }
+  }, 30000); // 30 секунд
+  
+  console.log('✅ Автообновление LIVE матчей запущено');
+}
+
+// Остановить автообновление live матчей
+function stopLiveMatchesAutoUpdate() {
+  if (liveMatchesUpdateInterval) {
+    clearInterval(liveMatchesUpdateInterval);
+    liveMatchesUpdateInterval = null;
+    console.log('⏹️ Автообновление LIVE матчей остановлено');
+  }
+}
+
 // ===== ИЗБРАННЫЕ LIVE МАТЧИ =====
 
 // Получить список избранных матчей из localStorage
@@ -14318,9 +14367,14 @@ function updateFavoriteStars() {
 // Проверка наличия live матчей и обновление индикатора на кнопке LIVE
 async function updateLiveIndicator() {
   const indicator = document.getElementById('liveTabIndicator');
-  if (!indicator) return;
+  if (!indicator) {
+    console.warn('⚠️ Индикатор LIVE не найден');
+    return;
+  }
   
   try {
+    console.log('🔄 Обновление индикатора LIVE...');
+    
     // Получаем все активные турниры
     const eventsResponse = await fetch('/api/events');
     const allEvents = await eventsResponse.json();
@@ -14332,6 +14386,8 @@ async function updateLiveIndicator() {
       return new Date(event.start_date) <= now;
     });
     
+    console.log(`📊 Активных турниров: ${activeEvents.length}`);
+    
     // Проверяем есть ли хотя бы один live матч в любом турнире
     let hasAnyLiveMatches = false;
     
@@ -14341,30 +14397,37 @@ async function updateLiveIndicator() {
         if (matchesResponse.ok) {
           const matchesData = await matchesResponse.json();
           const matches = matchesData.matches || [];
-          if (matches.some(m => m.status === 'live' || m.status === 'in_progress')) {
+          const liveMatches = matches.filter(m => m.status === 'live' || m.status === 'in_progress');
+          
+          if (liveMatches.length > 0) {
+            console.log(`🔴 Найдены LIVE матчи в турнире "${event.name}": ${liveMatches.length}`);
             hasAnyLiveMatches = true;
             break;
           }
         }
       } catch (e) {
         // Игнорируем ошибки отдельных турниров
+        console.warn(`⚠️ Ошибка проверки турнира ${event.name}:`, e.message);
       }
     }
     
     // Обновляем индикатор
     if (hasAnyLiveMatches) {
+      console.log('🔴 Индикатор: КРАСНЫЙ (есть live матчи)');
       indicator.classList.remove('static');
     } else {
+      console.log('🔵 Индикатор: СИНИЙ (нет live матчей)');
       indicator.classList.add('static');
     }
   } catch (error) {
-    console.error('Ошибка обновления live индикатора:', error);
+    console.error('❌ Ошибка обновления live индикатора:', error);
     // При ошибке показываем статичный индикатор
     indicator.classList.add('static');
   }
 }
 
 // Вызываем обновление индикатора при загрузке страницы и каждые 30 секунд
+// Только для залогиненных пользователей
 if (currentUser) {
   updateLiveIndicator();
   setInterval(updateLiveIndicator, 30000);
@@ -14499,32 +14562,28 @@ async function pollFavoriteMatches() {
     
     const isDesktop = window.innerWidth > 1400;
     
-    // Проверяем изменения счета
-    matches.forEach(match => {
-      if (match.status === 'live' && match.score) {
-        const previousScore = matchScores[match.id];
-        
-        if (previousScore && previousScore !== match.score) {
-          // Счет изменился
-          if (isDesktop) {
-            // На десктопе обновляем существующую карточку или создаем новую
-            updateDesktopNotification(match);
-          } else {
-            // На мобильной добавляем в очередь
-            addNotificationToQueue(match);
-          }
-        } else if (!previousScore && isDesktop) {
-          // Первый раз видим этот матч на десктопе - показываем карточку
-          updateDesktopNotification(match);
-        }
-        
-        // Сохраняем текущий счет
-        matchScores[match.id] = match.score;
-      }
-    });
-    
-    // На десктопе удаляем карточки матчей, которых больше нет в избранном
+    // На десктопе показываем все избранные матчи постоянно
     if (isDesktop) {
+      matches.forEach(match => {
+        if (match.status === 'live' && match.score) {
+          const previousScore = matchScores[match.id];
+          
+          // Всегда показываем/обновляем карточку на десктопе
+          updateDesktopNotification(match);
+          
+          // Если счет изменился - воспроизводим звук
+          if (previousScore && previousScore !== match.score) {
+            if (currentUser && currentUser.live_sound === 1) {
+              playGoalSound();
+            }
+          }
+          
+          // Сохраняем текущий счет
+          matchScores[match.id] = match.score;
+        }
+      });
+      
+      // Удаляем карточки матчей, которых больше нет в избранном
       const container = document.getElementById('goalNotifications');
       if (container) {
         const existingNotifications = container.querySelectorAll('.goal-notification');
@@ -14535,6 +14594,21 @@ async function pollFavoriteMatches() {
           }
         });
       }
+    } else {
+      // На мобильной показываем только при изменении счета
+      matches.forEach(match => {
+        if (match.status === 'live' && match.score) {
+          const previousScore = matchScores[match.id];
+          
+          if (previousScore && previousScore !== match.score) {
+            // Счет изменился - добавляем в очередь уведомлений
+            addNotificationToQueue(match);
+          }
+          
+          // Сохраняем текущий счет
+          matchScores[match.id] = match.score;
+        }
+      });
     }
     
   } catch (error) {
@@ -14553,7 +14627,7 @@ function updateDesktopNotification(match) {
   if (notification) {
     // Обновляем счет в существующей карточке
     const scoreElement = notification.querySelector('.goal-notification-score');
-    if (scoreElement) {
+    if (scoreElement && scoreElement.textContent !== match.score) {
       scoreElement.textContent = match.score;
       // Добавляем анимацию обновления
       scoreElement.style.animation = 'none';
@@ -14564,11 +14638,6 @@ function updateDesktopNotification(match) {
   } else {
     // Создаем новую карточку
     showGoalNotification(match);
-  }
-  
-  // Воспроизводим звук при обновлении счета
-  if (currentUser && currentUser.live_sound === 1) {
-    playGoalSound();
   }
 }
 
