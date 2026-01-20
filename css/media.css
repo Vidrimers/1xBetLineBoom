@@ -214,7 +214,7 @@
     top: 50%;
     left: 0;
     transform: translateY(-50%);
-    z-index: 999;
+    z-index: 1002;
     opacity: 1;
     pointer-events: auto;
     transition: opacity 0.3s ease;
@@ -239,6 +239,9 @@
     padding: 10px 2px;
     letter-spacing: 0.5px;
     box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+    position: relative;
+    z-index: 1002;
   }
 
   .mobile-nav-btn:hover {
@@ -1795,7 +1798,7 @@
     width: 50%;
     flex: 1;
     padding: 10px 0;
-    height: 40vh;
+    height: 50vh;
     /* max-width: 100%;
     padding: 4px;
     margin: 0 auto 5px;
