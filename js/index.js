@@ -14125,7 +14125,7 @@ async function showLiveEventMatches(eventId) {
             
             <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center;">
               <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: 8px; line-height: 1.3;">
-                ${match.team1 || 'Команда 1'}
+                ${match.team1}
               </div>
               
               <div style="color: #7ab0e0; font-size: 0.8em; margin-bottom: 8px;">
@@ -14133,7 +14133,7 @@ async function showLiveEventMatches(eventId) {
               </div>
               
               <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; line-height: 1.3;">
-                ${match.team2 || 'Команда 2'}
+                ${match.team2}
               </div>
             </div>
             

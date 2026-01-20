@@ -5180,6 +5180,53 @@ app.get("/api/live-matches", async (req, res) => {
       return res.json({ matches: [] });
     }
     
+    // Загружаем словарь команд для турнира
+    const mappingFiles = {
+      'SA': './names/SerieA.json',
+      'PL': './names/PremierLeague.json',
+      'BL1': './names/Bundesliga.json',
+      'PD': './names/LaLiga.json',
+      'FL1': './names/Ligue1.json',
+      'DED': './names/Eredivisie.json',
+      'CL': './names/LeagueOfChampionsTeams.json',
+      'EL': './names/EuropaLeague.json',
+      'RPL': './names/RussianPremierLeague.json'
+    };
+    
+    let teamMapping = {};
+    const mappingFile = mappingFiles[competition];
+    if (mappingFile) {
+      try {
+        const fs = require('fs');
+        const mappingData = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
+        teamMapping = mappingData.teams || {};
+        console.log(`📖 Загружен словарь команд для ${competition}: ${Object.keys(teamMapping).length} команд`);
+      } catch (error) {
+        console.warn(`⚠️ Не удалось загрузить словарь для ${competition}:`, error.message);
+      }
+    }
+    
+    // Функция для поиска перевода команды
+    const translateTeam = (teamName) => {
+      if (!teamName) return 'Команда';
+      
+      // Ищем точное совпадение (регистронезависимое)
+      const exactMatch = Object.keys(teamMapping).find(
+        key => key.toLowerCase() === teamName.toLowerCase()
+      );
+      if (exactMatch) return teamMapping[exactMatch];
+      
+      // Ищем частичное совпадение
+      const partialMatch = Object.keys(teamMapping).find(
+        key => teamName.toLowerCase().includes(key.toLowerCase()) ||
+               key.toLowerCase().includes(teamName.toLowerCase())
+      );
+      if (partialMatch) return teamMapping[partialMatch];
+      
+      // Если не нашли, возвращаем оригинал
+      return teamName;
+    };
+    
     // Определяем год для запроса
     // Для сезонных турниров используем текущий сезон
     const now = new Date();
@@ -5240,23 +5287,36 @@ app.get("/api/live-matches", async (req, res) => {
       })));
     }
     
-    // Преобразуем в формат нашего приложения
-    const matches = todayMatches.map(game => ({
-      id: game.id,
-      event_id: parseInt(eventId),
-      team1: game.homeTeam?.name || 'Команда 1',
-      team2: game.awayTeam?.name || 'Команда 2',
-      match_time: game.date,
-      status: game.statusName === 'Finished' ? 'finished' : 
-              game.statusName === 'Not Started' ? 'scheduled' : 'live',
-      score: game.homeResult !== null && game.awayResult !== null 
-        ? `${game.homeResult}:${game.awayResult}` 
-        : null,
-      elapsed: game.elapsed || null,
-      statusName: game.statusName
-    }));
+    // Преобразуем в формат нашего приложения с переводом названий
+    const matches = todayMatches.map(game => {
+      const originalTeam1 = game.homeTeam?.name || 'Команда 1';
+      const originalTeam2 = game.awayTeam?.name || 'Команда 2';
+      
+      return {
+        id: game.id,
+        event_id: parseInt(eventId),
+        team1: translateTeam(originalTeam1),
+        team2: translateTeam(originalTeam2),
+        team1_original: originalTeam1,
+        team2_original: originalTeam2,
+        match_time: game.date,
+        status: game.statusName === 'Finished' ? 'finished' : 
+                game.statusName === 'Not Started' ? 'scheduled' : 'live',
+        score: game.homeResult !== null && game.awayResult !== null 
+          ? `${game.homeResult}:${game.awayResult}` 
+          : null,
+        elapsed: game.elapsed || null,
+        statusName: game.statusName
+      };
+    });
     
     console.log(`✅ Найдено ${matches.length} матчей на сегодня для ${event.name}`);
+    if (matches.length > 0) {
+      console.log('Пример перевода:', {
+        original: matches[0].team1_original,
+        translated: matches[0].team1
+      });
+    }
     
     res.json({ matches });
     
