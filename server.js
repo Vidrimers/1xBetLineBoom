@@ -5190,15 +5190,15 @@ app.get("/api/live-matches", async (req, res) => {
     
     // Загружаем словарь команд для турнира
     const mappingFiles = {
-      'SA': './names/SerieA.json',
-      'PL': './names/PremierLeague.json',
-      'BL1': './names/Bundesliga.json',
-      'PD': './names/LaLiga.json',
-      'FL1': './names/Ligue1.json',
-      'DED': './names/Eredivisie.json',
-      'CL': './names/LeagueOfChampionsTeams.json',
-      'EL': './names/EuropaLeague.json',
-      'RPL': './names/RussianPremierLeague.json'
+      'SA': path.join(__dirname, 'names', 'SerieA.json'),
+      'PL': path.join(__dirname, 'names', 'PremierLeague.json'),
+      'BL1': path.join(__dirname, 'names', 'Bundesliga.json'),
+      'PD': path.join(__dirname, 'names', 'LaLiga.json'),
+      'FL1': path.join(__dirname, 'names', 'Ligue1.json'),
+      'DED': path.join(__dirname, 'names', 'Eredivisie.json'),
+      'CL': path.join(__dirname, 'names', 'LeagueOfChampionsTeams.json'),
+      'EL': path.join(__dirname, 'names', 'EuropaLeague.json'),
+      'RPL': path.join(__dirname, 'names', 'RussianPremierLeague.json')
     };
     
     let teamMapping = {}; // Русское -> Английское
