@@ -16499,6 +16499,15 @@ function displayDetailedStats(details, matchData) {
   const events = details.events || [];
   const lineupPlayers = details.lineupPlayers || [];
   
+  // Логируем статус для отладки
+  console.log('🔍 Статус матча:', {
+    status: game.status,
+    statusName: game.statusName,
+    elapsed: game.elapsed,
+    homeResult: game.homeResult,
+    awayResult: game.awayResult
+  });
+  
   const isLive = game.statusName === 'Live' || game.status === 4;
   const isFinished = game.statusName === 'Finished' || game.status === 8;
   const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '📅 Предстоящий';
