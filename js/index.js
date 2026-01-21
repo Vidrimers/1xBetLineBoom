@@ -15592,7 +15592,8 @@ function updateFavoriteMatchesData(liveMatches) {
 
 // Переключить статус избранного для матча
 function toggleFavoriteMatch(matchId, event) {
-  // НЕ останавливаем всплытие - пусть открывается статистика
+  event.stopPropagation(); // Предотвращаем клик по карточке - НЕ открываем статистику
+  event.preventDefault(); // Предотвращаем действие по умолчанию
   
   let favorites = getFavoriteMatches();
   const index = favorites.indexOf(matchId);
@@ -16532,8 +16533,22 @@ function displayDetailedStats(details, matchData) {
     awayResult: game.awayResult
   });
   
-  const isLive = game.statusName === 'Live' || game.status === 4;
-  const isFinished = game.statusName === 'Finished' || game.status === 8;
+  // Более гибкая проверка статуса
+  const isLive = game.statusName === 'Live' || 
+                 game.status === 4 || 
+                 game.status === 3 || // In Play
+                 (game.elapsed && game.elapsed > 0) ||
+                 (game.statusName && game.statusName.toLowerCase().includes('live'));
+                 
+  const isFinished = game.statusName === 'Finished' || 
+                     game.status === 8 || 
+                     game.status === 7 || // Full Time
+                     (game.statusName && (game.statusName.toLowerCase().includes('finished') || game.statusName.toLowerCase().includes('ft')));
+                     
+  const hasStarted = isLive || isFinished || (game.homeResult !== null && game.homeResult !== undefined);
+  
+  console.log('📊 Определение статуса:', { isLive, isFinished, hasStarted });
+  
   const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '📅 Предстоящий';
   
   let html = `
@@ -16565,7 +16580,7 @@ function displayDetailedStats(details, matchData) {
   `;
   
   // Если матч не начался - показываем сообщение
-  if (!isLive && !isFinished) {
+  if (!hasStarted) {
     html += `
       <div class="empty-message">
         <p>📅 Матч еще не начался</p>
