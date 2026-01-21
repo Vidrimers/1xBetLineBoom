@@ -12697,6 +12697,20 @@ app.get("/api/test/score-points/:userId", (req, res) => {
 // АВТОМАТИЧЕСКИЙ ПОДСЧЕТ РЕЗУЛЬТАТОВ
 // ============================================
 
+// Маппинг иконок турниров на коды для API
+const ICON_TO_COMPETITION = {
+  'img/cups/champions-league.png': 'CL',
+  'img/cups/european-league.png': 'EL',
+  'img/cups/england-premier-league.png': 'PL',
+  'img/cups/bundesliga.png': 'BL1',
+  'img/cups/spain-la-liga.png': 'PD',
+  'img/cups/serie-a.png': 'SA',
+  'img/cups/france-league-ligue-1.png': 'FL1',
+  'img/cups/rpl.png': 'RPL',
+  'img/cups/world-cup.png': 'WC',
+  'img/cups/uefa-euro.png': 'EC'
+};
+
 // Хранилище обработанных дат (чтобы не обрабатывать повторно)
 const processedDates = new Set();
 
@@ -12727,7 +12741,7 @@ function getActiveDates() {
     const dates = db.prepare(`
       SELECT DISTINCT 
         m.event_id,
-        e.competition_code,
+        e.icon,
         m.round,
         DATE(m.match_date) as date
       FROM matches m
@@ -12739,7 +12753,11 @@ function getActiveDates() {
       ORDER BY m.match_date
     `).all();
     
-    return dates;
+    // Определяем competition_code по иконке
+    return dates.map(date => ({
+      ...date,
+      competition_code: ICON_TO_COMPETITION[date.icon] || null
+    }));
   } catch (error) {
     console.error('❌ Ошибка получения активных дат:', error);
     return [];
@@ -12752,6 +12770,12 @@ function getActiveDates() {
 async function checkDateCompletion(dateGroup) {
   try {
     const { event_id, competition_code, round, date } = dateGroup;
+    
+    // Если не удалось определить турнир по иконке - пропускаем
+    if (!competition_code) {
+      console.log(`⚠️ Не удалось определить турнир для event_id=${event_id} (иконка не в маппинге)`);
+      return { allFinished: false, matches: [] };
+    }
     
     // Получаем матчи из БД для этой даты
     const dbMatches = db.prepare(`
