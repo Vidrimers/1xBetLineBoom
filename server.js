@@ -5363,21 +5363,15 @@ app.get("/api/live-matches", async (req, res) => {
       return teamName;
     };
     
-    // Определяем год для запроса
-    // Для сезонных турниров используем текущий сезон
+    // Определяем диапазон дат для запроса (сегодня)
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // 1-12
+    const today = now.toISOString().slice(0, 10); // "2026-01-21"
+    const tomorrow = new Date(now.getTime() + 86400000).toISOString().slice(0, 10); // "2026-01-22"
     
-    console.log(`🗓️ Текущая дата: ${now.toISOString()}, год: ${currentYear}, месяц: ${currentMonth}`);
+    console.log(`🗓️ Запрос матчей за период: ${today} - ${tomorrow}`);
     
-    // Если сейчас январь-июль, то сезон начался в прошлом году
-    // Например, январь 2026 = сезон 2025/2026, используем Year=2025
-    const year = currentMonth <= 7 ? currentYear - 1 : currentYear;
-    
-    console.log(`🎯 Определен год для запроса: ${year} (логика: месяц ${currentMonth} <= 7 ? ${currentYear - 1} : ${currentYear})`);
-    
-    const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&Year=${year}`;
+    // Используем фильтр по дате вместо Year для оптимизации
+    const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&From=${today}&To=${tomorrow}`;
     
     console.log(`📊 SStats API запрос live матчей для ${event.name}: ${url}`);
     
@@ -5400,19 +5394,10 @@ app.get("/api/live-matches", async (req, res) => {
       return res.status(500).json({ error: "SStats API вернул ошибку" });
     }
     
-    // Получаем сегодняшнюю дату
-    const today = new Date().toISOString().slice(0, 10); // "2026-01-20"
+    console.log(`📊 Всего матчей получено от API: ${sstatsData.data?.length || 0}`);
     
-    console.log(`📅 Ищем матчи на дату: ${today}`);
-    console.log(`📊 Всего матчей получено: ${sstatsData.data?.length || 0}`);
-    
-    // Фильтруем матчи: только на сегодня (показываем все - и live, и предстоящие, и завершенные)
-    const todayMatches = (sstatsData.data || []).filter(game => {
-      // Проверяем что матч на сегодня
-      if (!game.date) return false;
-      const matchDate = game.date.slice(0, 10);
-      return matchDate === today;
-    });
+    // Матчи уже отфильтрованы по дате в запросе, просто преобразуем их
+    const todayMatches = sstatsData.data || [];
     
     console.log(`✅ Матчей на сегодня: ${todayMatches.length}`);
     if (todayMatches.length > 0) {
