@@ -13547,8 +13547,8 @@ function updateMatchesFromAPI(matches) {
       UPDATE matches
       SET status = 'finished',
           winner = ?,
-          score_team1 = ?,
-          score_team2 = ?
+          team1_score = ?,
+          team2_score = ?
       WHERE id = ?
     `);
     
@@ -13636,8 +13636,8 @@ async function triggerAutoCountingForDate(dateGroup) {
         m.team1_name,
         m.team2_name,
         m.winner,
-        m.score_team1 as actual_score_team1,
-        m.score_team2 as actual_score_team2
+        m.team1_score as actual_score_team1,
+        m.team2_score as actual_score_team2
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
