@@ -9252,7 +9252,16 @@ app.post("/api/matches/bulk-create", (req, res) => {
     const createdMatches = [];
 
     matches.forEach((match) => {
-      const { team1_name, team2_name, match_date, round, event_id } = match;
+      const { 
+        team1_name, 
+        team2_name, 
+        match_date, 
+        round, 
+        event_id,
+        team1_score,
+        team2_score,
+        winner
+      } = match;
 
       if (!team1_name || !team2_name || !event_id) {
         throw new Error(
@@ -9260,27 +9269,59 @@ app.post("/api/matches/bulk-create", (req, res) => {
         );
       }
 
-      const result = db
-        .prepare(
-          `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round)
-           VALUES (?, ?, ?, ?, ?)`
-        )
-        .run(
+      // Если есть результаты - создаем матч с результатами
+      if (team1_score !== undefined && team2_score !== undefined && winner) {
+        const result = db
+          .prepare(
+            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, team1_score, team2_score, winner)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          )
+          .run(
+            event_id,
+            team1_name,
+            team2_name,
+            match_date || null,
+            round || null,
+            team1_score,
+            team2_score,
+            winner
+          );
+
+        createdMatches.push({
+          id: result.lastInsertRowid,
           event_id,
           team1_name,
           team2_name,
-          match_date || null,
-          round || null
-        );
+          match_date,
+          round,
+          team1_score,
+          team2_score,
+          winner,
+        });
+      } else {
+        // Создаем матч без результатов
+        const result = db
+          .prepare(
+            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round)
+             VALUES (?, ?, ?, ?, ?)`
+          )
+          .run(
+            event_id,
+            team1_name,
+            team2_name,
+            match_date || null,
+            round || null
+          );
 
-      createdMatches.push({
-        id: result.lastInsertRowid,
-        event_id,
-        team1_name,
-        team2_name,
-        match_date,
-        round,
-      });
+        createdMatches.push({
+          id: result.lastInsertRowid,
+          event_id,
+          team1_name,
+          team2_name,
+          match_date,
+          round,
+        });
+      }
     });
 
     res.json({

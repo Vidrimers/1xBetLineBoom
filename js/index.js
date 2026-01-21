@@ -11746,6 +11746,274 @@ function closeImportMatchesModal() {
   document.getElementById("importEventId").value = "";
 }
 
+// ===== ПАРСИНГ МАТЧЕЙ =====
+
+let parsedMatches = [];
+
+// Маппинг иконок турниров на коды для API
+const ICON_TO_COMPETITION = {
+  'img/cups/champions-league.png': 'CL',
+  'img/cups/european-league.png': 'EL',
+  'img/cups/england-premier-league.png': 'PL',
+  'img/cups/bundesliga.png': 'BL1',
+  'img/cups/spain-la-liga.png': 'PD',
+  'img/cups/serie-a.png': 'SA',
+  'img/cups/france-league-ligue-1.png': 'FL1',
+  'img/cups/rpl.png': 'RPL',
+  'img/cups/world-cup.png': 'WC',
+  'img/cups/uefa-euro.png': 'EC'
+};
+
+// Открыть модальное окно парсинга матчей
+function openBulkParseModal() {
+  if (!currentEventId) {
+    alert("❌ Сначала выберите турнир");
+    return;
+  }
+  
+  // Получаем текущий турнир
+  const currentEvent = events.find(e => e.id === currentEventId);
+  if (!currentEvent) {
+    alert("❌ Не удалось определить текущий турнир");
+    return;
+  }
+  
+  // Определяем код турнира по иконке
+  const tournamentCode = ICON_TO_COMPETITION[currentEvent.icon];
+  if (!tournamentCode) {
+    alert(`❌ Парсинг не поддерживается для турнира "${currentEvent.name}". Поддерживаются только турниры с иконками: Champions League, Europa League, Premier League, Bundesliga, La Liga, Serie A, Ligue 1, RPL`);
+    return;
+  }
+  
+  document.getElementById("bulkParseModal").style.display = "flex";
+  lockBodyScroll();
+  
+  // Устанавливаем код турнира
+  document.getElementById("parseCompetition").value = tournamentCode;
+  
+  // Сбрасываем форму
+  document.getElementById("parseDateFrom").value = "";
+  document.getElementById("parseDateTo").value = "";
+  document.getElementById("parseRound").value = "";
+  document.getElementById("parsePreviewContainer").style.display = "none";
+  document.getElementById("bulkParseSubmitBtn").disabled = true;
+  parsedMatches = [];
+}
+
+// Закрыть модальное окно парсинга
+function closeBulkParseModal() {
+  document.getElementById("bulkParseModal").style.display = "none";
+  unlockBodyScroll();
+  parsedMatches = [];
+}
+
+// Обновить превью при изменении параметров
+function updateParsePreview() {
+  const competition = document.getElementById("parseCompetition").value;
+  const dateFrom = document.getElementById("parseDateFrom").value;
+  const dateTo = document.getElementById("parseDateTo").value;
+  
+  if (competition && dateFrom && dateTo) {
+    document.getElementById("parsePreviewContainer").style.display = "block";
+    // Автоматически загружаем превью
+    loadParsePreview();
+  } else {
+    document.getElementById("parsePreviewContainer").style.display = "none";
+  }
+}
+
+// Загрузить превью спарсенных матчей
+async function loadParsePreview() {
+  const competition = document.getElementById("parseCompetition").value;
+  const dateFrom = document.getElementById("parseDateFrom").value;
+  const dateTo = document.getElementById("parseDateTo").value;
+  
+  if (!competition || !dateFrom || !dateTo) {
+    await showCustomAlert("Заполните все обязательные поля", "Ошибка", "❌");
+    return;
+  }
+  
+  // Проверяем что dateFrom <= dateTo
+  if (new Date(dateFrom) > new Date(dateTo)) {
+    await showCustomAlert("Дата начала не может быть позже даты окончания", "Ошибка", "❌");
+    return;
+  }
+  
+  const previewList = document.getElementById("parsePreviewList");
+  const updateBtn = previewList.previousElementSibling.querySelector('button');
+  
+  // Блокируем кнопку обновления
+  updateBtn.disabled = true;
+  updateBtn.textContent = "⏳ Загрузка...";
+  
+  previewList.innerHTML = '<div style="text-align: center; color: #b0b8c8; padding: 20px;">⏳ Загрузка матчей...</div>';
+  
+  try {
+    const response = await fetch(
+      `/api/fd-matches?competition=${encodeURIComponent(competition)}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Ошибка при загрузке матчей");
+    }
+    
+    const data = await response.json();
+    parsedMatches = data.matches || [];
+    
+    if (parsedMatches.length === 0) {
+      previewList.innerHTML = '<div style="text-align: center; color: #ffc107; padding: 20px;">⚠️ Не найдено завершенных матчей в указанном диапазоне</div>';
+      document.getElementById("bulkParseSubmitBtn").disabled = true;
+      return;
+    }
+    
+    // Отображаем превью матчей
+    const matchesHtml = parsedMatches.map((match, index) => {
+      const date = new Date(match.utcDate);
+      const formattedDate = date.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      
+      return `
+        <div style="
+          background: rgba(58, 123, 213, 0.1);
+          border: 1px solid rgba(90, 159, 212, 0.3);
+          border-radius: 6px;
+          padding: 12px;
+          margin-bottom: 10px;
+        ">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+              <div style="font-weight: 500; color: #e0e6f0; margin-bottom: 4px;">
+                ${match.homeTeam.name} vs ${match.awayTeam.name}
+              </div>
+              <div style="font-size: 0.85em; color: #b0b8c8;">
+                📅 ${formattedDate}
+              </div>
+            </div>
+            <div style="
+              background: rgba(76, 175, 80, 0.2);
+              border: 1px solid rgba(76, 175, 80, 0.5);
+              border-radius: 4px;
+              padding: 6px 12px;
+              font-weight: 500;
+              color: #4caf50;
+            ">
+              ${match.score.fullTime.home} : ${match.score.fullTime.away}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+    
+    previewList.innerHTML = `
+      <div style="margin-bottom: 15px; padding: 10px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px;">
+        <div style="color: #4caf50; font-weight: 500;">✅ Найдено матчей: ${parsedMatches.length}</div>
+      </div>
+      ${matchesHtml}
+    `;
+    
+    document.getElementById("bulkParseSubmitBtn").disabled = false;
+    
+  } catch (error) {
+    console.error("Ошибка при загрузке превью:", error);
+    previewList.innerHTML = `<div style="text-align: center; color: #f44336; padding: 20px;">❌ Ошибка: ${error.message}</div>`;
+    document.getElementById("bulkParseSubmitBtn").disabled = true;
+  } finally {
+    // Разблокируем кнопку обновления
+    updateBtn.disabled = false;
+    updateBtn.textContent = "🔄 Обновить";
+  }
+}
+
+// Отправить форму парсинга
+async function submitBulkParse(event) {
+  event.preventDefault();
+  
+  if (parsedMatches.length === 0) {
+    await showCustomAlert("Сначала загрузите превью матчей", "Ошибка", "❌");
+    return;
+  }
+  
+  const round = document.getElementById("parseRound").value.trim();
+  
+  if (!round) {
+    const confirmed = await showCustomConfirm(
+      "Вы не указали тур. Матчи будут созданы без указания тура. Продолжить?",
+      "Подтверждение",
+      "⚠️"
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+  }
+  
+  const submitBtn = document.getElementById("bulkParseSubmitBtn");
+  const originalText = submitBtn.textContent;
+  
+  try {
+    // Блокируем кнопку и показываем индикатор загрузки
+    submitBtn.disabled = true;
+    submitBtn.textContent = "⏳ Создание матчей...";
+    
+    // Преобразуем спарсенные матчи в формат для создания
+    const matchesToCreate = parsedMatches.map(match => ({
+      team1_name: match.homeTeam.name,
+      team2_name: match.awayTeam.name,
+      match_date: match.utcDate,
+      round: round || null,
+      event_id: currentEventId,
+      // Сразу устанавливаем результат
+      team1_score: match.score.fullTime.home,
+      team2_score: match.score.fullTime.away,
+      winner: match.score.fullTime.home > match.score.fullTime.away ? 'team1' :
+              match.score.fullTime.home < match.score.fullTime.away ? 'team2' : 'draw'
+    }));
+    
+    // Отправляем на сервер
+    const response = await fetch("/api/matches/bulk-create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ matches: matchesToCreate }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Ошибка при создании матчей");
+    }
+    
+    await showCustomAlert(
+      `Успешно создано ${matchesToCreate.length} матчей с результатами`,
+      "Успех",
+      "✅"
+    );
+    
+    closeBulkParseModal();
+    
+    // Перезагружаем матчи
+    await loadMatches(currentEventId);
+    
+  } catch (error) {
+    console.error("Ошибка при создании матчей:", error);
+    await showCustomAlert(
+      `Ошибка при создании матчей: ${error.message}`,
+      "Ошибка",
+      "❌"
+    );
+  } finally {
+    // Разблокируем кнопку
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  }
+}
+
 // Обновляем плейсхолдер и инструкции при изменении разделителя
 function updateImportSeparatorPreview() {
   const separatorSelect = document.getElementById("importSeparator");

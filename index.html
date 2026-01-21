@@ -3142,8 +3142,14 @@
         <div class="modal-header">
           <h2>➕ Создать новый матч</h2>
           <button type="button" onclick="openMatchTeamFileSelector('create')" 
-                  style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;">
+                  style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;"
+                  title="Выбрать файл команд">
             📥
+          </button>
+          <button type="button" onclick="openBulkParseModal()" 
+                  style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 8px;"
+                  title="Парсинг матчей">
+            ⚽
           </button>
           <button class="modal-close" onclick="closeCreateMatchModal()">
             &times;
@@ -3539,6 +3545,131 @@
                 type="button"
                 class="form-btn-cancel"
                 onclick="closeImportMatchesModal()"
+              >
+                ❌ Отмена
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для парсинга матчей -->
+    <div id="bulkParseModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'bulkParseModal', closeBulkParseModal)">
+      <div class="modal-content" style="max-width: 800px">
+        <div class="modal-header">
+          <h2>⚽ Парсинг матчей</h2>
+          <button class="modal-close" onclick="closeBulkParseModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="bulkParseForm" onsubmit="submitBulkParse(event)">
+            <div class="form-group" style="display: none;">
+              <input type="hidden" id="parseCompetition" />
+            </div>
+
+            <div class="form-group">
+              <label for="parseDateFrom">Дата начала *</label>
+              <input
+                type="date"
+                id="parseDateFrom"
+                required
+                style="
+                  width: 100%;
+                  padding: 12px;
+                  font-size: 0.95em;
+                  border-radius: 4px;
+                  border: 2px solid #3a7bd5;
+                  background: rgba(50, 55, 70, 0.7);
+                  color: #e0e6f0;
+                "
+                onchange="updateParsePreview()"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="parseDateTo">Дата окончания *</label>
+              <input
+                type="date"
+                id="parseDateTo"
+                required
+                style="
+                  width: 100%;
+                  padding: 12px;
+                  font-size: 0.95em;
+                  border-radius: 4px;
+                  border: 2px solid #3a7bd5;
+                  background: rgba(50, 55, 70, 0.7);
+                  color: #e0e6f0;
+                "
+                onchange="updateParsePreview()"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="parseRound">Тур / Группа / Стадия</label>
+              <input
+                type="text"
+                id="parseRound"
+                placeholder="Например: Тур 1, Группа A, 1/8 финала"
+                style="
+                  width: 100%;
+                  padding: 12px;
+                  font-size: 0.95em;
+                  border-radius: 4px;
+                  border: 2px solid #3a7bd5;
+                  background: rgba(50, 55, 70, 0.7);
+                  color: #e0e6f0;
+                "
+              />
+            </div>
+
+            <!-- Превью спарсенных матчей -->
+            <div id="parsePreviewContainer" style="display: none; margin-top: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #7ab0e0;">📋 Превью матчей</h3>
+                <button 
+                  type="button" 
+                  onclick="loadParsePreview()" 
+                  style="
+                    padding: 8px 16px;
+                    background: rgba(58, 123, 213, 0.2);
+                    border: 1px solid #3a7bd5;
+                    color: #e0e6f0;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                  "
+                >
+                  🔄 Обновить
+                </button>
+              </div>
+              <div 
+                id="parsePreviewList" 
+                style="
+                  max-height: 400px;
+                  overflow-y: auto;
+                  background: rgba(40, 44, 54, 0.5);
+                  border: 1px solid rgba(90, 159, 212, 0.3);
+                  border-radius: 8px;
+                  padding: 15px;
+                "
+              >
+                <div style="text-align: center; color: #b0b8c8; padding: 20px;">
+                  Выберите параметры и нажмите "Обновить"
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 20px;">
+              <button type="submit" class="form-btn-submit" id="bulkParseSubmitBtn" disabled>
+                ✅ Создать матчи
+              </button>
+              <button
+                type="button"
+                class="form-btn-cancel"
+                onclick="closeBulkParseModal()"
               >
                 ❌ Отмена
               </button>
