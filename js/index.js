@@ -12012,7 +12012,7 @@ async function loadParsePreview() {
             font-weight: 500;
             color: #4caf50;
           ">
-            ${match.score.fullTime.home} : ${match.score.fullTime.away}
+            ${match.score.fullTime.home ?? 0} : ${match.score.fullTime.away ?? 0}
           </div>
         ` : `
           <div style="
