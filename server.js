@@ -11943,7 +11943,7 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
         SELECT u.id, u.username, u.telegram_id, u.telegram_username
         FROM users u
         WHERE u.telegram_id IS NOT NULL 
-          AND u.telegram_notifications = 1
+          AND u.telegram_notifications_enabled = 1
       `).all();
 
       console.log(`📱 Найдено ${usersWithTelegram.length} пользователей для отправки личных сообщений`);
@@ -13439,9 +13439,8 @@ function getActiveDates() {
       JOIN events e ON m.event_id = e.id
       WHERE m.match_date IS NOT NULL
         AND DATE(m.match_date) >= DATE('now', '-2 days')
-        AND DATE(m.match_date) <= DATE('now', '+3 days')
+        AND DATE(m.match_date) <= DATE('now', '+1 days')
       GROUP BY m.event_id, e.icon, m.round, DATE(m.match_date)
-      HAVING COUNT(CASE WHEN m.status = 'finished' THEN 1 END) > 0
       ORDER BY m.match_date
     `).all();
     
