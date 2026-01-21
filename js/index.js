@@ -14475,9 +14475,9 @@ function renderCompletedDayMatches(dayId) {
     if (hasScore) {
       resultDisplay = `<div style="color: #4caf50; font-size: 1.3em; font-weight: 700; margin-bottom: 5px;">${match.team1_score}:${match.team2_score}</div>`;
     } else if (match.winner === 'team1') {
-      resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px;">Победа ${match.team1_name}</div>`;
+      resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px; word-spacing: 0.2em;">Победа ${match.team1_name}</div>`;
     } else if (match.winner === 'team2') {
-      resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px;">Победа ${match.team2_name}</div>`;
+      resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px; word-spacing: 0.2em;">Победа ${match.team2_name}</div>`;
     } else if (match.winner === 'draw') {
       resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px;">Ничья</div>`;
     } else {
@@ -15146,7 +15146,7 @@ async function pollFavoriteMatches() {
   
   // Загружаем актуальные данные через API для обновления localStorage
   try {
-    const response = await fetch(`${API_BASE_URL}/api/live-matches-by-ids`, {
+    const response = await fetch(`/api/live-matches-by-ids`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

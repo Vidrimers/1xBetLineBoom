@@ -5481,6 +5481,17 @@ app.get("/api/yesterday-matches", async (req, res) => {
     
     console.log(`✅ Найдено полностью завершенных дней: ${completedDays.length}`);
     
+    // Логируем первые несколько матчей для отладки
+    if (completedDays.length > 0 && completedDays[0].matches.length > 0) {
+      console.log('📋 Пример матча из completedDays:', {
+        team1_name: completedDays[0].matches[0].team1_name,
+        team2_name: completedDays[0].matches[0].team2_name,
+        team1_score: completedDays[0].matches[0].team1_score,
+        team2_score: completedDays[0].matches[0].team2_score,
+        winner: completedDays[0].matches[0].winner
+      });
+    }
+    
     res.json({ 
       event: event, 
       completedDays: completedDays 
