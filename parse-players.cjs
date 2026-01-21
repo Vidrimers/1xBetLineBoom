@@ -170,12 +170,15 @@ async function main() {
   // Сохраняем в файл
   const fileName = LEAGUE_FILES[leagueId] || 'Players';
   
-  // Создаем директорию если не существует
+  // Создаем директории если не существуют
   if (!fs.existsSync('temp')) {
     fs.mkdirSync('temp');
   }
+  if (!fs.existsSync('temp/parsed')) {
+    fs.mkdirSync('temp/parsed');
+  }
   
-  const filePath = `temp/${fileName}_parsed.json`;
+  const filePath = `temp/parsed/${fileName}_parsed.json`;
   
   fs.writeFileSync(filePath, JSON.stringify(playersObj, null, 2), 'utf-8');
   
