@@ -9263,7 +9263,8 @@ app.post("/api/matches/bulk-create", (req, res) => {
         event_id,
         team1_score,
         team2_score,
-        winner
+        winner,
+        score_prediction_enabled
       } = match;
 
       if (!team1_name || !team2_name || !event_id) {
@@ -9276,8 +9277,8 @@ app.post("/api/matches/bulk-create", (req, res) => {
       if (team1_score !== undefined && team2_score !== undefined && winner) {
         const result = db
           .prepare(
-            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, team1_score, team2_score, winner)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, team1_score, team2_score, winner, score_prediction_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
           )
           .run(
             event_id,
@@ -9287,7 +9288,8 @@ app.post("/api/matches/bulk-create", (req, res) => {
             round || null,
             team1_score,
             team2_score,
-            winner
+            winner,
+            score_prediction_enabled || 0
           );
 
         createdMatches.push({
@@ -9300,20 +9302,22 @@ app.post("/api/matches/bulk-create", (req, res) => {
           team1_score,
           team2_score,
           winner,
+          score_prediction_enabled: score_prediction_enabled || 0
         });
       } else {
         // Создаем матч без результатов
         const result = db
           .prepare(
-            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round)
-             VALUES (?, ?, ?, ?, ?)`
+            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, score_prediction_enabled)
+             VALUES (?, ?, ?, ?, ?, ?)`
           )
           .run(
             event_id,
             team1_name,
             team2_name,
             match_date || null,
-            round || null
+            round || null,
+            score_prediction_enabled || 0
           );
 
         createdMatches.push({
@@ -9323,6 +9327,7 @@ app.post("/api/matches/bulk-create", (req, res) => {
           team2_name,
           match_date,
           round,
+          score_prediction_enabled: score_prediction_enabled || 0
         });
       }
     });

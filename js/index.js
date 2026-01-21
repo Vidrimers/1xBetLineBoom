@@ -12042,6 +12042,7 @@ async function submitBulkParse(event) {
   }
   
   const round = document.getElementById("parseRound").value.trim();
+  const scorePredictionEnabled = document.getElementById("parseScorePrediction").checked;
   
   if (!round) {
     const confirmed = await showCustomConfirm(
@@ -12072,7 +12073,8 @@ async function submitBulkParse(event) {
         team2_name: match.awayTeam.name,
         match_date: match.utcDate,
         round: round || null,
-        event_id: currentEventId
+        event_id: currentEventId,
+        score_prediction_enabled: scorePredictionEnabled ? 1 : 0
       };
       
       // Если матч завершен - добавляем результаты
@@ -12108,6 +12110,10 @@ async function submitBulkParse(event) {
       message += `\n\n🏁 С результатами: ${finishedCount}\n📅 Без результатов: ${futureCount}`;
     } else if (finishedCount > 0) {
       message += ` с результатами`;
+    }
+    
+    if (scorePredictionEnabled) {
+      message += `\n\n📊 Прогноз на счет включен`;
     }
     
     await showCustomAlert(message, "Успех", "✅");
