@@ -1153,6 +1153,227 @@
               >
                 🧪 Тесты
               </button>
+              
+              <!-- Утилиты для управления -->
+              <button
+                onclick="runUtilityScript('check-processed-dates')"
+                style="
+                  background: rgba(33, 150, 243, 0.7);
+                  color: #e3f2fd;
+                  border: 1px solid #2196f3;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Показать список обработанных дат автоподсчета"
+              >
+                📋 Обработанные даты
+              </button>
+              
+              <button
+                onclick="runUtilityScript('clear-processed-dates')"
+                style="
+                  background: rgba(244, 67, 54, 0.7);
+                  color: #ffcdd2;
+                  border: 1px solid #f44336;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Очистить обработанные даты для повторного автоподсчета"
+              >
+                🗑️ Очистить даты
+              </button>
+              
+              <button
+                onclick="runUtilityScript('check-match-dates')"
+                style="
+                  background: rgba(103, 58, 183, 0.7);
+                  color: #e1bee7;
+                  border: 1px solid #673ab7;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Проверить даты матчей и активные даты для автоподсчета"
+              >
+                📅 Даты матчей
+              </button>
+              
+              <button
+                onclick="runUtilityScript('check-event-id')"
+                style="
+                  background: rgba(0, 150, 136, 0.7);
+                  color: #b2dfdb;
+                  border: 1px solid #009688;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Показать список всех турниров с их ID"
+              >
+                🏆 ID турниров
+              </button>
+              
+              <button
+                onclick="runUtilityScript('check-tables')"
+                style="
+                  background: rgba(121, 85, 72, 0.7);
+                  color: #d7ccc8;
+                  border: 1px solid #795548;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Проверить структуру таблиц базы данных"
+              >
+                🗄️ Структура БД
+              </button>
+              
+              <button
+                onclick="runUtilityScript('check-user-settings')"
+                style="
+                  background: rgba(63, 81, 181, 0.7);
+                  color: #c5cae9;
+                  border: 1px solid #3f51b5;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Проверить настройки уведомлений пользователей"
+              >
+                👥 Настройки юзеров
+              </button>
+              
+              <button
+                onclick="runUtilityScript('deactivate-old-events')"
+                style="
+                  background: rgba(255, 152, 0, 0.7);
+                  color: #ffe0b2;
+                  border: 1px solid #ff9800;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Деактивировать старые турниры (изменить статус на completed)"
+              >
+                🔒 Деактивировать старые
+              </button>
+              
+              <button
+                onclick="openEnableNotificationsModal()"
+                style="
+                  background: rgba(76, 175, 80, 0.7);
+                  color: #c8e6c9;
+                  border: 1px solid #4caf50;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Включить уведомления для конкретного пользователя"
+              >
+                🔔 Включить уведомления
+              </button>
+              
+              <button
+                onclick="runUtilityScript('enable-notifications-for-all')"
+                style="
+                  background: rgba(139, 195, 74, 0.7);
+                  color: #dcedc8;
+                  border: 1px solid #8bc34a;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 200px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Включить уведомления для всех пользователей с Telegram"
+              >
+                🔔 Уведомления для всех
+              </button>
+              
+              <button
+                onclick="openUpdateSstatsModal()"
+                style="
+                  background: rgba(233, 30, 99, 0.7);
+                  color: #f8bbd0;
+                  border: 1px solid #e91e63;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Обновить sstats_match_id для матчей турнира"
+              >
+                🔄 Обновить SStats ID
+              </button>
             </div>
           </div>
 

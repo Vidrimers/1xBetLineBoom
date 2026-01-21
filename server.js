@@ -13948,6 +13948,58 @@ app.post("/api/admin/clear-processed-dates", (req, res) => {
   }
 });
 
+// Эндпоинт для запуска утилитных скриптов
+app.post("/api/admin/run-utility", (req, res) => {
+  const { username, script, args = [] } = req.body;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+  
+  if (username !== ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+  
+  const scriptMap = {
+    'check-processed-dates': { file: 'check-processed-dates.cjs', title: 'Обработанные даты' },
+    'clear-processed-dates': { file: 'clear-processed-dates.cjs', title: 'Очистка дат' },
+    'check-match-dates': { file: 'check-match-dates.cjs', title: 'Даты матчей' },
+    'check-event-id': { file: 'check-event-id.cjs', title: 'ID турниров' },
+    'check-tables': { file: 'check-tables.js', title: 'Структура БД' },
+    'check-user-settings': { file: 'check-user-settings.cjs', title: 'Настройки пользователей' },
+    'deactivate-old-events': { file: 'deactivate-old-events.cjs', title: 'Деактивация турниров' },
+    'enable-notifications': { file: 'enable-notifications.cjs', title: 'Включение уведомлений' },
+    'enable-notifications-for-all': { file: 'enable-notifications-for-all.cjs', title: 'Уведомления для всех' },
+    'update-sstats-ids': { file: 'update-sstats-ids.cjs', title: 'Обновление SStats ID' }
+  };
+  
+  const scriptInfo = scriptMap[script];
+  if (!scriptInfo) {
+    return res.status(400).json({ error: 'Неизвестный скрипт' });
+  }
+  
+  try {
+    const command = `node ${scriptInfo.file} ${args.join(' ')}`;
+    console.log(`🔧 Запуск утилиты: ${command}`);
+    
+    const result = execSync(command, { 
+      encoding: 'utf8',
+      timeout: 30000,
+      maxBuffer: 1024 * 1024 * 10 // 10MB
+    });
+    
+    res.json({ 
+      success: true,
+      title: scriptInfo.title,
+      output: result
+    });
+  } catch (error) {
+    console.error(`❌ Ошибка запуска ${scriptInfo.file}:`, error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      output: error.stdout || error.stderr || ''
+    });
+  }
+});
+
 // Запускаем проверку каждые 5 минут
 const AUTO_COUNT_INTERVAL = 5 * 60 * 1000; // 5 минут
 setInterval(checkAndAutoCount, AUTO_COUNT_INTERVAL);

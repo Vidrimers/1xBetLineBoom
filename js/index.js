@@ -17167,3 +17167,257 @@ function cleanupOldFavorites() {
     console.log(`✅ Все избранные матчи актуальны`);
   }
 }
+
+
+// ===== УТИЛИТЫ АДМИН-ПАНЕЛИ =====
+
+// Запустить утилитный скрипт
+async function runUtilityScript(scriptName) {
+  try {
+    const response = await fetch(`/api/admin/run-utility`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        script: scriptName,
+        username: currentUser?.username
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      await showCustomAlert(`${data.output}`, data.title, "✅");
+    } else {
+      await showCustomAlert(`${data.error}`, "Ошибка", "❌");
+    }
+  } catch (error) {
+    console.error('Ошибка запуска утилиты:', error);
+    await showCustomAlert(`${error.message}`, "Ошибка запуска утилиты", "❌");
+  }
+}
+
+// Открыть модальное окно для включения уведомлений
+function openEnableNotificationsModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔔 Включить уведомления</h3>
+      <input 
+        type="number" 
+        id="userIdInput" 
+        placeholder="ID пользователя" 
+        style="
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #3a7bd5;
+          border-radius: 8px;
+          background: #2a3a4a;
+          color: #e0e6f0;
+          font-size: 16px;
+          margin-bottom: 20px;
+        "
+      />
+      <div style="display: flex; gap: 10px;">
+        <button onclick="enableNotificationsForUser()" style="
+          flex: 1;
+          background: #4caf50;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Включить</button>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="
+          flex: 1;
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Отмена</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  document.getElementById('userIdInput').focus();
+}
+
+// Включить уведомления для пользователя
+async function enableNotificationsForUser() {
+  const userId = document.getElementById('userIdInput').value;
+  
+  if (!userId) {
+    await showCustomAlert('Введите ID пользователя', 'Ошибка', '❌');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/run-utility`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        script: 'enable-notifications',
+        username: currentUser?.username,
+        args: [userId]
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      await showCustomAlert(`${data.output}`, data.title, '✅');
+      document.querySelector('div[style*=fixed]').remove();
+    } else {
+      await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+  }
+}
+
+// Открыть модальное окно для обновления SStats ID
+function openUpdateSstatsModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔄 Обновить SStats ID</h3>
+      <input 
+        type="number" 
+        id="eventIdInput" 
+        placeholder="ID турнира" 
+        style="
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #3a7bd5;
+          border-radius: 8px;
+          background: #2a3a4a;
+          color: #e0e6f0;
+          font-size: 16px;
+          margin-bottom: 20px;
+        "
+      />
+      <div style="display: flex; gap: 10px;">
+        <button onclick="updateSstatsIds()" style="
+          flex: 1;
+          background: #e91e63;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Обновить</button>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="
+          flex: 1;
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Отмена</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  document.getElementById('eventIdInput').focus();
+}
+
+// Обновить SStats ID для турнира
+async function updateSstatsIds() {
+  const eventId = document.getElementById('eventIdInput').value;
+  
+  if (!eventId) {
+    await showCustomAlert('Введите ID турнира', 'Ошибка', '❌');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/run-utility`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        script: 'update-sstats-ids',
+        username: currentUser?.username,
+        args: [eventId]
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      await showCustomAlert(`${data.output}`, data.title, '✅');
+      document.querySelector('div[style*=fixed]').remove();
+    } else {
+      await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+  }
+}
