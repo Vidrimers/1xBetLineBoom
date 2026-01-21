@@ -15840,8 +15840,8 @@ async function openTestsModal() {
           select.appendChild(option);
         });
         
-        // Если есть выбранный турнир, выбираем его
-        if (selectedEventId) {
+        // Если есть выбранный турнир, выбираем его (проверяем что переменная определена)
+        if (typeof selectedEventId !== 'undefined' && selectedEventId) {
           select.value = selectedEventId;
         }
       }
@@ -15887,10 +15887,12 @@ async function testAutoCounting() {
   
   const testRealGroup = document.getElementById('testRealGroupCheckbox')?.checked || false;
   
-  const confirmed = confirm(
+  const confirmed = await showCustomConfirm(
     `Запустить тест автоподсчета для выбранного турнира?\n\n` +
     `Режим: ${testRealGroup ? '📢 Отправка в реальную группу' : '👤 Только админу'}\n\n` +
-    `Это симулирует завершение всех матчей и запустит автоподсчет.`
+    `Это симулирует завершение всех матчей и запустит автоподсчет.`,
+    'Подтверждение',
+    '🧪'
   );
   
   if (!confirmed) return;
@@ -15917,8 +15919,8 @@ async function testAutoCounting() {
       // Закрываем модалку
       closeTestsModal();
       
-      // Если это текущий турнир, перезагружаем матчи
-      if (selectedEventId === eventId) {
+      // Если это текущий турнир, перезагружаем матчи (проверяем что переменная определена)
+      if (typeof selectedEventId !== 'undefined' && selectedEventId === eventId) {
         setTimeout(() => {
           loadMatches(eventId);
         }, 2000);

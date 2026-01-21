@@ -10853,7 +10853,7 @@ ${testMode ? '\n\n🧪 <b>ТЕСТОВЫЙ РЕЖИМ:</b> Отправлено 
   }
 });
 
-// POST /api/admin/test-auto-counting - Тест автоподсчета (имитация завершения матчей)
+// POST /api/admin/test-auto-counting - Тест автоподсчета (СИМУЛЯЦИЯ без изменения БД)
 app.post("/api/admin/test-auto-counting", async (req, res) => {
   const { username: adminUsername, eventId, testMode } = req.body;
 
@@ -10864,7 +10864,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
 
   try {
     console.log(`\n🧪 ========================================`);
-    console.log(`🧪 ТЕСТ АВТОПОДСЧЕТА (ИМИТАЦИЯ)`);
+    console.log(`🧪 ТЕСТ АВТОПОДСЧЕТА (СИМУЛЯЦИЯ)`);
     console.log(`🧪 Event ID: ${eventId}`);
     console.log(`🧪 Режим: ${testMode ? 'Только админу' : 'В реальную группу'}`);
     console.log(`🧪 ========================================\n`);
@@ -10891,7 +10891,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
     }
 
     console.log(`📊 Найдено незавершенных матчей: ${dbMatches.length}`);
-    console.log(`🎭 ИМИТИРУЕМ завершение ВСЕХ матчей\n`);
+    console.log(`🎭 СИМУЛИРУЕМ завершение (БЕЗ изменения БД)\n`);
 
     // Группируем матчи по датам и турам
     const matchesByDateRound = {};
@@ -10908,20 +10908,11 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
       matchesByDateRound[key].matches.push(match);
     });
 
-    console.log(`📅 Дат/туров с незавершенными матчами: ${Object.keys(matchesByDateRound).length}\n`);
+    console.log(`📅 Дат/туров: ${Object.keys(matchesByDateRound).length}\n`);
 
-    // ИМИТИРУЕМ завершение всех матчей
-    let updatedCount = 0;
-    const updateStmt = db.prepare(`
-      UPDATE matches
-      SET status = 'finished',
-          winner = ?,
-          score_team1 = ?,
-          score_team2 = ?
-      WHERE id = ?
-    `);
-
-    // Генерируем случайные результаты для всех матчей
+    // Генерируем СИМУЛИРОВАННЫЕ результаты (в памяти, не в БД)
+    const simulatedResults = {};
+    
     for (const dbMatch of dbMatches) {
       // Генерируем случайный счет (0-4 голов для каждой команды)
       const score1 = Math.floor(Math.random() * 5);
@@ -10937,38 +10928,41 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
         winner = 'draw';
       }
       
-      updateStmt.run(winner, score1, score2, dbMatch.id);
-      updatedCount++;
+      simulatedResults[dbMatch.id] = {
+        winner,
+        score_team1: score1,
+        score_team2: score2
+      };
       
-      console.log(`🎭 Имитация: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})`);
+      console.log(`🎭 Симуляция: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})`);
     }
 
-    console.log(`\n✅ Имитировано завершение матчей: ${updatedCount}\n`);
+    console.log(`\n✅ Симулировано ${Object.keys(simulatedResults).length} результатов\n`);
 
-    // Теперь запускаем подсчет для каждой даты/тура
+    // Теперь подсчитываем результаты для каждой даты/тура
     for (const [key, group] of Object.entries(matchesByDateRound)) {
       const { date, round } = group;
       
       console.log(`\n📊 Подсчет для ${date} | ${round}\n`);
 
-      // Получаем ставки за эту дату
+      // Получаем ставки за эту дату/тур
       const bets = db.prepare(`
         SELECT 
           b.*,
           u.username,
           u.telegram_id,
-          u.telegram_notifications,
+          u.telegram_notifications_enabled,
           m.team1_name,
           m.team2_name,
-          m.winner,
-          m.score_team1 as actual_score_team1,
-          m.score_team2 as actual_score_team2
+          sp.score_team1 as predicted_score_team1,
+          sp.score_team2 as predicted_score_team2
         FROM bets b
         JOIN users u ON b.user_id = u.id
         JOIN matches m ON b.match_id = m.id
+        LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
         WHERE DATE(m.match_date) = ?
           AND m.round = ?
-          AND m.status = 'finished'
+          AND m.status != 'finished'
           AND b.is_final_bet = 0
       `).all(date, round);
 
@@ -10977,7 +10971,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
         continue;
       }
 
-      // Подсчитываем результаты
+      // Подсчитываем результаты используя СИМУЛИРОВАННЫЕ данные
       const userStats = {};
       
       bets.forEach(bet => {
@@ -10986,24 +10980,28 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
           userStats[username] = {
             userId: bet.user_id,
             telegramId: bet.telegram_id,
-            telegramNotifications: bet.telegram_notifications,
+            telegramNotificationsEnabled: bet.telegram_notifications_enabled,
             points: 0,
             correctResults: 0,
             correctScores: 0
           };
         }
         
+        // Берем СИМУЛИРОВАННЫЙ результат
+        const simResult = simulatedResults[bet.match_id];
+        if (!simResult) return;
+        
         // Проверяем результат
         let isWon = false;
-        if (bet.prediction === 'draw' && bet.winner === 'draw') {
+        if (bet.prediction === 'draw' && simResult.winner === 'draw') {
           isWon = true;
-        } else if (bet.prediction === 'team1' && bet.winner === 'team1') {
+        } else if (bet.prediction === 'team1' && simResult.winner === 'team1') {
           isWon = true;
-        } else if (bet.prediction === 'team2' && bet.winner === 'team2') {
+        } else if (bet.prediction === 'team2' && simResult.winner === 'team2') {
           isWon = true;
-        } else if (bet.prediction === bet.team1_name && bet.winner === 'team1') {
+        } else if (bet.prediction === bet.team1_name && simResult.winner === 'team1') {
           isWon = true;
-        } else if (bet.prediction === bet.team2_name && bet.winner === 'team2') {
+        } else if (bet.prediction === bet.team2_name && simResult.winner === 'team2') {
           isWon = true;
         }
         
@@ -11012,9 +11010,9 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
           userStats[username].correctResults++;
           
           // Проверяем счет
-          if (bet.score_team1 != null && bet.score_team2 != null &&
-              bet.score_team1 === bet.actual_score_team1 &&
-              bet.score_team2 === bet.actual_score_team2) {
+          if (bet.predicted_score_team1 != null && bet.predicted_score_team2 != null &&
+              bet.predicted_score_team1 === simResult.score_team1 &&
+              bet.predicted_score_team2 === simResult.score_team2) {
             userStats[username].points++;
             userStats[username].correctScores++;
           }
@@ -11030,7 +11028,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
         return `${day}.${month}.${year}`;
       };
 
-      let message = `🧪 <b>ТЕСТ АВТОПОДСЧЕТА</b>\n\n`;
+      let message = `🧪 <b>ТЕСТ АВТОПОДСЧЕТА (СИМУЛЯЦИЯ)</b>\n\n`;
       message += `📅 Дата: ${formatDate(date)}\n`;
       message += `🏆 Тур: ${round}\n`;
       message += `🎯 Турнир: ${event.name}\n\n`;
@@ -11038,17 +11036,21 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
 
       const sortedUsers = Object.entries(userStats).sort(([, a], [, b]) => b.points - a.points);
       
-      sortedUsers.forEach(([username, stats]) => {
-        const statsText = [];
-        if (stats.correctResults > 0) {
-          statsText.push(`✅ ${stats.correctResults}`);
-        }
-        if (stats.correctScores > 0) {
-          statsText.push(`🎯 ${stats.correctScores}`);
-        }
-        const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
-        message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
-      });
+      if (sortedUsers.length === 0) {
+        message += `Нет результатов\n`;
+      } else {
+        sortedUsers.forEach(([username, stats]) => {
+          const statsText = [];
+          if (stats.correctResults > 0) {
+            statsText.push(`✅ ${stats.correctResults}`);
+          }
+          if (stats.correctScores > 0) {
+            statsText.push(`🎯 ${stats.correctScores}`);
+          }
+          const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
+          message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
+        });
+      }
 
       if (testMode) {
         message += `\n\n🧪 <b>ТЕСТОВЫЙ РЕЖИМ:</b> Отправлено только админу`;
@@ -11070,39 +11072,41 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
             console.log(`📤 Отправка результатов в группу и пользователям...`);
             
             // Отправляем в группу
-            await sendGroupNotification(message.replace('🧪 <b>ТЕСТ АВТОПОДСЧЕТА</b>', '🤖 <b>Автоподсчет завершен</b>'));
+            await sendGroupNotification(message.replace('🧪 <b>ТЕСТ АВТОПОДСЧЕТА (СИМУЛЯЦИЯ)</b>', '🤖 <b>Результаты подсчета</b>'));
             
             // Отправляем персональные сообщения
-            const bestUser = sortedUsers[0];
-            const worstUser = sortedUsers[sortedUsers.length - 1];
-            
-            for (const [username, stats] of sortedUsers) {
-              if (!stats.telegramId || stats.telegramNotifications !== 1) continue;
+            if (sortedUsers.length > 0) {
+              const bestUser = sortedUsers[0];
+              const worstUser = sortedUsers[sortedUsers.length - 1];
               
-              let personalMessage = '';
-              
-              if (username === bestUser[0] && sortedUsers.length > 1) {
-                personalMessage = `🏆 <b>Сегодня ты лучший!</b>\n\n`;
-                personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
-                if (stats.correctScores > 0) {
-                  personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+              for (const [username, stats] of sortedUsers) {
+                if (!stats.telegramId || stats.telegramNotificationsEnabled !== 1) continue;
+                
+                let personalMessage = '';
+                
+                if (username === bestUser[0] && sortedUsers.length > 1) {
+                  personalMessage = `🏆 <b>Сегодня ты лучший!</b>\n\n`;
+                  personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
+                  if (stats.correctScores > 0) {
+                    personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+                  }
+                  personalMessage += `!\n\nТак держать! 💪`;
+                } else if (username === worstUser[0] && sortedUsers.length > 1 && stats.points === 0) {
+                  personalMessage = `😢 <b>Сегодня ты лох...</b>\n\n`;
+                  personalMessage += `Ты набрал 0 очков.\n\nНе расстраивайся, в следующий раз обязательно получится! 🍀`;
+                } else {
+                  personalMessage = `📊 <b>Сегодня ты не лучший...</b>\n\n`;
+                  personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
+                  if (stats.correctScores > 0) {
+                    personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+                  }
+                  personalMessage += `.\n\nПродолжай стараться! 💪`;
                 }
-                personalMessage += `!\n\nТак держать! 💪`;
-              } else if (username === worstUser[0] && sortedUsers.length > 1 && stats.points === 0) {
-                personalMessage = `😢 <b>Сегодня ты лох...</b>\n\n`;
-                personalMessage += `Ты набрал 0 очков.\n\nНе расстраивайся, в следующий раз обязательно получится! 🍀`;
-              } else {
-                personalMessage = `📊 <b>Сегодня ты не лучший...</b>\n\n`;
-                personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
-                if (stats.correctScores > 0) {
-                  personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
-                }
-                personalMessage += `.\n\nПродолжай стараться! 💪`;
+                
+                personalMessage += `\n\n📅 Дата: ${formatDate(date)}\n🏆 Тур: ${round}`;
+                
+                await sendTelegramMessage(stats.telegramId, personalMessage);
               }
-              
-              personalMessage += `\n\n📅 Дата: ${formatDate(date)}\n🏆 Тур: ${round}`;
-              
-              await sendTelegramMessage(stats.telegramId, personalMessage);
             }
             
             console.log(`✅ Результаты отправлены в группу и пользователям`);
@@ -11114,13 +11118,13 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
     }
 
     console.log(`\n🧪 ========================================`);
-    console.log(`🧪 ТЕСТ ЗАВЕРШЕН`);
+    console.log(`🧪 ТЕСТ ЗАВЕРШЕН (БД НЕ ИЗМЕНЕНА)`);
     console.log(`🧪 ========================================\n`);
 
     res.json({ 
       success: true, 
-      message: `Тест автоподсчета завершен. Имитировано завершение ${updatedCount} матчей.`,
-      updatedMatches: updatedCount
+      message: `Тест автоподсчета завершен (симуляция). БД не изменена.`,
+      simulatedMatches: Object.keys(simulatedResults).length
     });
 
   } catch (error) {
