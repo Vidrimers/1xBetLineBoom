@@ -3817,16 +3817,16 @@ function displayMyBets(bets) {
       betsByDateRound[key].bets.push(betData);
     });
     
-    // Сортируем группы: pending первыми, потом по дате, если даты нет - по турам (большие номера первыми)
+    // Сортируем группы: в первую очередь по дате (от новых к старым), потом по турам
     const sortedGroups = Object.values(betsByDateRound).sort((a, b) => {
-      // Сначала группы с pending ставками
-      if (a.hasPending && !b.hasPending) return -1;
-      if (!a.hasPending && b.hasPending) return 1;
-      
-      // Если обе pending или обе finished, сортируем по дате
+      // В первую очередь сортируем по дате (от новых к старым)
       if (a.dateObj && b.dateObj) {
-        return a.dateObj - b.dateObj;
+        return b.dateObj - a.dateObj; // Обратная сортировка: новые даты первыми
       }
+      
+      // Группы с датой раньше групп без даты
+      if (a.dateObj && !b.dateObj) return -1;
+      if (!a.dateObj && b.dateObj) return 1;
       
       // Если у обеих нет даты, сортируем по турам (большие номера первыми)
       if (!a.dateObj && !b.dateObj) {
@@ -3843,15 +3843,36 @@ function displayMyBets(bets) {
         return tourB - tourA;
       }
       
-      // Группы с датой раньше групп без даты
-      if (a.dateObj && !b.dateObj) return -1;
-      if (!a.dateObj && b.dateObj) return 1;
-      
       return 0;
     });
     
-    // Выводим ставки с разделителями
+    // Разделяем ставки на pending и finished блоки
+    const pendingGroups = [];
+    const finishedGroups = [];
+    
     sortedGroups.forEach(group => {
+      const pendingBets = group.bets.filter(bet => bet.statusClass === 'pending');
+      const finishedBets = group.bets.filter(bet => bet.statusClass !== 'pending');
+      
+      if (pendingBets.length > 0) {
+        pendingGroups.push({
+          date: group.date,
+          round: group.round,
+          bets: pendingBets
+        });
+      }
+      
+      if (finishedBets.length > 0) {
+        finishedGroups.push({
+          date: group.date,
+          round: group.round,
+          bets: finishedBets
+        });
+      }
+    });
+    
+    // Выводим сначала все pending группы, потом все finished группы
+    [...pendingGroups, ...finishedGroups].forEach(group => {
       // Разделитель даты и тура
       html += `
         <div style="
