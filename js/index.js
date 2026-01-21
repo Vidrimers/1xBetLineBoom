@@ -15021,6 +15021,13 @@ async function showLiveEventMatches(eventId) {
       html += '</div>';
     }
     
+    // Контейнер для завершенных матчей (не обновляется автоматически)
+    html += `
+      <div id="completedDaysContainer" style="margin-top: 30px; border-top: 2px solid rgba(255, 255, 255, 0.1); padding-top: 20px;">
+        <!-- Завершенные матчи загружаются отдельно -->
+      </div>
+    `;
+    
     // Кнопка назад внизу
     html += `
       <div style="margin-top: 30px; text-align: center;">
@@ -15031,6 +15038,9 @@ async function showLiveEventMatches(eventId) {
     `;
     
     container.innerHTML = html;
+    
+    // Загружаем завершенные матчи отдельно
+    loadCompletedDays(eventId);
     
     // Обновляем звездочки после отрисовки
     updateFavoriteStars();
@@ -15096,6 +15106,11 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
   const container = document.getElementById('completedDaysContainer');
   if (!container) return;
   
+  if (completedDays.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  
   // Используем переданное состояние или пытаемся определить текущее
   let openSections = savedOpenSections;
   if (!openSections) {
@@ -15115,6 +15130,7 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
     const dayDate = new Date(day.date + 'T00:00:00');
     const dateStr = dayDate.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
     const dayId = `day-${day.date}`;
+    const matchCount = day.matches?.length || 0;
     
     // Проверяем была ли секция открыта
     const wasOpen = openSections.has(dayId);
@@ -15122,18 +15138,20 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
     const iconText = wasOpen ? '▲' : '▼';
     
     html += `
-      <div id="${dayId}Section" style="margin-top: 20px;">
-        <p onclick="toggleCompletedDay('${dayId}', ${eventId})" id="${dayId}Btn" style="
+      <div style="margin-bottom: 20px;">
+        <p onclick="toggleCompletedDay('${dayId}', ${eventId})" style="
           color: #b0b8c8;
           font-size: 0.9em;
-          margin-bottom: 0;
+          margin-bottom: 15px;
           cursor: pointer;
           transition: color 0.3s ease;
           user-select: none;
         " onmouseover="this.style.color='#e0e6f0'" onmouseout="this.style.color='#b0b8c8'">
-          <span id="${dayId}Icon">${iconText}</span> 📅 Завершенные матчи: ${dateStr}
+          <span id="${dayId}Icon" style="display: inline-block; transition: transform 0.3s; ${wasOpen ? 'transform: rotate(180deg);' : ''}">${iconText}</span> 
+          📅 Завершенные матчи: ${dateStr} 
+          <span style="color: #7ab0e0; font-size: 0.85em;">(${matchCount})</span>
         </p>
-        <div id="${dayId}Container" style="display: ${displayStyle}; margin-top: 15px;" data-date="${day.date}"></div>
+        <div id="${dayId}Container" style="display: ${displayStyle};" data-date="${day.date}"></div>
       </div>
     `;
   }
@@ -15208,8 +15226,19 @@ function renderCompletedDayMatches(dayId) {
       resultDisplay = `<div style="color: #888; font-size: 0.9em; margin-bottom: 5px;">vs</div>`;
     }
     
+    // Преобразуем данные матча в формат для showLiveTeamStats
+    const matchData = {
+      id: match.id,
+      team1: match.team1_name,
+      team2: match.team2_name,
+      score: hasScore ? `${match.team1_score}:${match.team2_score}` : null,
+      status: 'finished',
+      match_time: match.match_date,
+      elapsed: 90
+    };
+    
     html += `
-      <div class="live-match-card" style="
+      <div class="live-match-card" onclick='showLiveTeamStats(${JSON.stringify(matchData).replace(/'/g, "\\'")})'  style="
         background: rgba(255, 255, 255, 0.05);
         border: 2px solid #4caf50;
         border-radius: 8px;
@@ -15221,6 +15250,7 @@ function renderCompletedDayMatches(dayId) {
         justify-content: space-between;
         min-height: 180px;
         opacity: 0.8;
+        cursor: pointer;
       " onmouseover="this.style.transform='translateY(-5px)'; this.style.opacity='1';" onmouseout="this.style.transform='translateY(0)'; this.style.opacity='0.8';">
         
         <div style="text-align: center; margin-bottom: 10px;">
@@ -15260,6 +15290,7 @@ async function toggleCompletedDay(dayId, eventId) {
     // Показываем
     container.style.display = 'block';
     icon.textContent = '▲';
+    icon.style.transform = 'rotate(180deg)';
     
     // Загружаем матчи если еще не загружены
     if (!completedDaysLoaded[dayId]) {
@@ -15270,6 +15301,7 @@ async function toggleCompletedDay(dayId, eventId) {
     // Скрываем
     container.style.display = 'none';
     icon.textContent = '▼';
+    icon.style.transform = 'rotate(0deg)';
   }
 }
 
