@@ -11890,7 +11890,9 @@ async function loadParsePreview() {
       'SA': '/names/SerieA.json',
       'FL1': '/names/Ligue1.json',
       'DED': '/names/Eredivisie.json',
-      'RPL': '/names/RussianPremierLeague.json'
+      'RPL': '/names/RussianPremierLeague.json',
+      'WC': '/names/Countries.json',
+      'EC': '/names/Countries.json'
     };
     
     let teamTranslations = {};
