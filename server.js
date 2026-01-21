@@ -5079,11 +5079,19 @@ app.get("/api/fd-matches", async (req, res) => {
 
     // Преобразуем в формат SStats для совместимости с фронтом
     const matches = filteredGames.map(game => {
+      // Обрабатываем название тура
+      let roundName = game.roundName || game.round || game.stage || null;
+      
+      // Убираем "Regular Season -" и оставляем только "Тур X"
+      if (roundName && roundName.includes('Regular Season -')) {
+        roundName = 'Тур ' + roundName.replace('Regular Season -', '').trim();
+      }
+      
       return {
         id: game.id,
         utcDate: game.date,
         status: game.status === 8 ? 'FINISHED' : 'SCHEDULED',
-        round: game.roundName || game.round || game.stage || null,  // roundName - основное поле для тура
+        round: roundName,
         homeTeam: {
           id: game.homeTeam.id,
           name: game.homeTeam.name,

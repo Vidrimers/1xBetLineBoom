@@ -12083,28 +12083,27 @@ async function loadParsePreview() {
 // Переключить выбор тура
 function toggleRoundSelection(roundName) {
   const roundId = roundName.replace(/[^a-zA-Z0-9]/g, '_');
-  const checkbox = document.getElementById(`round_${roundId}`);
   const roundInput = document.getElementById("parseRound");
   
-  if (checkbox.checked) {
-    // Вписываем название тура в поле
-    roundInput.value = roundName === 'Без тура' ? '' : roundName;
-    
-    // Снимаем выбор с других чекбоксов
-    document.querySelectorAll('[id^="round_"]').forEach(cb => {
-      if (cb.id !== `round_${roundId}`) {
-        cb.checked = false;
-      }
-    });
-    
-    // Фильтруем parsedMatches чтобы оставить только матчи выбранного тура
-    const originalMatches = parsedMatches;
-    parsedMatches = originalMatches.filter(m => (m.round || 'Без тура') === roundName);
-  } else {
-    // Если снят чекбокс - очищаем поле и восстанавливаем все матчи
+  // Получаем все выбранные чекбоксы
+  const selectedCheckboxes = Array.from(document.querySelectorAll('[id^="round_"]:checked'));
+  
+  if (selectedCheckboxes.length === 0) {
+    // Если ничего не выбрано - очищаем поле и показываем все матчи
     roundInput.value = '';
-    // Перезагружаем превью чтобы восстановить все матчи
+    roundInput.disabled = false;
     loadParsePreview();
+  } else if (selectedCheckboxes.length === 1) {
+    // Если выбран один тур - вписываем его название и можно редактировать
+    const selectedRound = selectedCheckboxes[0].id.replace('round_', '').replace(/_/g, ' ');
+    // Находим оригинальное название тура
+    const originalRound = parsedMatches.find(m => m.round && m.round.replace(/[^a-zA-Z0-9]/g, '_') === selectedCheckboxes[0].id.replace('round_', ''))?.round || roundName;
+    roundInput.value = originalRound === 'Без тура' ? '' : originalRound;
+    roundInput.disabled = false;
+  } else {
+    // Если выбрано больше одного тура - блокируем инпут и очищаем
+    roundInput.value = '';
+    roundInput.disabled = true;
   }
 }
 
@@ -12117,10 +12116,37 @@ async function submitBulkParse(event) {
     return;
   }
   
-  const round = document.getElementById("parseRound").value.trim();
+  // Получаем выбранные туры
+  const selectedCheckboxes = Array.from(document.querySelectorAll('[id^="round_"]:checked'));
+  const roundInput = document.getElementById("parseRound");
   const scorePredictionEnabled = document.getElementById("parseScorePrediction").checked;
   
-  if (!round) {
+  // Определяем какие матчи нужно создать
+  let matchesToProcess = [];
+  
+  if (selectedCheckboxes.length === 0) {
+    // Если ничего не выбрано - создаем все матчи
+    matchesToProcess = parsedMatches;
+  } else {
+    // Если выбраны туры - фильтруем матчи по выбранным турам
+    const selectedRounds = selectedCheckboxes.map(cb => {
+      const roundId = cb.id.replace('round_', '');
+      // Находим оригинальное название тура
+      return parsedMatches.find(m => m.round && m.round.replace(/[^a-zA-Z0-9]/g, '_') === roundId)?.round;
+    }).filter(Boolean);
+    
+    matchesToProcess = parsedMatches.filter(m => selectedRounds.includes(m.round));
+  }
+  
+  if (matchesToProcess.length === 0) {
+    await showCustomAlert("Нет матчей для создания", "Ошибка", "❌");
+    return;
+  }
+  
+  // Если выбран один тур и указано название - используем его
+  const customRoundName = selectedCheckboxes.length === 1 && roundInput.value.trim() ? roundInput.value.trim() : null;
+  
+  if (selectedCheckboxes.length === 0 && !roundInput.value.trim()) {
     const confirmed = await showCustomConfirm(
       "Вы не указали тур. Матчи будут созданы без указания тура. Продолжить?",
       "Подтверждение",
@@ -12141,14 +12167,27 @@ async function submitBulkParse(event) {
     submitBtn.textContent = "⏳ Создание матчей...";
     
     // Преобразуем спарсенные матчи в формат для создания
-    const matchesToCreate = parsedMatches.map(match => {
+    const matchesToCreate = matchesToProcess.map(match => {
       const isFinished = match.status === 'FINISHED';
+      
+      // Определяем название тура
+      let roundName;
+      if (customRoundName) {
+        // Если указано кастомное название (один тур выбран)
+        roundName = customRoundName;
+      } else if (selectedCheckboxes.length > 1) {
+        // Если выбрано несколько туров - используем оригинальное название
+        roundName = match.round || null;
+      } else {
+        // Если ничего не выбрано - используем значение из инпута или null
+        roundName = roundInput.value.trim() || null;
+      }
       
       const baseMatch = {
         team1_name: match.homeTeam.name,
         team2_name: match.awayTeam.name,
         match_date: match.utcDate,
-        round: round || null,
+        round: roundName,
         event_id: currentEventId,
         score_prediction_enabled: scorePredictionEnabled ? 1 : 0
       };
@@ -12178,8 +12217,8 @@ async function submitBulkParse(event) {
       throw new Error(error.message || "Ошибка при создании матчей");
     }
     
-    const finishedCount = parsedMatches.filter(m => m.status === 'FINISHED').length;
-    const futureCount = parsedMatches.length - finishedCount;
+    const finishedCount = matchesToProcess.filter(m => m.status === 'FINISHED').length;
+    const futureCount = matchesToProcess.length - finishedCount;
     
     let message = `Успешно создано ${matchesToCreate.length} матчей`;
     if (finishedCount > 0 && futureCount > 0) {
