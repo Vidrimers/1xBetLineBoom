@@ -16252,74 +16252,378 @@ async function showLiveTeamStats(matchData) {
   }
   
   try {
-    // Формируем HTML со статистикой напрямую из данных матча
-    let html = '';
-    
-    // Определяем статус
-    const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
-    const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
-    const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : 'Предстоящий';
-    
-    // Основная информация о матче
-    html += `
-      <div style="background: rgba(90, 159, 212, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #5a9fd4;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <div style="text-align: center; flex: 1;">
-            <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team1}</div>
-          </div>
-          <div style="text-align: center; padding: 0 20px;">
-            <div style="color: #4caf50; font-size: 1.5em; font-weight: 700;">${matchData.score || 'vs'}</div>
-            <div style="color: #b0b8c8; font-size: 0.85em; margin-top: 5px;">${statusText}</div>
-            ${matchData.elapsed ? `<div style="color: #f44336; font-size: 0.9em; margin-top: 3px;">${matchData.elapsed}'</div>` : ''}
-          </div>
-          <div style="text-align: center; flex: 1;">
-            <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team2}</div>
-          </div>
-        </div>
-        ${matchData.match_time ? `
-          <div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin-top: 10px;">
-            🕐 ${new Date(matchData.match_time).toLocaleString('ru-RU', { 
-              day: '2-digit', 
-              month: 'long', 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </div>
-        ` : ''}
-      </div>
-    `;
-    
-    // Если матч еще не начался или только что начался
-    if (!isLive && !isFinished) {
-      html += `
-        <div class="empty-message">
-          <p>📅 Матч еще не начался</p>
-          <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Статистика появится после начала матча</p>
-        </div>
-      `;
+    // Если есть matchId - загружаем детальную статистику из SStats
+    if (matchData.id) {
+      console.log('🔍 Загружаем детали матча:', matchData.id);
+      const detailsResponse = await fetch(`/api/match-details/${matchData.id}`);
+      
+      if (detailsResponse.ok) {
+        const details = await detailsResponse.json();
+        console.log('✅ Детали получены:', details);
+        displayDetailedStats(details, matchData);
+        return;
+      } else {
+        console.warn('⚠️ Не удалось загрузить детали:', detailsResponse.status);
+      }
     } else {
-      html += `
-        <div class="empty-message">
-          <p>📊 Детальная статистика</p>
-          <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
-            ${isLive ? 'Матч идет в данный момент' : 'Матч завершен'}
-          </p>
-          ${matchData.statusName ? `<p style="font-size: 0.85em; color: #999; margin-top: 5px;">Статус: ${matchData.statusName}</p>` : ''}
-        </div>
-      `;
+      console.log('ℹ️ У матча нет ID, показываем базовую статистику');
     }
     
-    content.innerHTML = html;
+    // Fallback: показываем базовую статистику
+    displayBasicStats(matchData);
     
   } catch (error) {
-    console.error('Ошибка отображения статистики:', error);
-    content.innerHTML = `
+    console.error('Ошибка загрузки статистики:', error);
+    displayBasicStats(matchData);
+  }
+}
+
+function displayBasicStats(matchData) {
+  const content = document.getElementById('liveTeamStatsContent');
+  
+  const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
+  const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
+  const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : 'Предстоящий';
+  
+  let html = `
+    <div style="background: rgba(90, 159, 212, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #5a9fd4;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="text-align: center; flex: 1;">
+          <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team1}</div>
+        </div>
+        <div style="text-align: center; padding: 0 20px;">
+          <div style="color: #4caf50; font-size: 1.5em; font-weight: 700;">${matchData.score || 'vs'}</div>
+          <div style="color: #b0b8c8; font-size: 0.85em; margin-top: 5px;">${statusText}</div>
+          ${matchData.elapsed ? `<div style="color: #f44336; font-size: 0.9em; margin-top: 3px;">${matchData.elapsed}'</div>` : ''}
+        </div>
+        <div style="text-align: center; flex: 1;">
+          <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team2}</div>
+        </div>
+      </div>
+      ${matchData.match_time ? `
+        <div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin-top: 10px;">
+          🕐 ${new Date(matchData.match_time).toLocaleString('ru-RU', { 
+            day: '2-digit', 
+            month: 'long', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </div>
+      ` : ''}
+    </div>
+  `;
+  
+  if (!isLive && !isFinished) {
+    html += `
       <div class="empty-message">
-        <p>❌ Ошибка отображения статистики</p>
-        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">${error.message}</p>
+        <p>📅 Матч еще не начался</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Статистика появится после начала матча</p>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="empty-message">
+        <p>📊 Детальная статистика</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
+          ${isLive ? 'Матч идет в данный момент' : 'Матч завершен'}
+        </p>
       </div>
     `;
   }
+  
+  content.innerHTML = html;
+}
+
+function displayDetailedStats(details, matchData) {
+  const content = document.getElementById('liveTeamStatsContent');
+  const game = details.game;
+  const stats = details.statistics;
+  const events = details.events || [];
+  const lineupPlayers = details.lineupPlayers || [];
+  
+  const isLive = game.statusName === 'Live' || game.status === 4;
+  const isFinished = game.statusName === 'Finished' || game.status === 8;
+  const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '📅 Предстоящий';
+  
+  let html = `
+    <div style="background: rgba(90, 159, 212, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #5a9fd4;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="text-align: center; flex: 1;">
+          <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team1}</div>
+        </div>
+        <div style="text-align: center; padding: 0 20px;">
+          <div style="color: #4caf50; font-size: 1.5em; font-weight: 700;">${game.homeResult ?? 0} : ${game.awayResult ?? 0}</div>
+          <div style="color: #b0b8c8; font-size: 0.85em; margin-top: 5px;">${statusText}</div>
+          ${game.elapsed ? `<div style="color: #f44336; font-size: 0.9em; margin-top: 3px;">${game.elapsed}'</div>` : ''}
+        </div>
+        <div style="text-align: center; flex: 1;">
+          <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team2}</div>
+        </div>
+      </div>
+      ${game.date ? `
+        <div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin-top: 10px;">
+          🕐 ${new Date(game.date).toLocaleString('ru-RU', { 
+            day: '2-digit', 
+            month: 'long', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </div>
+      ` : ''}
+    </div>
+  `;
+  
+  // Если матч не начался - показываем сообщение
+  if (!isLive && !isFinished) {
+    html += `
+      <div class="empty-message">
+        <p>📅 Матч еще не начался</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Статистика появится после начала матча</p>
+      </div>
+    `;
+    content.innerHTML = html;
+    return;
+  }
+  
+  // Вкладки
+  html += `
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid rgba(255, 255, 255, 0.1);">
+      <button onclick="switchLiveStatsTab('statistics')" id="liveStatsTab-statistics" style="flex: 1; padding: 10px; background: rgba(90, 159, 212, 0.3); border: none; border-bottom: 3px solid #5a9fd4; color: #e0e6f0; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">
+        📈 Статистика
+      </button>
+      <button onclick="switchLiveStatsTab('lineups')" id="liveStatsTab-lineups" style="flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 3px solid transparent; color: #b0b8c8; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">
+        👥 Составы
+      </button>
+      <button onclick="switchLiveStatsTab('events')" id="liveStatsTab-events" style="flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 3px solid transparent; color: #b0b8c8; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">
+        ⚽ События
+      </button>
+    </div>
+    <div id="liveStatsTabContent"></div>
+  `;
+  
+  content.innerHTML = html;
+  
+  // Сохраняем данные для переключения вкладок
+  window.currentLiveStatsData = { details, matchData, stats, events, lineupPlayers, game };
+  
+  // Показываем статистику по умолчанию
+  switchLiveStatsTab('statistics');
+}
+
+function switchLiveStatsTab(tab) {
+  const data = window.currentLiveStatsData;
+  if (!data) return;
+  
+  // Обновляем стили кнопок
+  ['statistics', 'lineups', 'events'].forEach(t => {
+    const btn = document.getElementById(`liveStatsTab-${t}`);
+    if (btn) {
+      if (t === tab) {
+        btn.style.background = 'rgba(90, 159, 212, 0.3)';
+        btn.style.borderBottom = '3px solid #5a9fd4';
+        btn.style.color = '#e0e6f0';
+      } else {
+        btn.style.background = 'transparent';
+        btn.style.borderBottom = '3px solid transparent';
+        btn.style.color = '#b0b8c8';
+      }
+    }
+  });
+  
+  const content = document.getElementById('liveStatsTabContent');
+  
+  if (tab === 'statistics') {
+    content.innerHTML = renderStatistics(data.stats);
+  } else if (tab === 'lineups') {
+    content.innerHTML = renderLineups(data.lineupPlayers, data.game);
+  } else if (tab === 'events') {
+    content.innerHTML = renderEvents(data.events, data.game);
+  }
+}
+
+function renderStatistics(stats) {
+  if (!stats) {
+    return `
+      <div class="empty-message">
+        <p>📊 Статистика пока недоступна</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Данные появятся в ходе матча</p>
+      </div>
+    `;
+  }
+  
+  let html = `
+    <div style="background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+  `;
+  
+  const mainStats = [
+    { key: 'ballPossessionHome', label: 'Владение мячом', suffix: '%' },
+    { key: 'totalShotsHome', label: 'Удары' },
+    { key: 'shotsOnGoalHome', label: 'Удары в створ' },
+    { key: 'cornerKicksHome', label: 'Угловые' },
+    { key: 'foulsHome', label: 'Фолы' },
+    { key: 'yellowCardsHome', label: 'Желтые карточки' }
+  ];
+  
+  mainStats.forEach(stat => {
+    const homeValue = stats[stat.key] ?? 0;
+    const awayKey = stat.key.replace('Home', 'Away');
+    const awayValue = stats[awayKey] ?? 0;
+    const total = homeValue + awayValue || 1;
+    const homePercent = (homeValue / total) * 100;
+    const awayPercent = (awayValue / total) * 100;
+    
+    html += `
+      <div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85em;">
+          <span style="color: #e0e6f0;">${homeValue}${stat.suffix || ''}</span>
+          <span style="color: #b0b8c8;">${stat.label}</span>
+          <span style="color: #e0e6f0;">${awayValue}${stat.suffix || ''}</span>
+        </div>
+        <div style="display: flex; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+          <div style="width: ${homePercent}%; background: #5a9fd4;"></div>
+          <div style="width: ${awayPercent}%; background: #f44336;"></div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+function renderLineups(lineupPlayers, game) {
+  if (!lineupPlayers || lineupPlayers.length === 0) {
+    return `
+      <div class="empty-message">
+        <p>👥 Составы пока недоступны</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Данные появятся перед началом матча</p>
+      </div>
+    `;
+  }
+  
+  const homePlayers = lineupPlayers.filter(p => p.teamId === game.homeTeam.id);
+  const awayPlayers = lineupPlayers.filter(p => p.teamId === game.awayTeam.id);
+  
+  let html = `
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+  `;
+  
+  // Домашняя команда
+  html += `
+    <div style="background: rgba(90, 159, 212, 0.1); padding: 15px; border-radius: 8px;">
+      <h4 style="color: #5a9fd4; margin: 0 0 10px 0; font-size: 0.95em;">${game.homeTeam.name}</h4>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+  `;
+  
+  homePlayers.filter(p => p.startXI).forEach(p => {
+    html += `
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #e0e6f0;">
+        <span style="background: rgba(90, 159, 212, 0.3); padding: 2px 6px; border-radius: 3px; min-width: 25px; text-align: center;">${p.number}</span>
+        <span>${p.playerName}</span>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  // Гостевая команда
+  html += `
+    <div style="background: rgba(244, 67, 54, 0.1); padding: 15px; border-radius: 8px;">
+      <h4 style="color: #f44336; margin: 0 0 10px 0; font-size: 0.95em;">${game.awayTeam.name}</h4>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+  `;
+  
+  awayPlayers.filter(p => p.startXI).forEach(p => {
+    html += `
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #e0e6f0;">
+        <span style="background: rgba(244, 67, 54, 0.3); padding: 2px 6px; border-radius: 3px; min-width: 25px; text-align: center;">${p.number}</span>
+        <span>${p.playerName}</span>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  html += `</div>`;
+  
+  return html;
+}
+
+function renderEvents(events, game) {
+  if (!events || events.length === 0) {
+    return `
+      <div class="empty-message">
+        <p>⚽ События пока отсутствуют</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">События появятся в ходе матча</p>
+      </div>
+    `;
+  }
+  
+  // Типы событий: 1 = гол, 2 = желтая карточка, 3 = замена, 4 = красная карточка
+  const eventIcons = {
+    1: '⚽',
+    2: '🟨',
+    3: '🔄',
+    4: '🟥'
+  };
+  
+  const eventNames = {
+    1: 'Гол',
+    2: 'Желтая карточка',
+    3: 'Замена',
+    4: 'Красная карточка'
+  };
+  
+  // Сортируем события по времени
+  const sortedEvents = [...events].sort((a, b) => (a.elapsed || 0) - (b.elapsed || 0));
+  
+  let html = `
+    <div style="background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+  `;
+  
+  sortedEvents.forEach(event => {
+    const isHome = event.teamId === game.homeTeam.id;
+    const icon = eventIcons[event.type] || '📌';
+    const eventName = eventNames[event.type] || event.name;
+    
+    html += `
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1); border-radius: 5px; border-left: 3px solid ${isHome ? '#5a9fd4' : '#f44336'};">
+        <div style="min-width: 40px; text-align: center; color: #e0e6f0; font-weight: 600; font-size: 0.9em;">
+          ${event.elapsed}'
+        </div>
+        <div style="font-size: 1.2em;">
+          ${icon}
+        </div>
+        <div style="flex: 1;">
+          <div style="color: #e0e6f0; font-size: 0.9em; font-weight: 600;">
+            ${event.player?.name || 'N/A'}
+          </div>
+          <div style="color: #b0b8c8; font-size: 0.8em;">
+            ${eventName}${event.assistPlayer ? ` (ассист: ${event.assistPlayer.name})` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  return html;
 }
 
 function closeLiveTeamStatsModal() {

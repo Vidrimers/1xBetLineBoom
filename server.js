@@ -5456,6 +5456,64 @@ app.get("/api/live-matches", async (req, res) => {
   }
 });
 
+// GET /api/match-details/:matchId - Получить детальную информацию о матче из SStats
+app.get("/api/match-details/:matchId", async (req, res) => {
+  console.log(`🔍 /api/match-details запрос получен, matchId: ${req.params.matchId}`);
+  
+  try {
+    const { matchId } = req.params;
+    
+    if (!matchId) {
+      return res.status(400).json({ error: "Не указан matchId" });
+    }
+    
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      console.error(`❌ SSTATS_API_KEY не задан в переменных окружения`);
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+    
+    const url = `${SSTATS_API_BASE}/Games/${matchId}`;
+    console.log(`📊 SStats API запрос деталей матча: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-Key": apiKey,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ SStats API ошибка: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ error: errorText || response.statusText });
+    }
+    
+    const matchDetails = await response.json();
+    
+    console.log(`📦 Структура ответа:`, {
+      status: matchDetails.status,
+      hasData: !!matchDetails.data,
+      dataKeys: matchDetails.data ? Object.keys(matchDetails.data).slice(0, 10) : []
+    });
+    
+    if (matchDetails.status !== "OK") {
+      console.error(`❌ SStats API статус не OK:`, matchDetails);
+      return res.status(500).json({ error: "SStats API вернул ошибку" });
+    }
+    
+    const data = matchDetails.data;
+    console.log(`✅ Детали матча получены: ${data?.game?.homeTeam?.name || 'N/A'} vs ${data?.game?.awayTeam?.name || 'N/A'}`);
+    console.log(`📊 Доступные поля:`, Object.keys(data || {}).join(', '));
+    console.log(`⚽ События: ${data?.events?.length || 0}, Статистика: ${data?.statistics?.length || 0}, Игроки: ${data?.lineupPlayers?.length || 0}`);
+    
+    res.json(data);
+    
+  } catch (error) {
+    console.error("❌ /api/match-details ошибка:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/yesterday-matches - Получить завершенные матчи сгруппированные по датам
 app.get("/api/yesterday-matches", async (req, res) => {
   console.log(`🔍 /api/yesterday-matches запрос получен, eventId: ${req.query.eventId}`);
