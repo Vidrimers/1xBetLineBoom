@@ -3630,45 +3630,25 @@
             </div>
 
             <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 8px">
-                <input
-                  type="checkbox"
-                  id="parseIncludeFuture"
-                  style="cursor: pointer; width: auto"
-                />
-                <span>📅 Включить будущие матчи (без результатов)</span>
-              </label>
-              <span
-                style="
-                  color: #b0b8c8;
-                  font-size: 0.85em;
-                  margin-left: 26px;
-                  display: block;
-                  margin-top: 4px;
-                "
-                >Парсить не только завершенные, но и предстоящие матчи</span
-              >
-            </div>
-
-            <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 8px">
-                <input
-                  type="checkbox"
-                  id="parseScorePrediction"
-                  style="cursor: pointer; width: auto"
-                />
-                <span>📊 Прогноз на счет</span>
-              </label>
-              <span
-                style="
-                  color: #b0b8c8;
-                  font-size: 0.85em;
-                  margin-left: 26px;
-                  display: block;
-                  margin-top: 4px;
-                "
-                >Добавить возможность прогноза точного счета в создаваемых матчах</span
-              >
+              <label>Опции</label>
+              <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                  <input
+                    type="checkbox"
+                    id="parseIncludeFuture"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span>📅 Будущие матчи</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                  <input
+                    type="checkbox"
+                    id="parseScorePrediction"
+                    style="cursor: pointer; width: auto"
+                  />
+                  <span>📊 Прогноз на счет</span>
+                </label>
+              </div>
             </div>
 
             <!-- Превью спарсенных матчей -->
