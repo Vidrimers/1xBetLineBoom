@@ -16340,15 +16340,20 @@ async function loadPlayerNamesDict(tournamentCode) {
 
 // Перевести имя игрока (возвращает "Русское имя (Original Name)")
 function translatePlayerName(englishName) {
-  if (!playerNamesDict || !englishName) return englishName;
+  if (!playerNamesDict || !englishName) {
+    console.log(`⚠️ Перевод невозможен: dict=${!!playerNamesDict}, name=${englishName}`);
+    return englishName;
+  }
   
   // Ищем русское имя по английскому значению в словаре
   for (const [russian, english] of Object.entries(playerNamesDict)) {
     if (english === englishName) {
+      console.log(`✅ Переведено: ${englishName} → ${russian}`);
       return `${russian} (${englishName})`;
     }
   }
   
+  console.log(`❌ Не найдено в словаре: ${englishName}`);
   return englishName; // Если не найдено, возвращаем оригинал
 }
 
@@ -16674,10 +16679,11 @@ function renderLineups(lineupPlayers, game) {
   `;
   
   homePlayers.filter(p => p.startXI).forEach(p => {
+    const translatedName = translatePlayerName(p.playerName);
     html += `
       <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #e0e6f0;">
         <span style="background: rgba(90, 159, 212, 0.3); padding: 2px 6px; border-radius: 3px; min-width: 25px; text-align: center;">${p.number}</span>
-        <span>${p.playerName}</span>
+        <span>${translatedName}</span>
       </div>
     `;
   });
@@ -16695,10 +16701,11 @@ function renderLineups(lineupPlayers, game) {
   `;
   
   awayPlayers.filter(p => p.startXI).forEach(p => {
+    const translatedName = translatePlayerName(p.playerName);
     html += `
       <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #e0e6f0;">
         <span style="background: rgba(244, 67, 54, 0.3); padding: 2px 6px; border-radius: 3px; min-width: 25px; text-align: center;">${p.number}</span>
-        <span>${p.playerName}</span>
+        <span>${translatedName}</span>
       </div>
     `;
   });
@@ -16752,6 +16759,10 @@ function renderEvents(events, game) {
     const eventName = eventNames[event.type] || event.name;
     const isGoal = event.type === 1;
     
+    // Переводим имена игроков
+    const playerName = translatePlayerName(event.player?.name || 'N/A');
+    const assistName = event.assistPlayer ? translatePlayerName(event.assistPlayer.name) : null;
+    
     // Золотистый фон для голов, обычный для других событий
     const bgColor = isGoal 
       ? 'rgba(255, 215, 0, 0.15)' 
@@ -16771,10 +16782,10 @@ function renderEvents(events, game) {
         </div>
         <div style="flex: 1;">
           <div style="color: #e0e6f0; font-size: 0.9em; font-weight: 600;">
-            ${event.player?.name || 'N/A'}
+            ${playerName}
           </div>
           <div style="color: #b0b8c8; font-size: 0.8em;">
-            ${eventName}${event.assistPlayer ? ` (ассист: ${event.assistPlayer.name})` : ''}
+            ${eventName}${assistName ? ` (ассист: ${assistName})` : ''}
           </div>
         </div>
       </div>
