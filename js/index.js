@@ -15592,7 +15592,7 @@ function updateFavoriteMatchesData(liveMatches) {
 
 // Переключить статус избранного для матча
 function toggleFavoriteMatch(matchId, event) {
-  event.stopPropagation(); // Предотвращаем клик по карточке
+  // НЕ останавливаем всплытие - пусть открывается статистика
   
   let favorites = getFavoriteMatches();
   const index = favorites.indexOf(matchId);
@@ -15872,6 +15872,25 @@ function showGoalNotification(match) {
     <div class="goal-notification-score">${match.score}</div>
   `;
   
+  // Добавляем обработчик клика на карточку для открытия статистики
+  notification.style.cursor = 'pointer';
+  notification.addEventListener('click', (e) => {
+    // Проверяем что клик не по кнопке закрытия
+    if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+      console.log('🖱️ Клик по карточке избранного, открываем статистику для матча:', match.id);
+      // Формируем данные матча для showLiveTeamStats
+      const matchData = {
+        id: match.id,
+        team1: match.team1,
+        team2: match.team2,
+        score: match.score,
+        status: match.status,
+        elapsed: match.elapsed
+      };
+      showLiveTeamStats(matchData);
+    }
+  });
+  
   console.log('➕ Добавляем карточку в контейнер');
   container.appendChild(notification);
   console.log('✅ Карточка добавлена, всего карточек:', container.children.length);
@@ -16014,6 +16033,11 @@ async function pollFavoriteMatches() {
       });
       
       console.log('✅ Данные в localStorage обновлены');
+      
+      // Проверяем события матчей для отправки уведомлений в Telegram
+      if (currentUser && currentUser.id && favorites.length > 0) {
+        checkMatchEventsForNotifications(favorites, currentUser.id);
+      }
     }
   } catch (error) {
     console.log('⚠️ Не удалось обновить через API, используем данные из localStorage:', error.message);
@@ -17017,5 +17041,33 @@ async function testAutoCounting() {
   } catch (error) {
     console.error('Ошибка теста автоподсчета:', error);
     await showCustomAlert('Ошибка теста автоподсчета', 'Ошибка', '❌');
+  }
+}
+
+
+// ===== ПРОВЕРКА СОБЫТИЙ МАТЧЕЙ ДЛЯ УВЕДОМЛЕНИЙ В TELEGRAM =====
+async function checkMatchEventsForNotifications(matchIds, userId) {
+  try {
+    console.log(`📬 Проверка событий для ${matchIds.length} матчей`);
+    
+    const response = await fetch('/api/check-match-events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        matchIds: matchIds,
+        userId: userId
+      })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      if (result.notifications > 0) {
+        console.log(`✅ Отправлено ${result.notifications} уведомлений в Telegram`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Ошибка проверки событий:', error);
   }
 }

@@ -35,6 +35,17 @@ const SERVER_IP = process.env.SERVER_IP || "localhost";
 const SSTATS_API_KEY = process.env.SSTATS_API_KEY;
 const SSTATS_API_BASE = "https://api.sstats.net";
 
+// Функция для отправки сообщения в Telegram
+async function sendTelegramMessage(chatId, message) {
+  try {
+    await sendUserMessage(chatId, message);
+    return true;
+  } catch (error) {
+    console.error(`❌ Ошибка отправки Telegram сообщения:`, error);
+    return false;
+  }
+}
+
 // Маппинг кодов турниров на SStats League IDs
 const SSTATS_LEAGUE_MAPPING = {
   'CL': 2,    // UEFA Champions League ✅
@@ -1757,6 +1768,19 @@ db.exec(`
     chat_id INTEGER NOT NULL,
     first_name TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+// Таблица для отслеживания событий матчей (голы, карточки) для уведомлений
+db.exec(`
+  CREATE TABLE IF NOT EXISTS match_events_sent (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    event_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(match_id, event_id, user_id)
   )
 `);
 
@@ -5727,6 +5751,127 @@ app.post("/api/favorite-matches", async (req, res) => {
     
   } catch (error) {
     console.error("❌ /api/favorite-matches общая ошибка:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/check-match-events - Проверить события матчей и отправить уведомления
+app.post("/api/check-match-events", async (req, res) => {
+  try {
+    const { matchIds, userId } = req.body;
+    
+    if (!Array.isArray(matchIds) || matchIds.length === 0 || !userId) {
+      return res.json({ success: false, message: 'Invalid parameters' });
+    }
+    
+    console.log(`🔍 Проверка событий для ${matchIds.length} матчей, пользователь ${userId}`);
+    
+    // Получаем настройки пользователя
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    
+    if (!user || !user.telegram_notifications_enabled) {
+      console.log(`⏭️ У пользователя ${userId} отключены уведомления`);
+      return res.json({ success: true, notifications: 0 });
+    }
+    
+    // Получаем chat_id пользователя
+    const telegramUser = db.prepare(
+      'SELECT chat_id FROM telegram_users WHERE telegram_username = ?'
+    ).get(user.telegram_username);
+    
+    if (!telegramUser) {
+      console.log(`⏭️ У пользователя ${userId} нет привязки Telegram`);
+      return res.json({ success: true, notifications: 0 });
+    }
+    
+    let notificationsSent = 0;
+    
+    // Для каждого матча проверяем события
+    for (const matchId of matchIds) {
+      try {
+        // Получаем детали матча из SStats API
+        const match = db.prepare('SELECT sstats_match_id FROM matches WHERE id = ?').get(matchId);
+        
+        if (!match || !match.sstats_match_id) {
+          console.log(`⏭️ Матч ${matchId} не имеет sstats_match_id`);
+          continue;
+        }
+        
+        const detailsUrl = `${SSTATS_API_BASE}/Games/${match.sstats_match_id}`;
+        const response = await fetch(detailsUrl, {
+          headers: { 'X-API-Key': SSTATS_API_KEY }
+        });
+        
+        if (!response.ok) {
+          console.log(`⚠️ Не удалось загрузить детали матча ${matchId}`);
+          continue;
+        }
+        
+        const result = await response.json();
+        const details = result.data || result;
+        const events = details.events || [];
+        
+        // Проверяем каждое событие
+        for (const event of events) {
+          const eventId = `${event.id || event.elapsed}_${event.type}_${event.player?.name || 'unknown'}`;
+          
+          // Проверяем было ли уже отправлено уведомление
+          const alreadySent = db.prepare(
+            'SELECT id FROM match_events_sent WHERE match_id = ? AND event_id = ? AND user_id = ?'
+          ).get(matchId, eventId, userId);
+          
+          if (alreadySent) {
+            continue; // Уже отправляли
+          }
+          
+          // Фильтруем только важные события: голы и карточки
+          if (!['goal', 'yellowcard', 'redcard'].includes(event.type)) {
+            continue;
+          }
+          
+          // Формируем сообщение
+          let message = '';
+          const game = details.game;
+          const matchInfo = `${game.homeTeam?.name || 'Команда 1'} ${game.homeResult || 0}:${game.awayResult || 0} ${game.awayTeam?.name || 'Команда 2'}`;
+          
+          if (event.type === 'goal') {
+            const scorer = event.player?.name || 'Неизвестный игрок';
+            const assist = event.assistPlayer?.name ? ` (ассист: ${event.assistPlayer.name})` : '';
+            message = `⚽ ГОЛ!\n\n${matchInfo}\n\n${scorer} забил гол!${assist}\n⏱️ ${event.elapsed || '?'}'`;
+          } else if (event.type === 'yellowcard') {
+            const player = event.player?.name || 'Неизвестный игрок';
+            message = `🟨 Желтая карточка\n\n${matchInfo}\n\n${player} получил предупреждение\n⏱️ ${event.elapsed || '?'}'`;
+          } else if (event.type === 'redcard') {
+            const player = event.player?.name || 'Неизвестный игрок';
+            message = `🟥 Красная карточка!\n\n${matchInfo}\n\n${player} удален с поля!\n⏱️ ${event.elapsed || '?'}'`;
+          }
+          
+          if (message) {
+            // Отправляем уведомление через бота
+            try {
+              await sendTelegramMessage(telegramUser.chat_id, message);
+              
+              // Сохраняем что уведомление отправлено
+              db.prepare(
+                'INSERT INTO match_events_sent (match_id, event_id, event_type, user_id) VALUES (?, ?, ?, ?)'
+              ).run(matchId, eventId, event.type, userId);
+              
+              notificationsSent++;
+              console.log(`✅ Уведомление отправлено пользователю ${userId} о событии ${event.type} в матче ${matchId}`);
+            } catch (err) {
+              console.error(`❌ Ошибка отправки уведомления:`, err);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`❌ Ошибка обработки матча ${matchId}:`, err);
+      }
+    }
+    
+    res.json({ success: true, notifications: notificationsSent });
+    
+  } catch (error) {
+    console.error("❌ /api/check-match-events ошибка:", error);
     res.status(500).json({ error: error.message });
   }
 });
