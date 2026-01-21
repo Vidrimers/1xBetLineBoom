@@ -675,7 +675,13 @@ function renderRoundsOrderList() {
 
 // Удалить тур и все его матчи
 async function deleteRound(roundName, index) {
-  if (!confirm(`Вы уверены, что хотите удалить тур "${roundName}" и все его матчи?`)) {
+  const confirmed = await showCustomConfirm(
+    `Вы уверены, что хотите удалить тур "${roundName}" и все его матчи?`,
+    "Подтверждение удаления",
+    "⚠️"
+  );
+  
+  if (!confirmed) {
     return;
   }
 
@@ -706,9 +712,11 @@ async function deleteRound(roundName, index) {
     
     // Перерисовываем список туров в модалке
     renderRoundsOrderList();
+    
+    await showCustomAlert(`Тур "${roundName}" успешно удален`, "Успех", "✅");
   } catch (error) {
     console.error('Ошибка при удалении тура:', error);
-    alert('Не удалось удалить тур');
+    await showCustomAlert('Не удалось удалить тур', "Ошибка", "❌");
   }
 }
 
