@@ -15672,7 +15672,8 @@ function toggleFavoriteMatch(matchId, event) {
         team2: teamDivs[1]?.textContent.trim() || 'Команда 2',
         score: scoreDiv?.textContent.trim() || '0:0',
         betTeam: betTeam, // Добавляем информацию о ставке
-        addedAt: new Date().toISOString()
+        addedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString() // Добавляем updatedAt
       };
       
       saveFavoriteMatchData(matchId, matchData);
@@ -15694,6 +15695,8 @@ function toggleFavoriteMatch(matchId, event) {
   }
   
   saveFavoriteMatches(favorites);
+  console.log('💾 Сохранен список избранных:', favorites);
+  console.log('💾 localStorage favoriteMatches:', localStorage.getItem('favoriteMatches'));
   updateFavoriteStars();
   
   // Сразу обновляем карточки уведомлений
@@ -16012,6 +16015,7 @@ async function pollFavoriteMatches() {
     if (response.ok) {
       const apiMatches = await response.json();
       console.log(`📡 Получено ${apiMatches.length} матчей через API`);
+      console.log('📦 Данные матчей:', apiMatches);
       
       // Обновляем данные в localStorage
       apiMatches.forEach(match => {
@@ -17142,8 +17146,9 @@ function cleanupOldFavorites() {
     }
     
     // Если данные старше 24 часов - удаляем
-    if (matchData.updatedAt) {
-      const updatedAt = new Date(matchData.updatedAt);
+    const timestamp = matchData.updatedAt || matchData.addedAt;
+    if (timestamp) {
+      const updatedAt = new Date(timestamp);
       if (updatedAt < oneDayAgo) {
         console.log(`🗑️ Удаляем матч ${matchId} - данные старше 24 часов`);
         removeFavoriteMatchData(matchId);

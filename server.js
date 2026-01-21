@@ -5894,20 +5894,29 @@ app.post("/api/live-matches-by-ids", async (req, res) => {
     
     const allMatches = [];
     
-    // Для каждого matchId получаем sstats_match_id из БД и загружаем данные
+    // Для каждого matchId получаем данные из БД
     for (const matchId of matchIds) {
       try {
-        const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
+        // Ищем матч по id ИЛИ по sstats_match_id (т.к. на фронте может использоваться SStats ID)
+        let match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
         
         if (!match) {
-          console.log(`⏭️ Матч ${matchId} не найден в БД`);
+          // Пробуем найти по sstats_match_id
+          match = db.prepare('SELECT * FROM matches WHERE sstats_match_id = ?').get(matchId);
+        }
+        
+        if (!match) {
+          console.log(`⏭️ Матч ${matchId} не найден в БД (ни по id, ни по sstats_match_id)`);
           continue;
         }
+        
+        console.log(`📊 Матч ${matchId}: DB_id=${match.id}, team1=${match.team1_name}, team2=${match.team2_name}, sstats_id=${match.sstats_match_id}, score=${match.score}`);
         
         // Если есть sstats_match_id - загружаем из API
         if (match.sstats_match_id) {
           try {
             const url = `${SSTATS_API_BASE}/Games/${match.sstats_match_id}`;
+            console.log(`🔍 Загружаем из API: ${url}`);
             const response = await fetch(url, {
               headers: { 'X-API-Key': SSTATS_API_KEY }
             });
@@ -5918,12 +5927,14 @@ app.post("/api/live-matches-by-ids", async (req, res) => {
               const game = details.game;
               
               if (game) {
+                console.log(`✅ API вернул данные для матча ${matchId}: ${game.homeResult || 0}:${game.awayResult || 0}`);
                 allMatches.push({
-                  id: matchId,
-                  team1: game.homeTeam?.name || match.team1_name,
-                  team2: game.awayTeam?.name || match.team2_name,
-                  homeTeam: game.homeTeam?.name || match.team1_name,
-                  awayTeam: game.awayTeam?.name || match.team2_name,
+                  id: matchId, // Используем тот ID который пришел в запросе (SStats ID)
+                  dbId: match.id, // ID из нашей БД
+                  team1: match.team1_name, // Русское название из БД
+                  team2: match.team2_name, // Русское название из БД
+                  homeTeam: match.team1_name,
+                  awayTeam: match.team2_name,
                   score: `${game.homeResult || 0}:${game.awayResult || 0}`,
                   homeResult: game.homeResult || 0,
                   awayResult: game.awayResult || 0,
@@ -5933,16 +5944,19 @@ app.post("/api/live-matches-by-ids", async (req, res) => {
                 });
                 continue;
               }
+            } else {
+              console.log(`⚠️ API вернул ошибку ${response.status} для матча ${matchId}`);
             }
           } catch (apiError) {
-            console.log(`⚠️ Ошибка API для матча ${matchId}, используем данные из БД`);
+            console.log(`⚠️ Ошибка API для матча ${matchId}: ${apiError.message}`);
           }
         }
         
         // Fallback: используем данные из БД
         console.log(`📦 Используем данные из БД для матча ${matchId}`);
         allMatches.push({
-          id: matchId,
+          id: matchId, // Используем тот ID который пришел в запросе
+          dbId: match.id, // ID из нашей БД
           team1: match.team1_name,
           team2: match.team2_name,
           homeTeam: match.team1_name,
@@ -5960,7 +5974,7 @@ app.post("/api/live-matches-by-ids", async (req, res) => {
       }
     }
     
-    console.log(`✅ Найдено ${allMatches.length} матчей из ${matchIds.length} запрошенных`);
+    console.log(`✅ Возвращаем ${allMatches.length} матчей из ${matchIds.length} запрошенных`);
     res.json(allMatches);
     
   } catch (error) {
