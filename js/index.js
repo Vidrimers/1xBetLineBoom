@@ -15227,8 +15227,9 @@ function renderCompletedDayMatches(dayId) {
     }
     
     // Преобразуем данные матча в формат для showLiveTeamStats
+    // Используем sstats_match_id если есть, иначе обычный id
     const matchData = {
-      id: match.id,
+      id: match.sstats_match_id || match.id, // ID из SStats для загрузки детальной статистики
       team1: match.team1_name,
       team2: match.team2_name,
       score: hasScore ? `${match.team1_score}:${match.team2_score}` : null,
@@ -15236,6 +15237,13 @@ function renderCompletedDayMatches(dayId) {
       match_time: match.match_date,
       elapsed: 90
     };
+    
+    console.log('Завершенный матч:', { 
+      dbId: match.id, 
+      sstatsId: match.sstats_match_id,
+      usedId: matchData.id,
+      teams: `${matchData.team1} vs ${matchData.team2}` 
+    });
     
     html += `
       <div class="live-match-card" onclick='showLiveTeamStats(${JSON.stringify(matchData).replace(/'/g, "\\'")})'  style="
