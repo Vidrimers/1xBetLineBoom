@@ -5887,80 +5887,56 @@ app.post("/api/live-matches-by-ids", async (req, res) => {
       return res.json([]);
     }
     
-    const apiKey = process.env.SSTATS_API_KEY;
-    if (!apiKey) {
+    if (!SSTATS_API_KEY) {
       console.error(`❌ SSTATS_API_KEY не задан`);
       return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
     }
     
-    // Получаем все активные турниры
-    const activeEvents = db.prepare(`
-      SELECT * FROM events 
-      WHERE status = 'active' 
-      ORDER BY name
-    `).all();
-    
-    console.log(`📊 Найдено ${activeEvents.length} активных турниров`);
-    
     const allMatches = [];
     
-    // Проходим по каждому турниру и ищем матчи
-    for (const event of activeEvents) {
-      // Определяем код турнира
-      let competition = null;
-      const eventName = event.name.toLowerCase();
-      
-      if (eventName.includes('champions') || eventName.includes('лига чемпионов')) {
-        competition = 'CL';
-      } else if (eventName.includes('europa') || eventName.includes('лига европы')) {
-        competition = 'EL';
-      } else if (eventName.includes('serie a') || eventName.includes('серия а')) {
-        competition = 'SA';
-      } else if (eventName.includes('premier') && eventName.includes('england')) {
-        competition = 'PL';
-      } else if (eventName.includes('bundesliga') || eventName.includes('бундеслига')) {
-        competition = 'BL1';
-      } else if (eventName.includes('la liga') || eventName.includes('ла лига')) {
-        competition = 'PD';
-      } else if (eventName.includes('ligue 1') || eventName.includes('лига 1')) {
-        competition = 'FL1';
-      } else if (eventName.includes('eredivisie') || eventName.includes('эредивизи')) {
-        competition = 'DED';
-      } else if (eventName.includes('рпл') || (eventName.includes('премьер') && eventName.includes('росс'))) {
-        competition = 'RPL';
-      }
-      
-      if (!competition) continue;
-      
-      const leagueId = SSTATS_LEAGUE_MAPPING[competition];
-      if (!leagueId) continue;
-      
+    // Для каждого matchId получаем sstats_match_id из БД и загружаем данные
+    for (const matchId of matchIds) {
       try {
-        // Получаем матчи из SSTATS API
-        const url = `https://api.sstats.one/api/v1/leagues/${leagueId}/matches?apiKey=${apiKey}`;
-        const response = await fetch(url);
+        const match = db.prepare('SELECT sstats_match_id, team1_name, team2_name FROM matches WHERE id = ?').get(matchId);
         
-        if (!response.ok) continue;
+        if (!match || !match.sstats_match_id) {
+          console.log(`⏭️ Матч ${matchId} не имеет sstats_match_id`);
+          continue;
+        }
         
-        const data = await response.json();
-        if (!data.data || !Array.isArray(data.data)) continue;
+        // Загружаем данные из SStats API
+        const url = `${SSTATS_API_BASE}/Games/${match.sstats_match_id}`;
+        const response = await fetch(url, {
+          headers: { 'X-API-Key': SSTATS_API_KEY }
+        });
         
-        // Фильтруем только нужные матчи
-        const filteredMatches = data.data
-          .filter(match => matchIds.includes(match.id))
-          .map(match => ({
-            id: match.id,
-            team1: match.homeTeam,
-            team2: match.awayTeam,
-            score: `${match.homeResult || 0}:${match.awayResult || 0}`,
-            status: match.statusName || 'live',
-            elapsed: match.elapsed
-          }));
+        if (!response.ok) {
+          console.log(`⚠️ Не удалось загрузить матч ${matchId} (sstats: ${match.sstats_match_id})`);
+          continue;
+        }
         
-        allMatches.push(...filteredMatches);
+        const result = await response.json();
+        const details = result.data || result;
+        const game = details.game;
+        
+        if (!game) continue;
+        
+        allMatches.push({
+          id: matchId,
+          team1: game.homeTeam?.name || match.team1_name,
+          team2: game.awayTeam?.name || match.team2_name,
+          homeTeam: game.homeTeam?.name || match.team1_name,
+          awayTeam: game.awayTeam?.name || match.team2_name,
+          score: `${game.homeResult || 0}:${game.awayResult || 0}`,
+          homeResult: game.homeResult || 0,
+          awayResult: game.awayResult || 0,
+          status: game.statusName || 'live',
+          statusName: game.statusName,
+          elapsed: game.elapsed
+        });
         
       } catch (error) {
-        console.error(`⚠️ Ошибка загрузки матчей для ${event.name}:`, error.message);
+        console.error(`⚠️ Ошибка загрузки матча ${matchId}:`, error.message);
       }
     }
     
