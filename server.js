@@ -1699,6 +1699,22 @@ db.exec(`
 // Запускаем миграции для таблицы users
 runUsersMigrations();
 
+// Таблица настроек системы
+db.exec(`
+  CREATE TABLE IF NOT EXISTS system_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT UNIQUE NOT NULL,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+// Инициализируем настройку автоподсчета если её нет
+const autoCountingSetting = db.prepare("SELECT value FROM system_settings WHERE key = 'auto_counting_enabled'").get();
+if (!autoCountingSetting) {
+  db.prepare("INSERT INTO system_settings (key, value) VALUES ('auto_counting_enabled', 'true')").run();
+}
+
 // Таблица для связки telegram username → chat_id (для отправки личных сообщений)
 db.exec(`
   CREATE TABLE IF NOT EXISTS telegram_users (
@@ -12732,8 +12748,16 @@ const ICON_TO_COMPETITION = {
 // Хранилище обработанных дат (чтобы не обрабатывать повторно)
 const processedDates = new Set();
 
-// Флаг включения/выключения автоподсчета
-let autoCountingEnabled = true;
+// Функции для работы с настройкой автоподсчета в БД
+function getAutoCountingEnabled() {
+  const setting = db.prepare("SELECT value FROM system_settings WHERE key = 'auto_counting_enabled'").get();
+  return setting ? setting.value === 'true' : true;
+}
+
+function setAutoCountingEnabled(enabled) {
+  db.prepare("UPDATE system_settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = 'auto_counting_enabled'")
+    .run(enabled ? 'true' : 'false');
+}
 
 /**
  * Нормализация названия команды для сопоставления
@@ -13098,6 +13122,8 @@ async function triggerAutoCountingForDate(dateGroup) {
  */
 async function checkAndAutoCount() {
   try {
+    const autoCountingEnabled = getAutoCountingEnabled();
+    
     if (!autoCountingEnabled) {
       console.log(`⏸️ Автоподсчет отключен`);
       return;
@@ -13125,7 +13151,8 @@ async function checkAndAutoCount() {
 
 // Эндпоинт для управления автоподсчетом
 app.get("/api/admin/auto-counting-status", (req, res) => {
-  res.json({ enabled: autoCountingEnabled });
+  const enabled = getAutoCountingEnabled();
+  res.json({ enabled });
 });
 
 app.post("/api/admin/toggle-auto-counting", (req, res) => {
@@ -13136,12 +13163,15 @@ app.post("/api/admin/toggle-auto-counting", (req, res) => {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
   
-  autoCountingEnabled = !autoCountingEnabled;
-  console.log(`🤖 Автоподсчет ${autoCountingEnabled ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'}`);
+  const currentStatus = getAutoCountingEnabled();
+  const newStatus = !currentStatus;
+  setAutoCountingEnabled(newStatus);
+  
+  console.log(`🤖 Автоподсчет ${newStatus ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'}`);
   
   res.json({ 
-    enabled: autoCountingEnabled,
-    message: `Автоподсчет ${autoCountingEnabled ? 'включен' : 'выключен'}`
+    enabled: newStatus,
+    message: `Автоподсчет ${newStatus ? 'включен' : 'выключен'}`
   });
 });
 
