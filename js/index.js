@@ -11870,64 +11870,114 @@ async function loadParsePreview() {
       return;
     }
     
-    // Отображаем превью матчей
-    const matchesHtml = parsedMatches.map((match, index) => {
-      const date = new Date(match.utcDate);
-      const formattedDate = date.toLocaleString("ru-RU", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
+    // Группируем матчи по турам
+    const matchesByRound = {};
+    parsedMatches.forEach(match => {
+      const roundName = match.round || 'Без тура';
+      if (!matchesByRound[roundName]) {
+        matchesByRound[roundName] = [];
+      }
+      matchesByRound[roundName].push(match);
+    });
+    
+    // Отображаем превью матчей сгруппированных по турам
+    let matchesHtml = '';
+    
+    Object.keys(matchesByRound).sort().forEach(roundName => {
+      const roundMatches = matchesByRound[roundName];
+      const roundId = roundName.replace(/[^a-zA-Z0-9]/g, '_');
       
-      const isFinished = match.status === 'FINISHED';
-      const scoreHtml = isFinished ? `
-        <div style="
-          background: rgba(76, 175, 80, 0.2);
-          border: 1px solid rgba(76, 175, 80, 0.5);
-          border-radius: 4px;
-          padding: 6px 12px;
-          font-weight: 500;
-          color: #4caf50;
-        ">
-          ${match.score.fullTime.home} : ${match.score.fullTime.away}
-        </div>
-      ` : `
-        <div style="
-          background: rgba(255, 152, 0, 0.2);
-          border: 1px solid rgba(255, 152, 0, 0.5);
-          border-radius: 4px;
-          padding: 6px 12px;
-          font-weight: 500;
-          color: #ff9800;
-        ">
-          Предстоящий
-        </div>
+      matchesHtml += `
+        <div style="margin-bottom: 20px;">
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(58, 123, 213, 0.2);
+            border: 1px solid rgba(90, 159, 212, 0.5);
+            border-radius: 6px;
+            margin-bottom: 10px;
+          ">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
+              <input
+                type="checkbox"
+                id="round_${roundId}"
+                onchange="toggleRoundSelection('${roundName}')"
+                style="cursor: pointer; width: 18px; height: 18px;"
+              />
+              <span style="font-weight: 500; color: #e0e6f0; font-size: 1.05em;">
+                ${roundName} (${roundMatches.length} ${roundMatches.length === 1 ? 'матч' : 'матчей'})
+              </span>
+            </label>
+          </div>
+          <div id="matches_${roundId}">
       `;
       
-      return `
-        <div style="
-          background: rgba(58, 123, 213, 0.1);
-          border: 1px solid rgba(90, 159, 212, 0.3);
-          border-radius: 6px;
-          padding: 12px;
-          margin-bottom: 10px;
-        ">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="flex: 1;">
-              <div style="font-weight: 500; color: #e0e6f0; margin-bottom: 4px;">
-                ${match.homeTeam.name} vs ${match.awayTeam.name}
+      roundMatches.forEach(match => {
+        const date = new Date(match.utcDate);
+        const formattedDate = date.toLocaleString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        
+        const isFinished = match.status === 'FINISHED';
+        const scoreHtml = isFinished ? `
+          <div style="
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-weight: 500;
+            color: #4caf50;
+          ">
+            ${match.score.fullTime.home} : ${match.score.fullTime.away}
+          </div>
+        ` : `
+          <div style="
+            background: rgba(255, 152, 0, 0.2);
+            border: 1px solid rgba(255, 152, 0, 0.5);
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-weight: 500;
+            color: #ff9800;
+          ">
+            Предстоящий
+          </div>
+        `;
+        
+        matchesHtml += `
+          <div style="
+            background: rgba(58, 123, 213, 0.1);
+            border: 1px solid rgba(90, 159, 212, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            margin-left: 30px;
+          ">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="flex: 1;">
+                <div style="font-weight: 500; color: #e0e6f0; margin-bottom: 4px;">
+                  ${match.homeTeam.name} vs ${match.awayTeam.name}
+                </div>
+                <div style="font-size: 0.85em; color: #b0b8c8;">
+                  📅 ${formattedDate}
+                </div>
               </div>
-              <div style="font-size: 0.85em; color: #b0b8c8;">
-                📅 ${formattedDate}
-              </div>
+              ${scoreHtml}
             </div>
-            ${scoreHtml}
+          </div>
+        `;
+      });
+      
+      matchesHtml += `
           </div>
         </div>
       `;
-    }).join("");
+    });
     
     const finishedCount = parsedMatches.filter(m => m.status === 'FINISHED').length;
     const futureCount = parsedMatches.length - finishedCount;
@@ -11951,6 +12001,34 @@ async function loadParsePreview() {
     // Разблокируем кнопку обновления
     updateBtn.disabled = false;
     updateBtn.textContent = "🔄 Обновить";
+  }
+}
+
+// Переключить выбор тура
+function toggleRoundSelection(roundName) {
+  const roundId = roundName.replace(/[^a-zA-Z0-9]/g, '_');
+  const checkbox = document.getElementById(`round_${roundId}`);
+  const roundInput = document.getElementById("parseRound");
+  
+  if (checkbox.checked) {
+    // Вписываем название тура в поле
+    roundInput.value = roundName === 'Без тура' ? '' : roundName;
+    
+    // Снимаем выбор с других чекбоксов
+    document.querySelectorAll('[id^="round_"]').forEach(cb => {
+      if (cb.id !== `round_${roundId}`) {
+        cb.checked = false;
+      }
+    });
+    
+    // Фильтруем parsedMatches чтобы оставить только матчи выбранного тура
+    const originalMatches = parsedMatches;
+    parsedMatches = originalMatches.filter(m => (m.round || 'Без тура') === roundName);
+  } else {
+    // Если снят чекбокс - очищаем поле и восстанавливаем все матчи
+    roundInput.value = '';
+    // Перезагружаем превью чтобы восстановить все матчи
+    loadParsePreview();
   }
 }
 

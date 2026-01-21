@@ -5066,6 +5066,7 @@ app.get("/api/fd-matches", async (req, res) => {
       id: game.id,
       utcDate: game.date,
       status: game.status === 8 ? 'FINISHED' : 'SCHEDULED',
+      round: game.round || null,  // Добавляем информацию о туре
       homeTeam: {
         id: game.homeTeam.id,
         name: game.homeTeam.name,
