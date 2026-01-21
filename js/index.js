@@ -1637,6 +1637,9 @@ async function selectEvent(eventId, eventName) {
           <button id="addBracketBtn" onclick="openCreateBracketModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Создать сетку плей-офф">
             🏆
           </button>
+          <button id="autoCountingBtn" onclick="toggleAutoCounting(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Автоподсчет">
+            A
+          </button>
         `;
       }
       
@@ -1657,6 +1660,11 @@ async function selectEvent(eventId, eventName) {
       }
       
       adminButtonsContainer.innerHTML = buttonsHTML;
+      
+      // Загружаем статус автоподсчета для обновления кнопки
+      if (currentUser && currentUser.isAdmin) {
+        loadAutoCountingStatus();
+      }
     }
   } else if (adminSettingsBtn) {
     adminSettingsBtn.style.display = 'none';
@@ -15706,4 +15714,80 @@ async function showLiveTeamStats(matchData) {
 function closeLiveTeamStatsModal() {
   const modal = document.getElementById('liveTeamStatsModal');
   modal.style.display = 'none';
+}
+
+// ============================================
+// УПРАВЛЕНИЕ АВТОПОДСЧЕТОМ
+// ============================================
+
+/**
+ * Переключить автоподсчет (включить/выключить)
+ */
+async function toggleAutoCounting() {
+  if (!currentUser || !currentUser.isAdmin) {
+    alert('Недостаточно прав');
+    return;
+  }
+  
+  try {
+    // Получаем текущий статус
+    const statusResponse = await fetch('/api/admin/auto-counting-status');
+    const statusData = await statusResponse.json();
+    const currentStatus = statusData.enabled;
+    
+    // Переключаем
+    const response = await fetch('/api/admin/toggle-auto-counting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUser.username })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const newStatus = data.enabled;
+      
+      // Обновляем кнопку
+      const btn = document.getElementById('autoCountingBtn');
+      if (btn) {
+        btn.style.borderColor = newStatus ? '#4caf50' : '#f44336';
+        btn.style.color = newStatus ? '#4caf50' : '#f44336';
+        btn.title = `Автоподсчет: ${newStatus ? 'включен' : 'выключен'}`;
+      }
+      
+      await showCustomAlert(
+        data.message,
+        newStatus ? '✅ Включено' : '⏸️ Выключено',
+        newStatus ? '✅' : '⏸️'
+      );
+    } else {
+      const error = await response.json();
+      await showCustomAlert(error.error || 'Ошибка переключения', 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка переключения автоподсчета:', error);
+    await showCustomAlert('Ошибка переключения автоподсчета', 'Ошибка', '❌');
+  }
+}
+
+/**
+ * Загрузить статус автоподсчета при загрузке страницы
+ */
+async function loadAutoCountingStatus() {
+  if (!currentUser || !currentUser.isAdmin) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/admin/auto-counting-status');
+    const data = await response.json();
+    
+    const btn = document.getElementById('autoCountingBtn');
+    if (btn) {
+      btn.style.borderColor = data.enabled ? '#4caf50' : '#f44336';
+      btn.style.color = data.enabled ? '#4caf50' : '#f44336';
+      btn.title = `Автоподсчет: ${data.enabled ? 'включен' : 'выключен'}`;
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки статуса автоподсчета:', error);
+  }
 }

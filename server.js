@@ -12732,6 +12732,9 @@ const ICON_TO_COMPETITION = {
 // Хранилище обработанных дат (чтобы не обрабатывать повторно)
 const processedDates = new Set();
 
+// Флаг включения/выключения автоподсчета
+let autoCountingEnabled = true;
+
 /**
  * Нормализация названия команды для сопоставления
  */
@@ -13095,6 +13098,11 @@ async function triggerAutoCountingForDate(dateGroup) {
  */
 async function checkAndAutoCount() {
   try {
+    if (!autoCountingEnabled) {
+      console.log(`⏸️ Автоподсчет отключен`);
+      return;
+    }
+    
     console.log(`\n🔍 Проверка завершенных матчей... ${new Date().toLocaleString('ru-RU')}`);
     
     const activeDates = getActiveDates();
@@ -13114,6 +13122,28 @@ async function checkAndAutoCount() {
     console.error('❌ Ошибка в checkAndAutoCount:', error);
   }
 }
+
+// Эндпоинт для управления автоподсчетом
+app.get("/api/admin/auto-counting-status", (req, res) => {
+  res.json({ enabled: autoCountingEnabled });
+});
+
+app.post("/api/admin/toggle-auto-counting", (req, res) => {
+  const { username } = req.body;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+  
+  if (username !== ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+  
+  autoCountingEnabled = !autoCountingEnabled;
+  console.log(`🤖 Автоподсчет ${autoCountingEnabled ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'}`);
+  
+  res.json({ 
+    enabled: autoCountingEnabled,
+    message: `Автоподсчет ${autoCountingEnabled ? 'включен' : 'выключен'}`
+  });
+});
 
 // Запускаем проверку каждые 5 минут
 const AUTO_COUNT_INTERVAL = 5 * 60 * 1000; // 5 минут
