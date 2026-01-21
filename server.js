@@ -9244,7 +9244,7 @@ app.post("/api/admin/matches", async (req, res) => {
 });
 
 // POST /api/matches/bulk-create - Bulk импорт матчей (для админа)
-app.post("/api/matches/bulk-create", (req, res) => {
+app.post("/api/matches/bulk-create", async (req, res) => {
   const { matches } = req.body;
 
   if (!Array.isArray(matches) || matches.length === 0) {
@@ -9252,6 +9252,52 @@ app.post("/api/matches/bulk-create", (req, res) => {
   }
 
   try {
+    // Загружаем маппинг команд для перевода английских названий в русские
+    const mappingFiles = {
+      'CL': 'names/LeagueOfChampionsTeams.json',
+      'EL': 'names/EuropaLeague.json',
+      'PL': 'names/PremierLeague.json',
+      'BL1': 'names/Bundesliga.json',
+      'PD': 'names/LaLiga.json',
+      'SA': 'names/SerieA.json',
+      'FL1': 'names/Ligue1.json',
+      'DED': 'names/Eredivisie.json',
+      'RPL': 'names/RussianPremierLeague.json'
+    };
+    
+    // Создаем обратный маппинг: Английское -> Русское
+    let reverseMapping = {};
+    
+    // Пробуем определить турнир по первому матчу
+    if (matches.length > 0 && matches[0].event_id) {
+      const event = db.prepare("SELECT icon FROM events WHERE id = ?").get(matches[0].event_id);
+      if (event && event.icon) {
+        const competition = ICON_TO_COMPETITION[event.icon];
+        const mappingFile = mappingFiles[competition];
+        
+        if (mappingFile) {
+          try {
+            const mappingData = JSON.parse(fs.readFileSync(path.join(__dirname, mappingFile), 'utf-8'));
+            const teamMapping = mappingData.teams || {};
+            
+            // Создаем обратный маппинг: Английское -> Русское
+            // Если для одной английской команды есть несколько русских вариантов,
+            // выбираем самое короткое название (приоритет коротким названиям)
+            for (const [russian, english] of Object.entries(teamMapping)) {
+              const englishLower = english.toLowerCase();
+              if (!reverseMapping[englishLower] || russian.length < reverseMapping[englishLower].length) {
+                reverseMapping[englishLower] = russian;
+              }
+            }
+            
+            console.log(`✅ Загружен маппинг для ${competition}: ${Object.keys(reverseMapping).length} команд`);
+          } catch (err) {
+            console.warn(`⚠️ Не удалось загрузить маппинг из ${mappingFile}`);
+          }
+        }
+      }
+    }
+    
     const createdMatches = [];
 
     matches.forEach((match) => {
@@ -9273,6 +9319,10 @@ app.post("/api/matches/bulk-create", (req, res) => {
         );
       }
 
+      // Переводим названия команд на русский если есть маппинг
+      const team1_russian = reverseMapping[team1_name.toLowerCase()] || team1_name;
+      const team2_russian = reverseMapping[team2_name.toLowerCase()] || team2_name;
+
       // Если есть результаты - создаем матч с результатами
       if (team1_score !== undefined && team2_score !== undefined && winner) {
         const result = db
@@ -9282,8 +9332,8 @@ app.post("/api/matches/bulk-create", (req, res) => {
           )
           .run(
             event_id,
-            team1_name,
-            team2_name,
+            team1_russian,
+            team2_russian,
             match_date || null,
             round || null,
             team1_score,
@@ -9295,8 +9345,8 @@ app.post("/api/matches/bulk-create", (req, res) => {
         createdMatches.push({
           id: result.lastInsertRowid,
           event_id,
-          team1_name,
-          team2_name,
+          team1_name: team1_russian,
+          team2_name: team2_russian,
           match_date,
           round,
           team1_score,
@@ -9313,8 +9363,8 @@ app.post("/api/matches/bulk-create", (req, res) => {
           )
           .run(
             event_id,
-            team1_name,
-            team2_name,
+            team1_russian,
+            team2_russian,
             match_date || null,
             round || null,
             score_prediction_enabled || 0
@@ -9323,8 +9373,8 @@ app.post("/api/matches/bulk-create", (req, res) => {
         createdMatches.push({
           id: result.lastInsertRowid,
           event_id,
-          team1_name,
-          team2_name,
+          team1_name: team1_russian,
+          team2_name: team2_russian,
           match_date,
           round,
           score_prediction_enabled: score_prediction_enabled || 0
