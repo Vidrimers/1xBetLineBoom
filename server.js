@@ -5090,6 +5090,10 @@ app.get("/api/fd-matches", async (req, res) => {
       else if (roundName && roundName.includes('Group Stage -')) {
         roundName = 'Групповой этап ' + roundName.replace('Group Stage -', '').trim();
       }
+      // Заменяем "League Stage -" на "Тур"
+      else if (roundName && roundName.includes('League Stage -')) {
+        roundName = 'Тур ' + roundName.replace('League Stage -', '').trim();
+      }
       
       return {
         id: game.id,
