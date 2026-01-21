@@ -2496,7 +2496,7 @@ async function displayMatches() {
   
   sortedDateKeys.forEach((dateKey) => {
     // Добавляем разделитель даты
-    htmlContent += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0;">━━━ ${dateKey} ━━━</div>`;
+    htmlContent += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0; background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 4px;">━━━ ${dateKey} ━━━</div>`;
     
     // Добавляем матчи для этой даты
     matchesByDate[dateKey].forEach((match) => {
