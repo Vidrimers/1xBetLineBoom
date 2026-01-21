@@ -13394,7 +13394,7 @@ function normalizeTeamNameForAPI(name) {
 }
 
 /**
- * Получить активные даты с незавершенными матчами
+ * Получить активные даты с незавершенными матчами или недавно завершенными
  */
 function getActiveDates() {
   try {
@@ -13406,10 +13406,11 @@ function getActiveDates() {
         DATE(m.match_date) as date
       FROM matches m
       JOIN events e ON m.event_id = e.id
-      WHERE m.status != 'finished'
-        AND m.match_date IS NOT NULL
-        AND DATE(m.match_date) >= DATE('now', '-1 day')
+      WHERE m.match_date IS NOT NULL
+        AND DATE(m.match_date) >= DATE('now', '-2 days')
         AND DATE(m.match_date) <= DATE('now', '+3 days')
+      GROUP BY m.event_id, e.icon, m.round, DATE(m.match_date)
+      HAVING COUNT(CASE WHEN m.status = 'finished' THEN 1 END) > 0
       ORDER BY m.match_date
     `).all();
     
@@ -13437,18 +13438,34 @@ async function checkDateCompletion(dateGroup) {
       return { allFinished: false, matches: [] };
     }
     
-    // Получаем матчи из БД для этой даты
-    const dbMatches = db.prepare(`
+    // Получаем ВСЕ матчи из БД для этой даты (включая завершенные)
+    const allDbMatches = db.prepare(`
       SELECT * FROM matches
       WHERE event_id = ?
         AND round = ?
         AND DATE(match_date) = ?
-        AND status != 'finished'
     `).all(event_id, round, date);
     
-    if (dbMatches.length === 0) {
-      return { allFinished: true, matches: [] };
+    if (allDbMatches.length === 0) {
+      console.log(`⚠️ Нет матчей для даты ${date}`);
+      return { allFinished: false, matches: [] };
     }
+    
+    // Проверяем сколько матчей уже завершено
+    const finishedCount = allDbMatches.filter(m => m.status === 'finished').length;
+    console.log(`📊 Матчей для ${date}: ${allDbMatches.length}, завершено: ${finishedCount}`);
+    
+    // Если все уже завершены в БД - возвращаем их для подсчета
+    if (finishedCount === allDbMatches.length) {
+      console.log(`✅ Все матчи уже завершены в БД для ${date}`);
+      return { 
+        allFinished: true, 
+        matches: allDbMatches.map(dbMatch => ({ dbMatch, apiMatch: null }))
+      };
+    }
+    
+    // Есть незавершенные - проверяем через API
+    const dbMatches = allDbMatches.filter(m => m.status !== 'finished');
     
     // Запрашиваем матчи из API
     const leagueId = SSTATS_LEAGUE_MAPPING[competition_code];
@@ -13467,6 +13484,59 @@ async function checkDateCompletion(dateGroup) {
     }
     
     const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&Year=${year}`;
+    
+    const response = await fetch(url, {
+      headers: { "X-API-Key": SSTATS_API_KEY }
+    });
+    
+    if (!response.ok) {
+      console.error(`❌ SStats API ошибка: ${response.status}`);
+      return { allFinished: false, matches: [] };
+    }
+    
+    const sstatsData = await response.json();
+    
+    if (sstatsData.status !== "OK") {
+      console.error(`❌ SStats API статус не OK`);
+      return { allFinished: false, matches: [] };
+    }
+    
+    // Фильтруем матчи по дате
+    const apiMatches = (sstatsData.data || []).filter(game => {
+      const gameDate = game.date.split('T')[0];
+      return gameDate === date;
+    });
+    
+    // Сопоставляем матчи БД с API
+    const matchedMatches = [];
+    
+    for (const dbMatch of dbMatches) {
+      const apiMatch = apiMatches.find(api => {
+        const apiHome = normalizeTeamNameForAPI(api.homeTeam.name);
+        const apiAway = normalizeTeamNameForAPI(api.awayTeam.name);
+        const dbHome = normalizeTeamNameForAPI(dbMatch.team1_name);
+        const dbAway = normalizeTeamNameForAPI(dbMatch.team2_name);
+        
+        return (apiHome === dbHome && apiAway === dbAway) ||
+               (apiHome === dbAway && apiAway === dbHome);
+      });
+      
+      if (apiMatch) {
+        matchedMatches.push({ dbMatch, apiMatch });
+      }
+    }
+    
+    // Проверяем что все матчи завершены (status: 8)
+    const allFinished = matchedMatches.length > 0 && 
+                       matchedMatches.every(({ apiMatch }) => apiMatch.status === 8);
+    
+    return { allFinished, matches: matchedMatches };
+    
+  } catch (error) {
+    console.error('❌ Ошибка проверки завершения даты:', error);
+    return { allFinished: false, matches: [] };
+  }
+}
     
     const response = await fetch(url, {
       headers: { "X-API-Key": SSTATS_API_KEY }
@@ -13588,19 +13658,24 @@ async function triggerAutoCountingForDate(dateGroup) {
     // Проверяем завершение
     const { allFinished, matches } = await checkDateCompletion(dateGroup);
     
-    if (!allFinished || matches.length === 0) {
+    if (!allFinished) {
       console.log(`⏸️ Не все матчи завершены для ${date}`);
       return;
     }
     
     console.log(`✅ Все матчи завершены для ${date}!`);
     
-    // Обновляем матчи в БД
-    const updated = updateMatchesFromAPI(matches);
-    
-    if (!updated) {
-      console.error(`❌ Не удалось обновить матчи для ${date}`);
-      return;
+    // Обновляем матчи в БД (только если есть данные из API)
+    const matchesWithApi = matches.filter(m => m.apiMatch !== null);
+    if (matchesWithApi.length > 0) {
+      const updated = updateMatchesFromAPI(matchesWithApi);
+      
+      if (!updated) {
+        console.error(`❌ Не удалось обновить матчи для ${date}`);
+        return;
+      }
+    } else {
+      console.log(`ℹ️ Все матчи уже обновлены в БД`);
     }
     
     // Помечаем дату как обработанную
