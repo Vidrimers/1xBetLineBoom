@@ -11872,6 +11872,49 @@ async function loadParsePreview() {
   previewList.innerHTML = '<div style="text-align: center; color: #b0b8c8; padding: 20px;">⏳ Загрузка матчей...</div>';
   
   try {
+    // Загружаем словарь для перевода названий команд
+    const dictionaryMapping = {
+      'CL': '/names/LeagueOfChampionsTeams.json',
+      'EL': '/names/EuropaLeague.json',
+      'PL': '/names/PremierLeague.json',
+      'BL1': '/names/Bundesliga.json',
+      'PD': '/names/LaLiga.json',
+      'SA': '/names/SerieA.json',
+      'FL1': '/names/Ligue1.json',
+      'DED': '/names/Eredivisie.json',
+      'RPL': '/names/RussianPremierLeague.json'
+    };
+    
+    let teamTranslations = {};
+    const dictionaryFile = dictionaryMapping[competition];
+    
+    if (dictionaryFile) {
+      try {
+        const dictResponse = await fetch(dictionaryFile);
+        if (dictResponse.ok) {
+          const dictData = await dictResponse.json();
+          const teams = dictData.teams || {};
+          
+          // Создаем обратный маппинг: Английское -> Русское (выбираем самое короткое)
+          for (const [russian, english] of Object.entries(teams)) {
+            const englishLower = english.toLowerCase();
+            if (!teamTranslations[englishLower] || russian.length < teamTranslations[englishLower].length) {
+              teamTranslations[englishLower] = russian;
+            }
+          }
+          
+          console.log(`✅ Загружен словарь для ${competition}: ${Object.keys(teamTranslations).length} команд`);
+        }
+      } catch (err) {
+        console.warn(`⚠️ Не удалось загрузить словарь из ${dictionaryFile}`);
+      }
+    }
+    
+    // Функция для перевода названия команды
+    const translateTeamName = (englishName) => {
+      return teamTranslations[englishName.toLowerCase()] || englishName;
+    };
+    
     const response = await fetch(
       `/api/fd-matches?competition=${encodeURIComponent(competition)}&dateFrom=${dateFrom}&dateTo=${dateTo}&includeFuture=${includeFuture}`
     );
@@ -11945,6 +11988,10 @@ async function loadParsePreview() {
           minute: "2-digit"
         });
         
+        // Переводим названия команд
+        const homeTeamRu = translateTeamName(match.homeTeam.name);
+        const awayTeamRu = translateTeamName(match.awayTeam.name);
+        
         const isFinished = match.status === 'FINISHED';
         const scoreHtml = isFinished ? `
           <div style="
@@ -11982,7 +12029,7 @@ async function loadParsePreview() {
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="flex: 1;">
                 <div style="font-weight: 500; color: #e0e6f0; margin-bottom: 4px;">
-                  ${match.homeTeam.name} vs ${match.awayTeam.name}
+                  ${homeTeamRu} vs ${awayTeamRu}
                 </div>
                 <div style="font-size: 0.85em; color: #b0b8c8;">
                   📅 ${formattedDate}
