@@ -2141,7 +2141,8 @@ export function stopBot() {
 // Функция для отправки напоминаний о предстоящих матчах
 async function sendMatchReminders() {
   try {
-    const db = require("better-sqlite3")("1xBetLineBoom.db");
+    const Database = (await import("better-sqlite3")).default;
+    const db = new Database("1xBetLineBoom.db");
     
     // Получаем все настройки напоминаний
     const reminders = db.prepare(`
