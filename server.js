@@ -5043,7 +5043,7 @@ app.get("/api/fd-matches", async (req, res) => {
     
     console.log(`✅ Из них завершенных в диапазоне ${dateFrom} - ${dateTo}: ${filteredGames.length} матчей`);
 
-    // Преобразуем в формат Football-Data для совместимости с фронтом
+    // Преобразуем в формат SStats для совместимости с фронтом
     const matches = filteredGames.map(game => ({
       id: game.id,
       utcDate: game.date,
@@ -5066,7 +5066,7 @@ app.get("/api/fd-matches", async (req, res) => {
       }
     }));
 
-    // Возвращаем в том же формате что и Football-Data
+    // Возвращаем в том же формате что и SStats
     res.json({ matches });
 
   } catch (error) {
@@ -8747,7 +8747,7 @@ app.post("/api/seed-data", (req, res) => {
   }
 });
 
-// ===== FOOTBALL-DATA.ORG API ENDPOINTS =====
+// ===== SStats API ENDPOINTS =====
 
 // ===== АДМИН ФУНКЦИИ =====
 
@@ -12433,45 +12433,41 @@ app.post("/api/notify-counting-results", async (req, res) => {
         message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
       });
 
-    // Отправляем сообщение в Telegram
+    // Отправляем сообщение только админу в Telegram
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-      console.error("❌ Telegram токен или chat ID не настроены");
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+      console.error("❌ Telegram токен или admin ID не настроены");
       return res.status(500).json({ error: "Telegram не настроен" });
     }
 
-    const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
-
-    for (const chatId of chatIds) {
-      try {
-        const response = await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: message,
-              parse_mode: "HTML",
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          console.error(
-            `❌ Ошибка отправки в чат ${chatId}:`,
-            response.statusText
-          );
-        } else {
-          console.log(`✅ Уведомление отправлено в чат ${chatId}`);
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_ADMIN_ID,
+            text: message,
+            parse_mode: "HTML",
+          }),
         }
-      } catch (error) {
-        console.error(`❌ Ошибка отправки уведомления в чат ${chatId}:`, error);
+      );
+
+      if (!response.ok) {
+        console.error(
+          `❌ Ошибка отправки админу ${TELEGRAM_ADMIN_ID}:`,
+          response.statusText
+        );
+      } else {
+        console.log(`✅ Уведомление отправлено админу ${TELEGRAM_ADMIN_ID}`);
       }
+    } catch (error) {
+      console.error(`❌ Ошибка отправки уведомления админу:`, error);
     }
 
     res.json({ success: true });
