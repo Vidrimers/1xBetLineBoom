@@ -12693,9 +12693,401 @@ app.get("/api/test/score-points/:userId", (req, res) => {
   }
 });
 
+// ============================================
+// АВТОМАТИЧЕСКИЙ ПОДСЧЕТ РЕЗУЛЬТАТОВ
+// ============================================
+
+// Хранилище обработанных дат (чтобы не обрабатывать повторно)
+const processedDates = new Set();
+
+/**
+ * Нормализация названия команды для сопоставления
+ */
+function normalizeTeamNameForAPI(name) {
+  if (!name) return '';
+  
+  // Удаляем диакритику
+  const withoutDiacritics = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  
+  return withoutDiacritics
+    .toLowerCase()
+    .replace(/[''`]/g, '')
+    .replace(/[^a-z0-9\u0400-\u04FF\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Получить активные даты с незавершенными матчами
+ */
+function getActiveDates() {
+  try {
+    const dates = db.prepare(`
+      SELECT DISTINCT 
+        m.event_id,
+        e.competition_code,
+        m.round,
+        DATE(m.match_date) as date
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.status != 'finished'
+        AND m.match_date IS NOT NULL
+        AND DATE(m.match_date) >= DATE('now', '-1 day')
+        AND DATE(m.match_date) <= DATE('now', '+3 days')
+      ORDER BY m.match_date
+    `).all();
+    
+    return dates;
+  } catch (error) {
+    console.error('❌ Ошибка получения активных дат:', error);
+    return [];
+  }
+}
+
+/**
+ * Проверить завершение всех матчей для конкретной даты
+ */
+async function checkDateCompletion(dateGroup) {
+  try {
+    const { event_id, competition_code, round, date } = dateGroup;
+    
+    // Получаем матчи из БД для этой даты
+    const dbMatches = db.prepare(`
+      SELECT * FROM matches
+      WHERE event_id = ?
+        AND round = ?
+        AND DATE(match_date) = ?
+        AND status != 'finished'
+    `).all(event_id, round, date);
+    
+    if (dbMatches.length === 0) {
+      return { allFinished: true, matches: [] };
+    }
+    
+    // Запрашиваем матчи из API
+    const leagueId = SSTATS_LEAGUE_MAPPING[competition_code];
+    if (!leagueId) {
+      console.log(`⚠️ Неизвестный турнир: ${competition_code}`);
+      return { allFinished: false, matches: [] };
+    }
+    
+    const dateObj = new Date(date);
+    let year = dateObj.getFullYear();
+    
+    // Для лиг: если дата в первой половине года, это прошлый сезон
+    const cupTournaments = ['WC', 'EC'];
+    if (!cupTournaments.includes(competition_code) && dateObj.getMonth() < 7) {
+      year = year - 1;
+    }
+    
+    const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&Year=${year}`;
+    
+    const response = await fetch(url, {
+      headers: { "X-API-Key": SSTATS_API_KEY }
+    });
+    
+    if (!response.ok) {
+      console.error(`❌ SStats API ошибка: ${response.status}`);
+      return { allFinished: false, matches: [] };
+    }
+    
+    const sstatsData = await response.json();
+    
+    if (sstatsData.status !== "OK") {
+      console.error(`❌ SStats API статус не OK`);
+      return { allFinished: false, matches: [] };
+    }
+    
+    // Фильтруем матчи по дате
+    const apiMatches = (sstatsData.data || []).filter(game => {
+      const gameDate = game.date.split('T')[0];
+      return gameDate === date;
+    });
+    
+    // Сопоставляем матчи БД с API
+    const matchedMatches = [];
+    
+    for (const dbMatch of dbMatches) {
+      const apiMatch = apiMatches.find(api => {
+        const apiHome = normalizeTeamNameForAPI(api.homeTeam.name);
+        const apiAway = normalizeTeamNameForAPI(api.awayTeam.name);
+        const dbHome = normalizeTeamNameForAPI(dbMatch.team1_name);
+        const dbAway = normalizeTeamNameForAPI(dbMatch.team2_name);
+        
+        return (apiHome === dbHome && apiAway === dbAway) ||
+               (apiHome === dbAway && apiAway === dbHome);
+      });
+      
+      if (apiMatch) {
+        matchedMatches.push({ dbMatch, apiMatch });
+      }
+    }
+    
+    // Проверяем что все матчи завершены (status: 8)
+    const allFinished = matchedMatches.length > 0 && 
+                       matchedMatches.every(({ apiMatch }) => apiMatch.status === 8);
+    
+    return { allFinished, matches: matchedMatches };
+    
+  } catch (error) {
+    console.error('❌ Ошибка проверки завершения даты:', error);
+    return { allFinished: false, matches: [] };
+  }
+}
+
+/**
+ * Обновить матчи в БД из API
+ */
+function updateMatchesFromAPI(matches) {
+  try {
+    const updateStmt = db.prepare(`
+      UPDATE matches
+      SET status = 'finished',
+          winner = ?,
+          score_team1 = ?,
+          score_team2 = ?
+      WHERE id = ?
+    `);
+    
+    for (const { dbMatch, apiMatch } of matches) {
+      const homeScore = apiMatch.homeResult;
+      const awayScore = apiMatch.awayResult;
+      
+      // Определяем победителя с учетом возможного обратного порядка команд
+      const apiHome = normalizeTeamNameForAPI(apiMatch.homeTeam.name);
+      const dbHome = normalizeTeamNameForAPI(dbMatch.team1_name);
+      const isReversed = apiHome !== dbHome;
+      
+      let winner;
+      if (homeScore > awayScore) {
+        winner = isReversed ? 'team2' : 'team1';
+      } else if (homeScore < awayScore) {
+        winner = isReversed ? 'team1' : 'team2';
+      } else {
+        winner = 'draw';
+      }
+      
+      const score1 = isReversed ? awayScore : homeScore;
+      const score2 = isReversed ? homeScore : awayScore;
+      
+      updateStmt.run(winner, score1, score2, dbMatch.id);
+      
+      console.log(`✅ Обновлен матч: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Ошибка обновления матчей:', error);
+    return false;
+  }
+}
+
+/**
+ * Запустить автоподсчет для конкретной даты
+ */
+async function triggerAutoCountingForDate(dateGroup) {
+  try {
+    const { date, round, competition_code } = dateGroup;
+    const dateKey = `${date}_${round}_${competition_code}`;
+    
+    // Проверяем что не обрабатывали эту дату ранее
+    if (processedDates.has(dateKey)) {
+      return;
+    }
+    
+    console.log(`\n🤖 ========================================`);
+    console.log(`🤖 АВТОПОДСЧЕТ для ${date} | ${round}`);
+    console.log(`🤖 ========================================\n`);
+    
+    // Проверяем завершение
+    const { allFinished, matches } = await checkDateCompletion(dateGroup);
+    
+    if (!allFinished || matches.length === 0) {
+      console.log(`⏸️ Не все матчи завершены для ${date}`);
+      return;
+    }
+    
+    console.log(`✅ Все матчи завершены для ${date}!`);
+    
+    // Обновляем матчи в БД
+    const updated = updateMatchesFromAPI(matches);
+    
+    if (!updated) {
+      console.error(`❌ Не удалось обновить матчи для ${date}`);
+      return;
+    }
+    
+    // Помечаем дату как обработанную
+    processedDates.add(dateKey);
+    
+    // Получаем ставки за эту дату
+    const bets = db.prepare(`
+      SELECT 
+        b.*,
+        u.username,
+        m.team1_name,
+        m.team2_name,
+        m.winner,
+        m.score_team1 as actual_score_team1,
+        m.score_team2 as actual_score_team2
+      FROM bets b
+      JOIN users u ON b.user_id = u.id
+      JOIN matches m ON b.match_id = m.id
+      WHERE DATE(m.match_date) = ?
+        AND m.status = 'finished'
+        AND b.is_final_bet = 0
+    `).all(date);
+    
+    if (bets.length === 0) {
+      console.log(`⚠️ Нет ставок для ${date}`);
+      return;
+    }
+    
+    // Подсчитываем результаты
+    const userStats = {};
+    
+    bets.forEach(bet => {
+      const username = bet.username;
+      if (!userStats[username]) {
+        userStats[username] = {
+          points: 0,
+          correctResults: 0,
+          correctScores: 0
+        };
+      }
+      
+      // Проверяем результат
+      let isWon = false;
+      if (bet.prediction === 'draw' && bet.winner === 'draw') {
+        isWon = true;
+      } else if (bet.prediction === 'team1' && bet.winner === 'team1') {
+        isWon = true;
+      } else if (bet.prediction === 'team2' && bet.winner === 'team2') {
+        isWon = true;
+      } else if (bet.prediction === bet.team1_name && bet.winner === 'team1') {
+        isWon = true;
+      } else if (bet.prediction === bet.team2_name && bet.winner === 'team2') {
+        isWon = true;
+      }
+      
+      if (isWon) {
+        userStats[username].points++;
+        userStats[username].correctResults++;
+        
+        // Проверяем счет
+        if (bet.score_team1 != null && bet.score_team2 != null &&
+            bet.score_team1 === bet.actual_score_team1 &&
+            bet.score_team2 === bet.actual_score_team2) {
+          userStats[username].points++;
+          userStats[username].correctScores++;
+        }
+      }
+    });
+    
+    // Формируем сообщение для админа
+    const formatDate = (dateStr) => {
+      const d = new Date(dateStr);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}.${month}.${year}`;
+    };
+    
+    let message = `🤖 <b>Автоподсчет завершен</b>\n\n`;
+    message += `📅 Дата: ${formatDate(date)}\n`;
+    message += `🏆 Тур: ${round}\n\n`;
+    message += `📈 Статистика:\n`;
+    
+    Object.entries(userStats)
+      .sort(([, a], [, b]) => b.points - a.points)
+      .forEach(([username, stats]) => {
+        const statsText = [];
+        if (stats.correctResults > 0) {
+          statsText.push(`✅ ${stats.correctResults}`);
+        }
+        if (stats.correctScores > 0) {
+          statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
+        message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
+      });
+    
+    // Отправляем админу
+    await sendAdminNotification(message);
+    console.log(`✅ Уведомление отправлено админу`);
+    
+    // Через 5 секунд отправляем результаты в группу и пользователям
+    setTimeout(async () => {
+      try {
+        console.log(`📤 Отправка результатов в группу и пользователям...`);
+        
+        // Вызываем эндпоинт отправки результатов
+        const response = await fetch(`http://localhost:${PORT}/api/admin/send-counting-results`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateFrom: date,
+            dateTo: date
+          })
+        });
+        
+        if (response.ok) {
+          console.log(`✅ Результаты отправлены в группу и пользователям`);
+        } else {
+          console.error(`❌ Ошибка отправки результатов: ${response.status}`);
+        }
+      } catch (error) {
+        console.error(`❌ Ошибка отправки результатов:`, error);
+      }
+    }, 5000);
+    
+  } catch (error) {
+    console.error('❌ Ошибка автоподсчета:', error);
+  }
+}
+
+/**
+ * Основная функция проверки и автоподсчета
+ */
+async function checkAndAutoCount() {
+  try {
+    console.log(`\n🔍 Проверка завершенных матчей... ${new Date().toLocaleString('ru-RU')}`);
+    
+    const activeDates = getActiveDates();
+    
+    if (activeDates.length === 0) {
+      console.log(`✓ Нет активных дат для проверки`);
+      return;
+    }
+    
+    console.log(`📊 Найдено активных дат: ${activeDates.length}`);
+    
+    for (const dateGroup of activeDates) {
+      await triggerAutoCountingForDate(dateGroup);
+    }
+    
+  } catch (error) {
+    console.error('❌ Ошибка в checkAndAutoCount:', error);
+  }
+}
+
+// Запускаем проверку каждые 5 минут
+const AUTO_COUNT_INTERVAL = 5 * 60 * 1000; // 5 минут
+setInterval(checkAndAutoCount, AUTO_COUNT_INTERVAL);
+
+console.log(`\n🤖 Автоподсчет активирован (проверка каждые 5 минут)\n`);
+
 // Запуск сервера
 app.listen(PORT, "0.0.0.0", () => {
   console.log(
     `\n🎯 1xBetLineBoom сервер запущен на http://0.0.0.0:${PORT} (доступен на http://144.124.237.222:${PORT})\n`
   );
+  
+  // Запускаем первую проверку через 30 секунд после старта
+  setTimeout(() => {
+    console.log(`\n🤖 Запуск первой проверки автоподсчета...\n`);
+    checkAndAutoCount();
+  }, 30000);
 });
