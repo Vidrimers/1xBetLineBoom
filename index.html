@@ -4408,6 +4408,25 @@
             <p style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 10px;">
               Симулирует завершение всех матчей выбранного тура и запускает автоподсчет
             </p>
+            
+            <!-- Выбор турнира -->
+            <select 
+              id="testEventSelect" 
+              style="
+                width: 100%;
+                padding: 10px;
+                margin-bottom: 10px;
+                background: rgba(0, 0, 0, 0.3);
+                color: #e0e6f0;
+                border: 1px solid #3a7bd5;
+                border-radius: 5px;
+                font-size: 0.95em;
+                cursor: pointer;
+              "
+            >
+              <option value="">Выберите турнир...</option>
+            </select>
+            
             <button 
               onclick="testAutoCounting()" 
               style="

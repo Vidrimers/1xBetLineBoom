@@ -10853,7 +10853,7 @@ ${testMode ? '\n\n🧪 <b>ТЕСТОВЫЙ РЕЖИМ:</b> Отправлено 
   }
 });
 
-// POST /api/admin/test-auto-counting - Тест автоподсчета
+// POST /api/admin/test-auto-counting - Тест автоподсчета (имитация завершения матчей)
 app.post("/api/admin/test-auto-counting", async (req, res) => {
   const { username: adminUsername, eventId, testMode } = req.body;
 
@@ -10864,7 +10864,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
 
   try {
     console.log(`\n🧪 ========================================`);
-    console.log(`🧪 ТЕСТ АВТОПОДСЧЕТА`);
+    console.log(`🧪 ТЕСТ АВТОПОДСЧЕТА (ИМИТАЦИЯ)`);
     console.log(`🧪 Event ID: ${eventId}`);
     console.log(`🧪 Режим: ${testMode ? 'Только админу' : 'В реальную группу'}`);
     console.log(`🧪 ========================================\n`);
@@ -10876,16 +10876,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
       return res.status(404).json({ error: "Турнир не найден" });
     }
 
-    // Определяем competition_code по иконке
-    const competition_code = ICON_TO_COMPETITION[event.icon];
-    
-    if (!competition_code) {
-      return res.status(400).json({ 
-        error: "Не удалось определить турнир по иконке. Иконка не в маппинге." 
-      });
-    }
-
-    // Получаем все незавершенные матчи текущего турнира
+    // Получаем ВСЕ незавершенные матчи текущего турнира
     const dbMatches = db.prepare(`
       SELECT * FROM matches
       WHERE event_id = ?
@@ -10900,61 +10891,26 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
     }
 
     console.log(`📊 Найдено незавершенных матчей: ${dbMatches.length}`);
+    console.log(`🎭 ИМИТИРУЕМ завершение ВСЕХ матчей\n`);
 
-    // Группируем матчи по датам
-    const matchesByDate = {};
+    // Группируем матчи по датам и турам
+    const matchesByDateRound = {};
     dbMatches.forEach(match => {
       const date = match.match_date.split('T')[0];
-      if (!matchesByDate[date]) {
-        matchesByDate[date] = [];
+      const key = `${date}_${match.round}`;
+      if (!matchesByDateRound[key]) {
+        matchesByDateRound[key] = {
+          date,
+          round: match.round,
+          matches: []
+        };
       }
-      matchesByDate[date].push(match);
+      matchesByDateRound[key].matches.push(match);
     });
 
-    console.log(`📅 Дат с незавершенными матчами: ${Object.keys(matchesByDate).length}`);
+    console.log(`📅 Дат/туров с незавершенными матчами: ${Object.keys(matchesByDateRound).length}\n`);
 
-    // Запрашиваем матчи из API
-    const leagueId = SSTATS_LEAGUE_MAPPING[competition_code];
-    if (!leagueId) {
-      return res.status(400).json({ 
-        error: `Неизвестный турнир: ${competition_code}` 
-      });
-    }
-
-    // Определяем год для запроса
-    const firstMatch = dbMatches[0];
-    const dateObj = new Date(firstMatch.match_date);
-    let year = dateObj.getFullYear();
-    
-    // Для лиг: если дата в первой половине года, это прошлый сезон
-    const cupTournaments = ['WC', 'EC'];
-    if (!cupTournaments.includes(competition_code) && dateObj.getMonth() < 7) {
-      year = year - 1;
-    }
-
-    const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&Year=${year}`;
-    
-    console.log(`🌐 Запрос к API: ${url}`);
-
-    const response = await fetch(url, {
-      headers: { "X-API-Key": SSTATS_API_KEY }
-    });
-
-    if (!response.ok) {
-      return res.status(500).json({ 
-        error: `SStats API ошибка: ${response.status}` 
-      });
-    }
-
-    const sstatsData = await response.json();
-
-    if (sstatsData.status !== "OK") {
-      return res.status(500).json({ 
-        error: "SStats API статус не OK" 
-      });
-    }
-
-    // Сопоставляем матчи БД с API и обновляем их
+    // ИМИТИРУЕМ завершение всех матчей
     let updatedCount = 0;
     const updateStmt = db.prepare(`
       UPDATE matches
@@ -10965,66 +10921,33 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
       WHERE id = ?
     `);
 
+    // Генерируем случайные результаты для всех матчей
     for (const dbMatch of dbMatches) {
-      const matchDate = dbMatch.match_date.split('T')[0];
+      // Генерируем случайный счет (0-4 голов для каждой команды)
+      const score1 = Math.floor(Math.random() * 5);
+      const score2 = Math.floor(Math.random() * 5);
       
-      // Фильтруем матчи API по дате
-      const apiMatches = (sstatsData.data || []).filter(game => {
-        const gameDate = game.date.split('T')[0];
-        return gameDate === matchDate;
-      });
-
-      // Ищем соответствующий матч в API
-      const apiMatch = apiMatches.find(api => {
-        const apiHome = normalizeTeamNameForAPI(api.homeTeam.name);
-        const apiAway = normalizeTeamNameForAPI(api.awayTeam.name);
-        const dbHome = normalizeTeamNameForAPI(dbMatch.team1_name);
-        const dbAway = normalizeTeamNameForAPI(dbMatch.team2_name);
-        
-        return (apiHome === dbHome && apiAway === dbAway) ||
-               (apiHome === dbAway && apiAway === dbHome);
-      });
-
-      if (apiMatch && apiMatch.status === 8) {
-        // Матч завершен в API
-        const homeScore = apiMatch.homeResult;
-        const awayScore = apiMatch.awayResult;
-        
-        // Определяем победителя с учетом возможного обратного порядка команд
-        const apiHome = normalizeTeamNameForAPI(apiMatch.homeTeam.name);
-        const dbHome = normalizeTeamNameForAPI(dbMatch.team1_name);
-        const isReversed = apiHome !== dbHome;
-        
-        let winner;
-        if (homeScore > awayScore) {
-          winner = isReversed ? 'team2' : 'team1';
-        } else if (homeScore < awayScore) {
-          winner = isReversed ? 'team1' : 'team2';
-        } else {
-          winner = 'draw';
-        }
-        
-        const score1 = isReversed ? awayScore : homeScore;
-        const score2 = isReversed ? homeScore : awayScore;
-        
-        updateStmt.run(winner, score1, score2, dbMatch.id);
-        updatedCount++;
-        
-        console.log(`✅ Обновлен: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})`);
+      // Определяем победителя
+      let winner;
+      if (score1 > score2) {
+        winner = 'team1';
+      } else if (score1 < score2) {
+        winner = 'team2';
+      } else {
+        winner = 'draw';
       }
+      
+      updateStmt.run(winner, score1, score2, dbMatch.id);
+      updatedCount++;
+      
+      console.log(`🎭 Имитация: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})`);
     }
 
-    if (updatedCount === 0) {
-      return res.status(400).json({ 
-        error: "Не найдено завершенных матчей в API для обновления" 
-      });
-    }
+    console.log(`\n✅ Имитировано завершение матчей: ${updatedCount}\n`);
 
-    console.log(`\n✅ Обновлено матчей: ${updatedCount}\n`);
-
-    // Теперь запускаем подсчет для каждой даты
-    for (const [date, matches] of Object.entries(matchesByDate)) {
-      const round = matches[0].round;
+    // Теперь запускаем подсчет для каждой даты/тура
+    for (const [key, group] of Object.entries(matchesByDateRound)) {
+      const { date, round } = group;
       
       console.log(`\n📊 Подсчет для ${date} | ${round}\n`);
 
@@ -11044,12 +10967,13 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
         JOIN users u ON b.user_id = u.id
         JOIN matches m ON b.match_id = m.id
         WHERE DATE(m.match_date) = ?
+          AND m.round = ?
           AND m.status = 'finished'
           AND b.is_final_bet = 0
-      `).all(date);
+      `).all(date, round);
 
       if (bets.length === 0) {
-        console.log(`⚠️ Нет ставок для ${date}`);
+        console.log(`⚠️ Нет ставок для ${date} | ${round}`);
         continue;
       }
 
@@ -11106,7 +11030,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
         return `${day}.${month}.${year}`;
       };
 
-      let message = `${testMode ? '🧪 <b>ТЕСТ АВТОПОДСЧЕТА</b>\n\n' : '🤖 <b>Автоподсчет завершен</b>\n\n'}`;
+      let message = `🧪 <b>ТЕСТ АВТОПОДСЧЕТА</b>\n\n`;
       message += `📅 Дата: ${formatDate(date)}\n`;
       message += `🏆 Тур: ${round}\n`;
       message += `🎯 Турнир: ${event.name}\n\n`;
@@ -11130,33 +11054,58 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
         message += `\n\n🧪 <b>ТЕСТОВЫЙ РЕЖИМ:</b> Отправлено только админу`;
       }
 
-      // Отправляем уведомление
+      // Отправляем уведомления в зависимости от режима
       if (testMode) {
+        // Только админу
         await sendAdminNotification(message);
-        console.log(`✅ Уведомление отправлено админу (тестовый режим)`);
+        console.log(`✅ Уведомление отправлено только админу (тестовый режим)`);
       } else {
+        // В реальную группу
         await sendAdminNotification(message);
         console.log(`✅ Уведомление отправлено админу`);
         
-        // Через 5 секунд отправляем в группу и пользователям
+        // Через 5 секунд отправляем в группу и персональные сообщения
         setTimeout(async () => {
           try {
             console.log(`📤 Отправка результатов в группу и пользователям...`);
             
-            const response = await fetch(`http://localhost:${PORT}/api/admin/send-counting-results`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                dateFrom: date,
-                dateTo: date
-              })
-            });
+            // Отправляем в группу
+            await sendGroupNotification(message.replace('🧪 <b>ТЕСТ АВТОПОДСЧЕТА</b>', '🤖 <b>Автоподсчет завершен</b>'));
             
-            if (response.ok) {
-              console.log(`✅ Результаты отправлены в группу и пользователям`);
-            } else {
-              console.error(`❌ Ошибка отправки результатов: ${response.status}`);
+            // Отправляем персональные сообщения
+            const bestUser = sortedUsers[0];
+            const worstUser = sortedUsers[sortedUsers.length - 1];
+            
+            for (const [username, stats] of sortedUsers) {
+              if (!stats.telegramId || stats.telegramNotifications !== 1) continue;
+              
+              let personalMessage = '';
+              
+              if (username === bestUser[0] && sortedUsers.length > 1) {
+                personalMessage = `🏆 <b>Сегодня ты лучший!</b>\n\n`;
+                personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
+                if (stats.correctScores > 0) {
+                  personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+                }
+                personalMessage += `!\n\nТак держать! 💪`;
+              } else if (username === worstUser[0] && sortedUsers.length > 1 && stats.points === 0) {
+                personalMessage = `😢 <b>Сегодня ты лох...</b>\n\n`;
+                personalMessage += `Ты набрал 0 очков.\n\nНе расстраивайся, в следующий раз обязательно получится! 🍀`;
+              } else {
+                personalMessage = `📊 <b>Сегодня ты не лучший...</b>\n\n`;
+                personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
+                if (stats.correctScores > 0) {
+                  personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+                }
+                personalMessage += `.\n\nПродолжай стараться! 💪`;
+              }
+              
+              personalMessage += `\n\n📅 Дата: ${formatDate(date)}\n🏆 Тур: ${round}`;
+              
+              await sendTelegramMessage(stats.telegramId, personalMessage);
             }
+            
+            console.log(`✅ Результаты отправлены в группу и пользователям`);
           } catch (error) {
             console.error(`❌ Ошибка отправки результатов:`, error);
           }
@@ -11170,7 +11119,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: `Тест автоподсчета завершен. Обновлено матчей: ${updatedCount}`,
+      message: `Тест автоподсчета завершен. Имитировано завершение ${updatedCount} матчей.`,
       updatedMatches: updatedCount
     });
 

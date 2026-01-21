@@ -15812,7 +15812,7 @@ async function loadAutoCountingStatus() {
 /**
  * Открыть модалку тестов
  */
-function openTestsModal() {
+async function openTestsModal() {
   const modal = document.getElementById('testsModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -15822,6 +15822,31 @@ function openTestsModal() {
     const checkbox = document.getElementById('testRealGroupCheckbox');
     if (checkbox) {
       checkbox.checked = testRealGroup;
+    }
+    
+    // Загружаем список турниров
+    try {
+      const response = await fetch('/api/events');
+      const events = await response.json();
+      
+      const select = document.getElementById('testEventSelect');
+      if (select) {
+        select.innerHTML = '<option value="">Выберите турнир...</option>';
+        
+        events.forEach(event => {
+          const option = document.createElement('option');
+          option.value = event.id;
+          option.textContent = event.name;
+          select.appendChild(option);
+        });
+        
+        // Если есть выбранный турнир, выбираем его
+        if (selectedEventId) {
+          select.value = selectedEventId;
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки турниров:', error);
     }
   }
 }
@@ -15851,15 +15876,19 @@ async function testAutoCounting() {
     return;
   }
   
-  if (!selectedEventId) {
-    await showCustomAlert('Выберите турнир', 'Ошибка', '❌');
+  // Берем турнир из селекта в модалке
+  const select = document.getElementById('testEventSelect');
+  const eventId = select ? parseInt(select.value) : null;
+  
+  if (!eventId) {
+    await showCustomAlert('Выберите турнир из списка', 'Ошибка', '❌');
     return;
   }
   
   const testRealGroup = document.getElementById('testRealGroupCheckbox')?.checked || false;
   
   const confirmed = confirm(
-    `Запустить тест автоподсчета для текущего турнира?\n\n` +
+    `Запустить тест автоподсчета для выбранного турнира?\n\n` +
     `Режим: ${testRealGroup ? '📢 Отправка в реальную группу' : '👤 Только админу'}\n\n` +
     `Это симулирует завершение всех матчей и запустит автоподсчет.`
   );
@@ -15872,7 +15901,7 @@ async function testAutoCounting() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: currentUser.username,
-        eventId: selectedEventId,
+        eventId: eventId,
         testMode: !testRealGroup
       })
     });
@@ -15885,10 +15914,15 @@ async function testAutoCounting() {
         '✅'
       );
       
-      // Перезагружаем матчи чтобы увидеть обновления
-      setTimeout(() => {
-        loadMatches(selectedEventId);
-      }, 2000);
+      // Закрываем модалку
+      closeTestsModal();
+      
+      // Если это текущий турнир, перезагружаем матчи
+      if (selectedEventId === eventId) {
+        setTimeout(() => {
+          loadMatches(eventId);
+        }, 2000);
+      }
     } else {
       const error = await response.json();
       await showCustomAlert(error.error || 'Ошибка теста', 'Ошибка', '❌');
