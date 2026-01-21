@@ -2450,10 +2450,21 @@ async function displayMatches() {
     matchesByDate[dateKey].push(match);
   });
 
-  // Сортируем ключи дат (сначала реальные даты, потом "Без даты")
+  // Сортируем ключи дат
+  // Сначала проверяем, все ли матчи в дате завершены
   const sortedDateKeys = Object.keys(matchesByDate).sort((a, b) => {
     if (a === "Без даты") return 1;
     if (b === "Без даты") return -1;
+    
+    // Проверяем, все ли матчи завершены в каждой дате
+    const allFinishedA = matchesByDate[a].every(m => getMatchStatusByDate(m) === "finished");
+    const allFinishedB = matchesByDate[b].every(m => getMatchStatusByDate(m) === "finished");
+    
+    // Если в одной дате все завершены, а в другой нет - незавершенная идет первой
+    if (allFinishedA && !allFinishedB) return 1;  // A вниз
+    if (!allFinishedA && allFinishedB) return -1; // B вниз
+    
+    // Если обе даты в одинаковом состоянии (обе завершены или обе нет) - сортируем по дате
     const [dayA, monthA, yearA] = a.split(".").map(Number);
     const [dayB, monthB, yearB] = b.split(".").map(Number);
     const dateA = new Date(yearA, monthA - 1, dayA);
