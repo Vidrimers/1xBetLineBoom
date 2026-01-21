@@ -14131,6 +14131,18 @@ async function showLiveEventMatches(eventId) {
   localStorage.setItem('currentLiveEventId', eventId);
   const container = document.getElementById('liveMatchesContainer');
   
+  // ВАЖНО: Сохраняем состояние открытых секций ДО перезаписи container.innerHTML
+  const openSections = new Set();
+  if (completedDaysData && completedDaysData.completedDays) {
+    completedDaysData.completedDays.forEach(day => {
+      const dayId = `day-${day.date}`;
+      const dayContainer = document.getElementById(`${dayId}Container`);
+      if (dayContainer && dayContainer.style.display !== 'none') {
+        openSections.add(dayId);
+      }
+    });
+  }
+  
   try {
     // Получаем информацию о турнире
     const eventsResponse = await fetch('/api/events');
@@ -14292,8 +14304,8 @@ async function showLiveEventMatches(eventId) {
       // Первая загрузка - загружаем с сервера
       loadCompletedDays(eventId);
     } else {
-      // Обновление - перерисовываем из сохраненных данных
-      renderCompletedDays(eventId);
+      // Обновление - перерисовываем из сохраненных данных с восстановлением открытых секций
+      renderCompletedDays(eventId, openSections);
     }
     
     // Обновляем звездочки после отрисовки
@@ -14353,22 +14365,25 @@ async function loadCompletedDays(eventId) {
 }
 
 // Отрисовать завершенные дни
-function renderCompletedDays(eventId) {
+function renderCompletedDays(eventId, savedOpenSections = null) {
   if (!completedDaysData) return;
   
   const completedDays = completedDaysData.completedDays || [];
   const container = document.getElementById('completedDaysContainer');
   if (!container) return;
   
-  // Сохраняем какие секции были открыты
-  const openSections = new Set();
-  completedDays.forEach(day => {
-    const dayId = `day-${day.date}`;
-    const dayContainer = document.getElementById(`${dayId}Container`);
-    if (dayContainer && dayContainer.style.display !== 'none') {
-      openSections.add(dayId);
-    }
-  });
+  // Используем переданное состояние или пытаемся определить текущее
+  let openSections = savedOpenSections;
+  if (!openSections) {
+    openSections = new Set();
+    completedDays.forEach(day => {
+      const dayId = `day-${day.date}`;
+      const dayContainer = document.getElementById(`${dayId}Container`);
+      if (dayContainer && dayContainer.style.display !== 'none') {
+        openSections.add(dayId);
+      }
+    });
+  }
   
   let html = '';
   
