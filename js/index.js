@@ -16277,22 +16277,62 @@ if (window.innerWidth > 1400) {
 
 // Кэш для словаря имен игроков
 let playerNamesDict = null;
+let currentPlayersDictTournament = null; // Код турнира для которого загружен словарь
 
-// Загрузить словарь имен игроков
-async function loadPlayerNamesDict() {
-  if (playerNamesDict) return playerNamesDict;
+// Определить код турнира по иконке
+function determineTournamentCode(icon) {
+  const iconMapping = {
+    'img/cups/champions-league.png': 'CL',
+    'img/cups/european-league.png': 'EL',
+    'img/cups/england-premier-league.png': 'PL',
+    'img/cups/bundesliga.png': 'BL1',
+    'img/cups/spain-la-liga.png': 'PD',
+    'img/cups/serie-a.png': 'SA',
+    'img/cups/france-league-ligue-1.png': 'FL1',
+    'img/cups/world-cup.png': 'WC'
+  };
+  
+  return iconMapping[icon] || 'CL'; // По умолчанию CL
+}
+
+// Маппинг кодов турниров на файлы словарей игроков
+const PLAYERS_DICT_FILES = {
+  'CL': 'names/LeagueOfChampionsPlayers.json',
+  'EL': 'names/EuropaLeaguePlayers.json',
+  'PL': 'names/PremierLeaguePlayers.json',
+  'BL1': 'names/BundesligaPlayers.json',
+  'PD': 'names/LaLigaPlayers.json',
+  'SA': 'names/SerieAPlayers.json',
+  'FL1': 'names/Ligue1Players.json',
+  'DED': 'names/EredivisiePlayers.json',
+  'RPL': 'names/RussianPremierLeaguePlayers.json',
+  'WC': 'names/PlayerNames.json',
+  'EC': 'names/PlayerNames.json'
+};
+
+// Загрузить словарь имен игроков для конкретного турнира
+async function loadPlayerNamesDict(tournamentCode) {
+  // Если уже загружен словарь для этого турнира, возвращаем его
+  if (playerNamesDict && currentPlayersDictTournament === tournamentCode) {
+    return playerNamesDict;
+  }
+  
+  const dictFile = PLAYERS_DICT_FILES[tournamentCode] || 'names/PlayerNames.json';
   
   try {
-    const response = await fetch('/names/PlayerNames.json');
+    const response = await fetch(`/${dictFile}`);
     if (response.ok) {
       playerNamesDict = await response.json();
-      console.log('✅ Словарь имен игроков загружен:', Object.keys(playerNamesDict).length, 'имен');
+      currentPlayersDictTournament = tournamentCode;
+      console.log(`✅ Словарь игроков загружен для ${tournamentCode}:`, Object.keys(playerNamesDict).length, 'имен');
     } else {
       playerNamesDict = {};
+      currentPlayersDictTournament = null;
     }
   } catch (error) {
     console.warn('⚠️ Не удалось загрузить словарь имен игроков:', error);
     playerNamesDict = {};
+    currentPlayersDictTournament = null;
   }
   
   return playerNamesDict;
@@ -16321,6 +16361,21 @@ async function showLiveTeamStats(matchData) {
   modal.style.display = 'flex';
   title.textContent = `📊 ${matchData.team1} vs ${matchData.team2}`;
   content.innerHTML = '<div class="empty-message">⏳ Загрузка статистики...</div>';
+  
+  // Загружаем словарь игроков для текущего турнира
+  if (currentLiveEventId) {
+    try {
+      const events = await fetch('/api/events').then(r => r.json());
+      const event = events.find(e => e.id === currentLiveEventId);
+      if (event && event.icon) {
+        // Определяем код турнира по иконке (аналогично как в server.js)
+        const tournamentCode = determineTournamentCode(event.icon);
+        await loadPlayerNamesDict(tournamentCode);
+      }
+    } catch (err) {
+      console.warn('⚠️ Не удалось загрузить словарь игроков:', err);
+    }
+  }
   
   // Уведомляем админа об открытии статистики
   if (currentUser && currentUser.username && currentLiveEventId) {

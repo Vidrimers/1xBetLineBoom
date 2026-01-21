@@ -65,6 +65,21 @@ const COMPETITION_DICTIONARY_MAPPING = {
   'EC': 'names/Countries.json'   // Euro Championship
 };
 
+// Маппинг кодов турниров на файлы словарей игроков
+const PLAYERS_DICTIONARY_MAPPING = {
+  'CL': 'names/LeagueOfChampionsPlayers.json',
+  'EL': 'names/EuropaLeaguePlayers.json',
+  'PL': 'names/PremierLeaguePlayers.json',
+  'BL1': 'names/BundesligaPlayers.json',
+  'PD': 'names/LaLigaPlayers.json',
+  'SA': 'names/SerieAPlayers.json',
+  'FL1': 'names/Ligue1Players.json',
+  'DED': 'names/EredivisiePlayers.json',
+  'RPL': 'names/RussianPremierLeaguePlayers.json',
+  'WC': 'names/PlayerNames.json',  // World Cup - общий словарь
+  'EC': 'names/PlayerNames.json'   // Euro Championship - общий словарь
+};
+
 const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
 
 if (!fs.existsSync(AWARD_IMAGE_UPLOAD_DIR)) {
