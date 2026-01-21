@@ -16,6 +16,7 @@ const TEAM_NAME_MAP = {
   ньюкасл: "Newcastle United FC",
   тоттенхем: "Tottenham Hotspur FC",
   тоттенхэм: "Tottenham Hotspur FC",
+  тоттенхэм: "Tottenham",
 
   // ===== LA LIGA (ИСПАНИЯ) =====
   атлетик: "Athletic Club",
@@ -68,6 +69,7 @@ const TEAM_NAME_MAP = {
 
   // ===== SUPER LEAGUE (ГРЕЦИЯ) =====
   олимпиакос: "PAE Olympiakos SFP",
+  олимпиакос: "Olympiakos Piraeus",
 
   // ===== CZECH FIRST LEAGUE (ЧЕХИЯ) =====
   славия: "SK Slavia Praha",
