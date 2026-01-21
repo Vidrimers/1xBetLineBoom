@@ -5175,30 +5175,48 @@ app.get("/api/live-matches", async (req, res) => {
     
     console.log(`✅ Турнир найден: ${event.name}`);
     
-    // Определяем код турнира (например, из названия или отдельного поля)
-    // Пока используем простое сопоставление по названию
-    console.log(`🔍 Определение кода турнира для: "${event.name}"`);
-    let competition = null;
-    const eventName = event.name.toLowerCase();
+    // Определяем код турнира по иконке (как в автоподсчете)
+    console.log(`🔍 Определение кода турнира по иконке: "${event.icon}"`);
     
-    if (eventName.includes('champions') || eventName.includes('лига чемпионов')) {
-      competition = 'CL';
-    } else if (eventName.includes('europa') || eventName.includes('лига европы')) {
-      competition = 'EL';
-    } else if (eventName.includes('serie a') || eventName.includes('серия а')) {
-      competition = 'SA';
-    } else if (eventName.includes('premier') && eventName.includes('england')) {
-      competition = 'PL';
-    } else if (eventName.includes('bundesliga') || eventName.includes('бундеслига')) {
-      competition = 'BL1';
-    } else if (eventName.includes('la liga') || eventName.includes('ла лига')) {
-      competition = 'PD';
-    } else if (eventName.includes('ligue 1') || eventName.includes('лига 1')) {
-      competition = 'FL1';
-    } else if (eventName.includes('eredivisie') || eventName.includes('эредивизи')) {
-      competition = 'DED';
-    } else if (eventName.includes('рпл') || (eventName.includes('премьер') && eventName.includes('росс'))) {
-      competition = 'RPL';
+    const ICON_TO_COMPETITION = {
+      'img/cups/champions-league.png': 'CL',
+      'img/cups/european-league.png': 'EL',
+      'img/cups/england-premier-league.png': 'PL',
+      'img/cups/bundesliga.png': 'BL1',
+      'img/cups/spain-la-liga.png': 'PD',
+      'img/cups/serie-a.png': 'SA',
+      'img/cups/france-league-ligue-1.png': 'FL1',
+      'img/cups/rpl.png': 'RPL',
+      'img/cups/world-cup.png': 'WC',
+      'img/cups/uefa-euro.png': 'EC'
+    };
+    
+    let competition = ICON_TO_COMPETITION[event.icon] || null;
+    
+    // Если не удалось определить по иконке, пробуем по названию (fallback)
+    if (!competition) {
+      console.log(`⚠️ Иконка не в маппинге, пробуем определить по названию`);
+      const eventName = event.name.toLowerCase();
+      
+      if (eventName.includes('champions') || eventName.includes('лига чемпионов')) {
+        competition = 'CL';
+      } else if (eventName.includes('europa') || eventName.includes('лига европы')) {
+        competition = 'EL';
+      } else if (eventName.includes('serie a') || eventName.includes('серия а')) {
+        competition = 'SA';
+      } else if (eventName.includes('premier') && eventName.includes('england')) {
+        competition = 'PL';
+      } else if (eventName.includes('bundesliga') || eventName.includes('бундеслига')) {
+        competition = 'BL1';
+      } else if (eventName.includes('la liga') || eventName.includes('ла лига')) {
+        competition = 'PD';
+      } else if (eventName.includes('ligue 1') || eventName.includes('лига 1')) {
+        competition = 'FL1';
+      } else if (eventName.includes('eredivisie') || eventName.includes('эредивизи')) {
+        competition = 'DED';
+      } else if (eventName.includes('рпл') || (eventName.includes('премьер') && eventName.includes('росс'))) {
+        competition = 'RPL';
+      }
     }
     
     console.log(`🎯 Определен код турнира: ${competition || 'НЕ ОПРЕДЕЛЕН'}`);
