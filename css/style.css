@@ -1162,7 +1162,7 @@ button:active {
 .my-bets-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  /* gap: 10px; */
 }
 
 .bet-item {

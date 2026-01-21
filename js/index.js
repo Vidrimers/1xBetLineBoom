@@ -3737,12 +3737,10 @@ function displayMyBets(bets) {
   Object.keys(betsByTournament).forEach(eventName => {
     const tournament = betsByTournament[eventName];
     const totalBets = tournament.pending.length + tournament.finished.length;
-    const isActive = activeTournament === eventName;
-    const isOpen = activeTournament ? isActive : false; // Если есть активный - открыт только он, иначе все закрыты
+    const isOpen = false; // Все тоглы закрыты по умолчанию
     const toggleId = `tournament-${eventName.replace(/\s+/g, '-')}`;
     
     html += `
-      <div style="margin: 20px 0;">
         <div 
           onclick="toggleTournamentBets('${toggleId}')" 
           id="${toggleId}-toggle"
@@ -3765,7 +3763,7 @@ function displayMyBets(bets) {
           ━━━ ${eventName} (${totalBets}) ━━━
           <span id="${toggleId}-arrow2">${isOpen ? '▲' : '▼'}</span>
         </div>
-        <div id="${toggleId}-content" style="display: ${isOpen ? 'block' : 'none'}; display: flex; flex-direction: column; gap: 5px;">
+        <div id="${toggleId}-content" style="display: ${isOpen ? 'flex' : 'none'}; flex-direction: column; gap: 5px;">
     `;
     
     // Сначала pending ставки
@@ -3780,7 +3778,6 @@ function displayMyBets(bets) {
     
     html += `
         </div>
-      </div>
     `;
   });
 
