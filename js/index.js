@@ -14142,18 +14142,6 @@ async function showLiveEventMatches(eventId) {
   localStorage.setItem('currentLiveEventId', eventId);
   const container = document.getElementById('liveMatchesContainer');
   
-  // ВАЖНО: Сохраняем состояние открытых секций ДО перезаписи container.innerHTML
-  const openSections = new Set();
-  if (completedDaysData && completedDaysData.completedDays) {
-    completedDaysData.completedDays.forEach(day => {
-      const dayId = `day-${day.date}`;
-      const dayContainer = document.getElementById(`${dayId}Container`);
-      if (dayContainer && dayContainer.style.display !== 'none') {
-        openSections.add(dayId);
-      }
-    });
-  }
-  
   try {
     // Получаем информацию о турнире
     const eventsResponse = await fetch('/api/events');
@@ -14297,11 +14285,6 @@ async function showLiveEventMatches(eventId) {
       html += '</div>';
     }
     
-    // Добавляем контейнер для завершенных матчей по датам
-    html += `
-      <div id="completedDaysContainer" style="margin-top: 30px;"></div>
-    `;
-    
     // Кнопка назад внизу
     html += `
       <div style="margin-top: 30px; text-align: center;">
@@ -14312,15 +14295,6 @@ async function showLiveEventMatches(eventId) {
     `;
     
     container.innerHTML = html;
-    
-    // Загружаем или восстанавливаем завершенные дни
-    if (!completedDaysData) {
-      // Первая загрузка - загружаем с сервера
-      loadCompletedDays(eventId);
-    } else {
-      // Обновление - перерисовываем из сохраненных данных с восстановлением открытых секций
-      renderCompletedDays(eventId, openSections);
-    }
     
     // Обновляем звездочки после отрисовки
     updateFavoriteStars();
