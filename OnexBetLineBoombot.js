@@ -1992,8 +1992,8 @@ export function startBot() {
         break;
       case "🌐 Открыть сайт":
         logUserAction(msg, "Нажата кнопка: Открыть сайт");
-        // Проверяем что SERVER_URL не localhost перед отправкой кнопки
-        if (SERVER_URL.includes('localhost') || SERVER_URL.includes('127.0.0.1') || SERVER_URL.includes('192.168.')) {
+        // Проверяем что PUBLIC_URL не localhost перед отправкой кнопки
+        if (PUBLIC_URL.includes('localhost') || PUBLIC_URL.includes('127.0.0.1') || PUBLIC_URL.includes('192.168.')) {
           sendMessageWithThread(chatId, `🌐 <b>Сайт:</b> 1xbetlineboom.xyz\n\n⚠️ Локальный сервер недоступен извне`, {
             parse_mode: "HTML",
             __msg: msg,
@@ -2007,7 +2007,7 @@ export function startBot() {
                 [
                   {
                     text: "Жмакни чтобы перейти",
-                    url: SERVER_URL,
+                    url: PUBLIC_URL,
                   },
                 ],
               ],
