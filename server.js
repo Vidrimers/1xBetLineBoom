@@ -5078,28 +5078,30 @@ app.get("/api/fd-matches", async (req, res) => {
     console.log(`✅ Из них ${statusText} в диапазоне ${dateFrom} - ${dateTo}: ${filteredGames.length} матчей`);
 
     // Преобразуем в формат SStats для совместимости с фронтом
-    const matches = filteredGames.map(game => ({
-      id: game.id,
-      utcDate: game.date,
-      status: game.status === 8 ? 'FINISHED' : 'SCHEDULED',
-      round: game.round || null,  // Добавляем информацию о туре
-      homeTeam: {
-        id: game.homeTeam.id,
-        name: game.homeTeam.name,
-        shortName: game.homeTeam.name
-      },
-      awayTeam: {
-        id: game.awayTeam.id,
-        name: game.awayTeam.name,
-        shortName: game.awayTeam.name
-      },
-      score: {
-        fullTime: {
-          home: game.homeResult || null,
-          away: game.awayResult || null
+    const matches = filteredGames.map(game => {
+      return {
+        id: game.id,
+        utcDate: game.date,
+        status: game.status === 8 ? 'FINISHED' : 'SCHEDULED',
+        round: game.roundName || game.round || game.stage || null,  // roundName - основное поле для тура
+        homeTeam: {
+          id: game.homeTeam.id,
+          name: game.homeTeam.name,
+          shortName: game.homeTeam.name
+        },
+        awayTeam: {
+          id: game.awayTeam.id,
+          name: game.awayTeam.name,
+          shortName: game.awayTeam.name
+        },
+        score: {
+          fullTime: {
+            home: game.homeResult || null,
+            away: game.awayResult || null
+          }
         }
-      }
-    }));
+      };
+    });
 
     // Возвращаем в том же формате что и SStats
     res.json({ matches });
