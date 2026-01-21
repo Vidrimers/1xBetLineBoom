@@ -13537,59 +13537,6 @@ async function checkDateCompletion(dateGroup) {
     return { allFinished: false, matches: [] };
   }
 }
-    
-    const response = await fetch(url, {
-      headers: { "X-API-Key": SSTATS_API_KEY }
-    });
-    
-    if (!response.ok) {
-      console.error(`❌ SStats API ошибка: ${response.status}`);
-      return { allFinished: false, matches: [] };
-    }
-    
-    const sstatsData = await response.json();
-    
-    if (sstatsData.status !== "OK") {
-      console.error(`❌ SStats API статус не OK`);
-      return { allFinished: false, matches: [] };
-    }
-    
-    // Фильтруем матчи по дате
-    const apiMatches = (sstatsData.data || []).filter(game => {
-      const gameDate = game.date.split('T')[0];
-      return gameDate === date;
-    });
-    
-    // Сопоставляем матчи БД с API
-    const matchedMatches = [];
-    
-    for (const dbMatch of dbMatches) {
-      const apiMatch = apiMatches.find(api => {
-        const apiHome = normalizeTeamNameForAPI(api.homeTeam.name);
-        const apiAway = normalizeTeamNameForAPI(api.awayTeam.name);
-        const dbHome = normalizeTeamNameForAPI(dbMatch.team1_name);
-        const dbAway = normalizeTeamNameForAPI(dbMatch.team2_name);
-        
-        return (apiHome === dbHome && apiAway === dbAway) ||
-               (apiHome === dbAway && apiAway === dbHome);
-      });
-      
-      if (apiMatch) {
-        matchedMatches.push({ dbMatch, apiMatch });
-      }
-    }
-    
-    // Проверяем что все матчи завершены (status: 8)
-    const allFinished = matchedMatches.length > 0 && 
-                       matchedMatches.every(({ apiMatch }) => apiMatch.status === 8);
-    
-    return { allFinished, matches: matchedMatches };
-    
-  } catch (error) {
-    console.error('❌ Ошибка проверки завершения даты:', error);
-    return { allFinished: false, matches: [] };
-  }
-}
 
 /**
  * Обновить матчи в БД из API
