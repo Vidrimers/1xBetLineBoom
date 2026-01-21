@@ -49,6 +49,22 @@ const SSTATS_LEAGUE_MAPPING = {
   'WC': 1,    // World Cup ✅
   'EC': 4     // Euro Championship ✅
 };
+
+// Маппинг кодов турниров на файлы словарей команд
+const COMPETITION_DICTIONARY_MAPPING = {
+  'CL': 'names/LeagueOfChampionsTeams.json',
+  'EL': 'names/EuropaLeague.json',
+  'PL': 'names/PremierLeague.json',
+  'BL1': 'names/Bundesliga.json',
+  'PD': 'names/LaLiga.json',
+  'SA': 'names/SerieA.json',
+  'FL1': 'names/Ligue1.json',
+  'DED': 'names/Eredivisie.json',
+  'RPL': 'names/RussianPremierLeague.json',
+  'WC': null,  // World Cup - словарь не требуется
+  'EC': null   // Euro Championship - словарь не требуется
+};
+
 const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
 
 if (!fs.existsSync(AWARD_IMAGE_UPLOAD_DIR)) {
@@ -5194,21 +5210,8 @@ app.get("/api/live-matches", async (req, res) => {
     
     console.log(`✅ Турнир найден: ${event.name}`);
     
-    // Определяем код турнира по иконке (как в автоподсчете)
+    // Определяем код турнира по иконке (используем глобальный маппинг)
     console.log(`🔍 Определение кода турнира по иконке: "${event.icon}"`);
-    
-    const ICON_TO_COMPETITION = {
-      'img/cups/champions-league.png': 'CL',
-      'img/cups/european-league.png': 'EL',
-      'img/cups/england-premier-league.png': 'PL',
-      'img/cups/bundesliga.png': 'BL1',
-      'img/cups/spain-la-liga.png': 'PD',
-      'img/cups/serie-a.png': 'SA',
-      'img/cups/france-league-ligue-1.png': 'FL1',
-      'img/cups/rpl.png': 'RPL',
-      'img/cups/world-cup.png': 'WC',
-      'img/cups/uefa-euro.png': 'EC'
-    };
     
     let competition = ICON_TO_COMPETITION[event.icon] || null;
     
@@ -9252,19 +9255,6 @@ app.post("/api/matches/bulk-create", async (req, res) => {
   }
 
   try {
-    // Загружаем маппинг команд для перевода английских названий в русские
-    const mappingFiles = {
-      'CL': 'names/LeagueOfChampionsTeams.json',
-      'EL': 'names/EuropaLeague.json',
-      'PL': 'names/PremierLeague.json',
-      'BL1': 'names/Bundesliga.json',
-      'PD': 'names/LaLiga.json',
-      'SA': 'names/SerieA.json',
-      'FL1': 'names/Ligue1.json',
-      'DED': 'names/Eredivisie.json',
-      'RPL': 'names/RussianPremierLeague.json'
-    };
-    
     // Создаем обратный маппинг: Английское -> Русское
     let reverseMapping = {};
     
@@ -9273,7 +9263,7 @@ app.post("/api/matches/bulk-create", async (req, res) => {
       const event = db.prepare("SELECT icon FROM events WHERE id = ?").get(matches[0].event_id);
       if (event && event.icon) {
         const competition = ICON_TO_COMPETITION[event.icon];
-        const mappingFile = mappingFiles[competition];
+        const mappingFile = COMPETITION_DICTIONARY_MAPPING[competition];
         
         if (mappingFile) {
           try {
@@ -13130,7 +13120,8 @@ const ICON_TO_COMPETITION = {
   'img/cups/france-league-ligue-1.png': 'FL1',
   'img/cups/rpl.png': 'RPL',
   'img/cups/world-cup.png': 'WC',
-  'img/cups/uefa-euro.png': 'EC'
+  'img/cups/uefa-euro.png': 'EC',
+  '🇳🇱': 'DED'  // Eredivisie
 };
 
 // Хранилище обработанных дат (чтобы не обрабатывать повторно)

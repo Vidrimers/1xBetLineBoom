@@ -1,5 +1,20 @@
 // ===== ПОДСЧЁТ =====
 
+// Маппинг кодов турниров на файлы словарей команд
+const COMPETITION_DICTIONARY_MAPPING = {
+  'CL': '/names/LeagueOfChampionsTeams.json',
+  'EL': '/names/EuropaLeague.json',
+  'PL': '/names/PremierLeague.json',
+  'BL1': '/names/Bundesliga.json',
+  'PD': '/names/LaLiga.json',
+  'SA': '/names/SerieA.json',
+  'FL1': '/names/Ligue1.json',
+  'DED': '/names/Eredivisie.json',
+  'RPL': '/names/RussianPremierLeague.json',
+  'WC': '/names/Countries.json',
+  'EC': '/names/Countries.json'
+};
+
 // Переменная для хранения выбранной лиги
 let selectedCompetition = "CL"; // По умолчанию Champions League
 
@@ -8,21 +23,7 @@ let teamMappings = {};
 
 // Загрузить маппинг команд для турнира
 async function loadTeamMapping(competition) {
-  const mappingFiles = {
-    'SA': '/names/SerieA.json',
-    'PL': '/names/PremierLeague.json',
-    'BL1': '/names/Bundesliga.json',
-    'PD': '/names/LaLiga.json',
-    'FL1': '/names/Ligue1.json',
-    'DED': '/names/Eredivisie.json',
-    'CL': '/names/LeagueOfChampionsTeams.json',
-    'EL': '/names/EuropaLeague.json',
-    'RPL': '/names/RussianPremierLeague.json',
-    'WC': '/names/Countries.json',
-    'EC': '/names/Countries.json'
-  };
-
-  const filePath = mappingFiles[competition];
+  const filePath = COMPETITION_DICTIONARY_MAPPING[competition];
   if (!filePath) {
     console.warn(`⚠️ Нет файла маппинга для турнира ${competition}`);
     return {};
