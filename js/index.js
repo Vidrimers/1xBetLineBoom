@@ -14365,8 +14365,9 @@ async function toggleYesterdayMatches(eventId) {
           let html = '<div class="live-matches-grid">';
           
           for (const match of matches) {
-            const matchTime = new Date(match.match_time);
+            const matchTime = new Date(match.match_date);
             const timeStr = matchTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = matchTime.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
             
             // Проверяем есть ли ставка на этот матч
             let betTeam = null;
@@ -14378,8 +14379,25 @@ async function toggleYesterdayMatches(eventId) {
             }
             
             const isDraw = betTeam && (betTeam.toLowerCase() === 'ничья' || betTeam.toLowerCase() === 'draw');
-            const shouldUnderlineTeam1 = (betTeam === match.team1 || isDraw);
-            const shouldUnderlineTeam2 = (betTeam === match.team2 || isDraw);
+            const shouldUnderlineTeam1 = (betTeam === match.team1_name || isDraw);
+            const shouldUnderlineTeam2 = (betTeam === match.team2_name || isDraw);
+            
+            // Формируем отображение результата
+            const hasScore = (match.team1_score !== null && match.team1_score !== undefined && 
+                             match.team2_score !== null && match.team2_score !== undefined);
+            
+            let resultDisplay = '';
+            if (hasScore) {
+              resultDisplay = `<div style="color: #4caf50; font-size: 1.3em; font-weight: 700; margin-bottom: 5px;">${match.team1_score}:${match.team2_score}</div>`;
+            } else if (match.winner === 'team1') {
+              resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px;">Победа ${match.team1_name}</div>`;
+            } else if (match.winner === 'team2') {
+              resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px;">Победа ${match.team2_name}</div>`;
+            } else if (match.winner === 'draw') {
+              resultDisplay = `<div style="color: #4caf50; font-size: 1.1em; font-weight: 700; margin-bottom: 5px;">Ничья</div>`;
+            } else {
+              resultDisplay = `<div style="color: #888; font-size: 0.9em; margin-bottom: 5px;">vs</div>`;
+            }
             
             html += `
               <div class="live-match-card" style="
@@ -14398,21 +14416,19 @@ async function toggleYesterdayMatches(eventId) {
                 
                 <div style="text-align: center; margin-bottom: 10px;">
                   <div style="color: #4caf50; font-size: 0.85em; font-weight: 600;">
-                    ✅ Завершен • ${timeStr}
+                    ✅ Завершен • ${dateStr} ${timeStr}
                   </div>
                 </div>
                 
                 <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center;">
                   <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: 5px; line-height: 1.3;">
-                    ${shouldUnderlineTeam1 ? `<span style="position: relative; display: inline-block;">${match.team1}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team1}
+                    ${shouldUnderlineTeam1 ? `<span style="position: relative; display: inline-block;">${match.team1_name}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team1_name}
                   </div>
                   
-                  <div style="color: #4caf50; font-size: 1.3em; font-weight: 700; margin-bottom: 5px;">
-                    ${match.score || '0:0'}
-                  </div>
+                  ${resultDisplay}
                   
                   <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; line-height: 1.3;">
-                    ${shouldUnderlineTeam2 ? `<span style="position: relative; display: inline-block;">${match.team2}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team2}
+                    ${shouldUnderlineTeam2 ? `<span style="position: relative; display: inline-block;">${match.team2_name}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team2_name}
                   </div>
                 </div>
               </div>

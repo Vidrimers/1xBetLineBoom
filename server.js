@@ -1947,6 +1947,19 @@ try {
   // Колонка уже существует
 }
 
+// Добавляем колонки для счета матча
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN team1_score INTEGER").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN team2_score INTEGER").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
 // Таблица настроек сайта
 db.exec(`
   CREATE TABLE IF NOT EXISTS site_settings (
@@ -5418,113 +5431,38 @@ app.get("/api/yesterday-matches", async (req, res) => {
       return res.status(404).json({ error: "Турнир не найден" });
     }
     
-    // Определяем код турнира для SSTATS API
-    let competition = null;
-    const eventName = event.name.toLowerCase();
-    
-    if (eventName.includes('champions') || eventName.includes('лига чемпионов')) {
-      competition = 'CL';
-    } else if (eventName.includes('europa') || eventName.includes('лига европы')) {
-      competition = 'EL';
-    } else if (eventName.includes('serie a') || eventName.includes('серия а')) {
-      competition = 'SA';
-    } else if (eventName.includes('premier') && eventName.includes('england')) {
-      competition = 'PL';
-    } else if (eventName.includes('bundesliga') || eventName.includes('бундеслига')) {
-      competition = 'BL1';
-    } else if (eventName.includes('la liga') || eventName.includes('ла лига')) {
-      competition = 'PD';
-    } else if (eventName.includes('ligue 1') || eventName.includes('лига 1')) {
-      competition = 'FL1';
-    } else if (eventName.includes('eredivisie') || eventName.includes('эредивизи')) {
-      competition = 'DED';
-    } else if (eventName.includes('рпл') || (eventName.includes('премьер') && eventName.includes('росс'))) {
-      competition = 'RPL';
-    }
-    
-    if (!competition) {
-      return res.json({ event: event, matches: [] });
-    }
-    
-    const leagueId = SSTATS_LEAGUE_MAPPING[competition];
-    if (!leagueId) {
-      return res.json({ event: event, matches: [] });
-    }
-    
-    const apiKey = process.env.SSTATS_API_KEY;
-    if (!apiKey) {
-      console.error(`❌ SSTATS_API_KEY не задан`);
-      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
-    }
-    
-    // Получаем матчи из SSTATS API
-    const url = `https://api.sstats.one/api/v1/leagues/${leagueId}/matches?apiKey=${apiKey}`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ SStats API ошибка: ${response.status} - ${errorText}`);
-      return res.status(response.status).json({ error: errorText || response.statusText });
-    }
-    
-    const sstatsData = await response.json();
-    
-    if (sstatsData.status !== "OK") {
-      console.error(`❌ SStats API статус не OK:`, sstatsData);
-      return res.status(500).json({ error: "SStats API вернул ошибку" });
-    }
-    
     // Получаем вчерашнюю дату
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0);
+    const yesterdayEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
     
-    console.log(`📅 Ищем завершенные матчи на дату: ${yesterdayStr}`);
-    console.log(`📊 Всего матчей получено: ${sstatsData.data?.length || 0}`);
+    console.log(`📅 Ищем завершенные матчи на дату: ${yesterday.toISOString().slice(0, 10)}`);
     
-    // Фильтруем матчи: только вчерашние и только завершенные
-    const yesterdayMatches = (sstatsData.data || []).filter(game => {
-      if (!game.date) return false;
-      const matchDate = game.date.slice(0, 10);
-      const isYesterday = matchDate === yesterdayStr;
-      const isFinished = game.statusName === 'Finished' || game.statusName === 'Full Time';
-      return isYesterday && isFinished;
-    });
+    // Получаем завершенные матчи из БД за вчерашний день
+    const matches = db.prepare(`
+      SELECT 
+        m.*,
+        e.name as event_name
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.event_id = ?
+        AND m.match_date >= ?
+        AND m.match_date <= ?
+        AND m.winner IS NOT NULL
+      ORDER BY m.match_date ASC
+    `).all(eventId, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
     
-    console.log(`✅ Завершенных матчей за вчера: ${yesterdayMatches.length}`);
+    console.log(`✅ Завершенных матчей за вчера: ${matches.length}`);
     
-    // Преобразуем в формат нашего приложения
-    const matches = yesterdayMatches.map(game => {
-      const originalTeam1 = game.homeTeam?.name || 'Команда 1';
-      const originalTeam2 = game.awayTeam?.name || 'Команда 2';
-      
-      return {
-        id: game.id,
-        event_id: parseInt(eventId),
-        team1: translateTeam(originalTeam1),
-        team2: translateTeam(originalTeam2),
-        team1_original: originalTeam1,
-        team2_original: originalTeam2,
-        match_time: game.date,
-        status: 'finished',
-        score: game.homeResult !== null && game.awayResult !== null 
-          ? `${game.homeResult}:${game.awayResult}` 
-          : null,
-        statusName: game.statusName
-      };
-    });
-    
-    console.log(`✅ Найдено ${matches.length} завершенных матчей за вчера для ${event.name}`);
-    
-    res.json({
-      event: event,
-      matches: matches,
-      date: yesterdayStr
+    res.json({ 
+      event: event, 
+      matches: matches 
     });
     
   } catch (error) {
-    console.error("❌ /api/yesterday-matches критическая ошибка:", error.message);
-    console.error("❌ Stack trace:", error.stack);
+    console.error(`❌ /api/yesterday-matches критическая ошибка: ${error.message}`);
+    console.error(`❌ Stack trace:`, error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -9280,8 +9218,8 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
       }
 
       db.prepare(
-        "UPDATE matches SET status = ?, result = ?, winner = ? WHERE id = ?"
-      ).run(status, result || null, winner, matchId);
+        "UPDATE matches SET status = ?, result = ?, winner = ?, team1_score = ?, team2_score = ? WHERE id = ?"
+      ).run(status, result || null, winner, req.body.score_team1 || null, req.body.score_team2 || null, matchId);
 
       // Уведомление админу если это модератор
       if (isModerator && username) {
