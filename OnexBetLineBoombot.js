@@ -22,20 +22,13 @@ const PROTOCOL = USE_HTTPS ? "https" : "http";
 const isStandardPort = (USE_HTTPS && SERVER_PORT === "443") || (!USE_HTTPS && SERVER_PORT === "80");
 const portSuffix = isStandardPort ? "" : `:${SERVER_PORT}`;
 
-// Для локальных запросов из бота
-// Если SERVER_IP это localhost или 192.168.x.x (локальная сеть), используем localhost
-// Если это домен или внешний IP, используем его напрямую
+// Для локальных запросов из бота ВСЕГДА используем localhost (бот на том же сервере)
+const SERVER_URL = `http://localhost:${SERVER_PORT}`;
+
+// Для внешних ссылок (которые отправляются пользователям в кнопках)
 const isLocalNetwork = SERVER_IP === "localhost" || SERVER_IP.startsWith("192.168.") || SERVER_IP.startsWith("127.0.");
 const isDomain = SERVER_IP.includes(".") && !SERVER_IP.match(/^\d+\.\d+\.\d+\.\d+$/); // Проверяем, это домен или IP
 
-// Если домен, то скорее всего HTTPS через nginx на стандартном порту
-const SERVER_URL = isLocalNetwork 
-  ? `http://localhost:${SERVER_PORT}` 
-  : (isDomain && !process.env.USE_HTTPS) 
-    ? `https://${SERVER_IP}` // Для доменов по умолчанию HTTPS без порта
-    : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
-
-// Для внешних ссылок (которые отправляются пользователям)
 const PUBLIC_URL = (isDomain && !process.env.USE_HTTPS)
   ? `https://${SERVER_IP}` // Для доменов по умолчанию HTTPS без порта
   : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
@@ -1999,20 +1992,28 @@ export function startBot() {
         break;
       case "🌐 Открыть сайт":
         logUserAction(msg, "Нажата кнопка: Открыть сайт");
-        sendMessageWithThread(chatId, `1xbetlineboom.xyz`, {
-          parse_mode: "HTML",
-          __msg: msg,
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: "Жмакни чтобы перейти",
-                  url: SERVER_URL,
-                },
+        // Проверяем что SERVER_URL не localhost перед отправкой кнопки
+        if (SERVER_URL.includes('localhost') || SERVER_URL.includes('127.0.0.1') || SERVER_URL.includes('192.168.')) {
+          sendMessageWithThread(chatId, `🌐 <b>Сайт:</b> 1xbetlineboom.xyz\n\n⚠️ Локальный сервер недоступен извне`, {
+            parse_mode: "HTML",
+            __msg: msg,
+          });
+        } else {
+          sendMessageWithThread(chatId, `1xbetlineboom.xyz`, {
+            parse_mode: "HTML",
+            __msg: msg,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Жмакни чтобы перейти",
+                    url: SERVER_URL,
+                  },
+                ],
               ],
-            ],
-          },
-        });
+            },
+          });
+        }
         break;
     }
   });
@@ -2024,9 +2025,8 @@ export function startBot() {
     try {
       console.error(
         "❌ Ошибка polling:",
-        error && error.code ? error.code : error
+        error && error.code ? error.code : error && error.message ? error.message : "Unknown error"
       );
-      console.error("Full polling error:", error);
 
       // Если 409 Conflict - другой бот уже получает обновления
       if (error && error.response && error.response.statusCode === 409) {
