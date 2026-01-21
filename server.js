@@ -4956,7 +4956,7 @@ app.get("/api/user/:userId/bets", async (req, res) => {
         `
       SELECT b.*, 
              m.team1_name, m.team2_name, m.winner, 
-             m.status as match_status, m.round, m.is_final, 
+             m.status as match_status, m.round, m.is_final, m.match_date,
              e.name as event_name, 
              e.status as event_status,
              e.start_date as event_start_date,

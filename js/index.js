@@ -3722,8 +3722,20 @@ function displayMyBets(bets) {
     if (!betsByTournament[eventName]) {
       betsByTournament[eventName] = {
         pending: [],
-        finished: []
+        finished: [],
+        dates: new Set(),
+        rounds: new Set()
       };
+    }
+    
+    // Собираем даты и туры
+    if (betData.bet.match_date) {
+      const date = new Date(betData.bet.match_date);
+      const formattedDate = `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+      betsByTournament[eventName].dates.add(formattedDate);
+    }
+    if (betData.bet.round) {
+      betsByTournament[eventName].rounds.add(betData.bet.round);
     }
     
     if (betData.statusClass === 'pending') {
@@ -3777,14 +3789,78 @@ function displayMyBets(bets) {
         <div id="${toggleId}-content" style="display: ${isOpen ? 'flex' : 'none'}; flex-direction: column; gap: 5px;">
     `;
     
-    // Сначала pending ставки
-    tournament.pending.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn }) => {
-      html += generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn);
+    // Группируем ставки по дате и туру
+    const allBets = [...tournament.pending, ...tournament.finished];
+    const betsByDateRound = {};
+    
+    allBets.forEach(betData => {
+      const date = betData.bet.match_date ? new Date(betData.bet.match_date) : null;
+      const formattedDate = date ? `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}` : 'Без даты';
+      const round = betData.bet.round || 'Без тура';
+      const key = `${formattedDate}_${round}`;
+      
+      if (!betsByDateRound[key]) {
+        betsByDateRound[key] = {
+          date: formattedDate,
+          round: round,
+          dateObj: date,
+          bets: [],
+          hasPending: false
+        };
+      }
+      
+      // Отмечаем если есть pending ставки
+      if (betData.statusClass === 'pending') {
+        betsByDateRound[key].hasPending = true;
+      }
+      
+      betsByDateRound[key].bets.push(betData);
     });
     
-    // Потом finished ставки
-    tournament.finished.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn }) => {
-      html += generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn);
+    // Сортируем группы: pending первыми, потом по дате, если даты нет - по турам
+    const sortedGroups = Object.values(betsByDateRound).sort((a, b) => {
+      // Сначала группы с pending ставками
+      if (a.hasPending && !b.hasPending) return -1;
+      if (!a.hasPending && b.hasPending) return 1;
+      
+      // Если обе pending или обе finished, сортируем по дате
+      if (a.dateObj && b.dateObj) {
+        return a.dateObj - b.dateObj;
+      }
+      
+      // Если у одной нет даты, сортируем по турам
+      if (!a.dateObj && !b.dateObj) {
+        return a.round.localeCompare(b.round);
+      }
+      
+      // Группы с датой раньше групп без даты
+      if (a.dateObj && !b.dateObj) return -1;
+      if (!a.dateObj && b.dateObj) return 1;
+      
+      return 0;
+    });
+    
+    // Выводим ставки с разделителями
+    sortedGroups.forEach(group => {
+      // Разделитель даты и тура
+      html += `
+        <div style="
+          text-align: center;
+          color: #b0b8c8;
+          font-size: 0.85em;
+          margin: 10px 0 5px 0;
+          padding: 5px;
+          background: rgba(0, 0, 0, 0.2);
+          border-radius: 3px;
+        ">
+          📅 ${group.date} | 🏆 ${group.round}
+        </div>
+      `;
+      
+      // Ставки этой группы
+      group.bets.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn }) => {
+        html += generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn);
+      });
     });
     
     html += `
