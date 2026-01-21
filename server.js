@@ -61,8 +61,8 @@ const COMPETITION_DICTIONARY_MAPPING = {
   'FL1': 'names/Ligue1.json',
   'DED': 'names/Eredivisie.json',
   'RPL': 'names/RussianPremierLeague.json',
-  'WC': null,  // World Cup - словарь не требуется
-  'EC': null   // Euro Championship - словарь не требуется
+  'WC': 'names/Countries.json',  // World Cup
+  'EC': 'names/Countries.json'   // Euro Championship
 };
 
 const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
@@ -5085,6 +5085,10 @@ app.get("/api/fd-matches", async (req, res) => {
       // Убираем "Regular Season -" и оставляем только "Тур X"
       if (roundName && roundName.includes('Regular Season -')) {
         roundName = 'Тур ' + roundName.replace('Regular Season -', '').trim();
+      }
+      // Заменяем "Group Stage -" на "Групповой этап"
+      else if (roundName && roundName.includes('Group Stage -')) {
+        roundName = 'Групповой этап ' + roundName.replace('Group Stage -', '').trim();
       }
       
       return {
