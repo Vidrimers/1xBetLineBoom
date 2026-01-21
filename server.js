@@ -11130,6 +11130,7 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
 
     const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
 
+    // Отправляем в группу
     for (const chatId of chatIds) {
       try {
         const response = await fetch(
@@ -11160,7 +11161,145 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
       }
     }
 
-    res.json({ success: true, message: "Результаты отправлены в группу" });
+    // Отправляем персонализированные сообщения в личку пользователям
+    try {
+      // Получаем всех пользователей с привязанным Telegram и включенной настройкой личных сообщений
+      const usersWithTelegram = db.prepare(`
+        SELECT u.id, u.username, u.telegram_id, u.telegram_username
+        FROM users u
+        WHERE u.telegram_id IS NOT NULL 
+          AND u.telegram_notifications = 1
+      `).all();
+
+      console.log(`📱 Найдено ${usersWithTelegram.length} пользователей для отправки личных сообщений`);
+
+      // Для каждого турнира отправляем персонализированные сообщения
+      for (const tournament of tournamentResults) {
+        const users = tournament.users;
+        
+        if (users.length === 0) continue;
+
+        // Находим максимальное и минимальное количество очков
+        const maxPoints = users[0].points;
+        const minPoints = users[users.length - 1].points;
+
+        // Находим победителя (первого с максимальными очками)
+        const winner = users[0];
+
+        // Отправляем каждому пользователю персонализированное сообщение
+        for (const user of users) {
+          // Проверяем, есть ли этот пользователь в списке с Telegram
+          const telegramUser = usersWithTelegram.find(u => u.username === user.username);
+          
+          if (!telegramUser) {
+            console.log(`⏭️ Пропускаем ${user.username} - нет Telegram или отключены уведомления`);
+            continue;
+          }
+
+          // Формируем персонализированное сообщение
+          let personalMessage = `📊 <b>Результаты за период</b>\n`;
+          personalMessage += `📅 ${dateFromFormatted} - ${dateToFormatted}\n\n`;
+          personalMessage += `🏆 <b>${tournament.eventName}</b>\n\n`;
+
+          // Добавляем список всех участников
+          for (let i = 0; i < users.length; i++) {
+            const u = users[i];
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '▪️';
+            
+            // Правильное склонение для очков
+            let pointsWord;
+            if (u.points === 0) {
+              pointsWord = 'очков';
+            } else if (u.points === 1) {
+              pointsWord = 'очко';
+            } else if (u.points >= 2 && u.points <= 4) {
+              pointsWord = 'очка';
+            } else {
+              pointsWord = 'очков';
+            }
+            
+            let userLine = `${medal} ${u.username}: <b>${u.points}</b> ${pointsWord}`;
+            
+            // Добавляем статистику
+            const stats = [];
+            if (u.correctResults > 0) {
+              stats.push(`✅ ${u.correctResults}`);
+            }
+            if (u.correctScores > 0) {
+              stats.push(`🎯 ${u.correctScores}`);
+            }
+            if (stats.length > 0) {
+              userLine += ` (${stats.join(', ')})`;
+            }
+            
+            personalMessage += userLine + '\n';
+          }
+
+          personalMessage += '\n';
+
+          // Добавляем персонализированное окончание
+          // Правильное склонение для очков текущего пользователя
+          let userPointsWord;
+          if (user.points === 0) {
+            userPointsWord = 'очков';
+          } else if (user.points === 1) {
+            userPointsWord = 'очко';
+          } else if (user.points >= 2 && user.points <= 4) {
+            userPointsWord = 'очка';
+          } else {
+            userPointsWord = 'очков';
+          }
+
+          if (user.points === maxPoints) {
+            // Пользователь лучший (или один из лучших)
+            personalMessage += `Сегодня ты лучший, у тебя <b>${user.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${user.username}! 🎉`;
+          } else if (user.points === minPoints) {
+            // Пользователь худший (или один из худших)
+            personalMessage += `Сегодня ты лох, такое может случиться с каждым, у тебя <b>${user.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winner.username}! 🎉`;
+          } else {
+            // Пользователь в середине
+            personalMessage += `Сегодня ты не лучший, у тебя <b>${user.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winner.username}! 🎉`;
+          }
+
+          // Отправляем личное сообщение
+          try {
+            const response = await fetch(
+              `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  chat_id: telegramUser.telegram_id,
+                  text: personalMessage,
+                  parse_mode: "HTML",
+                }),
+              }
+            );
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error(
+                `❌ Ошибка отправки личного сообщения ${user.username} (${telegramUser.telegram_id}):`,
+                errorData
+              );
+            } else {
+              console.log(`✅ Личное сообщение отправлено ${user.username} (${telegramUser.telegram_id})`);
+            }
+          } catch (error) {
+            console.error(`❌ Ошибка отправки личного сообщения ${user.username}:`, error);
+          }
+
+          // Небольшая задержка между отправками, чтобы не превысить лимиты Telegram API
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    } catch (error) {
+      console.error("❌ Ошибка отправки личных сообщений:", error);
+    }
+
+    res.json({ success: true, message: "Результаты отправлены в группу и личные сообщения" });
   } catch (error) {
     console.error("❌ Ошибка отправки результатов:", error);
     res.status(500).json({ error: error.message });
