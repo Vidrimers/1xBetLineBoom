@@ -3817,7 +3817,7 @@ function displayMyBets(bets) {
       betsByDateRound[key].bets.push(betData);
     });
     
-    // Сортируем группы: pending первыми, потом по дате, если даты нет - по турам
+    // Сортируем группы: pending первыми, потом по дате, если даты нет - по турам (большие номера первыми)
     const sortedGroups = Object.values(betsByDateRound).sort((a, b) => {
       // Сначала группы с pending ставками
       if (a.hasPending && !b.hasPending) return -1;
@@ -3828,9 +3828,19 @@ function displayMyBets(bets) {
         return a.dateObj - b.dateObj;
       }
       
-      // Если у одной нет даты, сортируем по турам
+      // Если у обеих нет даты, сортируем по турам (большие номера первыми)
       if (!a.dateObj && !b.dateObj) {
-        return a.round.localeCompare(b.round);
+        // Извлекаем номер тура из строки "Тур 7" -> 7
+        const extractTourNumber = (round) => {
+          const match = round.match(/\d+/);
+          return match ? parseInt(match[0]) : 0;
+        };
+        
+        const tourA = extractTourNumber(a.round);
+        const tourB = extractTourNumber(b.round);
+        
+        // Сортируем по убыванию (большие номера первыми)
+        return tourB - tourA;
       }
       
       // Группы с датой раньше групп без даты
@@ -3853,7 +3863,7 @@ function displayMyBets(bets) {
           background: rgba(0, 0, 0, 0.2);
           border-radius: 3px;
         ">
-          📅 ${group.date} | 🏆 ${group.round}
+          ${group.date} | ${group.round}
         </div>
       `;
       
