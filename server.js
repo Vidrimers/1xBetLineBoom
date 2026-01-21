@@ -5413,7 +5413,7 @@ app.get("/api/live-matches", async (req, res) => {
   }
 });
 
-// GET /api/yesterday-matches - Получить завершенные матчи за вчерашний день
+// GET /api/yesterday-matches - Получить завершенные матчи сгруппированные по датам
 app.get("/api/yesterday-matches", async (req, res) => {
   console.log(`🔍 /api/yesterday-matches запрос получен, eventId: ${req.query.eventId}`);
   
@@ -5431,33 +5431,59 @@ app.get("/api/yesterday-matches", async (req, res) => {
       return res.status(404).json({ error: "Турнир не найден" });
     }
     
-    // Получаем вчерашнюю дату
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0);
-    const yesterdayEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
+    console.log(`📅 Ищем завершенные матчи сгруппированные по датам`);
     
-    console.log(`📅 Ищем завершенные матчи на дату: ${yesterday.toISOString().slice(0, 10)}`);
-    
-    // Получаем завершенные матчи из БД за вчерашний день
-    const matches = db.prepare(`
+    // Получаем все завершенные матчи
+    const allMatches = db.prepare(`
       SELECT 
         m.*,
-        e.name as event_name
+        e.name as event_name,
+        DATE(m.match_date) as match_day
       FROM matches m
       JOIN events e ON m.event_id = e.id
       WHERE m.event_id = ?
-        AND m.match_date >= ?
-        AND m.match_date <= ?
         AND m.winner IS NOT NULL
-      ORDER BY m.match_date ASC
-    `).all(eventId, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
+      ORDER BY m.match_date DESC
+    `).all(eventId);
     
-    console.log(`✅ Завершенных матчей за вчера: ${matches.length}`);
+    // Группируем по датам
+    const matchesByDate = {};
+    allMatches.forEach(match => {
+      const day = match.match_day;
+      if (!matchesByDate[day]) {
+        matchesByDate[day] = [];
+      }
+      matchesByDate[day].push(match);
+    });
+    
+    // Проверяем какие дни полностью завершены (все матчи этого дня имеют результат)
+    const completedDays = [];
+    
+    for (const day in matchesByDate) {
+      // Получаем все матчи этого дня (включая незавершенные)
+      const allDayMatches = db.prepare(`
+        SELECT COUNT(*) as total
+        FROM matches
+        WHERE event_id = ?
+          AND DATE(match_date) = ?
+      `).get(eventId, day);
+      
+      const finishedDayMatches = matchesByDate[day].length;
+      
+      // Если все матчи дня завершены, добавляем в список
+      if (allDayMatches.total === finishedDayMatches) {
+        completedDays.push({
+          date: day,
+          matches: matchesByDate[day]
+        });
+      }
+    }
+    
+    console.log(`✅ Найдено полностью завершенных дней: ${completedDays.length}`);
     
     res.json({ 
       event: event, 
-      matches: matches 
+      completedDays: completedDays 
     });
     
   } catch (error) {
