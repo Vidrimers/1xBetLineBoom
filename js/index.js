@@ -1640,6 +1640,9 @@ async function selectEvent(eventId, eventName) {
           <button id="autoCountingBtn" onclick="toggleAutoCounting(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Автоподсчет">
             A
           </button>
+          <button id="testsBtn" onclick="openTestsModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #ff9800; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Тесты">
+            🧪
+          </button>
         `;
       }
       
@@ -8802,6 +8805,8 @@ async function testGroupNotification() {
     return;
   }
 
+  const testRealGroup = document.getElementById('testRealGroupCheckbox')?.checked || false;
+
   try {
     const response = await fetch("/api/admin/test-group-notification", {
       method: "POST",
@@ -8810,6 +8815,7 @@ async function testGroupNotification() {
       },
       body: JSON.stringify({
         username: currentUser.username,
+        testMode: !testRealGroup // Если чекбокс выключен - тестовый режим (только админу)
       }),
     });
 
@@ -8820,7 +8826,14 @@ async function testGroupNotification() {
       return;
     }
 
-    console.log("✅ Тестовое уведомление отправлено в группу");
+    await showCustomAlert(
+      testRealGroup 
+        ? 'Тестовое уведомление отправлено в группу' 
+        : 'Тестовое уведомление отправлено только админу',
+      'Успешно',
+      '✅'
+    );
+    console.log(`✅ Тестовое уведомление отправлено ${testRealGroup ? 'в группу' : 'админу'}`);
   } catch (error) {
     console.error("Ошибка при отправке тестового уведомления:", error);
     alert("Ошибка при отправке уведомления");
@@ -15789,5 +15802,99 @@ async function loadAutoCountingStatus() {
     }
   } catch (error) {
     console.error('Ошибка загрузки статуса автоподсчета:', error);
+  }
+}
+
+// ============================================
+// МОДАЛКА ТЕСТОВ
+// ============================================
+
+/**
+ * Открыть модалку тестов
+ */
+function openTestsModal() {
+  const modal = document.getElementById('testsModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    
+    // Загружаем настройку из localStorage
+    const testRealGroup = localStorage.getItem('testRealGroup') === 'true';
+    const checkbox = document.getElementById('testRealGroupCheckbox');
+    if (checkbox) {
+      checkbox.checked = testRealGroup;
+    }
+  }
+}
+
+/**
+ * Закрыть модалку тестов
+ */
+function closeTestsModal() {
+  const modal = document.getElementById('testsModal');
+  if (modal) {
+    modal.style.display = 'none';
+    
+    // Сохраняем настройку в localStorage
+    const checkbox = document.getElementById('testRealGroupCheckbox');
+    if (checkbox) {
+      localStorage.setItem('testRealGroup', checkbox.checked);
+    }
+  }
+}
+
+/**
+ * Тест автоподсчета
+ */
+async function testAutoCounting() {
+  if (!currentUser || !currentUser.isAdmin) {
+    await showCustomAlert('Недостаточно прав', 'Ошибка', '❌');
+    return;
+  }
+  
+  if (!selectedEventId) {
+    await showCustomAlert('Выберите турнир', 'Ошибка', '❌');
+    return;
+  }
+  
+  const testRealGroup = document.getElementById('testRealGroupCheckbox')?.checked || false;
+  
+  const confirmed = confirm(
+    `Запустить тест автоподсчета для текущего турнира?\n\n` +
+    `Режим: ${testRealGroup ? '📢 Отправка в реальную группу' : '👤 Только админу'}\n\n` +
+    `Это симулирует завершение всех матчей и запустит автоподсчет.`
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    const response = await fetch('/api/admin/test-auto-counting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        eventId: selectedEventId,
+        testMode: !testRealGroup
+      })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      await showCustomAlert(
+        data.message || 'Тест автоподсчета запущен',
+        'Успешно',
+        '✅'
+      );
+      
+      // Перезагружаем матчи чтобы увидеть обновления
+      setTimeout(() => {
+        loadMatches(selectedEventId);
+      }, 2000);
+    } else {
+      const error = await response.json();
+      await showCustomAlert(error.error || 'Ошибка теста', 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка теста автоподсчета:', error);
+    await showCustomAlert('Ошибка теста автоподсчета', 'Ошибка', '❌');
   }
 }
