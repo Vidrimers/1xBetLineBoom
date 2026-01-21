@@ -5262,16 +5262,16 @@ app.get("/api/live-matches", async (req, res) => {
     console.log(`🎯 Определен код турнира: ${competition || 'НЕ ОПРЕДЕЛЕН'}`);
     
     if (!competition) {
-      console.warn(`⚠️ Турнир не поддерживается: ${event.name}`);
-      return res.json({ matches: [] }); // Если турнир не поддерживается, возвращаем пустой массив
+      console.log(`ℹ️ Турнир не поддерживается SStats API: ${event.name} - возвращаем пустой массив`);
+      return res.json({ matches: [] }); // Тихо возвращаем пустой массив без ошибки
     }
     
     const leagueId = SSTATS_LEAGUE_MAPPING[competition];
     console.log(`🆔 League ID для ${competition}: ${leagueId}`);
     
     if (!leagueId) {
-      console.warn(`⚠️ League ID не найден для ${competition}`);
-      return res.json({ matches: [] });
+      console.log(`ℹ️ League ID не найден для ${competition} - возвращаем пустой массив`);
+      return res.json({ matches: [] }); // Тихо возвращаем пустой массив без ошибки
     }
     
     // Загружаем словарь команд для турнира

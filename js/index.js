@@ -14814,7 +14814,7 @@ async function loadLiveMatches() {
           hasLiveMatches = matches.some(m => m.status === 'live' || m.status === 'in_progress');
         }
       } catch (e) {
-        console.warn(`Не удалось проверить live матчи для ${event.name}`);
+        // Тихо игнорируем ошибки - турнир может не поддерживаться SStats API
       }
       
       html += `
