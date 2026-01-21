@@ -14800,6 +14800,28 @@ function toggleFavoriteMatch(matchId, event) {
   let favorites = getFavoriteMatches();
   const index = favorites.indexOf(matchId);
   
+  // Получаем данные матча для уведомления
+  const matchCard = event.target.closest('.live-match-card');
+  let matchInfo = { match: 'Неизвестный матч', tournamentName: 'Неизвестный турнир' };
+  
+  if (matchCard) {
+    const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
+    const team1 = teamDivs[0]?.textContent.trim() || 'Команда 1';
+    const team2 = teamDivs[1]?.textContent.trim() || 'Команда 2';
+    matchInfo.match = `${team1} vs ${team2}`;
+    
+    // Получаем название турнира из текущего события
+    if (currentLiveEventId) {
+      fetch('/api/events')
+        .then(res => res.json())
+        .then(events => {
+          const event = events.find(e => e.id === currentLiveEventId);
+          if (event) matchInfo.tournamentName = event.name;
+        })
+        .catch(() => {});
+    }
+  }
+  
   if (index > -1) {
     // Убрать из избранного
     favorites.splice(index, 1);
@@ -14808,6 +14830,19 @@ function toggleFavoriteMatch(matchId, event) {
     // Очищаем флаг удаленного завершенного матча (если пользователь снова добавит - покажем)
     deletedFinishedMatches.delete(matchId);
     saveDeletedFinishedMatches(); // Сохраняем в localStorage
+    
+    // Уведомляем админа об удалении из избранного
+    if (currentUser && currentUser.username) {
+      fetch('/api/notify-live-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser.username,
+          action: 'remove_favorite',
+          details: matchInfo
+        })
+      }).catch(err => console.log('Ошибка отправки уведомления:', err));
+    }
   } else {
     // Добавить в избранное (максимум 10)
     if (favorites.length >= 10) {
@@ -14817,7 +14852,6 @@ function toggleFavoriteMatch(matchId, event) {
     favorites.push(matchId);
     
     // Сохраняем данные матча из карточки
-    const matchCard = event.target.closest('.live-match-card');
     if (matchCard) {
       const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
       const scoreDiv = matchCard.querySelector('div[style*="font-size: 1.3em"][style*="color: #4caf50"]');
@@ -14842,6 +14876,19 @@ function toggleFavoriteMatch(matchId, event) {
       
       saveFavoriteMatchData(matchId, matchData);
       console.log('💾 Сохранены данные матча:', matchData);
+    }
+    
+    // Уведомляем админа о добавлении в избранное
+    if (currentUser && currentUser.username) {
+      fetch('/api/notify-live-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser.username,
+          action: 'add_favorite',
+          details: matchInfo
+        })
+      }).catch(err => console.log('Ошибка отправки уведомления:', err));
     }
   }
   
@@ -15440,6 +15487,33 @@ async function showLiveTeamStats(matchData) {
   modal.style.display = 'flex';
   title.textContent = `📊 ${matchData.team1} vs ${matchData.team2}`;
   content.innerHTML = '<div class="empty-message">⏳ Загрузка статистики...</div>';
+  
+  // Уведомляем админа об открытии статистики
+  if (currentUser && currentUser.username && currentLiveEventId) {
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(events => {
+        const event = events.find(e => e.id === currentLiveEventId);
+        const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
+        const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
+        const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : 'Предстоящий';
+        
+        return fetch('/api/notify-live-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: currentUser.username,
+            action: 'open_match_stats',
+            details: {
+              match: `${matchData.team1} vs ${matchData.team2}`,
+              tournamentName: event ? event.name : 'Неизвестный турнир',
+              status: statusText
+            }
+          })
+        });
+      })
+      .catch(err => console.log('Ошибка отправки уведомления:', err));
+  }
   
   try {
     // Формируем HTML со статистикой напрямую из данных матча

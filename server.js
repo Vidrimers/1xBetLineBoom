@@ -5766,6 +5766,74 @@ app.get("/api/live-match-stats", async (req, res) => {
   }
 });
 
+// POST /api/notify-live-action - Уведомить админа о действиях пользователя в LIVE
+app.post("/api/notify-live-action", async (req, res) => {
+  try {
+    const { username, action, details } = req.body;
+    
+    if (!username || !action) {
+      return res.status(400).json({ error: "Требуются username и action" });
+    }
+    
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+    
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) {
+      console.log("⚠️ Telegram не настроен, уведомление не отправлено");
+      return res.json({ success: false });
+    }
+    
+    const time = new Date().toLocaleString("ru-RU");
+    let message = '';
+    
+    switch (action) {
+      case 'open_live_tournament':
+        message = `📺 ОТКРЫТ LIVE ТУРНИР\n\n👤 Пользователь: ${username}\n🏆 Турнир: ${details.tournamentName}\n🕐 Время: ${time}`;
+        break;
+      case 'add_favorite':
+        message = `⭐ ДОБАВЛЕН В ИЗБРАННОЕ\n\n👤 Пользователь: ${username}\n⚽ Матч: ${details.match}\n🏆 Турнир: ${details.tournamentName}\n🕐 Время: ${time}`;
+        break;
+      case 'remove_favorite':
+        message = `💔 УДАЛЕН ИЗ ИЗБРАННОГО\n\n👤 Пользователь: ${username}\n⚽ Матч: ${details.match}\n🏆 Турнир: ${details.tournamentName}\n🕐 Время: ${time}`;
+        break;
+      case 'open_match_stats':
+        message = `📊 ОТКРЫТА СТАТИСТИКА МАТЧА\n\n👤 Пользователь: ${username}\n⚽ Матч: ${details.match}\n🏆 Турнир: ${details.tournamentName}\n📈 Статус: ${details.status}\n🕐 Время: ${time}`;
+        break;
+      default:
+        message = `🔔 ДЕЙСТВИЕ В LIVE\n\n👤 Пользователь: ${username}\n📝 Действие: ${action}\n🕐 Время: ${time}`;
+    }
+    
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_ADMIN_ID,
+            text: message,
+          }),
+        }
+      );
+      
+      if (response.ok) {
+        console.log(`✅ Уведомление админу отправлено: ${action} от ${username}`);
+        res.json({ success: true });
+      } else {
+        console.error(`❌ Ошибка отправки уведомления: ${response.statusText}`);
+        res.json({ success: false });
+      }
+    } catch (error) {
+      console.error("❌ Ошибка отправки уведомления:", error);
+      res.json({ success: false });
+    }
+    
+  } catch (error) {
+    console.error("❌ Ошибка в /api/notify-live-action:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/counting-bets", (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
