@@ -11761,7 +11761,8 @@ const ICON_TO_COMPETITION = {
   'img/cups/france-league-ligue-1.png': 'FL1',
   'img/cups/rpl.png': 'RPL',
   'img/cups/world-cup.png': 'WC',
-  'img/cups/uefa-euro.png': 'EC'
+  'img/cups/uefa-euro.png': 'EC',
+  '🇳🇱': 'DED'  // Eredivisie (эмодзи флага Нидерландов)
 };
 
 // Открыть модальное окно парсинга матчей
@@ -11827,6 +11828,7 @@ async function loadParsePreview() {
   const competition = document.getElementById("parseCompetition").value;
   const dateFrom = document.getElementById("parseDateFrom").value;
   const dateTo = document.getElementById("parseDateTo").value;
+  const includeFuture = document.getElementById("parseIncludeFuture").checked;
   
   if (!competition || !dateFrom || !dateTo) {
     await showCustomAlert("Заполните все обязательные поля", "Ошибка", "❌");
@@ -11850,7 +11852,7 @@ async function loadParsePreview() {
   
   try {
     const response = await fetch(
-      `/api/fd-matches?competition=${encodeURIComponent(competition)}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+      `/api/fd-matches?competition=${encodeURIComponent(competition)}&dateFrom=${dateFrom}&dateTo=${dateTo}&includeFuture=${includeFuture}`
     );
     
     if (!response.ok) {
@@ -11862,7 +11864,8 @@ async function loadParsePreview() {
     parsedMatches = data.matches || [];
     
     if (parsedMatches.length === 0) {
-      previewList.innerHTML = '<div style="text-align: center; color: #ffc107; padding: 20px;">⚠️ Не найдено завершенных матчей в указанном диапазоне</div>';
+      const statusText = includeFuture ? 'матчей' : 'завершенных матчей';
+      previewList.innerHTML = `<div style="text-align: center; color: #ffc107; padding: 20px;">⚠️ Не найдено ${statusText} в указанном диапазоне</div>`;
       document.getElementById("bulkParseSubmitBtn").disabled = true;
       return;
     }
@@ -11877,6 +11880,31 @@ async function loadParsePreview() {
         hour: "2-digit",
         minute: "2-digit"
       });
+      
+      const isFinished = match.status === 'FINISHED';
+      const scoreHtml = isFinished ? `
+        <div style="
+          background: rgba(76, 175, 80, 0.2);
+          border: 1px solid rgba(76, 175, 80, 0.5);
+          border-radius: 4px;
+          padding: 6px 12px;
+          font-weight: 500;
+          color: #4caf50;
+        ">
+          ${match.score.fullTime.home} : ${match.score.fullTime.away}
+        </div>
+      ` : `
+        <div style="
+          background: rgba(255, 152, 0, 0.2);
+          border: 1px solid rgba(255, 152, 0, 0.5);
+          border-radius: 4px;
+          padding: 6px 12px;
+          font-weight: 500;
+          color: #ff9800;
+        ">
+          Предстоящий
+        </div>
+      `;
       
       return `
         <div style="
@@ -11895,24 +11923,20 @@ async function loadParsePreview() {
                 📅 ${formattedDate}
               </div>
             </div>
-            <div style="
-              background: rgba(76, 175, 80, 0.2);
-              border: 1px solid rgba(76, 175, 80, 0.5);
-              border-radius: 4px;
-              padding: 6px 12px;
-              font-weight: 500;
-              color: #4caf50;
-            ">
-              ${match.score.fullTime.home} : ${match.score.fullTime.away}
-            </div>
+            ${scoreHtml}
           </div>
         </div>
       `;
     }).join("");
     
+    const finishedCount = parsedMatches.filter(m => m.status === 'FINISHED').length;
+    const futureCount = parsedMatches.length - finishedCount;
+    
     previewList.innerHTML = `
       <div style="margin-bottom: 15px; padding: 10px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px;">
         <div style="color: #4caf50; font-weight: 500;">✅ Найдено матчей: ${parsedMatches.length}</div>
+        ${finishedCount > 0 ? `<div style="color: #4caf50; font-size: 0.9em; margin-top: 4px;">🏁 Завершенных: ${finishedCount}</div>` : ''}
+        ${futureCount > 0 ? `<div style="color: #ff9800; font-size: 0.9em; margin-top: 4px;">📅 Предстоящих: ${futureCount}</div>` : ''}
       </div>
       ${matchesHtml}
     `;
@@ -11962,18 +11986,27 @@ async function submitBulkParse(event) {
     submitBtn.textContent = "⏳ Создание матчей...";
     
     // Преобразуем спарсенные матчи в формат для создания
-    const matchesToCreate = parsedMatches.map(match => ({
-      team1_name: match.homeTeam.name,
-      team2_name: match.awayTeam.name,
-      match_date: match.utcDate,
-      round: round || null,
-      event_id: currentEventId,
-      // Сразу устанавливаем результат
-      team1_score: match.score.fullTime.home,
-      team2_score: match.score.fullTime.away,
-      winner: match.score.fullTime.home > match.score.fullTime.away ? 'team1' :
-              match.score.fullTime.home < match.score.fullTime.away ? 'team2' : 'draw'
-    }));
+    const matchesToCreate = parsedMatches.map(match => {
+      const isFinished = match.status === 'FINISHED';
+      
+      const baseMatch = {
+        team1_name: match.homeTeam.name,
+        team2_name: match.awayTeam.name,
+        match_date: match.utcDate,
+        round: round || null,
+        event_id: currentEventId
+      };
+      
+      // Если матч завершен - добавляем результаты
+      if (isFinished && match.score.fullTime.home !== null && match.score.fullTime.away !== null) {
+        baseMatch.team1_score = match.score.fullTime.home;
+        baseMatch.team2_score = match.score.fullTime.away;
+        baseMatch.winner = match.score.fullTime.home > match.score.fullTime.away ? 'team1' :
+                          match.score.fullTime.home < match.score.fullTime.away ? 'team2' : 'draw';
+      }
+      
+      return baseMatch;
+    });
     
     // Отправляем на сервер
     const response = await fetch("/api/matches/bulk-create", {
@@ -11989,11 +12022,17 @@ async function submitBulkParse(event) {
       throw new Error(error.message || "Ошибка при создании матчей");
     }
     
-    await showCustomAlert(
-      `Успешно создано ${matchesToCreate.length} матчей с результатами`,
-      "Успех",
-      "✅"
-    );
+    const finishedCount = parsedMatches.filter(m => m.status === 'FINISHED').length;
+    const futureCount = parsedMatches.length - finishedCount;
+    
+    let message = `Успешно создано ${matchesToCreate.length} матчей`;
+    if (finishedCount > 0 && futureCount > 0) {
+      message += `\n\n🏁 С результатами: ${finishedCount}\n📅 Без результатов: ${futureCount}`;
+    } else if (finishedCount > 0) {
+      message += ` с результатами`;
+    }
+    
+    await showCustomAlert(message, "Успех", "✅");
     
     closeBulkParseModal();
     

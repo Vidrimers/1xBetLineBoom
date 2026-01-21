@@ -4984,7 +4984,7 @@ app.get("/api/user/:userId/bets", async (req, res) => {
 // GET /api/fd-matches - Получить матчи через SStats API (замена Football-Data)
 app.get("/api/fd-matches", async (req, res) => {
   try {
-    const { competition, dateFrom, dateTo } = req.query;
+    const { competition, dateFrom, dateTo, includeFuture } = req.query;
     if (!competition || !dateFrom || !dateTo) {
       return res
         .status(400)
@@ -5049,21 +5049,23 @@ app.get("/api/fd-matches", async (req, res) => {
 
     // Фильтруем по датам и статусу на сервере
     const filteredGames = (sstatsData.data || []).filter(game => {
-      // Проверяем что матч завершен (status: 8 = Finished)
-      if (game.status !== 8) return false;
+      // Если includeFuture=true, пропускаем все матчи
+      // Если includeFuture=false, только завершенные (status: 8 = Finished)
+      if (includeFuture !== 'true' && game.status !== 8) return false;
       
       // Проверяем что дата матча в нужном диапазоне
       const gameDate = game.date.split('T')[0]; // Берем только дату без времени
       return gameDate >= dateFrom && gameDate <= dateTo;
     });
     
-    console.log(`✅ Из них завершенных в диапазоне ${dateFrom} - ${dateTo}: ${filteredGames.length} матчей`);
+    const statusText = includeFuture === 'true' ? 'всех' : 'завершенных';
+    console.log(`✅ Из них ${statusText} в диапазоне ${dateFrom} - ${dateTo}: ${filteredGames.length} матчей`);
 
     // Преобразуем в формат SStats для совместимости с фронтом
     const matches = filteredGames.map(game => ({
       id: game.id,
       utcDate: game.date,
-      status: 'FINISHED',
+      status: game.status === 8 ? 'FINISHED' : 'SCHEDULED',
       homeTeam: {
         id: game.homeTeam.id,
         name: game.homeTeam.name,
@@ -5076,8 +5078,8 @@ app.get("/api/fd-matches", async (req, res) => {
       },
       score: {
         fullTime: {
-          home: game.homeResult,
-          away: game.awayResult
+          home: game.homeResult || null,
+          away: game.awayResult || null
         }
       }
     }));
