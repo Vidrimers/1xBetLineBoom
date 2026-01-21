@@ -5707,6 +5707,65 @@ app.post("/api/live-matches-by-ids", async (req, res) => {
   }
 });
 
+// GET /api/live-match-stats - Получить статистику LIVE матча
+app.get("/api/live-match-stats", async (req, res) => {
+  try {
+    const { matchId, eventId } = req.query;
+    
+    if (!matchId) {
+      return res.status(400).json({ error: "Требуется matchId" });
+    }
+    
+    console.log(`📊 /api/live-match-stats запрос: matchId=${matchId}, eventId=${eventId}`);
+    
+    // Получаем информацию о матче из БД
+    const match = db.prepare(`
+      SELECT 
+        m.*,
+        e.name as event_name
+      FROM matches m
+      LEFT JOIN events e ON m.event_id = e.id
+      WHERE m.id = ?
+    `).get(matchId);
+    
+    if (!match) {
+      return res.status(404).json({ error: "Матч не найден" });
+    }
+    
+    console.log(`📋 Информация о матче из БД:`, {
+      id: match.id,
+      team1: match.team1_name,
+      team2: match.team2_name,
+      status: match.status,
+      score: match.score,
+      event_name: match.event_name
+    });
+    
+    // Базовая информация о матче (всегда возвращаем)
+    const result = {
+      matchId: match.id,
+      team1: match.team1_name,
+      team2: match.team2_name,
+      score: match.score || null,
+      status: match.status === 'live' || match.status === 'in_progress' ? '🔴 LIVE' : 
+              match.status === 'finished' ? '✅ Завершен' : 
+              'Предстоящий',
+      matchTime: match.match_time,
+      elapsed: match.elapsed || null,
+      statistics: [],
+      events: [],
+      lineups: null
+    };
+    
+    console.log(`✅ Базовая статистика матча ${matchId} подготовлена, отправляем клиенту`);
+    res.json(result);
+    
+  } catch (error) {
+    console.error("❌ /api/live-match-stats ошибка:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/counting-bets", (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;

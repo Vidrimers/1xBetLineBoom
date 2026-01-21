@@ -14242,7 +14242,9 @@ async function showLiveEventMatches(eventId) {
         const shouldUnderlineTeam2 = (betTeam === match.team2 || isDraw);
         
         html += `
-          <div class="live-match-card ${isLive ? 'is-live' : ''}" data-match-id="${match.id}" style="
+          <div class="live-match-card ${isLive ? 'is-live' : ''}" data-match-id="${match.id}" 
+            onclick='showLiveTeamStats(${JSON.stringify(match).replace(/'/g, "\\'")})'
+            style="
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid ${isLive ? '#f44336' : isFinished ? '#4caf50' : 'rgba(90, 159, 212, 0.5)'};
             border-radius: 8px;
@@ -14253,6 +14255,7 @@ async function showLiveEventMatches(eventId) {
             flex-direction: column;
             justify-content: space-between;
             min-height: 180px;
+            cursor: pointer;
           " onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${isLive ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
             
             ${isLive ? `
@@ -15452,3 +15455,90 @@ if (window.innerWidth > 1400) {
   });
 }
 
+// ===== МОДАЛЬНОЕ ОКНО СТАТИСТИКИ LIVE МАТЧА =====
+
+async function showLiveTeamStats(matchData) {
+  const modal = document.getElementById('liveTeamStatsModal');
+  const title = document.getElementById('liveTeamStatsTitle');
+  const content = document.getElementById('liveTeamStatsContent');
+  
+  // Показываем модальное окно с flex для центрирования
+  modal.style.display = 'flex';
+  title.textContent = `📊 ${matchData.team1} vs ${matchData.team2}`;
+  content.innerHTML = '<div class="empty-message">⏳ Загрузка статистики...</div>';
+  
+  try {
+    // Формируем HTML со статистикой напрямую из данных матча
+    let html = '';
+    
+    // Определяем статус
+    const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
+    const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
+    const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : 'Предстоящий';
+    
+    // Основная информация о матче
+    html += `
+      <div style="background: rgba(90, 159, 212, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #5a9fd4;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="text-align: center; flex: 1;">
+            <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team1}</div>
+          </div>
+          <div style="text-align: center; padding: 0 20px;">
+            <div style="color: #4caf50; font-size: 1.5em; font-weight: 700;">${matchData.score || 'vs'}</div>
+            <div style="color: #b0b8c8; font-size: 0.85em; margin-top: 5px;">${statusText}</div>
+            ${matchData.elapsed ? `<div style="color: #f44336; font-size: 0.9em; margin-top: 3px;">${matchData.elapsed}'</div>` : ''}
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="color: #e0e6f0; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">${matchData.team2}</div>
+          </div>
+        </div>
+        ${matchData.match_time ? `
+          <div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin-top: 10px;">
+            🕐 ${new Date(matchData.match_time).toLocaleString('ru-RU', { 
+              day: '2-digit', 
+              month: 'long', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    // Если матч еще не начался или только что начался
+    if (!isLive && !isFinished) {
+      html += `
+        <div class="empty-message">
+          <p>📅 Матч еще не начался</p>
+          <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Статистика появится после начала матча</p>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="empty-message">
+          <p>📊 Детальная статистика</p>
+          <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
+            ${isLive ? 'Матч идет в данный момент' : 'Матч завершен'}
+          </p>
+          ${matchData.statusName ? `<p style="font-size: 0.85em; color: #999; margin-top: 5px;">Статус: ${matchData.statusName}</p>` : ''}
+        </div>
+      `;
+    }
+    
+    content.innerHTML = html;
+    
+  } catch (error) {
+    console.error('Ошибка отображения статистики:', error);
+    content.innerHTML = `
+      <div class="empty-message">
+        <p>❌ Ошибка отображения статистики</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">${error.message}</p>
+      </div>
+    `;
+  }
+}
+
+function closeLiveTeamStatsModal() {
+  const modal = document.getElementById('liveTeamStatsModal');
+  modal.style.display = 'none';
+}

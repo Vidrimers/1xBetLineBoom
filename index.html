@@ -4340,5 +4340,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно статистики команды в LIVE -->
+    <div id="liveTeamStatsModal" class="modal" style="display: none" onclick="if(event.target.id === 'liveTeamStatsModal') closeLiveTeamStatsModal()">
+      <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h2 id="liveTeamStatsTitle">📊 Статистика матча</h2>
+          <button class="modal-close" onclick="closeLiveTeamStatsModal()">
+            &times;
+          </button>
+        </div>
+        <div id="liveTeamStatsContent" style="padding: 20px;">
+          <div class="empty-message">Загрузка статистики...</div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
