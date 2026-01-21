@@ -3864,15 +3864,46 @@ function toggleTournamentBets(toggleId) {
   const content = document.getElementById(`${toggleId}-content`);
   const arrow1 = document.getElementById(`${toggleId}-arrow`);
   const arrow2 = document.getElementById(`${toggleId}-arrow2`);
+  const betItems = content.querySelectorAll('.bet-item');
   
-  if (content.style.display === 'none') {
-    content.style.display = 'block';
+  // Определяем задержку в зависимости от количества карточек
+  const delay = betItems.length > 30 ? 1 : 10;
+  
+  if (content.style.display === 'none' || !content.style.display) {
+    // Открываем
+    content.style.display = 'flex';
     arrow1.textContent = '▲';
     arrow2.textContent = '▲';
+    
+    // Анимация появления карточек одна за другой
+    betItems.forEach((item, index) => {
+      item.style.opacity = '0';
+      item.style.transform = 'translateX(-20px)';
+      setTimeout(() => {
+        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        item.style.opacity = '1';
+        item.style.transform = 'translateX(0)';
+      }, index * delay);
+    });
   } else {
-    content.style.display = 'none';
+    // Закрываем
     arrow1.textContent = '▼';
     arrow2.textContent = '▼';
+    
+    // Анимация исчезновения карточек одна за другой (в обратном порядке)
+    const reversedItems = Array.from(betItems).reverse();
+    reversedItems.forEach((item, index) => {
+      setTimeout(() => {
+        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
+      }, index * delay);
+    });
+    
+    // Скрываем контейнер после завершения анимации
+    setTimeout(() => {
+      content.style.display = 'none';
+    }, reversedItems.length * delay + 300);
   }
 }
 
