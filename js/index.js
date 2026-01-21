@@ -813,6 +813,9 @@ async function loadConfig() {
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🔄 DOMContentLoaded - начало загрузки");
 
+  // Очищаем старые завершенные матчи из избранного
+  cleanupOldFavorites();
+
   // Запускаем отслеживание позиции кубика
   startDicePositionTracking();
 
@@ -16117,6 +16120,17 @@ function processMatches(matches, favorites, isDesktop) {
               setTimeout(() => notification.remove(), 300);
             }
           }
+          
+          // Удаляем матч из избранного
+          let favorites = getFavoriteMatches();
+          const index = favorites.indexOf(match.id);
+          if (index > -1) {
+            favorites.splice(index, 1);
+            saveFavoriteMatches(favorites);
+            removeFavoriteMatchData(match.id);
+            console.log(`🗑️ Матч ${match.id} удален из избранного (завершен)`);
+          }
+          
           // Помечаем матч как удаленный (не показывать снова)
           deletedFinishedMatches.add(match.id);
           saveDeletedFinishedMatches(); // Сохраняем в localStorage
@@ -17084,5 +17098,67 @@ async function checkMatchEventsForNotifications(matchIds, userId) {
     }
   } catch (error) {
     console.error('❌ Ошибка проверки событий:', error);
+  }
+}
+
+
+// ===== ОЧИСТКА СТАРЫХ ИЗБРАННЫХ МАТЧЕЙ =====
+function cleanupOldFavorites() {
+  const favorites = getFavoriteMatches();
+  if (favorites.length === 0) return;
+  
+  console.log(`🧹 Проверка ${favorites.length} избранных матчей на актуальность...`);
+  
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 часа назад
+  
+  let cleaned = 0;
+  const updatedFavorites = favorites.filter(matchId => {
+    const matchData = getFavoriteMatchData(matchId);
+    
+    // Если нет данных - удаляем
+    if (!matchData) {
+      console.log(`🗑️ Удаляем матч ${matchId} - нет данных`);
+      removeFavoriteMatchData(matchId);
+      cleaned++;
+      return false;
+    }
+    
+    // Если матч завершен - удаляем
+    const isFinished = matchData.status === 'Finished' || 
+                      matchData.status === 'finished' || 
+                      matchData.status === 'Full Time' || 
+                      matchData.status === 'FT' ||
+                      matchData.status === 'Completed' ||
+                      matchData.status === 'completed' ||
+                      matchData.status === 'FINISHED' ||
+                      matchData.status === 'COMPLETED';
+    
+    if (isFinished) {
+      console.log(`🗑️ Удаляем матч ${matchId} - завершен`);
+      removeFavoriteMatchData(matchId);
+      cleaned++;
+      return false;
+    }
+    
+    // Если данные старше 24 часов - удаляем
+    if (matchData.updatedAt) {
+      const updatedAt = new Date(matchData.updatedAt);
+      if (updatedAt < oneDayAgo) {
+        console.log(`🗑️ Удаляем матч ${matchId} - данные старше 24 часов`);
+        removeFavoriteMatchData(matchId);
+        cleaned++;
+        return false;
+      }
+    }
+    
+    return true;
+  });
+  
+  if (cleaned > 0) {
+    saveFavoriteMatches(updatedFavorites);
+    console.log(`✅ Очищено ${cleaned} старых матчей из избранного`);
+  } else {
+    console.log(`✅ Все избранные матчи актуальны`);
   }
 }

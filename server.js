@@ -5897,46 +5897,66 @@ app.post("/api/live-matches-by-ids", async (req, res) => {
     // Для каждого matchId получаем sstats_match_id из БД и загружаем данные
     for (const matchId of matchIds) {
       try {
-        const match = db.prepare('SELECT sstats_match_id, team1_name, team2_name FROM matches WHERE id = ?').get(matchId);
+        const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
         
-        if (!match || !match.sstats_match_id) {
-          console.log(`⏭️ Матч ${matchId} не имеет sstats_match_id`);
+        if (!match) {
+          console.log(`⏭️ Матч ${matchId} не найден в БД`);
           continue;
         }
         
-        // Загружаем данные из SStats API
-        const url = `${SSTATS_API_BASE}/Games/${match.sstats_match_id}`;
-        const response = await fetch(url, {
-          headers: { 'X-API-Key': SSTATS_API_KEY }
-        });
-        
-        if (!response.ok) {
-          console.log(`⚠️ Не удалось загрузить матч ${matchId} (sstats: ${match.sstats_match_id})`);
-          continue;
+        // Если есть sstats_match_id - загружаем из API
+        if (match.sstats_match_id) {
+          try {
+            const url = `${SSTATS_API_BASE}/Games/${match.sstats_match_id}`;
+            const response = await fetch(url, {
+              headers: { 'X-API-Key': SSTATS_API_KEY }
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              const details = result.data || result;
+              const game = details.game;
+              
+              if (game) {
+                allMatches.push({
+                  id: matchId,
+                  team1: game.homeTeam?.name || match.team1_name,
+                  team2: game.awayTeam?.name || match.team2_name,
+                  homeTeam: game.homeTeam?.name || match.team1_name,
+                  awayTeam: game.awayTeam?.name || match.team2_name,
+                  score: `${game.homeResult || 0}:${game.awayResult || 0}`,
+                  homeResult: game.homeResult || 0,
+                  awayResult: game.awayResult || 0,
+                  status: game.statusName || 'live',
+                  statusName: game.statusName,
+                  elapsed: game.elapsed
+                });
+                continue;
+              }
+            }
+          } catch (apiError) {
+            console.log(`⚠️ Ошибка API для матча ${matchId}, используем данные из БД`);
+          }
         }
         
-        const result = await response.json();
-        const details = result.data || result;
-        const game = details.game;
-        
-        if (!game) continue;
-        
+        // Fallback: используем данные из БД
+        console.log(`📦 Используем данные из БД для матча ${matchId}`);
         allMatches.push({
           id: matchId,
-          team1: game.homeTeam?.name || match.team1_name,
-          team2: game.awayTeam?.name || match.team2_name,
-          homeTeam: game.homeTeam?.name || match.team1_name,
-          awayTeam: game.awayTeam?.name || match.team2_name,
-          score: `${game.homeResult || 0}:${game.awayResult || 0}`,
-          homeResult: game.homeResult || 0,
-          awayResult: game.awayResult || 0,
-          status: game.statusName || 'live',
-          statusName: game.statusName,
-          elapsed: game.elapsed
+          team1: match.team1_name,
+          team2: match.team2_name,
+          homeTeam: match.team1_name,
+          awayTeam: match.team2_name,
+          score: match.score || '0:0',
+          homeResult: match.team1_score || 0,
+          awayResult: match.team2_score || 0,
+          status: match.winner ? 'Finished' : 'live',
+          statusName: match.winner ? 'Finished' : 'Live',
+          elapsed: null
         });
         
       } catch (error) {
-        console.error(`⚠️ Ошибка загрузки матча ${matchId}:`, error.message);
+        console.error(`⚠️ Ошибка обработки матча ${matchId}:`, error.message);
       }
     }
     
