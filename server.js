@@ -13363,6 +13363,37 @@ const ICON_TO_COMPETITION = {
 // Хранилище обработанных дат (чтобы не обрабатывать повторно)
 const processedDates = new Set();
 
+// Создаем таблицу для хранения обработанных дат автоподсчета
+db.exec(`
+  CREATE TABLE IF NOT EXISTS auto_counting_processed (
+    date_key TEXT PRIMARY KEY,
+    processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+// Загружаем обработанные даты из БД при старте
+const loadProcessedDates = () => {
+  try {
+    const dates = db.prepare('SELECT date_key FROM auto_counting_processed').all();
+    dates.forEach(row => processedDates.add(row.date_key));
+    console.log(`📋 Загружено ${dates.length} обработанных дат из БД`);
+  } catch (error) {
+    console.error('❌ Ошибка загрузки обработанных дат:', error);
+  }
+};
+
+// Сохранить обработанную дату в БД
+const saveProcessedDate = (dateKey) => {
+  try {
+    db.prepare('INSERT OR IGNORE INTO auto_counting_processed (date_key) VALUES (?)').run(dateKey);
+  } catch (error) {
+    console.error('❌ Ошибка сохранения обработанной даты:', error);
+  }
+};
+
+// Загружаем при старте
+loadProcessedDates();
+
 // Функции для работы с настройкой автоподсчета в БД
 function getAutoCountingEnabled() {
   const setting = db.prepare("SELECT value FROM system_settings WHERE key = 'auto_counting_enabled'").get();
@@ -13627,6 +13658,8 @@ async function triggerAutoCountingForDate(dateGroup) {
     
     // Помечаем дату как обработанную
     processedDates.add(dateKey);
+    saveProcessedDate(dateKey);
+    console.log(`✅ Дата ${dateKey} помечена как обработанная`);
     
     // Получаем ставки за эту дату
     const bets = db.prepare(`
@@ -13810,6 +13843,34 @@ app.post("/api/admin/toggle-auto-counting", (req, res) => {
     enabled: newStatus,
     message: `Автоподсчет ${newStatus ? 'включен' : 'выключен'}`
   });
+});
+
+// Эндпоинт для очистки обработанных дат (для повторного подсчета)
+app.post("/api/admin/clear-processed-dates", (req, res) => {
+  const { username } = req.body;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+  
+  if (username !== ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+  
+  try {
+    // Очищаем из памяти
+    processedDates.clear();
+    
+    // Очищаем из БД
+    db.prepare('DELETE FROM auto_counting_processed').run();
+    
+    console.log(`🧹 Очищены все обработанные даты автоподсчета`);
+    
+    res.json({ 
+      success: true,
+      message: 'Обработанные даты очищены. Автоподсчет запустится заново при следующей проверке.'
+    });
+  } catch (error) {
+    console.error('❌ Ошибка очистки обработанных дат:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Запускаем проверку каждые 5 минут
