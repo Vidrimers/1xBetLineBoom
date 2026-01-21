@@ -1578,6 +1578,9 @@ function resetLogFile() {
 // Инициализируем базу данных
 let db = new Database("1xBetLineBoom.db");
 
+// Отключаем WAL-режим (используем DELETE режим для совместимости)
+db.pragma("journal_mode = DELETE");
+
 // Отключаем FOREIGN KEY constraints для упрощения операций удаления
 db.pragma("foreign_keys = OFF");
 
@@ -5585,6 +5588,8 @@ app.get("/api/yesterday-matches", async (req, res) => {
     // Логируем первые несколько матчей для отладки
     if (completedDays.length > 0 && completedDays[0].matches.length > 0) {
       console.log('📋 Пример матча из completedDays:', {
+        id: completedDays[0].matches[0].id,
+        sstats_match_id: completedDays[0].matches[0].sstats_match_id,
         team1_name: completedDays[0].matches[0].team1_name,
         team2_name: completedDays[0].matches[0].team2_name,
         team1_score: completedDays[0].matches[0].team1_score,
@@ -12128,9 +12133,9 @@ app.post("/api/backup", async (req, res) => {
     const backupPath = path.join(BACKUPS_DIR, backupFilename);
     const dbPath = path.join(__dirname, "1xBetLineBoom.db");
 
-    // ВАЖНО: Записываем все изменения из WAL в основной файл БД перед копированием
-    db.pragma("wal_checkpoint(FULL)");
-    console.log("✓ WAL checkpoint выполнен перед созданием бэкапа");
+    // Синхронизируем все изменения в основной файл БД перед копированием
+    db.pragma("synchronous = FULL");
+    console.log("✓ Синхронизация БД выполнена перед созданием бэкапа");
 
     // Копируем файл БД
     fs.copyFileSync(dbPath, backupPath);
@@ -12408,7 +12413,7 @@ app.post("/api/admin/restore-backup", async (req, res) => {
 
     // Переоткрываем соединение с БД
     db = new Database("./1xBetLineBoom.db");
-    db.pragma("journal_mode = WAL");
+    db.pragma("journal_mode = DELETE");
 
     // Запускаем миграции для восстановленной БД
     console.log("🔄 Запуск миграций после восстановления БД...");

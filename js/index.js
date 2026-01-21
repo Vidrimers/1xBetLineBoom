@@ -869,14 +869,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         const validateResponse = await fetch(`/api/sessions/${sessionToken}/validate`);
         if (!validateResponse.ok) {
           // Сессия недействительна - разлогиниваем
-          console.log("⚠️ Сессия недействительна, выполняется выход");
+          console.log("⚠️ Сессия недействительна при загрузке, выполняется выход");
           localStorage.removeItem("currentUser");
           localStorage.removeItem("sessionToken");
           location.reload();
           return;
         }
       } catch (err) {
-        console.error("⚠️ Ошибка проверки сессии:", err);
+        // При ошибке загрузки НЕ разлогиниваем, просто логируем
+        console.warn("⚠️ Не удалось проверить сессию при загрузке (возможно временная проблема с БД):", err.message);
+        // Продолжаем работу, периодическая проверка разберется позже
       }
     } else {
       // Если нет токена сессии, создаем новую
@@ -985,7 +987,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadSavedTheme();
   }
 
-  // Запускаем периодическую проверку сессии каждые 5 секунд
+  // Запускаем периодическую проверку сессии каждые 60 секунд (снижена частота)
+  let sessionCheckFailures = 0; // Счетчик неудачных проверок
   sessionCheckInterval = setInterval(async () => {
     // Пропускаем проверку если идет переименование пользователя
     if (isRenamingUser) {
@@ -999,17 +1002,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const validateResponse = await fetch(`/api/sessions/${token}/validate`);
         if (!validateResponse.ok) {
-          // Сессия недействительна - разлогиниваем
-          console.log("⚠️ Сессия стала недействительной, выполняется выход");
+          sessionCheckFailures++;
+          console.log(`⚠️ Проверка сессии не прошла (попытка ${sessionCheckFailures}/3)`);
+          
+          // Разлогиниваем только после 3 неудачных попыток подряд
+          if (sessionCheckFailures >= 3) {
+            console.log("❌ Сессия недействительна после 3 попыток, выполняется выход");
+            localStorage.removeItem("currentUser");
+            localStorage.removeItem("sessionToken");
+            location.reload();
+          }
+        } else {
+          // Сброс счетчика при успешной проверке
+          sessionCheckFailures = 0;
+        }
+      } catch (err) {
+        sessionCheckFailures++;
+        console.error(`⚠️ Ошибка проверки сессии (попытка ${sessionCheckFailures}/3):`, err.message);
+        
+        // Разлогиниваем только после 3 неудачных попыток подряд
+        if (sessionCheckFailures >= 3) {
+          console.log("❌ Множественные ошибки проверки сессии, выполняется выход");
           localStorage.removeItem("currentUser");
           localStorage.removeItem("sessionToken");
           location.reload();
         }
-      } catch (err) {
-        console.error("⚠️ Ошибка проверки сессии:", err);
       }
     }
-  }, 5000); // Проверка каждые 5 секунд
+  }, 60000); // Проверка каждые 60 секунд
 
   // Запускаем обновление статусов матчей каждые 30 секунд
   matchUpdateInterval = setInterval(() => {
@@ -15227,9 +15247,9 @@ function renderCompletedDayMatches(dayId) {
     }
     
     // Преобразуем данные матча в формат для showLiveTeamStats
-    // Используем sstats_match_id если есть, иначе обычный id
+    // ВАЖНО: Используем sstats_match_id для загрузки правильной статистики из SStats API
     const matchData = {
-      id: match.sstats_match_id || match.id, // ID из SStats для загрузки детальной статистики
+      id: match.sstats_match_id || match.id, // Приоритет у sstats_match_id
       team1: match.team1_name,
       team2: match.team2_name,
       score: hasScore ? `${match.team1_score}:${match.team2_score}` : null,
@@ -15238,11 +15258,12 @@ function renderCompletedDayMatches(dayId) {
       elapsed: 90
     };
     
-    console.log('Завершенный матч:', { 
+    console.log('🎯 Завершенный матч:', { 
       dbId: match.id, 
       sstatsId: match.sstats_match_id,
       usedId: matchData.id,
-      teams: `${matchData.team1} vs ${matchData.team2}` 
+      teams: `${matchData.team1} vs ${matchData.team2}`,
+      score: matchData.score
     });
     
     html += `
@@ -16254,6 +16275,43 @@ if (window.innerWidth > 1400) {
 
 // ===== МОДАЛЬНОЕ ОКНО СТАТИСТИКИ LIVE МАТЧА =====
 
+// Кэш для словаря имен игроков
+let playerNamesDict = null;
+
+// Загрузить словарь имен игроков
+async function loadPlayerNamesDict() {
+  if (playerNamesDict) return playerNamesDict;
+  
+  try {
+    const response = await fetch('/names/PlayerNames.json');
+    if (response.ok) {
+      playerNamesDict = await response.json();
+      console.log('✅ Словарь имен игроков загружен:', Object.keys(playerNamesDict).length, 'имен');
+    } else {
+      playerNamesDict = {};
+    }
+  } catch (error) {
+    console.warn('⚠️ Не удалось загрузить словарь имен игроков:', error);
+    playerNamesDict = {};
+  }
+  
+  return playerNamesDict;
+}
+
+// Перевести имя игрока (возвращает "Русское имя (Original Name)")
+function translatePlayerName(englishName) {
+  if (!playerNamesDict || !englishName) return englishName;
+  
+  // Ищем русское имя по английскому значению в словаре
+  for (const [russian, english] of Object.entries(playerNamesDict)) {
+    if (english === englishName) {
+      return `${russian} (${englishName})`;
+    }
+  }
+  
+  return englishName; // Если не найдено, возвращаем оригинал
+}
+
 async function showLiveTeamStats(matchData) {
   const modal = document.getElementById('liveTeamStatsModal');
   const title = document.getElementById('liveTeamStatsTitle');
@@ -16637,9 +16695,19 @@ function renderEvents(events, game) {
     const isHome = event.teamId === game.homeTeam.id;
     const icon = eventIcons[event.type] || '📌';
     const eventName = eventNames[event.type] || event.name;
+    const isGoal = event.type === 1;
+    
+    // Золотистый фон для голов, обычный для других событий
+    const bgColor = isGoal 
+      ? 'rgba(255, 215, 0, 0.15)' 
+      : `rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1)`;
+    
+    const borderColor = isGoal 
+      ? '#ffd700' 
+      : (isHome ? '#5a9fd4' : '#f44336');
     
     html += `
-      <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1); border-radius: 5px; border-left: 3px solid ${isHome ? '#5a9fd4' : '#f44336'};">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: ${bgColor}; border-radius: 5px; border-left: 3px solid ${borderColor};">
         <div style="min-width: 40px; text-align: center; color: #e0e6f0; font-weight: 600; font-size: 0.9em;">
           ${event.elapsed}'
         </div>
