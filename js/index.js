@@ -3765,7 +3765,7 @@ function displayMyBets(bets) {
           ━━━ ${eventName} (${totalBets}) ━━━
           <span id="${toggleId}-arrow2">${isOpen ? '▲' : '▼'}</span>
         </div>
-        <div id="${toggleId}-content" style="display: ${isOpen ? 'block' : 'none'};">
+        <div id="${toggleId}-content" style="display: ${isOpen ? 'block' : 'none'}; display: flex; flex-direction: column; gap: 5px;">
     `;
     
     // Сначала pending ставки
