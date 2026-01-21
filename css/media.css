@@ -3280,6 +3280,8 @@
   .backup-lock-btn {
     opacity: 1 !important;
     pointer-events: auto !important;
+    right: 0px;
+  bottom: 0px;
   }
 }
 
