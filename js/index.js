@@ -17245,6 +17245,183 @@ function formatUtilityOutput(text) {
   return formatted;
 }
 
+// Открыть модальное окно управления датами
+async function openDatesManagementModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">📅 Управление датами автоподсчета</h3>
+      
+      <div id="datesContentContainer" style="
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #2a3a4a;
+        border-radius: 8px;
+        max-height: 50vh;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        line-height: 1.6;
+        color: #e0e6f0;
+      ">
+        <div style="color: #999; text-align: center; padding: 10px;">Загрузка...</div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button onclick="loadDatesData('processed')" style="
+          flex: 1;
+          background: #2196f3;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">📋 Обработанные даты</button>
+        <button onclick="loadDatesData('matches')" style="
+          flex: 1;
+          background: #673ab7;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">📅 Даты матчей</button>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button onclick="clearProcessedDates()" style="
+          flex: 1;
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">🗑️ Очистить даты</button>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="
+          flex: 1;
+          background: #607d8b;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Закрыть</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Загружаем обработанные даты по умолчанию
+  loadDatesData('processed');
+}
+
+// Загрузить данные о датах
+async function loadDatesData(type) {
+  const container = document.getElementById('datesContentContainer');
+  if (!container) return;
+  
+  container.innerHTML = '<div style="color: #999; text-align: center; padding: 10px;">Загрузка...</div>';
+  
+  const scriptName = type === 'processed' ? 'check-processed-dates' : 'check-match-dates';
+  
+  try {
+    const response = await fetch(`/api/admin/run-utility`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        script: scriptName,
+        username: currentUser?.username
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const formatted = formatUtilityOutput(data.output);
+      container.innerHTML = formatted;
+    } else {
+      container.innerHTML = `<div style="color: #f44336;">${data.error}</div>`;
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки данных:', error);
+    container.innerHTML = `<div style="color: #f44336;">Ошибка загрузки: ${error.message}</div>`;
+  }
+}
+
+// Очистить обработанные даты
+async function clearProcessedDates() {
+  const confirmed = await showCustomConfirm(
+    'Вы уверены что хотите очистить все обработанные даты?\n\nЭто позволит автоподсчету запуститься повторно для уже подсчитанных дат.',
+    'Очистка обработанных дат',
+    '⚠️'
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    const response = await fetch(`/api/admin/run-utility`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        script: 'clear-processed-dates',
+        username: currentUser?.username
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      await showCustomAlert('Обработанные даты успешно очищены', 'Успех', '✅');
+      // Обновляем данные
+      loadDatesData('processed');
+    } else {
+      await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    await showCustomAlert('Ошибка при очистке дат', 'Ошибка', '❌');
+  }
+}
+
 // Открыть модальное окно управления уведомлениями
 async function openNotificationsModal() {
   // Загружаем список пользователей
