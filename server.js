@@ -2711,6 +2711,7 @@ app.get("/api/events/:eventId/user-bets/:userId", (req, res) => {
         m.team2_name,
         m.winner,
         m.match_date,
+        m.round,
         CASE 
           WHEN m.winner IS NOT NULL THEN
             CASE 
@@ -2790,6 +2791,7 @@ app.get("/api/events/:eventId/user-bets/:userId", (req, res) => {
     // Форматируем ставки с информацией о матчах
     const formattedBets = bets.map(bet => ({
       ...bet,
+      round: bet.round,
       match: {
         team1_name: bet.team1_name,
         team2_name: bet.team2_name,

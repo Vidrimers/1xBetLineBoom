@@ -17594,7 +17594,11 @@ async function showComparison() {
 
 // Отобразить модалку сравнения
 function displayComparisonModal(data1, data2) {
+  // Блокируем body
+  document.body.style.overflow = 'hidden';
+  
   const modal = document.createElement('div');
+  modal.className = 'comparison-modal';
   modal.style.cssText = `
     position: fixed;
     top: 0;
@@ -17608,6 +17612,13 @@ function displayComparisonModal(data1, data2) {
     z-index: 10000;
   `;
   
+  // Закрытие по клику вне модалки
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeComparisonModal();
+    }
+  });
+  
   modal.innerHTML = `
     <div style="
       background: #1e2a3a;
@@ -17618,8 +17629,27 @@ function displayComparisonModal(data1, data2) {
       max-height: 90vh;
       overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      position: relative;
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">⚖️ ${data1.user.username} vs ${data2.user.username}</h3>
+      <button class="modal-close" onclick="closeComparisonModal()" style="
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: transparent;
+        border: none;
+        color: #e0e6f0;
+        font-size: 24px;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
+      
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;">⚖️ ${data1.user.username} vs ${data2.user.username}</h3>
       
       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <button onclick="switchComparisonTab('bets')" id="comparisonTabBets" style="
@@ -17645,18 +17675,6 @@ function displayComparisonModal(data1, data2) {
       </div>
       
       <div id="comparisonContent"></div>
-      
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="
-        width: 100%;
-        background: #f44336;
-        color: white;
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        margin-top: 20px;
-      ">Закрыть</button>
     </div>
   `;
   
@@ -17667,6 +17685,16 @@ function displayComparisonModal(data1, data2) {
   
   // Показываем вкладку ставок по умолчанию
   switchComparisonTab('bets');
+}
+
+// Закрыть модалку сравнения
+function closeComparisonModal() {
+  const modal = document.querySelector('.comparison-modal');
+  if (modal) {
+    modal.remove();
+  }
+  // Разблокируем body
+  document.body.style.overflow = '';
 }
 
 // Переключить вкладку сравнения
@@ -17680,16 +17708,26 @@ function switchComparisonTab(tab) {
   const content = document.getElementById('comparisonContent');
   
   if (tab === 'bets') {
-    content.innerHTML = generateBetsComparison(data1, data2);
+    const selectedRound = window.comparisonSelectedRound || 'all';
+    content.innerHTML = generateBetsComparison(data1, data2, selectedRound);
   } else {
     content.innerHTML = generateStatsComparison(data1, data2);
   }
 }
 
 // Генерировать сравнение ставок
-function generateBetsComparison(data1, data2) {
+function generateBetsComparison(data1, data2, selectedRound = 'all') {
   const bets1Map = new Map(data1.bets.map(b => [b.match_id, b]));
   const bets2Map = new Map(data2.bets.map(b => [b.match_id, b]));
+  
+  // Функция для форматирования прогноза
+  const formatPrediction = (prediction, match) => {
+    if (!prediction) return '❌ Нет ставки';
+    if (prediction === 'team1') return match?.team1_name || 'Команда 1';
+    if (prediction === 'team2') return match?.team2_name || 'Команда 2';
+    if (prediction === 'draw') return 'Ничья';
+    return prediction;
+  };
   
   // Находим различия
   const differences = [];
@@ -17702,11 +17740,20 @@ function generateBetsComparison(data1, data2) {
     if (!bet1 || !bet2 || bet1.prediction !== bet2.prediction) {
       differences.push({
         match: bet1?.match || bet2?.match,
+        round: bet1?.round || bet2?.round,
         bet1: bet1,
         bet2: bet2
       });
     }
   });
+  
+  // Получаем уникальные туры только из различий
+  const rounds = [...new Set(differences.map(d => d.round).filter(r => r))].sort();
+  
+  // Фильтруем по выбранному туру
+  const filteredDifferences = selectedRound === 'all' 
+    ? differences 
+    : differences.filter(d => d.round === selectedRound);
   
   if (differences.length === 0) {
     return '<div style="color: #4caf50; text-align: center; padding: 20px;">✅ Все ставки одинаковые</div>';
@@ -17714,8 +17761,35 @@ function generateBetsComparison(data1, data2) {
   
   return `
     <div style="color: #e0e6f0;">
-      <h4 style="color: #ff9800; margin-bottom: 15px;">⚠️ Различия в ставках (${differences.length})</h4>
-      ${differences.map(diff => `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <h4 style="color: #ff9800; margin: 0;">⚠️ Различия в ставках (${filteredDifferences.length})</h4>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button onclick="filterComparisonByRound('all')" style="
+            background: ${selectedRound === 'all' ? '#2196f3' : '#607d8b'};
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+          ">Все туры</button>
+          ${rounds.map(round => {
+            const escapedRound = round.replace(/'/g, "\\'");
+            return `
+            <button onclick="filterComparisonByRound('${escapedRound}')" style="
+              background: ${selectedRound === round ? '#2196f3' : '#607d8b'};
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 0.9em;
+            ">${round}</button>
+          `;
+          }).join('')}
+        </div>
+      </div>
+      ${filteredDifferences.map(diff => `
         <div style="
           background: #2a3a4a;
           padding: 15px;
@@ -17723,19 +17797,20 @@ function generateBetsComparison(data1, data2) {
           margin-bottom: 10px;
         ">
           <div style="font-weight: bold; margin-bottom: 10px;">
+            ${diff.round ? `<span style="color: #999; font-size: 0.85em;">${diff.round}</span><br/>` : ''}
             ${diff.match?.team1_name || 'Матч'} vs ${diff.match?.team2_name || ''}
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div style="background: #1e2a3a; padding: 10px; border-radius: 6px;">
               <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data1.user.username}</div>
-              <div>${diff.bet1 ? diff.bet1.prediction : '❌ Нет ставки'}</div>
+              <div>${formatPrediction(diff.bet1?.prediction, diff.match)}</div>
               ${diff.bet1 ? `<div style="color: ${diff.bet1.is_won ? '#4caf50' : diff.bet1.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
                 ${diff.bet1.is_won ? '✅ Выиграл' : diff.bet1.is_lost ? '❌ Проиграл' : '⏳ Ожидание'}
               </div>` : ''}
             </div>
             <div style="background: #1e2a3a; padding: 10px; border-radius: 6px;">
               <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data2.user.username}</div>
-              <div>${diff.bet2 ? diff.bet2.prediction : '❌ Нет ставки'}</div>
+              <div>${formatPrediction(diff.bet2?.prediction, diff.match)}</div>
               ${diff.bet2 ? `<div style="color: ${diff.bet2.is_won ? '#4caf50' : diff.bet2.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
                 ${diff.bet2.is_won ? '✅ Выиграл' : diff.bet2.is_lost ? '❌ Проиграл' : '⏳ Ожидание'}
               </div>` : ''}
@@ -17745,6 +17820,14 @@ function generateBetsComparison(data1, data2) {
       `).join('')}
     </div>
   `;
+}
+
+// Фильтровать сравнение по туру
+function filterComparisonByRound(round) {
+  const { data1, data2 } = window.comparisonData;
+  window.comparisonSelectedRound = round;
+  const content = document.getElementById('comparisonContent');
+  content.innerHTML = generateBetsComparison(data1, data2, round);
 }
 
 // Генерировать сравнение статистики
