@@ -4155,6 +4155,37 @@ app.get("/api/users", (req, res) => {
   }
 });
 
+// 5.1.1 Получить детали пользователя (для админа)
+app.get("/api/admin/user-details/:userId", (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = db
+      .prepare("SELECT id, username, telegram_username, telegram_notifications_enabled FROM users WHERE id = ?")
+      .get(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    
+    // Получаем информацию из telegram_users
+    let telegramUser = null;
+    if (user.telegram_username) {
+      telegramUser = db
+        .prepare("SELECT chat_id, first_name FROM telegram_users WHERE telegram_username = ?")
+        .get(user.telegram_username);
+    }
+    
+    res.json({
+      user,
+      telegramUser
+    });
+  } catch (error) {
+    console.error("Ошибка при получении деталей пользователя:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 5.2 Получить всех модераторов
 app.get("/api/moderators", (req, res) => {
   try {

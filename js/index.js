@@ -17221,8 +17221,8 @@ async function runUtilityScript(scriptName) {
   }
 }
 
-// Открыть модальное окно для включения уведомлений
-async function openEnableNotificationsModal() {
+// Открыть модальное окно управления уведомлениями
+async function openNotificationsModal() {
   // Загружаем список пользователей
   let usersListHTML = '<div style="color: #999; text-align: center; padding: 10px;">Загрузка...</div>';
   
@@ -17245,42 +17245,27 @@ async function openEnableNotificationsModal() {
       background: #1e2a3a;
       padding: 30px;
       border-radius: 12px;
-      max-width: 500px;
+      max-width: 600px;
       width: 90%;
       max-height: 80vh;
       overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔔 Включить уведомления</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔔 Управление уведомлениями</h3>
       
       <div id="usersListContainer" style="
         margin-bottom: 20px;
         padding: 15px;
         background: #2a3a4a;
         border-radius: 8px;
-        max-height: 300px;
+        max-height: 400px;
         overflow-y: auto;
       ">
         ${usersListHTML}
       </div>
       
-      <input 
-        type="number" 
-        id="userIdInput" 
-        placeholder="ID пользователя" 
-        style="
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #3a7bd5;
-          border-radius: 8px;
-          background: #2a3a4a;
-          color: #e0e6f0;
-          font-size: 16px;
-          margin-bottom: 20px;
-        "
-      />
       <div style="display: flex; gap: 10px;">
-        <button onclick="enableNotificationsForUser()" style="
+        <button onclick="enableNotificationsForAll()" style="
           flex: 1;
           background: #4caf50;
           color: white;
@@ -17289,7 +17274,7 @@ async function openEnableNotificationsModal() {
           border-radius: 8px;
           cursor: pointer;
           font-size: 16px;
-        ">Включить</button>
+        ">✅ Включить для всех</button>
         <button onclick="this.closest('div[style*=fixed]').remove()" style="
           flex: 1;
           background: #f44336;
@@ -17299,7 +17284,7 @@ async function openEnableNotificationsModal() {
           border-radius: 8px;
           cursor: pointer;
           font-size: 16px;
-        ">Отмена</button>
+        ">Закрыть</button>
       </div>
     </div>
   `;
@@ -17313,35 +17298,34 @@ async function openEnableNotificationsModal() {
       const users = await response.json();
       
       usersListHTML = users.map(user => {
-        const notifStatus = user.telegram_notifications_enabled ? '✅' : '❌';
+        const notifStatus = user.telegram_notifications_enabled ? '✅ Вкл' : '❌ Выкл';
         const telegramStatus = user.telegram_username ? `@${user.telegram_username}` : '❌ Нет TG';
         
         return `
           <div style="
-            padding: 8px 12px;
+            padding: 12px;
             margin-bottom: 8px;
             background: #1e2a3a;
             border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             cursor: pointer;
             transition: background 0.2s;
           " 
           onmouseover="this.style.background='#2a3a4a'"
           onmouseout="this.style.background='#1e2a3a'"
-          onclick="document.getElementById('userIdInput').value='${user.id}'">
-            <div>
-              <div style="color: #e0e6f0; font-weight: bold;">
-                ${user.username}
+          onclick="showUserDetails(${user.id}, '${user.username.replace(/'/g, "\\'")}', '${user.telegram_username || ''}', ${user.telegram_notifications_enabled})">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #e0e6f0; font-weight: bold; margin-bottom: 4px;">
+                  ${user.username}
+                </div>
+                <div style="color: #999; font-size: 0.85em;">
+                  ${telegramStatus}
+                </div>
               </div>
-              <div style="color: #999; font-size: 0.85em;">
-                ${telegramStatus}
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: #5a9fd4; font-weight: bold;">ID: ${user.id}</span>
+                <span style="font-size: 0.9em;">${notifStatus}</span>
               </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="color: #5a9fd4; font-weight: bold;">ID: ${user.id}</span>
-              <span>${notifStatus}</span>
             </div>
           </div>
         `;
@@ -17358,19 +17342,118 @@ async function openEnableNotificationsModal() {
     document.getElementById('usersListContainer').innerHTML = 
       '<div style="color: #f44336; text-align: center; padding: 10px;">Ошибка загрузки</div>';
   }
-  
-  document.getElementById('userIdInput').focus();
 }
 
-// Включить уведомления для пользователя
-async function enableNotificationsForUser() {
-  const userId = document.getElementById('userIdInput').value;
-  
-  if (!userId) {
-    await showCustomAlert('Введите ID пользователя', 'Ошибка', '❌');
-    return;
+// Показать детали пользователя
+async function showUserDetails(userId, username, telegramUsername, notificationsEnabled) {
+  // Загружаем детальную информацию о пользователе
+  try {
+    const response = await fetch(`/api/admin/user-details/${userId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    const telegramInfo = data.telegramUser 
+      ? `<div style="color: #4caf50; margin-top: 10px;">
+           📱 <strong>Telegram привязка:</strong><br/>
+           Chat ID: ${data.telegramUser.chat_id}<br/>
+           Имя: ${data.telegramUser.first_name}
+         </div>`
+      : `<div style="color: #ff9800; margin-top: 10px;">
+           ⚠️ Нет записи в telegram_users
+         </div>`;
+    
+    const notifStatusText = notificationsEnabled ? '✅ Включены' : '❌ Отключены';
+    
+    const detailsModal = document.createElement('div');
+    detailsModal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+    `;
+    
+    detailsModal.innerHTML = `
+      <div style="
+        background: #1e2a3a;
+        padding: 30px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      ">
+        <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">👤 ${username}</h3>
+        
+        <div style="
+          padding: 15px;
+          background: #2a3a4a;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          color: #e0e6f0;
+          line-height: 1.8;
+        ">
+          <div><strong>ID:</strong> ${userId}</div>
+          <div><strong>Username:</strong> ${username}</div>
+          <div><strong>Telegram:</strong> ${telegramUsername || 'не привязан'}</div>
+          <div><strong>Уведомления:</strong> ${notifStatusText}</div>
+          ${telegramInfo}
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          ${!notificationsEnabled ? `
+            <button onclick="toggleUserNotifications(${userId}, true)" style="
+              flex: 1;
+              background: #4caf50;
+              color: white;
+              border: none;
+              padding: 12px;
+              border-radius: 8px;
+              cursor: pointer;
+              font-size: 16px;
+            ">✅ Включить уведомления</button>
+          ` : `
+            <button onclick="toggleUserNotifications(${userId}, false)" style="
+              flex: 1;
+              background: #ff9800;
+              color: white;
+              border: none;
+              padding: 12px;
+              border-radius: 8px;
+              cursor: pointer;
+              font-size: 16px;
+            ">❌ Отключить уведомления</button>
+          `}
+          <button onclick="this.closest('div[style*=fixed]').remove()" style="
+            flex: 1;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+          ">Закрыть</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(detailsModal);
+  } catch (error) {
+    console.error('Ошибка загрузки деталей пользователя:', error);
+    await showCustomAlert('Ошибка загрузки деталей пользователя', 'Ошибка', '❌');
   }
-  
+}
+
+// Переключить уведомления для пользователя
+async function toggleUserNotifications(userId, enable) {
   try {
     const response = await fetch(`/api/admin/run-utility`, {
       method: 'POST',
@@ -17380,7 +17463,51 @@ async function enableNotificationsForUser() {
       body: JSON.stringify({ 
         script: 'enable-notifications',
         username: currentUser?.username,
-        args: [userId]
+        args: [userId, enable ? '1' : '0']
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Закрываем оба модальных окна
+      const modals = document.querySelectorAll('div[style*="z-index: 10001"], div[style*="z-index: 10000"]');
+      modals.forEach(m => m.remove());
+      // Открываем заново главное окно
+      openNotificationsModal();
+    } else {
+      await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    await showCustomAlert('Ошибка при изменении настроек', 'Ошибка', '❌');
+  }
+}
+
+// Включить уведомления для всех пользователей
+async function enableNotificationsForAll() {
+  const confirmed = await showCustomConfirm(
+    'Включить уведомления для всех пользователей с привязанным Telegram?',
+    'Подтверждение',
+    '🔔'
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    const response = await fetch(`/api/admin/run-utility`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        script: 'enable-notifications-for-all',
+        username: currentUser?.username,
+        args: []
       })
     });
     
@@ -17392,13 +17519,16 @@ async function enableNotificationsForUser() {
     
     if (data.success) {
       await showCustomAlert(`${data.output}`, data.title, '✅');
-      document.querySelector('div[style*=fixed]').remove();
+      // Закрываем модальное окно
+      document.querySelector('div[style*="z-index: 10000"]').remove();
+      // Открываем заново
+      openNotificationsModal();
     } else {
       await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при включении уведомлений', 'Ошибка', '❌');
   }
 }
 

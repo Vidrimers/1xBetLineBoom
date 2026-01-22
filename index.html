@@ -1266,28 +1266,6 @@
               </button>
               
               <button
-                onclick="runUtilityScript('check-user-settings')"
-                style="
-                  background: rgba(63, 81, 181, 0.7);
-                  color: #c5cae9;
-                  border: 1px solid #3f51b5;
-                  padding: 12px 20px;
-                  border-radius: 8px;
-                  cursor: pointer;
-                  font-size: 0.95em;
-                  transition: all 0.3s ease;
-                  white-space: nowrap;
-                  flex: 1 1 auto;
-                  min-width: 180px;
-                "
-                onmouseover="this.style.transform='scale(1.05)'"
-                onmouseout="this.style.transform='scale(1)'"
-                title="Проверить настройки уведомлений пользователей"
-              >
-                👥 Настройки юзеров
-              </button>
-              
-              <button
                 onclick="openDeactivateEventsModal()"
                 style="
                   background: rgba(255, 152, 0, 0.7);
@@ -1310,7 +1288,7 @@
               </button>
               
               <button
-                onclick="openEnableNotificationsModal()"
+                onclick="openNotificationsModal()"
                 style="
                   background: rgba(76, 175, 80, 0.7);
                   color: #c8e6c9;
@@ -1326,31 +1304,9 @@
                 "
                 onmouseover="this.style.transform='scale(1.05)'"
                 onmouseout="this.style.transform='scale(1)'"
-                title="Включить уведомления для конкретного пользователя"
+                title="Управление уведомлениями пользователей"
               >
-                🔔 Включить уведомления
-              </button>
-              
-              <button
-                onclick="runUtilityScript('enable-notifications-for-all')"
-                style="
-                  background: rgba(139, 195, 74, 0.7);
-                  color: #dcedc8;
-                  border: 1px solid #8bc34a;
-                  padding: 12px 20px;
-                  border-radius: 8px;
-                  cursor: pointer;
-                  font-size: 0.95em;
-                  transition: all 0.3s ease;
-                  white-space: nowrap;
-                  flex: 1 1 auto;
-                  min-width: 200px;
-                "
-                onmouseover="this.style.transform='scale(1.05)'"
-                onmouseout="this.style.transform='scale(1)'"
-                title="Включить уведомления для всех пользователей с Telegram"
-              >
-                🔔 Уведомления для всех
+                🔔 Управление уведомлениями
               </button>
               
               <button
