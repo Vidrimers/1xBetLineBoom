@@ -395,7 +395,47 @@
         </div>
 
         <div class="section" id="tournamentSection" style="display: none">
-          <h2 id="tournamentTitle">📋 Участники турнира</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="tournamentTitle" style="margin: 0;">📋 Участники турнира</h2>
+            <div id="tournament-buttons" style="display: flex; gap: 10px;">
+              <button 
+                onclick="openComparisonModal()"
+                style="
+                  background: rgba(90, 159, 212, 0.7);
+                  color: #e0e6f0;
+                  border: 1px solid #3a7bd5;
+                  padding: 8px 16px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.9em;
+                  transition: all 0.3s ease;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Сравнить участников"
+              >
+                Сравнение
+              </button>
+              <button 
+                onclick="openTournamentInfoModal()"
+                style="
+                  background: rgba(255, 152, 0, 0.7);
+                  color: #ffe0b2;
+                  border: 1px solid #ff9800;
+                  padding: 8px 16px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.9em;
+                  transition: all 0.3s ease;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Информация о турнире"
+              >
+                ❔
+              </button>
+            </div>
+          </div>
           <div class="events-participants-list" id="tournamentParticipantsList">
             <div class="empty-message">Загружаем участников...</div>
           </div>
