@@ -1,5 +1,6 @@
 node_modules/
 temp/
+img/avatar/
 .vscode/
 .DS_Store
 npm/

@@ -4762,15 +4762,37 @@ async function displayTournamentParticipants(
     return (a.event_lost || 0) - (b.event_lost || 0);
   });
 
+  // Вычисляем места с учетом одинаковых показателей (последовательная нумерация)
+  const placesMap = new Map();
+  let displayPlace = 1;
+  
+  sortedParticipants.forEach((participant, index) => {
+    if (index === 0) {
+      placesMap.set(index, 1);
+    } else {
+      const prev = sortedParticipants[index - 1];
+      // Если все показатели одинаковые - то же место
+      if (participant.event_won === prev.event_won && 
+          participant.event_bets === prev.event_bets && 
+          participant.event_lost === prev.event_lost) {
+        placesMap.set(index, placesMap.get(index - 1));
+      } else {
+        // Следующее место = предыдущее отображаемое место + 1
+        displayPlace = placesMap.get(index - 1) + 1;
+        placesMap.set(index, displayPlace);
+      }
+    }
+  });
+
   tournamentParticipantsList.innerHTML = sortedParticipants
     .map((participant, index) => {
-      const place = index + 1;
+      const place = placesMap.get(index);
       const totalParticipants = sortedParticipants.length;
       let emoji = "😐"; // нейтральное для середины
 
       if (place === 1) {
         emoji = "😎"; // первое место
-      } else if (place === totalParticipants && totalParticipants > 1) {
+      } else if (index === totalParticipants - 1 && totalParticipants > 1) {
         emoji = "💩"; // последнее место
       }
 
