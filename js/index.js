@@ -17734,7 +17734,9 @@ async function enableNotificationsForAll() {
 }
 
 // Открыть модальное окно для обновления SStats ID
-function openUpdateSstatsModal() {
+async function openUpdateSstatsModal() {
+  let eventsListHTML = '<div style="color: #999; text-align: center; padding: 10px;">Загрузка...</div>';
+  
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed;
@@ -17754,11 +17756,25 @@ function openUpdateSstatsModal() {
       background: #1e2a3a;
       padding: 30px;
       border-radius: 12px;
-      max-width: 400px;
+      max-width: 600px;
       width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
       <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔄 Обновить SStats ID</h3>
+      
+      <div id="eventsListForSstats" style="
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #2a3a4a;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+      ">
+        ${eventsListHTML}
+      </div>
+      
       <input 
         type="number" 
         id="eventIdInput" 
@@ -17800,6 +17816,67 @@ function openUpdateSstatsModal() {
   `;
   
   document.body.appendChild(modal);
+  
+  // Загружаем список турниров
+  try {
+    const response = await fetch('/api/admin/all-events');
+    if (response.ok) {
+      const events = await response.json();
+      
+      if (events.length === 0) {
+        eventsListHTML = '<div style="color: #999; text-align: center; padding: 10px;">Нет турниров</div>';
+      } else {
+        // Сортируем: активные сверху, потом по дате начала
+        events.sort((a, b) => {
+          if (a.status === 'active' && b.status !== 'active') return -1;
+          if (a.status !== 'active' && b.status === 'active') return 1;
+          return new Date(b.start_date) - new Date(a.start_date);
+        });
+        
+        eventsListHTML = events.map(event => {
+          const startDate = event.start_date ? new Date(event.start_date).toLocaleDateString('ru-RU') : 'Не указана';
+          const statusBadge = event.status === 'active' 
+            ? '<span style="color: #4caf50;">●</span>' 
+            : '<span style="color: #999;">○</span>';
+          
+          return `
+            <div style="
+              padding: 8px 12px;
+              margin-bottom: 8px;
+              background: #1e2a3a;
+              border-radius: 6px;
+              cursor: pointer;
+              transition: background 0.2s;
+            " 
+            onmouseover="this.style.background='#2a3a4a'"
+            onmouseout="this.style.background='#1e2a3a'"
+            onclick="document.getElementById('eventIdInput').value='${event.id}'">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="color: #e0e6f0; font-weight: bold; margin-bottom: 4px;">
+                    ${statusBadge} ${event.name}
+                  </div>
+                  <div style="color: #999; font-size: 0.85em;">
+                    Начало: ${startDate}
+                  </div>
+                </div>
+                <div style="color: #5a9fd4; font-weight: bold;">
+                  ID: ${event.id}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      
+      document.getElementById('eventsListForSstats').innerHTML = eventsListHTML;
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки турниров:', error);
+    document.getElementById('eventsListForSstats').innerHTML = 
+      '<div style="color: #f44336; text-align: center; padding: 10px;">Ошибка загрузки</div>';
+  }
+  
   document.getElementById('eventIdInput').focus();
 }
 
