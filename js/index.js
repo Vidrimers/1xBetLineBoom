@@ -218,7 +218,14 @@ function showCustomAlert(message, title = "Уведомление", icon = "ℹ�
     overlay.innerHTML = `
       <div class="custom-modal">
         <div class="custom-modal-title">${icon} ${title}</div>
-        <div class="custom-modal-message">${message}</div>
+        <div class="custom-modal-message" style="
+          text-align: left;
+          white-space: pre-wrap;
+          font-family: 'Courier New', monospace;
+          line-height: 1.6;
+          max-height: 60vh;
+          overflow-y: auto;
+        ">${message}</div>
         <div class="custom-modal-buttons">
           <button class="custom-modal-btn custom-modal-btn-primary">OK</button>
         </div>
@@ -17211,7 +17218,9 @@ async function runUtilityScript(scriptName) {
     const data = await response.json();
     
     if (data.success) {
-      await showCustomAlert(`${data.output}`, data.title, "✅");
+      // Форматируем вывод для читаемости
+      const formattedOutput = formatUtilityOutput(data.output);
+      await showCustomAlert(formattedOutput, data.title, "✅");
     } else {
       await showCustomAlert(`${data.error}`, "Ошибка", "❌");
     }
@@ -17219,6 +17228,21 @@ async function runUtilityScript(scriptName) {
     console.error('Ошибка запуска утилиты:', error);
     await showCustomAlert(`${error.message}`, "Ошибка запуска утилиты", "❌");
   }
+}
+
+// Форматировать вывод утилит для читаемости
+function formatUtilityOutput(text) {
+  if (!text) return '';
+  
+  // Заменяем переносы строк на <br>
+  let formatted = text.replace(/\n/g, '<br>');
+  
+  // Добавляем отступы для строк начинающихся с пробелов
+  formatted = formatted.replace(/^(\s+)/gm, (match) => {
+    return '&nbsp;'.repeat(match.length);
+  });
+  
+  return formatted;
 }
 
 // Открыть модальное окно управления уведомлениями
