@@ -2547,9 +2547,11 @@ app.get("/api/events", (req, res) => {
         `SELECT e.*, COUNT(m.id) as match_count 
          FROM events e 
          LEFT JOIN matches m ON e.id = m.event_id 
-         WHERE e.status = 'active' 
          GROUP BY e.id
-         ORDER BY e.start_date ASC, e.created_at ASC`
+         ORDER BY 
+           CASE WHEN e.status = 'active' THEN 0 ELSE 1 END,
+           e.start_date DESC, 
+           e.created_at DESC`
       )
       .all();
     res.json(events);
