@@ -2691,6 +2691,123 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
   }
 });
 
+// 3. Получить ставки пользователя в турнире (для сравнения)
+app.get("/api/events/:eventId/user-bets/:userId", (req, res) => {
+  try {
+    const { eventId, userId } = req.params;
+    
+    // Получаем информацию о пользователе
+    const user = db.prepare("SELECT id, username, avatar FROM users WHERE id = ?").get(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    
+    // Получаем все ставки пользователя в этом турнире
+    const bets = db.prepare(`
+      SELECT 
+        b.*,
+        m.team1_name,
+        m.team2_name,
+        m.winner,
+        m.match_date,
+        CASE 
+          WHEN m.winner IS NOT NULL THEN
+            CASE 
+              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                   (b.prediction = 'team2' AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') OR
+                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1
+              ELSE 0
+            END
+          ELSE NULL
+        END as is_won,
+        CASE 
+          WHEN m.winner IS NOT NULL THEN
+            CASE 
+              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                        (b.prediction = 'team2' AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw') OR
+                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1
+              ELSE 0
+            END
+          ELSE NULL
+        END as is_lost
+      FROM bets b
+      INNER JOIN matches m ON b.match_id = m.id
+      WHERE b.user_id = ? AND m.event_id = ?
+      ORDER BY m.match_date ASC
+    `).all(userId, eventId);
+    
+    // Получаем статистику
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(DISTINCT b.id) as event_bets,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN
+            CASE 
+              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                   (b.prediction = 'team2' AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') OR
+                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1
+              ELSE 0
+            END
+          ELSE 0
+        END) as event_won,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN
+            CASE 
+              WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                   (b.prediction = 'team2' AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') OR
+                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1
+              ELSE 0
+            END
+          ELSE 0
+        END) as event_won_count,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL THEN
+            CASE 
+              WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                        (b.prediction = 'team2' AND m.winner = 'team2') OR
+                        (b.prediction = 'draw' AND m.winner = 'draw') OR
+                        (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                        (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1
+              ELSE 0
+            END
+          ELSE 0
+        END) as event_lost,
+        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as event_pending
+      FROM bets b
+      INNER JOIN matches m ON b.match_id = m.id
+      WHERE b.user_id = ? AND m.event_id = ?
+    `).get(userId, eventId);
+    
+    // Форматируем ставки с информацией о матчах
+    const formattedBets = bets.map(bet => ({
+      ...bet,
+      match: {
+        team1_name: bet.team1_name,
+        team2_name: bet.team2_name,
+        winner: bet.winner,
+        match_date: bet.match_date
+      }
+    }));
+    
+    res.json({
+      user,
+      bets: formattedBets,
+      stats: stats || { event_bets: 0, event_won: 0, event_won_count: 0, event_lost: 0, event_pending: 0 }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 4. Получить матчи по событию
 app.get("/api/events/:eventId/matches", (req, res) => {
   try {

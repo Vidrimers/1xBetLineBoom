@@ -17444,6 +17444,387 @@ async function clearProcessedDates() {
   }
 }
 
+// Открыть модальное окно сравнения участников
+async function openComparisonModal() {
+  if (!window.currentEventId) {
+    await showCustomAlert('Ошибка: турнир не выбран', 'Ошибка', '❌');
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">⚖️ Сравнение участников</h3>
+      
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; color: #e0e6f0; margin-bottom: 8px;">Первый участник:</label>
+        <select id="compareUser1" style="
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #3a7bd5;
+          border-radius: 8px;
+          background: #2a3a4a;
+          color: #e0e6f0;
+          font-size: 16px;
+        ">
+          <option value="">Выберите участника...</option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; color: #e0e6f0; margin-bottom: 8px;">Второй участник:</label>
+        <select id="compareUser2" style="
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #3a7bd5;
+          border-radius: 8px;
+          background: #2a3a4a;
+          color: #e0e6f0;
+          font-size: 16px;
+        ">
+          <option value="">Выберите участника...</option>
+        </select>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button onclick="showComparison()" style="
+          flex: 1;
+          background: #4caf50;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Сравнить</button>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="
+          flex: 1;
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Отмена</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Загружаем список участников
+  try {
+    const response = await fetch(`/api/events/${window.currentEventId}/tournament-participants`);
+    const participants = await response.json();
+    
+    const select1 = document.getElementById('compareUser1');
+    const select2 = document.getElementById('compareUser2');
+    
+    participants.forEach(p => {
+      const option1 = document.createElement('option');
+      option1.value = p.id;
+      option1.textContent = `${p.username} (${p.event_won || 0} очков)`;
+      select1.appendChild(option1);
+      
+      const option2 = document.createElement('option');
+      option2.value = p.id;
+      option2.textContent = `${p.username} (${p.event_won || 0} очков)`;
+      select2.appendChild(option2);
+    });
+  } catch (error) {
+    console.error('Ошибка загрузки участников:', error);
+  }
+}
+
+// Показать сравнение двух участников
+async function showComparison() {
+  const user1Id = document.getElementById('compareUser1').value;
+  const user2Id = document.getElementById('compareUser2').value;
+  
+  if (!user1Id || !user2Id) {
+    await showCustomAlert('Выберите обоих участников', 'Ошибка', '❌');
+    return;
+  }
+  
+  if (user1Id === user2Id) {
+    await showCustomAlert('Выберите разных участников', 'Ошибка', '❌');
+    return;
+  }
+  
+  // Закрываем модалку выбора
+  document.querySelector('div[style*="z-index: 10000"]').remove();
+  
+  // Загружаем данные для сравнения
+  try {
+    const [bets1Response, bets2Response] = await Promise.all([
+      fetch(`/api/events/${window.currentEventId}/user-bets/${user1Id}`),
+      fetch(`/api/events/${window.currentEventId}/user-bets/${user2Id}`)
+    ]);
+    
+    const bets1 = await bets1Response.json();
+    const bets2 = await bets2Response.json();
+    
+    displayComparisonModal(bets1, bets2);
+  } catch (error) {
+    console.error('Ошибка загрузки данных:', error);
+    await showCustomAlert('Ошибка загрузки данных для сравнения', 'Ошибка', '❌');
+  }
+}
+
+// Отобразить модалку сравнения
+function displayComparisonModal(data1, data2) {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">⚖️ ${data1.user.username} vs ${data2.user.username}</h3>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button onclick="switchComparisonTab('bets')" id="comparisonTabBets" style="
+          flex: 1;
+          background: #2196f3;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Ставки</button>
+        <button onclick="switchComparisonTab('stats')" id="comparisonTabStats" style="
+          flex: 1;
+          background: #607d8b;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Статистика</button>
+      </div>
+      
+      <div id="comparisonContent"></div>
+      
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="
+        width: 100%;
+        background: #f44336;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 20px;
+      ">Закрыть</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Сохраняем данные для переключения вкладок
+  window.comparisonData = { data1, data2 };
+  
+  // Показываем вкладку ставок по умолчанию
+  switchComparisonTab('bets');
+}
+
+// Переключить вкладку сравнения
+function switchComparisonTab(tab) {
+  const { data1, data2 } = window.comparisonData;
+  
+  // Обновляем стили кнопок
+  document.getElementById('comparisonTabBets').style.background = tab === 'bets' ? '#2196f3' : '#607d8b';
+  document.getElementById('comparisonTabStats').style.background = tab === 'stats' ? '#2196f3' : '#607d8b';
+  
+  const content = document.getElementById('comparisonContent');
+  
+  if (tab === 'bets') {
+    content.innerHTML = generateBetsComparison(data1, data2);
+  } else {
+    content.innerHTML = generateStatsComparison(data1, data2);
+  }
+}
+
+// Генерировать сравнение ставок
+function generateBetsComparison(data1, data2) {
+  const bets1Map = new Map(data1.bets.map(b => [b.match_id, b]));
+  const bets2Map = new Map(data2.bets.map(b => [b.match_id, b]));
+  
+  // Находим различия
+  const differences = [];
+  const allMatchIds = new Set([...bets1Map.keys(), ...bets2Map.keys()]);
+  
+  allMatchIds.forEach(matchId => {
+    const bet1 = bets1Map.get(matchId);
+    const bet2 = bets2Map.get(matchId);
+    
+    if (!bet1 || !bet2 || bet1.prediction !== bet2.prediction) {
+      differences.push({
+        match: bet1?.match || bet2?.match,
+        bet1: bet1,
+        bet2: bet2
+      });
+    }
+  });
+  
+  if (differences.length === 0) {
+    return '<div style="color: #4caf50; text-align: center; padding: 20px;">✅ Все ставки одинаковые</div>';
+  }
+  
+  return `
+    <div style="color: #e0e6f0;">
+      <h4 style="color: #ff9800; margin-bottom: 15px;">⚠️ Различия в ставках (${differences.length})</h4>
+      ${differences.map(diff => `
+        <div style="
+          background: #2a3a4a;
+          padding: 15px;
+          border-radius: 8px;
+          margin-bottom: 10px;
+        ">
+          <div style="font-weight: bold; margin-bottom: 10px;">
+            ${diff.match?.team1_name || 'Матч'} vs ${diff.match?.team2_name || ''}
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="background: #1e2a3a; padding: 10px; border-radius: 6px;">
+              <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data1.user.username}</div>
+              <div>${diff.bet1 ? diff.bet1.prediction : '❌ Нет ставки'}</div>
+              ${diff.bet1 ? `<div style="color: ${diff.bet1.is_won ? '#4caf50' : diff.bet1.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
+                ${diff.bet1.is_won ? '✅ Выиграл' : diff.bet1.is_lost ? '❌ Проиграл' : '⏳ Ожидание'}
+              </div>` : ''}
+            </div>
+            <div style="background: #1e2a3a; padding: 10px; border-radius: 6px;">
+              <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data2.user.username}</div>
+              <div>${diff.bet2 ? diff.bet2.prediction : '❌ Нет ставки'}</div>
+              ${diff.bet2 ? `<div style="color: ${diff.bet2.is_won ? '#4caf50' : diff.bet2.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
+                ${diff.bet2.is_won ? '✅ Выиграл' : diff.bet2.is_lost ? '❌ Проиграл' : '⏳ Ожидание'}
+              </div>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// Генерировать сравнение статистики
+function generateStatsComparison(data1, data2) {
+  const stats = [
+    { label: 'Очки', key: 'event_won', better: 'higher' },
+    { label: 'Всего ставок', key: 'event_bets', better: 'higher' },
+    { label: 'Выиграно', key: 'event_won_count', better: 'higher' },
+    { label: 'Проиграно', key: 'event_lost', better: 'lower' },
+    { label: 'Ожидание', key: 'event_pending', better: 'none' }
+  ];
+  
+  return `
+    <div style="color: #e0e6f0;">
+      <h4 style="color: #5a9fd4; margin-bottom: 15px;">📊 Статистика турнира</h4>
+      <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
+        ${stats.map(stat => {
+          const val1 = data1.stats[stat.key] || 0;
+          const val2 = data2.stats[stat.key] || 0;
+          const isDiff = val1 !== val2;
+          const winner = stat.better === 'higher' ? (val1 > val2 ? 1 : val1 < val2 ? 2 : 0) :
+                        stat.better === 'lower' ? (val1 < val2 ? 1 : val1 > val2 ? 2 : 0) : 0;
+          
+          return `
+            <div style="
+              display: grid;
+              grid-template-columns: 1fr auto auto;
+              gap: 15px;
+              padding: 10px 0;
+              border-bottom: 1px solid #1e2a3a;
+              align-items: center;
+            ">
+              <div style="font-weight: ${isDiff ? 'bold' : 'normal'}; color: ${isDiff ? '#ff9800' : '#e0e6f0'};">
+                ${stat.label}
+              </div>
+              <div style="
+                text-align: center;
+                padding: 5px 15px;
+                background: ${winner === 1 ? '#4caf50' : '#1e2a3a'};
+                border-radius: 6px;
+                font-weight: ${winner === 1 ? 'bold' : 'normal'};
+              ">
+                ${val1}
+              </div>
+              <div style="
+                text-align: center;
+                padding: 5px 15px;
+                background: ${winner === 2 ? '#4caf50' : '#1e2a3a'};
+                border-radius: 6px;
+                font-weight: ${winner === 2 ? 'bold' : 'normal'};
+              ">
+                ${val2}
+              </div>
+            </div>
+          `;
+        }).join('')}
+        
+        <div style="
+          display: grid;
+          grid-template-columns: 1fr auto auto;
+          gap: 15px;
+          padding-top: 10px;
+          align-items: center;
+          font-size: 0.9em;
+          color: #999;
+        ">
+          <div></div>
+          <div style="text-align: center;">${data1.user.username}</div>
+          <div style="text-align: center;">${data2.user.username}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Открыть модальное окно информации о турнире
+async function openTournamentInfoModal() {
+  await showCustomAlert('Функция в разработке', 'Информация', 'ℹ️');
+}
+
 // Открыть модальное окно управления уведомлениями
 async function openNotificationsModal() {
   // Загружаем список пользователей
