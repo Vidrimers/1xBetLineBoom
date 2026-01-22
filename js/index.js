@@ -17173,6 +17173,25 @@ function cleanupOldFavorites() {
 
 // Запустить утилитный скрипт
 async function runUtilityScript(scriptName) {
+  // Опасные операции требуют подтверждения
+  const dangerousScripts = {
+    'clear-processed-dates': {
+      title: 'Очистка обработанных дат',
+      message: 'Вы уверены что хотите очистить все обработанные даты?\n\nЭто позволит автоподсчету запуститься повторно для уже подсчитанных дат.',
+      icon: '⚠️'
+    }
+  };
+  
+  // Если это опасная операция - запрашиваем подтверждение
+  if (dangerousScripts[scriptName]) {
+    const config = dangerousScripts[scriptName];
+    const confirmed = await showCustomConfirm(config.message, config.title, config.icon);
+    
+    if (!confirmed) {
+      return; // Пользователь отменил
+    }
+  }
+  
   try {
     const response = await fetch(`/api/admin/run-utility`, {
       method: 'POST',
@@ -17484,6 +17503,209 @@ async function updateSstatsIds() {
     if (data.success) {
       await showCustomAlert(`${data.output}`, data.title, '✅');
       document.querySelector('div[style*=fixed]').remove();
+    } else {
+      await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+  }
+}
+
+
+// Открыть модальное окно для деактивации турниров
+async function openDeactivateEventsModal() {
+  // Загружаем список активных турниров
+  let eventsListHTML = '<div style="color: #999; text-align: center; padding: 10px;">Загрузка...</div>';
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔒 Деактивировать турниры</h3>
+      
+      <div style="
+        margin-bottom: 20px;
+        padding: 15px;
+        background: rgba(255, 152, 0, 0.2);
+        border-left: 4px solid #ff9800;
+        border-radius: 4px;
+        color: #ffe0b2;
+      ">
+        ⚠️ Выберите турниры для деактивации. Их статус будет изменен на "completed".
+      </div>
+      
+      <div id="eventsListContainer" style="
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #2a3a4a;
+        border-radius: 8px;
+        max-height: 400px;
+        overflow-y: auto;
+      ">
+        ${eventsListHTML}
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button onclick="deactivateSelectedEvents()" style="
+          flex: 1;
+          background: #ff9800;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Деактивировать выбранные</button>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="
+          flex: 1;
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Отмена</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Загружаем турниры
+  try {
+    const response = await fetch('/api/admin/all-events');
+    if (response.ok) {
+      const events = await response.json();
+      
+      // Фильтруем только активные турниры
+      const activeEvents = events.filter(e => e.status === 'active');
+      
+      if (activeEvents.length === 0) {
+        eventsListHTML = '<div style="color: #999; text-align: center; padding: 10px;">Нет активных турниров</div>';
+      } else {
+        eventsListHTML = activeEvents.map(event => {
+          const startDate = event.start_date ? new Date(event.start_date).toLocaleDateString('ru-RU') : 'Не указана';
+          
+          return `
+            <label style="
+              display: flex;
+              align-items: center;
+              padding: 12px;
+              margin-bottom: 8px;
+              background: #1e2a3a;
+              border-radius: 6px;
+              cursor: pointer;
+              transition: background 0.2s;
+            " 
+            onmouseover="this.style.background='#2a3a4a'"
+            onmouseout="this.style.background='#1e2a3a'">
+              <input 
+                type="checkbox" 
+                class="event-checkbox" 
+                data-event-id="${event.id}"
+                style="
+                  width: 20px;
+                  height: 20px;
+                  margin-right: 15px;
+                  cursor: pointer;
+                "
+              />
+              <div style="flex: 1;">
+                <div style="color: #e0e6f0; font-weight: bold; margin-bottom: 4px;">
+                  ${event.name}
+                </div>
+                <div style="color: #999; font-size: 0.85em;">
+                  ID: ${event.id} | Начало: ${startDate}
+                </div>
+              </div>
+            </label>
+          `;
+        }).join('');
+      }
+      
+      document.getElementById('eventsListContainer').innerHTML = eventsListHTML;
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки турниров:', error);
+    document.getElementById('eventsListContainer').innerHTML = 
+      '<div style="color: #f44336; text-align: center; padding: 10px;">Ошибка загрузки</div>';
+  }
+}
+
+// Деактивировать выбранные турниры
+async function deactivateSelectedEvents() {
+  const checkboxes = document.querySelectorAll('.event-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    await showCustomAlert('Выберите хотя бы один турнир', 'Ошибка', '❌');
+    return;
+  }
+  
+  const eventIds = Array.from(checkboxes).map(cb => cb.dataset.eventId);
+  
+  const confirmed = await showCustomConfirm(
+    `Вы уверены что хотите деактивировать ${eventIds.length} турнир(ов)?\n\nИх статус будет изменен на "completed".`,
+    'Подтверждение деактивации',
+    '⚠️'
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/admin/deactivate-events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        eventIds: eventIds,
+        username: currentUser?.username
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      await showCustomAlert(
+        `Деактивировано турниров: ${data.deactivated}\n\n${data.events.map(e => `✓ ${e.name}`).join('\n')}`,
+        'Турниры деактивированы',
+        '✅'
+      );
+      document.querySelector('div[style*=fixed]').remove();
+      
+      // Перезагружаем список событий если он открыт
+      if (typeof loadEvents === 'function') {
+        loadEvents();
+      }
     } else {
       await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
     }

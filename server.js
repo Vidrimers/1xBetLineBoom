@@ -4146,7 +4146,7 @@ app.post("/api/user/login/confirm", async (req, res) => {
 app.get("/api/users", (req, res) => {
   try {
     const users = db
-      .prepare("SELECT id, username, telegram_username FROM users ORDER BY username ASC")
+      .prepare("SELECT id, username, telegram_username, telegram_notifications_enabled FROM users ORDER BY username ASC")
       .all();
     res.json(users);
   } catch (error) {
@@ -8279,6 +8279,24 @@ app.post("/api/user/:userId/sessions/:sessionToken/confirm-trust", async (req, r
     }
 
     res.json({ success: true, message: "Статус устройства успешно изменен" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Получить все турниры (для админа)
+app.get("/api/admin/all-events", (req, res) => {
+  try {
+    const events = db
+      .prepare(
+        `SELECT e.*, COUNT(m.id) as match_count 
+         FROM events e 
+         LEFT JOIN matches m ON e.id = m.event_id 
+         GROUP BY e.id
+         ORDER BY e.status DESC, e.start_date DESC`
+      )
+      .all();
+    res.json(events);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -13997,6 +14015,42 @@ app.post("/api/admin/run-utility", (req, res) => {
       error: error.message,
       output: error.stdout || error.stderr || ''
     });
+  }
+});
+
+// Эндпоинт для деактивации выбранных турниров
+app.post("/api/admin/deactivate-events", (req, res) => {
+  const { username, eventIds } = req.body;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+  
+  if (username !== ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+  
+  if (!Array.isArray(eventIds) || eventIds.length === 0) {
+    return res.status(400).json({ error: "Не выбраны турниры" });
+  }
+  
+  try {
+    const placeholders = eventIds.map(() => '?').join(',');
+    
+    // Получаем названия турниров перед деактивацией
+    const events = db.prepare(`SELECT id, name FROM events WHERE id IN (${placeholders})`).all(...eventIds);
+    
+    // Деактивируем турниры
+    const result = db.prepare(`UPDATE events SET status = 'completed' WHERE id IN (${placeholders})`).run(...eventIds);
+    
+    console.log(`🔒 Деактивировано турниров: ${result.changes}`);
+    events.forEach(e => console.log(`  - ${e.name} (ID: ${e.id})`));
+    
+    res.json({ 
+      success: true,
+      deactivated: result.changes,
+      events: events
+    });
+  } catch (error) {
+    console.error('❌ Ошибка деактивации турниров:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
