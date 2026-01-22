@@ -2680,7 +2680,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
       WHERE m.event_id = ?
       GROUP BY u.id, u.username, u.avatar, u.show_bets
       HAVING COUNT(DISTINCT b.id) > 0
-      ORDER BY event_won DESC, event_bets DESC
+      ORDER BY event_won DESC, event_bets DESC, event_lost ASC
     `
       )
       .all(eventId, eventId);
