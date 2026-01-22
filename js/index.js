@@ -17203,7 +17203,10 @@ async function runUtilityScript(scriptName) {
 }
 
 // Открыть модальное окно для включения уведомлений
-function openEnableNotificationsModal() {
+async function openEnableNotificationsModal() {
+  // Загружаем список пользователей
+  let usersListHTML = '<div style="color: #999; text-align: center; padding: 10px;">Загрузка...</div>';
+  
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed;
@@ -17223,11 +17226,25 @@ function openEnableNotificationsModal() {
       background: #1e2a3a;
       padding: 30px;
       border-radius: 12px;
-      max-width: 400px;
+      max-width: 500px;
       width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
       <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔔 Включить уведомления</h3>
+      
+      <div id="usersListContainer" style="
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #2a3a4a;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+      ">
+        ${usersListHTML}
+      </div>
+      
       <input 
         type="number" 
         id="userIdInput" 
@@ -17269,6 +17286,60 @@ function openEnableNotificationsModal() {
   `;
   
   document.body.appendChild(modal);
+  
+  // Загружаем пользователей
+  try {
+    const response = await fetch('/api/users');
+    if (response.ok) {
+      const users = await response.json();
+      
+      usersListHTML = users.map(user => {
+        const notifStatus = user.telegram_notifications_enabled ? '✅' : '❌';
+        const telegramStatus = user.telegram_username ? `@${user.telegram_username}` : '❌ Нет TG';
+        
+        return `
+          <div style="
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: #1e2a3a;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+          " 
+          onmouseover="this.style.background='#2a3a4a'"
+          onmouseout="this.style.background='#1e2a3a'"
+          onclick="document.getElementById('userIdInput').value='${user.id}'">
+            <div>
+              <div style="color: #e0e6f0; font-weight: bold;">
+                ${user.username}
+              </div>
+              <div style="color: #999; font-size: 0.85em;">
+                ${telegramStatus}
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="color: #5a9fd4; font-weight: bold;">ID: ${user.id}</span>
+              <span>${notifStatus}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      if (users.length === 0) {
+        usersListHTML = '<div style="color: #999; text-align: center; padding: 10px;">Нет пользователей</div>';
+      }
+      
+      document.getElementById('usersListContainer').innerHTML = usersListHTML;
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки пользователей:', error);
+    document.getElementById('usersListContainer').innerHTML = 
+      '<div style="color: #f44336; text-align: center; padding: 10px;">Ошибка загрузки</div>';
+  }
+  
   document.getElementById('userIdInput').focus();
 }
 
