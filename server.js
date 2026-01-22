@@ -4307,6 +4307,190 @@ app.get("/api/admin/user-details/:userId", (req, res) => {
   }
 });
 
+// 5.1.2 Получить глобальную статистику пользователя (за все турниры)
+app.get("/api/users/:userId/global-stats", (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Получаем информацию о пользователе
+    const user = db.prepare("SELECT id, username, avatar, created_at FROM users WHERE id = ?").get(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    
+    // Получаем полную статистику ставок (как в профиле)
+    const bets = db.prepare(`
+      SELECT 
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 1
+          ELSE 0
+        END) as total_bets,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
+            CASE 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                       -- Базовое очко за угаданный результат (3 за финал, 1 за обычный матч)
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+                       -- Дополнительное очко за угаданный счет
+                       CASE 
+                         WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+                         THEN 1 
+                         ELSE 0 
+                       END
+                  ELSE 0 
+                END
+              -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0
+            END 
+          ELSE 0 
+        END) as won_bets,
+        -- Количество угаданных ставок (для процента побед)
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
+            CASE 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1
+                  ELSE 0 
+                END
+              -- Финальные параметры (yellow_cards, red_cards, corners и т.д.)
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0
+            END 
+          ELSE 0 
+        END) as won_count,
+        SUM(CASE 
+          WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
+            CASE 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                            (b.prediction = 'team2' AND m.winner = 'team2') OR
+                            (b.prediction = 'draw' AND m.winner = 'draw') OR
+                            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                            (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+                  ELSE 0 
+                END
+              -- Финальные параметры
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 2
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 2
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 2
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 2
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 2
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 2
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 2
+                  ELSE 0
+                END
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as lost_bets,
+        SUM(CASE 
+          WHEN (b.is_final_bet = 0 AND m.winner IS NULL) OR 
+               (b.is_final_bet = 1 AND fpr.id IS NULL) THEN 1 
+          ELSE 0 
+        END) as pending_bets,
+        COUNT(DISTINCT m.event_id) as tournaments_count
+      FROM bets b
+      LEFT JOIN matches m ON b.match_id = m.id
+      LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+      WHERE b.user_id = ?
+    `).get(userId);
+    
+    // Подсчитываем количество побед в турнирах (1-е места)
+    const tournamentWins = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM tournament_awards
+      WHERE user_id = ?
+    `).get(userId);
+    
+    // Получаем награды
+    const awards = db.prepare(`
+      SELECT ta.id, ta.event_name, ta.won_bets, ta.awarded_at, e.icon as event_icon
+      FROM tournament_awards ta
+      LEFT JOIN events e ON ta.event_id = e.id
+      WHERE ta.user_id = ?
+      ORDER BY ta.awarded_at DESC
+    `).all(userId);
+    
+    // Подсчитываем статистику по сетке плей-офф
+    const bracketStats = db.prepare(`
+      SELECT 
+        COUNT(*) as total_bracket_predictions,
+        SUM(CASE WHEN bp.predicted_winner = br.actual_winner THEN 1 ELSE 0 END) as correct_bracket_predictions,
+        SUM(CASE WHEN bp.predicted_winner != br.actual_winner THEN 1 ELSE 0 END) as incorrect_bracket_predictions
+      FROM bracket_predictions bp
+      LEFT JOIN bracket_results br ON bp.bracket_id = br.bracket_id 
+        AND bp.stage = br.stage 
+        AND bp.match_index = br.match_index
+      WHERE bp.user_id = ? AND br.actual_winner IS NOT NULL
+    `).get(userId);
+    
+    const stats = {
+      total_bets: bets.total_bets || 0,
+      won_bets: bets.won_bets || 0,
+      won_count: bets.won_count || 0,
+      lost_bets: bets.lost_bets || 0,
+      pending_bets: bets.pending_bets || 0,
+      tournaments_count: bets.tournaments_count || 0,
+      tournament_wins: tournamentWins?.count || 0,
+      win_accuracy: bets.total_bets > 0 ? Math.round((bets.won_count / bets.total_bets) * 100) : 0,
+      bracket_correct: bracketStats?.correct_bracket_predictions || 0,
+      bracket_incorrect: bracketStats?.incorrect_bracket_predictions || 0
+    };
+    
+    res.json({
+      user,
+      stats,
+      awards: awards || []
+    });
+  } catch (error) {
+    console.error("Ошибка при получении глобальной статистики:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 5.2 Получить всех модераторов
 app.get("/api/moderators", (req, res) => {
   try {
@@ -7256,6 +7440,45 @@ app.get("/api/user/:userId/awards", (req, res) => {
     res.json(awards || []);
   } catch (error) {
     console.error("Ошибка при получении наград:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 11. Уведомление админу о сравнении участников
+app.post("/api/notify-comparison", async (req, res) => {
+  try {
+    const { viewerUsername, user1Username, user2Username, eventName } = req.body;
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      const message = `⚖️ СРАВНЕНИЕ УЧАСТНИКОВ
+
+👤 Кто сравнивает: ${viewerUsername}
+🆚 Сравнивает: ${user1Username} vs ${user2Username}
+${eventName ? `🏆 Турнир: ${eventName}` : '🌐 Глобальное сравнение'}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+      try {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_ADMIN_ID,
+            text: message,
+          }),
+        });
+        console.log("✅ Уведомление о сравнении отправлено админу");
+      } catch (error) {
+        console.error("⚠️ Не удалось отправить уведомление о сравнении:", error);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Ошибка при отправке уведомления о сравнении:", error);
     res.status(500).json({ error: error.message });
   }
 });

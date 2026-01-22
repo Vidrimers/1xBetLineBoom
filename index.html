@@ -401,7 +401,7 @@
               <button 
                 onclick="openComparisonModal()"
                 style="
-                  background: rgba(90, 159, 212, 0.7);
+                  background: transparent;
                   color: #e0e6f0;
                   border: 1px solid #3a7bd5;
                   padding: 8px 16px;
@@ -414,12 +414,12 @@
                 onmouseout="this.style.transform='scale(1)'"
                 title="Сравнить участников"
               >
-                Сравнение
+                ⚖️ Сравнение
               </button>
               <button 
                 onclick="openTournamentInfoModal()"
                 style="
-                  background: rgba(255, 152, 0, 0.7);
+                  background: transparent;
                   color: #ffe0b2;
                   border: 1px solid #ff9800;
                   padding: 8px 16px;
@@ -450,7 +450,27 @@
         </div>
 
         <div class="section">
-          <h2 id="participantsHeader">👥 Всего участников: </h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="participantsHeader" style="margin: 0;">👥 Всего участников: </h2>
+            <button 
+              onclick="openGlobalComparisonModal()"
+              style="
+                background: transparent;
+                color: #e0e6f0;
+                border: 1px solid #3a7bd5;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.9em;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+              title="Сравнить участников"
+            >
+              ⚖️ Сравнение
+            </button>
+          </div>
           <div class="participants-list" id="participantsList">
             <div class="empty-message">Загружаем участников...</div>
           </div>
