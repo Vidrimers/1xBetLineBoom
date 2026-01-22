@@ -719,8 +719,6 @@ async function deleteRound(roundName, index) {
     
     // Перерисовываем список туров в модалке
     renderRoundsOrderList();
-    
-    await showCustomAlert(`Тур "${roundName}" успешно удален`, "Успех", "✅");
   } catch (error) {
     console.error('Ошибка при удалении тура:', error);
     await showCustomAlert('Не удалось удалить тур', "Ошибка", "❌");
