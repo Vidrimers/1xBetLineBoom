@@ -17869,6 +17869,7 @@ function generateStatsComparison(data1, data2) {
                 background: ${winner === 1 ? '#4caf50' : '#1e2a3a'};
                 border-radius: 6px;
                 font-weight: ${winner === 1 ? 'bold' : 'normal'};
+                min-width: 60px;
               ">
                 ${val1}
               </div>
@@ -17878,6 +17879,7 @@ function generateStatsComparison(data1, data2) {
                 background: ${winner === 2 ? '#4caf50' : '#1e2a3a'};
                 border-radius: 6px;
                 font-weight: ${winner === 2 ? 'bold' : 'normal'};
+                min-width: 60px;
               ">
                 ${val2}
               </div>
@@ -17895,8 +17897,8 @@ function generateStatsComparison(data1, data2) {
           color: #999;
         ">
           <div></div>
-          <div style="text-align: center;">${data1.user.username}</div>
-          <div style="text-align: center;">${data2.user.username}</div>
+          <div style="text-align: center; min-width: 60px;">${data1.user.username}</div>
+          <div style="text-align: center; min-width: 60px;">${data2.user.username}</div>
         </div>
       </div>
     </div>
