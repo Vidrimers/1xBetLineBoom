@@ -17934,7 +17934,141 @@ function generateStatsComparison(data1, data2) {
 
 // Открыть модальное окно информации о турнире
 async function openTournamentInfoModal() {
-  await showCustomAlert('Функция в разработке', 'Информация', 'ℹ️');
+  // Отправляем уведомление админу
+  try {
+    await fetch('/api/notify-tournament-info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser?.username || 'Неизвестный',
+        eventName: window.currentEventName || null
+      })
+    });
+  } catch (notifyError) {
+    console.error('Ошибка отправки уведомления:', notifyError);
+  }
+
+  // Блокируем body
+  document.body.style.overflow = 'hidden';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  // Закрытие по клику вне модалки
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+      document.body.style.overflow = '';
+    }
+  });
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      position: relative;
+      color: #e0e6f0;
+    ">
+      <button onclick="this.closest('div[style*=fixed]').remove(); document.body.style.overflow = '';" style="
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: transparent;
+        border: none;
+        color: #e0e6f0;
+        font-size: 24px;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
+      
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">ℹ️ Информация о турнире</h3>
+      
+      <div style="line-height: 1.6;">
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🎯 Система начисления очков</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <div style="margin-bottom: 10px;">
+            <strong style="color: #4caf50;">Обычные матчи:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+              <li><strong>1 очко</strong> — за угаданный результат (победа команды 1, победа команды 2 или ничья)</li>
+              <li><strong>+1 очко</strong> — дополнительно за точный счет (если угадан результат)</li>
+            </ul>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <strong style="color: #4caf50;">Финальные матчи:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+              <li><strong>3 очка</strong> — за угаданный результат</li>
+              <li><strong>+1 очко</strong> — дополнительно за точный счет</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: #4caf50;">Финальные параметры:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+              <li><strong>1 очко</strong> — за каждый угаданный параметр (желтые карточки, красные карточки, угловые, точный счет, пенальти в игре, дополнительное время, серия пенальти)</li>
+            </ul>
+          </div>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">📊 Сортировка участников</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Участники сортируются по следующим критериям (в порядке приоритета):</p>
+          <ol style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Больше очков</strong> — чем больше очков набрано, тем выше место</li>
+            <li><strong>Больше выигранных ставок</strong> — при равных очках учитывается количество угаданных результатов</li>
+            <li><strong>Меньше проигранных ставок</strong> — при равных очках и выигрышах учитывается количество проигранных ставок</li>
+            <li><strong>Больше всего ставок</strong> — при полностью одинаковых показателях учитывается общее количество сделанных ставок</li>
+          </ol>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🏆 Одинаковые показатели</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Если у нескольких участников <strong>полностью одинаковые</strong> показатели по всем критериям:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li>Все участники получают <strong>одинаковое место</strong></li>
+            <li>Следующее место рассчитывается с учетом количества участников на предыдущем месте</li>
+            <li><strong>Пример:</strong> если два участника на 1-м месте, следующий будет на 2-м месте (не на 3-м)</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">📈 Отображение статистики</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
+          <p style="margin: 0;">В карточке каждого участника отображается:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Место</strong> — позиция в рейтинге турнира</li>
+            <li><strong>Очки</strong> — общее количество набранных очков</li>
+            <li><strong>Всего ставок</strong> — количество сделанных ставок</li>
+            <li><strong>Выиграно</strong> — количество угаданных результатов</li>
+            <li><strong>Проиграно</strong> — количество неугаданных результатов</li>
+            <li><strong>Ожидание</strong> — количество ставок, результаты которых еще не известны</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
 }
 
 // Открыть модальное окно сравнения участников (глобальное)

@@ -7483,6 +7483,44 @@ ${eventName ? `🏆 Турнир: ${eventName}` : '🌐 Глобальное с�
   }
 });
 
+// 12. Уведомление админу об открытии информации о турнире
+app.post("/api/notify-tournament-info", async (req, res) => {
+  try {
+    const { username, eventName } = req.body;
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      const message = `ℹ️ ПРОСМОТР ИНФОРМАЦИИ О ТУРНИРЕ
+
+👤 Пользователь: ${username}
+${eventName ? `🏆 Турнир: ${eventName}` : ''}
+
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+      try {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_ADMIN_ID,
+            text: message,
+          }),
+        });
+        console.log("✅ Уведомление о просмотре информации отправлено админу");
+      } catch (error) {
+        console.error("⚠️ Не удалось отправить уведомление о просмотре информации:", error);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Ошибка при отправке уведомления о просмотре информации:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/user/:userId/avatar - Сохранить аватар пользователя
 app.post("/api/user/:userId/avatar", (req, res) => {
   try {
