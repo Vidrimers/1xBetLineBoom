@@ -4064,7 +4064,7 @@ function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, del
         ${
           bet.score_team1 != null && bet.score_team2 != null
             ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
-                Счет: <span style="${
+                📊 Счет: <span style="${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.match_status === 'finished'
                     ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
@@ -4074,6 +4074,42 @@ function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, del
                 ${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.match_status === 'finished'
                     ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
+                    : ""
+                }
+              </div>`
+            : ""
+        }
+        ${
+          bet.yellow_cards != null
+            ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
+                🟨 Желтые: <span style="${
+                  bet.actual_yellow_cards != null && bet.match_status === 'finished'
+                    ? bet.yellow_cards === bet.actual_yellow_cards
+                      ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
+                      : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
+                    : ''
+                }">${bet.yellow_cards}</span>
+                ${
+                  bet.actual_yellow_cards != null && bet.match_status === 'finished'
+                    ? ` | Результат: <strong>${bet.actual_yellow_cards}</strong>`
+                    : ""
+                }
+              </div>`
+            : ""
+        }
+        ${
+          bet.red_cards != null
+            ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
+                🟥 Красные: <span style="${
+                  bet.actual_red_cards != null && bet.match_status === 'finished'
+                    ? bet.red_cards === bet.actual_red_cards
+                      ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
+                      : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
+                    : ''
+                }">${bet.red_cards}</span>
+                ${
+                  bet.actual_red_cards != null && bet.match_status === 'finished'
+                    ? ` | Результат: <strong>${bet.actual_red_cards}</strong>`
                     : ""
                 }
               </div>`
@@ -5149,7 +5185,7 @@ function displayTournamentParticipantBets(bets) {
         ${
           bet.score_team1 != null && bet.score_team2 != null
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
-                Счет: <span style="${
+                📊 Счет: <span style="${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
                     ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
@@ -5159,6 +5195,42 @@ function displayTournamentParticipantBets(bets) {
                 ${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
                     ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
+                    : ""
+                }
+              </div>`
+            : ""
+        }
+        ${
+          bet.yellow_cards != null
+            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+                🟨 Желтые: <span style="${
+                  bet.actual_yellow_cards != null && bet.result !== 'pending'
+                    ? bet.yellow_cards === bet.actual_yellow_cards
+                      ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
+                      : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
+                    : ''
+                }">${bet.yellow_cards}</span>
+                ${
+                  bet.actual_yellow_cards != null && bet.result !== 'pending'
+                    ? ` | Результат: <strong>${bet.actual_yellow_cards}</strong>`
+                    : ""
+                }
+              </div>`
+            : ""
+        }
+        ${
+          bet.red_cards != null
+            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+                🟥 Красные: <span style="${
+                  bet.actual_red_cards != null && bet.result !== 'pending'
+                    ? bet.red_cards === bet.actual_red_cards
+                      ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
+                      : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
+                    : ''
+                }">${bet.red_cards}</span>
+                ${
+                  bet.actual_red_cards != null && bet.result !== 'pending'
+                    ? ` | Результат: <strong>${bet.actual_red_cards}</strong>`
                     : ""
                 }
               </div>`

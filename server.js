@@ -4019,6 +4019,10 @@ app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
           sp.score_team2,
           ms.score_team1 as actual_score_team1,
           ms.score_team2 as actual_score_team2,
+          cp.yellow_cards,
+          cp.red_cards,
+          m.yellow_cards as actual_yellow_cards,
+          m.red_cards as actual_red_cards,
           CASE 
             WHEN b.prediction = 'team1' THEN m.team1_name
             WHEN b.prediction = 'team2' THEN m.team2_name
@@ -4044,6 +4048,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
         JOIN matches m ON b.match_id = m.id
         LEFT JOIN score_predictions sp ON sp.user_id = b.user_id AND sp.match_id = b.match_id
         LEFT JOIN match_scores ms ON ms.match_id = b.match_id
+        LEFT JOIN cards_predictions cp ON cp.user_id = b.user_id AND cp.match_id = b.match_id
         WHERE m.event_id = ? AND b.user_id = ? AND b.is_final_bet = 0
         ORDER BY m.id ASC
       `
@@ -5418,6 +5423,8 @@ app.get("/api/user/:userId/bets", async (req, res) => {
       SELECT b.*, 
              m.team1_name, m.team2_name, m.winner, 
              m.status as match_status, m.round, m.is_final, m.match_date,
+             m.yellow_cards as actual_yellow_cards,
+             m.red_cards as actual_red_cards,
              e.name as event_name, 
              e.status as event_status,
              e.start_date as event_start_date,
@@ -5425,12 +5432,15 @@ app.get("/api/user/:userId/bets", async (req, res) => {
              sp.score_team1,
              sp.score_team2,
              ms.score_team1 as actual_score_team1,
-             ms.score_team2 as actual_score_team2
+             ms.score_team2 as actual_score_team2,
+             cp.yellow_cards,
+             cp.red_cards
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
       LEFT JOIN score_predictions sp ON sp.user_id = b.user_id AND sp.match_id = b.match_id
       LEFT JOIN match_scores ms ON ms.match_id = b.match_id
+      LEFT JOIN cards_predictions cp ON cp.user_id = b.user_id AND cp.match_id = b.match_id
       WHERE b.user_id = ?
       ORDER BY b.created_at DESC
     `
@@ -12366,17 +12376,25 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           b.prediction, 
           m.winner, 
           m.is_final,
+          m.score_prediction_enabled,
+          m.yellow_cards_prediction_enabled,
+          m.red_cards_prediction_enabled,
           u.username, 
           u.telegram_username,
           sp.score_team1 as predicted_score1,
           sp.score_team2 as predicted_score2,
           ms.score_team1 as actual_score1,
-          ms.score_team2 as actual_score2
+          ms.score_team2 as actual_score2,
+          cp.yellow_cards as predicted_yellow_cards,
+          cp.red_cards as predicted_red_cards,
+          m.yellow_cards as actual_yellow_cards,
+          m.red_cards as actual_red_cards
         FROM bets b
         JOIN matches m ON b.match_id = m.id
         JOIN users u ON b.user_id = u.id
         LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
         LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+        LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
         WHERE b.match_id IN (${placeholders})
       `).all(...matchIds);
 
@@ -12390,7 +12408,9 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
             telegram_username: bet.telegram_username,
             points: 0,
             correctResults: 0,
-            correctScores: 0
+            correctScores: 0,
+            correctYellowCards: 0,
+            correctRedCards: 0
           };
         }
 
@@ -12406,18 +12426,36 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           userPoints[bet.user_id].points += resultPoints;
           userPoints[bet.user_id].correctResults++;
 
-          // Проверяем прогноз на счет
-          if (bet.predicted_score1 !== null && bet.predicted_score2 !== null &&
+          // Проверяем прогноз на счет (только если включен для этого матча)
+          if (bet.score_prediction_enabled === 1 &&
+              bet.predicted_score1 !== null && bet.predicted_score2 !== null &&
               bet.actual_score1 !== null && bet.actual_score2 !== null) {
             const scoreCorrect = 
               bet.predicted_score1 === bet.actual_score1 && 
               bet.predicted_score2 === bet.actual_score2;
             
             if (scoreCorrect) {
-              // Дополнительное очко за угаданный счет
               userPoints[bet.user_id].points++;
               userPoints[bet.user_id].correctScores++;
             }
+          }
+
+          // Проверяем прогноз на желтые карточки (только если включен для этого матча)
+          if (bet.yellow_cards_prediction_enabled === 1 &&
+              bet.predicted_yellow_cards !== null &&
+              bet.actual_yellow_cards !== null &&
+              bet.predicted_yellow_cards === bet.actual_yellow_cards) {
+            userPoints[bet.user_id].points++;
+            userPoints[bet.user_id].correctYellowCards++;
+          }
+
+          // Проверяем прогноз на красные карточки (только если включен для этого матча)
+          if (bet.red_cards_prediction_enabled === 1 &&
+              bet.predicted_red_cards !== null &&
+              bet.actual_red_cards !== null &&
+              bet.predicted_red_cards === bet.actual_red_cards) {
+            userPoints[bet.user_id].points++;
+            userPoints[bet.user_id].correctRedCards++;
           }
         }
       }
@@ -12474,6 +12512,12 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           }
           if (user.correctScores > 0) {
             stats.push(`🎯 ${user.correctScores}`);
+          }
+          if (user.correctYellowCards > 0) {
+            stats.push(`🟨 ${user.correctYellowCards}`);
+          }
+          if (user.correctRedCards > 0) {
+            stats.push(`🟥 ${user.correctRedCards}`);
           }
           if (stats.length > 0) {
             userLine += ` (${stats.join(', ')})`;
@@ -12608,6 +12652,12 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
             }
             if (u.correctScores > 0) {
               stats.push(`🎯 ${u.correctScores}`);
+            }
+            if (u.correctYellowCards > 0) {
+              stats.push(`🟨 ${u.correctYellowCards}`);
+            }
+            if (u.correctRedCards > 0) {
+              stats.push(`🟥 ${u.correctRedCards}`);
             }
             if (stats.length > 0) {
               userLine += ` (${stats.join(', ')})`;
@@ -14924,6 +14974,12 @@ async function triggerAutoCountingForDate(dateGroup) {
         }
         if (stats.correctScores > 0) {
           statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        if (stats.correctYellowCards > 0) {
+          statsText.push(`🟨 ${stats.correctYellowCards}`);
+        }
+        if (stats.correctRedCards > 0) {
+          statsText.push(`🟥 ${stats.correctRedCards}`);
         }
         const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
         message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
