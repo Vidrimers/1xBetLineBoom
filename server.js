@@ -14093,9 +14093,15 @@ function updateMatchesFromAPI(matches) {
       const homeScore = apiMatch.homeResult;
       const awayScore = apiMatch.awayResult;
       
+      // Получаем код турнира для перевода названий
+      const event = db.prepare("SELECT icon FROM events WHERE id = ?").get(dbMatch.event_id);
+      const competition_code = event ? ICON_TO_COMPETITION[event.icon] : null;
+      
       // Определяем победителя с учетом возможного обратного порядка команд
       const apiHome = normalizeTeamNameForAPI(apiMatch.homeTeam.name);
-      const dbHome = normalizeTeamNameForAPI(dbMatch.team1_name);
+      // ИСПРАВЛЕНИЕ: переводим русское название в английское перед сравнением
+      const dbTeam1English = translateTeamNameToEnglish(dbMatch.team1_name, competition_code);
+      const dbHome = normalizeTeamNameForAPI(dbTeam1English);
       const isReversed = apiHome !== dbHome;
       
       let winner;
