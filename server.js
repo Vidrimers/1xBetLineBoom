@@ -2062,6 +2062,19 @@ try {
   // Колонка уже существует
 }
 
+// Добавляем колонки для фактических карточек в матче
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN yellow_cards INTEGER").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN red_cards INTEGER").run();
+} catch (error) {
+  // Колонка уже существует
+}
+
 // Таблица настроек сайта
 db.exec(`
   CREATE TABLE IF NOT EXISTS site_settings (
@@ -12786,7 +12799,9 @@ app.post("/api/admin/recount-results", async (req, res) => {
       SET status = 'pending',
           winner = NULL,
           team1_score = NULL,
-          team2_score = NULL
+          team2_score = NULL,
+          yellow_cards = NULL,
+          red_cards = NULL
       WHERE DATE(match_date) = ?
         AND round = ?
         AND result IS NULL
@@ -12857,13 +12872,20 @@ app.post("/api/admin/recount-results", async (req, res) => {
         m.winner,
         m.team1_score as actual_score_team1,
         m.team2_score as actual_score_team2,
+        m.yellow_cards as actual_yellow_cards,
+        m.red_cards as actual_red_cards,
         m.score_prediction_enabled,
+        m.yellow_cards_prediction_enabled,
+        m.red_cards_prediction_enabled,
         sp.score_team1 as predicted_score_team1,
-        sp.score_team2 as predicted_score_team2
+        sp.score_team2 as predicted_score_team2,
+        cp.yellow_cards as predicted_yellow_cards,
+        cp.red_cards as predicted_red_cards
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date) = ?
         AND m.round = ?
         AND m.status = 'finished'
@@ -12884,7 +12906,9 @@ app.post("/api/admin/recount-results", async (req, res) => {
           telegramNotificationsEnabled: bet.telegram_notifications_enabled,
           points: 0,
           correctResults: 0,
-          correctScores: 0
+          correctScores: 0,
+          correctYellowCards: 0,
+          correctRedCards: 0
         };
       }
       
@@ -12913,6 +12937,24 @@ app.post("/api/admin/recount-results", async (req, res) => {
             bet.predicted_score_team2 === bet.actual_score_team2) {
           userStats[username].points++;
           userStats[username].correctScores++;
+        }
+        
+        // Проверяем желтые карточки (только если включен прогноз на желтые карточки для этого матча)
+        if (bet.yellow_cards_prediction_enabled === 1 &&
+            bet.predicted_yellow_cards != null &&
+            bet.actual_yellow_cards != null &&
+            bet.predicted_yellow_cards === bet.actual_yellow_cards) {
+          userStats[username].points++;
+          userStats[username].correctYellowCards++;
+        }
+        
+        // Проверяем красные карточки (только если включен прогноз на красные карточки для этого матча)
+        if (bet.red_cards_prediction_enabled === 1 &&
+            bet.predicted_red_cards != null &&
+            bet.actual_red_cards != null &&
+            bet.predicted_red_cards === bet.actual_red_cards) {
+          userStats[username].points++;
+          userStats[username].correctRedCards++;
         }
       }
     });
@@ -12944,6 +12986,12 @@ app.post("/api/admin/recount-results", async (req, res) => {
         }
         if (stats.correctScores > 0) {
           statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        if (stats.correctYellowCards > 0) {
+          statsText.push(`🟨 ${stats.correctYellowCards}`);
+        }
+        if (stats.correctRedCards > 0) {
+          statsText.push(`🟥 ${stats.correctRedCards}`);
         }
         const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
         message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
@@ -14255,10 +14303,17 @@ app.get("/api/test/score-points/:userId", (req, res) => {
         m.team2_name,
         m.winner,
         m.is_final,
+        m.score_prediction_enabled,
+        m.yellow_cards_prediction_enabled,
+        m.red_cards_prediction_enabled,
         sp.score_team1 as predicted_score1,
         sp.score_team2 as predicted_score2,
         ms.score_team1 as actual_score1,
         ms.score_team2 as actual_score2,
+        cp.yellow_cards as predicted_yellow_cards,
+        cp.red_cards as predicted_red_cards,
+        m.yellow_cards as actual_yellow_cards,
+        m.red_cards as actual_red_cards,
         CASE 
           WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
                (b.prediction = 'team2' AND m.winner = 'team2') OR
@@ -14269,12 +14324,29 @@ app.get("/api/test/score-points/:userId", (req, res) => {
           ELSE 0 
         END as result_correct,
         CASE 
-          WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+          WHEN m.score_prediction_enabled = 1 AND
+               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
           THEN 1 
           ELSE 0 
         END as score_correct,
+        CASE 
+          WHEN m.yellow_cards_prediction_enabled = 1 AND
+               cp.yellow_cards IS NOT NULL AND
+               m.yellow_cards IS NOT NULL AND
+               cp.yellow_cards = m.yellow_cards
+          THEN 1 
+          ELSE 0 
+        END as yellow_cards_correct,
+        CASE 
+          WHEN m.red_cards_prediction_enabled = 1 AND
+               cp.red_cards IS NOT NULL AND
+               m.red_cards IS NOT NULL AND
+               cp.red_cards = m.red_cards
+          THEN 1 
+          ELSE 0 
+        END as red_cards_correct,
         CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END as base_points,
         CASE 
           WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
@@ -14285,9 +14357,26 @@ app.get("/api/test/score-points/:userId", (req, res) => {
           THEN 
             CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
             CASE 
-              WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+              WHEN m.score_prediction_enabled = 1 AND
+                   sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                    ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                    sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+              THEN 1 
+              ELSE 0 
+            END +
+            CASE 
+              WHEN m.yellow_cards_prediction_enabled = 1 AND
+                   cp.yellow_cards IS NOT NULL AND
+                   m.yellow_cards IS NOT NULL AND
+                   cp.yellow_cards = m.yellow_cards
+              THEN 1 
+              ELSE 0 
+            END +
+            CASE 
+              WHEN m.red_cards_prediction_enabled = 1 AND
+                   cp.red_cards IS NOT NULL AND
+                   m.red_cards IS NOT NULL AND
+                   cp.red_cards = m.red_cards
               THEN 1 
               ELSE 0 
             END
@@ -14296,6 +14385,7 @@ app.get("/api/test/score-points/:userId", (req, res) => {
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id
       WHERE b.user_id = ? 
         AND b.is_final_bet = 0 
@@ -14728,10 +14818,17 @@ async function triggerAutoCountingForDate(dateGroup) {
         m.winner,
         m.team1_score as actual_score_team1,
         m.team2_score as actual_score_team2,
-        m.score_prediction_enabled
+        m.yellow_cards as actual_yellow_cards,
+        m.red_cards as actual_red_cards,
+        m.score_prediction_enabled,
+        m.yellow_cards_prediction_enabled,
+        m.red_cards_prediction_enabled,
+        cp.yellow_cards as predicted_yellow_cards,
+        cp.red_cards as predicted_red_cards
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
+      LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date) = ?
         AND m.status = 'finished'
         AND b.is_final_bet = 0
@@ -14751,7 +14848,9 @@ async function triggerAutoCountingForDate(dateGroup) {
         userStats[username] = {
           points: 0,
           correctResults: 0,
-          correctScores: 0
+          correctScores: 0,
+          correctYellowCards: 0,
+          correctRedCards: 0
         };
       }
       
@@ -14780,6 +14879,24 @@ async function triggerAutoCountingForDate(dateGroup) {
             bet.score_team2 === bet.actual_score_team2) {
           userStats[username].points++;
           userStats[username].correctScores++;
+        }
+        
+        // Проверяем желтые карточки (только если включен прогноз на желтые карточки для этого матча)
+        if (bet.yellow_cards_prediction_enabled === 1 &&
+            bet.predicted_yellow_cards != null &&
+            bet.actual_yellow_cards != null &&
+            bet.predicted_yellow_cards === bet.actual_yellow_cards) {
+          userStats[username].points++;
+          userStats[username].correctYellowCards++;
+        }
+        
+        // Проверяем красные карточки (только если включен прогноз на красные карточки для этого матча)
+        if (bet.red_cards_prediction_enabled === 1 &&
+            bet.predicted_red_cards != null &&
+            bet.actual_red_cards != null &&
+            bet.predicted_red_cards === bet.actual_red_cards) {
+          userStats[username].points++;
+          userStats[username].correctRedCards++;
         }
       }
     });
