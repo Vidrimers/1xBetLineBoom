@@ -1844,6 +1844,21 @@ db.exec(`
   )
 `);
 
+// Таблица прогнозов на карточки
+db.exec(`
+  CREATE TABLE IF NOT EXISTS cards_predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    match_id INTEGER NOT NULL,
+    yellow_cards INTEGER,
+    red_cards INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (match_id) REFERENCES matches(id),
+    UNIQUE(user_id, match_id)
+  )
+`);
+
 // Таблица фактических счетов матчей
 db.exec(`
   CREATE TABLE IF NOT EXISTS match_scores (
@@ -1904,6 +1919,19 @@ try {
 // Добавляем колонку score_prediction_enabled если её нет (для прогноза на счет)
 try {
   db.prepare("ALTER TABLE matches ADD COLUMN score_prediction_enabled INTEGER DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
+// Добавляем колонки для прогноза на карточки
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN yellow_cards_prediction_enabled INTEGER DEFAULT 0").run();
+} catch (error) {
+  // Колонка уже существует, это нормально
+}
+
+try {
+  db.prepare("ALTER TABLE matches ADD COLUMN red_cards_prediction_enabled INTEGER DEFAULT 0").run();
 } catch (error) {
   // Колонка уже существует, это нормально
 }
@@ -2814,6 +2842,32 @@ app.get("/api/events/:eventId/user-bets/:userId", (req, res) => {
 app.get("/api/events/:eventId/matches", (req, res) => {
   try {
     const { eventId } = req.params;
+    const { username } = req.query;
+    
+    // Если передан username, загружаем матчи с прогнозами пользователя
+    if (username) {
+      const user = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
+      
+      if (user) {
+        const matches = db
+          .prepare(
+            `SELECT m.*, 
+                    sp.score_team1 as predicted_score_team1, 
+                    sp.score_team2 as predicted_score_team2,
+                    cp.yellow_cards as predicted_yellow_cards,
+                    cp.red_cards as predicted_red_cards
+             FROM matches m
+             LEFT JOIN score_predictions sp ON m.id = sp.match_id AND sp.user_id = ?
+             LEFT JOIN cards_predictions cp ON m.id = cp.match_id AND cp.user_id = ?
+             WHERE m.event_id = ? 
+             ORDER BY m.created_at ASC`
+          )
+          .all(user.id, user.id, eventId);
+        return res.json(matches);
+      }
+    }
+    
+    // Если username не передан, загружаем матчи без прогнозов
     const matches = db
       .prepare(
         "SELECT * FROM matches WHERE event_id = ? ORDER BY created_at ASC"
@@ -6830,6 +6884,82 @@ app.post("/api/score-predictions", async (req, res) => {
   }
 });
 
+// POST /api/cards-predictions - Создать/обновить прогноз на карточки
+app.post("/api/cards-predictions", async (req, res) => {
+  try {
+    const { user_id, match_id, yellow_cards, red_cards } = req.body;
+
+    // Получаем информацию о пользователе
+    const user = db
+      .prepare("SELECT username FROM users WHERE id = ?")
+      .get(user_id);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем матч
+    const match = db
+      .prepare(
+        `SELECT m.status, m.match_date, m.winner, m.yellow_cards_prediction_enabled, m.red_cards_prediction_enabled
+         FROM matches m 
+         WHERE m.id = ?`
+      )
+      .get(match_id);
+
+    if (!match) {
+      return res.status(404).json({ error: "Матч не найден" });
+    }
+
+    if (!match.yellow_cards_prediction_enabled && !match.red_cards_prediction_enabled) {
+      return res.status(400).json({ error: "Прогноз на карточки не включен для этого матча" });
+    }
+
+    // Проверяем статус матча
+    const now = new Date();
+    const matchDate = match.match_date ? new Date(match.match_date) : null;
+
+    if (matchDate && matchDate <= now) {
+      return res.status(400).json({ error: "Матч уже начался" });
+    }
+
+    if (match.winner) {
+      return res.status(400).json({ error: "Матч уже завершен" });
+    }
+
+    // Проверяем корректность данных
+    if (yellow_cards !== null && (yellow_cards < 0 || yellow_cards > 20)) {
+      return res.status(400).json({ error: "Количество желтых карточек должно быть от 0 до 20" });
+    }
+
+    if (red_cards !== null && (red_cards < 0 || red_cards > 10)) {
+      return res.status(400).json({ error: "Количество красных карточек должно быть от 0 до 10" });
+    }
+
+    // Проверяем существует ли уже прогноз
+    const existingPrediction = db
+      .prepare("SELECT id FROM cards_predictions WHERE user_id = ? AND match_id = ?")
+      .get(user_id, match_id);
+
+    if (existingPrediction) {
+      // Обновляем существующий прогноз
+      db.prepare(
+        "UPDATE cards_predictions SET yellow_cards = ?, red_cards = ? WHERE user_id = ? AND match_id = ?"
+      ).run(yellow_cards, red_cards, user_id, match_id);
+    } else {
+      // Создаем новый прогноз
+      db.prepare(
+        "INSERT INTO cards_predictions (user_id, match_id, yellow_cards, red_cards) VALUES (?, ?, ?, ?)"
+      ).run(user_id, match_id, yellow_cards, red_cards);
+    }
+
+    res.json({ message: "Прогноз на карточки сохранен" });
+  } catch (error) {
+    console.error("Ошибка при сохранении прогноза на карточки:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/score-predictions/:matchId - Удалить прогноз на счет
 app.delete("/api/score-predictions/:matchId", async (req, res) => {
   try {
@@ -9784,6 +9914,8 @@ app.post("/api/admin/matches", async (req, res) => {
     round,
     is_final,
     score_prediction_enabled,
+    yellow_cards_prediction_enabled,
+    red_cards_prediction_enabled,
     show_exact_score,
     show_yellow_cards,
     show_red_cards,
@@ -9838,10 +9970,11 @@ app.post("/api/admin/matches", async (req, res) => {
         `
       INSERT INTO matches (
         event_id, team1_name, team2_name, match_date, round,
-        is_final, score_prediction_enabled, show_exact_score, show_yellow_cards, show_red_cards,
+        is_final, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled,
+        show_exact_score, show_yellow_cards, show_red_cards,
         show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
       )
       .run(
@@ -9852,6 +9985,8 @@ app.post("/api/admin/matches", async (req, res) => {
         round || null,
         is_final ? 1 : 0,
         score_prediction_enabled ? 1 : 0,
+        yellow_cards_prediction_enabled ? 1 : 0,
+        red_cards_prediction_enabled ? 1 : 0,
         show_exact_score ? 1 : 0,
         show_yellow_cards ? 1 : 0,
         show_red_cards ? 1 : 0,
@@ -9984,8 +10119,8 @@ app.post("/api/matches/bulk-create", async (req, res) => {
       if (team1_score !== undefined && team2_score !== undefined && winner) {
         const result = db
           .prepare(
-            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, team1_score, team2_score, winner, score_prediction_enabled)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, team1_score, team2_score, winner, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
           )
           .run(
             event_id,
@@ -9996,7 +10131,9 @@ app.post("/api/matches/bulk-create", async (req, res) => {
             team1_score,
             team2_score,
             winner,
-            score_prediction_enabled || 0
+            score_prediction_enabled || 0,
+            match.yellow_cards_prediction_enabled || 0,
+            match.red_cards_prediction_enabled || 0
           );
 
         createdMatches.push({
@@ -10009,14 +10146,16 @@ app.post("/api/matches/bulk-create", async (req, res) => {
           team1_score,
           team2_score,
           winner,
-          score_prediction_enabled: score_prediction_enabled || 0
+          score_prediction_enabled: score_prediction_enabled || 0,
+          yellow_cards_prediction_enabled: match.yellow_cards_prediction_enabled || 0,
+          red_cards_prediction_enabled: match.red_cards_prediction_enabled || 0
         });
       } else {
         // Создаем матч без результатов
         const result = db
           .prepare(
-            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, score_prediction_enabled)
-             VALUES (?, ?, ?, ?, ?, ?)`
+            `INSERT INTO matches (event_id, team1_name, team2_name, match_date, round, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
           )
           .run(
             event_id,
@@ -10024,7 +10163,9 @@ app.post("/api/matches/bulk-create", async (req, res) => {
             team2_russian,
             match_date || null,
             round || null,
-            score_prediction_enabled || 0
+            score_prediction_enabled || 0,
+            match.yellow_cards_prediction_enabled || 0,
+            match.red_cards_prediction_enabled || 0
           );
 
         createdMatches.push({
@@ -10034,7 +10175,9 @@ app.post("/api/matches/bulk-create", async (req, res) => {
           team2_name: team2_russian,
           match_date,
           round,
-          score_prediction_enabled: score_prediction_enabled || 0
+          score_prediction_enabled: score_prediction_enabled || 0,
+          yellow_cards_prediction_enabled: match.yellow_cards_prediction_enabled || 0,
+          red_cards_prediction_enabled: match.red_cards_prediction_enabled || 0
         });
       }
     });
@@ -10062,6 +10205,8 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
     round,
     is_final,
     score_prediction_enabled,
+    yellow_cards_prediction_enabled,
+    red_cards_prediction_enabled,
     show_exact_score,
     show_yellow_cards,
     show_red_cards,
@@ -10212,6 +10357,8 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
       round !== undefined ||
       is_final !== undefined ||
       score_prediction_enabled !== undefined ||
+      yellow_cards_prediction_enabled !== undefined ||
+      red_cards_prediction_enabled !== undefined ||
       show_exact_score !== undefined ||
       show_yellow_cards !== undefined ||
       show_red_cards !== undefined ||
@@ -10224,7 +10371,8 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
       const currentMatch = db
         .prepare(
           `SELECT team1_name, team2_name, match_date, round, 
-                   is_final, score_prediction_enabled, show_exact_score, show_yellow_cards, show_red_cards,
+                   is_final, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled,
+                   show_exact_score, show_yellow_cards, show_red_cards,
                    show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end 
            FROM matches WHERE id = ?`
         )
@@ -10259,6 +10407,8 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
           round = ?,
           is_final = ?,
           score_prediction_enabled = ?,
+          yellow_cards_prediction_enabled = ?,
+          red_cards_prediction_enabled = ?,
           show_exact_score = ?,
           show_yellow_cards = ?,
           show_red_cards = ?,
@@ -10278,6 +10428,16 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
             ? 1
             : 0
           : currentMatch.score_prediction_enabled,
+        yellow_cards_prediction_enabled !== undefined
+          ? yellow_cards_prediction_enabled
+            ? 1
+            : 0
+          : currentMatch.yellow_cards_prediction_enabled,
+        red_cards_prediction_enabled !== undefined
+          ? red_cards_prediction_enabled
+            ? 1
+            : 0
+          : currentMatch.red_cards_prediction_enabled,
         show_exact_score !== undefined
           ? show_exact_score
             ? 1
@@ -11710,6 +11870,7 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
           u.telegram_notifications_enabled,
           m.team1_name,
           m.team2_name,
+          m.score_prediction_enabled,
           sp.score_team1 as predicted_score_team1,
           sp.score_team2 as predicted_score_team2
         FROM bets b
@@ -11765,8 +11926,9 @@ app.post("/api/admin/test-auto-counting", async (req, res) => {
           userStats[username].points++;
           userStats[username].correctResults++;
           
-          // Проверяем счет
-          if (bet.predicted_score_team1 != null && bet.predicted_score_team2 != null &&
+          // Проверяем счет (только если включен прогноз на счет для этого матча)
+          if (bet.score_prediction_enabled === 1 &&
+              bet.predicted_score_team1 != null && bet.predicted_score_team2 != null &&
               bet.predicted_score_team1 === simResult.score_team1 &&
               bet.predicted_score_team2 === simResult.score_team2) {
             userStats[username].points++;
@@ -12695,6 +12857,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
         m.winner,
         m.team1_score as actual_score_team1,
         m.team2_score as actual_score_team2,
+        m.score_prediction_enabled,
         sp.score_team1 as predicted_score_team1,
         sp.score_team2 as predicted_score_team2
       FROM bets b
@@ -12743,8 +12906,9 @@ app.post("/api/admin/recount-results", async (req, res) => {
         userStats[username].points++;
         userStats[username].correctResults++;
         
-        // Проверяем счет
-        if (bet.predicted_score_team1 != null && bet.predicted_score_team2 != null &&
+        // Проверяем счет (только если включен прогноз на счет для этого матча)
+        if (bet.score_prediction_enabled === 1 &&
+            bet.predicted_score_team1 != null && bet.predicted_score_team2 != null &&
             bet.predicted_score_team1 === bet.actual_score_team1 &&
             bet.predicted_score_team2 === bet.actual_score_team2) {
           userStats[username].points++;
@@ -14563,7 +14727,8 @@ async function triggerAutoCountingForDate(dateGroup) {
         m.team2_name,
         m.winner,
         m.team1_score as actual_score_team1,
-        m.team2_score as actual_score_team2
+        m.team2_score as actual_score_team2,
+        m.score_prediction_enabled
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
@@ -14608,8 +14773,9 @@ async function triggerAutoCountingForDate(dateGroup) {
         userStats[username].points++;
         userStats[username].correctResults++;
         
-        // Проверяем счет
-        if (bet.score_team1 != null && bet.score_team2 != null &&
+        // Проверяем счет (только если включен прогноз на счет для этого матча)
+        if (bet.score_prediction_enabled === 1 &&
+            bet.score_team1 != null && bet.score_team2 != null &&
             bet.score_team1 === bet.actual_score_team1 &&
             bet.score_team2 === bet.actual_score_team2) {
           userStats[username].points++;

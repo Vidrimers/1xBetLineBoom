@@ -1873,7 +1873,11 @@ async function loadMatches(eventId) {
     }
 
     // Загружаем и отображаем матчи
-    const response = await fetch(`/api/events/${eventId}/matches`);
+    const username = currentUser?.username;
+    const url = username 
+      ? `/api/events/${eventId}/matches?username=${encodeURIComponent(username)}`
+      : `/api/events/${eventId}/matches`;
+    const response = await fetch(url);
     matches = await response.json();
     currentRoundFilter = "all"; // Сбрасываем фильтр при загрузке нового турнира
     displayMatches();
@@ -2663,13 +2667,27 @@ async function displayMatches() {
                     <div class="team team-right">${match.team2_name}</div>
                 </div>
                 ${
-                  match.round || match.score_prediction_enabled
+                  match.round || match.score_prediction_enabled || match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled
                     ? `<div class="match-round-row">
-                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam1_${match.id}" class="score-input score-input-left" min="0" value="${userBetOnMatch?.score_team1 != null ? userBetOnMatch.score_team1 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="syncScoreInputs(${match.id}, '${userBetOnMatch?.prediction || ''}')">` : ""}
+                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam1_${match.id}" class="score-input score-input-left" min="0" value="${match.predicted_score_team1 != null ? match.predicted_score_team1 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (match.predicted_score_team1 != null && match.predicted_score_team2 != null) ? "disabled" : ""} oninput="syncScoreInputs(${match.id}, '${userBetOnMatch?.prediction || ''}')">` : ""}
                       ${match.round ? `<div class="match-round">${match.round}</div>` : ""}
-                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam2_${match.id}" class="score-input score-input-right" min="0" value="${userBetOnMatch?.score_team2 != null ? userBetOnMatch.score_team2 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? "disabled" : ""} oninput="syncScoreInputs(${match.id}, '${userBetOnMatch?.prediction || ''}')">` : ""}
-                      ${match.score_prediction_enabled && userBetOnMatch?.prediction && effectiveStatus === "pending" && !(userBetOnMatch?.score_team1 != null && userBetOnMatch?.score_team2 != null) ? `<div class="score-action-btns" id="scoreButtons_${match.id}">
+                      ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam2_${match.id}" class="score-input score-input-right" min="0" value="${match.predicted_score_team2 != null ? match.predicted_score_team2 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (match.predicted_score_team1 != null && match.predicted_score_team2 != null) ? "disabled" : ""} oninput="syncScoreInputs(${match.id}, '${userBetOnMatch?.prediction || ''}')">` : ""}
+                      ${(match.score_prediction_enabled || match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) && userBetOnMatch?.prediction && effectiveStatus === "pending" && !((match.score_prediction_enabled ? (match.predicted_score_team1 != null && match.predicted_score_team2 != null) : true) && (match.yellow_cards_prediction_enabled ? match.predicted_yellow_cards != null : true) && (match.red_cards_prediction_enabled ? match.predicted_red_cards != null : true)) ? `<div class="score-action-btns" id="scoreButtons_${match.id}">
                         <button class="score-confirm-btn" onclick="placeScorePrediction(${match.id}, '${userBetOnMatch?.prediction || ''}')">✅</button>
+                      </div>` : ""}
+                    </div>`
+                    : ""
+                }
+                ${
+                  (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) && userBetOnMatch?.prediction
+                    ? `<div class="match-cards-row" style="display: flex; justify-content: center; gap: 10px; margin-top: 5px;">
+                      ${match.yellow_cards_prediction_enabled ? `<div style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 0.9em;">🟨</span>
+                        <input type="number" id="yellowCards_${match.id}" class="score-input" min="0" max="20" value="${match.predicted_yellow_cards != null ? match.predicted_yellow_cards : ''}" placeholder="0" ${effectiveStatus !== "pending" || (match.predicted_yellow_cards != null) ? "disabled" : ""} style="width: 50px; text-align: center;">
+                      </div>` : ""}
+                      ${match.red_cards_prediction_enabled ? `<div style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 0.9em;">🟥</span>
+                        <input type="number" id="redCards_${match.id}" class="score-input" min="0" max="10" value="${match.predicted_red_cards != null ? match.predicted_red_cards : ''}" placeholder="0" ${effectiveStatus !== "pending" || (match.predicted_red_cards != null) ? "disabled" : ""} style="width: 50px; text-align: center;">
                       </div>` : ""}
                     </div>`
                     : ""
@@ -3102,29 +3120,47 @@ async function placeScorePrediction(matchId, prediction) {
 
   const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
   const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
+  const yellowCardsInput = document.getElementById(`yellowCards_${matchId}`);
+  const redCardsInput = document.getElementById(`redCards_${matchId}`);
   
   // Если поле пустое, считаем как 0
-  const scoreTeam1 = scoreTeam1Input.value === '' ? 0 : parseInt(scoreTeam1Input.value);
-  const scoreTeam2 = scoreTeam2Input.value === '' ? 0 : parseInt(scoreTeam2Input.value);
+  const scoreTeam1 = scoreTeam1Input ? (scoreTeam1Input.value === '' ? 0 : parseInt(scoreTeam1Input.value)) : null;
+  const scoreTeam2 = scoreTeam2Input ? (scoreTeam2Input.value === '' ? 0 : parseInt(scoreTeam2Input.value)) : null;
+  const yellowCards = yellowCardsInput ? (yellowCardsInput.value === '' ? null : parseInt(yellowCardsInput.value)) : null;
+  const redCards = redCardsInput ? (redCardsInput.value === '' ? null : parseInt(redCardsInput.value)) : null;
 
-  if (isNaN(scoreTeam1) || isNaN(scoreTeam2) || scoreTeam1 < 0 || scoreTeam2 < 0) {
-    alert("Введите корректный счет (0 или больше)");
-    return;
+  // Валидация счета если есть поля
+  if (scoreTeam1 !== null && scoreTeam2 !== null) {
+    if (isNaN(scoreTeam1) || isNaN(scoreTeam2) || scoreTeam1 < 0 || scoreTeam2 < 0) {
+      alert("Введите корректный счет (0 или больше)");
+      return;
+    }
+
+    // Валидация: прогноз на счет должен соответствовать ставке
+    if (prediction === 'team1' && scoreTeam1 <= scoreTeam2) {
+      showScoreAlert("Вы поставили на победу первой команды, но счет не соответствует вашей ставке");
+      return;
+    }
+    
+    if (prediction === 'team2' && scoreTeam2 <= scoreTeam1) {
+      showScoreAlert("Вы поставили на победу второй команды, но счет не соответствует вашей ставке");
+      return;
+    }
+    
+    if (prediction === 'draw' && scoreTeam1 !== scoreTeam2) {
+      showScoreAlert("Вы поставили на ничью, но счет не соответствует вашей ставке");
+      return;
+    }
   }
 
-  // Валидация: прогноз на счет должен соответствовать ставке
-  if (prediction === 'team1' && scoreTeam1 <= scoreTeam2) {
-    showScoreAlert("Вы поставили на победу первой команды, но счет не соответствует вашей ставке");
+  // Валидация карточек если есть поля
+  if (yellowCards !== null && (isNaN(yellowCards) || yellowCards < 0 || yellowCards > 20)) {
+    alert("Введите корректное количество желтых карточек (0-20)");
     return;
   }
   
-  if (prediction === 'team2' && scoreTeam2 <= scoreTeam1) {
-    showScoreAlert("Вы поставили на победу второй команды, но счет не соответствует вашей ставке");
-    return;
-  }
-  
-  if (prediction === 'draw' && scoreTeam1 !== scoreTeam2) {
-    showScoreAlert("Вы поставили на ничью, но счет не соответствует вашей ставке");
+  if (redCards !== null && (isNaN(redCards) || redCards < 0 || redCards > 10)) {
+    alert("Введите корректное количество красных карточек (0-10)");
     return;
   }
 
@@ -3133,41 +3169,67 @@ async function placeScorePrediction(matchId, prediction) {
   if (match) {
     const effectiveStatus = getMatchStatusByDate(match);
     if (effectiveStatus !== "pending") {
-      alert("Матч уже начался, прогноз на счет недоступен");
+      alert("Матч уже начался, прогноз недоступен");
       return;
     }
   }
 
   try {
-    const response = await fetch("/api/score-predictions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_id: currentUser.id,
-        match_id: matchId,
-        score_team1: scoreTeam1,
-        score_team2: scoreTeam2,
-      }),
-    });
+    // Сохраняем прогноз на счет если есть
+    if (scoreTeam1 !== null && scoreTeam2 !== null) {
+      const scoreResponse = await fetch("/api/score-predictions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          match_id: matchId,
+          score_team1: scoreTeam1,
+          score_team2: scoreTeam2,
+        }),
+      });
 
-    if (response.ok) {
-      // Скрываем кнопки и блокируем инпуты
-      const buttonsDiv = document.getElementById(`scoreButtons_${matchId}`);
-      if (buttonsDiv) {
-        buttonsDiv.style.display = 'none';
+      if (!scoreResponse.ok) {
+        const error = await scoreResponse.json();
+        alert(error.error || "Ошибка сохранения прогноза на счет");
+        return;
       }
-      const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
-      const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
-      if (scoreTeam1Input) scoreTeam1Input.disabled = true;
-      if (scoreTeam2Input) scoreTeam2Input.disabled = true;
-      
-      loadMyBets();
-    } else {
-      const error = await response.json();
-      alert(error.error || "Ошибка при сохранении прогноза");
     }
+
+    // Сохраняем прогноз на карточки если есть
+    if (yellowCards !== null || redCards !== null) {
+      const cardsResponse = await fetch("/api/cards-predictions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          match_id: matchId,
+          yellow_cards: yellowCards,
+          red_cards: redCards,
+        }),
+      });
+
+      if (!cardsResponse.ok) {
+        const error = await cardsResponse.json();
+        alert(error.error || "Ошибка сохранения прогноза на карточки");
+        return;
+      }
+    }
+
+    // Скрываем кнопки и блокируем инпуты
+    const buttonsDiv = document.getElementById(`scoreButtons_${matchId}`);
+    if (buttonsDiv) {
+      buttonsDiv.style.display = 'none';
+    }
+    if (scoreTeam1Input) scoreTeam1Input.disabled = true;
+    if (scoreTeam2Input) scoreTeam2Input.disabled = true;
+    if (yellowCardsInput) yellowCardsInput.disabled = true;
+    if (redCardsInput) redCardsInput.disabled = true;
+    
+    loadMyBets();
   } catch (error) {
     console.error("Ошибка при сохранении прогноза на счет:", error);
     alert("Ошибка при сохранении прогноза на счет");
@@ -10872,6 +10934,8 @@ async function submitCreateMatch(event) {
 
   const isFinal = document.getElementById("matchIsFinal").checked;
   const scorePredictionEnabled = document.getElementById("matchScorePrediction").checked;
+  const yellowCardsPredictionEnabled = document.getElementById("matchYellowCardsPrediction").checked;
+  const redCardsPredictionEnabled = document.getElementById("matchRedCardsPrediction").checked;
 
   // Если это финальный матч, устанавливаем round = "🏆 Финал"
   if (isFinal) {
@@ -10934,6 +10998,8 @@ async function submitCreateMatch(event) {
           round: round || null,
           is_final: isFinal,
           score_prediction_enabled: scorePredictionEnabled,
+          yellow_cards_prediction_enabled: yellowCardsPredictionEnabled,
+          red_cards_prediction_enabled: redCardsPredictionEnabled,
           show_exact_score: showExactScore,
           show_yellow_cards: showYellowCards,
           show_red_cards: showRedCards,
@@ -11027,6 +11093,10 @@ async function openEditMatchModal(id, team1, team2, date, round) {
       match.show_penalties_at_end || false;
     document.getElementById("editMatchScorePrediction").checked =
       match.score_prediction_enabled || false;
+    document.getElementById("editMatchYellowCardsPrediction").checked =
+      match.yellow_cards_prediction_enabled || false;
+    document.getElementById("editMatchRedCardsPrediction").checked =
+      match.red_cards_prediction_enabled || false;
 
     // Обновим состояние тура и параметров в зависимости от is_final
     toggleFinalMatch("edit");
@@ -11074,6 +11144,8 @@ async function submitEditMatch(event) {
 
   const isFinal = document.getElementById("editMatchIsFinal").checked;
   const scorePredictionEnabled = document.getElementById("editMatchScorePrediction").checked;
+  const yellowCardsPredictionEnabled = document.getElementById("editMatchYellowCardsPrediction").checked;
+  const redCardsPredictionEnabled = document.getElementById("editMatchRedCardsPrediction").checked;
 
   // Если это финальный матч, устанавливаем round = "🏆 Финал"
   if (isFinal) {
@@ -11118,6 +11190,8 @@ async function submitEditMatch(event) {
         round: round || null,
         is_final: isFinal,
         score_prediction_enabled: scorePredictionEnabled,
+        yellow_cards_prediction_enabled: yellowCardsPredictionEnabled,
+        red_cards_prediction_enabled: redCardsPredictionEnabled,
         show_exact_score: showExactScore,
         show_yellow_cards: showYellowCards,
         show_red_cards: showRedCards,
@@ -11144,6 +11218,8 @@ async function submitEditMatch(event) {
           round: round,
           is_final: isFinal,
           score_prediction_enabled: scorePredictionEnabled,
+          yellow_cards_prediction_enabled: yellowCardsPredictionEnabled,
+          red_cards_prediction_enabled: redCardsPredictionEnabled,
           show_exact_score: showExactScore,
           show_yellow_cards: showYellowCards,
           show_red_cards: showRedCards,
@@ -12398,6 +12474,8 @@ async function submitBulkParse(event) {
   const selectedCheckboxes = Array.from(document.querySelectorAll('[id^="round_"]:checked'));
   const roundInput = document.getElementById("parseRound");
   const scorePredictionEnabled = document.getElementById("parseScorePrediction").checked;
+  const yellowCardsPredictionEnabled = document.getElementById("parseYellowCardsPrediction").checked;
+  const redCardsPredictionEnabled = document.getElementById("parseRedCardsPrediction").checked;
   
   // Определяем какие матчи нужно создать
   let matchesToProcess = [];
@@ -12467,7 +12545,9 @@ async function submitBulkParse(event) {
         match_date: match.utcDate,
         round: roundName,
         event_id: currentEventId,
-        score_prediction_enabled: scorePredictionEnabled ? 1 : 0
+        score_prediction_enabled: scorePredictionEnabled ? 1 : 0,
+        yellow_cards_prediction_enabled: yellowCardsPredictionEnabled ? 1 : 0,
+        red_cards_prediction_enabled: redCardsPredictionEnabled ? 1 : 0
       };
       
       // Если матч завершен - добавляем результаты
