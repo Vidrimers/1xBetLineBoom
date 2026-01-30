@@ -1460,22 +1460,42 @@
         <div class="section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h2 style="margin: 0;">📊 Подсчет результатов</h2>
-            <button 
-              onclick="sendCountingResults()"
-              style="
-                display: inline-block;
-                background: transparent;
-                border: 1px solid rgb(58, 123, 213);
-                color: rgb(224, 230, 240);
-                padding: 3px 7px;
-                font-size: 0.9em;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-              "
-            >
-              📤 Отправить результаты
-            </button>
+            <div style="display: flex; gap: 10px;">
+              <button 
+                onclick="openRecountModal()"
+                style="
+                  display: inline-block;
+                  background: transparent;
+                  border: 1px solid rgb(255, 152, 0);
+                  color: rgb(255, 152, 0);
+                  padding: 3px 7px;
+                  font-size: 0.9em;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                "
+                onmouseover="this.style.background='rgba(255, 152, 0, 0.1)'"
+                onmouseout="this.style.background='transparent'"
+              >
+                🔄 ПЕРЕСЧИТАТЬ
+              </button>
+              <button 
+                onclick="sendCountingResults()"
+                style="
+                  display: inline-block;
+                  background: transparent;
+                  border: 1px solid rgb(58, 123, 213);
+                  color: rgb(224, 230, 240);
+                  padding: 3px 7px;
+                  font-size: 0.9em;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                "
+              >
+                📤 Отправить результаты
+              </button>
+            </div>
           </div>
           <div class="counting-container" id="countingContainer">
             <div class="empty-message">Функция в разработке</div>
@@ -1534,6 +1554,106 @@
           <div class="modal-body">
             <div id="bugReportsList" style="display: flex; flex-direction: column; gap: 15px">
               <div class="empty-message">Загружаем багрепорты...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Модальное окно для пересчета результатов -->
+      <div id="recountModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'recountModal', closeRecountModal)">
+        <div class="modal-content" style="max-width: 500px">
+          <div class="modal-header">
+            <h2>🔄 Пересчет результатов</h2>
+            <button class="modal-close" onclick="closeRecountModal()">
+              &times;
+            </button>
+          </div>
+          <div class="modal-body">
+            <div style="margin-bottom: 20px;">
+              <p style="color: rgb(224, 230, 240); margin-bottom: 15px;">
+                ⚠️ Это действие сбросит результаты выбранной даты и пересчитает их заново.
+              </p>
+              
+              <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: rgb(224, 230, 240);">
+                  📅 Дата:
+                </label>
+                <input 
+                  type="date" 
+                  id="recountDate" 
+                  style="
+                    width: 100%;
+                    padding: 8px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 5px;
+                    color: rgb(224, 230, 240);
+                    font-size: 14px;
+                  "
+                />
+              </div>
+
+              <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: rgb(224, 230, 240);">
+                  🏆 Тур:
+                </label>
+                <input 
+                  type="text" 
+                  id="recountRound" 
+                  placeholder="Например: Тур 8"
+                  style="
+                    width: 100%;
+                    padding: 8px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 5px;
+                    color: rgb(224, 230, 240);
+                    font-size: 14px;
+                  "
+                />
+              </div>
+
+              <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 5px;">
+                <p style="color: rgb(224, 230, 240); margin-bottom: 10px; font-weight: bold;">
+                  📤 Отправить результаты пересчета:
+                </p>
+                <label style="display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;">
+                  <input 
+                    type="checkbox" 
+                    id="recountSendToGroup" 
+                    style="margin-right: 8px; cursor: pointer;"
+                  />
+                  <span style="color: rgb(224, 230, 240);">В группу</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input 
+                    type="checkbox" 
+                    id="recountSendToUsers" 
+                    style="margin-right: 8px; cursor: pointer;"
+                  />
+                  <span style="color: rgb(224, 230, 240);">Пользователям в ЛС</span>
+                </label>
+              </div>
+
+              <button 
+                onclick="confirmRecount()"
+                style="
+                  width: 100%;
+                  padding: 12px;
+                  background: rgb(255, 152, 0);
+                  border: none;
+                  border-radius: 5px;
+                  color: white;
+                  font-size: 16px;
+                  font-weight: bold;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                "
+                onmouseover="this.style.background='rgb(255, 167, 38)'"
+                onmouseout="this.style.background='rgb(255, 152, 0)'"
+              >
+                🔄 ПЕРЕСЧИТАТЬ
+              </button>
             </div>
           </div>
         </div>

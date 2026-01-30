@@ -8473,6 +8473,102 @@ async function sendCountingResults() {
   }
 }
 
+// Открыть модалку пересчета
+function openRecountModal() {
+  if (!canViewCounting()) {
+    alert("У вас нет прав");
+    return;
+  }
+  
+  // Устанавливаем текущую дату по умолчанию
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('recountDate').value = today;
+  
+  document.getElementById('recountModal').style.display = 'flex';
+}
+
+// Закрыть модалку пересчета
+function closeRecountModal() {
+  document.getElementById('recountModal').style.display = 'none';
+}
+
+// Подтвердить пересчет
+async function confirmRecount() {
+  const date = document.getElementById('recountDate').value;
+  const round = document.getElementById('recountRound').value.trim();
+  const sendToGroup = document.getElementById('recountSendToGroup').checked;
+  const sendToUsers = document.getElementById('recountSendToUsers').checked;
+
+  if (!date) {
+    await showCustomAlert("Выберите дату", "Ошибка", "❌");
+    return;
+  }
+
+  if (!round) {
+    await showCustomAlert("Укажите тур (например: Тур 8)", "Ошибка", "❌");
+    return;
+  }
+
+  // Подтверждение действия
+  const confirmed = confirm(
+    `⚠️ Вы уверены что хотите пересчитать результаты?\n\n` +
+    `📅 Дата: ${date}\n` +
+    `🏆 Тур: ${round}\n\n` +
+    `Это действие:\n` +
+    `1. Сбросит результаты матчей\n` +
+    `2. Пересчитает их заново\n` +
+    `3. ${sendToGroup ? 'Отправит результаты в группу\n' : ''}` +
+    `${sendToUsers ? '4. Отправит результаты пользователям в ЛС\n' : ''}`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    closeRecountModal();
+    
+    // Показываем индикатор загрузки
+    await showCustomAlert("Пересчет результатов...", "Обработка", "⏳");
+
+    const response = await fetch('/api/admin/recount-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser,
+        date,
+        round,
+        sendToGroup,
+        sendToUsers
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      await showCustomAlert(
+        result.message || "Результаты успешно пересчитаны!",
+        "Успешно",
+        "✅"
+      );
+      
+      // Обновляем данные подсчета если они отображаются
+      if (document.getElementById('counting-content').style.display !== 'none') {
+        loadCountingData();
+      }
+    } else {
+      const error = await response.json();
+      await showCustomAlert(
+        error.error || "Не удалось пересчитать результаты",
+        "Ошибка",
+        "❌"
+      );
+    }
+  } catch (error) {
+    console.error("Ошибка пересчета результатов:", error);
+    await showCustomAlert("Ошибка при пересчете результатов", "Ошибка", "❌");
+  }
+}
+
 // Закрыть модальное окно при клике вне его
 window.onclick = function (event) {
   const adminModal = document.getElementById("adminModal");

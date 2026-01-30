@@ -12512,6 +12512,329 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
   }
 });
 
+// POST /api/admin/recount-results - Пересчитать результаты для конкретной даты
+app.post("/api/admin/recount-results", async (req, res) => {
+  const { username, date, round, sendToGroup, sendToUsers } = req.body;
+
+  // Проверяем права (админ или модератор с правами на подсчет)
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+  const isAdmin = username === ADMIN_DB_NAME;
+  
+  if (!isAdmin) {
+    const moderator = db.prepare("SELECT * FROM moderators WHERE username = ?").get(username);
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = moderator.permissions ? moderator.permissions.split(',') : [];
+    if (!permissions.includes('view_counting')) {
+      return res.status(403).json({ error: "Недостаточно прав для пересчета" });
+    }
+  }
+
+  try {
+    if (!date || !round) {
+      return res.status(400).json({ error: "Не указаны дата или тур" });
+    }
+
+    console.log(`\n🔄 ========================================`);
+    console.log(`🔄 ПЕРЕСЧЕТ РЕЗУЛЬТАТОВ`);
+    console.log(`🔄 Инициатор: ${username}`);
+    console.log(`🔄 Дата: ${date}`);
+    console.log(`🔄 Тур: ${round}`);
+    console.log(`🔄 ========================================\n`);
+
+    // Шаг 1: Получаем все матчи для этой даты и тура
+    const matches = db.prepare(`
+      SELECT m.*, e.icon, e.name as event_name
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE DATE(m.match_date) = ?
+        AND m.round = ?
+        AND m.result IS NULL
+    `).all(date, round);
+
+    if (matches.length === 0) {
+      return res.status(404).json({ error: "Не найдено матчей для указанной даты и тура" });
+    }
+
+    console.log(`📊 Найдено матчей: ${matches.length}`);
+
+    // Шаг 2: Сбрасываем результаты этих матчей
+    const resetStmt = db.prepare(`
+      UPDATE matches
+      SET status = 'pending',
+          winner = NULL,
+          team1_score = NULL,
+          team2_score = NULL
+      WHERE DATE(match_date) = ?
+        AND round = ?
+        AND result IS NULL
+    `);
+
+    const resetResult = resetStmt.run(date, round);
+    console.log(`✅ Сброшено матчей: ${resetResult.changes}`);
+
+    // Шаг 3: Удаляем обработанную дату из списка
+    const dateKey = `${date}_${round}`;
+    if (processedDates.has(dateKey)) {
+      processedDates.delete(dateKey);
+      console.log(`✅ Удалена обработанная дата: ${dateKey}`);
+    }
+
+    // Шаг 4: Запускаем автоподсчет для этой даты
+    const event = matches[0];
+    const competition_code = ICON_TO_COMPETITION[event.icon];
+
+    if (!competition_code) {
+      return res.status(400).json({ error: "Не удалось определить турнир" });
+    }
+
+    console.log(`🔄 Запуск автоподсчета для ${date} | ${round}...`);
+
+    // Вызываем функцию автоподсчета
+    const dateGroup = {
+      event_id: event.event_id,
+      competition_code,
+      round,
+      date
+    };
+
+    // Проверяем завершение матчей
+    const { allFinished, matches: matchedMatches } = await checkDateCompletion(dateGroup);
+
+    if (!allFinished) {
+      return res.status(400).json({ 
+        error: "Не все матчи завершены. Пересчет возможен только для полностью завершенных дат." 
+      });
+    }
+
+    // Обновляем матчи из API
+    const matchesWithApi = matchedMatches.filter(m => m.apiMatch !== null);
+    if (matchesWithApi.length > 0) {
+      const updated = updateMatchesFromAPI(matchesWithApi);
+      if (!updated) {
+        return res.status(500).json({ error: "Не удалось обновить результаты матчей" });
+      }
+    }
+
+    // Помечаем дату как обработанную
+    const fullDateKey = `${date}_${round}_${competition_code}`;
+    processedDates.add(fullDateKey);
+    saveProcessedDate(fullDateKey);
+
+    console.log(`✅ Результаты обновлены`);
+
+    // Шаг 5: Получаем ставки и подсчитываем результаты
+    const bets = db.prepare(`
+      SELECT 
+        b.*,
+        u.username,
+        u.telegram_id,
+        u.telegram_notifications_enabled,
+        m.team1_name,
+        m.team2_name,
+        m.winner,
+        m.team1_score as actual_score_team1,
+        m.team2_score as actual_score_team2,
+        sp.score_team1 as predicted_score_team1,
+        sp.score_team2 as predicted_score_team2
+      FROM bets b
+      JOIN users u ON b.user_id = u.id
+      JOIN matches m ON b.match_id = m.id
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      WHERE DATE(m.match_date) = ?
+        AND m.round = ?
+        AND m.status = 'finished'
+        AND b.is_final_bet = 0
+    `).all(date, round);
+
+    console.log(`📊 Найдено ставок: ${bets.length}`);
+
+    // Подсчитываем результаты
+    const userStats = {};
+    
+    bets.forEach(bet => {
+      const username = bet.username;
+      if (!userStats[username]) {
+        userStats[username] = {
+          userId: bet.user_id,
+          telegramId: bet.telegram_id,
+          telegramNotificationsEnabled: bet.telegram_notifications_enabled,
+          points: 0,
+          correctResults: 0,
+          correctScores: 0
+        };
+      }
+      
+      // Проверяем результат
+      let isWon = false;
+      if (bet.prediction === 'draw' && bet.winner === 'draw') {
+        isWon = true;
+      } else if (bet.prediction === 'team1' && bet.winner === 'team1') {
+        isWon = true;
+      } else if (bet.prediction === 'team2' && bet.winner === 'team2') {
+        isWon = true;
+      } else if (bet.prediction === bet.team1_name && bet.winner === 'team1') {
+        isWon = true;
+      } else if (bet.prediction === bet.team2_name && bet.winner === 'team2') {
+        isWon = true;
+      }
+      
+      if (isWon) {
+        userStats[username].points++;
+        userStats[username].correctResults++;
+        
+        // Проверяем счет
+        if (bet.predicted_score_team1 != null && bet.predicted_score_team2 != null &&
+            bet.predicted_score_team1 === bet.actual_score_team1 &&
+            bet.predicted_score_team2 === bet.actual_score_team2) {
+          userStats[username].points++;
+          userStats[username].correctScores++;
+        }
+      }
+    });
+
+    // Формируем сообщение
+    const formatDate = (dateStr) => {
+      const d = new Date(dateStr);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}.${month}.${year}`;
+    };
+
+    let message = `🔄 <b>Результаты пересчета</b>\n\n`;
+    message += `📅 Дата: ${formatDate(date)}\n`;
+    message += `🏆 Тур: ${round}\n`;
+    message += `🎯 Турнир: ${event.event_name}\n\n`;
+    message += `📈 Статистика:\n`;
+
+    const sortedUsers = Object.entries(userStats).sort(([, a], [, b]) => b.points - a.points);
+    
+    if (sortedUsers.length === 0) {
+      message += `Нет результатов\n`;
+    } else {
+      sortedUsers.forEach(([username, stats]) => {
+        const statsText = [];
+        if (stats.correctResults > 0) {
+          statsText.push(`✅ ${stats.correctResults}`);
+        }
+        if (stats.correctScores > 0) {
+          statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
+        message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
+      });
+    }
+
+    console.log(`✅ Пересчет завершен`);
+
+    // Шаг 6: Отправляем уведомления если нужно
+    if (sendToGroup || sendToUsers) {
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+      if (!TELEGRAM_BOT_TOKEN) {
+        console.log('⚠️ Telegram не настроен, уведомления не отправлены');
+      } else {
+        // Отправляем в группу
+        if (sendToGroup && TELEGRAM_CHAT_ID) {
+          const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
+          for (const chatId of chatIds) {
+            try {
+              await fetch(
+                `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: "HTML",
+                  }),
+                }
+              );
+              console.log(`✅ Результаты пересчета отправлены в группу ${chatId}`);
+            } catch (error) {
+              console.error(`❌ Ошибка отправки в группу ${chatId}:`, error);
+            }
+          }
+        }
+
+        // Отправляем пользователям
+        if (sendToUsers && sortedUsers.length > 0) {
+          const bestUser = sortedUsers[0];
+          const worstUser = sortedUsers[sortedUsers.length - 1];
+          
+          for (const [username, stats] of sortedUsers) {
+            if (!stats.telegramId || stats.telegramNotificationsEnabled !== 1) continue;
+            
+            let personalMessage = '🔄 <b>Результаты пересчета</b>\n\n';
+            
+            if (username === bestUser[0] && sortedUsers.length > 1) {
+              personalMessage += `🏆 <b>Сегодня ты лучший!</b>\n\n`;
+              personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
+              if (stats.correctScores > 0) {
+                personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+              }
+              personalMessage += `!\n\nТак держать! 💪`;
+            } else if (username === worstUser[0] && sortedUsers.length > 1 && stats.points === 0) {
+              personalMessage += `😢 <b>Сегодня ты лох...</b>\n\n`;
+              personalMessage += `Ты набрал 0 очков.\n\nНе расстраивайся, в следующий раз обязательно получится! 🍀`;
+            } else {
+              personalMessage += `📊 <b>Сегодня ты не лучший...</b>\n\n`;
+              personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
+              if (stats.correctScores > 0) {
+                personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+              }
+              personalMessage += `.\n\nПродолжай стараться! 💪`;
+            }
+            
+            personalMessage += `\n\n📅 Дата: ${formatDate(date)}\n🏆 Тур: ${round}`;
+            
+            try {
+              await fetch(
+                `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: stats.telegramId,
+                    text: personalMessage,
+                    parse_mode: "HTML",
+                  }),
+                }
+              );
+              console.log(`✅ Результаты пересчета отправлены пользователю ${username}`);
+            } catch (error) {
+              console.error(`❌ Ошибка отправки пользователю ${username}:`, error);
+            }
+            
+            // Задержка между отправками
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+      }
+    }
+
+    console.log(`\n🔄 ========================================`);
+    console.log(`🔄 ПЕРЕСЧЕТ ЗАВЕРШЕН`);
+    console.log(`🔄 ========================================\n`);
+
+    res.json({ 
+      success: true, 
+      message: `Результаты успешно пересчитаны! Обновлено матчей: ${resetResult.changes}`,
+      matchesUpdated: resetResult.changes,
+      betsProcessed: bets.length
+    });
+
+  } catch (error) {
+    console.error("❌ Ошибка пересчета результатов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/clear-logs - Очистить файл логов (только для админа)
 app.post("/api/admin/clear-logs", (req, res) => {
   const { username } = req.body;
