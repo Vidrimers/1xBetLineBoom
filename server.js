@@ -12512,6 +12512,64 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
   }
 });
 
+// GET /api/admin/get-events-for-date - Получить список турниров для выбранной даты
+app.get("/api/admin/get-events-for-date", (req, res) => {
+  const { date } = req.query;
+
+  if (!date) {
+    return res.status(400).json({ error: "Не указана дата" });
+  }
+
+  try {
+    // Получаем все турниры для указанной даты с количеством матчей
+    const events = db.prepare(`
+      SELECT 
+        e.id as event_id,
+        e.name as event_name,
+        COUNT(*) as matches_count
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE DATE(m.match_date) = ?
+      GROUP BY e.id, e.name
+      ORDER BY e.name
+    `).all(date);
+
+    res.json({ events });
+  } catch (error) {
+    console.error("❌ Ошибка получения турниров:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/get-rounds-for-event - Получить список туров для выбранного турнира и даты
+app.get("/api/admin/get-rounds-for-event", (req, res) => {
+  const { eventId, date } = req.query;
+
+  if (!eventId || !date) {
+    return res.status(400).json({ error: "Не указан турнир или дата" });
+  }
+
+  try {
+    // Получаем все туры для указанного турнира и даты с количеством матчей
+    const rounds = db.prepare(`
+      SELECT 
+        m.round,
+        COUNT(*) as matches_count,
+        SUM(CASE WHEN m.status = 'finished' THEN 1 ELSE 0 END) as finished_count
+      FROM matches m
+      WHERE m.event_id = ?
+        AND DATE(m.match_date) = ?
+      GROUP BY m.round
+      ORDER BY m.round
+    `).all(eventId, date);
+
+    res.json({ rounds });
+  } catch (error) {
+    console.error("❌ Ошибка получения туров:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/recount-results - Пересчитать результаты для конкретной даты
 app.post("/api/admin/recount-results", async (req, res) => {
   const { username, date, round, sendToGroup, sendToUsers } = req.body;

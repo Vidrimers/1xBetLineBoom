@@ -8474,7 +8474,7 @@ async function sendCountingResults() {
 }
 
 // Открыть модалку пересчета
-function openRecountModal() {
+async function openRecountModal() {
   if (!canViewCounting()) {
     alert("У вас нет прав");
     return;
@@ -8484,8 +8484,98 @@ function openRecountModal() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('recountDate').value = today;
   
+  // Загружаем список турниров
+  await loadEventsForRecount(today);
+  
   document.getElementById('recountModal').style.display = 'flex';
 }
+
+// Загрузить список турниров для выбранной даты
+async function loadEventsForRecount(date) {
+  try {
+    const response = await fetch(`/api/admin/get-events-for-date?date=${date}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      const eventSelect = document.getElementById('recountEvent');
+      const roundSelect = document.getElementById('recountRound');
+      
+      // Очищаем списки
+      eventSelect.innerHTML = '<option value="">Выберите турнир...</option>';
+      roundSelect.innerHTML = '<option value="">Сначала выберите турнир...</option>';
+      roundSelect.disabled = true;
+      
+      // Добавляем турниры
+      if (data.events && data.events.length > 0) {
+        data.events.forEach(event => {
+          const option = document.createElement('option');
+          option.value = event.event_id;
+          option.textContent = `${event.event_name} (${event.matches_count} матчей)`;
+          eventSelect.appendChild(option);
+        });
+      } else {
+        eventSelect.innerHTML = '<option value="">Нет турниров для этой даты</option>';
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка загрузки турниров:", error);
+  }
+}
+
+// Загрузить список туров для выбранного турнира и даты
+async function loadRoundsForRecount(eventId, date) {
+  try {
+    const response = await fetch(`/api/admin/get-rounds-for-event?eventId=${eventId}&date=${date}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      const roundSelect = document.getElementById('recountRound');
+      
+      // Очищаем список
+      roundSelect.innerHTML = '<option value="">Выберите тур...</option>';
+      roundSelect.disabled = false;
+      
+      // Добавляем туры
+      if (data.rounds && data.rounds.length > 0) {
+        data.rounds.forEach(round => {
+          const option = document.createElement('option');
+          option.value = round.round;
+          option.textContent = `${round.round} (${round.matches_count} матчей, завершено: ${round.finished_count})`;
+          roundSelect.appendChild(option);
+        });
+      } else {
+        roundSelect.innerHTML = '<option value="">Нет туров для этого турнира</option>';
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка загрузки туров:", error);
+  }
+}
+
+// Обработчики изменения даты и турнира в модалке пересчета
+document.addEventListener('DOMContentLoaded', () => {
+  const recountDateInput = document.getElementById('recountDate');
+  if (recountDateInput) {
+    recountDateInput.addEventListener('change', (e) => {
+      loadEventsForRecount(e.target.value);
+    });
+  }
+  
+  const recountEventSelect = document.getElementById('recountEvent');
+  if (recountEventSelect) {
+    recountEventSelect.addEventListener('change', (e) => {
+      const eventId = e.target.value;
+      const date = document.getElementById('recountDate').value;
+      if (eventId && date) {
+        loadRoundsForRecount(eventId, date);
+      } else {
+        const roundSelect = document.getElementById('recountRound');
+        roundSelect.innerHTML = '<option value="">Сначала выберите турнир...</option>';
+        roundSelect.disabled = true;
+      }
+    });
+  }
+});
 
 // Закрыть модалку пересчета
 function closeRecountModal() {
@@ -8505,21 +8595,42 @@ async function confirmRecount() {
   }
 
   if (!round) {
-    await showCustomAlert("Укажите тур (например: Тур 8)", "Ошибка", "❌");
+    await showCustomAlert("Выберите тур", "Ошибка", "❌");
     return;
   }
 
+  // Форматируем дату для отображения
+  const dateObj = new Date(date);
+  const formattedDate = dateObj.toLocaleDateString('ru-RU');
+
+  // Формируем сообщение подтверждения
+  let confirmMessage = `<div style="text-align: left; line-height: 1.8;">
+    <p style="margin-bottom: 15px;"><strong>Вы уверены что хотите пересчитать результаты?</strong></p>
+    
+    <div style="background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 5px; margin-bottom: 15px;">
+      <div style="margin-bottom: 8px;">📅 <strong>Дата:</strong> ${formattedDate}</div>
+      <div>🏆 <strong>Тур:</strong> ${round}</div>
+    </div>
+    
+    <p style="margin-bottom: 10px;"><strong>Это действие:</strong></p>
+    <ul style="margin: 0; padding-left: 20px;">
+      <li>Сбросит результаты матчей</li>
+      <li>Пересчитает их заново</li>`;
+  
+  if (sendToGroup) {
+    confirmMessage += `\n      <li style="color: rgb(76, 175, 80);">✅ Отправит результаты в группу</li>`;
+  }
+  
+  if (sendToUsers) {
+    confirmMessage += `\n      <li style="color: rgb(76, 175, 80);">✅ Отправит результаты пользователям в ЛС</li>`;
+  }
+  
+  confirmMessage += `
+    </ul>
+  </div>`;
+
   // Подтверждение действия
-  const confirmed = confirm(
-    `⚠️ Вы уверены что хотите пересчитать результаты?\n\n` +
-    `📅 Дата: ${date}\n` +
-    `🏆 Тур: ${round}\n\n` +
-    `Это действие:\n` +
-    `1. Сбросит результаты матчей\n` +
-    `2. Пересчитает их заново\n` +
-    `3. ${sendToGroup ? 'Отправит результаты в группу\n' : ''}` +
-    `${sendToUsers ? '4. Отправит результаты пользователям в ЛС\n' : ''}`
-  );
+  const confirmed = await showCustomConfirm(confirmMessage, "Подтверждение пересчета", "⚠️");
 
   if (!confirmed) {
     return;
