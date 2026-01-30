@@ -3229,6 +3229,21 @@ async function placeScorePrediction(matchId, prediction) {
     if (yellowCardsInput) yellowCardsInput.disabled = true;
     if (redCardsInput) redCardsInput.disabled = true;
     
+    // Обновляем данные в объекте match чтобы при следующем рендере поля были disabled
+    const match = matches.find(m => m.id === matchId);
+    if (match) {
+      if (scoreTeam1 !== null && scoreTeam2 !== null) {
+        match.predicted_score_team1 = scoreTeam1;
+        match.predicted_score_team2 = scoreTeam2;
+      }
+      if (yellowCards !== null) {
+        match.predicted_yellow_cards = yellowCards;
+      }
+      if (redCards !== null) {
+        match.predicted_red_cards = redCards;
+      }
+    }
+    
     loadMyBets();
   } catch (error) {
     console.error("Ошибка при сохранении прогноза на счет:", error);
