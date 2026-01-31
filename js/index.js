@@ -14391,6 +14391,137 @@ function closeTournamentAnnouncementModal() {
   unlockBodyScroll();
 }
 
+// Открыть модальное окно объявления о новых функциях
+function openAnnouncementModal() {
+  document.getElementById('featureAnnouncementModal').style.display = 'flex';
+  lockBodyScroll();
+  
+  // Добавляем обработчик для предпросмотра
+  const titleInput = document.getElementById('announcementTitle');
+  const textInput = document.getElementById('announcementText');
+  const preview = document.getElementById('announcementPreviewText');
+  
+  function updatePreview() {
+    const title = titleInput.value.trim();
+    const text = textInput.value.trim();
+    
+    if (!title && !text) {
+      preview.innerHTML = 'Введите текст чтобы увидеть предпросмотр...';
+      return;
+    }
+    
+    let previewText = '';
+    if (title) {
+      previewText += `<b>${title}</b>\n\n`;
+    }
+    if (text) {
+      previewText += text;
+    }
+    
+    preview.innerHTML = previewText.replace(/\n/g, '<br>');
+  }
+  
+  titleInput.addEventListener('input', updatePreview);
+  textInput.addEventListener('input', updatePreview);
+  
+  updatePreview();
+}
+
+// Закрыть модальное окно объявления
+function closeAnnouncementModal() {
+  document.getElementById('featureAnnouncementModal').style.display = 'none';
+  unlockBodyScroll();
+  document.getElementById('featureAnnouncementForm').reset();
+  document.getElementById('announcementPreviewText').innerHTML = 'Введите текст чтобы увидеть предпросмотр...';
+}
+
+// Отправить объявление себе для проверки
+async function sendAnnouncementToSelf() {
+  const title = document.getElementById('announcementTitle').value.trim();
+  const text = document.getElementById('announcementText').value.trim();
+  
+  if (!title || !text) {
+    alert('Заполните все поля');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/admin/send-feature-announcement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        title,
+        text,
+        testMode: true
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      if (typeof showCustomAlert === 'function') {
+        showCustomAlert('Тестовое сообщение отправлено вам в Telegram', 'Успешно', '✅');
+      } else {
+        alert('Тестовое сообщение отправлено вам в Telegram');
+      }
+    } else {
+      alert(result.error || 'Ошибка при отправке');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    alert('Ошибка при отправке');
+  }
+}
+
+// Отправить объявление всем пользователям
+async function sendAnnouncementToAll() {
+  const title = document.getElementById('announcementTitle').value.trim();
+  const text = document.getElementById('announcementText').value.trim();
+  
+  if (!title || !text) {
+    alert('Заполните все поля');
+    return;
+  }
+  
+  if (!confirm('Отправить объявление всем пользователям с включенными уведомлениями?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/admin/send-feature-announcement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        title,
+        text,
+        testMode: false
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      closeAnnouncementModal();
+      if (typeof showCustomAlert === 'function') {
+        showCustomAlert(
+          `Объявление отправлено: ${result.successCount} успешно, ${result.errorCount} ошибок`,
+          'Успешно',
+          '✅'
+        );
+      } else {
+        alert(`Объявление отправлено: ${result.successCount} успешно, ${result.errorCount} ошибок`);
+      }
+    } else {
+      alert(result.error || 'Ошибка при отправке');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    alert('Ошибка при отправке');
+  }
+}
+
 // Отправить объявление о турнире админу
 async function sendTournamentAnnouncementToAdmin() {
   if (!window.tournamentAnnouncementData) {

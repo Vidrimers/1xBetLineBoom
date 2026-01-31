@@ -1213,6 +1213,27 @@
               >
                 🧪 Тесты
               </button>
+              <button
+                onclick="openAnnouncementModal()"
+                style="
+                  background: rgba(255, 87, 34, 0.7);
+                  color: #ffccbc;
+                  border: 1px solid #ff5722;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 140px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Отправить объявление о новых функциях всем пользователям"
+              >
+                📢 Объявление
+              </button>
               
               <!-- Утилиты для управления -->
               <button
@@ -4177,6 +4198,76 @@
               ❌ Отмена
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно объявления о новых функциях -->
+    <div id="featureAnnouncementModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'featureAnnouncementModal', closeAnnouncementModal)">
+      <div class="modal-content" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>📢 Объявление о новых функциях</h2>
+          <button class="modal-close" onclick="closeAnnouncementModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="featureAnnouncementForm">
+            <div class="form-group">
+              <label for="announcementTitle">Заголовок *</label>
+              <input
+                type="text"
+                id="announcementTitle"
+                placeholder="Например: Новые функции!"
+                required
+                style="width: 100%; padding: 8px; font-size: 0.95em"
+              />
+            </div>
+            <div class="form-group">
+              <label for="announcementText">Текст объявления *</label>
+              <textarea
+                id="announcementText"
+                placeholder="Опишите новые функции...&#10;&#10;Можно использовать:&#10;• Списки&#10;• Эмодзи 🎉&#10;• Несколько строк"
+                rows="8"
+                required
+                style="width: 100%; padding: 8px; font-size: 0.95em; line-height: 1.5;"
+              ></textarea>
+            </div>
+            <div style="background: rgba(56, 118, 235, 0.1); border: 1px solid rgba(56, 118, 235, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+              <div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 8px;">
+                💡 Предпросмотр:
+              </div>
+              <div id="announcementPreviewText" style="white-space: pre-wrap; line-height: 1.6; color: #e0e6f0; font-size: 0.95em;">
+                Введите текст чтобы увидеть предпросмотр...
+              </div>
+            </div>
+            <div class="form-actions" style="display: flex; gap: 10px;">
+              <button
+                type="button"
+                class="form-btn-preview"
+                onclick="sendAnnouncementToSelf()"
+                style="background: rgba(56, 118, 235, 0.7); border-color: #3876eb; flex: 1;"
+              >
+                📤 Отправить себе
+              </button>
+              <button
+                type="button"
+                class="form-btn-submit"
+                onclick="sendAnnouncementToAll()"
+                style="flex: 1;"
+              >
+                ✅ Отправить всем
+              </button>
+              <button
+                type="button"
+                class="form-btn-cancel"
+                onclick="closeAnnouncementModal()"
+                style="flex: 1;"
+              >
+                ❌ Отмена
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

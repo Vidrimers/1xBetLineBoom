@@ -10567,6 +10567,112 @@ app.post("/api/admin/send-tournament-announcement", async (req, res) => {
   }
 });
 
+// POST /api/admin/send-feature-announcement - Отправить объявление о новых функциях
+app.post("/api/admin/send-feature-announcement", async (req, res) => {
+  try {
+    const { username, title, text, testMode } = req.body;
+    
+    if (!username || !title || !text) {
+      return res.status(400).json({ error: "Недостаточно данных" });
+    }
+    
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    
+    // Проверяем что это админ
+    if (username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    
+    if (!TELEGRAM_BOT_TOKEN) {
+      return res.status(500).json({ error: "Telegram бот не настроен" });
+    }
+    
+    // Формируем красивое сообщение
+    const message = `🎉 <b>${title}</b>\n\n${text}\n\n━━━━━━━━━━━━━━━━━━━━\n\n💬 Приятной игры! 🎯`;
+    
+    if (testMode) {
+      // Отправляем только админу для проверки
+      const ADMIN_TELEGRAM_ID = process.env.TELEGRAM_ADMIN_ID;
+      
+      if (!ADMIN_TELEGRAM_ID) {
+        return res.status(500).json({ error: "TELEGRAM_ADMIN_ID не настроен" });
+      }
+      
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: ADMIN_TELEGRAM_ID,
+              text: `📝 <b>ТЕСТОВОЕ СООБЩЕНИЕ</b>\n\n${message}`,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+        
+        console.log(`✅ Тестовое объявление отправлено админу`);
+        return res.json({ success: true, message: "Тестовое сообщение отправлено" });
+      } catch (error) {
+        console.error("❌ Ошибка отправки тестового сообщения:", error);
+        return res.status(500).json({ error: "Не удалось отправить тестовое сообщение" });
+      }
+    }
+    
+    // Отправляем всем пользователям с включенными уведомлениями
+    const users = db.prepare(
+      `SELECT id, username, telegram_id 
+       FROM users 
+       WHERE telegram_id IS NOT NULL 
+       AND telegram_notifications_enabled = 1`
+    ).all();
+    
+    console.log(`📢 Отправка объявления "${title}" ${users.length} пользователям...`);
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const user of users) {
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: user.telegram_id,
+              text: message,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+        successCount++;
+        
+        // Небольшая задержка между отправками
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`⚠️ Не удалось отправить объявление пользователю ${user.username}:`, error.message);
+        errorCount++;
+      }
+    }
+    
+    console.log(`✅ Объявление "${title}" отправлено: ${successCount} успешно, ${errorCount} ошибок`);
+    
+    res.json({ 
+      success: true, 
+      successCount, 
+      errorCount,
+      message: `Объявление отправлено: ${successCount} успешно, ${errorCount} ошибок`
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при отправке объявления:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /api/admin/events/:eventId - Редактировать событие (только для админа)
 app.put("/api/admin/events/:eventId", (req, res) => {
   const { eventId } = req.params;
