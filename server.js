@@ -1427,6 +1427,104 @@ ${matchesList}
   }
 }
 
+// Функция для отправки объявления о турнире всем пользователям
+async function sendTournamentAnnouncementToUsers(eventId, name, description, startDate, endDate) {
+  try {
+    console.log(`📢 Отправка объявления о турнире "${name}" всем пользователям...`);
+    
+    // Получаем всех пользователей с привязанным Telegram
+    const users = db
+      .prepare(
+        `SELECT id, username, telegram_id FROM users WHERE telegram_id IS NOT NULL`
+      )
+      .all();
+    
+    console.log(`📢 Найдено ${users.length} пользователей с Telegram`);
+    
+    if (users.length === 0) {
+      return;
+    }
+    
+    // Форматируем даты
+    let dateText = '';
+    if (startDate && endDate) {
+      const start = new Date(startDate).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const end = new Date(endDate).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      dateText = `📅 Даты: ${start} - ${end}`;
+    } else if (startDate) {
+      const start = new Date(startDate).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      dateText = `📅 Начало: ${start}`;
+    }
+    
+    // Формируем сообщение
+    let message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
+    message += `<b>${name}</b>\n\n`;
+    
+    if (description) {
+      message += `📝 ${description}\n\n`;
+    }
+    
+    if (dateText) {
+      message += `${dateText}\n\n`;
+    }
+    
+    message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
+    message += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+    
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    
+    if (!TELEGRAM_BOT_TOKEN) {
+      console.warn("⚠️ TELEGRAM_BOT_TOKEN не настроен");
+      return;
+    }
+    
+    // Отправляем каждому пользователю
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const user of users) {
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: user.telegram_id,
+              text: message,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+        successCount++;
+        
+        // Небольшая задержка между отправками
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`⚠️ Не удалось отправить объявление пользователю ${user.username}:`, error);
+        errorCount++;
+      }
+    }
+    
+    console.log(`✅ Объявление о турнире "${name}" отправлено: ${successCount} успешно, ${errorCount} ошибок`);
+  } catch (error) {
+    console.error("❌ Ошибка при отправке объявления пользователям:", error);
+    throw error;
+  }
+}
+
 // Функция для проверки и отправки уведомлений о начале матча
 async function checkAndNotifyMatchStart() {
   try {
@@ -2417,6 +2515,20 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (match_id) REFERENCES matches(id),
     UNIQUE(user_id, match_id)
+  )
+`);
+
+// Таблица для хранения ожидающих публикации объявлений о турнирах
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pending_announcements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    start_date TEXT,
+    end_date TEXT,
+    message TEXT NOT NULL,
+    username TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -10319,6 +10431,14 @@ app.post("/api/admin/events", async (req, res) => {
       });
     }
 
+    // Отправляем объявление о турнире всем пользователям
+    try {
+      await sendTournamentAnnouncementToUsers(result.lastInsertRowid, name, description, start_date, end_date);
+    } catch (error) {
+      console.error("❌ Ошибка отправки объявления пользователям:", error);
+      // Не возвращаем ошибку, турнир уже создан
+    }
+
     res.json({
       id: result.lastInsertRowid,
       name,
@@ -10374,7 +10494,15 @@ app.post("/api/admin/send-tournament-announcement", async (req, res) => {
       return res.status(403).json({ error: "Недостаточно прав для отправки объявлений" });
     }
     
-    // Отправляем сообщение админу в Telegram
+    // Сохраняем объявление в БД
+    const result = db.prepare(`
+      INSERT INTO pending_announcements (name, description, start_date, end_date, message, username)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(name, description || null, startDate || null, endDate || null, message, username);
+    
+    const announcementId = result.lastInsertRowid;
+    
+    // Отправляем сообщение админу в Telegram с инлайн-кнопкой
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const ADMIN_TELEGRAM_ID = process.env.TELEGRAM_ADMIN_ID;
     
@@ -10384,10 +10512,10 @@ app.post("/api/admin/send-tournament-announcement", async (req, res) => {
         `━━━━━━━━━━━━━━━━━━━━\n` +
         `${message}\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `Проверьте и опубликуйте объявление, если всё в порядке.`;
+        `Нажмите кнопку ниже чтобы опубликовать объявление всем пользователям.`;
       
       try {
-        await fetch(
+        const response = await fetch(
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
           {
             method: "POST",
@@ -10396,11 +10524,33 @@ app.post("/api/admin/send-tournament-announcement", async (req, res) => {
               chat_id: ADMIN_TELEGRAM_ID,
               text: adminMessage,
               parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: "✅ Опубликовать всем",
+                      callback_data: `publish_${announcementId}`
+                    }
+                  ],
+                  [
+                    {
+                      text: "❌ Отклонить",
+                      callback_data: `reject_${announcementId}`
+                    }
+                  ]
+                ]
+              }
             }),
           }
         );
         
-        console.log(`✅ Объявление о турнире "${name}" отправлено админу от ${username}`);
+        if (!response.ok) {
+          const error = await response.json();
+          console.error("❌ Ошибка Telegram API:", error);
+          return res.status(500).json({ error: "Не удалось отправить сообщение админу" });
+        }
+        
+        console.log(`✅ Объявление о турнире "${name}" (ID: ${announcementId}) отправлено админу от ${username}`);
       } catch (error) {
         console.error("❌ Ошибка отправки объявления админу:", error);
         return res.status(500).json({ error: "Не удалось отправить сообщение админу" });

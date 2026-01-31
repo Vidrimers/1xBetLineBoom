@@ -2018,6 +2018,160 @@ export function startBot() {
     }
   });
 
+  // ===== ОБРАБОТЧИК CALLBACK QUERY (ИНЛАЙН-КНОПКИ) =====
+  bot.on("callback_query", async (callbackQuery) => {
+    const msg = callbackQuery.message;
+    const data = callbackQuery.data;
+    const chatId = msg.chat.id;
+    
+    console.log(`📲 Получен callback: ${data}`);
+    
+    try {
+      // Обработка публикации объявления о турнире
+      if (data.startsWith("publish_")) {
+        const announcementId = data.replace("publish_", "");
+        
+        console.log(`📢 Публикация объявления ID: ${announcementId}`);
+        
+        // Загружаем данные объявления из БД
+        const Database = (await import("better-sqlite3")).default;
+        const db = new Database("1xBetLineBoom.db");
+        
+        const announcement = db.prepare(
+          `SELECT * FROM pending_announcements WHERE id = ?`
+        ).get(announcementId);
+        
+        if (!announcement) {
+          await bot.answerCallbackQuery(callbackQuery.id, {
+            text: "❌ Объявление не найдено"
+          });
+          db.close();
+          return;
+        }
+        
+        // Получаем всех пользователей
+        const users = db.prepare(
+          `SELECT id, username, telegram_id FROM users WHERE telegram_id IS NOT NULL`
+        ).all();
+        
+        db.close();
+        
+        console.log(`📢 Найдено ${users.length} пользователей для рассылки`);
+        
+        // Форматируем даты
+        let dateText = '';
+        if (announcement.start_date && announcement.end_date) {
+          const start = new Date(announcement.start_date).toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          const end = new Date(announcement.end_date).toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          dateText = `📅 Даты: ${start} - ${end}`;
+        } else if (announcement.start_date) {
+          const start = new Date(announcement.start_date).toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          dateText = `📅 Начало: ${start}`;
+        }
+        
+        // Формируем сообщение
+        let message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
+        message += `<b>${announcement.name}</b>\n\n`;
+        
+        if (announcement.description) {
+          message += `📝 ${announcement.description}\n\n`;
+        }
+        
+        if (dateText) {
+          message += `${dateText}\n\n`;
+        }
+        
+        message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
+        message += `🔗 <a href="${PUBLIC_URL}">Открыть сайт</a>`;
+        
+        // Отправляем каждому пользователю
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const user of users) {
+          try {
+            await bot.sendMessage(user.telegram_id, message, {
+              parse_mode: "HTML"
+            });
+            successCount++;
+            
+            // Небольшая задержка между отправками
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (error) {
+            console.error(`⚠️ Не удалось отправить объявление пользователю ${user.username}:`, error.message);
+            errorCount++;
+          }
+        }
+        
+        // Удаляем объявление из БД после публикации
+        const db2 = new Database("1xBetLineBoom.db");
+        db2.prepare(`DELETE FROM pending_announcements WHERE id = ?`).run(announcementId);
+        db2.close();
+        
+        // Отвечаем админу
+        await bot.answerCallbackQuery(callbackQuery.id, {
+          text: `✅ Объявление опубликовано: ${successCount} успешно, ${errorCount} ошибок`
+        });
+        
+        // Обновляем сообщение админа
+        await bot.editMessageText(
+          `${msg.text}\n\n✅ <b>ОПУБЛИКОВАНО</b>\n📊 Отправлено: ${successCount} пользователям\n❌ Ошибок: ${errorCount}`,
+          {
+            chat_id: chatId,
+            message_id: msg.message_id,
+            parse_mode: "HTML"
+          }
+        );
+        
+        console.log(`✅ Объявление о турнире "${announcement.name}" опубликовано: ${successCount} успешно, ${errorCount} ошибок`);
+      }
+      
+      // Обработка отклонения объявления
+      else if (data.startsWith("reject_")) {
+        const announcementId = data.replace("reject_", "");
+        
+        // Удаляем объявление из БД
+        const Database = (await import("better-sqlite3")).default;
+        const db = new Database("1xBetLineBoom.db");
+        db.prepare(`DELETE FROM pending_announcements WHERE id = ?`).run(announcementId);
+        db.close();
+        
+        await bot.answerCallbackQuery(callbackQuery.id, {
+          text: "❌ Объявление отклонено"
+        });
+        
+        // Обновляем сообщение админа
+        await bot.editMessageText(
+          `${msg.text}\n\n❌ <b>ОТКЛОНЕНО</b>`,
+          {
+            chat_id: chatId,
+            message_id: msg.message_id,
+            parse_mode: "HTML"
+          }
+        );
+        
+        console.log(`❌ Объявление ID ${announcementId} отклонено админом`);
+      }
+    } catch (error) {
+      console.error("❌ Ошибка обработки callback:", error);
+      await bot.answerCallbackQuery(callbackQuery.id, {
+        text: "❌ Ошибка обработки"
+      });
+    }
+  });
+
   // Обработчик ошибок polling — логируем подробно и при EFATAL пытаемся восстановить соединение
   // перед окончательным выходом. Это помогает отличать временные разрывы (socket hang up)
   // от постоянных проблем (например, DNS или отсутствие интернета).
