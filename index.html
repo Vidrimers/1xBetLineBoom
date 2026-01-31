@@ -1811,6 +1811,14 @@
                 </button>
                 <button
                   type="button"
+                  class="form-btn-preview"
+                  onclick="previewTournamentAnnouncement(event)"
+                  style="background: rgba(56, 118, 235, 0.7); border-color: #3876eb;"
+                >
+                  📤 Отправить админу
+                </button>
+                <button
+                  type="button"
                   class="form-btn-cancel"
                   onclick="closeCreateEventModal()"
                 >
@@ -4134,6 +4142,41 @@
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно предпросмотра объявления о турнире -->
+    <div id="tournamentAnnouncementModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'tournamentAnnouncementModal', closeTournamentAnnouncementModal)">
+      <div class="modal-content" style="max-width: 550px">
+        <div class="modal-header">
+          <h2>📢 Предпросмотр объявления</h2>
+          <button class="modal-close" onclick="closeTournamentAnnouncementModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="background: rgba(56, 118, 235, 0.1); border: 1px solid rgba(56, 118, 235, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+            <div id="announcementPreview" style="white-space: pre-wrap; line-height: 1.6; color: #e0e6f0;">
+              <!-- Предпросмотр сообщения будет здесь -->
+            </div>
+          </div>
+          <div class="form-actions">
+            <button
+              type="button"
+              class="form-btn-submit"
+              onclick="sendTournamentAnnouncementToAdmin()"
+            >
+              📤 Отправить админу
+            </button>
+            <button
+              type="button"
+              class="form-btn-cancel"
+              onclick="closeTournamentAnnouncementModal()"
+            >
+              ❌ Отмена
+            </button>
+          </div>
         </div>
       </div>
     </div>

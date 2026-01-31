@@ -14308,6 +14308,124 @@ function closeCreateEventModal() {
     .removeEventListener("change", handleCreateEventIconChange);
 }
 
+// Предпросмотр объявления о турнире
+function previewTournamentAnnouncement(event) {
+  event.preventDefault();
+  
+  // Собираем данные турнира
+  const name = document.getElementById("eventName").value.trim();
+  const description = document.getElementById("eventDescription").value.trim();
+  const startDate = document.getElementById("eventDate").value;
+  const endDate = document.getElementById("eventEndDate").value;
+  
+  if (!name) {
+    alert('Введите название турнира');
+    return;
+  }
+  
+  // Форматируем даты
+  let dateText = '';
+  if (startDate && endDate) {
+    const start = new Date(startDate).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const end = new Date(endDate).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    dateText = `📅 Даты: ${start} - ${end}`;
+  } else if (startDate) {
+    const start = new Date(startDate).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    dateText = `📅 Начало: ${start}`;
+  }
+  
+  // Формируем сообщение
+  let message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
+  message += `<b>${name}</b>\n\n`;
+  
+  if (description) {
+    message += `📝 ${description}\n\n`;
+  }
+  
+  if (dateText) {
+    message += `${dateText}\n\n`;
+  }
+  
+  message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
+  message += `🔗 <a href="http://${window.location.hostname}:${window.location.port}">Открыть сайт</a>`;
+  
+  // Показываем предпросмотр (конвертируем HTML в читаемый текст)
+  const previewText = message
+    .replace(/<b>/g, '**')
+    .replace(/<\/b>/g, '**')
+    .replace(/<a href="[^"]*">/g, '')
+    .replace(/<\/a>/g, '')
+    .replace(/\n/g, '\n');
+  
+  document.getElementById('announcementPreview').innerHTML = previewText.replace(/\n/g, '<br>');
+  
+  // Сохраняем данные для отправки
+  window.tournamentAnnouncementData = {
+    name,
+    description,
+    startDate,
+    endDate,
+    message
+  };
+  
+  // Открываем модальное окно предпросмотра
+  document.getElementById('tournamentAnnouncementModal').style.display = 'flex';
+  lockBodyScroll();
+}
+
+// Закрыть модальное окно предпросмотра объявления
+function closeTournamentAnnouncementModal() {
+  document.getElementById('tournamentAnnouncementModal').style.display = 'none';
+  unlockBodyScroll();
+}
+
+// Отправить объявление о турнире админу
+async function sendTournamentAnnouncementToAdmin() {
+  if (!window.tournamentAnnouncementData) {
+    alert('Ошибка: данные турнира не найдены');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/admin/send-tournament-announcement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        ...window.tournamentAnnouncementData
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      closeTournamentAnnouncementModal();
+      if (typeof showCustomAlert === 'function') {
+        showCustomAlert('Объявление отправлено админу на проверку', 'Успешно', '✅');
+      } else {
+        alert('Объявление отправлено админу на проверку');
+      }
+    } else {
+      alert(result.error || 'Ошибка при отправке объявления');
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    alert('Ошибка при отправке объявления');
+  }
+}
+
 // Открыть модальное окно редактирования турнира
 function openEditEventModal(eventId) {
   console.log("🔧 openEditEventModal called with eventId:", eventId);

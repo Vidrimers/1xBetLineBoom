@@ -10341,6 +10341,82 @@ app.post("/api/admin/events", async (req, res) => {
   }
 });
 
+// POST /api/admin/send-tournament-announcement - Отправить объявление о турнире админу на проверку
+app.post("/api/admin/send-tournament-announcement", async (req, res) => {
+  try {
+    const { username, name, description, startDate, endDate, message } = req.body;
+    
+    if (!username || !name || !message) {
+      return res.status(400).json({ error: "Недостаточно данных" });
+    }
+    
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    
+    // Проверяем права (админ или модератор с правами)
+    const isAdmin = username === ADMIN_DB_NAME;
+    let hasPermission = isAdmin;
+    
+    if (!isAdmin) {
+      // Проверяем права модератора
+      const moderator = db.prepare(`
+        SELECT permissions FROM moderators 
+        WHERE user_id = (SELECT id FROM users WHERE username = ?)
+      `).get(username);
+      
+      if (moderator) {
+        const permissions = JSON.parse(moderator.permissions || "[]");
+        hasPermission = permissions.includes("create_tournaments");
+      }
+    }
+    
+    if (!hasPermission) {
+      console.log(`❌ Пользователь ${username} попытался отправить объявление без прав`);
+      return res.status(403).json({ error: "Недостаточно прав для отправки объявлений" });
+    }
+    
+    // Отправляем сообщение админу в Telegram
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const ADMIN_TELEGRAM_ID = process.env.TELEGRAM_ADMIN_ID;
+    
+    if (TELEGRAM_BOT_TOKEN && ADMIN_TELEGRAM_ID) {
+      const adminMessage = `📢 <b>ЗАПРОС НА ПУБЛИКАЦИЮ ТУРНИРА</b>\n\n` +
+        `👤 От ${isAdmin ? 'админа' : 'модератора'}: <b>${username}</b>\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `${message}\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Проверьте и опубликуйте объявление, если всё в порядке.`;
+      
+      try {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: ADMIN_TELEGRAM_ID,
+              text: adminMessage,
+              parse_mode: "HTML",
+            }),
+          }
+        );
+        
+        console.log(`✅ Объявление о турнире "${name}" отправлено админу от ${username}`);
+      } catch (error) {
+        console.error("❌ Ошибка отправки объявления админу:", error);
+        return res.status(500).json({ error: "Не удалось отправить сообщение админу" });
+      }
+    } else {
+      console.warn("⚠️ TELEGRAM_BOT_TOKEN или TELEGRAM_ADMIN_ID не настроены");
+      return res.status(500).json({ error: "Telegram бот не настроен" });
+    }
+    
+    res.json({ success: true, message: "Объявление отправлено админу" });
+  } catch (error) {
+    console.error("❌ Ошибка при отправке объявления:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /api/admin/events/:eventId - Редактировать событие (только для админа)
 app.put("/api/admin/events/:eventId", (req, res) => {
   const { eventId } = req.params;
