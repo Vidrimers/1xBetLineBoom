@@ -7576,6 +7576,108 @@ function closeBugReportModal() {
   }
 }
 
+// Открыть модальное окно детальных настроек уведомлений
+async function openDetailedNotificationsModal() {
+  if (!currentUser) {
+    await showCustomAlert("Войдите в систему", "Ошибка", "❌");
+    return;
+  }
+
+  // Проверяем привязку Telegram
+  if (!currentUser.telegram_username) {
+    await showCustomAlert(
+      "Для настройки уведомлений необходимо привязать Telegram аккаунт.\n\nПерейдите в настройки профиля и свяжите свой аккаунт с ботом.",
+      "Telegram не привязан",
+      "📱"
+    );
+    return;
+  }
+
+  const modal = document.getElementById("detailedNotificationsModal");
+  if (modal) {
+    // Загружаем текущие настройки
+    await loadDetailedNotificationSettings();
+    
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = "flex";
+  }
+}
+
+// Закрыть модальное окно детальных настроек уведомлений
+function closeDetailedNotificationsModal() {
+  const modal = document.getElementById("detailedNotificationsModal");
+  if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
+    modal.style.display = "none";
+  }
+}
+
+// Загрузить детальные настройки уведомлений
+async function loadDetailedNotificationSettings() {
+  if (!currentUser) return;
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/notification-settings`);
+    
+    if (response.ok) {
+      const settings = await response.json();
+      
+      // Устанавливаем значения чекбоксов
+      document.getElementById("notifMatchReminders").checked = settings.match_reminders !== false;
+      document.getElementById("notifTournamentAnnouncements").checked = settings.tournament_announcements !== false;
+      document.getElementById("notifMatchResults").checked = settings.match_results !== false;
+      document.getElementById("notifSystemMessages").checked = settings.system_messages !== false;
+    }
+  } catch (error) {
+    console.error("Ошибка загрузки настроек уведомлений:", error);
+  }
+}
+
+// Сохранить детальные настройки уведомлений
+async function saveDetailedNotificationSettings() {
+  if (!currentUser) return;
+
+  const settings = {
+    match_reminders: document.getElementById("notifMatchReminders").checked,
+    tournament_announcements: document.getElementById("notifTournamentAnnouncements").checked,
+    match_results: document.getElementById("notifMatchResults").checked,
+    system_messages: document.getElementById("notifSystemMessages").checked,
+  };
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/notification-settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+
+    if (response.ok) {
+      await showCustomAlert(
+        "Настройки уведомлений успешно сохранены!",
+        "Успешно",
+        "✅"
+      );
+      closeDetailedNotificationsModal();
+    } else {
+      const error = await response.json();
+      await showCustomAlert(
+        error.error || "Ошибка при сохранении настроек",
+        "Ошибка",
+        "❌"
+      );
+    }
+  } catch (error) {
+    console.error("Ошибка сохранения настроек уведомлений:", error);
+    await showCustomAlert(
+      "Ошибка при сохранении настроек",
+      "Ошибка",
+      "❌"
+    );
+  }
+}
+
 // Отправить багрепорт
 async function sendBugReport() {
   if (!currentUser) {

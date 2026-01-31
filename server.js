@@ -2753,6 +2753,21 @@ db.exec(`
   )
 `);
 
+// Таблица детальных настроек уведомлений пользователя
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_notification_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    match_reminders INTEGER DEFAULT 1,
+    tournament_announcements INTEGER DEFAULT 1,
+    match_results INTEGER DEFAULT 1,
+    system_messages INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )
+`);
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)
@@ -10601,6 +10616,77 @@ app.delete("/api/user/:userId/event/:eventId/reminders", async (req, res) => {
         console.error("Ошибка отправки уведомления об удалении напоминаний:", error);
       }
     }
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/user/:userId/notification-settings - Получить детальные настройки уведомлений
+app.get("/api/user/:userId/notification-settings", (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Получаем настройки или возвращаем значения по умолчанию
+    let settings = db.prepare(`
+      SELECT match_reminders, tournament_announcements, match_results, system_messages
+      FROM user_notification_settings
+      WHERE user_id = ?
+    `).get(userId);
+    
+    // Если настроек нет, возвращаем значения по умолчанию
+    if (!settings) {
+      settings = {
+        match_reminders: 1,
+        tournament_announcements: 1,
+        match_results: 1,
+        system_messages: 1
+      };
+    }
+    
+    // Преобразуем в boolean
+    res.json({
+      match_reminders: settings.match_reminders === 1,
+      tournament_announcements: settings.tournament_announcements === 1,
+      match_results: settings.match_results === 1,
+      system_messages: settings.system_messages === 1
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/:userId/notification-settings - Сохранить детальные настройки уведомлений
+app.post("/api/user/:userId/notification-settings", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { match_reminders, tournament_announcements, match_results, system_messages } = req.body;
+    
+    // Проверяем существование пользователя
+    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    
+    // Сохраняем или обновляем настройки
+    db.prepare(`
+      INSERT INTO user_notification_settings (user_id, match_reminders, tournament_announcements, match_results, system_messages, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) 
+      DO UPDATE SET 
+        match_reminders = excluded.match_reminders,
+        tournament_announcements = excluded.tournament_announcements,
+        match_results = excluded.match_results,
+        system_messages = excluded.system_messages,
+        updated_at = CURRENT_TIMESTAMP
+    `).run(
+      userId,
+      match_reminders ? 1 : 0,
+      tournament_announcements ? 1 : 0,
+      match_results ? 1 : 0,
+      system_messages ? 1 : 0
+    );
     
     res.json({ success: true });
   } catch (error) {
