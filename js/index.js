@@ -7626,6 +7626,7 @@ async function loadDetailedNotificationSettings() {
       
       // Устанавливаем значения чекбоксов
       document.getElementById("notifMatchReminders").checked = settings.match_reminders !== false;
+      document.getElementById("notifOnlyActiveTournaments").checked = settings.only_active_tournaments === true;
       document.getElementById("notifTournamentAnnouncements").checked = settings.tournament_announcements !== false;
       document.getElementById("notifMatchResults").checked = settings.match_results !== false;
       document.getElementById("notifSystemMessages").checked = settings.system_messages !== false;
@@ -7641,6 +7642,7 @@ async function saveDetailedNotificationSettings() {
 
   const settings = {
     match_reminders: document.getElementById("notifMatchReminders").checked,
+    only_active_tournaments: document.getElementById("notifOnlyActiveTournaments").checked,
     tournament_announcements: document.getElementById("notifTournamentAnnouncements").checked,
     match_results: document.getElementById("notifMatchResults").checked,
     system_messages: document.getElementById("notifSystemMessages").checked,

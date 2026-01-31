@@ -2759,6 +2759,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL UNIQUE,
     match_reminders INTEGER DEFAULT 1,
+    only_active_tournaments INTEGER DEFAULT 0,
     tournament_announcements INTEGER DEFAULT 1,
     match_results INTEGER DEFAULT 1,
     system_messages INTEGER DEFAULT 1,
@@ -10630,7 +10631,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
     
     // Получаем настройки или возвращаем значения по умолчанию
     let settings = db.prepare(`
-      SELECT match_reminders, tournament_announcements, match_results, system_messages
+      SELECT match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
       FROM user_notification_settings
       WHERE user_id = ?
     `).get(userId);
@@ -10639,6 +10640,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
     if (!settings) {
       settings = {
         match_reminders: 1,
+        only_active_tournaments: 0,
         tournament_announcements: 1,
         match_results: 1,
         system_messages: 1
@@ -10648,6 +10650,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
     // Преобразуем в boolean
     res.json({
       match_reminders: settings.match_reminders === 1,
+      only_active_tournaments: settings.only_active_tournaments === 1,
       tournament_announcements: settings.tournament_announcements === 1,
       match_results: settings.match_results === 1,
       system_messages: settings.system_messages === 1
@@ -10661,7 +10664,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
 app.post("/api/user/:userId/notification-settings", (req, res) => {
   try {
     const { userId } = req.params;
-    const { match_reminders, tournament_announcements, match_results, system_messages } = req.body;
+    const { match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages } = req.body;
     
     // Проверяем существование пользователя
     const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
@@ -10671,11 +10674,12 @@ app.post("/api/user/:userId/notification-settings", (req, res) => {
     
     // Сохраняем или обновляем настройки
     db.prepare(`
-      INSERT INTO user_notification_settings (user_id, match_reminders, tournament_announcements, match_results, system_messages, updated_at)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO user_notification_settings (user_id, match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(user_id) 
       DO UPDATE SET 
         match_reminders = excluded.match_reminders,
+        only_active_tournaments = excluded.only_active_tournaments,
         tournament_announcements = excluded.tournament_announcements,
         match_results = excluded.match_results,
         system_messages = excluded.system_messages,
@@ -10683,6 +10687,7 @@ app.post("/api/user/:userId/notification-settings", (req, res) => {
     `).run(
       userId,
       match_reminders ? 1 : 0,
+      only_active_tournaments ? 1 : 0,
       tournament_announcements ? 1 : 0,
       match_results ? 1 : 0,
       system_messages ? 1 : 0
