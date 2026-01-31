@@ -14415,7 +14415,28 @@ function openAnnouncementModal() {
       previewText += `<b>${title}</b>\n\n`;
     }
     if (text) {
-      previewText += text;
+      // Применяем то же форматирование что и на сервере
+      let formatted = text;
+      
+      // *текст* → жирный
+      formatted = formatted.replace(/\*([^*]+)\*/g, '<b>$1</b>');
+      
+      // _текст_ → курсив
+      formatted = formatted.replace(/_([^_]+)_/g, '<i>$1</i>');
+      
+      // `текст` → моноширинный
+      formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px;">$1</code>');
+      
+      // Списки с • или -
+      formatted = formatted.replace(/^[•\-]\s+(.+)$/gm, '  ▪️ $1');
+      
+      // Цифровые списки
+      formatted = formatted.replace(/^(\d+)\.\s+(.+)$/gm, '  <b>$1.</b> $2');
+      
+      // Подпункты
+      formatted = formatted.replace(/^\s{2,}([•\-])\s+(.+)$/gm, '     ◦ $2');
+      
+      previewText += formatted;
     }
     
     preview.innerHTML = previewText.replace(/\n/g, '<br>');
