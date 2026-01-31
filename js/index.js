@@ -15180,6 +15180,8 @@ async function submitCreateEvent(event) {
     start_date: document.getElementById("eventDate").value || null,
     end_date: document.getElementById("eventEndDate").value || null,
     team_file: document.getElementById("eventTeamFile").value || null,
+    sendToUsers: document.getElementById("sendToUsersCheckbox").checked,
+    sendToGroup: document.getElementById("sendToGroupCheckbox").checked,
   };
 
   // Определяем иконку

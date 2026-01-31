@@ -1525,6 +1525,98 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
   }
 }
 
+// Функция для отправки объявления о турнире в группу
+async function notifyTournamentToGroup(eventId, name, description, startDate, endDate) {
+  try {
+    console.log(`📢 Отправка объявления о турнире "${name}" в группу...`);
+    
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+    const THREAD_ID = process.env.THREAD_ID;
+    
+    if (!TELEGRAM_BOT_TOKEN) {
+      console.warn("⚠️ TELEGRAM_BOT_TOKEN не настроен");
+      return;
+    }
+    
+    if (!TELEGRAM_CHAT_ID) {
+      console.warn("⚠️ TELEGRAM_CHAT_ID не настроен");
+      return;
+    }
+    
+    // Форматируем даты
+    let dateText = '';
+    if (startDate && endDate) {
+      const start = new Date(startDate).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const end = new Date(endDate).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      dateText = `📅 Даты: ${start} - ${end}`;
+    } else if (startDate) {
+      const start = new Date(startDate).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      dateText = `📅 Начало: ${start}`;
+    }
+    
+    // Формируем сообщение
+    let message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
+    message += `<b>${name}</b>\n\n`;
+    
+    if (description) {
+      message += `📝 ${description}\n\n`;
+    }
+    
+    if (dateText) {
+      message += `${dateText}\n\n`;
+    }
+    
+    message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
+    message += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+    
+    // Формируем параметры запроса
+    const requestBody = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: "HTML",
+    };
+    
+    // Добавляем thread_id если он указан
+    if (THREAD_ID) {
+      requestBody.message_thread_id = parseInt(THREAD_ID);
+    }
+    
+    // Отправляем в группу
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
+    
+    const result = await response.json();
+    
+    if (result.ok) {
+      console.log(`✅ Объявление о турнире "${name}" отправлено в группу`);
+    } else {
+      console.error(`❌ Ошибка отправки в группу:`, result);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при отправке объявления в группу:", error);
+    throw error;
+  }
+}
+
 // Функция для проверки и отправки уведомлений о начале матча
 async function checkAndNotifyMatchStart() {
   try {
@@ -10657,6 +10749,8 @@ app.post("/api/admin/events", async (req, res) => {
     icon,
     background_color,
     team_file,
+    sendToUsers,
+    sendToGroup,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -10720,12 +10814,24 @@ app.post("/api/admin/events", async (req, res) => {
       });
     }
 
-    // Отправляем объявление о турнире всем пользователям
-    try {
-      await sendTournamentAnnouncementToUsers(result.lastInsertRowid, name, description, start_date, end_date);
-    } catch (error) {
-      console.error("❌ Ошибка отправки объявления пользователям:", error);
-      // Не возвращаем ошибку, турнир уже создан
+    // Отправляем объявление о турнире пользователям (если чекбокс проставлен)
+    if (sendToUsers) {
+      try {
+        await sendTournamentAnnouncementToUsers(result.lastInsertRowid, name, description, start_date, end_date);
+      } catch (error) {
+        console.error("❌ Ошибка отправки объявления пользователям:", error);
+        // Не возвращаем ошибку, турнир уже создан
+      }
+    }
+
+    // Отправляем объявление в группу (если чекбокс проставлен)
+    if (sendToGroup) {
+      try {
+        await notifyTournamentToGroup(result.lastInsertRowid, name, description, start_date, end_date);
+      } catch (error) {
+        console.error("❌ Ошибка отправки объявления в группу:", error);
+        // Не возвращаем ошибку, турнир уже создан
+      }
     }
 
     res.json({
