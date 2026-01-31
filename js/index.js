@@ -15506,11 +15506,29 @@ async function showLiveEventMatches(eventId) {
       </div>
     `;
     
+    // Сохраняем содержимое контейнера завершенных матчей перед обновлением
+    const existingCompletedDaysContainer = document.getElementById('completedDaysContainer');
+    const savedCompletedDaysHTML = existingCompletedDaysContainer ? existingCompletedDaysContainer.innerHTML : null;
+    
     container.innerHTML = html;
     
-    // Загружаем завершенные матчи отдельно (с принудительной перезагрузкой)
-    completedDaysData = null; // Очищаем кэш
-    loadCompletedDays(eventId, true);
+    // Восстанавливаем содержимое контейнера завершенных матчей после обновления
+    if (savedCompletedDaysHTML) {
+      const newCompletedDaysContainer = document.getElementById('completedDaysContainer');
+      if (newCompletedDaysContainer) {
+        newCompletedDaysContainer.innerHTML = savedCompletedDaysHTML;
+        console.log('✅ Восстановлено содержимое completedDaysContainer');
+      }
+    }
+    
+    // Загружаем завершенные матчи отдельно
+    // При первой загрузке - с принудительной перезагрузкой
+    // При автообновлении - не перезагружаем, если уже есть данные
+    const isFirstLoad = !completedDaysData || !savedCompletedDaysHTML;
+    if (isFirstLoad) {
+      completedDaysData = null; // Очищаем кэш только при первой загрузке
+      loadCompletedDays(eventId, true);
+    }
     
     // Обновляем звездочки после отрисовки
     updateFavoriteStars();
@@ -15553,6 +15571,19 @@ let completedDaysData = null; // Сохраняем данные с сервер
 
 async function loadCompletedDays(eventId, forceReload = false) {
   try {
+    // Сохраняем состояние открытых секций перед перезагрузкой
+    let openSections = null;
+    if (completedDaysData && !forceReload) {
+      openSections = new Set();
+      completedDaysData.completedDays?.forEach(day => {
+        const dayId = `day-${day.date}`;
+        const container = document.getElementById(`${dayId}Container`);
+        if (container && container.style.display !== 'none') {
+          openSections.add(dayId);
+        }
+      });
+    }
+    
     // Принудительная перезагрузка или первая загрузка
     if (forceReload || !completedDaysData) {
       const response = await fetch(`/api/yesterday-matches?eventId=${eventId}`);
@@ -15566,7 +15597,7 @@ async function loadCompletedDays(eventId, forceReload = false) {
       console.log('📥 Загружены завершенные дни:', completedDaysData.completedDays?.length || 0);
     }
     
-    renderCompletedDays(eventId);
+    renderCompletedDays(eventId, openSections);
     
   } catch (error) {
     console.error('Ошибка загрузки завершенных дней:', error);
