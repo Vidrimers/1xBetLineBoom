@@ -2792,6 +2792,20 @@ db.exec(`
   )
 `);
 
+// Миграция: добавление колонки only_active_tournaments если её нет
+try {
+  const tableInfo = db.prepare("PRAGMA table_info(user_notification_settings)").all();
+  const hasOnlyActiveTournaments = tableInfo.some(col => col.name === 'only_active_tournaments');
+  
+  if (!hasOnlyActiveTournaments) {
+    console.log("🔄 Миграция: добавление колонки only_active_tournaments в user_notification_settings");
+    db.exec(`ALTER TABLE user_notification_settings ADD COLUMN only_active_tournaments INTEGER DEFAULT 0`);
+    console.log("✅ Миграция завершена");
+  }
+} catch (error) {
+  console.error("❌ Ошибка миграции user_notification_settings:", error);
+}
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)

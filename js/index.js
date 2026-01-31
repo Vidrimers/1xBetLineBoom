@@ -1827,11 +1827,8 @@ async function selectEvent(eventId, eventName) {
       matchRemindersBtn.style.display = 'none';
       updateReminderIndicator(false);
     } else {
-      matchRemindersBtn.style.display = 'flex';
-      // Загружаем настройки напоминаний для обновления индикатора
-      if (currentUser) {
-        loadMatchReminders();
-      }
+      // Проверяем настройку "Напоминания о матчах"
+      checkMatchRemindersSettingAndUpdateButton();
     }
   }
 
@@ -7664,6 +7661,43 @@ function updateOnlyActiveTournamentsState() {
   }
 }
 
+// Проверить настройку "Напоминания о матчах" и обновить видимость кнопки
+async function checkMatchRemindersSettingAndUpdateButton() {
+  const matchRemindersBtn = document.getElementById('matchRemindersBtn');
+  
+  if (!matchRemindersBtn || !currentUser) {
+    if (matchRemindersBtn) matchRemindersBtn.style.display = 'none';
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/user/${currentUser.id}/notification-settings`);
+    
+    if (response.ok) {
+      const settings = await response.json();
+      
+      // Если настройка "Напоминания о матчах" выключена - скрываем кнопку
+      if (settings.match_reminders === false) {
+        matchRemindersBtn.style.display = 'none';
+        updateReminderIndicator(false);
+      } else {
+        matchRemindersBtn.style.display = 'flex';
+        // Загружаем настройки напоминаний для обновления индикатора
+        loadMatchReminders();
+      }
+    } else {
+      // Если настроек нет - показываем кнопку (по умолчанию включено)
+      matchRemindersBtn.style.display = 'flex';
+      loadMatchReminders();
+    }
+  } catch (error) {
+    console.error("Ошибка проверки настроек напоминаний:", error);
+    // При ошибке показываем кнопку
+    matchRemindersBtn.style.display = 'flex';
+    loadMatchReminders();
+  }
+}
+
 // Сохранить детальные настройки уведомлений
 async function saveDetailedNotificationSettings() {
   if (!currentUser) return;
@@ -7690,6 +7724,17 @@ async function saveDetailedNotificationSettings() {
     
     // Обновляем состояние disabled для зависимой настройки
     updateOnlyActiveTournamentsState();
+    
+    // Обновляем видимость кнопки колокольчика если изменилась настройка напоминаний
+    if (currentEventId) {
+      const event = events.find((e) => e.id === currentEventId);
+      const isLocked = event && event.locked_reason;
+      const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
+      
+      if (!isLocked && !isUpcoming) {
+        checkMatchRemindersSettingAndUpdateButton();
+      }
+    }
   } catch (error) {
     console.error("Ошибка сохранения настроек уведомлений:", error);
   }
@@ -10077,6 +10122,26 @@ async function syncDetailedNotificationSettings(isEnabled) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),
     });
+    
+    // Обновляем видимость кнопки колокольчика
+    if (currentEventId) {
+      const event = events.find((e) => e.id === currentEventId);
+      const isLocked = event && event.locked_reason;
+      const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
+      
+      if (!isLocked && !isUpcoming) {
+        const matchRemindersBtn = document.getElementById('matchRemindersBtn');
+        if (matchRemindersBtn) {
+          if (isEnabled) {
+            matchRemindersBtn.style.display = 'flex';
+            loadMatchReminders();
+          } else {
+            matchRemindersBtn.style.display = 'none';
+            updateReminderIndicator(false);
+          }
+        }
+      }
+    }
   } catch (error) {
     console.error("Ошибка синхронизации детальных настроек:", error);
   }
