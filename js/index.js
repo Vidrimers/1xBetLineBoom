@@ -17330,8 +17330,12 @@ function renderEvents(events, game) {
       // Красная карточка - красный
       bgColor = 'rgba(244, 67, 54, 0.1)';
       borderColor = 'rgb(244, 67, 54)';
+    } else if (event.type === 3) {
+      // Замена - синий
+      bgColor = 'rgba(56, 118, 235, 0.3)';
+      borderColor = 'rgb(56, 118, 235)';
     } else {
-      // Остальные события (замены и т.д.) - цвет команды
+      // Остальные события - цвет команды
       bgColor = `rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1)`;
       borderColor = isHome ? '#5a9fd4' : '#f44336';
     }
