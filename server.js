@@ -13235,7 +13235,16 @@ app.post("/api/admin/recount-results", async (req, res) => {
     if (sortedUsers.length === 0) {
       message += `Нет результатов\n`;
     } else {
+      // Определяем уникальные значения очков для присвоения мест
+      const uniqueScores = [...new Set(sortedUsers.map(([, stats]) => stats.points))];
+      
       sortedUsers.forEach(([username, stats]) => {
+        // Определяем место по уникальному значению очков
+        const place = uniqueScores.indexOf(stats.points) + 1;
+        
+        // Присваиваем медаль по месту (только первые 3 места получают медали)
+        const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '▪️';
+        
         const statsText = [];
         if (stats.correctResults > 0) {
           statsText.push(`✅ ${stats.correctResults}`);
@@ -13250,7 +13259,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
           statsText.push(`🟥 ${stats.correctRedCards}`);
         }
         const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
-        message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
+        message += `${medal} ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
       });
     }
 
@@ -13290,34 +13299,85 @@ app.post("/api/admin/recount-results", async (req, res) => {
 
         // Отправляем пользователям
         if (sendToUsers && sortedUsers.length > 0) {
-          const bestUser = sortedUsers[0];
-          const worstUser = sortedUsers[sortedUsers.length - 1];
+          const maxPoints = sortedUsers[0][1].points;
+          const minPoints = sortedUsers[sortedUsers.length - 1][1].points;
+          const winners = sortedUsers.filter(([, stats]) => stats.points === maxPoints);
+          
+          // Определяем уникальные значения очков для присвоения мест
+          const uniqueScores = [...new Set(sortedUsers.map(([, stats]) => stats.points))];
           
           for (const [username, stats] of sortedUsers) {
             if (!stats.telegramId || stats.telegramNotificationsEnabled !== 1) continue;
             
             let personalMessage = '🔄 <b>Результаты пересчета</b>\n\n';
+            personalMessage += `📅 Дата: ${formatDate(date)}\n`;
+            personalMessage += `🏆 Тур: ${round}\n`;
+            personalMessage += `🎯 Турнир: ${event.event_name}\n\n`;
+            personalMessage += `📈 Статистика:\n`;
             
-            if (username === bestUser[0] && sortedUsers.length > 1) {
-              personalMessage += `🏆 <b>Сегодня ты лучший!</b>\n\n`;
-              personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
-              if (stats.correctScores > 0) {
-                personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
+            // Добавляем список всех участников с медалями
+            sortedUsers.forEach(([uname, ustats]) => {
+              // Определяем место по уникальному значению очков
+              const place = uniqueScores.indexOf(ustats.points) + 1;
+              
+              // Присваиваем медаль по месту
+              const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '▪️';
+              
+              const statsText = [];
+              if (ustats.correctResults > 0) {
+                statsText.push(`✅ ${ustats.correctResults}`);
               }
-              personalMessage += `!\n\nТак держать! 💪`;
-            } else if (username === worstUser[0] && sortedUsers.length > 1 && stats.points === 0) {
-              personalMessage += `😢 <b>Сегодня ты лох...</b>\n\n`;
-              personalMessage += `Ты набрал 0 очков.\n\nНе расстраивайся, в следующий раз обязательно получится! 🍀`;
+              if (ustats.correctScores > 0) {
+                statsText.push(`🎯 ${ustats.correctScores}`);
+              }
+              if (ustats.correctYellowCards > 0) {
+                statsText.push(`🟨 ${ustats.correctYellowCards}`);
+              }
+              if (ustats.correctRedCards > 0) {
+                statsText.push(`🟥 ${ustats.correctRedCards}`);
+              }
+              const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
+              personalMessage += `${medal} ${uname}: ${ustats.points} ${ustats.points === 1 ? 'очко' : ustats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;
+            });
+            
+            personalMessage += '\n';
+            
+            // Добавляем персонализированное окончание
+            let userPointsWord;
+            if (stats.points === 0) {
+              userPointsWord = 'очков';
+            } else if (stats.points === 1) {
+              userPointsWord = 'очко';
+            } else if (stats.points >= 2 && stats.points <= 4) {
+              userPointsWord = 'очка';
             } else {
-              personalMessage += `📊 <b>Сегодня ты не лучший...</b>\n\n`;
-              personalMessage += `Ты набрал ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}`;
-              if (stats.correctScores > 0) {
-                personalMessage += ` и угадал ${stats.correctScores} ${stats.correctScores === 1 ? 'счет' : 'счета'} 🎯`;
-              }
-              personalMessage += `.\n\nПродолжай стараться! 💪`;
+              userPointsWord = 'очков';
             }
-            
-            personalMessage += `\n\n📅 Дата: ${formatDate(date)}\n🏆 Тур: ${round}`;
+
+            if (stats.points === maxPoints) {
+              // Пользователь лучший (или один из лучших)
+              if (winners.length === 1) {
+                personalMessage += `Сегодня ты лучший, у тебя <b>${stats.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${username}! 🎉`;
+              } else {
+                personalMessage += `Сегодня ты один из лучших, у тебя <b>${stats.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${username}! 🎉`;
+              }
+            } else if (stats.points === minPoints) {
+              // Пользователь худший (или один из худших)
+              if (winners.length === 1) {
+                personalMessage += `Сегодня ты лох, такое может случиться с каждым, у тебя <b>${stats.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winners[0][0]}! 🎉`;
+              } else {
+                const winnerNames = winners.map(([name]) => name).join(' и ');
+                personalMessage += `Сегодня ты лох, такое может случиться с каждым, у тебя <b>${stats.points} ${userPointsWord}</b>, а лучшие, это малютки 👑 ${winnerNames}! 🎉`;
+              }
+            } else {
+              // Пользователь в середине
+              if (winners.length === 1) {
+                personalMessage += `Сегодня ты не лучший, у тебя <b>${stats.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winners[0][0]}! 🎉`;
+              } else {
+                const winnerNames = winners.map(([name]) => name).join(' и ');
+                personalMessage += `Сегодня ты не лучший, у тебя <b>${stats.points} ${userPointsWord}</b>, а лучшие, это малютки 👑 ${winnerNames}! 🎉`;
+              }
+            }
             
             try {
               await fetch(
