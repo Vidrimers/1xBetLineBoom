@@ -10612,7 +10612,7 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
     formattedText = formattedText.replace(/^\s{2,}([•\-])\s+(.+)$/gm, '     ◦ $2');
     
     // Формируем красивое сообщение
-    const message = `🎉 <b>${title}</b>\n\n${formattedText}\n\n━━━━━━━━━━━━━━━━━━━━\n\n💬 Приятной игры! 🎯`;
+    const message = `🎉 <b>${title}</b>\n\n${formattedText}\n\n━━━━━━━━━━━━━━━━━━━━\n\n💬 Победных ставок! 🎯`;
     
     if (testMode) {
       // Отправляем только админу для проверки
