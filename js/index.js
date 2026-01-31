@@ -7630,9 +7630,37 @@ async function loadDetailedNotificationSettings() {
       document.getElementById("notifTournamentAnnouncements").checked = settings.tournament_announcements !== false;
       document.getElementById("notifMatchResults").checked = settings.match_results !== false;
       document.getElementById("notifSystemMessages").checked = settings.system_messages !== false;
+      
+      // Обновляем состояние disabled для зависимой настройки
+      updateOnlyActiveTournamentsState();
     }
   } catch (error) {
     console.error("Ошибка загрузки настроек уведомлений:", error);
+  }
+}
+
+// Обновить состояние настройки "Только по турнирам с моими ставками"
+function updateOnlyActiveTournamentsState() {
+  const matchRemindersCheckbox = document.getElementById("notifMatchReminders");
+  const onlyActiveTournamentsCheckbox = document.getElementById("notifOnlyActiveTournaments");
+  
+  if (matchRemindersCheckbox && onlyActiveTournamentsCheckbox) {
+    const isMatchRemindersEnabled = matchRemindersCheckbox.checked;
+    
+    // Если напоминания о матчах выключены - делаем настройку disabled
+    onlyActiveTournamentsCheckbox.disabled = !isMatchRemindersEnabled;
+    
+    // Визуально затемняем родительский блок если disabled
+    const parentDiv = onlyActiveTournamentsCheckbox.closest('.notification-setting-item');
+    if (parentDiv) {
+      if (!isMatchRemindersEnabled) {
+        parentDiv.style.opacity = '0.5';
+        parentDiv.style.pointerEvents = 'none';
+      } else {
+        parentDiv.style.opacity = '1';
+        parentDiv.style.pointerEvents = 'auto';
+      }
+    }
   }
 }
 
@@ -7659,6 +7687,9 @@ async function saveDetailedNotificationSettings() {
       const error = await response.json();
       console.error("Ошибка сохранения настроек:", error);
     }
+    
+    // Обновляем состояние disabled для зависимой настройки
+    updateOnlyActiveTournamentsState();
   } catch (error) {
     console.error("Ошибка сохранения настроек уведомлений:", error);
   }
@@ -10017,21 +10048,24 @@ async function syncDetailedNotificationSettings(isEnabled) {
 
   // Обновляем чекбоксы в модалке (если она открыта)
   const notifMatchReminders = document.getElementById("notifMatchReminders");
+  const notifOnlyActiveTournaments = document.getElementById("notifOnlyActiveTournaments");
   const notifTournamentAnnouncements = document.getElementById("notifTournamentAnnouncements");
   const notifMatchResults = document.getElementById("notifMatchResults");
   const notifSystemMessages = document.getElementById("notifSystemMessages");
   
   if (notifMatchReminders) notifMatchReminders.checked = isEnabled;
+  if (notifOnlyActiveTournaments) notifOnlyActiveTournaments.checked = isEnabled;
   if (notifTournamentAnnouncements) notifTournamentAnnouncements.checked = isEnabled;
   if (notifMatchResults) notifMatchResults.checked = isEnabled;
   if (notifSystemMessages) notifSystemMessages.checked = isEnabled;
   
-  // Примечание: notifOnlyActiveTournaments НЕ меняем - это независимая настройка фильтрации
+  // Обновляем состояние disabled для зависимой настройки
+  updateOnlyActiveTournamentsState();
   
   // Сохраняем изменения в БД
   const settings = {
     match_reminders: isEnabled,
-    only_active_tournaments: document.getElementById("notifOnlyActiveTournaments")?.checked || false,
+    only_active_tournaments: isEnabled,
     tournament_announcements: isEnabled,
     match_results: isEnabled,
     system_messages: isEnabled,
