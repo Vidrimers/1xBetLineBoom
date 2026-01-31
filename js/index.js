@@ -9998,6 +9998,9 @@ async function saveTelegramNotificationSettings() {
       currentUser.telegram_notifications_enabled = isEnabled ? 1 : 0;
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
       showSaveStatus('telegramNotificationsStatus', 'saved');
+      
+      // Синхронизируем детальные настройки уведомлений
+      await syncDetailedNotificationSettings(isEnabled);
     } else {
       showSaveStatus('telegramNotificationsStatus', 'error');
       console.error("Ошибка:", result.error);
@@ -10005,6 +10008,41 @@ async function saveTelegramNotificationSettings() {
   } catch (error) {
     console.error("Ошибка при сохранении уведомлений:", error);
     showSaveStatus('telegramNotificationsStatus', 'error');
+  }
+}
+
+// Синхронизировать детальные настройки с основным переключателем
+async function syncDetailedNotificationSettings(isEnabled) {
+  if (!currentUser) return;
+
+  // Обновляем чекбоксы в модалке (если она открыта)
+  const notifMatchReminders = document.getElementById("notifMatchReminders");
+  const notifTournamentAnnouncements = document.getElementById("notifTournamentAnnouncements");
+  const notifMatchResults = document.getElementById("notifMatchResults");
+  const notifSystemMessages = document.getElementById("notifSystemMessages");
+  
+  if (notifMatchReminders) notifMatchReminders.checked = isEnabled;
+  if (notifTournamentAnnouncements) notifTournamentAnnouncements.checked = isEnabled;
+  if (notifMatchResults) notifMatchResults.checked = isEnabled;
+  if (notifSystemMessages) notifSystemMessages.checked = isEnabled;
+  
+  // Сохраняем изменения в БД
+  const settings = {
+    match_reminders: isEnabled,
+    only_active_tournaments: document.getElementById("notifOnlyActiveTournaments")?.checked || false,
+    tournament_announcements: isEnabled,
+    match_results: isEnabled,
+    system_messages: isEnabled,
+  };
+
+  try {
+    await fetch(`/api/user/${currentUser.id}/notification-settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+  } catch (error) {
+    console.error("Ошибка синхронизации детальных настроек:", error);
   }
 }
 
