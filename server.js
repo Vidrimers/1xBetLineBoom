@@ -4015,12 +4015,12 @@ app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
           m.round as round,
           m.match_date,
           0 as is_final_bet,
-          sp.score_team1,
-          sp.score_team2,
+          CASE WHEN m.score_prediction_enabled = 1 THEN sp.score_team1 ELSE NULL END as score_team1,
+          CASE WHEN m.score_prediction_enabled = 1 THEN sp.score_team2 ELSE NULL END as score_team2,
           ms.score_team1 as actual_score_team1,
           ms.score_team2 as actual_score_team2,
-          cp.yellow_cards,
-          cp.red_cards,
+          CASE WHEN m.yellow_cards_prediction_enabled = 1 THEN cp.yellow_cards ELSE NULL END as yellow_cards,
+          CASE WHEN m.red_cards_prediction_enabled = 1 THEN cp.red_cards ELSE NULL END as red_cards,
           m.yellow_cards as actual_yellow_cards,
           m.red_cards as actual_red_cards,
           CASE 
@@ -5429,12 +5429,12 @@ app.get("/api/user/:userId/bets", async (req, res) => {
              e.status as event_status,
              e.start_date as event_start_date,
              e.locked_reason as event_locked_reason,
-             sp.score_team1,
-             sp.score_team2,
+             CASE WHEN m.score_prediction_enabled = 1 THEN sp.score_team1 ELSE NULL END as score_team1,
+             CASE WHEN m.score_prediction_enabled = 1 THEN sp.score_team2 ELSE NULL END as score_team2,
              ms.score_team1 as actual_score_team1,
              ms.score_team2 as actual_score_team2,
-             cp.yellow_cards,
-             cp.red_cards
+             CASE WHEN m.yellow_cards_prediction_enabled = 1 THEN cp.yellow_cards ELSE NULL END as yellow_cards,
+             CASE WHEN m.red_cards_prediction_enabled = 1 THEN cp.red_cards ELSE NULL END as red_cards
       FROM bets b
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
@@ -10499,6 +10499,27 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
         matchId
       );
 
+      // Если отключили прогноз на счет - удаляем все прогнозы на счет для этого матча
+      if (score_prediction_enabled !== undefined && !score_prediction_enabled) {
+        const deletedScores = db.prepare("DELETE FROM score_predictions WHERE match_id = ?").run(matchId);
+        console.log(`🗑️ Удалено прогнозов на счет: ${deletedScores.changes}`);
+      }
+
+      // Если отключили прогноз на желтые карточки - удаляем прогнозы на желтые карточки
+      if (yellow_cards_prediction_enabled !== undefined && !yellow_cards_prediction_enabled) {
+        const deletedYellow = db.prepare("UPDATE cards_predictions SET yellow_cards = NULL WHERE match_id = ?").run(matchId);
+        console.log(`🗑️ Удалено прогнозов на желтые карточки: ${deletedYellow.changes}`);
+      }
+
+      // Если отключили прогноз на красные карточки - удаляем прогнозы на красные карточки
+      if (red_cards_prediction_enabled !== undefined && !red_cards_prediction_enabled) {
+        const deletedRed = db.prepare("UPDATE cards_predictions SET red_cards = NULL WHERE match_id = ?").run(matchId);
+        console.log(`🗑️ Удалено прогнозов на красные карточки: ${deletedRed.changes}`);
+      }
+
+      // Удаляем записи в cards_predictions где оба поля NULL
+      db.prepare("DELETE FROM cards_predictions WHERE match_id = ? AND yellow_cards IS NULL AND red_cards IS NULL").run(matchId);
+
       // Уведомление админу если это модератор
       if (isModerator && username) {
         const event = db.prepare("SELECT e.name FROM events e JOIN matches m ON m.event_id = e.id WHERE m.id = ?").get(matchId);
@@ -12795,16 +12816,123 @@ app.get("/api/admin/get-rounds-for-event", (req, res) => {
   }
 });
 
-// POST /api/admin/recount-results - Пересчитать результаты для конкретной даты
-app.post("/api/admin/recount-results", async (req, res) => {
-  const { username, date, round, sendToGroup, sendToUsers } = req.body;
+// POST /api/admin/cleanup-disabled-predictions - Очистить прогнозы для матчей с отключенными чекбоксами
+app.post("/api/admin/cleanup-disabled-predictions", async (req, res) => {
+  const { username } = req.body;
 
   // Проверяем права (админ или модератор с правами на подсчет)
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
   const isAdmin = username === ADMIN_DB_NAME;
   
   if (!isAdmin) {
-    const moderator = db.prepare("SELECT * FROM moderators WHERE username = ?").get(username);
+    const moderator = db.prepare(`
+      SELECT m.*, u.username 
+      FROM moderators m
+      JOIN users u ON m.user_id = u.id
+      WHERE u.username = ?
+    `).get(username);
+    
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    
+    const permissions = moderator.permissions ? moderator.permissions.split(',') : [];
+    if (!permissions.includes('view_counting')) {
+      return res.status(403).json({ error: "Недостаточно прав для очистки прогнозов" });
+    }
+  }
+
+  try {
+    console.log(`\n🧹 ========================================`);
+    console.log(`🧹 ОЧИСТКА ПРОГНОЗОВ С ОТКЛЮЧЕННЫМИ ЧЕКБОКСАМИ`);
+    console.log(`🧹 Инициатор: ${username}`);
+    console.log(`🧹 ========================================\n`);
+
+    // Получаем все матчи
+    const matches = db.prepare("SELECT id, team1_name, team2_name, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled FROM matches").all();
+    
+    let totalDeletedScores = 0;
+    let totalDeletedYellow = 0;
+    let totalDeletedRed = 0;
+    let totalDeletedCardsRecords = 0;
+
+    matches.forEach(match => {
+      // Удаляем прогнозы на счет если чекбокс отключен
+      if (match.score_prediction_enabled === 0) {
+        const deleted = db.prepare("DELETE FROM score_predictions WHERE match_id = ?").run(match.id);
+        if (deleted.changes > 0) {
+          console.log(`🗑️ Матч ${match.team1_name} - ${match.team2_name}: удалено ${deleted.changes} прогнозов на счет`);
+          totalDeletedScores += deleted.changes;
+        }
+      }
+
+      // Удаляем прогнозы на желтые карточки если чекбокс отключен
+      if (match.yellow_cards_prediction_enabled === 0) {
+        const deleted = db.prepare("UPDATE cards_predictions SET yellow_cards = NULL WHERE match_id = ?").run(match.id);
+        if (deleted.changes > 0) {
+          console.log(`🗑️ Матч ${match.team1_name} - ${match.team2_name}: удалено ${deleted.changes} прогнозов на желтые карточки`);
+          totalDeletedYellow += deleted.changes;
+        }
+      }
+
+      // Удаляем прогнозы на красные карточки если чекбокс отключен
+      if (match.red_cards_prediction_enabled === 0) {
+        const deleted = db.prepare("UPDATE cards_predictions SET red_cards = NULL WHERE match_id = ?").run(match.id);
+        if (deleted.changes > 0) {
+          console.log(`🗑️ Матч ${match.team1_name} - ${match.team2_name}: удалено ${deleted.changes} прогнозов на красные карточки`);
+          totalDeletedRed += deleted.changes;
+        }
+      }
+    });
+
+    // Удаляем пустые записи в cards_predictions (где оба поля NULL)
+    const deletedEmpty = db.prepare("DELETE FROM cards_predictions WHERE yellow_cards IS NULL AND red_cards IS NULL").run();
+    totalDeletedCardsRecords = deletedEmpty.changes;
+
+    console.log(`\n✅ Очистка завершена!`);
+    console.log(`📊 Статистика:`);
+    console.log(`   - Удалено прогнозов на счет: ${totalDeletedScores}`);
+    console.log(`   - Удалено прогнозов на желтые карточки: ${totalDeletedYellow}`);
+    console.log(`   - Удалено прогнозов на красные карточки: ${totalDeletedRed}`);
+    console.log(`   - Удалено пустых записей в cards_predictions: ${totalDeletedCardsRecords}\n`);
+
+    res.json({
+      success: true,
+      message: "Прогнозы успешно очищены",
+      stats: {
+        deletedScores: totalDeletedScores,
+        deletedYellow: totalDeletedYellow,
+        deletedRed: totalDeletedRed,
+        deletedCardsRecords: totalDeletedCardsRecords
+      }
+    });
+  } catch (error) {
+    console.error("❌ Ошибка очистки прогнозов:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/recount-results - Пересчитать результаты для конкретной даты
+app.post("/api/admin/recount-results", async (req, res) => {
+  const { username, date, round, sendToGroup, sendToUsers } = req.body;
+
+  console.log('🔄 Пересчет результатов:', { username, date, round, sendToGroup, sendToUsers });
+
+  // Проверяем права (админ или модератор с правами на подсчет)
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+  const isAdmin = username === ADMIN_DB_NAME;
+  
+  if (!isAdmin) {
+    console.log('Проверка прав модератора для:', username);
+    const moderator = db.prepare(`
+      SELECT m.*, u.username 
+      FROM moderators m
+      JOIN users u ON m.user_id = u.id
+      WHERE u.username = ?
+    `).get(username);
+    
+    console.log('Найден модератор:', moderator);
+    
     if (!moderator) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
@@ -12834,7 +12962,6 @@ app.post("/api/admin/recount-results", async (req, res) => {
       JOIN events e ON m.event_id = e.id
       WHERE DATE(m.match_date) = ?
         AND m.round = ?
-        AND m.result IS NULL
     `).all(date, round);
 
     if (matches.length === 0) {
@@ -12842,6 +12969,48 @@ app.post("/api/admin/recount-results", async (req, res) => {
     }
 
     console.log(`📊 Найдено матчей: ${matches.length}`);
+
+    // Шаг 1.5: Очищаем прогнозы для матчей где админ отключил чекбоксы
+    let totalDeletedScores = 0;
+    let totalDeletedYellow = 0;
+    let totalDeletedRed = 0;
+
+    matches.forEach(match => {
+      // Удаляем прогнозы на счет если чекбокс отключен
+      if (match.score_prediction_enabled === 0) {
+        const deleted = db.prepare("DELETE FROM score_predictions WHERE match_id = ?").run(match.id);
+        totalDeletedScores += deleted.changes;
+      }
+
+      // Удаляем прогнозы на желтые карточки если чекбокс отключен
+      if (match.yellow_cards_prediction_enabled === 0) {
+        const deleted = db.prepare("UPDATE cards_predictions SET yellow_cards = NULL WHERE match_id = ?").run(match.id);
+        totalDeletedYellow += deleted.changes;
+      }
+
+      // Удаляем прогнозы на красные карточки если чекбокс отключен
+      if (match.red_cards_prediction_enabled === 0) {
+        const deleted = db.prepare("UPDATE cards_predictions SET red_cards = NULL WHERE match_id = ?").run(match.id);
+        totalDeletedRed += deleted.changes;
+      }
+    });
+
+    // Удаляем пустые записи в cards_predictions
+    const matchIds = matches.map(m => m.id);
+    if (matchIds.length > 0) {
+      const placeholders = matchIds.map(() => '?').join(',');
+      db.prepare(`DELETE FROM cards_predictions WHERE match_id IN (${placeholders}) AND yellow_cards IS NULL AND red_cards IS NULL`).run(...matchIds);
+    }
+
+    if (totalDeletedScores > 0) {
+      console.log(`🗑️ Удалено прогнозов на счет (чекбокс отключен): ${totalDeletedScores}`);
+    }
+    if (totalDeletedYellow > 0) {
+      console.log(`🗑️ Удалено прогнозов на желтые карточки (чекбокс отключен): ${totalDeletedYellow}`);
+    }
+    if (totalDeletedRed > 0) {
+      console.log(`🗑️ Удалено прогнозов на красные карточки (чекбокс отключен): ${totalDeletedRed}`);
+    }
 
     // Шаг 2: Сбрасываем результаты этих матчей
     const resetStmt = db.prepare(`

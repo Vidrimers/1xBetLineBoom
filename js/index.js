@@ -5183,7 +5183,7 @@ function displayTournamentParticipantBets(bets) {
           }
         </div>
         ${
-          bet.score_team1 != null && bet.score_team2 != null
+          bet.score_team1 !== null && bet.score_team1 !== undefined && bet.score_team2 !== null && bet.score_team2 !== undefined
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
                 📊 Счет: <span style="${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
@@ -5201,7 +5201,7 @@ function displayTournamentParticipantBets(bets) {
             : ""
         }
         ${
-          bet.yellow_cards != null
+          bet.yellow_cards !== null && bet.yellow_cards !== undefined
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
                 🟨 Желтые: <span style="${
                   bet.actual_yellow_cards != null && bet.result !== 'pending'
@@ -5219,7 +5219,7 @@ function displayTournamentParticipantBets(bets) {
             : ""
         }
         ${
-          bet.red_cards != null
+          bet.red_cards !== null && bet.red_cards !== undefined
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
                 🟥 Красные: <span style="${
                   bet.actual_red_cards != null && bet.result !== 'pending'
@@ -8629,6 +8629,32 @@ async function openRecountModal() {
     return;
   }
   
+  // Показываем индикатор загрузки
+  const loadingMsg = await showCustomAlert("Подготовка к пересчету...", "Загрузка", "⏳");
+  
+  try {
+    // Очищаем прогнозы для матчей с отключенными чекбоксами
+    const cleanupResponse = await fetch('/api/admin/cleanup-disabled-predictions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username
+      })
+    });
+    
+    if (cleanupResponse.ok) {
+      const result = await cleanupResponse.json();
+      console.log('✅ Очистка прогнозов:', result);
+    }
+  } catch (error) {
+    console.error("⚠️ Ошибка очистки прогнозов:", error);
+  }
+  
+  // Закрываем индикатор загрузки
+  if (loadingMsg && loadingMsg.close) {
+    loadingMsg.close();
+  }
+  
   // Устанавливаем текущую дату по умолчанию
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('recountDate').value = today;
@@ -8795,7 +8821,7 @@ async function confirmRecount() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: currentUser,
+        username: currentUser.username,
         date,
         round,
         sendToGroup,
@@ -8813,7 +8839,7 @@ async function confirmRecount() {
       
       // Обновляем данные подсчета если они отображаются
       if (document.getElementById('counting-content').style.display !== 'none') {
-        loadCountingData();
+        loadCounting();
       }
     } else {
       const error = await response.json();
