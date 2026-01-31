@@ -6185,6 +6185,11 @@ app.get("/api/fd-matches", async (req, res) => {
     const statusText = includeFuture === 'true' ? 'всех' : 'завершенных';
     console.log(`✅ Из них ${statusText} в диапазоне ${dateFrom} - ${dateTo}: ${filteredGames.length} матчей`);
 
+    // Предупреждение для RPL о проблеме с датами в SStats API
+    if (leagueId === 235) {
+      console.warn(`⚠️ ВНИМАНИЕ: SStats API для RPL возвращает неточные даты матчей. Рекомендуется проверить и скорректировать даты вручную после парсинга.`);
+    }
+
     // Преобразуем в формат SStats для совместимости с фронтом
     const matches = filteredGames.map(game => {
       // Обрабатываем название тура
