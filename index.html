@@ -3565,7 +3565,7 @@
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления за N часов до начала матчей турниров</p>
               </div>
               <label class="switch">
-                <input type="checkbox" id="notifMatchReminders" checked />
+                <input type="checkbox" id="notifMatchReminders" checked onchange="saveDetailedNotificationSettings()" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -3577,7 +3577,7 @@
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления о создании новых турниров</p>
               </div>
               <label class="switch">
-                <input type="checkbox" id="notifTournamentAnnouncements" checked />
+                <input type="checkbox" id="notifTournamentAnnouncements" checked onchange="saveDetailedNotificationSettings()" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -3589,7 +3589,7 @@
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления о результатах матчей, на которые вы ставили</p>
               </div>
               <label class="switch">
-                <input type="checkbox" id="notifMatchResults" checked />
+                <input type="checkbox" id="notifMatchResults" checked onchange="saveDetailedNotificationSettings()" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -3601,26 +3601,11 @@
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Важные обновления и объявления от администрации</p>
               </div>
               <label class="switch">
-                <input type="checkbox" id="notifSystemMessages" checked />
+                <input type="checkbox" id="notifSystemMessages" checked onchange="saveDetailedNotificationSettings()" />
                 <span class="slider"></span>
               </label>
             </div>
 
-          </div>
-
-          <div style="margin-top: 25px; display: flex; gap: 10px; justify-content: flex-end;">
-            <button 
-              onclick="closeDetailedNotificationsModal()" 
-              style="padding: 10px 20px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 5px; color: #e0e6f0; cursor: pointer; font-size: 14px;"
-            >
-              ❌ Отмена
-            </button>
-            <button 
-              onclick="saveDetailedNotificationSettings()" 
-              style="padding: 10px 20px; background: rgba(76, 175, 80, 0.8); border: 1px solid #4caf50; border-radius: 5px; color: #fff; cursor: pointer; font-size: 14px; font-weight: bold;"
-            >
-              ✅ Сохранить
-            </button>
           </div>
         </div>
       </div>

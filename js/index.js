@@ -7653,28 +7653,12 @@ async function saveDetailedNotificationSettings() {
       body: JSON.stringify(settings),
     });
 
-    if (response.ok) {
-      await showCustomAlert(
-        "Настройки уведомлений успешно сохранены!",
-        "Успешно",
-        "✅"
-      );
-      closeDetailedNotificationsModal();
-    } else {
+    if (!response.ok) {
       const error = await response.json();
-      await showCustomAlert(
-        error.error || "Ошибка при сохранении настроек",
-        "Ошибка",
-        "❌"
-      );
+      console.error("Ошибка сохранения настроек:", error);
     }
   } catch (error) {
     console.error("Ошибка сохранения настроек уведомлений:", error);
-    await showCustomAlert(
-      "Ошибка при сохранении настроек",
-      "Ошибка",
-      "❌"
-    );
   }
 }
 
