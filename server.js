@@ -10661,16 +10661,23 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
 });
 
 // POST /api/user/:userId/notification-settings - Сохранить детальные настройки уведомлений
-app.post("/api/user/:userId/notification-settings", (req, res) => {
+app.post("/api/user/:userId/notification-settings", async (req, res) => {
   try {
     const { userId } = req.params;
     const { match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages } = req.body;
     
     // Проверяем существование пользователя
-    const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+    const user = db.prepare("SELECT id, username FROM users WHERE id = ?").get(userId);
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
+    
+    // Получаем старые настройки для сравнения
+    const oldSettings = db.prepare(`
+      SELECT match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
+      FROM user_notification_settings
+      WHERE user_id = ?
+    `).get(userId);
     
     // Сохраняем или обновляем настройки
     db.prepare(`
@@ -10692,6 +10699,48 @@ app.post("/api/user/:userId/notification-settings", (req, res) => {
       match_results ? 1 : 0,
       system_messages ? 1 : 0
     );
+    
+    // Формируем сообщение об изменениях для админа
+    const changes = [];
+    
+    if (!oldSettings) {
+      // Первая настройка - отправляем все значения
+      changes.push(`🔔 Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`🎯 Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`🏆 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`📢 Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+    } else {
+      // Сравниваем и добавляем только изменения
+      if (oldSettings.match_reminders !== (match_reminders ? 1 : 0)) {
+        changes.push(`🔔 Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+      if (oldSettings.only_active_tournaments !== (only_active_tournaments ? 1 : 0)) {
+        changes.push(`🎯 Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+      if (oldSettings.tournament_announcements !== (tournament_announcements ? 1 : 0)) {
+        changes.push(`🏆 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+      if (oldSettings.match_results !== (match_results ? 1 : 0)) {
+        changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+      if (oldSettings.system_messages !== (system_messages ? 1 : 0)) {
+        changes.push(`📢 Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+    }
+    
+    // Отправляем уведомление админу если были изменения
+    if (changes.length > 0) {
+      const message = `⚙️ <b>Изменение настроек уведомлений</b>\n\n` +
+        `👤 Пользователь: <b>${user.username}</b>\n\n` +
+        `${changes.join('\n')}`;
+      
+      try {
+        await sendAdminNotification(message);
+      } catch (error) {
+        console.error("Ошибка отправки уведомления админу:", error);
+      }
+    }
     
     res.json({ success: true });
   } catch (error) {

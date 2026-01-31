@@ -10026,6 +10026,8 @@ async function syncDetailedNotificationSettings(isEnabled) {
   if (notifMatchResults) notifMatchResults.checked = isEnabled;
   if (notifSystemMessages) notifSystemMessages.checked = isEnabled;
   
+  // Примечание: notifOnlyActiveTournaments НЕ меняем - это независимая настройка фильтрации
+  
   // Сохраняем изменения в БД
   const settings = {
     match_reminders: isEnabled,
