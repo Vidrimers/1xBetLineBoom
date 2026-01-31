@@ -7645,6 +7645,11 @@ function updateOnlyActiveTournamentsState() {
   if (threeHourRemindersCheckbox && onlyActiveTournamentsCheckbox) {
     const isThreeHourRemindersEnabled = threeHourRemindersCheckbox.checked;
     
+    // Если напоминания за 3 часа включаются - автоматически включаем фильтр
+    if (isThreeHourRemindersEnabled && onlyActiveTournamentsCheckbox.disabled) {
+      onlyActiveTournamentsCheckbox.checked = true;
+    }
+    
     // Если напоминания за 3 часа выключены - делаем настройку disabled
     onlyActiveTournamentsCheckbox.disabled = !isThreeHourRemindersEnabled;
     
