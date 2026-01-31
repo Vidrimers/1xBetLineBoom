@@ -1120,15 +1120,20 @@ async function checkAndNotifyUpcomingMatches() {
     const usersWithNotifications = db
       .prepare(
         `
-      SELECT id, username, telegram_id, telegram_username
-      FROM users
-      WHERE telegram_notifications_enabled = 1 AND telegram_id IS NOT NULL
+      SELECT u.id, u.username, u.telegram_id, u.telegram_username,
+             COALESCE(uns.three_hour_reminders, 1) as three_hour_reminders,
+             COALESCE(uns.only_active_tournaments, 0) as only_active_tournaments
+      FROM users u
+      LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
+      WHERE u.telegram_notifications_enabled = 1 
+        AND u.telegram_id IS NOT NULL
+        AND COALESCE(uns.three_hour_reminders, 1) = 1
     `
       )
       .all();
 
     console.log(
-      `🔔 Найдено ${usersWithNotifications.length} пользователей с включенными уведомлениями`
+      `🔔 Найдено ${usersWithNotifications.length} пользователей с включенными уведомлениями за 3 часа`
     );
 
     if (usersWithNotifications.length === 0) {
@@ -1192,6 +1197,22 @@ async function checkAndNotifyUpcomingMatches() {
 
       // Отправляем уведомление каждому пользователю
       for (const user of usersWithNotifications) {
+        // Если включена настройка "только по активным турнирам", проверяем наличие ставок
+        if (user.only_active_tournaments === 1) {
+          const hasBets = db.prepare(`
+            SELECT COUNT(*) as count
+            FROM predictions p
+            JOIN matches m ON p.match_id = m.id
+            WHERE p.user_id = ? AND m.event_id = ?
+          `).get(user.id, group.event_id);
+          
+          // Если нет ставок в этом турнире, пропускаем
+          if (!hasBets || hasBets.count === 0) {
+            console.log(`⏭️ Пропускаем пользователя ${user.username} - нет ставок в турнире ${group.event_name}`);
+            continue;
+          }
+        }
+        
         const message = `⏰ <b>${matchWord}</b>
 
 ${startWord} через 3 часа!
@@ -2782,6 +2803,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL UNIQUE,
     match_reminders INTEGER DEFAULT 1,
+    three_hour_reminders INTEGER DEFAULT 1,
     only_active_tournaments INTEGER DEFAULT 0,
     tournament_announcements INTEGER DEFAULT 1,
     match_results INTEGER DEFAULT 1,
@@ -2800,6 +2822,20 @@ try {
   if (!hasOnlyActiveTournaments) {
     console.log("🔄 Миграция: добавление колонки only_active_tournaments в user_notification_settings");
     db.exec(`ALTER TABLE user_notification_settings ADD COLUMN only_active_tournaments INTEGER DEFAULT 0`);
+    console.log("✅ Миграция завершена");
+  }
+} catch (error) {
+  console.error("❌ Ошибка миграции user_notification_settings:", error);
+}
+
+// Миграция: добавление колонки three_hour_reminders если её нет
+try {
+  const tableInfo = db.prepare("PRAGMA table_info(user_notification_settings)").all();
+  const hasThreeHourReminders = tableInfo.some(col => col.name === 'three_hour_reminders');
+  
+  if (!hasThreeHourReminders) {
+    console.log("🔄 Миграция: добавление колонки three_hour_reminders в user_notification_settings");
+    db.exec(`ALTER TABLE user_notification_settings ADD COLUMN three_hour_reminders INTEGER DEFAULT 1`);
     console.log("✅ Миграция завершена");
   }
 } catch (error) {
@@ -10668,7 +10704,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
     
     // Получаем настройки или возвращаем значения по умолчанию
     let settings = db.prepare(`
-      SELECT match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
+      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
       FROM user_notification_settings
       WHERE user_id = ?
     `).get(userId);
@@ -10677,6 +10713,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
     if (!settings) {
       settings = {
         match_reminders: 1,
+        three_hour_reminders: 1,
         only_active_tournaments: 0,
         tournament_announcements: 1,
         match_results: 1,
@@ -10687,6 +10724,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
     // Преобразуем в boolean
     res.json({
       match_reminders: settings.match_reminders === 1,
+      three_hour_reminders: settings.three_hour_reminders === 1,
       only_active_tournaments: settings.only_active_tournaments === 1,
       tournament_announcements: settings.tournament_announcements === 1,
       match_results: settings.match_results === 1,
@@ -10701,7 +10739,7 @@ app.get("/api/user/:userId/notification-settings", (req, res) => {
 app.post("/api/user/:userId/notification-settings", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages } = req.body;
+    const { match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages } = req.body;
     
     // Проверяем существование пользователя
     const user = db.prepare("SELECT id, username FROM users WHERE id = ?").get(userId);
@@ -10711,18 +10749,19 @@ app.post("/api/user/:userId/notification-settings", async (req, res) => {
     
     // Получаем старые настройки для сравнения
     const oldSettings = db.prepare(`
-      SELECT match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
+      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
       FROM user_notification_settings
       WHERE user_id = ?
     `).get(userId);
     
     // Сохраняем или обновляем настройки
     db.prepare(`
-      INSERT INTO user_notification_settings (user_id, match_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO user_notification_settings (user_id, match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(user_id) 
       DO UPDATE SET 
         match_reminders = excluded.match_reminders,
+        three_hour_reminders = excluded.three_hour_reminders,
         only_active_tournaments = excluded.only_active_tournaments,
         tournament_announcements = excluded.tournament_announcements,
         match_results = excluded.match_results,
@@ -10731,6 +10770,7 @@ app.post("/api/user/:userId/notification-settings", async (req, res) => {
     `).run(
       userId,
       match_reminders ? 1 : 0,
+      three_hour_reminders ? 1 : 0,
       only_active_tournaments ? 1 : 0,
       tournament_announcements ? 1 : 0,
       match_results ? 1 : 0,
@@ -10743,6 +10783,7 @@ app.post("/api/user/:userId/notification-settings", async (req, res) => {
     if (!oldSettings) {
       // Первая настройка - отправляем все значения
       changes.push(`🔔 Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`⏰ Напоминания за 3 часа: ${three_hour_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`🎯 Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`🏆 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
@@ -10751,6 +10792,9 @@ app.post("/api/user/:userId/notification-settings", async (req, res) => {
       // Сравниваем и добавляем только изменения
       if (oldSettings.match_reminders !== (match_reminders ? 1 : 0)) {
         changes.push(`🔔 Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+      if (oldSettings.three_hour_reminders !== (three_hour_reminders ? 1 : 0)) {
+        changes.push(`⏰ Напоминания за 3 часа: ${three_hour_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       if (oldSettings.only_active_tournaments !== (only_active_tournaments ? 1 : 0)) {
         changes.push(`🎯 Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);

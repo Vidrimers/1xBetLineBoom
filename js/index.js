@@ -7623,6 +7623,7 @@ async function loadDetailedNotificationSettings() {
       
       // Устанавливаем значения чекбоксов
       document.getElementById("notifMatchReminders").checked = settings.match_reminders !== false;
+      document.getElementById("notifThreeHourReminders").checked = settings.three_hour_reminders !== false;
       document.getElementById("notifOnlyActiveTournaments").checked = settings.only_active_tournaments === true;
       document.getElementById("notifTournamentAnnouncements").checked = settings.tournament_announcements !== false;
       document.getElementById("notifMatchResults").checked = settings.match_results !== false;
@@ -7638,19 +7639,19 @@ async function loadDetailedNotificationSettings() {
 
 // Обновить состояние настройки "Только по турнирам с моими ставками"
 function updateOnlyActiveTournamentsState() {
-  const matchRemindersCheckbox = document.getElementById("notifMatchReminders");
+  const threeHourRemindersCheckbox = document.getElementById("notifThreeHourReminders");
   const onlyActiveTournamentsCheckbox = document.getElementById("notifOnlyActiveTournaments");
   
-  if (matchRemindersCheckbox && onlyActiveTournamentsCheckbox) {
-    const isMatchRemindersEnabled = matchRemindersCheckbox.checked;
+  if (threeHourRemindersCheckbox && onlyActiveTournamentsCheckbox) {
+    const isThreeHourRemindersEnabled = threeHourRemindersCheckbox.checked;
     
-    // Если напоминания о матчах выключены - делаем настройку disabled
-    onlyActiveTournamentsCheckbox.disabled = !isMatchRemindersEnabled;
+    // Если напоминания за 3 часа выключены - делаем настройку disabled
+    onlyActiveTournamentsCheckbox.disabled = !isThreeHourRemindersEnabled;
     
     // Визуально затемняем родительский блок если disabled
     const parentDiv = onlyActiveTournamentsCheckbox.closest('.notification-setting-item');
     if (parentDiv) {
-      if (!isMatchRemindersEnabled) {
+      if (!isThreeHourRemindersEnabled) {
         parentDiv.style.opacity = '0.5';
         parentDiv.style.pointerEvents = 'none';
       } else {
@@ -7704,6 +7705,7 @@ async function saveDetailedNotificationSettings() {
 
   const settings = {
     match_reminders: document.getElementById("notifMatchReminders").checked,
+    three_hour_reminders: document.getElementById("notifThreeHourReminders").checked,
     only_active_tournaments: document.getElementById("notifOnlyActiveTournaments").checked,
     tournament_announcements: document.getElementById("notifTournamentAnnouncements").checked,
     match_results: document.getElementById("notifMatchResults").checked,
@@ -10093,12 +10095,14 @@ async function syncDetailedNotificationSettings(isEnabled) {
 
   // Обновляем чекбоксы в модалке (если она открыта)
   const notifMatchReminders = document.getElementById("notifMatchReminders");
+  const notifThreeHourReminders = document.getElementById("notifThreeHourReminders");
   const notifOnlyActiveTournaments = document.getElementById("notifOnlyActiveTournaments");
   const notifTournamentAnnouncements = document.getElementById("notifTournamentAnnouncements");
   const notifMatchResults = document.getElementById("notifMatchResults");
   const notifSystemMessages = document.getElementById("notifSystemMessages");
   
   if (notifMatchReminders) notifMatchReminders.checked = isEnabled;
+  if (notifThreeHourReminders) notifThreeHourReminders.checked = isEnabled;
   if (notifOnlyActiveTournaments) notifOnlyActiveTournaments.checked = isEnabled;
   if (notifTournamentAnnouncements) notifTournamentAnnouncements.checked = isEnabled;
   if (notifMatchResults) notifMatchResults.checked = isEnabled;
@@ -10110,6 +10114,7 @@ async function syncDetailedNotificationSettings(isEnabled) {
   // Сохраняем изменения в БД
   const settings = {
     match_reminders: isEnabled,
+    three_hour_reminders: isEnabled,
     only_active_tournaments: isEnabled,
     tournament_announcements: isEnabled,
     match_results: isEnabled,

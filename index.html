@@ -3562,10 +3562,22 @@
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
                 <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">🔔 Напоминания о матчах</h4>
-                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления за N часов до начала матчей турниров</p>
+                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления за N часов до начала матчей турниров (настраивается через кнопку 🔔)</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="notifMatchReminders" checked onchange="saveDetailedNotificationSettings()" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Напоминания за 3 часа -->
+            <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+              <div style="flex: 1;">
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">⏰ Напоминания за 3 часа до матча</h4>
+                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Автоматические уведомления за 3 часа до начала всех матчей</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notifThreeHourReminders" checked onchange="saveDetailedNotificationSettings()" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -3574,7 +3586,7 @@
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
                 <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">🎯 Только по турнирам с моими ставками</h4>
-                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Напоминания придут только если вы уже сделали хотя бы одну ставку в турнире</p>
+                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Напоминания за 3 часа придут только если вы уже сделали хотя бы одну ставку в турнире</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="notifOnlyActiveTournaments" onchange="saveDetailedNotificationSettings()" />
