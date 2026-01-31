@@ -16143,9 +16143,9 @@ function toggleFavoriteMatch(matchId, event) {
       }).catch(err => console.log('Ошибка отправки уведомления:', err));
     }
   } else {
-    // Добавить в избранное (максимум 10)
-    if (favorites.length >= 10) {
-      showCustomAlert('Максимум 10 избранных матчей одновременно', 'Ограничение', '⚠️');
+    // Добавить в избранное (максимум 20)
+    if (favorites.length >= 20) {
+      showCustomAlert('Максимум 20 избранных матчей одновременно', 'Ограничение', '⚠️');
       return;
     }
     favorites.push(matchId);
@@ -16154,6 +16154,7 @@ function toggleFavoriteMatch(matchId, event) {
     if (matchCard) {
       const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
       const scoreDiv = matchCard.querySelector('div[style*="font-size: 1.3em"][style*="color: #4caf50"]');
+      const statusDiv = matchCard.querySelector('div[style*="color: #ff9800"]');
       
       // Проверяем есть ли ставка на этот матч
       let betTeam = null;
@@ -16169,13 +16170,21 @@ function toggleFavoriteMatch(matchId, event) {
         team1: teamDivs[0]?.textContent.trim() || 'Команда 1',
         team2: teamDivs[1]?.textContent.trim() || 'Команда 2',
         score: scoreDiv?.textContent.trim() || '0:0',
+        status: statusDiv?.textContent.trim() || 'live',
         betTeam: betTeam, // Добавляем информацию о ставке
         addedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString() // Добавляем updatedAt
+        updatedAt: new Date().toISOString()
       };
       
       saveFavoriteMatchData(matchId, matchData);
       console.log('💾 Сохранены данные матча:', matchData);
+      
+      // Сразу создаем карточку на десктопе
+      const isDesktop = window.innerWidth > 1400;
+      if (isDesktop) {
+        console.log('🖥️ ДЕСКТОП: Создаем карточку сразу после добавления в избранное');
+        updateDesktopNotification(matchData);
+      }
     }
     
     // Уведомляем админа о добавлении в избранное
@@ -16349,6 +16358,13 @@ function showGoalNotification(match) {
     return;
   }
   
+  // Проверяем не существует ли уже карточка
+  const existingNotification = container.querySelector(`[data-match-id="${match.id}"]`);
+  if (existingNotification) {
+    console.log('⚠️ Карточка уже существует, пропускаем создание');
+    return;
+  }
+  
   const notification = document.createElement('div');
   notification.className = 'goal-notification';
   notification.setAttribute('data-match-id', match.id);
@@ -16365,10 +16381,21 @@ function showGoalNotification(match) {
     ? `<span style="position: relative; display: inline-block;">${match.team2}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #fff;"></span></span>`
     : match.team2;
   
+  // Определяем статус для отображения
+  const isFinished = match.status === 'Finished' || 
+                    match.status === 'finished' || 
+                    match.status === 'Full Time' || 
+                    match.status === 'FT' ||
+                    match.status === 'Completed' ||
+                    match.status === 'completed';
+  
+  const statusText = isFinished ? 'ЗАВЕРШЕН' : 'LIVE';
+  const statusColor = isFinished ? '#ff9800' : '#4caf50';
+  
   notification.innerHTML = `
     <div class="goal-notification-header">
       <span class="goal-notification-icon">⚽</span>
-      <span class="goal-notification-title">LIVE</span>
+      <span class="goal-notification-title" style="color: ${statusColor};">${statusText}</span>
       <button onclick="closeGoalNotification(${match.id})" style="margin-left: auto; background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;" title="Закрыть">✕</button>
     </div>
     <div class="goal-notification-teams">
@@ -16531,7 +16558,8 @@ async function pollFavoriteMatches() {
           team1: match.team1 || match.homeTeam,
           team2: match.team2 || match.awayTeam,
           score: match.score || `${match.homeResult || 0}:${match.awayResult || 0}`,
-          status: match.status || match.statusName,
+          status: match.status || match.statusName || 'live',
+          elapsed: match.elapsed || null,
           betTeam: betTeam, // Добавляем информацию о ставке
           updatedAt: new Date().toISOString()
         };
@@ -16560,8 +16588,8 @@ async function pollFavoriteMatches() {
         team2: matchData.team2,
         score: matchData.score || '0:0',
         status: matchData.status || 'live',
-        betTeam: matchData.betTeam || null, // Добавляем информацию о ставке
-        elapsed: null
+        elapsed: matchData.elapsed || null,
+        betTeam: matchData.betTeam || null // Добавляем информацию о ставке
       });
     }
   });
@@ -16716,26 +16744,49 @@ function updateDesktopNotification(match) {
   
   if (notification) {
     console.log('♻️ Обновляем существующую карточку');
+    
     // Обновляем счет в существующей карточке
     const scoreElement = notification.querySelector('.goal-notification-score');
-    if (scoreElement && scoreElement.textContent !== match.score) {
-      console.log(`📊 Обновление счета: ${scoreElement.textContent} → ${match.score}`);
-      scoreElement.textContent = match.score;
-      
-      // Добавляем анимацию обновления счета
-      scoreElement.style.animation = 'none';
-      setTimeout(() => {
-        scoreElement.style.animation = 'goalBounce 0.6s ease-out';
-      }, 10);
-      
-      // Добавляем анимацию тряски карточки на 6 секунд (только на десктопе)
-      const isDesktop = window.innerWidth > 1400;
-      if (isDesktop) {
-        notification.classList.add('shake');
-        // Убираем класс через 6 секунд
+    const currentScore = scoreElement?.textContent || '';
+    const newScore = match.score || '0:0';
+    
+    if (currentScore !== newScore) {
+      console.log(`📊 Обновление счета: ${currentScore} → ${newScore}`);
+      if (scoreElement) {
+        scoreElement.textContent = newScore;
+        
+        // Добавляем анимацию обновления счета
+        scoreElement.style.animation = 'none';
         setTimeout(() => {
-          notification.classList.remove('shake');
-        }, 6000);
+          scoreElement.style.animation = 'goalBounce 0.6s ease-out';
+        }, 10);
+        
+        // Добавляем анимацию тряски карточки на 6 секунд (только на десктопе)
+        const isDesktop = window.innerWidth > 1400;
+        if (isDesktop) {
+          notification.classList.add('shake');
+          // Убираем класс через 6 секунд
+          setTimeout(() => {
+            notification.classList.remove('shake');
+          }, 6000);
+        }
+      }
+    }
+    
+    // Обновляем статус (если изменился)
+    const titleElement = notification.querySelector('.goal-notification-title');
+    if (titleElement && match.status) {
+      const isFinished = match.status === 'Finished' || 
+                        match.status === 'finished' || 
+                        match.status === 'Full Time' || 
+                        match.status === 'FT' ||
+                        match.status === 'Completed' ||
+                        match.status === 'completed';
+      
+      if (isFinished && titleElement.textContent === 'LIVE') {
+        console.log('🏁 Матч завершен, обновляем статус');
+        titleElement.textContent = 'ЗАВЕРШЕН';
+        titleElement.style.color = '#ff9800';
       }
     }
   } else {
