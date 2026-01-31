@@ -4138,6 +4138,50 @@
       </div>
     </div>
 
+    <!-- Модальное окно для массового редактирования дат -->
+    <div id="bulkEditDatesModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'bulkEditDatesModal', closeBulkEditDatesModal)">
+      <div class="modal-content" style="max-width: 900px">
+        <div class="modal-header">
+          <h2>📅 Массовое редактирование дат матчей</h2>
+          <button class="modal-close" onclick="closeBulkEditDatesModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="bulkEditRoundFilter">Фильтр по туру</label>
+            <select id="bulkEditRoundFilter" onchange="loadBulkEditMatches()" style="width: 100%; padding: 10px; font-size: 0.95em;">
+              <option value="">Все матчи</option>
+            </select>
+          </div>
+
+          <div id="bulkEditMatchesList" style="max-height: 500px; overflow-y: auto; margin-top: 15px;">
+            <div style="text-align: center; padding: 20px; color: #b0b8c8;">
+              Загрузка матчей...
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top: 20px;">
+            <button
+              type="button"
+              class="form-btn-submit"
+              onclick="saveBulkEditDates()"
+              id="bulkEditSaveBtn"
+            >
+              ✅ Сохранить все
+            </button>
+            <button
+              type="button"
+              class="form-btn-cancel"
+              onclick="closeBulkEditDatesModal()"
+            >
+              ❌ Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Модальное окно для блокировки турнира -->
     <div id="lockEventModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'lockEventModal', closeLockEventModal)">
       <div class="modal-content">

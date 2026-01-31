@@ -11365,6 +11365,71 @@ app.post("/api/matches/bulk-create", async (req, res) => {
   }
 });
 
+// POST /api/matches/bulk-update-dates - Массовое обновление дат матчей (для админа)
+app.post("/api/matches/bulk-update-dates", async (req, res) => {
+  const { updates, username } = req.body;
+
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return res.status(400).json({ error: "Укажите массив обновлений" });
+  }
+
+  // Проверка прав доступа
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  let isModerator = false;
+  
+  if (!isAdminUser) {
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    
+    if (moderator) {
+      const permissions = JSON.parse(moderator.permissions || "[]");
+      isModerator = permissions.includes("edit_matches");
+    }
+    
+    if (!isModerator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+  }
+
+  try {
+    let updatedCount = 0;
+
+    updates.forEach(update => {
+      const { match_id, match_date } = update;
+
+      if (!match_id || !match_date) {
+        throw new Error("Отсутствуют обязательные поля: match_id, match_date");
+      }
+
+      // Проверяем что дата валидная
+      const dateObj = new Date(match_date);
+      if (isNaN(dateObj.getTime())) {
+        throw new Error(`Неверный формат даты для матча ${match_id}`);
+      }
+
+      // Обновляем дату матча
+      const result = db
+        .prepare("UPDATE matches SET match_date = ? WHERE id = ?")
+        .run(match_date, match_id);
+
+      if (result.changes > 0) {
+        updatedCount++;
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Успешно обновлено дат: ${updatedCount}`,
+      updatedCount
+    });
+  } catch (error) {
+    console.error("Ошибка при массовом обновлении дат:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /api/admin/matches/:matchId - Изменить статус или отредактировать матч (для админа и модераторов с правами)
 app.put("/api/admin/matches/:matchId", async (req, res) => {
   const { matchId } = req.params;

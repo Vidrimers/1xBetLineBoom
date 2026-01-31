@@ -2609,7 +2609,20 @@ async function displayMatches() {
     // Рендерим кнопки сетки в matches-container (всегда обновляем, даже если пусто)
     const matchesBracketButtons = document.getElementById('matchesBracketButtons');
     if (matchesBracketButtons) {
-      matchesBracketButtons.innerHTML = bracketsHTML; // Если пусто, то очистит контейнер
+      // Добавляем кнопку массового редактирования дат для админа/модератора
+      let adminButtonsHTML = '';
+      if (currentUser && (currentUser.isAdmin || canEditMatches())) {
+        adminButtonsHTML = `
+          <button class="round-filter-btn" 
+                  onclick="openBulkEditDatesModal()" 
+                  style="background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); border-color: #4caf50;"
+                  title="Массовое редактирование дат матчей">
+            📅 Редактировать даты
+          </button>
+        `;
+      }
+      
+      matchesBracketButtons.innerHTML = bracketsHTML + adminButtonsHTML;
     }
 
     // Рендерим кнопки туров в roundsFilterScroll
@@ -12490,6 +12503,197 @@ function closeBulkParseModal() {
   document.getElementById("bulkParseModal").style.display = "none";
   unlockBodyScroll();
   parsedMatches = [];
+}
+
+// ===== МАССОВОЕ РЕДАКТИРОВАНИЕ ДАТ МАТЧЕЙ =====
+
+// Открыть модальное окно массового редактирования дат
+async function openBulkEditDatesModal() {
+  if (!currentEventId) {
+    await showCustomAlert("Выберите турнир", "Ошибка", "❌");
+    return;
+  }
+
+  document.getElementById("bulkEditDatesModal").style.display = "flex";
+  lockBodyScroll();
+
+  // Загружаем список туров для фильтра
+  const uniqueRounds = [...new Set(matches.map(m => m.round).filter(r => r && r.trim()))];
+  const roundSelect = document.getElementById("bulkEditRoundFilter");
+  
+  roundSelect.innerHTML = '<option value="">Все матчи</option>';
+  uniqueRounds.forEach(round => {
+    roundSelect.innerHTML += `<option value="${round}">${round}</option>`;
+  });
+
+  // Загружаем матчи
+  await loadBulkEditMatches();
+}
+
+// Закрыть модальное окно массового редактирования дат
+function closeBulkEditDatesModal() {
+  document.getElementById("bulkEditDatesModal").style.display = "none";
+  unlockBodyScroll();
+}
+
+// Загрузить матчи для редактирования
+async function loadBulkEditMatches() {
+  const container = document.getElementById("bulkEditMatchesList");
+  const roundFilter = document.getElementById("bulkEditRoundFilter").value;
+
+  // Фильтруем матчи
+  let filteredMatches = matches;
+  if (roundFilter) {
+    filteredMatches = matches.filter(m => m.round === roundFilter);
+  }
+
+  if (filteredMatches.length === 0) {
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #b0b8c8;">Нет матчей для отображения</div>';
+    return;
+  }
+
+  // Сортируем по дате
+  const sortedMatches = [...filteredMatches].sort((a, b) => {
+    if (!a.match_date) return 1;
+    if (!b.match_date) return -1;
+    return new Date(a.match_date) - new Date(b.match_date);
+  });
+
+  // Формируем HTML таблицу
+  let html = `
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background: rgba(56, 118, 235, 0.2); border-bottom: 2px solid rgba(56, 118, 235, 0.5);">
+          <th style="padding: 12px; text-align: left; color: #e0e6f0; font-weight: 600;">Матч</th>
+          <th style="padding: 12px; text-align: left; color: #e0e6f0; font-weight: 600; min-width: 220px;">Дата и время</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  sortedMatches.forEach(match => {
+    // Преобразуем дату в формат для datetime-local
+    let dateValue = '';
+    if (match.match_date) {
+      const date = new Date(match.match_date);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      dateValue = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    html += `
+      <tr style="border-bottom: 1px solid rgba(90, 159, 212, 0.2);">
+        <td style="padding: 12px; color: #e0e6f0;">
+          <div style="font-weight: 500;">${match.team1_name} vs ${match.team2_name}</div>
+          ${match.round ? `<div style="font-size: 0.85em; color: #b0b8c8; margin-top: 4px;">${match.round}</div>` : ''}
+        </td>
+        <td style="padding: 12px;">
+          <input 
+            type="datetime-local" 
+            class="bulk-edit-date-input" 
+            data-match-id="${match.id}"
+            value="${dateValue}"
+            style="
+              width: 100%;
+              padding: 8px;
+              font-size: 0.9em;
+              background: rgba(40, 44, 54, 0.8);
+              border: 1px solid rgba(90, 159, 212, 0.3);
+              border-radius: 4px;
+              color: #e0e6f0;
+            "
+          />
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  container.innerHTML = html;
+}
+
+// Сохранить массовое редактирование дат
+async function saveBulkEditDates() {
+  const inputs = document.querySelectorAll('.bulk-edit-date-input');
+  const updates = [];
+
+  inputs.forEach(input => {
+    const matchId = parseInt(input.dataset.matchId);
+    const dateValue = input.value;
+
+    if (dateValue) {
+      updates.push({
+        match_id: matchId,
+        match_date: dateValue
+      });
+    }
+  });
+
+  if (updates.length === 0) {
+    await showCustomAlert("Нет дат для сохранения", "Ошибка", "❌");
+    return;
+  }
+
+  const saveBtn = document.getElementById("bulkEditSaveBtn");
+  const originalText = saveBtn.textContent;
+
+  try {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "⏳ Сохранение...";
+
+    const response = await fetch("/api/matches/bulk-update-dates", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        updates,
+        username: currentUser.username
+      }),
+    });
+
+    // Проверяем тип контента ответа
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Сервер вернул не JSON:", text);
+      throw new Error("Сервер вернул некорректный ответ");
+    }
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Ошибка при сохранении");
+    }
+
+    await showCustomAlert(
+      `Успешно обновлено дат: ${result.updatedCount}`,
+      "Успех",
+      "✅"
+    );
+
+    closeBulkEditDatesModal();
+
+    // Перезагружаем матчи
+    await loadMatches(currentEventId);
+  } catch (error) {
+    console.error("Ошибка при сохранении дат:", error);
+    await showCustomAlert(
+      `Ошибка при сохранении: ${error.message}`,
+      "Ошибка",
+      "❌"
+    );
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalText;
+  }
 }
 
 // Обновить превью при изменении параметров
