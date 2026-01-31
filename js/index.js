@@ -15698,7 +15698,8 @@ function renderCompletedDayMatches(dayId) {
     // Преобразуем данные матча в формат для showLiveTeamStats
     // ВАЖНО: Используем sstats_match_id для загрузки правильной статистики из SStats API
     const matchData = {
-      id: match.sstats_match_id || match.id, // Приоритет у sstats_match_id
+      id: match.sstats_match_id, // Используем только sstats_match_id, если его нет - будет null
+      dbId: match.id, // Сохраняем локальный ID для справки
       team1: match.team1_name,
       team2: match.team2_name,
       score: hasScore ? `${match.team1_score}:${match.team2_score}` : null,
@@ -15848,8 +15849,21 @@ async function toggleYesterdayMatches(eventId) {
               resultDisplay = `<div style="color: #888; font-size: 0.9em; margin-bottom: 5px;">vs</div>`;
             }
             
+            // Преобразуем данные матча в формат для showLiveTeamStats
+            // ВАЖНО: Используем sstats_match_id для загрузки правильной статистики из SStats API
+            const matchData = {
+              id: match.sstats_match_id, // Используем только sstats_match_id, если его нет - будет null
+              dbId: match.id, // Сохраняем локальный ID для справки
+              team1: match.team1_name,
+              team2: match.team2_name,
+              score: hasScore ? `${match.team1_score}:${match.team2_score}` : null,
+              status: 'finished',
+              match_time: match.match_date,
+              elapsed: 90
+            };
+            
             html += `
-              <div class="live-match-card" style="
+              <div class="live-match-card" onclick='showLiveTeamStats(${JSON.stringify(matchData).replace(/'/g, "\\'")})'  style="
                 background: rgba(255, 255, 255, 0.05);
                 border: 2px solid #4caf50;
                 border-radius: 8px;
@@ -15861,6 +15875,7 @@ async function toggleYesterdayMatches(eventId) {
                 justify-content: space-between;
                 min-height: 180px;
                 opacity: 0.8;
+                cursor: pointer;
               " onmouseover="this.style.transform='translateY(-5px)'; this.style.opacity='1';" onmouseout="this.style.transform='translateY(0)'; this.style.opacity='0.8';">
                 
                 <div style="text-align: center; margin-bottom: 10px;">
@@ -16901,7 +16916,12 @@ async function showLiveTeamStats(matchData) {
   try {
     // Если есть matchId - загружаем детальную статистику из SStats
     if (matchData.id) {
-      console.log('🔍 Загружаем детали матча:', matchData.id);
+      console.log('🔍 Загружаем детали матча:', {
+        id: matchData.id,
+        team1: matchData.team1,
+        team2: matchData.team2,
+        status: matchData.status
+      });
       const detailsResponse = await fetch(`/api/match-details/${matchData.id}`);
       
       if (detailsResponse.ok) {
@@ -16910,10 +16930,15 @@ async function showLiveTeamStats(matchData) {
         displayDetailedStats(details, matchData);
         return;
       } else {
-        console.warn('⚠️ Не удалось загрузить детали:', detailsResponse.status);
+        console.warn('⚠️ Не удалось загрузить детали:', {
+          status: detailsResponse.status,
+          statusText: detailsResponse.statusText,
+          matchId: matchData.id
+        });
       }
     } else {
-      console.log('ℹ️ У матча нет ID, показываем базовую статистику');
+      console.log('ℹ️ У матча нет SStats ID (sstats_match_id), показываем базовую статистику');
+      console.log('💡 Подсказка: Запустите скрипт update-sstats-ids.cjs для обновления ID матчей');
     }
     
     // Fallback: показываем базовую статистику
@@ -16965,6 +16990,19 @@ function displayBasicStats(matchData) {
       <div class="empty-message">
         <p>📅 Матч еще не начался</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Статистика появится после начала матча</p>
+      </div>
+    `;
+  } else if (!matchData.id) {
+    // Если нет SStats ID - показываем сообщение об этом
+    html += `
+      <div class="empty-message">
+        <p>📊 Детальная статистика недоступна</p>
+        <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
+          Для этого матча отсутствует связь с SStats API
+        </p>
+        <p style="font-size: 0.85em; color: #888; margin-top: 8px;">
+          Обновите SStats ID через панель управления турниром
+        </p>
       </div>
     `;
   } else {
@@ -17270,19 +17308,33 @@ function renderEvents(events, game) {
     const icon = eventIcons[event.type] || '📌';
     const eventName = eventNames[event.type] || event.name;
     const isGoal = event.type === 1;
+    const isYellowCard = event.type === 2;
+    const isRedCard = event.type === 4;
     
     // Переводим имена игроков
     const playerName = translatePlayerName(event.player?.name || 'N/A');
     const assistName = event.assistPlayer ? translatePlayerName(event.assistPlayer.name) : null;
     
-    // Золотистый фон для голов, обычный для других событий
-    const bgColor = isGoal 
-      ? 'rgba(255, 215, 0, 0.15)' 
-      : `rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1)`;
+    // Определяем цвет фона и границы в зависимости от типа события
+    let bgColor, borderColor;
     
-    const borderColor = isGoal 
-      ? '#ffd700' 
-      : (isHome ? '#5a9fd4' : '#f44336');
+    if (isGoal) {
+      // Гол - зеленый
+      bgColor = 'rgba(7, 255, 23, 0.2)';
+      borderColor = 'rgb(7, 255, 23)';
+    } else if (isYellowCard) {
+      // Желтая карточка - желтый
+      bgColor = 'rgba(255, 215, 0, 0.15)';
+      borderColor = 'rgb(255, 215, 0)';
+    } else if (isRedCard) {
+      // Красная карточка - красный
+      bgColor = 'rgba(244, 67, 54, 0.1)';
+      borderColor = 'rgb(244, 67, 54)';
+    } else {
+      // Остальные события (замены и т.д.) - цвет команды
+      bgColor = `rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1)`;
+      borderColor = isHome ? '#5a9fd4' : '#f44336';
+    }
     
     html += `
       <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: ${bgColor}; border-radius: 5px; border-left: 3px solid ${borderColor};">

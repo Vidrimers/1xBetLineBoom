@@ -6037,6 +6037,172 @@ app.get("/api/yesterday-matches", async (req, res) => {
     
     console.log(`✅ Найдено полностью завершенных дней: ${completedDays.length}`);
     
+    // Автоматически заполняем sstats_match_id для матчей без него
+    let matchesWithoutSstatsId = 0;
+    let matchesUpdated = 0;
+    
+    for (const day of completedDays) {
+      for (const match of day.matches) {
+        if (!match.sstats_match_id) {
+          matchesWithoutSstatsId++;
+        }
+      }
+    }
+    
+    if (matchesWithoutSstatsId > 0) {
+      console.log(`⚠️ Найдено ${matchesWithoutSstatsId} матчей без sstats_match_id, пытаемся заполнить...`);
+      
+      try {
+        // Определяем код турнира
+        const competition = ICON_TO_COMPETITION[event.icon];
+        const leagueId = competition ? SSTATS_LEAGUE_MAPPING[competition] : null;
+        
+        if (leagueId && SSTATS_API_KEY) {
+          // Загружаем словарь команд для турнира
+          const mappingFiles = {
+            'SA': path.join(__dirname, 'names', 'SerieA.json'),
+            'PL': path.join(__dirname, 'names', 'PremierLeague.json'),
+            'BL1': path.join(__dirname, 'names', 'Bundesliga.json'),
+            'PD': path.join(__dirname, 'names', 'LaLiga.json'),
+            'FL1': path.join(__dirname, 'names', 'Ligue1.json'),
+            'DED': path.join(__dirname, 'names', 'Eredivisie.json'),
+            'CL': path.join(__dirname, 'names', 'LeagueOfChampionsTeams.json'),
+            'EL': path.join(__dirname, 'names', 'EuropaLeague.json'),
+            'RPL': path.join(__dirname, 'names', 'RussianPremierLeague.json')
+          };
+          
+          let teamMapping = {}; // Русское -> Английское
+          const mappingFile = mappingFiles[competition];
+          
+          if (mappingFile && fs.existsSync(mappingFile)) {
+            try {
+              const fileContent = fs.readFileSync(mappingFile, 'utf8');
+              const mappingData = JSON.parse(fileContent);
+              const originalMapping = mappingData.teams || mappingData || {};
+              
+              // Создаем регистронезависимый маппинг
+              teamMapping = {};
+              for (const [russian, english] of Object.entries(originalMapping)) {
+                teamMapping[russian.toLowerCase()] = english;
+              }
+              
+              console.log(`📖 Загружен словарь команд для ${competition}: ${Object.keys(teamMapping).length} команд`);
+            } catch (err) {
+              console.warn(`⚠️ Ошибка загрузки словаря: ${err.message}`);
+            }
+          }
+          
+          // Функция для нормализации названия команды (убираем FC, AC и т.д.)
+          const normalizeTeamName = (name) => {
+            if (!name) return '';
+            return name.toLowerCase()
+              .replace(/\b(fc|ac|as|us|ss|afc|bsc|fk|gk|gnk|sk|cf|cd|rc|rcd|ud|sd)\b/g, '')
+              .replace(/\s+/g, ' ')
+              .trim();
+          };
+          
+          // Получаем все матчи турнира из SStats API за последние 30 дней
+          const endDate = new Date().toISOString().slice(0, 10);
+          const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+          
+          const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&From=${startDate}&To=${endDate}`;
+          const response = await fetch(url, {
+            headers: { "X-API-Key": SSTATS_API_KEY }
+          });
+          
+          if (response.ok) {
+            const sstatsData = await response.json();
+            const sstatsMatches = sstatsData.data || [];
+            
+            console.log(`📊 Получено ${sstatsMatches.length} матчей из SStats API`);
+            
+            // Логируем первые 3 матча из SStats для отладки
+            if (sstatsMatches.length > 0) {
+              console.log('📋 Примеры матчей из SStats API:');
+              sstatsMatches.slice(0, 3).forEach((sm, idx) => {
+                console.log(`  ${idx + 1}. ${sm.homeTeam?.name} vs ${sm.awayTeam?.name} (${new Date(sm.date).toLocaleDateString('ru-RU')})`);
+              });
+            }
+            
+            // Логируем первые 3 матча из БД для отладки
+            const matchesToUpdate = [];
+            for (const day of completedDays) {
+              for (const match of day.matches) {
+                if (!match.sstats_match_id) {
+                  matchesToUpdate.push(match);
+                }
+              }
+            }
+            
+            if (matchesToUpdate.length > 0) {
+              console.log('📋 Примеры матчей из БД (требуют обновления):');
+              matchesToUpdate.slice(0, 3).forEach((m, idx) => {
+                console.log(`  ${idx + 1}. ${m.team1_name} vs ${m.team2_name} (${new Date(m.match_date).toLocaleDateString('ru-RU')})`);
+              });
+            }
+            
+            // Сопоставляем матчи по командам и дате
+            for (const day of completedDays) {
+              for (const match of day.matches) {
+                if (!match.sstats_match_id) {
+                  // Переводим русские названия в английские (регистронезависимо)
+                  const team1English = teamMapping[match.team1_name.toLowerCase()] || match.team1_name;
+                  const team2English = teamMapping[match.team2_name.toLowerCase()] || match.team2_name;
+                  
+                  console.log(`🔍 Перевод: "${match.team1_name}" -> "${team1English}", "${match.team2_name}" -> "${team2English}"`);
+                  
+                  // Нормализуем названия
+                  const team1Normalized = normalizeTeamName(team1English);
+                  const team2Normalized = normalizeTeamName(team2English);
+                  
+                  // Ищем соответствующий матч в SStats
+                  const sstatsMatch = sstatsMatches.find(sm => {
+                    const matchDate = new Date(match.match_date);
+                    const sstatsDate = new Date(sm.date);
+                    const dateDiff = Math.abs(matchDate - sstatsDate) / (1000 * 60 * 60); // разница в часах
+                    
+                    // Нормализуем названия из SStats
+                    const sstatsTeam1 = normalizeTeamName(sm.homeTeam?.name);
+                    const sstatsTeam2 = normalizeTeamName(sm.awayTeam?.name);
+                    
+                    // Проверяем совпадение команд
+                    const team1Match = sstatsTeam1.includes(team1Normalized) || 
+                                      team1Normalized.includes(sstatsTeam1) ||
+                                      sstatsTeam1 === team1Normalized;
+                    const team2Match = sstatsTeam2.includes(team2Normalized) || 
+                                      team2Normalized.includes(sstatsTeam2) ||
+                                      sstatsTeam2 === team2Normalized;
+                    
+                    const isMatch = dateDiff < 24 && team1Match && team2Match;
+                    
+                    if (isMatch) {
+                      console.log(`🎯 Найдено совпадение: ${match.team1_name} (${team1Normalized}) vs ${match.team2_name} (${team2Normalized}) = ${sm.homeTeam?.name} (${sstatsTeam1}) vs ${sm.awayTeam?.name} (${sstatsTeam2})`);
+                    }
+                    
+                    return isMatch;
+                  });
+                  
+                  if (sstatsMatch) {
+                    // Обновляем sstats_match_id в БД
+                    db.prepare('UPDATE matches SET sstats_match_id = ? WHERE id = ?').run(sstatsMatch.id, match.id);
+                    match.sstats_match_id = sstatsMatch.id; // Обновляем в текущем объекте
+                    matchesUpdated++;
+                    console.log(`✅ Обновлен sstats_match_id для матча ${match.id}: ${match.team1_name} vs ${match.team2_name} -> ${sstatsMatch.id}`);
+                  } else {
+                    console.log(`❌ Не найдено совпадение для: ${match.team1_name} (${team1Normalized}) vs ${match.team2_name} (${team2Normalized})`);
+                  }
+                }
+              }
+            }
+            
+            console.log(`✅ Обновлено ${matchesUpdated} из ${matchesWithoutSstatsId} матчей`);
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ Не удалось автоматически заполнить sstats_match_id:', err.message);
+      }
+    }
+    
     // Логируем первые несколько матчей для отладки
     if (completedDays.length > 0 && completedDays[0].matches.length > 0) {
       console.log('📋 Пример матча из completedDays:', {
