@@ -6037,8 +6037,9 @@ app.get("/api/yesterday-matches", async (req, res) => {
     
     console.log(`✅ Найдено полностью завершенных дней: ${completedDays.length}`);
     
-    // Автоматически заполняем sstats_match_id для матчей без него
+    // Автоматически заполняем sstats_match_id и счет для матчей
     let matchesWithoutSstatsId = 0;
+    let matchesWithoutScore = 0;
     let matchesUpdated = 0;
     
     for (const day of completedDays) {
@@ -6046,7 +6047,52 @@ app.get("/api/yesterday-matches", async (req, res) => {
         if (!match.sstats_match_id) {
           matchesWithoutSstatsId++;
         }
+        // Проверяем матчи с sstats_match_id, но без счета
+        if (match.sstats_match_id && (match.team1_score === null || match.team2_score === null)) {
+          matchesWithoutScore++;
+        }
       }
+    }
+    
+    // Если есть матчи без счета, но с sstats_match_id - загружаем счет напрямую
+    if (matchesWithoutScore > 0) {
+      console.log(`⚠️ Найдено ${matchesWithoutScore} матчей с sstats_match_id, но без счета, загружаем счет...`);
+      
+      for (const day of completedDays) {
+        for (const match of day.matches) {
+          if (match.sstats_match_id && (match.team1_score === null || match.team2_score === null)) {
+            try {
+              const url = `${SSTATS_API_BASE}/Games/${match.sstats_match_id}`;
+              const response = await fetch(url, {
+                headers: { "X-API-Key": SSTATS_API_KEY }
+              });
+              
+              if (response.ok) {
+                const matchDetails = await response.json();
+                if (matchDetails.status === "OK" && matchDetails.data?.game) {
+                  const homeScore = matchDetails.data.game.homeResult ?? null;
+                  const awayScore = matchDetails.data.game.awayResult ?? null;
+                  
+                  if (homeScore !== null && awayScore !== null) {
+                    db.prepare('UPDATE matches SET team1_score = ?, team2_score = ? WHERE id = ?')
+                      .run(homeScore, awayScore, match.id);
+                    
+                    match.team1_score = homeScore;
+                    match.team2_score = awayScore;
+                    matchesUpdated++;
+                    
+                    console.log(`✅ Обновлен счет для матча ${match.id}: ${match.team1_name} vs ${match.team2_name} -> ${homeScore}:${awayScore}`);
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn(`⚠️ Ошибка загрузки счета для матча ${match.id}:`, err.message);
+            }
+          }
+        }
+      }
+      
+      console.log(`✅ Обновлено счетов: ${matchesUpdated} из ${matchesWithoutScore}`);
     }
     
     if (matchesWithoutSstatsId > 0) {
@@ -6165,15 +6211,28 @@ app.get("/api/yesterday-matches", async (req, res) => {
                     const sstatsTeam1 = normalizeTeamName(sm.homeTeam?.name);
                     const sstatsTeam2 = normalizeTeamName(sm.awayTeam?.name);
                     
-                    // Проверяем совпадение команд
-                    const team1Match = sstatsTeam1.includes(team1Normalized) || 
-                                      team1Normalized.includes(sstatsTeam1) ||
-                                      sstatsTeam1 === team1Normalized;
-                    const team2Match = sstatsTeam2.includes(team2Normalized) || 
-                                      team2Normalized.includes(sstatsTeam2) ||
-                                      sstatsTeam2 === team2Normalized;
+                    // Проверяем совпадение команд (более гибкое сравнение)
+                    const team1Match = 
+                      sstatsTeam1.includes(team1Normalized) || 
+                      team1Normalized.includes(sstatsTeam1) ||
+                      sstatsTeam1 === team1Normalized ||
+                      // Дополнительная проверка по первым 4 символам (для коротких названий)
+                      (team1Normalized.length >= 4 && sstatsTeam1.length >= 4 && 
+                       team1Normalized.substring(0, 4) === sstatsTeam1.substring(0, 4));
+                    
+                    const team2Match = 
+                      sstatsTeam2.includes(team2Normalized) || 
+                      team2Normalized.includes(sstatsTeam2) ||
+                      sstatsTeam2 === team2Normalized ||
+                      // Дополнительная проверка по первым 4 символам
+                      (team2Normalized.length >= 4 && sstatsTeam2.length >= 4 && 
+                       team2Normalized.substring(0, 4) === sstatsTeam2.substring(0, 4));
                     
                     const isMatch = dateDiff < 24 && team1Match && team2Match;
+                    
+                    if (dateDiff < 24 && (team1Match || team2Match)) {
+                      console.log(`🔍 Частичное совпадение (дата OK, команды: ${team1Match ? '✓' : '✗'}/${team2Match ? '✓' : '✗'}): ${match.team1_name} (${team1Normalized}) vs ${match.team2_name} (${team2Normalized}) = ${sm.homeTeam?.name} (${sstatsTeam1}) vs ${sm.awayTeam?.name} (${sstatsTeam2})`);
+                    }
                     
                     if (isMatch) {
                       console.log(`🎯 Найдено совпадение: ${match.team1_name} (${team1Normalized}) vs ${match.team2_name} (${team2Normalized}) = ${sm.homeTeam?.name} (${sstatsTeam1}) vs ${sm.awayTeam?.name} (${sstatsTeam2})`);
@@ -6183,13 +6242,38 @@ app.get("/api/yesterday-matches", async (req, res) => {
                   });
                   
                   if (sstatsMatch) {
-                    // Обновляем sstats_match_id в БД
-                    db.prepare('UPDATE matches SET sstats_match_id = ? WHERE id = ?').run(sstatsMatch.id, match.id);
+                    // Обновляем sstats_match_id и счет в БД
+                    const homeScore = sstatsMatch.homeResult ?? null;
+                    const awayScore = sstatsMatch.awayResult ?? null;
+                    
+                    db.prepare('UPDATE matches SET sstats_match_id = ?, team1_score = ?, team2_score = ? WHERE id = ?')
+                      .run(sstatsMatch.id, homeScore, awayScore, match.id);
+                    
                     match.sstats_match_id = sstatsMatch.id; // Обновляем в текущем объекте
+                    match.team1_score = homeScore; // Обновляем счет
+                    match.team2_score = awayScore; // Обновляем счет
+                    
                     matchesUpdated++;
-                    console.log(`✅ Обновлен sstats_match_id для матча ${match.id}: ${match.team1_name} vs ${match.team2_name} -> ${sstatsMatch.id}`);
+                    console.log(`✅ Обновлен sstats_match_id и счет для матча ${match.id}: ${match.team1_name} vs ${match.team2_name} -> ${sstatsMatch.id} (${homeScore}:${awayScore})`);
                   } else {
-                    console.log(`❌ Не найдено совпадение для: ${match.team1_name} (${team1Normalized}) vs ${match.team2_name} (${team2Normalized})`);
+                    console.log(`❌ Не найдено совпадение для: ${match.team1_name} (${team1Normalized}) vs ${match.team2_name} (${team2Normalized}), дата: ${new Date(match.match_date).toLocaleDateString('ru-RU')}`);
+                    
+                    // Показываем ближайшие матчи по дате для отладки
+                    const matchDate = new Date(match.match_date);
+                    const nearbyMatches = sstatsMatches.filter(sm => {
+                      const sstatsDate = new Date(sm.date);
+                      const dateDiff = Math.abs(matchDate - sstatsDate) / (1000 * 60 * 60);
+                      return dateDiff < 48; // В пределах 48 часов
+                    }).slice(0, 3);
+                    
+                    if (nearbyMatches.length > 0) {
+                      console.log(`  📅 Ближайшие матчи по дате:`);
+                      nearbyMatches.forEach(sm => {
+                        const sstatsTeam1 = normalizeTeamName(sm.homeTeam?.name);
+                        const sstatsTeam2 = normalizeTeamName(sm.awayTeam?.name);
+                        console.log(`    - ${sm.homeTeam?.name} (${sstatsTeam1}) vs ${sm.awayTeam?.name} (${sstatsTeam2}), дата: ${new Date(sm.date).toLocaleDateString('ru-RU')}`);
+                      });
+                    }
                   }
                 }
               }

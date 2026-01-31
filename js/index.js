@@ -15508,8 +15508,9 @@ async function showLiveEventMatches(eventId) {
     
     container.innerHTML = html;
     
-    // Загружаем завершенные матчи отдельно
-    loadCompletedDays(eventId);
+    // Загружаем завершенные матчи отдельно (с принудительной перезагрузкой)
+    completedDaysData = null; // Очищаем кэш
+    loadCompletedDays(eventId, true);
     
     // Обновляем звездочки после отрисовки
     updateFavoriteStars();
@@ -15550,15 +15551,20 @@ function backToLiveEvents() {
 let completedDaysLoaded = {};
 let completedDaysData = null; // Сохраняем данные с сервера
 
-async function loadCompletedDays(eventId) {
+async function loadCompletedDays(eventId, forceReload = false) {
   try {
-    const response = await fetch(`/api/yesterday-matches?eventId=${eventId}`);
-    if (!response.ok) {
-      throw new Error(`Ошибка: ${response.status}`);
+    // Принудительная перезагрузка или первая загрузка
+    if (forceReload || !completedDaysData) {
+      const response = await fetch(`/api/yesterday-matches?eventId=${eventId}`);
+      if (!response.ok) {
+        throw new Error(`Ошибка: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      completedDaysData = data; // Сохраняем данные
+      
+      console.log('📥 Загружены завершенные дни:', completedDaysData.completedDays?.length || 0);
     }
-    
-    const data = await response.json();
-    completedDaysData = data; // Сохраняем данные
     
     renderCompletedDays(eventId);
     
