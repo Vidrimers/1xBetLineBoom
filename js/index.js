@@ -14391,6 +14391,88 @@ function closeTournamentAnnouncementModal() {
   unlockBodyScroll();
 }
 
+// Форматирование текста в textarea
+function formatText(type) {
+  const textarea = document.getElementById('announcementText');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selectedText = textarea.value.substring(start, end);
+  
+  if (!selectedText && (type === 'bold' || type === 'italic' || type === 'code')) {
+    alert('Выделите текст для форматирования');
+    return;
+  }
+  
+  let formattedText = '';
+  let cursorOffset = 0;
+  
+  switch(type) {
+    case 'bold':
+      formattedText = `*${selectedText}*`;
+      cursorOffset = selectedText.length + 2;
+      break;
+    case 'italic':
+      formattedText = `_${selectedText}_`;
+      cursorOffset = selectedText.length + 2;
+      break;
+    case 'code':
+      formattedText = `\`${selectedText}\``;
+      cursorOffset = selectedText.length + 2;
+      break;
+    case 'bullet':
+      // Если текст выделен - добавляем маркер к каждой строке
+      if (selectedText) {
+        formattedText = selectedText.split('\n').map(line => line.trim() ? `• ${line}` : line).join('\n');
+        cursorOffset = formattedText.length;
+      } else {
+        // Если ничего не выделено - вставляем шаблон
+        formattedText = '• ';
+        cursorOffset = 2;
+      }
+      break;
+    case 'number':
+      // Если текст выделен - добавляем нумерацию к каждой строке
+      if (selectedText) {
+        let counter = 1;
+        formattedText = selectedText.split('\n').map(line => line.trim() ? `${counter++}. ${line}` : line).join('\n');
+        cursorOffset = formattedText.length;
+      } else {
+        // Если ничего не выделено - вставляем шаблон
+        formattedText = '1. ';
+        cursorOffset = 3;
+      }
+      break;
+  }
+  
+  // Заменяем выделенный текст на отформатированный
+  textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+  
+  // Устанавливаем курсор в конец отформатированного текста
+  textarea.focus();
+  textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+  
+  // Обновляем предпросмотр
+  textarea.dispatchEvent(new Event('input'));
+}
+
+// Вставка эмодзи в позицию курсора
+function insertEmoji(emoji) {
+  const textarea = document.getElementById('announcementText');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  
+  // Вставляем эмодзи в позицию курсора
+  textarea.value = textarea.value.substring(0, start) + emoji + textarea.value.substring(end);
+  
+  // Устанавливаем курсор после эмодзи
+  const newPosition = start + emoji.length;
+  textarea.focus();
+  textarea.setSelectionRange(newPosition, newPosition);
+  
+  // Обновляем предпросмотр
+  textarea.dispatchEvent(new Event('input'));
+}
+
 // Открыть модальное окно объявления о новых функциях
 function openAnnouncementModal() {
   document.getElementById('featureAnnouncementModal').style.display = 'flex';
