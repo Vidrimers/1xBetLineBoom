@@ -1885,6 +1885,9 @@ async function selectEvent(eventId, eventName) {
           <button id="importMatchesBtn" onclick="openImportMatchesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Импортировать матчи">
             📥
           </button>
+          <button id="bulkEditDatesBtn" onclick="openBulkEditDatesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Массовое редактирование дат">
+            📅
+          </button>
         `;
       }
       
@@ -2609,20 +2612,7 @@ async function displayMatches() {
     // Рендерим кнопки сетки в matches-container (всегда обновляем, даже если пусто)
     const matchesBracketButtons = document.getElementById('matchesBracketButtons');
     if (matchesBracketButtons) {
-      // Добавляем кнопку массового редактирования дат для админа/модератора
-      let adminButtonsHTML = '';
-      if (currentUser && (currentUser.isAdmin || canEditMatches())) {
-        adminButtonsHTML = `
-          <button class="round-filter-btn" 
-                  onclick="openBulkEditDatesModal()" 
-                  style="background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); border-color: #4caf50;"
-                  title="Массовое редактирование дат матчей">
-            📅 Редактировать даты
-          </button>
-        `;
-      }
-      
-      matchesBracketButtons.innerHTML = bracketsHTML + adminButtonsHTML;
+      matchesBracketButtons.innerHTML = bracketsHTML;
     }
 
     // Рендерим кнопки туров в roundsFilterScroll
