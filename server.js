@@ -1496,7 +1496,20 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
     
     for (const user of users) {
       try {
-        await fetch(
+        // Проверяем детальные настройки уведомлений
+        const notifSettings = db.prepare(`
+          SELECT tournament_announcements 
+          FROM user_notification_settings 
+          WHERE user_id = ?
+        `).get(user.id);
+        
+        // Если настройка выключена, пропускаем
+        if (notifSettings && notifSettings.tournament_announcements === 0) {
+          console.log(`⏭️ Пропускаем пользователя ${user.username} - объявления о турнирах выключены`);
+          continue;
+        }
+        
+        const response = await fetch(
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
           {
             method: "POST",
@@ -1508,12 +1521,22 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
             }),
           }
         );
-        successCount++;
+        
+        const result = await response.json();
+        
+        if (!result.ok) {
+          console.error(`⚠️ Telegram API ошибка для ${user.username}:`, result);
+          errorCount++;
+        } else {
+          successCount++;
+        }
         
         // Небольшая задержка между отправками
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error(`⚠️ Не удалось отправить объявление пользователю ${user.username}:`, error);
+        console.error(`⚠️ Не удалось отправить объявление пользователю ${user.username}:`, error.message);
+        console.error(`   telegram_id: ${user.telegram_id}`);
+        console.error(`   Полная ошибка:`, error);
         errorCount++;
       }
     }
