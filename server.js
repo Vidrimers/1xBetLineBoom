@@ -2069,6 +2069,14 @@ function runUsersMigrations() {
     // Колонка уже существует, игнорируем
   }
   
+  // Миграция: добавляем telegram_id если его нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN telegram_id TEXT UNIQUE`);
+    console.log("✅ Колонка telegram_id добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+  
   console.log("✅ Миграции для таблицы users завершены");
 }
 
@@ -4700,6 +4708,282 @@ app.post("/api/user/login/confirm", async (req, res) => {
 
     res.json(user);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Хранилище токенов авторизации через Telegram (в памяти)
+const telegramAuthTokens = new Map();
+
+// POST /api/telegram-auth/create-token - Создать токен для авторизации через Telegram
+app.post("/api/telegram-auth/create-token", async (req, res) => {
+  try {
+    const { auth_token, device_info, browser, os } = req.body;
+    
+    if (!auth_token) {
+      return res.status(400).json({ error: "Токен обязателен" });
+    }
+
+    // Сохраняем токен с временем истечения (5 минут)
+    telegramAuthTokens.set(auth_token, {
+      status: 'pending',
+      device_info,
+      browser,
+      os,
+      created_at: Date.now(),
+      expires_at: Date.now() + 5 * 60 * 1000 // 5 минут
+    });
+
+    // Получаем имя бота из переменных окружения
+    const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'YourBotUsername';
+
+    res.json({ 
+      success: true,
+      botUsername
+    });
+  } catch (error) {
+    console.error("Ошибка создания токена:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/telegram-auth/check-status - Проверить статус авторизации
+app.get("/api/telegram-auth/check-status", async (req, res) => {
+  try {
+    const { auth_token } = req.query;
+    
+    if (!auth_token) {
+      return res.status(400).json({ error: "Токен обязателен" });
+    }
+
+    const tokenData = telegramAuthTokens.get(auth_token);
+    
+    if (!tokenData) {
+      return res.json({ status: 'not_found' });
+    }
+
+    // Проверяем истечение токена
+    if (Date.now() > tokenData.expires_at) {
+      telegramAuthTokens.delete(auth_token);
+      return res.json({ status: 'expired' });
+    }
+
+    if (tokenData.status === 'completed') {
+      // Возвращаем данные пользователя
+      res.json({
+        status: 'completed',
+        user: tokenData.user,
+        isNewUser: tokenData.isNewUser
+      });
+      
+      // Удаляем токен после успешной авторизации
+      telegramAuthTokens.delete(auth_token);
+    } else {
+      res.json({ status: 'pending' });
+    }
+  } catch (error) {
+    console.error("Ошибка проверки статуса:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/telegram-auth/complete - Завершить авторизацию (вызывается ботом)
+app.post("/api/telegram-auth/complete", async (req, res) => {
+  try {
+    const { auth_token, telegram_id, first_name, username: tg_username } = req.body;
+    
+    if (!auth_token || !telegram_id) {
+      return res.status(400).json({ error: "Токен и Telegram ID обязательны" });
+    }
+
+    const tokenData = telegramAuthTokens.get(auth_token);
+    
+    if (!tokenData) {
+      return res.status(404).json({ error: "Токен не найден" });
+    }
+
+    // Проверяем истечение токена
+    if (Date.now() > tokenData.expires_at) {
+      telegramAuthTokens.delete(auth_token);
+      return res.status(400).json({ error: "Токен истек" });
+    }
+
+    // Проверяем, существует ли пользователь с таким telegram_id
+    let user = db
+      .prepare("SELECT * FROM users WHERE telegram_id = ?")
+      .get(telegram_id);
+
+    const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+    const isNewUser = !user;
+
+    if (!user) {
+      // Генерируем уникальное имя "Малютка{число}"
+      let username;
+      let attempts = 0;
+      const maxAttempts = 100;
+      
+      do {
+        const randomNum = Math.floor(Math.random() * 10000);
+        username = `Малютка${randomNum}`;
+        const existing = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
+        if (!existing) break;
+        attempts++;
+      } while (attempts < maxAttempts);
+
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({ error: "Не удалось сгенерировать уникальное имя" });
+      }
+
+      // Создаем нового пользователя
+      const result = db
+        .prepare("INSERT INTO users (username, telegram_id, telegram_username) VALUES (?, ?, ?)")
+        .run(username, telegram_id, tg_username || null);
+      
+      user = { 
+        id: result.lastInsertRowid, 
+        username,
+        telegram_id,
+        telegram_username: tg_username || null
+      };
+
+      // Проверяем, были ли другие пользователи с этого IP
+      const otherUsers = db.prepare(`
+        SELECT DISTINCT u.username 
+        FROM sessions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.ip_address = ? AND u.id != ?
+        ORDER BY s.created_at DESC
+        LIMIT 5
+      `).all(ip_address, user.id);
+
+      const time = new Date().toLocaleString("ru-RU");
+      
+      let message = `👤 НОВЫЙ ПОЛЬЗОВАТЕЛЬ (Telegram)
+
+🆔 ID: ${user.id}
+👤 Имя: ${username}
+📱 Telegram: ${first_name || 'N/A'} ${tg_username ? `(@${tg_username})` : ''}
+🔑 TG ID: ${telegram_id}
+🌍 IP: ${ip_address}
+🕐 Время: ${time}`;
+
+      if (otherUsers.length > 0) {
+        message += `\n\n⚠️ С этого IP уже заходили:`;
+        otherUsers.forEach(u => {
+          message += `\n  • ${u.username}`;
+        });
+      }
+
+      // Отправляем уведомление админу
+      notifyAdmin(message).catch(err => {
+        console.error("⚠️ Не удалось отправить уведомление о новом пользователе:", err);
+      });
+    }
+
+    // Обновляем токен с данными пользователя
+    tokenData.status = 'completed';
+    tokenData.user = user;
+    tokenData.isNewUser = isNewUser;
+    telegramAuthTokens.set(auth_token, tokenData);
+
+    res.json({ 
+      success: true,
+      user,
+      isNewUser
+    });
+  } catch (error) {
+    console.error("Ошибка завершения авторизации:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/user/telegram-auth - Авторизация через Telegram
+app.post("/api/user/telegram-auth", async (req, res) => {
+  try {
+    const { telegram_id, first_name, username: tg_username } = req.body;
+    
+    if (!telegram_id) {
+      return res.status(400).json({ error: "Telegram ID обязателен" });
+    }
+
+    // Проверяем, существует ли пользователь с таким telegram_id
+    let user = db
+      .prepare("SELECT * FROM users WHERE telegram_id = ?")
+      .get(telegram_id);
+
+    const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+    const isNewUser = !user;
+
+    if (!user) {
+      // Генерируем уникальное имя "Малютка{число}"
+      let username;
+      let attempts = 0;
+      const maxAttempts = 100;
+      
+      do {
+        const randomNum = Math.floor(Math.random() * 10000);
+        username = `Малютка${randomNum}`;
+        const existing = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
+        if (!existing) break;
+        attempts++;
+      } while (attempts < maxAttempts);
+
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({ error: "Не удалось сгенерировать уникальное имя" });
+      }
+
+      // Создаем нового пользователя
+      const result = db
+        .prepare("INSERT INTO users (username, telegram_id, telegram_username) VALUES (?, ?, ?)")
+        .run(username, telegram_id, tg_username || null);
+      
+      user = { 
+        id: result.lastInsertRowid, 
+        username,
+        telegram_id,
+        telegram_username: tg_username || null
+      };
+
+      // Проверяем, были ли другие пользователи с этого IP
+      const otherUsers = db.prepare(`
+        SELECT DISTINCT u.username 
+        FROM sessions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.ip_address = ? AND u.id != ?
+        ORDER BY s.created_at DESC
+        LIMIT 5
+      `).all(ip_address, user.id);
+
+      const time = new Date().toLocaleString("ru-RU");
+      
+      let message = `👤 НОВЫЙ ПОЛЬЗОВАТЕЛЬ (Telegram)
+
+🆔 ID: ${user.id}
+👤 Имя: ${username}
+📱 Telegram: ${first_name || 'N/A'} ${tg_username ? `(@${tg_username})` : ''}
+🔑 TG ID: ${telegram_id}
+🌍 IP: ${ip_address}
+🕐 Время: ${time}`;
+
+      if (otherUsers.length > 0) {
+        message += `\n\n⚠️ С этого IP уже заходили:`;
+        otherUsers.forEach(u => {
+          message += `\n  • ${u.username}`;
+        });
+      }
+
+      // Отправляем уведомление админу
+      notifyAdmin(message).catch(err => {
+        console.error("⚠️ Не удалось отправить уведомление о новом пользователе:", err);
+      });
+    }
+
+    res.json({ 
+      user,
+      isNewUser
+    });
+  } catch (error) {
+    console.error("Ошибка Telegram авторизации:", error);
     res.status(500).json({ error: error.message });
   }
 });

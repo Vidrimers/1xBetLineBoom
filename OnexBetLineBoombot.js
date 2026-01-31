@@ -945,6 +945,58 @@ export function startBot() {
     // Логируем действие
     logUserAction(msg, "Нажата команда /start" + (startParam ? ` с параметром: ${startParam}` : ""));
 
+    // Проверяем, есть ли параметр auth_{token} для авторизации на сайте
+    if (startParam && startParam.startsWith('auth_')) {
+      const authToken = startParam.replace('auth_', '');
+      
+      console.log(`🔐 Попытка авторизации через Telegram с токеном: ${authToken}`);
+      
+      try {
+        const telegram_id = msg.from.id.toString();
+        const first_name = msg.from.first_name;
+        const username = msg.from.username;
+
+        // Отправляем запрос на сервер для завершения авторизации
+        const response = await fetch(`${SERVER_URL}/api/telegram-auth/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            auth_token: authToken,
+            telegram_id,
+            first_name,
+            username
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          console.log(`✅ Авторизация успешна для telegram_id: ${telegram_id}`);
+          
+          const welcomeMessage = result.isNewUser 
+            ? `🎉 Добро пожаловать!\n\n✅ Вы успешно авторизовались на сайте!\n👤 Ваше имя: ${result.user.username}\n\n💡 Имя можно изменить в профиле на сайте.`
+            : `✅ Вы успешно авторизовались на сайте!\n👤 Ваше имя: ${result.user.username}`;
+          
+          replyInThread(msg, welcomeMessage, mainMenuKeyboard);
+        } else {
+          console.log(`❌ Ошибка авторизации: ${result.error}`);
+          replyInThread(
+            msg,
+            `❌ Ошибка авторизации: ${result.error || 'Неизвестная ошибка'}\n\nПопробуйте снова.`,
+            mainMenuKeyboard
+          );
+        }
+      } catch (error) {
+        console.error('❌ Ошибка при авторизации:', error);
+        replyInThread(
+          msg,
+          `❌ Произошла ошибка при авторизации. Попробуйте позже.`,
+          mainMenuKeyboard
+        );
+      }
+      return;
+    }
+
     // Проверяем, есть ли параметр link_{userId}
     if (startParam && startParam.startsWith('link_')) {
       const userId = startParam.replace('link_', '');

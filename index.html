@@ -11,6 +11,8 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
     />
+    <!-- Telegram WebApp API -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
   <body>
     <!-- Контейнер для уведомлений о голах -->
@@ -72,6 +74,9 @@
           <button id="authBtn" class="auth-btn" onclick="initUser()">
             Войти
           </button>
+          <button id="telegramAuthBtn" class="auth-btn telegram-auth-btn" onclick="loginWithTelegram()" style="background: linear-gradient(135deg, #54a9eb 0%, #3876eb 100%); margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <img src="img/tg.png" alt="Telegram" style="width: 20px; height: 20px;"> Войти через Telegram
+          </button>
         </div>
         <p
           id="userStatus"
@@ -96,6 +101,9 @@
         />
         <button class="auth-btn" onclick="initUser()">
           Войти
+        </button>
+        <button id="telegramAuthBtnMobile" class="auth-btn telegram-auth-btn" onclick="loginWithTelegram()" style="background: linear-gradient(135deg, #54a9eb 0%, #3876eb 100%); margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <img src="img/tg.png" alt="Telegram" style="width: 20px; height: 20px;"> Войти через Telegram
         </button>
       </div>
 

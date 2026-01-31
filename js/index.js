@@ -408,6 +408,7 @@ function setAuthButtonToLogoutState() {
     '<span class="logout-text logout-text-before">ВЫ</span><span class="logout-cross">X</span><span class="logout-text logout-text-after">ОД</span>';
   authBtn.onclick = () => logoutUser();
   moveAuthButtonToProfile();
+  hideTelegramAuthButtons();
 }
 
 function setAuthButtonToLoginState() {
@@ -417,6 +418,23 @@ function setAuthButtonToLoginState() {
   authBtn.innerHTML = "Войти";
   authBtn.onclick = () => initUser();
   moveAuthButtonToLoginForm();
+  showTelegramAuthButtons();
+}
+
+// Скрыть кнопки Telegram авторизации
+function hideTelegramAuthButtons() {
+  const telegramAuthBtn = document.getElementById("telegramAuthBtn");
+  const telegramAuthBtnMobile = document.getElementById("telegramAuthBtnMobile");
+  if (telegramAuthBtn) telegramAuthBtn.style.display = "none";
+  if (telegramAuthBtnMobile) telegramAuthBtnMobile.style.display = "none";
+}
+
+// Показать кнопки Telegram авторизации
+function showTelegramAuthButtons() {
+  const telegramAuthBtn = document.getElementById("telegramAuthBtn");
+  const telegramAuthBtnMobile = document.getElementById("telegramAuthBtnMobile");
+  if (telegramAuthBtn) telegramAuthBtn.style.display = "flex";
+  if (telegramAuthBtnMobile) telegramAuthBtnMobile.style.display = "flex";
 }
 
 // ===== ТЕМЫ =====
@@ -1372,6 +1390,178 @@ async function logoutUser() {
   // Очищаем ставки
   document.getElementById("myBetsList").innerHTML =
     '<div class="empty-message">У вас пока нет ставок</div>';
+}
+
+// Функция авторизации через Telegram
+async function loginWithTelegram() {
+  try {
+    // Генерируем уникальный токен для авторизации
+    const authToken = `auth_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    
+    // Сохраняем токен в localStorage для проверки после возврата
+    localStorage.setItem('telegram_auth_token', authToken);
+    
+    // Получаем информацию об устройстве
+    const deviceData = getDeviceInfo();
+    localStorage.setItem('telegram_auth_device', JSON.stringify(deviceData));
+    
+    // Отправляем запрос на сервер для создания токена авторизации
+    const response = await fetch("/api/telegram-auth/create-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        auth_token: authToken,
+        device_info: deviceData.deviceInfo,
+        browser: deviceData.browser,
+        os: deviceData.os
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      await showCustomAlert(result.error || 'Ошибка создания токена', 'Ошибка', '❌');
+      return;
+    }
+
+    // Открываем бота с командой авторизации
+    const botUsername = result.botUsername || 'YourBotUsername'; // Замените на имя вашего бота
+    const telegramUrl = `https://t.me/${botUsername}?start=auth_${authToken}`;
+    window.open(telegramUrl, '_blank');
+
+    // Запускаем проверку статуса авторизации
+    checkTelegramAuthStatus(authToken);
+  } catch (error) {
+    console.error("Ошибка при авторизации через Telegram:", error);
+    await showCustomAlert("Ошибка при авторизации через Telegram", 'Ошибка', '❌');
+  }
+}
+
+// Проверка статуса авторизации через Telegram
+let authCheckInterval = null;
+async function checkTelegramAuthStatus(authToken) {
+  let attempts = 0;
+  const maxAttempts = 60; // 60 попыток по 2 секунды = 2 минуты
+
+  authCheckInterval = setInterval(async () => {
+    attempts++;
+
+    if (attempts > maxAttempts) {
+      clearInterval(authCheckInterval);
+      await showCustomAlert(
+        'Время ожидания авторизации истекло. Попробуйте снова.',
+        'Таймаут',
+        '⏱️'
+      );
+      localStorage.removeItem('telegram_auth_token');
+      localStorage.removeItem('telegram_auth_device');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/telegram-auth/check-status?auth_token=${authToken}`);
+      const result = await response.json();
+
+      if (result.status === 'completed' && result.user) {
+        clearInterval(authCheckInterval);
+        
+        currentUser = result.user;
+        currentUser.isAdmin = currentUser.username === ADMIN_DB_NAME;
+
+        // Загружаем права модератора
+        await loadModeratorPermissions();
+
+        // Получаем сохраненные данные устройства
+        const deviceDataStr = localStorage.getItem('telegram_auth_device');
+        const deviceData = deviceDataStr ? JSON.parse(deviceDataStr) : getDeviceInfo();
+
+        // Создаем сессию на сервере
+        try {
+          const sessionResponse = await fetch("/api/sessions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: currentUser.id,
+              device_info: deviceData.deviceInfo,
+              browser: deviceData.browser,
+              os: deviceData.os
+            })
+          });
+
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            localStorage.setItem("sessionToken", sessionData.session_token);
+            console.log("✅ Сессия создана:", sessionData.session_token);
+          }
+        } catch (err) {
+          console.error("⚠️ Ошибка создания сессии:", err);
+        }
+
+        // Сохраняем пользователя в localStorage
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+        // Загружаем тему с сервера после логина
+        await loadSavedTheme();
+
+        // Обновляем классы контейнера для показа контента
+        const container = document.querySelector(".container");
+        container.classList.remove("not-logged-in");
+        container.classList.add("logged-in");
+
+        // Меняем логотип с анимированного на обычный
+        document.getElementById("headerLogo").src = "img/logo_nobg.png";
+
+        // Показываем ссылку на Google Sheets когда залогинен
+        document.getElementById("headerLogoLink").style.display = "block";
+        document.getElementById("headerLogoDefault").style.display = "none";
+
+        // Показываем информацию о пользователе
+        document.getElementById("userStatus").style.display = "block";
+        document.getElementById("usernameBold").textContent = currentUser.username;
+        document.getElementById("username").disabled = true;
+
+        setAuthButtonToLogoutState();
+
+        // Показываем админ-кнопки если это админ
+        if (currentUser.isAdmin) {
+          document.getElementById("adminBtn").style.display = "inline-block";
+          document.getElementById("countingBtn").style.display = "inline-block";
+          document.getElementById("adminSettingsPanel").style.display = "block";
+        } else if (isModerator()) {
+          if (canCreateTournaments()) {
+            document.getElementById("adminBtn").style.display = "inline-block";
+          }
+          if (canViewCounting()) {
+            document.getElementById("countingBtn").style.display = "inline-block";
+          }
+        }
+
+        // Если это новый пользователь - показываем приветственное сообщение
+        if (result.isNewUser) {
+          await showCustomAlert(
+            `Твое имя на сайте: ${currentUser.username}\n\nИмя можно изменить в профиле, наведя или нажав на текущее имя.`,
+            'Добро пожаловать! 🎉',
+            '👋'
+          );
+        }
+
+        // Загружаем турниры, матчи и ставки пользователя
+        loadEventsList();
+        loadMyBets();
+        
+        // Запускаем обновление индикатора LIVE
+        updateLiveIndicator();
+
+        // Очищаем временные данные
+        localStorage.removeItem('telegram_auth_token');
+        localStorage.removeItem('telegram_auth_device');
+      }
+    } catch (error) {
+      console.error("Ошибка проверки статуса авторизации:", error);
+    }
+  }, 2000); // Проверяем каждые 2 секунды
 }
 
 // ===== ТУРНИРЫ =====
@@ -5379,9 +5569,9 @@ function displayProfile(profile) {
           </div>
         </div>
       </div>
-      <div class="profile-username" onmouseover="document.getElementById('editUsernameBtn').style.display='inline'" onmouseout="document.getElementById('editUsernameBtn').style.display='none'">
+      <div class="profile-username" onclick="editUsername()" onmouseover="document.getElementById('editUsernameBtn').style.display='inline'" onmouseout="document.getElementById('editUsernameBtn').style.display='none'" style="cursor: pointer;">
         <span id="usernameDisplay">${profile.username}</span>
-        <button id="editUsernameBtn" onclick="editUsername()" style="
+        <button id="editUsernameBtn" onclick="event.stopPropagation(); editUsername()" style="
           background: transparent;
           color: #0088cc;
           border: none;
