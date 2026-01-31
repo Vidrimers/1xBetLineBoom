@@ -17295,72 +17295,92 @@ function renderEvents(events, game) {
     4: 'Красная карточка'
   };
   
-  // Сортируем события по времени
-  const sortedEvents = [...events].sort((a, b) => (a.elapsed || 0) - (b.elapsed || 0));
+  // Разделяем события по командам
+  const homeEvents = events.filter(e => e.teamId === game.homeTeam.id).sort((a, b) => (a.elapsed || 0) - (b.elapsed || 0));
+  const awayEvents = events.filter(e => e.teamId === game.awayTeam.id).sort((a, b) => (a.elapsed || 0) - (b.elapsed || 0));
   
-  let html = `
-    <div style="background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 8px;">
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-  `;
-  
-  sortedEvents.forEach(event => {
-    const isHome = event.teamId === game.homeTeam.id;
-    const icon = eventIcons[event.type] || '📌';
-    const eventName = eventNames[event.type] || event.name;
-    const isGoal = event.type === 1;
-    const isYellowCard = event.type === 2;
-    const isRedCard = event.type === 4;
-    
-    // Переводим имена игроков
-    const playerName = translatePlayerName(event.player?.name || 'N/A');
-    const assistName = event.assistPlayer ? translatePlayerName(event.assistPlayer.name) : null;
-    
-    // Определяем цвет фона и границы в зависимости от типа события
-    let bgColor, borderColor;
-    
-    if (isGoal) {
-      // Гол - зеленый
-      bgColor = 'rgba(7, 255, 23, 0.2)';
-      borderColor = 'rgb(7, 255, 23)';
-    } else if (isYellowCard) {
-      // Желтая карточка - желтый
-      bgColor = 'rgba(255, 215, 0, 0.15)';
-      borderColor = 'rgb(255, 215, 0)';
-    } else if (isRedCard) {
-      // Красная карточка - красный
-      bgColor = 'rgba(244, 67, 54, 0.1)';
-      borderColor = 'rgb(244, 67, 54)';
-    } else if (event.type === 3) {
-      // Замена - синий
-      bgColor = 'rgba(56, 118, 235, 0.3)';
-      borderColor = 'rgb(56, 118, 235)';
-    } else {
-      // Остальные события - цвет команды
-      bgColor = `rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1)`;
-      borderColor = isHome ? '#5a9fd4' : '#f44336';
+  // Функция для рендеринга событий команды
+  const renderTeamEvents = (teamEvents, isHome) => {
+    if (teamEvents.length === 0) {
+      return `
+        <div style="text-align: center; padding: 20px; color: #888; font-size: 0.9em;">
+          Нет событий
+        </div>
+      `;
     }
     
-    html += `
-      <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: ${bgColor}; border-radius: 5px; border-left: 3px solid ${borderColor};">
-        <div style="min-width: 40px; text-align: center; color: #e0e6f0; font-weight: 600; font-size: 0.9em;">
-          ${event.elapsed}'
-        </div>
-        <div style="font-size: 1.2em;">
-          ${icon}
-        </div>
-        <div style="flex: 1;">
-          <div style="color: #e0e6f0; font-size: 0.9em; font-weight: 600;">
-            ${playerName}
+    let html = '';
+    teamEvents.forEach(event => {
+      const icon = eventIcons[event.type] || '📌';
+      const eventName = eventNames[event.type] || event.name;
+      const isGoal = event.type === 1;
+      const isYellowCard = event.type === 2;
+      const isRedCard = event.type === 4;
+      const isSubstitution = event.type === 3;
+      
+      // Переводим имена игроков
+      const playerName = translatePlayerName(event.player?.name || 'N/A');
+      const assistName = event.assistPlayer ? translatePlayerName(event.assistPlayer.name) : null;
+      
+      // Определяем цвет фона и границы в зависимости от типа события
+      let bgColor, borderColor;
+      
+      if (isGoal) {
+        bgColor = 'rgba(7, 255, 23, 0.2)';
+        borderColor = 'rgb(7, 255, 23)';
+      } else if (isYellowCard) {
+        bgColor = 'rgba(255, 215, 0, 0.15)';
+        borderColor = 'rgb(255, 215, 0)';
+      } else if (isRedCard) {
+        bgColor = 'rgba(244, 67, 54, 0.1)';
+        borderColor = 'rgb(244, 67, 54)';
+      } else if (isSubstitution) {
+        bgColor = 'rgba(56, 118, 235, 0.3)';
+        borderColor = 'rgb(56, 118, 235)';
+      } else {
+        bgColor = `rgba(${isHome ? '90, 159, 212' : '244, 67, 54'}, 0.1)`;
+        borderColor = isHome ? '#5a9fd4' : '#f44336';
+      }
+      
+      html += `
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: ${bgColor}; border-radius: 5px; border-left: 3px solid ${borderColor}; margin-bottom: 8px;">
+          <div style="min-width: 35px; text-align: center; color: #e0e6f0; font-weight: 600; font-size: 0.85em;">
+            ${event.elapsed}'
           </div>
-          <div style="color: #b0b8c8; font-size: 0.8em;">
-            ${eventName}${assistName ? ` (ассист: ${assistName})` : ''}
+          <div style="font-size: 1.1em;">
+            ${icon}
+          </div>
+          <div style="flex: 1;">
+            <div style="color: #e0e6f0; font-size: 0.85em; font-weight: 600;">
+              ${playerName}
+            </div>
+            <div style="color: #b0b8c8; font-size: 0.75em;">
+              ${eventName}${assistName ? ` (ассист: ${assistName})` : ''}
+            </div>
           </div>
         </div>
-      </div>
-    `;
-  });
+      `;
+    });
+    
+    return html;
+  };
   
-  html += `
+  let html = `
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+      <!-- Домашняя команда -->
+      <div style="background: rgba(90, 159, 212, 0.05); padding: 15px; border-radius: 8px;">
+        <h4 style="color: #5a9fd4; margin: 0 0 15px 0; font-size: 0.95em; text-align: center;">
+          ${game.homeTeam.name}
+        </h4>
+        ${renderTeamEvents(homeEvents, true)}
+      </div>
+      
+      <!-- Гостевая команда -->
+      <div style="background: rgba(244, 67, 54, 0.05); padding: 15px; border-radius: 8px;">
+        <h4 style="color: #f44336; margin: 0 0 15px 0; font-size: 0.95em; text-align: center;">
+          ${game.awayTeam.name}
+        </h4>
+        ${renderTeamEvents(awayEvents, false)}
       </div>
     </div>
   `;
