@@ -12508,9 +12508,17 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
 
       // Показываем результаты всех пользователей
       if (tournament.users.length > 0) {
+        // Определяем уникальные значения очков для присвоения мест
+        const uniqueScores = [...new Set(tournament.users.map(u => u.points))];
+        
         for (let i = 0; i < tournament.users.length; i++) {
           const user = tournament.users[i];
-          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '▪️';
+          
+          // Определяем место по уникальному значению очков
+          const place = uniqueScores.indexOf(user.points) + 1;
+          
+          // Присваиваем медаль по месту (только первые 3 места получают медали)
+          const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '▪️';
           
           // Правильное склонение для очков
           let pointsWord;
@@ -12547,15 +12555,22 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           message += userLine + '\n';
         }
 
-        // Лучший за период
+        // Лучшие за период (может быть несколько с одинаковыми очками)
         if (tournament.users.length > 0) {
-          const winner = tournament.users[0];
-          message += `\n👑 <b>Лучший за период ${dateFromFormatted} - ${dateToFormatted}:</b>\n`;
-          message += `Поздравляем, малютка ${winner.username}! 🎉\n`;
+          const maxPoints = tournament.users[0].points;
+          const winners = tournament.users.filter(u => u.points === maxPoints);
           
-          // Если есть угаданные счета, показываем
-          if (winner.correctScores > 0) {
-            message += `🎯 Угадано счетов: ${winner.correctScores}\n`;
+          message += `\n👑 <b>Лучший за период ${dateFromFormatted} - ${dateToFormatted}:</b>\n`;
+          
+          if (winners.length === 1) {
+            message += `Поздравляем, малютка ${winners[0].username}! 🎉\n`;
+            if (winners[0].correctScores > 0) {
+              message += `🎯 Угадано счетов: ${winners[0].correctScores}\n`;
+            }
+          } else {
+            // Несколько победителей с одинаковыми очками
+            const winnerNames = winners.map(w => w.username).join(' и ');
+            message += `Поздравляем малюток ${winnerNames}! 🎉\n`;
           }
         }
       } else {
@@ -12629,8 +12644,8 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
         const maxPoints = users[0].points;
         const minPoints = users[users.length - 1].points;
 
-        // Находим победителя (первого с максимальными очками)
-        const winner = users[0];
+        // Находим всех победителей (может быть несколько с одинаковыми очками)
+        const winners = users.filter(u => u.points === maxPoints);
 
         // Отправляем каждому пользователю персонализированное сообщение
         for (const user of users) {
@@ -12647,10 +12662,18 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           personalMessage += `📅 ${dateFromFormatted} - ${dateToFormatted}\n\n`;
           personalMessage += `🏆 <b>${tournament.eventName}</b>\n\n`;
 
-          // Добавляем список всех участников
+          // Добавляем список всех участников с правильными медалями
+          // Определяем уникальные значения очков для присвоения мест
+          const uniqueScores = [...new Set(users.map(u => u.points))];
+          
           for (let i = 0; i < users.length; i++) {
             const u = users[i];
-            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '▪️';
+            
+            // Определяем место по уникальному значению очков
+            const place = uniqueScores.indexOf(u.points) + 1;
+            
+            // Присваиваем медаль по месту (только первые 3 места получают медали)
+            const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : '▪️';
             
             // Правильное склонение для очков
             let pointsWord;
@@ -12704,13 +12727,27 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
 
           if (user.points === maxPoints) {
             // Пользователь лучший (или один из лучших)
-            personalMessage += `Сегодня ты лучший, у тебя <b>${user.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${user.username}! 🎉`;
+            if (winners.length === 1) {
+              personalMessage += `Сегодня ты лучший, у тебя <b>${user.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${user.username}! 🎉`;
+            } else {
+              personalMessage += `Сегодня ты один из лучших, у тебя <b>${user.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${user.username}! 🎉`;
+            }
           } else if (user.points === minPoints) {
             // Пользователь худший (или один из худших)
-            personalMessage += `Сегодня ты лох, такое может случиться с каждым, у тебя <b>${user.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winner.username}! 🎉`;
+            if (winners.length === 1) {
+              personalMessage += `Сегодня ты лох, такое может случиться с каждым, у тебя <b>${user.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winners[0].username}! 🎉`;
+            } else {
+              const winnerNames = winners.map(w => w.username).join(' и ');
+              personalMessage += `Сегодня ты лох, такое может случиться с каждым, у тебя <b>${user.points} ${userPointsWord}</b>, а лучшие, это малютки 👑 ${winnerNames}! 🎉`;
+            }
           } else {
             // Пользователь в середине
-            personalMessage += `Сегодня ты не лучший, у тебя <b>${user.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winner.username}! 🎉`;
+            if (winners.length === 1) {
+              personalMessage += `Сегодня ты не лучший, у тебя <b>${user.points} ${userPointsWord}</b>, а лучший, это малютка 👑 ${winners[0].username}! 🎉`;
+            } else {
+              const winnerNames = winners.map(w => w.username).join(' и ');
+              personalMessage += `Сегодня ты не лучший, у тебя <b>${user.points} ${userPointsWord}</b>, а лучшие, это малютки 👑 ${winnerNames}! 🎉`;
+            }
           }
 
           // Отправляем личное сообщение
