@@ -296,7 +296,7 @@ body {
 }
 
 .not-logged-in header img {
-  width: 350px;
+  width: 230px;
   height: auto;
 }
 
@@ -387,6 +387,12 @@ header h1 {
 .user-input #authBtn:hover {
   background: rgba(58, 123, 213, 0.9);
   box-shadow: 0 4px 12px rgba(58, 123, 213, 0.4);
+}
+
+/* Скрываем описание сайта после входа */
+.container.logged-in .welcome-info,
+.container.logged-in .welcome-info-mobile {
+  display: none !important;
 }
 
 .profile-section .profile-heading-row {
