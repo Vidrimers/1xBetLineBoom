@@ -887,21 +887,32 @@ function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex, showA
   return html;
 }
 
-// Получить список уже выбранных команд в сетке
+// Получить список уже выбранных команд в сетке (с подсчетом дубликатов)
 function getSelectedTeams() {
-  const selectedTeams = new Set();
+  const selectedTeams = new Map(); // Используем Map для подсчета количества
   
   if (!currentBracket.matches) return selectedTeams;
   
   // Проходим по всем стадиям и матчам
   Object.values(currentBracket.matches).forEach(stageMatches => {
     Object.values(stageMatches).forEach(match => {
-      if (match.team1) selectedTeams.add(match.team1);
-      if (match.team2) selectedTeams.add(match.team2);
+      if (match.team1) {
+        selectedTeams.set(match.team1, (selectedTeams.get(match.team1) || 0) + 1);
+      }
+      if (match.team2) {
+        selectedTeams.set(match.team2, (selectedTeams.get(match.team2) || 0) + 1);
+      }
     });
   });
   
   return selectedTeams;
+}
+
+// Проверить, является ли команда дубликатом (выбрана более одного раза)
+function isDuplicateTeam(teamName) {
+  if (!teamName) return false;
+  const selectedTeams = getSelectedTeams();
+  return selectedTeams.get(teamName) > 1;
 }
 
 // Отрисовать слот команды с радиокнопкой (если админ)
@@ -936,25 +947,22 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   const isWinner = prediction && prediction === teamName;
   const highlightClass = isWinner ? 'bracket-team-winner' : '';
   
+  // Проверяем, является ли команда дубликатом
+  const isDuplicate = isDuplicateTeam(teamName);
+  const duplicateStyle = isDuplicate ? 'background: rgba(73, 117, 221, 0.1);' : '';
+  
   // Режим редактирования для админа - только для начальной стадии из БД
   const editableStages = getEditableStages(currentBracket);
   const isEditableStage = editableStages.includes(stageId);
   
   if (isEditingBracket && isEditableStage) {
-    // Получаем список уже выбранных команд
-    const selectedTeams = getSelectedTeams();
-    
-    // Фильтруем команды: исключаем уже выбранные, но оставляем текущую команду
-    const availableTeams = allTeams.filter(team => 
-      !selectedTeams.has(team) || team === teamName
-    );
-    
-    const teamOptions = availableTeams.map(team => 
+    // Все команды доступны для выбора (не фильтруем)
+    const teamOptions = allTeams.map(team => 
       `<option value="${team}" ${team === teamName ? 'selected' : ''}>${team}</option>`
     ).join('');
     
     return `
-      <div class="bracket-team-slot ${highlightClass}">
+      <div class="bracket-team-slot ${highlightClass}" style="${duplicateStyle}">
         <select 
           class="bracket-team-select" 
           data-stage="${stageId}" 
@@ -981,7 +989,7 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
          data-match="${matchIndex}" 
          data-team="${teamName || ''}"
          ${clickHandler} 
-         style="${cursorStyle}">
+         style="${cursorStyle} ${duplicateStyle}">
       <div class="bracket-team-name">${teamName || `—`}</div>
     </div>
   `;
@@ -1016,6 +1024,9 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
     // Удаляем прогноз из БД для текущей стадии
     await deleteBracketPrediction(stageId, matchIndex);
     
+    // Удаляем ставки на все дубликаты этой команды
+    await removeAllDuplicatePredictions(teamName, stageId, matchIndex);
+    
     // Очищаем все последующие стадии (с удалением из БД и очисткой слотов команд)
     // Передаем название удаленной команды для поиска и удаления во всех последующих стадиях
     const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
@@ -1038,11 +1049,103 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
   // Обновляем только визуальное отображение без перерисовки всей модалки
   updateBracketMatchDisplay(stageId, matchIndex, teamName);
   
+  // Автоматически выбираем эту же команду во всех дубликатах
+  await selectAllDuplicates(teamName, stageId, matchIndex);
+  
   // Продвигаем команду в следующую стадию
   promoteTeamToNextStage(stageId, matchIndex, teamName);
   
   // Автоматически сохраняем прогноз на сервер
   await saveSingleBracketPrediction(stageId, matchIndex, teamName);
+}
+
+// Автоматически выбрать команду во всех дубликатах
+async function selectAllDuplicates(teamName, excludeStageId, excludeMatchIndex) {
+  if (!currentBracket.matches || !teamName) return;
+  
+  // Находим все слоты с этой командой
+  const duplicates = [];
+  
+  Object.keys(currentBracket.matches).forEach(stageId => {
+    Object.keys(currentBracket.matches[stageId]).forEach(matchIndex => {
+      const match = currentBracket.matches[stageId][matchIndex];
+      const matchIdx = parseInt(matchIndex);
+      
+      // Пропускаем текущий матч
+      if (stageId === excludeStageId && matchIdx === excludeMatchIndex) {
+        return;
+      }
+      
+      // Проверяем, есть ли эта команда в матче
+      if (match.team1 === teamName || match.team2 === teamName) {
+        duplicates.push({ stageId, matchIndex: matchIdx });
+      }
+    });
+  });
+  
+  // Автоматически выбираем эту команду во всех найденных дубликатах
+  for (const dup of duplicates) {
+    if (!bracketPredictions[dup.stageId]) {
+      bracketPredictions[dup.stageId] = {};
+    }
+    bracketPredictions[dup.stageId][dup.matchIndex] = teamName;
+    
+    // Обновляем визуальное отображение
+    updateBracketMatchDisplay(dup.stageId, dup.matchIndex, teamName);
+    
+    // Продвигаем команду в следующую стадию
+    promoteTeamToNextStage(dup.stageId, dup.matchIndex, teamName);
+    
+    // Сохраняем прогноз на сервер
+    await saveSingleBracketPrediction(dup.stageId, dup.matchIndex, teamName);
+  }
+}
+
+// Удалить ставки на все дубликаты команды
+async function removeAllDuplicatePredictions(teamName, excludeStageId, excludeMatchIndex) {
+  if (!currentBracket.matches || !teamName) return;
+  
+  // Находим все слоты с этой командой
+  const duplicates = [];
+  
+  Object.keys(currentBracket.matches).forEach(stageId => {
+    Object.keys(currentBracket.matches[stageId]).forEach(matchIndex => {
+      const match = currentBracket.matches[stageId][matchIndex];
+      const matchIdx = parseInt(matchIndex);
+      
+      // Пропускаем текущий матч
+      if (stageId === excludeStageId && matchIdx === excludeMatchIndex) {
+        return;
+      }
+      
+      // Проверяем, есть ли эта команда в матче
+      if (match.team1 === teamName || match.team2 === teamName) {
+        duplicates.push({ stageId, matchIndex: matchIdx });
+      }
+    });
+  });
+  
+  // Удаляем ставки на все дубликаты
+  for (const dup of duplicates) {
+    if (bracketPredictions[dup.stageId]) {
+      delete bracketPredictions[dup.stageId][dup.matchIndex];
+    }
+    
+    // Обновляем визуальное отображение
+    updateBracketMatchDisplay(dup.stageId, dup.matchIndex, null);
+    
+    // Удаляем из БД
+    await deleteBracketPrediction(dup.stageId, dup.matchIndex);
+    
+    // Очищаем последующие стадии
+    const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+    const currentStageIndex = stageOrder.indexOf(dup.stageId);
+    if (currentStageIndex < stageOrder.length - 1) {
+      const nextStageId = stageOrder[currentStageIndex + 1];
+      const nextMatchIndex = Math.floor(dup.matchIndex / 2);
+      await clearPredictionsFromStage(nextStageId, nextMatchIndex, true, true, teamName);
+    }
+  }
 }
 
 // Удалить прогноз из БД
