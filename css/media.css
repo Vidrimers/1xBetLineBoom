@@ -435,6 +435,18 @@
 
   .modal-header {
     padding: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .modal-header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .modal-action-btn {
+    font-size: 13px;
+    padding: 6px 12px;
   }
 
   .modal-body {
@@ -449,10 +461,12 @@
 
   .admin-user-actions {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .admin-btn {
     flex: 1;
+    min-width: 40px;
   }
 
   .form-group {
@@ -658,10 +672,12 @@
   .admin-user-actions {
     width: 100%;
     margin-top: 10px;
+    flex-wrap: wrap;
   }
 
   .admin-btn {
     flex: 1;
+    min-width: 40px;
   }
 
   .event-item:hover .event-admin-actions {
@@ -881,6 +897,15 @@
     font-size: 1.1em;
   }
 
+  .modal-header-actions {
+    gap: 6px;
+  }
+
+  .modal-action-btn {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
   .modal-close {
     width: 35px;
     height: 35px;
@@ -907,11 +932,13 @@
 
   .admin-user-actions {
     gap: 5px;
+    flex-wrap: wrap;
   }
 
   .admin-btn {
     padding: 5px 10px;
     font-size: 0.7em;
+    flex: 0 1 auto;
   }
 
   .form-group {
@@ -1475,10 +1502,20 @@
   .modal-header {
     padding: 10px;
     border-radius: 8px 8px 0 0;
+    gap: 8px;
   }
 
   .modal-header h2 {
     font-size: 1em;
+  }
+
+  .modal-header-actions {
+    gap: 5px;
+  }
+
+  .modal-action-btn {
+    font-size: 11px;
+    padding: 4px 8px;
   }
 
   .modal-close {
@@ -2048,6 +2085,15 @@
   .modal-header h2 {
     font-size: 0.95em;
     margin: 0;
+  }
+
+  .modal-header-actions {
+    gap: 4px;
+  }
+
+  .modal-action-btn {
+    font-size: 10px;
+    padding: 3px 6px;
   }
 
   .modal-close {
@@ -3055,6 +3101,10 @@
     flex-wrap: wrap;
   }
 
+  .modal-header-actions {
+    gap: 6px;
+  }
+
   .modal-header > div:first-child {
     flex: 1 1 100%;
     margin-bottom: 10px;
@@ -3161,6 +3211,10 @@
     font-size: 0.95em;
   }
 
+  .modal-header-actions {
+    gap: 5px;
+  }
+
   .modal-header button {
     padding: 5px 8px !important;
     font-size: 0.9em !important;
@@ -3235,6 +3289,10 @@
 
   .modal-header h2 {
     font-size: 0.9em;
+  }
+
+  .modal-header-actions {
+    gap: 4px;
   }
 
   .modal-header button {

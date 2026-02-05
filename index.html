@@ -1545,31 +1545,19 @@
         <div class="modal-content">
           <div class="modal-header">
             <h2>👥 Управление пользователями</h2>
-            <button 
-              class="modal-action-btn" 
-              id="syncTelegramIdsBtn"
-              onclick="syncAllTelegramIds()"
-              title="Синхронизировать telegram_id для всех пользователей"
-              style="
-                background: rgba(0, 188, 212, 0.8);
-                color: #fff;
-                border: 1px solid #00bcd4;
-                padding: 8px 16px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: all 0.3s ease;
-                margin-right: 10px;
-                display: none;
-              "
-              onmouseover="this.style.background='rgba(0, 188, 212, 1)'"
-              onmouseout="this.style.background='rgba(0, 188, 212, 0.8)'"
-            >
-              🤖 Синхронизация
-            </button>
-            <button class="modal-close" onclick="closeAdminModal()">
-              &times;
-            </button>
+            <div class="modal-header-actions">
+              <button 
+                class="modal-action-btn" 
+                id="syncTelegramIdsBtn"
+                onclick="syncAllTelegramIds()"
+                title="Синхронизировать telegram_id для всех пользователей"
+              >
+                🤖 Синхронизация
+              </button>
+              <button class="modal-close" onclick="closeAdminModal()">
+                &times;
+              </button>
+            </div>
           </div>
           <div class="modal-body">
             <div id="adminUsersList" class="admin-users-list">
