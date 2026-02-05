@@ -9911,6 +9911,7 @@ async function loadGroupRemindersCardVisibility() {
     const btn = document.getElementById('toggleGroupRemindersCardBtn');
     
     if (card) {
+      // Показываем карточку только если она НЕ скрыта
       card.style.display = result.hidden ? 'none' : 'block';
     }
     
@@ -9922,6 +9923,11 @@ async function loadGroupRemindersCardVisibility() {
     }
   } catch (error) {
     console.error('Ошибка при загрузке видимости карточки:', error);
+    // При ошибке показываем карточку (безопасное поведение по умолчанию)
+    const card = document.getElementById('groupRemindersCard');
+    if (card) {
+      card.style.display = 'block';
+    }
   }
 }
 // Сохранить Telegram username
