@@ -33,6 +33,7 @@ MIGRATION-README.md
 АПИПереходSStats-Маппинг.md
 МИГРАЦИЯ_SSTATS.md
 ИНСТРУКЦИЯ_МАППИНГ_КОМАНД.md
+fix-telegram-username-case.cjs
 
 парсинг.txt
 live.txt

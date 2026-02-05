@@ -4971,7 +4971,12 @@ app.get("/api/telegram-auth/check-status", async (req, res) => {
 // POST /api/telegram-auth/complete - Завершить авторизацию (вызывается ботом)
 app.post("/api/telegram-auth/complete", async (req, res) => {
   try {
-    const { auth_token, telegram_id, first_name, username: tg_username } = req.body;
+    let { auth_token, telegram_id, first_name, username: tg_username } = req.body;
+    
+    // Приводим telegram username к нижнему регистру
+    if (tg_username) {
+      tg_username = tg_username.toLowerCase();
+    }
     
     if (!auth_token || !telegram_id) {
       return res.status(400).json({ error: "Токен и Telegram ID обязательны" });
@@ -5081,7 +5086,12 @@ app.post("/api/telegram-auth/complete", async (req, res) => {
 // POST /api/user/telegram-auth - Авторизация через Telegram
 app.post("/api/user/telegram-auth", async (req, res) => {
   try {
-    const { telegram_id, first_name, username: tg_username } = req.body;
+    let { telegram_id, first_name, username: tg_username } = req.body;
+    
+    // Приводим telegram username к нижнему регистру
+    if (tg_username) {
+      tg_username = tg_username.toLowerCase();
+    }
     
     if (!telegram_id) {
       return res.status(400).json({ error: "Telegram ID обязателен" });
@@ -9015,6 +9025,11 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
       telegram_username = telegram_username.substring(1);
     }
 
+    // Приводим к нижнему регистру
+    if (telegram_username) {
+      telegram_username = telegram_username.toLowerCase();
+    }
+
     // Проверяем существование пользователя
     const user = db
       .prepare("SELECT id, username, telegram_username FROM users WHERE id = ?")
@@ -9027,7 +9042,7 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
     if (telegram_username) {
       const existingUser = db
         .prepare("SELECT id FROM users WHERE LOWER(telegram_username) = ? AND id != ?")
-        .get(telegram_username.toLowerCase(), userId);
+        .get(telegram_username, userId);
       
       if (existingUser) {
         return res.status(400).json({ 
@@ -9041,10 +9056,9 @@ app.put("/api/user/:userId/telegram", async (req, res) => {
     // Получаем telegram_id (chat_id) из telegram_users если пользователь уже писал боту
     let telegramId = null;
     if (telegram_username) {
-      const cleanUsername = telegram_username.toLowerCase();
       const telegramUser = db
         .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
-        .get(cleanUsername);
+        .get(telegram_username);
       
       if (telegramUser && telegramUser.chat_id) {
         telegramId = telegramUser.chat_id;
@@ -9309,10 +9323,15 @@ app.post("/api/user/:userId/telegram/confirm-change", async (req, res) => {
       cleanNewUsername = cleanNewUsername.substring(1);
     }
 
+    // Приводим к нижнему регистру
+    if (cleanNewUsername) {
+      cleanNewUsername = cleanNewUsername.toLowerCase();
+    }
+
     if (cleanNewUsername) {
       const existingUser = db
         .prepare("SELECT id FROM users WHERE LOWER(telegram_username) = ? AND id != ?")
-        .get(cleanNewUsername.toLowerCase(), userId);
+        .get(cleanNewUsername, userId);
       
       if (existingUser) {
         confirmationCodes.delete(`change_${userId}`);
@@ -9334,7 +9353,7 @@ app.post("/api/user/:userId/telegram/confirm-change", async (req, res) => {
     if (cleanNewUsername) {
       const telegramUser = db
         .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
-        .get(cleanNewUsername.toLowerCase());
+        .get(cleanNewUsername);
       
       if (telegramUser && telegramUser.chat_id) {
         telegramId = telegramUser.chat_id;
