@@ -10875,6 +10875,20 @@ app.post("/api/telegram/register", (req, res) => {
 
     console.log(`📱 Зарегистрирован telegram: @${cleanUsername} → ${chat_id}`);
 
+    // Синхронизируем telegram_username в таблице users (если пользователь привязан по telegram_id)
+    try {
+      const result = db.prepare(
+        `UPDATE users SET telegram_username = ? WHERE telegram_id = ? AND (telegram_username IS NULL OR telegram_username != ?)`
+      ).run(cleanUsername, chat_id, cleanUsername);
+      
+      if (result.changes > 0) {
+        console.log(`🔄 Синхронизирован telegram_username для chat_id ${chat_id}: @${cleanUsername}`);
+      }
+    } catch (syncError) {
+      console.error('⚠️ Ошибка синхронизации telegram_username:', syncError);
+      // Не прерываем выполнение, т.к. основная регистрация прошла успешно
+    }
+
     res.json({ success: true, telegram_username: cleanUsername, chat_id });
   } catch (error) {
     console.error("Ошибка регистрации telegram:", error);
