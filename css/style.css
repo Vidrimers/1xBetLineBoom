@@ -391,7 +391,8 @@ header h1 {
 
 /* Скрываем описание сайта после входа */
 .container.logged-in .welcome-info,
-.container.logged-in .welcome-info-mobile {
+.container.logged-in .welcome-info-mobile,
+.container.logged-in .telegram-info-btn {
   display: none !important;
 }
 
@@ -1999,7 +2000,7 @@ button.tab-btn:hover {
   display: none;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 100000;
   animation: fadeIn 0.3s ease;
 }
 

@@ -7573,6 +7573,146 @@ function closeBugReportModal() {
   }
 }
 
+// Открыть модальное окно с информацией о входе через Telegram (для экрана логина)
+function openTelegramInfoModal() {
+  const modal = document.getElementById("telegramInfoModal");
+  if (modal) {
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = "flex";
+  }
+}
+
+// Закрыть модальное окно с информацией о входе через Telegram
+function closeTelegramInfoModal() {
+  const modal = document.getElementById("telegramInfoModal");
+  if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
+    modal.style.display = "none";
+  }
+}
+
+// Открыть модальное окно с информацией о привязке Telegram (для настроек залогиненных)
+async function openTelegramBindInfoModal() {
+  // Блокируем body
+  document.body.style.overflow = 'hidden';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  // Закрытие по клику вне модалки
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+      document.body.style.overflow = '';
+    }
+  });
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      position: relative;
+      color: #e0e6f0;
+    ">
+      <button onclick="this.closest('div[style*=fixed]').remove(); document.body.style.overflow = '';" style="
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: transparent;
+        border: none;
+        color: #e0e6f0;
+        font-size: 24px;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
+      
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">📱 Зачем привязывать Telegram?</h3>
+      
+      <div style="line-height: 1.6;">
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔔 Уведомления и напоминания</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Получайте важные уведомления прямо в Telegram:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Напоминания о матчах</strong> — не пропустите начало матча и успейте сделать ставку</li>
+            <li><strong>Результаты матчей</strong> — узнавайте о завершении матчей и своих выигрышах</li>
+            <li><strong>Новые турниры</strong> — будьте в курсе новых турниров и событий</li>
+            <li><strong>Важные обновления</strong> — получайте информацию об изменениях в системе</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔐 Безопасность</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Дополнительная защита вашего аккаунта:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Двухфакторная аутентификация</strong> — подтверждение входа через бота для максимальной безопасности</li>
+            <li><strong>Уведомления о входе</strong> — получайте оповещения о каждом входе в аккаунт</li>
+            <li><strong>Контроль доступа</strong> — мгновенно узнавайте о подозрительной активности</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🤖 Функционал бота</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Управляйте своим аккаунтом через Telegram:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Быстрый доступ</strong> — просматривайте свою статистику и результаты</li>
+            <li><strong>Управление уведомлениями</strong> — настраивайте, какие уведомления получать</li>
+            <li><strong>Информация о турнирах</strong> — получайте актуальную информацию о текущих турнирах</li>
+            <li><strong>Поддержка</strong> — связывайтесь с администрацией напрямую через бота</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔒 Конфиденциальность</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li>Ваш Telegram используется <strong>только для уведомлений</strong> и связи с вами</li>
+            <li>Мы <strong>не передаем</strong> ваши данные третьим лицам</li>
+            <li>Вы можете <strong>отключить уведомления</strong> в любой момент в настройках</li>
+            <li>Вы можете <strong>отвязать Telegram</strong> в любое время</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🚀 Как привязать?</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
+          <ol style="margin: 5px 0; padding-left: 20px;">
+            <li>Нажмите кнопку <strong>"🔗 Привязать свой ТГ"</strong></li>
+            <li>Откроется бот <strong>@OnexBetLineBoomBot</strong> в Telegram</li>
+            <li>Нажмите <strong>/start</strong> или кнопку "Начать"</li>
+            <li>Бот автоматически привяжет ваш аккаунт</li>
+            <li>Готово! Теперь вы будете получать уведомления</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
 // Открыть модальное окно детальных настроек уведомлений
 async function openDetailedNotificationsModal() {
   if (!currentUser) {
@@ -9792,7 +9932,7 @@ async function loadSettings() {
     const telegramHTML = `
       <!-- Telegram -->
       <div id="telegramSettingsElement" class="setting-item" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); position: relative;">
-        <button onclick="openTelegramInfoModal()" style="
+        <button onclick="openTelegramBindInfoModal()" style="
           position: absolute;
           top: 0;
           right: 0;
@@ -19704,126 +19844,6 @@ async function openTournamentInfoModal() {
             <li><strong>Проиграно</strong> — количество неугаданных результатов</li>
             <li><strong>Ожидание</strong> — количество ставок, результаты которых еще не известны</li>
           </ul>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-}
-
-// Открыть модальное окно информации о Telegram
-async function openTelegramInfoModal() {
-  // Блокируем body
-  document.body.style.overflow = 'hidden';
-
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-  `;
-  
-  // Закрытие по клику вне модалки
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove();
-      document.body.style.overflow = '';
-    }
-  });
-  
-  modal.innerHTML = `
-    <div style="
-      background: #1e2a3a;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 700px;
-      width: 95%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      position: relative;
-      color: #e0e6f0;
-    ">
-      <button onclick="this.closest('div[style*=fixed]').remove(); document.body.style.overflow = '';" style="
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        background: transparent;
-        border: none;
-        color: #e0e6f0;
-        font-size: 24px;
-        cursor: pointer;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: background 0.2s;
-      " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
-      
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">📱 Зачем привязывать Telegram?</h3>
-      
-      <div style="line-height: 1.6;">
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔔 Уведомления и напоминания</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <p style="margin: 0 0 10px 0;">Получайте важные уведомления прямо в Telegram:</p>
-          <ul style="margin: 5px 0; padding-left: 20px;">
-            <li><strong>Напоминания о матчах</strong> — не пропустите начало матча и успейте сделать ставку</li>
-            <li><strong>Результаты матчей</strong> — узнавайте о завершении матчей и своих выигрышах</li>
-            <li><strong>Новые турниры</strong> — будьте в курсе новых турниров и событий</li>
-            <li><strong>Важные обновления</strong> — получайте информацию об изменениях в системе</li>
-          </ul>
-        </div>
-
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔐 Безопасность</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <p style="margin: 0 0 10px 0;">Дополнительная защита вашего аккаунта:</p>
-          <ul style="margin: 5px 0; padding-left: 20px;">
-            <li><strong>Двухфакторная аутентификация</strong> — подтверждение входа через бота для максимальной безопасности</li>
-            <li><strong>Уведомления о входе</strong> — получайте оповещения о каждом входе в аккаунт</li>
-            <li><strong>Контроль доступа</strong> — мгновенно узнавайте о подозрительной активности</li>
-          </ul>
-        </div>
-
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🤖 Функционал бота</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <p style="margin: 0 0 10px 0;">Управляйте своим аккаунтом через Telegram:</p>
-          <ul style="margin: 5px 0; padding-left: 20px;">
-            <li><strong>Быстрый доступ</strong> — просматривайте свою статистику и результаты</li>
-            <li><strong>Управление уведомлениями</strong> — настраивайте, какие уведомления получать</li>
-            <li><strong>Информация о турнирах</strong> — получайте актуальную информацию о текущих турнирах</li>
-            <li><strong>Поддержка</strong> — связывайтесь с администрацией напрямую через бота</li>
-          </ul>
-        </div>
-
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔒 Конфиденциальность</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <ul style="margin: 5px 0; padding-left: 20px;">
-            <li>Ваш Telegram используется <strong>только для уведомлений</strong> и связи с вами</li>
-            <li>Мы <strong>не передаем</strong> ваши данные третьим лицам</li>
-            <li>Вы можете <strong>отключить уведомления</strong> в любой момент в настройках</li>
-            <li>Вы можете <strong>отвязать Telegram</strong> в любое время</li>
-          </ul>
-        </div>
-
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🚀 Как привязать?</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
-          <ol style="margin: 5px 0; padding-left: 20px;">
-            <li>Нажмите кнопку <strong>"🔗 Привязать свой ТГ"</strong></li>
-            <li>Откроется бот <strong>@OnexBetLineBoomBot</strong> в Telegram</li>
-            <li>Нажмите <strong>/start</strong> или кнопку "Начать"</li>
-            <li>Бот автоматически привяжет ваш аккаунт</li>
-            <li>Готово! Теперь вы будете получать уведомления</li>
-          </ol>
         </div>
       </div>
     </div>
