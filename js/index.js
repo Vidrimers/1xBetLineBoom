@@ -9891,6 +9891,9 @@ async function loadSettings() {
     
     // Загружаем настройку кнопки "Мне повезет"
     await loadLuckyButtonSettings();
+    
+    // Загружаем видимость карточки напоминаний в группе
+    await loadGroupRemindersCardVisibility();
   } catch (error) {
     console.error("Ошибка при загрузке настроек:", error);
     // Не очищаем контейнер, чтобы статический HTML остался видимым
@@ -9898,6 +9901,29 @@ async function loadSettings() {
   }
 }
 
+// Загрузить видимость карточки напоминаний в группе
+async function loadGroupRemindersCardVisibility() {
+  try {
+    const response = await fetch('/api/admin/group-reminders-card-visibility');
+    const result = await response.json();
+    
+    const card = document.getElementById('groupRemindersCard');
+    const btn = document.getElementById('toggleGroupRemindersCardBtn');
+    
+    if (card) {
+      card.style.display = result.hidden ? 'none' : 'block';
+    }
+    
+    if (btn && currentUser && currentUser.isAdmin) {
+      btn.textContent = result.hidden ? '👁️ Показать напоминания ТГ' : '🚫 Скрыть напоминания ТГ';
+      btn.style.background = result.hidden ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
+      btn.style.color = result.hidden ? '#c8e6c9' : '#ffe0d6';
+      btn.style.borderColor = result.hidden ? '#4caf50' : '#ff5722';
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке видимости карточки:', error);
+  }
+}
 // Сохранить Telegram username
 async function saveTelegramUsername() {
   if (!currentUser) {
@@ -10187,6 +10213,53 @@ async function saveGroupRemindersSettings() {
   } catch (error) {
     console.error("Ошибка при сохранении напоминаний в группе:", error);
     showSaveStatus('groupRemindersStatus', 'error');
+  }
+}
+
+// Переключить видимость карточки напоминаний в группе для всех пользователей (только для админа)
+async function toggleGroupRemindersCardVisibility() {
+  if (!currentUser || !currentUser.isAdmin) {
+    await showCustomAlert("У вас нет прав для этого действия", "Ошибка", "❌");
+    return;
+  }
+
+  try {
+    const card = document.getElementById('groupRemindersCard');
+    const btn = document.getElementById('toggleGroupRemindersCardBtn');
+    const isCurrentlyHidden = card.style.display === 'none';
+
+    // Переключаем видимость
+    const newVisibility = !isCurrentlyHidden;
+    
+    const response = await fetch('/api/admin/group-reminders-card-visibility', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        hidden: newVisibility,
+        admin_username: currentUser.username 
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      card.style.display = newVisibility ? 'none' : 'block';
+      btn.textContent = newVisibility ? '👁️ Показать напоминания ТГ' : '🚫 Скрыть напоминания ТГ';
+      btn.style.background = newVisibility ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
+      btn.style.color = newVisibility ? '#c8e6c9' : '#ffe0d6';
+      btn.style.borderColor = newVisibility ? '#4caf50' : '#ff5722';
+      
+      await showCustomAlert(
+        newVisibility ? 'Карточка скрыта для всех пользователей' : 'Карточка показана для всех пользователей',
+        'Успешно',
+        '✅'
+      );
+    } else {
+      await showCustomAlert(result.error || 'Ошибка при изменении видимости', 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка при переключении видимости карточки:', error);
+    await showCustomAlert('Произошла ошибка при изменении видимости', 'Ошибка', '❌');
   }
 }
 

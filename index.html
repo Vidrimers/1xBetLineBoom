@@ -592,6 +592,7 @@
 
             <!-- Напоминания в группе -->
             <div
+              id="groupRemindersCard"
               class="settings-item"
               style="
                 padding: 20px;
@@ -1133,6 +1134,28 @@
                 onmouseout="this.style.transform='scale(1)'"
               >
                 🛡️ Модераторы
+              </button>
+              <button
+                id="toggleGroupRemindersCardBtn"
+                onclick="toggleGroupRemindersCardVisibility()"
+                style="
+                  background: rgba(255, 87, 34, 0.7);
+                  color: #ffe0d6;
+                  border: 1px solid #ff5722;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Скрыть/показать карточку напоминаний для всех пользователей"
+              >
+                👥 Напоминания ТГ
               </button>
               <button
                 onclick="openAwardsPanel()"
