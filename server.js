@@ -4200,7 +4200,7 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
 app.put("/api/brackets/:bracketId/structure", (req, res) => {
   try {
     const { bracketId } = req.params;
-    const { user_id, matches } = req.body;
+    const { user_id, matches, temporary_teams } = req.body;
     
     if (!user_id) {
       return res.status(401).json({ error: "Требуется авторизация" });
@@ -4211,7 +4211,7 @@ app.put("/api/brackets/:bracketId/structure", (req, res) => {
     }
     
     // Получаем текущую структуру сетки
-    const bracket = db.prepare("SELECT matches FROM brackets WHERE id = ?").get(bracketId);
+    const bracket = db.prepare("SELECT matches, temporary_teams FROM brackets WHERE id = ?").get(bracketId);
     
     if (!bracket) {
       return res.status(404).json({ error: "Сетка не найдена" });
@@ -4248,12 +4248,16 @@ app.put("/api/brackets/:bracketId/structure", (req, res) => {
       }
     });
     
-    // Сохраняем только отфильтрованную структуру (без последующих стадий)
+    // Сохраняем только отфильтрованную структуру (без последующих стадий) и временные команды
     const result = db.prepare(`
       UPDATE brackets 
-      SET matches = ?
+      SET matches = ?, temporary_teams = ?
       WHERE id = ?
-    `).run(JSON.stringify(filteredMatches), bracketId);
+    `).run(
+      JSON.stringify(filteredMatches), 
+      JSON.stringify(temporary_teams || {}),
+      bracketId
+    );
     
     if (result.changes === 0) {
       return res.status(404).json({ error: "Сетка не найдена" });

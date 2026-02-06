@@ -1021,34 +1021,64 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   const isEditableStage = editableStages.includes(stageId);
   
   if (isEditingBracket && isEditableStage) {
-    // Все команды доступны для выбора (не фильтруем)
-    const teamOptions = allTeams.map(team => 
-      `<option value="${team}" ${team === teamName ? 'selected' : ''}>${team}</option>`
-    ).join('');
+    // Проверяем есть ли временные команды для этого слота
+    const tempTeams = currentBracket.temporary_teams?.[stageId]?.[matchIndex]?.[teamIndex];
+    const hasMultipleTeams = tempTeams && tempTeams.length > 1;
+    
+    // Формируем отображение команд
+    let displayText = '';
+    let slotStyle = duplicateStyle;
+    
+    if (hasMultipleTeams) {
+      // Две команды - показываем через "/"
+      displayText = tempTeams.join(' / ');
+      slotStyle += ' opacity: 0.6; border: 2px dashed #ff9800;';
+    } else if (teamName) {
+      // Одна команда
+      displayText = teamName;
+    } else {
+      // Пусто
+      displayText = '— Выберите команду —';
+      slotStyle += ' opacity: 0.7;';
+    }
     
     return `
-      <div class="bracket-team-slot ${highlightClass}" style="${duplicateStyle}">
-        <select 
-          class="bracket-team-select" 
-          data-stage="${stageId}" 
-          data-match="${matchIndex}" 
-          data-team="${teamIndex}"
-          onchange="updateBracketTeamSelection()"
-          style="width: 100%; padding: 5px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 4px; color: #e0e6f0; font-size: 0.9em;"
-        >
-          <option value="">— Выберите команду —</option>
-          ${teamOptions}
-        </select>
+      <div class="bracket-team-slot ${highlightClass}" 
+           style="${slotStyle} cursor: pointer; padding: 8px;"
+           data-stage="${stageId}" 
+           data-match="${matchIndex}" 
+           data-team-index="${teamIndex}"
+           onclick="openTeamSelectionModal('${stageId}', ${matchIndex}, ${teamIndex}, event)"
+           title="${hasMultipleTeams ? 'Две команды - слот заблокирован для ставок. Кликните чтобы выбрать окончательную команду' : 'Кликните для выбора команды. Ctrl+клик для добавления второй команды'}">
+        <div class="bracket-team-name" style="font-size: 0.9em;">
+          ${displayText}
+          ${hasMultipleTeams ? '<span style="color: #ff9800; margin-left: 5px;">⚠️</span>' : ''}
+        </div>
       </div>
     `;
   }
   
   // Обычный режим - кликабельные слоты для выбора победителя
+  // Проверяем есть ли временные команды для этого слота (две команды = disabled)
+  const tempTeams = currentBracket.temporary_teams?.[stageId]?.[matchIndex]?.[teamIndex];
+  const hasMultipleTeams = tempTeams && tempTeams.length > 1;
+  
   // Проверяем блокировку конкретной колонки
   const isStageClosed = isBracketClosed(currentBracket, stageId);
-  const isClickable = !isStageClosed && teamName;
+  const isClickable = !isStageClosed && teamName && !hasMultipleTeams;
   const clickHandler = isClickable ? `onclick="selectBracketWinner('${stageId}', ${matchIndex}, '${teamName.replace(/'/g, "\\'")}')"` : '';
   const cursorStyle = isClickable ? 'cursor: pointer;' : '';
+  
+  // Если есть две команды - показываем их через "/" с предупреждением
+  let displayText = teamName || '—';
+  let warningIcon = '';
+  let disabledStyle = '';
+  
+  if (hasMultipleTeams) {
+    displayText = tempTeams.join(' / ');
+    warningIcon = '<span style="color: #ff9800; margin-left: 5px;">⚠️</span>';
+    disabledStyle = 'opacity: 0.6; border: 2px dashed #ff9800;';
+  }
   
   return `
     <div class="bracket-team-slot ${highlightClass}" 
@@ -1056,8 +1086,9 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
          data-match="${matchIndex}" 
          data-team="${teamName || ''}"
          ${clickHandler} 
-         style="${cursorStyle} ${duplicateStyle}">
-      <div class="bracket-team-name">${teamName || `—`}</div>
+         style="${cursorStyle} ${duplicateStyle} ${disabledStyle}"
+         ${hasMultipleTeams ? 'title="Слот заблокирован - две команды"' : ''}>
+      <div class="bracket-team-name">${displayText}${warningIcon}</div>
     </div>
   `;
 }
@@ -1290,7 +1321,8 @@ async function saveBracketStructure() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id: currentUser.id,
-        matches: filteredMatches // Сохраняем только начальные стадии
+        matches: filteredMatches, // Сохраняем только начальные стадии
+        temporary_teams: currentBracket.temporary_teams || {} // Сохраняем временные команды
       })
     });
     
@@ -1690,38 +1722,161 @@ async function saveBracketTeams() {
 
 // Обновить выбор команд в селектах (перерисовать после изменения)
 function updateBracketTeamSelection() {
-  // Собираем текущие выборы из селектов
-  const selects = document.querySelectorAll('.bracket-team-select');
-  const currentSelections = {};
+  // Эта функция больше не используется, но оставляем для обратной совместимости
+  console.warn('updateBracketTeamSelection deprecated');
+}
+
+// Открыть модальное окно выбора команды для слота
+function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
+  if (event) event.stopPropagation();
   
-  selects.forEach(select => {
-    const stage = select.dataset.stage;
-    const matchIndex = parseInt(select.dataset.match);
-    const teamIndex = parseInt(select.dataset.team);
-    const teamName = select.value;
-    
-    if (!currentSelections[stage]) {
-      currentSelections[stage] = {};
+  // Получаем текущие команды в слоте
+  const currentTeam = currentBracket.matches?.[stageId]?.[matchIndex]?.[teamIndex === 0 ? 'team1' : 'team2'];
+  const tempTeams = currentBracket.temporary_teams?.[stageId]?.[matchIndex]?.[teamIndex] || [];
+  
+  // Создаем модальное окно
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.cssText = 'display: flex; z-index: 100001;';
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.remove();
+      document.body.style.overflow = '';
     }
-    
-    if (!currentSelections[stage][matchIndex]) {
-      currentSelections[stage][matchIndex] = {};
-    }
-    
-    if (teamIndex === 0) {
-      currentSelections[stage][matchIndex].team1 = teamName;
+  };
+  
+  const teamsListHTML = allTeams.map(team => {
+    const isSelected = currentTeam === team || tempTeams.includes(team);
+    return `
+      <div class="team-option ${isSelected ? 'selected' : ''}" 
+           data-team="${team}"
+           style="padding: 10px; margin: 5px 0; background: ${isSelected ? 'rgba(90, 159, 212, 0.3)' : 'rgba(40, 44, 54, 0.9)'}; border: 1px solid ${isSelected ? '#5a9fd4' : 'rgba(90, 159, 212, 0.5)'}; border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+           onmouseover="this.style.background='rgba(90, 159, 212, 0.2)'"
+           onmouseout="this.style.background='${isSelected ? 'rgba(90, 159, 212, 0.3)' : 'rgba(40, 44, 54, 0.9)'}'"
+           onclick="selectTeamForSlot('${stageId}', ${matchIndex}, ${teamIndex}, '${team.replace(/'/g, "\\'")}', event)">
+        ${team} ${isSelected ? '✓' : ''}
+      </div>
+    `;
+  }).join('');
+  
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Выбор команды</h2>
+        <button class="modal-close" onclick="this.closest('.modal').remove(); document.body.style.overflow = '';">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: #b0b8c8; margin-bottom: 15px;">
+          <strong>Ctrl+клик</strong> - добавить вторую команду (слот будет заблокирован для ставок)<br>
+          <strong>Обычный клик</strong> - выбрать одну команду
+        </p>
+        <div id="teamsListContainer">
+          ${teamsListHTML}
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+          <button onclick="clearSlotTeams('${stageId}', ${matchIndex}, ${teamIndex})" 
+                  style="flex: 1; padding: 10px; background: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; border-radius: 6px; color: #f44336; cursor: pointer;">
+            🗑️ Очистить
+          </button>
+          <button onclick="this.closest('.modal').remove(); document.body.style.overflow = '';" 
+                  style="flex: 1; padding: 10px; background: rgba(90, 159, 212, 0.2); border: 1px solid #5a9fd4; border-radius: 6px; color: #5a9fd4; cursor: pointer;">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+}
+
+// Выбрать команду для слота
+function selectTeamForSlot(stageId, matchIndex, teamIndex, teamName, event) {
+  if (event) event.stopPropagation();
+  
+  const isCtrlPressed = event.ctrlKey || event.metaKey;
+  
+  // Инициализируем структуры если их нет
+  if (!currentBracket.matches) currentBracket.matches = {};
+  if (!currentBracket.matches[stageId]) currentBracket.matches[stageId] = {};
+  if (!currentBracket.matches[stageId][matchIndex]) currentBracket.matches[stageId][matchIndex] = {};
+  
+  if (!currentBracket.temporary_teams) currentBracket.temporary_teams = {};
+  if (!currentBracket.temporary_teams[stageId]) currentBracket.temporary_teams[stageId] = {};
+  if (!currentBracket.temporary_teams[stageId][matchIndex]) currentBracket.temporary_teams[stageId][matchIndex] = {};
+  
+  const teamKey = teamIndex === 0 ? 'team1' : 'team2';
+  const currentTeam = currentBracket.matches[stageId][matchIndex][teamKey];
+  let tempTeams = currentBracket.temporary_teams[stageId][matchIndex][teamIndex] || [];
+  
+  if (isCtrlPressed) {
+    // Ctrl+клик - добавляем/убираем команду из временного списка
+    if (tempTeams.includes(teamName)) {
+      // Убираем команду
+      tempTeams = tempTeams.filter(t => t !== teamName);
     } else {
-      currentSelections[stage][matchIndex].team2 = teamName;
+      // Добавляем команду (максимум 2)
+      if (tempTeams.length < 2) {
+        tempTeams.push(teamName);
+      } else {
+        showCustomAlert('Можно добавить максимум 2 команды', 'Внимание', '⚠️');
+        return;
+      }
     }
-  });
+    
+    // Сохраняем временные команды
+    if (tempTeams.length > 0) {
+      currentBracket.temporary_teams[stageId][matchIndex][teamIndex] = tempTeams;
+      // Очищаем основную команду если есть временные
+      currentBracket.matches[stageId][matchIndex][teamKey] = '';
+    } else {
+      delete currentBracket.temporary_teams[stageId][matchIndex][teamIndex];
+    }
+  } else {
+    // Обычный клик - устанавливаем одну команду
+    currentBracket.matches[stageId][matchIndex][teamKey] = teamName;
+    // Очищаем временные команды
+    delete currentBracket.temporary_teams[stageId][matchIndex][teamIndex];
+    
+    // Закрываем модалку
+    const modal = event.target.closest('.modal');
+    if (modal) {
+      modal.remove();
+      document.body.style.overflow = '';
+    }
+  }
   
-  // Обновляем данные сетки
-  currentBracket.matches = currentSelections;
-  
-  // Отмечаем, что есть несохраненные изменения
+  // Отмечаем несохраненные изменения
   hasUnsavedChanges = true;
   
-  // Перерисовываем модальное окно
+  // Перерисовываем
+  const isClosed = isBracketClosed(currentBracket);
+  renderBracketModal(isClosed);
+}
+
+// Очистить команды в слоте
+function clearSlotTeams(stageId, matchIndex, teamIndex) {
+  if (!currentBracket.matches?.[stageId]?.[matchIndex]) return;
+  
+  const teamKey = teamIndex === 0 ? 'team1' : 'team2';
+  currentBracket.matches[stageId][matchIndex][teamKey] = '';
+  
+  // Очищаем временные команды
+  if (currentBracket.temporary_teams?.[stageId]?.[matchIndex]?.[teamIndex]) {
+    delete currentBracket.temporary_teams[stageId][matchIndex][teamIndex];
+  }
+  
+  // Отмечаем несохраненные изменения
+  hasUnsavedChanges = true;
+  
+  // Закрываем модалку и перерисовываем
+  const modal = document.querySelector('.modal[style*="z-index: 100001"]');
+  if (modal) {
+    modal.remove();
+    document.body.style.overflow = '';
+  }
+  
   const isClosed = isBracketClosed(currentBracket);
   renderBracketModal(isClosed);
 }
