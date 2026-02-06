@@ -35,6 +35,8 @@ MIGRATION-README.md
 ИНСТРУКЦИЯ_МАППИНГ_КОМАНД.md
 fix-telegram-username-case.cjs
 add-group-reminders-visibility-setting.cjs
+negative-reactions.json
+positive-reactions.json
 
 парсинг.txt
 live.txt

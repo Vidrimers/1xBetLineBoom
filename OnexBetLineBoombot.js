@@ -2070,6 +2070,77 @@ export function startBot() {
     }
   });
 
+  // ===== ОБРАБОТЧИК РЕАКЦИЙ НА СООБЩЕНИЯ =====
+  bot.on("message_reaction", async (reaction) => {
+    try {
+      const chatId = reaction.chat.id;
+      const userId = reaction.user.id;
+      const messageId = reaction.message_id;
+      
+      // Получаем информацию о пользователе
+      let username = "Неизвестный";
+      try {
+        const user = await bot.getChat(userId);
+        username = user.username || user.first_name || "Неизвестный";
+      } catch (error) {
+        console.error("Ошибка получения информации о пользователе:", error);
+      }
+      
+      // Получаем новые реакции
+      const newReactions = reaction.new_reaction || [];
+      if (newReactions.length === 0) return;
+      
+      // Берем первую реакцию (обычно одна)
+      const reactionEmoji = newReactions[0].emoji || newReactions[0].type;
+      
+      console.log(`👍 Реакция от @${username}: ${reactionEmoji}`);
+      
+      // Отправляем уведомление админу
+      try {
+        await bot.sendMessage(
+          TELEGRAM_ADMIN_ID,
+          `👤 Пользователь @${username} поставил реакцию ${reactionEmoji} на сообщение бота`,
+          { parse_mode: "HTML" }
+        );
+      } catch (error) {
+        console.error("Ошибка отправки уведомления админу:", error);
+      }
+      
+      // Определяем тип реакции
+      const positiveEmojis = ["👍", "❤️", "🔥", "🥰", "😍", "🤩", "💯", "⭐", "✨", "🎉", "👏", "🙏", "💪", "🤝"];
+      const negativeEmojis = ["👎", "💩", "🤡", "🤮", "😡", "😠", "🖕", "💀"];
+      
+      const isPositive = positiveEmojis.includes(reactionEmoji);
+      const isNegative = negativeEmojis.includes(reactionEmoji);
+      
+      if (!isPositive && !isNegative) return; // Игнорируем нейтральные реакции
+      
+      // Загружаем фразы из файлов
+      let phrases = [];
+      try {
+        const fileName = isPositive ? "js/positive-reactions.json" : "js/negative-reactions.json";
+        const fileContent = fs.readFileSync(fileName, "utf8");
+        phrases = JSON.parse(fileContent);
+      } catch (error) {
+        console.error("Ошибка загрузки фраз:", error);
+        phrases = isPositive ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
+      }
+      
+      // Выбираем случайную фразу
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      
+      // Отправляем ответ пользователю
+      try {
+        await bot.sendMessage(chatId, randomPhrase);
+      } catch (error) {
+        console.error("Ошибка отправки ответа на реакцию:", error);
+      }
+      
+    } catch (error) {
+      console.error("Ошибка обработки реакции:", error);
+    }
+  });
+
   // ===== ОБРАБОТЧИК CALLBACK QUERY (ИНЛАЙН-КНОПКИ) =====
   bot.on("callback_query", async (callbackQuery) => {
     const msg = callbackQuery.message;
