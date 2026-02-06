@@ -1615,9 +1615,10 @@ async function toggleBracketLock() {
   
   const isCurrentlyLocked = currentBracket.is_locked === 1;
   const newLockState = isCurrentlyLocked ? 0 : 1;
+  const bracketId = currentBracket.id; // Сохраняем ID до возможного обнуления
   
   try {
-    const response = await fetch(`/api/admin/brackets/${currentBracket.id}/lock`, {
+    const response = await fetch(`/api/admin/brackets/${bracketId}/lock`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1631,9 +1632,6 @@ async function toggleBracketLock() {
       throw new Error(error.error || 'Ошибка изменения блокировки');
     }
     
-    // Обновляем состояние
-    currentBracket.is_locked = newLockState;
-    
     const message = newLockState === 1 
       ? 'Сетка заблокирована. Пользователи не смогут делать прогнозы.' 
       : 'Сетка разблокирована. Пользователи могут делать прогнозы.';
@@ -1645,7 +1643,7 @@ async function toggleBracketLock() {
     }
     
     // Перезагружаем сетку чтобы обновить интерфейс
-    await openBracketModal(currentBracket.id);
+    await openBracketModal(bracketId);
     
   } catch (error) {
     console.error('Ошибка при изменении блокировки:', error);
