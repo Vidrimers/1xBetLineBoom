@@ -2602,6 +2602,15 @@ export async function handleWebhookUpdate(update) {
     if (update.message) {
       // Эмулируем событие message для существующих обработчиков
       bot.emit('message', update.message);
+      
+      // Дополнительно: вручную проверяем команды для webhook
+      // bot.onText не всегда срабатывает через emit
+      const text = update.message.text;
+      if (text && text.startsWith('/')) {
+        console.log(`🔧 Webhook: обнаружена команда ${text}`);
+        // Эмулируем событие text для обработчиков команд
+        bot.emit('text', update.message);
+      }
     }
     
     // Обрабатываем callback_query
