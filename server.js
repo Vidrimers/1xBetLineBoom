@@ -1530,6 +1530,16 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
           continue;
         }
         
+        // Добавляем инлайн-кнопки реакций для личных сообщений
+        const replyMarkup = {
+          inline_keyboard: [
+            [
+              { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
+              { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+            ]
+          ]
+        };
+        
         const response = await fetch(
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
           {
@@ -1539,6 +1549,7 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
               chat_id: user.telegram_id,
               text: message,
               parse_mode: "HTML",
+              reply_markup: replyMarkup
             }),
           }
         );
@@ -11370,6 +11381,16 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
       }
       
       try {
+        // Добавляем инлайн-кнопки реакций для тестового сообщения
+        const replyMarkup = {
+          inline_keyboard: [
+            [
+              { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
+              { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+            ]
+          ]
+        };
+        
         await fetch(
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
           {
@@ -11379,6 +11400,7 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
               chat_id: ADMIN_TELEGRAM_ID,
               text: `📝 <b>ТЕСТОВОЕ СООБЩЕНИЕ</b>\n\n${message}`,
               parse_mode: "HTML",
+              reply_markup: replyMarkup
             }),
           }
         );
@@ -11406,6 +11428,16 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
     
     for (const user of users) {
       try {
+        // Добавляем инлайн-кнопки реакций для личных сообщений
+        const replyMarkup = {
+          inline_keyboard: [
+            [
+              { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
+              { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+            ]
+          ]
+        };
+        
         await fetch(
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
           {
@@ -11415,6 +11447,7 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
               chat_id: user.telegram_id,
               text: message,
               parse_mode: "HTML",
+              reply_markup: replyMarkup
             }),
           }
         );
