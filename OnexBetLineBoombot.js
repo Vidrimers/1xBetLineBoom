@@ -29,8 +29,9 @@ const SERVER_URL = `http://localhost:${SERVER_PORT}`;
 const isLocalNetwork = SERVER_IP === "localhost" || SERVER_IP.startsWith("192.168.") || SERVER_IP.startsWith("127.0.");
 const isDomain = SERVER_IP.includes(".") && !SERVER_IP.match(/^\d+\.\d+\.\d+\.\d+$/); // Проверяем, это домен или IP
 
-const PUBLIC_URL = (isDomain && !process.env.USE_HTTPS)
-  ? `https://${SERVER_IP}` // Для доменов по умолчанию HTTPS без порта
+// Для доменов всегда используем HTTPS (независимо от USE_HTTPS)
+const PUBLIC_URL = isDomain
+  ? `https://${SERVER_IP}` // Для доменов всегда HTTPS без порта
   : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
 
 console.log(
@@ -873,16 +874,18 @@ export async function notifyReminderDeleted(username, telegramUsername, eventNam
 
 // ===== ИНИЦИАЛИЗАЦИЯ И ЗАПУСК БОТА =====
 
-export function startBot() {
+export async function startBot() {
   if (botStarted) {
     console.log("ℹ️ Бот уже запущен, пропускаем повторную инициализацию");
     return;
   }
 
-  // Проверяем переменную окружения для включения polling
-  const enablePolling = process.env.TELEGRAM_BOT_POLLING === "true";
+  // Проверяем режим работы бота
+  const botMode = process.env.TELEGRAM_BOT_MODE || "polling"; // polling или webhook
+  const enablePolling = botMode === "polling";
 
   if (enablePolling) {
+    // Режим polling
     try {
       bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { 
         polling: {
@@ -890,7 +893,7 @@ export function startBot() {
         }
       });
       botStarted = true;
-      console.log("✅ Telegram бот запущен с polling (включены реакции)");
+      console.log("✅ Telegram бот запущен в режиме POLLING (включены реакции)");
     } catch (error) {
       console.error("❌ Ошибка при запуске бота с polling:", error.message);
       console.log("🔄 Запускаем бота без polling...");
@@ -901,11 +904,22 @@ export function startBot() {
       );
     }
   } else {
+    // Режим webhook
     bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
     botStarted = true;
-    console.log(
-      "✅ Telegram бот запущен без polling (TELEGRAM_BOT_POLLING=false)"
-    );
+    
+    // Настраиваем webhook
+    const webhookUrl = `${PUBLIC_URL}/telegram-webhook`;
+    try {
+      await bot.setWebHook(webhookUrl, {
+        allowed_updates: ["message", "callback_query", "message_reaction"]
+      });
+      console.log(`✅ Telegram бот запущен в режиме WEBHOOK: ${webhookUrl}`);
+      console.log("📡 Реакции включены через webhook");
+    } catch (error) {
+      console.error("❌ Ошибка установки webhook:", error.message);
+      console.log("⚠️ Бот работает без webhook (только отправка сообщений)");
+    }
   }
 
   // Запускаем background worker для повторной отправки уведомлений
@@ -2074,102 +2088,20 @@ export function startBot() {
     }
   });
 
-  // ===== ОБРАБОТЧИК РЕАКЦИЙ НА СООБЩЕНИЯ =====
-  // Используем обработчик update так как message_reaction может не поддерживаться напрямую
-  bot.on("update", async (update) => {
-    // Логируем ВСЕ updates для отладки (кроме обычных сообщений и callback)
-    const updateTypes = Object.keys(update).filter(key => key !== 'update_id');
-    console.log("📦 Получен update с типами:", updateTypes);
-    
-    // Проверяем есть ли message_reaction в update
-    if (update.message_reaction) {
-      try {
-        const reaction = update.message_reaction;
-        console.log("🔔 Получено событие message_reaction:", JSON.stringify(reaction, null, 2));
-        
-        const chatId = reaction.chat.id;
-        const userId = reaction.user.id;
-        const messageId = reaction.message_id;
-        
-        // Получаем информацию о пользователе
-        let username = "Неизвестный";
-        try {
-          const user = await bot.getChat(userId);
-          username = user.username || user.first_name || "Неизвестный";
-        } catch (error) {
-          console.error("Ошибка получения информации о пользователе:", error);
-        }
-        
-        // Получаем новые реакции
-        const newReactions = reaction.new_reaction || [];
-        console.log("📊 Новые реакции:", newReactions);
-        
-        if (newReactions.length === 0) {
-          console.log("⚠️ Нет новых реакций, выходим");
-          return;
-        }
-        
-        // Берем первую реакцию (обычно одна)
-        const reactionData = newReactions[0];
-        const reactionEmoji = reactionData.emoji || reactionData.type;
-        
-        console.log(`👍 Реакция от @${username}: ${reactionEmoji}`);
-        
-        // Отправляем уведомление админу
-        try {
-          await bot.sendMessage(
-            TELEGRAM_ADMIN_ID,
-            `👤 Пользователь @${username} поставил реакцию ${reactionEmoji} на сообщение бота`,
-            { parse_mode: "HTML" }
-          );
-          console.log("✅ Уведомление админу отправлено");
-        } catch (error) {
-          console.error("Ошибка отправки уведомления админу:", error);
-        }
-        
-        // Определяем тип реакции
-        const positiveEmojis = ["👍", "❤️", "🔥", "🥰", "😍", "🤩", "💯", "⭐", "✨", "🎉", "👏", "🙏", "💪", "🤝"];
-        const negativeEmojis = ["👎", "💩", "🤡", "🤮", "😡", "😠", "🖕", "💀"];
-        
-        const isPositive = positiveEmojis.includes(reactionEmoji);
-        const isNegative = negativeEmojis.includes(reactionEmoji);
-        
-        console.log(`🎯 Тип реакции: ${isPositive ? 'положительная' : isNegative ? 'отрицательная' : 'нейтральная'}`);
-        
-        if (!isPositive && !isNegative) {
-          console.log("⚠️ Нейтральная реакция, не отвечаем");
-          return;
-        }
-        
-        // Загружаем фразы из файлов
-        let phrases = [];
-        try {
-          const fileName = isPositive ? "js/positive-reactions.json" : "js/negative-reactions.json";
-          const fileContent = fs.readFileSync(fileName, "utf8");
-          phrases = JSON.parse(fileContent);
-          console.log(`📄 Загружено ${phrases.length} фраз из ${fileName}`);
-        } catch (error) {
-          console.error("Ошибка загрузки фраз:", error);
-          phrases = isPositive ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
-        }
-        
-        // Выбираем случайную фразу
-        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-        console.log(`💬 Отправляем фразу: ${randomPhrase}`);
-        
-        // Отправляем ответ пользователю
-        try {
-          await bot.sendMessage(chatId, randomPhrase);
-          console.log("✅ Ответ пользователю отправлен");
-        } catch (error) {
-          console.error("Ошибка отправки ответа на реакцию:", error);
-        }
-        
-      } catch (error) {
-        console.error("❌ Ошибка обработки реакции:", error);
+  // ===== ОБРАБОТЧИК РЕАКЦИЙ НА СООБЩЕНИЯ (ТОЛЬКО ДЛЯ POLLING) =====
+  // В режиме webhook реакции обрабатываются через handleWebhookUpdate
+  if (process.env.TELEGRAM_BOT_MODE === "polling") {
+    bot.on("update", async (update) => {
+      // Логируем ВСЕ updates для отладки (кроме обычных сообщений и callback)
+      const updateTypes = Object.keys(update).filter(key => key !== 'update_id');
+      console.log("📦 Получен update с типами:", updateTypes);
+      
+      // Проверяем есть ли message_reaction в update
+      if (update.message_reaction) {
+        await handleMessageReaction(update.message_reaction);
       }
-    }
-  });
+    });
+  }
 
   // ===== ОБРАБОТЧИК CALLBACK QUERY (ИНЛАЙН-КНОПКИ) =====
   bot.on("callback_query", async (callbackQuery) => {
@@ -2558,3 +2490,117 @@ async function sendMatchReminders() {
 // Запускаем проверку напоминаний каждые 15 минут
 setInterval(sendMatchReminders, 15 * 60 * 1000);
 console.log('✅ Система напоминаний о матчах запущена (проверка каждые 15 минут)');
+
+// ===== ОБРАБОТКА WEBHOOK UPDATES =====
+export async function handleWebhookUpdate(update) {
+  try {
+    console.log("📦 Обработка webhook update, типы:", Object.keys(update).filter(k => k !== 'update_id'));
+    
+    // Обрабатываем message_reaction
+    if (update.message_reaction) {
+      await handleMessageReaction(update.message_reaction);
+    }
+    
+    // Обрабатываем обычные сообщения
+    if (update.message) {
+      // Эмулируем событие message для существующих обработчиков
+      bot.emit('message', update.message);
+    }
+    
+    // Обрабатываем callback_query
+    if (update.callback_query) {
+      bot.emit('callback_query', update.callback_query);
+    }
+    
+  } catch (error) {
+    console.error("❌ Ошибка обработки webhook update:", error);
+  }
+}
+
+// Функция обработки реакций (вынесена отдельно для переиспользования)
+async function handleMessageReaction(reaction) {
+  try {
+    console.log("🔔 Получено событие message_reaction:", JSON.stringify(reaction, null, 2));
+    
+    const chatId = reaction.chat.id;
+    const userId = reaction.user.id;
+    const messageId = reaction.message_id;
+    
+    // Получаем информацию о пользователе
+    let username = "Неизвестный";
+    try {
+      const user = await bot.getChat(userId);
+      username = user.username || user.first_name || "Неизвестный";
+    } catch (error) {
+      console.error("Ошибка получения информации о пользователе:", error);
+    }
+    
+    // Получаем новые реакции
+    const newReactions = reaction.new_reaction || [];
+    console.log("📊 Новые реакции:", newReactions);
+    
+    if (newReactions.length === 0) {
+      console.log("⚠️ Нет новых реакций, выходим");
+      return;
+    }
+    
+    // Берем первую реакцию (обычно одна)
+    const reactionData = newReactions[0];
+    const reactionEmoji = reactionData.emoji || reactionData.type;
+    
+    console.log(`👍 Реакция от @${username}: ${reactionEmoji}`);
+    
+    // Отправляем уведомление админу
+    try {
+      await bot.sendMessage(
+        TELEGRAM_ADMIN_ID,
+        `👤 Пользователь @${username} поставил реакцию ${reactionEmoji} на сообщение бота`,
+        { parse_mode: "HTML" }
+      );
+      console.log("✅ Уведомление админу отправлено");
+    } catch (error) {
+      console.error("Ошибка отправки уведомления админу:", error);
+    }
+    
+    // Определяем тип реакции
+    const positiveEmojis = ["👍", "❤️", "🔥", "🥰", "😍", "🤩", "💯", "⭐", "✨", "🎉", "👏", "🙏", "💪", "🤝"];
+    const negativeEmojis = ["👎", "💩", "🤡", "🤮", "😡", "😠", "🖕", "💀"];
+    
+    const isPositive = positiveEmojis.includes(reactionEmoji);
+    const isNegative = negativeEmojis.includes(reactionEmoji);
+    
+    console.log(`🎯 Тип реакции: ${isPositive ? 'положительная' : isNegative ? 'отрицательная' : 'нейтральная'}`);
+    
+    if (!isPositive && !isNegative) {
+      console.log("⚠️ Нейтральная реакция, не отвечаем");
+      return;
+    }
+    
+    // Загружаем фразы из файлов
+    let phrases = [];
+    try {
+      const fileName = isPositive ? "js/positive-reactions.json" : "js/negative-reactions.json";
+      const fileContent = fs.readFileSync(fileName, "utf8");
+      phrases = JSON.parse(fileContent);
+      console.log(`📄 Загружено ${phrases.length} фраз из ${fileName}`);
+    } catch (error) {
+      console.error("Ошибка загрузки фраз:", error);
+      phrases = isPositive ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
+    }
+    
+    // Выбираем случайную фразу
+    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+    console.log(`💬 Отправляем фразу: ${randomPhrase}`);
+    
+    // Отправляем ответ пользователю
+    try {
+      await bot.sendMessage(chatId, randomPhrase);
+      console.log("✅ Ответ пользователю отправлен");
+    } catch (error) {
+      console.error("Ошибка отправки ответа на реакцию:", error);
+    }
+    
+  } catch (error) {
+    console.error("❌ Ошибка обработки реакции:", error);
+  }
+}

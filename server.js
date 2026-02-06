@@ -2092,6 +2092,26 @@ db.pragma("foreign_keys = OFF");
 app.use(express.json({ limit: "50mb" })); // Увеличиваем лимит для аватаров
 app.use(express.static(".")); // Раздаем статические файлы (HTML, CSS, JS)
 
+// ===== TELEGRAM WEBHOOK ENDPOINT =====
+app.post("/telegram-webhook", async (req, res) => {
+  try {
+    console.log("📨 Получен webhook от Telegram");
+    const update = req.body;
+    
+    // Импортируем функцию обработки update из бота
+    const { handleWebhookUpdate } = await import("./OnexBetLineBoombot.js");
+    
+    // Обрабатываем update
+    await handleWebhookUpdate(update);
+    
+    // Отвечаем Telegram что всё ОК
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("❌ Ошибка обработки webhook:", error);
+    res.sendStatus(500);
+  }
+});
+
 // Middleware для обновления last_activity при каждом запросе
 app.use((req, res, next) => {
   // Пропускаем статические файлы
