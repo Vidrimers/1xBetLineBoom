@@ -1032,6 +1032,8 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
     const tempTeams = currentBracket.temporary_teams?.[stageId]?.[matchIndex]?.[teamIndex];
     const hasMultipleTeams = tempTeams && tempTeams.length > 1;
     
+    console.log(`🔍 renderTeamSlot (EDIT): ${stageId}[${matchIndex}][${teamIndex}], tempTeams:`, tempTeams, 'teamName:', teamName);
+    
     // Формируем отображение команд
     let displayText = '';
     let slotStyle = duplicateStyle;
@@ -1069,6 +1071,8 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   // Проверяем есть ли временные команды для этого слота (две команды = disabled)
   const tempTeams = currentBracket.temporary_teams?.[stageId]?.[matchIndex]?.[teamIndex];
   const hasMultipleTeams = tempTeams && tempTeams.length > 1;
+  
+  console.log(`🔍 renderTeamSlot (VIEW): ${stageId}[${matchIndex}][${teamIndex}], tempTeams:`, tempTeams, 'teamName:', teamName);
   
   // Проверяем блокировку конкретной колонки
   const isStageClosed = isBracketClosed(currentBracket, stageId);
@@ -1212,10 +1216,12 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
     currentBracket.matches[nextStageId][nextMatchIndex] = {};
   }
   
-  // Сохраняем временные команды перед обновлением
-  const tempTeamsBackup = currentBracket.temporary_teams?.[nextStageId]?.[nextMatchIndex] 
-    ? JSON.parse(JSON.stringify(currentBracket.temporary_teams[nextStageId][nextMatchIndex])) 
+  // Сохраняем ВСЕ временные команды перед обновлением
+  const tempTeamsBackup = currentBracket.temporary_teams 
+    ? JSON.parse(JSON.stringify(currentBracket.temporary_teams)) 
     : null;
+  
+  console.log('🔍 promoteTeamToNextStage: Backup temporary_teams:', tempTeamsBackup);
   
   if (teamPosition === 0) {
     currentBracket.matches[nextStageId][nextMatchIndex].team1 = teamName;
@@ -1223,16 +1229,16 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
     currentBracket.matches[nextStageId][nextMatchIndex].team2 = teamName;
   }
   
-  // Восстанавливаем временные команды после обновления
+  // Восстанавливаем ВСЕ временные команды после обновления
   if (tempTeamsBackup) {
-    if (!currentBracket.temporary_teams) currentBracket.temporary_teams = {};
-    if (!currentBracket.temporary_teams[nextStageId]) currentBracket.temporary_teams[nextStageId] = {};
-    if (!currentBracket.temporary_teams[nextStageId][nextMatchIndex]) currentBracket.temporary_teams[nextStageId][nextMatchIndex] = {};
-    currentBracket.temporary_teams[nextStageId][nextMatchIndex] = tempTeamsBackup;
+    currentBracket.temporary_teams = tempTeamsBackup;
+    console.log('✅ promoteTeamToNextStage: Восстановлены temporary_teams:', currentBracket.temporary_teams);
   }
   
-  // Обновляем отображение следующей стадии
-  updateNextStageDisplay(nextStageId, nextMatchIndex);
+  // Перерисовываем всю модалку чтобы корректно отобразить temporary_teams
+  const isClosed = isBracketClosed(currentBracket);
+  console.log('🔄 promoteTeamToNextStage: Перерисовываем модалку, temporary_teams:', currentBracket.temporary_teams);
+  renderBracketModal(isClosed);
   
   // КАСКАДНОЕ ОБНОВЛЕНИЕ: если в следующей стадии был выбран победитель этого матча,
   // проверяем, нужно ли продвинуть его дальше
