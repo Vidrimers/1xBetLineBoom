@@ -1260,10 +1260,8 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
     console.log('✅ promoteTeamToNextStage: Восстановлены temporary_teams:', currentBracket.temporary_teams);
   }
   
-  // Перерисовываем всю модалку чтобы корректно отобразить temporary_teams
-  const isClosed = isBracketClosed(currentBracket);
-  console.log('🔄 promoteTeamToNextStage: Перерисовываем модалку, temporary_teams:', currentBracket.temporary_teams);
-  renderBracketModal(isClosed);
+  // Обновляем только визуальное отображение следующей стадии БЕЗ полной перерисовки
+  updateNextStageDisplay(nextStageId, nextMatchIndex);
   
   // КАСКАДНОЕ ОБНОВЛЕНИЕ: если в следующей стадии был выбран победитель этого матча,
   // проверяем, нужно ли продвинуть его дальше
@@ -1456,24 +1454,44 @@ function updateNextStageDisplay(nextStageId, nextMatchIndex) {
     const teamName = matchData ? (index === 0 ? matchData.team1 : matchData.team2) : null;
     const teamNameElement = slot.querySelector('.bracket-team-name');
     
+    // Проверяем есть ли временные команды для этого слота
+    const tempTeams = currentBracket.temporary_teams?.[nextStageId]?.[nextMatchIndex]?.[index];
+    const hasMultipleTeams = tempTeams && tempTeams.length > 1;
+    
     if (teamNameElement) {
-      if (teamName) {
-        // Устанавливаем название команды
+      if (hasMultipleTeams) {
+        // Две команды - показываем через "/"
+        const displayText = tempTeams.join(' / ');
+        teamNameElement.innerHTML = `${displayText}<span style="color: #ff9800; margin-left: 5px;">⚠️</span>`;
+        slot.dataset.team = teamName || '';
+        slot.onclick = null;
+        slot.style.cursor = 'default';
+        slot.style.opacity = '0.6';
+        slot.style.border = '2px dashed #ff9800';
+        slot.title = 'Слот заблокирован - две команды';
+      } else if (teamName) {
+        // Одна команда - устанавливаем название
         teamNameElement.textContent = teamName;
         slot.dataset.team = teamName;
         
         // Обновляем обработчик клика
-        const isClosed = isBracketClosed(currentBracket);
-        if (!isClosed) {
+        const isStageClosed = isBracketClosed(currentBracket, nextStageId);
+        if (!isStageClosed) {
           slot.onclick = () => selectBracketWinner(nextStageId, nextMatchIndex, teamName);
           slot.style.cursor = 'pointer';
         }
+        slot.style.opacity = '';
+        slot.style.border = '';
+        slot.title = '';
       } else {
         // Очищаем слот
-        teamNameElement.textContent = '';
+        teamNameElement.textContent = '—';
         delete slot.dataset.team;
         slot.onclick = null;
         slot.style.cursor = 'default';
+        slot.style.opacity = '';
+        slot.style.border = '';
+        slot.title = '';
       }
     }
   });
