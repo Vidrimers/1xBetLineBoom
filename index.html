@@ -5461,17 +5461,16 @@
           </div>
 
           <div style="margin-bottom: 20px">
-            <label style="display: block; margin-bottom: 5px; font-weight: 600">
-              <span id="bracketStartDateLabel">Дата начала 1/16:</span>
+            <label style="display: block; margin-bottom: 10px; font-weight: 600;">
+              📅 Даты блокировки колонок:
             </label>
-            <input
-              type="datetime-local"
-              id="bracketStartDate"
-              style="width: 100%; padding: 10px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; color: #e0e6f0;"
-            />
-            <small style="color: #b0b8c8; display: block; margin-top: 5px;">
-              После этой даты ставки в сетке будут закрыты
+            <small style="color: #b0b8c8; display: block; margin-bottom: 15px;">
+              Установите дату и время блокировки для каждой колонки. Если дата не указана, используется дата предыдущей колонки.
             </small>
+            
+            <div id="lockDatesContainer" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Даты будут добавлены динамически через JS -->
+            </div>
           </div>
 
           <div style="display: flex; gap: 10px">

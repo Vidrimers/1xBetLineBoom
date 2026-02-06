@@ -2753,6 +2753,22 @@ try {
   // Колонка уже существует, игнорируем
 }
 
+// Миграция: добавляем lock_dates для каждой стадии (JSON)
+try {
+  db.prepare("ALTER TABLE brackets ADD COLUMN lock_dates TEXT").run();
+  console.log("✅ Колонка lock_dates добавлена в таблицу brackets");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
+// Миграция: добавляем temporary_teams для слотов с двумя командами (JSON)
+try {
+  db.prepare("ALTER TABLE brackets ADD COLUMN temporary_teams TEXT").run();
+  console.log("✅ Колонка temporary_teams добавлена в таблицу brackets");
+} catch (e) {
+  // Колонка уже существует, игнорируем
+}
+
 // Таблица прогнозов пользователей в сетке
 db.exec(`
   CREATE TABLE IF NOT EXISTS bracket_predictions (
@@ -3685,6 +3701,30 @@ app.get("/api/brackets/:bracketId", (req, res) => {
       bracket.matches = {};
     }
     
+    // Парсим lock_dates из JSON если есть
+    if (bracket.lock_dates) {
+      try {
+        bracket.lock_dates = JSON.parse(bracket.lock_dates);
+      } catch (e) {
+        console.error('Ошибка парсинга lock_dates:', e);
+        bracket.lock_dates = {};
+      }
+    } else {
+      bracket.lock_dates = {};
+    }
+    
+    // Парсим temporary_teams из JSON если есть
+    if (bracket.temporary_teams) {
+      try {
+        bracket.temporary_teams = JSON.parse(bracket.temporary_teams);
+      } catch (e) {
+        console.error('Ошибка парсинга temporary_teams:', e);
+        bracket.temporary_teams = {};
+      }
+    } else {
+      bracket.temporary_teams = {};
+    }
+    
     res.json(bracket);
   } catch (error) {
     console.error("Ошибка получения сетки:", error);
@@ -4019,7 +4059,7 @@ app.delete("/api/brackets/:bracketId/predictions/cleanup", (req, res) => {
 // Создать сетку (только для админа)
 app.post("/api/admin/brackets", (req, res) => {
   try {
-    const { event_id, name, start_date, start_stage, username } = req.body;
+    const { event_id, name, start_date, start_stage, lock_dates, temporary_teams, username } = req.body;
     
     if (!username) {
       return res.status(401).json({ error: "Требуется авторизация" });
@@ -4038,9 +4078,16 @@ app.post("/api/admin/brackets", (req, res) => {
     
     // Создаем сетку
     const result = db.prepare(`
-      INSERT INTO brackets (event_id, name, start_date, start_stage)
-      VALUES (?, ?, ?, ?)
-    `).run(event_id, name, start_date, start_stage || 'round_of_16');
+      INSERT INTO brackets (event_id, name, start_date, start_stage, lock_dates, temporary_teams)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      event_id, 
+      name, 
+      start_date, 
+      start_stage || 'round_of_16',
+      lock_dates ? JSON.stringify(lock_dates) : null,
+      temporary_teams ? JSON.stringify(temporary_teams) : null
+    );
     
     console.log(`✅ Сетка "${name}" создана для турнира ${event_id} (начало: ${start_stage || 'round_of_16'})`);
     
@@ -4058,7 +4105,7 @@ app.post("/api/admin/brackets", (req, res) => {
 app.put("/api/admin/brackets/:bracketId", (req, res) => {
   try {
     const { bracketId } = req.params;
-    const { name, start_date, start_stage, username } = req.body;
+    const { name, start_date, start_stage, lock_dates, temporary_teams, username } = req.body;
     
     if (!username) {
       return res.status(401).json({ error: "Требуется авторизация" });
@@ -4078,9 +4125,16 @@ app.put("/api/admin/brackets/:bracketId", (req, res) => {
     // Обновляем сетку
     const result = db.prepare(`
       UPDATE brackets 
-      SET name = ?, start_date = ?, start_stage = ?
+      SET name = ?, start_date = ?, start_stage = ?, lock_dates = ?, temporary_teams = ?
       WHERE id = ?
-    `).run(name, start_date, start_stage || 'round_of_16', bracketId);
+    `).run(
+      name, 
+      start_date, 
+      start_stage || 'round_of_16',
+      lock_dates ? JSON.stringify(lock_dates) : null,
+      temporary_teams ? JSON.stringify(temporary_teams) : null,
+      bracketId
+    );
     
     if (result.changes === 0) {
       return res.status(404).json({ error: "Сетка не найдена" });

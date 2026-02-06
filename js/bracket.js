@@ -1705,21 +1705,19 @@ async function openCreateBracketModal() {
   
   // Очищаем форму
   const nameInput = document.getElementById('bracketName');
-  const dateInput = document.getElementById('bracketStartDate');
   const stageSelect = document.getElementById('bracketStartStage');
   
   if (nameInput) nameInput.value = '';
-  if (dateInput) dateInput.value = '';
   if (stageSelect) stageSelect.value = 'round_of_16';
   
   // Меняем заголовок на "Создать"
   const modalTitle = modal.querySelector('.modal-header h2');
   if (modalTitle) modalTitle.textContent = '➕ Создать сетку плей-офф';
   
-  // Добавляем обработчик изменения стадии
+  // Добавляем обработчик изменения стадии для обновления полей дат
   if (stageSelect) {
-    stageSelect.onchange = updateStartDateLabel;
-    updateStartDateLabel();
+    stageSelect.onchange = renderLockDatesFields;
+    renderLockDatesFields();
   }
   
   modal.style.display = 'flex';
@@ -1732,20 +1730,55 @@ async function openCreateBracketModal() {
   }
 }
 
-// Обновить метку даты в зависимости от выбранной стадии
-function updateStartDateLabel() {
+// Отрисовать поля для дат блокировки колонок
+function renderLockDatesFields(existingLockDates = {}) {
   const stageSelect = document.getElementById('bracketStartStage');
-  const dateLabel = document.getElementById('bracketStartDateLabel');
+  const container = document.getElementById('lockDatesContainer');
   
-  if (!stageSelect || !dateLabel) return;
+  if (!stageSelect || !container) return;
   
-  const stage = stageSelect.value;
-  const stageNames = {
-    'round_of_16': '1/16',
-    'round_of_8': '1/8'
-  };
+  const startStage = stageSelect.value;
   
-  dateLabel.textContent = `Дата начала ${stageNames[stage] || '1/16'}:`;
+  // Определяем какие стадии нужно показать
+  const allStages = [
+    { id: 'round_of_16', name: '1/16' },
+    { id: 'round_of_8', name: '1/8' },
+    { id: 'quarter_finals', name: '1/4' },
+    { id: 'semi_finals', name: '1/2' },
+    { id: 'final', name: '🏆 Финал' }
+  ];
+  
+  // Находим индекс начальной стадии
+  const startIndex = allStages.findIndex(s => s.id === startStage);
+  const stagesToShow = allStages.slice(startIndex);
+  
+  // Очищаем контейнер
+  container.innerHTML = '';
+  
+  // Создаем поля для каждой стадии
+  stagesToShow.forEach((stage, index) => {
+    const isFirst = index === 0;
+    const value = existingLockDates[stage.id] || '';
+    
+    const fieldHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label style="min-width: 80px; font-weight: 500; color: ${isFirst ? '#5a9fd4' : '#b0b8c8'};">
+          ${stage.name}:
+        </label>
+        <input
+          type="datetime-local"
+          id="lockDate_${stage.id}"
+          data-stage="${stage.id}"
+          value="${value}"
+          ${isFirst ? 'required' : ''}
+          style="flex: 1; padding: 8px; background: rgba(40, 44, 54, 0.9); border: 1px solid ${isFirst ? '#5a9fd4' : 'rgba(90, 159, 212, 0.3)'}; border-radius: 6px; color: #e0e6f0;"
+          placeholder="${isFirst ? 'Обязательно' : 'Наследует от предыдущей'}"
+        />
+      </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', fieldHTML);
+  });
 }
 
 // Открыть модальное окно редактирования сетки
@@ -1759,31 +1792,19 @@ function openEditBracketModal(bracket) {
   
   // Заполняем форму данными сетки
   const nameInput = document.getElementById('bracketName');
-  const dateInput = document.getElementById('bracketStartDate');
   const stageSelect = document.getElementById('bracketStartStage');
   
   if (nameInput) nameInput.value = bracket.name;
   if (stageSelect) stageSelect.value = bracket.start_stage || 'round_of_16';
   
-  if (dateInput) {
-    // Преобразуем дату в формат datetime-local
-    const date = new Date(bracket.start_date);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
-  
   // Меняем заголовок на "Редактировать"
   const modalTitle = modal.querySelector('.modal-header h2');
   if (modalTitle) modalTitle.textContent = '✏️ Редактировать сетку плей-офф';
   
-  // Добавляем обработчик изменения стадии
+  // Отрисовываем поля дат с существующими значениями
   if (stageSelect) {
-    stageSelect.onchange = updateStartDateLabel;
-    updateStartDateLabel();
+    stageSelect.onchange = () => renderLockDatesFields(bracket.lock_dates || {});
+    renderLockDatesFields(bracket.lock_dates || {});
   }
   
   // Сохраняем ID сетки для обновления
@@ -1822,8 +1843,33 @@ async function createBracket() {
   const isEdit = !!bracketId;
   
   const name = document.getElementById('bracketName').value.trim();
-  const startDate = document.getElementById('bracketStartDate').value;
   const startStage = document.getElementById('bracketStartStage').value;
+  
+  // Собираем даты блокировки из полей
+  const lockDates = {};
+  const lockDateInputs = document.querySelectorAll('[id^="lockDate_"]');
+  
+  lockDateInputs.forEach(input => {
+    const stage = input.dataset.stage;
+    const value = input.value;
+    if (value) {
+      lockDates[stage] = value;
+    }
+  });
+  
+  // Проверяем что хотя бы первая дата указана
+  const firstStageInput = document.querySelector(`#lockDate_${startStage}`);
+  if (!firstStageInput || !firstStageInput.value) {
+    if (typeof showCustomAlert === 'function') {
+      await showCustomAlert('Укажите дату блокировки для первой колонки', 'Ошибка', '❌');
+    } else {
+      alert('Укажите дату блокировки для первой колонки');
+    }
+    return;
+  }
+  
+  // Для обратной совместимости используем первую дату как start_date
+  const startDate = firstStageInput.value;
   
   if (!name) {
     if (typeof showCustomAlert === 'function') {
@@ -1833,10 +1879,6 @@ async function createBracket() {
     }
     return;
   }
-  
-  if (!startDate) {
-    if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Выберите дату начала', 'Ошибка', '❌');
     } else {
       alert('Выберите дату начала');
     }
@@ -1852,6 +1894,7 @@ async function createBracket() {
       name,
       start_date: startDate,
       start_stage: startStage,
+      lock_dates: lockDates,
       username: currentUser.username
     });
     
@@ -1863,6 +1906,7 @@ async function createBracket() {
         name,
         start_date: startDate,
         start_stage: startStage,
+        lock_dates: lockDates,
         username: currentUser.username
       })
     });
