@@ -105,6 +105,17 @@
     overflow-x: hidden;
   }
 
+  /* Стили для незалогиненного состояния */
+  .container.not-logged-in {
+    justify-content: normal;
+    height: 100vh;
+  }
+
+  /* Убираем padding у body для незалогиненного состояния */
+  body:has(.container.not-logged-in) {
+    padding: 0;
+  }
+
   body {
     padding: 10px;
     overflow-x: hidden;
@@ -267,11 +278,12 @@
     position: relative;
     z-index: 1001;
     /* background: rgba(30, 34, 44, 0.98); */
-    padding: 20px;
+    padding: 10px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
     /* width: 100%; */
     max-width: 100%;
     margin: 10px auto;
@@ -282,12 +294,19 @@
   }
 
   .user-input-mobile input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     text-align: center;
   }
 
-  .user-input-mobile button {
-    width: 100%;
+  .user-input-mobile > .auth-btn:not(.telegram-auth-btn) {
+    flex-shrink: 0;
+    width: auto;
+  }
+
+  .user-input-mobile button.telegram-auth-btn,
+  .user-input-mobile button.telegram-info-btn {
+    /* Кнопки Telegram остаются на полную ширину */
   }
 
   /* .mobile-menu-toggle:hover {
