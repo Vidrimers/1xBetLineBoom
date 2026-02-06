@@ -4173,6 +4173,22 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
       return res.status(400).json({ error: "Не указаны команды" });
     }
     
+    // Удаляем результаты для пустых слотов
+    // Проходим по всем стадиям и матчам
+    Object.keys(matches).forEach(stageId => {
+      Object.keys(matches[stageId]).forEach(matchIndex => {
+        const match = matches[stageId][matchIndex];
+        // Если обе команды пустые - удаляем результат этого матча
+        if ((!match.team1 || match.team1.trim() === '') && (!match.team2 || match.team2.trim() === '')) {
+          db.prepare(`
+            DELETE FROM bracket_results 
+            WHERE bracket_id = ? AND stage = ? AND match_index = ?
+          `).run(bracketId, stageId, matchIndex);
+          console.log(`🗑️ Удален результат для пустого матча: ${stageId} match ${matchIndex}`);
+        }
+      });
+    });
+    
     // Обновляем команды в сетке и временные команды (сохраняем как JSON)
     const result = db.prepare(`
       UPDATE brackets 

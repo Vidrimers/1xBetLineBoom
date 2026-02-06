@@ -967,10 +967,11 @@ function getSelectedTeams() {
   // Проходим по всем стадиям и матчам
   Object.values(currentBracket.matches).forEach(stageMatches => {
     Object.values(stageMatches).forEach(match => {
-      if (match.team1) {
+      // Проверяем что команда не пустая строка
+      if (match.team1 && match.team1.trim() !== '') {
         selectedTeams.set(match.team1, (selectedTeams.get(match.team1) || 0) + 1);
       }
-      if (match.team2) {
+      if (match.team2 && match.team2.trim() !== '') {
         selectedTeams.set(match.team2, (selectedTeams.get(match.team2) || 0) + 1);
       }
     });
@@ -981,7 +982,7 @@ function getSelectedTeams() {
 
 // Проверить, является ли команда дубликатом (выбрана более одного раза)
 function isDuplicateTeam(teamName) {
-  if (!teamName) return false;
+  if (!teamName || teamName.trim() === '') return false;
   const selectedTeams = getSelectedTeams();
   return selectedTeams.get(teamName) > 1;
 }
