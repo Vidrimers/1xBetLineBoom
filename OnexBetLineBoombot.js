@@ -884,9 +884,13 @@ export function startBot() {
 
   if (enablePolling) {
     try {
-      bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+      bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { 
+        polling: {
+          allowed_updates: ["message", "callback_query", "message_reaction"]
+        }
+      });
       botStarted = true;
-      console.log("✅ Telegram бот запущен с polling");
+      console.log("✅ Telegram бот запущен с polling (включены реакции)");
     } catch (error) {
       console.error("❌ Ошибка при запуске бота с polling:", error.message);
       console.log("🔄 Запускаем бота без polling...");
@@ -2073,6 +2077,8 @@ export function startBot() {
   // ===== ОБРАБОТЧИК РЕАКЦИЙ НА СООБЩЕНИЯ =====
   bot.on("message_reaction", async (reaction) => {
     try {
+      console.log("🔔 Получено событие message_reaction:", JSON.stringify(reaction, null, 2));
+      
       const chatId = reaction.chat.id;
       const userId = reaction.user.id;
       const messageId = reaction.message_id;
@@ -2088,10 +2094,16 @@ export function startBot() {
       
       // Получаем новые реакции
       const newReactions = reaction.new_reaction || [];
-      if (newReactions.length === 0) return;
+      console.log("📊 Новые реакции:", newReactions);
+      
+      if (newReactions.length === 0) {
+        console.log("⚠️ Нет новых реакций, выходим");
+        return;
+      }
       
       // Берем первую реакцию (обычно одна)
-      const reactionEmoji = newReactions[0].emoji || newReactions[0].type;
+      const reactionData = newReactions[0];
+      const reactionEmoji = reactionData.emoji || reactionData.type;
       
       console.log(`👍 Реакция от @${username}: ${reactionEmoji}`);
       
@@ -2102,6 +2114,7 @@ export function startBot() {
           `👤 Пользователь @${username} поставил реакцию ${reactionEmoji} на сообщение бота`,
           { parse_mode: "HTML" }
         );
+        console.log("✅ Уведомление админу отправлено");
       } catch (error) {
         console.error("Ошибка отправки уведомления админу:", error);
       }
@@ -2113,7 +2126,12 @@ export function startBot() {
       const isPositive = positiveEmojis.includes(reactionEmoji);
       const isNegative = negativeEmojis.includes(reactionEmoji);
       
-      if (!isPositive && !isNegative) return; // Игнорируем нейтральные реакции
+      console.log(`🎯 Тип реакции: ${isPositive ? 'положительная' : isNegative ? 'отрицательная' : 'нейтральная'}`);
+      
+      if (!isPositive && !isNegative) {
+        console.log("⚠️ Нейтральная реакция, не отвечаем");
+        return;
+      }
       
       // Загружаем фразы из файлов
       let phrases = [];
@@ -2121,6 +2139,7 @@ export function startBot() {
         const fileName = isPositive ? "js/positive-reactions.json" : "js/negative-reactions.json";
         const fileContent = fs.readFileSync(fileName, "utf8");
         phrases = JSON.parse(fileContent);
+        console.log(`📄 Загружено ${phrases.length} фраз из ${fileName}`);
       } catch (error) {
         console.error("Ошибка загрузки фраз:", error);
         phrases = isPositive ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
@@ -2128,16 +2147,18 @@ export function startBot() {
       
       // Выбираем случайную фразу
       const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      console.log(`💬 Отправляем фразу: ${randomPhrase}`);
       
       // Отправляем ответ пользователю
       try {
         await bot.sendMessage(chatId, randomPhrase);
+        console.log("✅ Ответ пользователю отправлен");
       } catch (error) {
         console.error("Ошибка отправки ответа на реакцию:", error);
       }
       
     } catch (error) {
-      console.error("Ошибка обработки реакции:", error);
+      console.error("❌ Ошибка обработки реакции:", error);
     }
   });
 
