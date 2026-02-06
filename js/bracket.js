@@ -1212,10 +1212,23 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
     currentBracket.matches[nextStageId][nextMatchIndex] = {};
   }
   
+  // Сохраняем временные команды перед обновлением
+  const tempTeamsBackup = currentBracket.temporary_teams?.[nextStageId]?.[nextMatchIndex] 
+    ? JSON.parse(JSON.stringify(currentBracket.temporary_teams[nextStageId][nextMatchIndex])) 
+    : null;
+  
   if (teamPosition === 0) {
     currentBracket.matches[nextStageId][nextMatchIndex].team1 = teamName;
   } else {
     currentBracket.matches[nextStageId][nextMatchIndex].team2 = teamName;
+  }
+  
+  // Восстанавливаем временные команды после обновления
+  if (tempTeamsBackup) {
+    if (!currentBracket.temporary_teams) currentBracket.temporary_teams = {};
+    if (!currentBracket.temporary_teams[nextStageId]) currentBracket.temporary_teams[nextStageId] = {};
+    if (!currentBracket.temporary_teams[nextStageId][nextMatchIndex]) currentBracket.temporary_teams[nextStageId][nextMatchIndex] = {};
+    currentBracket.temporary_teams[nextStageId][nextMatchIndex] = tempTeamsBackup;
   }
   
   // Обновляем отображение следующей стадии
