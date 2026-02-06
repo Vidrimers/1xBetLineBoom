@@ -554,13 +554,29 @@ export async function sendGroupNotification(message) {
 }
 
 // Функция для отправки сообщения пользователю
-export async function sendUserMessage(userId, message) {
+export async function sendUserMessage(userId, message, options = {}) {
   try {
     if (!bot) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    await sendMessageWithThread(userId, message);
+    
+    // Добавляем кнопки реакций для личных чатов (если не отключено)
+    if (!options.noReactionButtons && userId > 0) { // userId > 0 означает личный чат
+      const reactionButtons = {
+        reply_markup: {
+          inline_keyboard: [[
+            { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
+            { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+          ]]
+        }
+      };
+      
+      // Объединяем с существующими опциями
+      options = { ...options, ...reactionButtons };
+    }
+    
+    await sendMessageWithThread(userId, message, options);
     console.log(`✅ Сообщение отправлено пользователю ${userId}`);
   } catch (error) {
     console.error(
@@ -2108,10 +2124,65 @@ export async function startBot() {
     const msg = callbackQuery.message;
     const data = callbackQuery.data;
     const chatId = msg.chat.id;
+    const userId = callbackQuery.from.id;
+    const username = callbackQuery.from.username || callbackQuery.from.first_name || "Неизвестный";
     
     console.log(`📲 Получен callback: ${data}`);
     
     try {
+      // ===== ОБРАБОТКА КНОПОК РЕАКЦИЙ =====
+      if (data.startsWith("reaction_")) {
+        const reactionType = data.includes("positive") ? "positive" : "negative";
+        const emoji = reactionType === "positive" ? "👍" : "👎";
+        
+        console.log(`👍 Реакция от @${username}: ${emoji} (через кнопку)`);
+        
+        // Отправляем уведомление админу
+        try {
+          await bot.sendMessage(
+            TELEGRAM_ADMIN_ID,
+            `👤 Пользователь @${username} нажал кнопку ${emoji} на сообщение бота`,
+            { parse_mode: "HTML" }
+          );
+          console.log("✅ Уведомление админу отправлено");
+        } catch (error) {
+          console.error("Ошибка отправки уведомления админу:", error);
+        }
+        
+        // Загружаем фразы из файлов
+        let phrases = [];
+        try {
+          const fileName = reactionType === "positive" ? "js/positive-reactions.json" : "js/negative-reactions.json";
+          const fileContent = fs.readFileSync(fileName, "utf8");
+          phrases = JSON.parse(fileContent);
+          console.log(`📄 Загружено ${phrases.length} фраз из ${fileName}`);
+        } catch (error) {
+          console.error("Ошибка загрузки фраз:", error);
+          phrases = reactionType === "positive" ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
+        }
+        
+        // Выбираем случайную фразу
+        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        console.log(`💬 Отправляем фразу: ${randomPhrase}`);
+        
+        // Отвечаем через answerCallbackQuery (всплывающее уведомление)
+        await bot.answerCallbackQuery(callbackQuery.id, {
+          text: randomPhrase,
+          show_alert: false
+        });
+        
+        // Также отправляем сообщение в чат
+        try {
+          await bot.sendMessage(chatId, randomPhrase);
+          console.log("✅ Ответ пользователю отправлен");
+        } catch (error) {
+          console.error("Ошибка отправки ответа:", error);
+        }
+        
+        return; // Выходим, чтобы не обрабатывать дальше
+      }
+      
+      // ===== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ CALLBACK =====
       // Обработка публикации объявления о турнире
       if (data.startsWith("publish_")) {
         const announcementId = data.replace("publish_", "");
