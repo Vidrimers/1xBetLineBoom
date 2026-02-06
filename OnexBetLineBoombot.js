@@ -182,6 +182,17 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   const msg = options.__msg || null;
   delete options.__msg; // Удаляем из опций перед отправкой
 
+  // Добавляем кнопки реакций для личных чатов (если не отключено и это личный чат)
+  if (!options.noReactionButtons && chatIdNum > 0 && chatIdNum !== TELEGRAM_CHAT_ID) {
+    options.reply_markup = {
+      inline_keyboard: [[
+        { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
+        { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+      ]]
+    };
+    console.log(`🔘 Добавлены кнопки реакций для личного чата ${chatIdNum}`);
+  }
+
   const messageOptions = {
     parse_mode: "HTML",
     ...options, // Опции должны быть ПОСЛЕ parse_mode чтобы не перезаписались
@@ -2138,6 +2149,20 @@ export async function startBot() {
         
         console.log(`👍 Реакция от @${username}: ${emoji} (через кнопку)`);
         
+        // Удаляем кнопки после нажатия
+        try {
+          await bot.editMessageReplyMarkup(
+            { inline_keyboard: [] }, // Пустая клавиатура = удаление кнопок
+            {
+              chat_id: chatId,
+              message_id: msg.message_id
+            }
+          );
+          console.log("🗑️ Кнопки удалены после нажатия");
+        } catch (error) {
+          console.error("Ошибка удаления кнопок:", error.message);
+        }
+        
         // Отправляем уведомление админу
         try {
           await bot.sendMessage(
@@ -2174,7 +2199,7 @@ export async function startBot() {
         
         // Также отправляем сообщение в чат
         try {
-          await bot.sendMessage(chatId, randomPhrase);
+          await bot.sendMessage(chatId, randomPhrase, { noReactionButtons: true }); // Без кнопок на ответе
           console.log("✅ Ответ пользователю отправлен");
         } catch (error) {
           console.error("Ошибка отправки ответа:", error);
