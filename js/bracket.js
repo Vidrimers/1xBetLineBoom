@@ -1744,17 +1744,24 @@ function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
   }).join('');
   
   modal.innerHTML = `
-    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
       <div class="modal-header">
         <h2>Выбор команды</h2>
         <button class="modal-close" onclick="this.closest('.modal').remove(); document.body.style.overflow = '';">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
         <p style="color: #b0b8c8; margin-bottom: 15px;">
           <strong>Ctrl+клик</strong> - добавить вторую команду (слот будет заблокирован для ставок)<br>
           <strong>Обычный клик</strong> - выбрать одну команду
         </p>
-        <div id="teamsListContainer">
+        
+        <input type="text" 
+               id="teamSearchInput" 
+               placeholder="🔍 Поиск команды..." 
+               style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; color: #e0e6ed; font-size: 14px;"
+               oninput="filterTeamsList(this.value)">
+        
+        <div id="teamsListContainer" style="flex: 1; overflow-y: auto;">
           ${teamsListHTML}
         </div>
         <div style="margin-top: 15px; display: flex; gap: 10px;">
@@ -1773,6 +1780,30 @@ function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
   
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
+  
+  // Фокус на поле поиска
+  setTimeout(() => {
+    const searchInput = document.getElementById('teamSearchInput');
+    if (searchInput) searchInput.focus();
+  }, 100);
+}
+
+// Функция фильтрации списка команд
+function filterTeamsList(searchText) {
+  const container = document.getElementById('teamsListContainer');
+  if (!container) return;
+  
+  const teamOptions = container.querySelectorAll('.team-option');
+  const search = searchText.toLowerCase().trim();
+  
+  teamOptions.forEach(option => {
+    const teamName = option.dataset.team.toLowerCase();
+    if (teamName.includes(search)) {
+      option.style.display = '';
+    } else {
+      option.style.display = 'none';
+    }
+  });
 }
 
 // Выбрать команду для слота
