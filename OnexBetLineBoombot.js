@@ -183,8 +183,8 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   delete options.__msg; // Удаляем из опций перед отправкой
 
   const messageOptions = {
-    ...options,
     parse_mode: "HTML",
+    ...options, // Опции должны быть ПОСЛЕ parse_mode чтобы не перезаписались
   };
 
   // Всегда используем основной THREAD_ID если это основной чат, игнорируем старые потоки
@@ -574,6 +574,7 @@ export async function sendUserMessage(userId, message, options = {}) {
       
       // Объединяем с существующими опциями
       options = { ...options, ...reactionButtons };
+      console.log(`🔘 Добавлены кнопки реакций для пользователя ${userId}`);
     }
     
     await sendMessageWithThread(userId, message, options);
