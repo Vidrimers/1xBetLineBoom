@@ -4156,7 +4156,7 @@ app.put("/api/admin/brackets/:bracketId", (req, res) => {
 app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
   try {
     const { bracketId } = req.params;
-    const { username, matches } = req.body;
+    const { username, matches, temporary_teams } = req.body;
     
     if (!username) {
       return res.status(401).json({ error: "Требуется авторизация" });
@@ -4173,12 +4173,16 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
       return res.status(400).json({ error: "Не указаны команды" });
     }
     
-    // Обновляем команды в сетке (сохраняем как JSON)
+    // Обновляем команды в сетке и временные команды (сохраняем как JSON)
     const result = db.prepare(`
       UPDATE brackets 
-      SET matches = ?
+      SET matches = ?, temporary_teams = ?
       WHERE id = ?
-    `).run(JSON.stringify(matches), bracketId);
+    `).run(
+      JSON.stringify(matches), 
+      JSON.stringify(temporary_teams || {}),
+      bracketId
+    );
     
     if (result.changes === 0) {
       return res.status(404).json({ error: "Сетка не найдена" });

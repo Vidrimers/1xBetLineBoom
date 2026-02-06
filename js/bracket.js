@@ -1660,30 +1660,9 @@ async function saveBracketTeams() {
   if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
   
   try {
-    // Собираем данные о командах из селектов
-    const selects = document.querySelectorAll('.bracket-team-select');
-    const matches = {};
-    
-    selects.forEach(select => {
-      const stage = select.dataset.stage;
-      const matchIndex = parseInt(select.dataset.match);
-      const teamIndex = parseInt(select.dataset.team);
-      const teamName = select.value;
-      
-      if (!matches[stage]) {
-        matches[stage] = {};
-      }
-      
-      if (!matches[stage][matchIndex]) {
-        matches[stage][matchIndex] = {};
-      }
-      
-      if (teamIndex === 0) {
-        matches[stage][matchIndex].team1 = teamName;
-      } else {
-        matches[stage][matchIndex].team2 = teamName;
-      }
-    });
+    // Берем данные из currentBracket (они уже обновлены через selectTeamForSlot)
+    const matches = currentBracket.matches || {};
+    const temporary_teams = currentBracket.temporary_teams || {};
     
     // Отправляем данные на сервер
     const response = await fetch(`/api/admin/brackets/${currentBracket.id}/teams`, {
@@ -1691,7 +1670,8 @@ async function saveBracketTeams() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: currentUser.username,
-        matches: matches
+        matches: matches,
+        temporary_teams: temporary_teams
       })
     });
     
@@ -1706,10 +1686,9 @@ async function saveBracketTeams() {
       alert('Команды успешно сохранены!');
     }
     
-    // Обновляем данные сетки
-    currentBracket.matches = matches;
+    // Сбрасываем флаг несохраненных изменений
     isEditingBracket = false;
-    hasUnsavedChanges = false; // Сбрасываем флаг после успешного сохранения
+    hasUnsavedChanges = false;
     
     const isClosed = isBracketClosed(currentBracket);
     renderBracketModal(isClosed);
@@ -1838,8 +1817,16 @@ function selectTeamForSlot(stageId, matchIndex, teamIndex, teamName, event) {
       delete currentBracket.temporary_teams[stageId][matchIndex][teamIndex];
     }
   } else {
-    // Обычный клик - устанавливаем одну команду
-    currentBracket.matches[stageId][matchIndex][teamKey] = teamName;
+    // Обычный клик
+    // Проверяем, не выбрана ли уже эта команда
+    if (currentTeam === teamName) {
+      // Повторный клик на ту же команду - удаляем её
+      currentBracket.matches[stageId][matchIndex][teamKey] = '';
+    } else {
+      // Устанавливаем новую команду
+      currentBracket.matches[stageId][matchIndex][teamKey] = teamName;
+    }
+    
     // Очищаем временные команды
     delete currentBracket.temporary_teams[stageId][matchIndex][teamIndex];
     
