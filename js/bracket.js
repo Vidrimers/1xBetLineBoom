@@ -598,6 +598,10 @@ function renderBracketModal(isClosed) {
   const modal = document.getElementById('bracketModal');
   if (!modal) return;
   
+  // Сохраняем текущую позицию скролла модалки
+  const modalContent = modal.querySelector('.modal-content');
+  const savedScrollTop = modalContent ? modalContent.scrollTop : 0;
+  
   // Проверяем что currentBracket существует
   if (!currentBracket) {
     console.error('renderBracketModal: currentBracket is null');
@@ -721,6 +725,15 @@ function renderBracketModal(isClosed) {
       </div>
     </div>
   `;
+  
+  // Восстанавливаем позицию скролла после перерисовки
+  setTimeout(() => {
+    const newModalContent = modal.querySelector('.modal-content');
+    if (newModalContent && savedScrollTop > 0) {
+      newModalContent.scrollTop = savedScrollTop;
+      console.log('📜 Восстановлена позиция скролла:', savedScrollTop);
+    }
+  }, 0);
 }
 
 // Отрисовать стадии сетки
