@@ -2075,90 +2075,99 @@ export function startBot() {
   });
 
   // ===== ОБРАБОТЧИК РЕАКЦИЙ НА СООБЩЕНИЯ =====
-  bot.on("message_reaction", async (reaction) => {
-    try {
-      console.log("🔔 Получено событие message_reaction:", JSON.stringify(reaction, null, 2));
-      
-      const chatId = reaction.chat.id;
-      const userId = reaction.user.id;
-      const messageId = reaction.message_id;
-      
-      // Получаем информацию о пользователе
-      let username = "Неизвестный";
+  // Используем обработчик update так как message_reaction может не поддерживаться напрямую
+  bot.on("update", async (update) => {
+    // Логируем ВСЕ updates для отладки (кроме обычных сообщений и callback)
+    const updateTypes = Object.keys(update).filter(key => key !== 'update_id');
+    console.log("📦 Получен update с типами:", updateTypes);
+    
+    // Проверяем есть ли message_reaction в update
+    if (update.message_reaction) {
       try {
-        const user = await bot.getChat(userId);
-        username = user.username || user.first_name || "Неизвестный";
+        const reaction = update.message_reaction;
+        console.log("🔔 Получено событие message_reaction:", JSON.stringify(reaction, null, 2));
+        
+        const chatId = reaction.chat.id;
+        const userId = reaction.user.id;
+        const messageId = reaction.message_id;
+        
+        // Получаем информацию о пользователе
+        let username = "Неизвестный";
+        try {
+          const user = await bot.getChat(userId);
+          username = user.username || user.first_name || "Неизвестный";
+        } catch (error) {
+          console.error("Ошибка получения информации о пользователе:", error);
+        }
+        
+        // Получаем новые реакции
+        const newReactions = reaction.new_reaction || [];
+        console.log("📊 Новые реакции:", newReactions);
+        
+        if (newReactions.length === 0) {
+          console.log("⚠️ Нет новых реакций, выходим");
+          return;
+        }
+        
+        // Берем первую реакцию (обычно одна)
+        const reactionData = newReactions[0];
+        const reactionEmoji = reactionData.emoji || reactionData.type;
+        
+        console.log(`👍 Реакция от @${username}: ${reactionEmoji}`);
+        
+        // Отправляем уведомление админу
+        try {
+          await bot.sendMessage(
+            TELEGRAM_ADMIN_ID,
+            `👤 Пользователь @${username} поставил реакцию ${reactionEmoji} на сообщение бота`,
+            { parse_mode: "HTML" }
+          );
+          console.log("✅ Уведомление админу отправлено");
+        } catch (error) {
+          console.error("Ошибка отправки уведомления админу:", error);
+        }
+        
+        // Определяем тип реакции
+        const positiveEmojis = ["👍", "❤️", "🔥", "🥰", "😍", "🤩", "💯", "⭐", "✨", "🎉", "👏", "🙏", "💪", "🤝"];
+        const negativeEmojis = ["👎", "💩", "🤡", "🤮", "😡", "😠", "🖕", "💀"];
+        
+        const isPositive = positiveEmojis.includes(reactionEmoji);
+        const isNegative = negativeEmojis.includes(reactionEmoji);
+        
+        console.log(`🎯 Тип реакции: ${isPositive ? 'положительная' : isNegative ? 'отрицательная' : 'нейтральная'}`);
+        
+        if (!isPositive && !isNegative) {
+          console.log("⚠️ Нейтральная реакция, не отвечаем");
+          return;
+        }
+        
+        // Загружаем фразы из файлов
+        let phrases = [];
+        try {
+          const fileName = isPositive ? "js/positive-reactions.json" : "js/negative-reactions.json";
+          const fileContent = fs.readFileSync(fileName, "utf8");
+          phrases = JSON.parse(fileContent);
+          console.log(`📄 Загружено ${phrases.length} фраз из ${fileName}`);
+        } catch (error) {
+          console.error("Ошибка загрузки фраз:", error);
+          phrases = isPositive ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
+        }
+        
+        // Выбираем случайную фразу
+        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        console.log(`💬 Отправляем фразу: ${randomPhrase}`);
+        
+        // Отправляем ответ пользователю
+        try {
+          await bot.sendMessage(chatId, randomPhrase);
+          console.log("✅ Ответ пользователю отправлен");
+        } catch (error) {
+          console.error("Ошибка отправки ответа на реакцию:", error);
+        }
+        
       } catch (error) {
-        console.error("Ошибка получения информации о пользователе:", error);
+        console.error("❌ Ошибка обработки реакции:", error);
       }
-      
-      // Получаем новые реакции
-      const newReactions = reaction.new_reaction || [];
-      console.log("📊 Новые реакции:", newReactions);
-      
-      if (newReactions.length === 0) {
-        console.log("⚠️ Нет новых реакций, выходим");
-        return;
-      }
-      
-      // Берем первую реакцию (обычно одна)
-      const reactionData = newReactions[0];
-      const reactionEmoji = reactionData.emoji || reactionData.type;
-      
-      console.log(`👍 Реакция от @${username}: ${reactionEmoji}`);
-      
-      // Отправляем уведомление админу
-      try {
-        await bot.sendMessage(
-          TELEGRAM_ADMIN_ID,
-          `👤 Пользователь @${username} поставил реакцию ${reactionEmoji} на сообщение бота`,
-          { parse_mode: "HTML" }
-        );
-        console.log("✅ Уведомление админу отправлено");
-      } catch (error) {
-        console.error("Ошибка отправки уведомления админу:", error);
-      }
-      
-      // Определяем тип реакции
-      const positiveEmojis = ["👍", "❤️", "🔥", "🥰", "😍", "🤩", "💯", "⭐", "✨", "🎉", "👏", "🙏", "💪", "🤝"];
-      const negativeEmojis = ["👎", "💩", "🤡", "🤮", "😡", "😠", "🖕", "💀"];
-      
-      const isPositive = positiveEmojis.includes(reactionEmoji);
-      const isNegative = negativeEmojis.includes(reactionEmoji);
-      
-      console.log(`🎯 Тип реакции: ${isPositive ? 'положительная' : isNegative ? 'отрицательная' : 'нейтральная'}`);
-      
-      if (!isPositive && !isNegative) {
-        console.log("⚠️ Нейтральная реакция, не отвечаем");
-        return;
-      }
-      
-      // Загружаем фразы из файлов
-      let phrases = [];
-      try {
-        const fileName = isPositive ? "js/positive-reactions.json" : "js/negative-reactions.json";
-        const fileContent = fs.readFileSync(fileName, "utf8");
-        phrases = JSON.parse(fileContent);
-        console.log(`📄 Загружено ${phrases.length} фраз из ${fileName}`);
-      } catch (error) {
-        console.error("Ошибка загрузки фраз:", error);
-        phrases = isPositive ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
-      }
-      
-      // Выбираем случайную фразу
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      console.log(`💬 Отправляем фразу: ${randomPhrase}`);
-      
-      // Отправляем ответ пользователю
-      try {
-        await bot.sendMessage(chatId, randomPhrase);
-        console.log("✅ Ответ пользователю отправлен");
-      } catch (error) {
-        console.error("Ошибка отправки ответа на реакцию:", error);
-      }
-      
-    } catch (error) {
-      console.error("❌ Ошибка обработки реакции:", error);
     }
   });
 
