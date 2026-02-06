@@ -2600,17 +2600,28 @@ export async function handleWebhookUpdate(update) {
     
     // Обрабатываем обычные сообщения
     if (update.message) {
-      // Эмулируем событие message для существующих обработчиков
-      bot.emit('message', update.message);
-      
-      // Дополнительно: вручную проверяем команды для webhook
-      // bot.onText не всегда срабатывает через emit
       const text = update.message.text;
+      
+      // Вручную обрабатываем команды для webhook (bot.onText не работает через emit)
       if (text && text.startsWith('/')) {
         console.log(`🔧 Webhook: обнаружена команда ${text}`);
-        // Эмулируем событие text для обработчиков команд
-        bot.emit('text', update.message);
+        
+        // Проверяем каждую команду и вызываем соответствующий обработчик
+        if (text.startsWith('/start')) {
+          const match = text.match(/\/start(.*)/);
+          // Находим обработчик /start и вызываем его
+          const handlers = bot._textRegexpCallbacks || [];
+          for (const handler of handlers) {
+            if (handler.regexp.test(text)) {
+              await handler.callback(update.message, match);
+              break;
+            }
+          }
+        }
       }
+      
+      // Эмулируем событие message для остальных обработчиков
+      bot.emit('message', update.message);
     }
     
     // Обрабатываем callback_query
