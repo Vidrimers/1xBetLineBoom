@@ -36,18 +36,18 @@ function getFirstFilledStage(matches) {
   return null;
 }
 
-// Получить список редактируемых стадий (только начальная стадия из БД)
+// Получить список редактируемых стадий (все стадии для админа)
 function getEditableStages(bracket) {
-  // Используем start_stage из БД, если есть
-  if (bracket && bracket.start_stage) {
-    console.log(`✏️ Редактируемая стадия из БД: ${bracket.start_stage}`);
-    return [bracket.start_stage];
-  }
+  // Админ может редактировать все стадии
+  const allStages = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
   
-  // Если start_stage не указана, определяем по первой заполненной стадии
-  const firstStage = getFirstFilledStage(bracket?.matches);
-  const result = firstStage ? [firstStage] : ['round_of_16']; // По умолчанию только 1/16
-  console.log(`✏️ Редактируемые стадии (определено автоматически):`, result);
+  // Определяем начальную стадию
+  const startStage = bracket?.start_stage || getFirstFilledStage(bracket?.matches) || 'round_of_16';
+  const startIndex = allStages.indexOf(startStage);
+  
+  // Возвращаем все стадии начиная с начальной
+  const result = startIndex >= 0 ? allStages.slice(startIndex) : allStages;
+  console.log(`✏️ Редактируемые стадии:`, result);
   return result;
 }
 
@@ -497,14 +497,53 @@ function handleBracketResize() {
   }, 250);
 }
 
-// Проверить, закрыта ли сетка для ставок
-function isBracketClosed(bracket) {
+// Проверить, закрыта ли сетка для ставок (глобально или конкретная колонка)
+function isBracketClosed(bracket, stageId = null) {
+  if (!bracket) return false;
+  
+  // Если указана конкретная стадия, проверяем её дату блокировки
+  if (stageId && bracket.lock_dates) {
+    const lockDate = getEffectiveLockDate(bracket, stageId);
+    if (lockDate) {
+      const now = new Date();
+      return now >= new Date(lockDate);
+    }
+  }
+  
+  // Fallback на старую логику для обратной совместимости
   if (!bracket.start_date) return false;
   
   const startDate = new Date(bracket.start_date);
   const now = new Date();
   
   return now >= startDate;
+}
+
+// Получить эффективную дату блокировки для стадии (с учетом наследования)
+function getEffectiveLockDate(bracket, stageId) {
+  if (!bracket.lock_dates) return bracket.start_date;
+  
+  // Если для этой стадии указана дата - возвращаем её
+  if (bracket.lock_dates[stageId]) {
+    return bracket.lock_dates[stageId];
+  }
+  
+  // Иначе ищем предыдущую заполненную дату
+  const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+  const currentIndex = stageOrder.indexOf(stageId);
+  
+  if (currentIndex === -1) return bracket.start_date;
+  
+  // Идем назад по стадиям и ищем первую заполненную дату
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    const prevStage = stageOrder[i];
+    if (bracket.lock_dates[prevStage]) {
+      return bracket.lock_dates[prevStage];
+    }
+  }
+  
+  // Если не нашли - возвращаем start_date
+  return bracket.start_date;
 }
 
 // Подсчитать статистику прогнозов в сетке
@@ -698,6 +737,31 @@ function renderBracketStages(isClosed, showAdminButtons = false) {
     const headerText = nextStageText[stage.id] || '';
     const isLastStage = stageIndex === stages.length - 1;
     
+    // Проверяем блокировку конкретной колонки
+    const isStageClosed = isBracketClosed(currentBracket, stage.id);
+    const lockDate = getEffectiveLockDate(currentBracket, stage.id);
+    
+    // Форматируем дату блокировки
+    let lockDateFormatted = '';
+    if (lockDate) {
+      const date = new Date(lockDate);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      lockDateFormatted = `${day}.${month} ${hours}:${minutes}`;
+    }
+    
+    // Индикатор блокировки колонки
+    const lockIndicator = !isViewingOtherUserBracket ? `
+      <div style="text-align: center; margin-top: 5px; font-size: 0.75em;">
+        ${isStageClosed 
+          ? `<span style="color: #f44336;">🔒 Закрыто</span>` 
+          : `<span style="color: #4caf50;">✅ ${lockDateFormatted}</span>`
+        }
+      </div>
+    ` : '';
+    
     html += `
       <div class="bracket-stage-column${stage.id === 'final' ? ' bracket-final' : ''}" data-stage-index="${stageIndex}">
         ${headerText ? `
@@ -710,6 +774,7 @@ function renderBracketStages(isClosed, showAdminButtons = false) {
           </div>
         `}
         <h3 class="bracket-stage-title">${stage.name}</h3>
+        ${lockIndicator}
         <div class="bracket-matches-column">
           ${renderStageMatchesVertical(stage, isClosed, 0, stage.matches, showAdminButtons)}
         </div>
@@ -979,7 +1044,9 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   }
   
   // Обычный режим - кликабельные слоты для выбора победителя
-  const isClickable = !isClosed && teamName;
+  // Проверяем блокировку конкретной колонки
+  const isStageClosed = isBracketClosed(currentBracket, stageId);
+  const isClickable = !isStageClosed && teamName;
   const clickHandler = isClickable ? `onclick="selectBracketWinner('${stageId}', ${matchIndex}, '${teamName.replace(/'/g, "\\'")}')"` : '';
   const cursorStyle = isClickable ? 'cursor: pointer;' : '';
   
@@ -999,11 +1066,11 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
 async function selectBracketWinner(stageId, matchIndex, teamName) {
   if (!currentUser || !currentBracket) return;
   
-  // Проверяем, закрыта ли сетка
-  const isClosed = isBracketClosed(currentBracket);
-  if (isClosed) {
+  // Проверяем, закрыта ли конкретная колонка
+  const isStageClosed = isBracketClosed(currentBracket, stageId);
+  if (isStageClosed) {
     if (typeof showCustomAlert === 'function') {
-      showCustomAlert('Ставки в сетке закрыты', 'Внимание', '🔒');
+      showCustomAlert('Ставки в этой колонке закрыты', 'Внимание', '🔒');
     }
     return;
   }
