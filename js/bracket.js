@@ -598,6 +598,12 @@ function renderBracketModal(isClosed) {
   const modal = document.getElementById('bracketModal');
   if (!modal) return;
   
+  // Проверяем что currentBracket существует
+  if (!currentBracket) {
+    console.error('renderBracketModal: currentBracket is null');
+    return;
+  }
+  
   const isManuallyLocked = currentBracket.is_locked === 1;
   const isAutoLocked = isClosed && !isManuallyLocked && !isViewingOtherUserBracket;
   const isLocked = isClosed || isManuallyLocked || isViewingOtherUserBracket; // Блокируем при просмотре чужих прогнозов
@@ -1638,8 +1644,8 @@ async function toggleBracketLock() {
       alert(message);
     }
     
-    // Перерисовываем модальное окно
-    renderBracketModal(isClosed);
+    // Перезагружаем сетку чтобы обновить интерфейс
+    await openBracketModal(currentBracket.id);
     
   } catch (error) {
     console.error('Ошибка при изменении блокировки:', error);
@@ -2098,11 +2104,6 @@ async function createBracket() {
       await showCustomAlert('Введите название сетки', 'Ошибка', '❌');
     } else {
       alert('Введите название сетки');
-    }
-    return;
-  }
-    } else {
-      alert('Выберите дату начала');
     }
     return;
   }
