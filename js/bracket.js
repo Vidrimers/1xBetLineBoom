@@ -598,9 +598,13 @@ function renderBracketModal(isClosed) {
   const modal = document.getElementById('bracketModal');
   if (!modal) return;
   
-  // Сохраняем текущую позицию скролла модалки
+  // Сохраняем текущую позицию скролла модалки (проверяем оба возможных контейнера)
   const modalContent = modal.querySelector('.modal-content');
+  const bracketContainer = modal.querySelector('.bracket-container');
   const savedScrollTop = modalContent ? modalContent.scrollTop : 0;
+  const savedScrollLeft = bracketContainer ? bracketContainer.scrollLeft : 0;
+  
+  console.log('💾 Сохраняем скролл:', { scrollTop: savedScrollTop, scrollLeft: savedScrollLeft });
   
   // Проверяем что currentBracket существует
   if (!currentBracket) {
@@ -727,13 +731,21 @@ function renderBracketModal(isClosed) {
   `;
   
   // Восстанавливаем позицию скролла после перерисовки
-  setTimeout(() => {
+  // Используем requestAnimationFrame для гарантии что DOM обновился
+  requestAnimationFrame(() => {
     const newModalContent = modal.querySelector('.modal-content');
+    const newBracketContainer = modal.querySelector('.bracket-container');
+    
     if (newModalContent && savedScrollTop > 0) {
       newModalContent.scrollTop = savedScrollTop;
-      console.log('📜 Восстановлена позиция скролла:', savedScrollTop);
+      console.log('✅ Восстановлен scrollTop:', savedScrollTop);
     }
-  }, 0);
+    
+    if (newBracketContainer && savedScrollLeft > 0) {
+      newBracketContainer.scrollLeft = savedScrollLeft;
+      console.log('✅ Восстановлен scrollLeft:', savedScrollLeft);
+    }
+  });
 }
 
 // Отрисовать стадии сетки
