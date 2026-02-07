@@ -2309,28 +2309,31 @@ export async function startBot() {
         
         const messageReactions = groupReactions.get(messageId);
         
-        // Инициализируем Set для этой эмоджи если его нет
+        // Проверяем, есть ли у пользователя уже какая-то реакция на это сообщение
+        let userHasAnyReaction = false;
+        for (const [e, users] of messageReactions.entries()) {
+          if (users.has(userId)) {
+            userHasAnyReaction = true;
+            break;
+          }
+        }
+        
+        // Если пользователь уже поставил реакцию - блокируем повторные попытки
+        if (userHasAnyReaction) {
+          await bot.answerCallbackQuery(callbackQuery.id, {
+            text: "Вы уже поставили реакцию на это сообщение",
+            show_alert: true
+          });
+          console.log(`🚫 Пользователь @${username} уже поставил реакцию, повторная попытка заблокирована`);
+          return;
+        }
+        
+        // Добавляем новую реакцию (первую и единственную для этого пользователя)
         if (!messageReactions.has(emoji)) {
           messageReactions.set(emoji, new Set());
         }
-        
-        const emojiUsers = messageReactions.get(emoji);
-        
-        // Проверяем, уже нажимал ли пользователь эту кнопку
-        if (emojiUsers.has(userId)) {
-          // Пользователь уже нажимал - убираем его реакцию
-          emojiUsers.delete(userId);
-          console.log(`➖ Убрана реакция ${emoji} от @${username}`);
-          
-          // Если больше никто не нажимал эту эмоджи - удаляем её из Map
-          if (emojiUsers.size === 0) {
-            messageReactions.delete(emoji);
-          }
-        } else {
-          // Пользователь еще не нажимал - добавляем реакцию
-          emojiUsers.add(userId);
-          console.log(`➕ Добавлена реакция ${emoji} от @${username}`);
-        }
+        messageReactions.get(emoji).add(userId);
+        console.log(`➕ Добавлена реакция ${emoji} от @${username} (окончательная)`);
         
         // Формируем обновленные кнопки с счетчиками
         const allEmojis = ["👍", "🔥", "❤️", "🫡", "😂", "👎", "😐", "💩", "🤡", "🤮"];
@@ -2383,7 +2386,7 @@ export async function startBot() {
         const positiveEmojis = ["👍", "🔥", "❤️", "🫡", "😂"];
         const reactionType = positiveEmojis.includes(emoji) ? "positive" : "negative";
         
-        // Загружаем фразы из файлов
+        // Загружаем фразы из файлов и отправляем ответ
         let phrases = [];
         try {
           const fileName = reactionType === "positive" ? "js/positive-reactions.json" : "js/negative-reactions.json";
@@ -2395,25 +2398,22 @@ export async function startBot() {
           phrases = reactionType === "positive" ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
         }
         
-        // Выбираем случайную фразу и отправляем в группу (только если реакция добавлена, не убрана)
-        if (emojiUsers.has(userId)) {
-          const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-          console.log(`💬 Отправляем фразу в группу: ${randomPhrase}`);
-          
-          try {
-            await sendMessageWithThread(chatId, randomPhrase, { 
-              noReactionButtons: true,
-              __msg: msg 
-            });
-            console.log("✅ Ответ в группу отправлен");
-          } catch (error) {
-            console.error("Ошибка отправки ответа в группу:", error);
-          }
+        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        console.log(`💬 Отправляем фразу в группу: ${randomPhrase}`);
+        
+        try {
+          await sendMessageWithThread(chatId, randomPhrase, { 
+            noReactionButtons: true,
+            __msg: msg 
+          });
+          console.log("✅ Ответ в группу отправлен");
+        } catch (error) {
+          console.error("Ошибка отправки ответа в группу:", error);
         }
         
         // Отвечаем пользователю через answerCallbackQuery
         await bot.answerCallbackQuery(callbackQuery.id, {
-          text: emojiUsers.has(userId) ? `Вы поставили ${emoji}` : `Вы убрали ${emoji}`,
+          text: `Вы поставили ${emoji}`,
           show_alert: false
         });
         
