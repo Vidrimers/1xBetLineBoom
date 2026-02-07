@@ -215,6 +215,7 @@ async function notifyAdmin(message) {
         body: JSON.stringify({
           chat_id: TELEGRAM_ADMIN_ID,
           text: message,
+          parse_mode: 'HTML'
         }),
       }
     );
@@ -6986,6 +6987,7 @@ app.get("/api/match-glicko/:matchId", async (req, res) => {
     
     const data = glickoData.data;
     console.log(`✅ Glicko-2 данные получены для матча ${match.team1_name} vs ${match.team2_name}`);
+    console.log(`📊 Структура данных glicko:`, JSON.stringify(data.glicko, null, 2));
     
     res.json({
       matchId: matchId,
@@ -10807,6 +10809,118 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
   }
 });
 
+// GET /api/user/:userId/show-xg-button - Получить настройку показа кнопки xG
+app.get("/api/user/:userId/show-xg-button", (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    let user;
+    
+    // Пытаемся получить пользователя
+    try {
+      user = db
+        .prepare("SELECT show_xg_button FROM users WHERE id = ?")
+        .get(userId);
+    } catch (error) {
+      // Если колонка не существует, добавляем её
+      if (error.message.includes("no such column: show_xg_button")) {
+        console.log("⚠️ Колонка show_xg_button отсутствует, добавляем...");
+        db.exec(`ALTER TABLE users ADD COLUMN show_xg_button INTEGER DEFAULT 1`);
+        console.log("✅ Колонка show_xg_button добавлена в таблицу users");
+        
+        // Повторно получаем пользователя
+        user = db
+          .prepare("SELECT show_xg_button FROM users WHERE id = ?")
+          .get(userId);
+      } else {
+        throw error;
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    const showXgButton = user.show_xg_button !== undefined ? user.show_xg_button : 1;
+
+    res.json({
+      show_xg_button: showXgButton,
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при получении настройки show_xg_button:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/user/:userId/show-xg-button - Сохранить настройку показа кнопки xG
+app.put("/api/user/:userId/show-xg-button", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { show_xg_button } = req.body;
+
+    if (show_xg_button === undefined || ![0, 1].includes(show_xg_button)) {
+      return res.status(400).json({ error: "Неверное значение show_xg_button" });
+    }
+
+    const user = db
+      .prepare("SELECT username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем существование колонки и добавляем если нужно
+    try {
+      db.prepare("UPDATE users SET show_xg_button = ? WHERE id = ?").run(show_xg_button, userId);
+    } catch (error) {
+      // Если колонка не существует, добавляем её
+      if (error.message.includes("no such column: show_xg_button")) {
+        console.log("⚠️ Колонка show_xg_button отсутствует, добавляем...");
+        db.exec(`ALTER TABLE users ADD COLUMN show_xg_button INTEGER DEFAULT 1`);
+        console.log("✅ Колонка show_xg_button добавлена в таблицу users");
+        
+        // Повторяем UPDATE
+        db.prepare("UPDATE users SET show_xg_button = ? WHERE id = ?").run(show_xg_button, userId);
+      } else {
+        throw error;
+      }
+    }
+
+    // Записываем в логи
+    const showXgButtonNames = {
+      1: 'Показывать',
+      0: 'Скрыть'
+    };
+    
+    writeBetLog("settings", {
+      username: user.username,
+      setting: "'Кнопка xG'",
+      newValue: showXgButtonNames[show_xg_button]
+    });
+
+    // Отправляем уведомление админу
+    try {
+      await notifyAdmin(
+        `🎯 <b>ИЗМЕНЕНИЕ НАСТРОЙКИ КНОПКИ XG</b>\n\n` +
+        `👤 Пользователь: <b>${user.username}</b>\n` +
+        `${user.telegram_username ? `📱 Telegram: @${user.telegram_username}\n` : ""}` +
+        `✏️ Новая настройка: <b>${showXgButtonNames[show_xg_button] || show_xg_button}</b>\n` +
+        `🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`
+      );
+    } catch (err) {
+      console.error(
+        "⚠️ Ошибка отправки уведомления админу об изменении настройки кнопки xG:",
+        err.message
+      );
+    }
+
+    res.json({ success: true, show_xg_button });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/user/:userId/event/:eventId/reminders - Получить настройки напоминаний для турнира
 app.get("/api/user/:userId/event/:eventId/reminders", (req, res) => {
   try {
@@ -13375,20 +13489,21 @@ app.get("/api/xg-button-visibility", (req, res) => {
 // POST /api/notify-xg-modal-opened - Уведомить админа об открытии модалки xG
 app.post("/api/notify-xg-modal-opened", async (req, res) => {
   try {
-    const { username, eventName } = req.body;
+    const { username, eventName, round } = req.body;
 
     if (!username) {
       return res.status(400).json({ error: "Требуется username" });
     }
 
-    console.log(`📊 Пользователь ${username} открыл модалку xG для турнира: ${eventName || 'N/A'}`);
+    console.log(`📊 Пользователь ${username} открыл модалку xG для турнира: ${eventName || 'N/A'}, тур: ${round || 'N/A'}`);
 
     // Отправляем уведомление админу
     try {
       await notifyAdmin(
         `📊 <b>Открыта модалка xG</b>\n\n` +
         `👤 Пользователь: <b>${username}</b>\n` +
-        `🏆 Турнир: <b>${eventName || 'Не указан'}</b>`
+        `🏆 Турнир: <b>${eventName || 'Не указан'}</b>\n` +
+        `🎯 Тур: <b>${round || 'Не указан'}</b>`
       );
       console.log('✅ Уведомление админу отправлено');
     } catch (error) {

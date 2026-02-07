@@ -18,6 +18,10 @@ async function openXgModal() {
   const currentEvent = events.find(e => e.id === currentEventId);
   const eventName = currentEvent ? currentEvent.name : 'Неизвестный турнир';
   
+  // Получаем текущий тур
+  const currentRound = currentRoundFilter || 'all';
+  const roundName = currentRound === 'all' ? 'Все туры' : currentRound;
+  
   // Отправляем уведомление админу
   try {
     await fetch('/api/notify-xg-modal-opened', {
@@ -25,7 +29,8 @@ async function openXgModal() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: currentUser.username,
-        eventName: eventName
+        eventName: eventName,
+        round: roundName
       })
     });
   } catch (err) {
@@ -33,7 +38,6 @@ async function openXgModal() {
   }
   
   // Получаем матчи текущего тура
-  const currentRound = currentRoundFilter || 'all';
   const matchesForRound = matches.filter(m => {
     if (currentRound === 'all') return true;
     return m.round === currentRound;
@@ -72,6 +76,13 @@ async function openXgModal() {
   
   document.body.appendChild(modal);
   lockBodyScroll();
+  
+  // Закрытие по клику вне контента
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeXgModal();
+    }
+  });
   
   // Загружаем данные для каждого матча
   loadXgDataForMatches(matchesForRound);

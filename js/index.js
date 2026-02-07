@@ -2611,23 +2611,29 @@ async function displayMatches() {
     if (matchesBracketButtons) {
       // Проверяем видимость кнопки xG
       let xgButtonHTML = '';
-      try {
-        const xgVisibilityResponse = await fetch('/api/xg-button-visibility');
-        if (xgVisibilityResponse.ok) {
-          const xgVisibility = await xgVisibilityResponse.json();
-          if (!xgVisibility.hidden) {
-            xgButtonHTML = `
-              <button class="round-filter-btn xg-filter-btn" 
-                      onclick="openXgModal()" 
-                      title="Прогнозы Glicko-2 и xG"
-                      style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                🎯 xG
-              </button>
-            `;
+      
+      // Проверяем настройку пользователя
+      const userShowXgButton = currentUser && currentUser.show_xg_button !== undefined ? currentUser.show_xg_button : 1;
+      
+      if (userShowXgButton === 1) {
+        try {
+          const xgVisibilityResponse = await fetch('/api/xg-button-visibility');
+          if (xgVisibilityResponse.ok) {
+            const xgVisibility = await xgVisibilityResponse.json();
+            if (!xgVisibility.hidden) {
+              xgButtonHTML = `
+                <button class="round-filter-btn xg-filter-btn" 
+                        onclick="openXgModal()" 
+                        title="Прогнозы Glicko-2 и xG"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                  🎯 xG
+                </button>
+              `;
+            }
           }
+        } catch (err) {
+          console.error('Ошибка проверки видимости кнопки xG:', err);
         }
-      } catch (err) {
-        console.error('Ошибка проверки видимости кнопки xG:', err);
       }
       
       matchesBracketButtons.innerHTML = bracketsHTML + xgButtonHTML;
@@ -10053,6 +10059,9 @@ async function loadSettings() {
     // Загружаем настройку кнопки "Мне повезет"
     await loadLuckyButtonSettings();
     
+    // Загружаем настройку кнопки xG
+    await loadXgButtonSettings();
+    
     // Загружаем видимость карточки напоминаний в группе
     await loadGroupRemindersCardVisibility();
   } catch (error) {
@@ -10667,6 +10676,28 @@ async function loadLuckyButtonSettings() {
   }
 }
 
+// Загрузить настройку "Кнопка xG"
+async function loadXgButtonSettings() {
+  try {
+    if (!currentUser) return;
+
+    const response = await fetch(`/api/user/${currentUser.id}/show-xg-button`);
+    const data = await response.json();
+
+    if (response.ok) {
+      const select = document.getElementById("showXgButtonSelect");
+      if (select) {
+        const showXgButton = data.show_xg_button !== undefined ? data.show_xg_button : 1;
+        select.value = showXgButton.toString();
+        currentUser.show_xg_button = showXgButton;
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      }
+    }
+  } catch (error) {
+    console.error("Ошибка при загрузке настройки кнопки xG:", error);
+  }
+}
+
 // Сохранить часовой пояс пользователя
 async function saveTimezoneSettings() {
   try {
@@ -10903,6 +10934,49 @@ function updateLuckyButtonVisibility() {
       // Если турнир не выбран - показываем кнопку
       luckyBtnContainer.style.display = "block";
     }
+  }
+}
+
+// Сохранить настройку "Кнопка xG"
+async function saveXgButtonSettings() {
+  try {
+    if (!currentUser) {
+      alert("Сначала войдите в систему");
+      return;
+    }
+
+    const select = document.getElementById("showXgButtonSelect");
+    const showXgButton = parseInt(select.value);
+
+    showSaveStatus('xgButtonStatus', 'saving');
+
+    const response = await fetch(`/api/user/${currentUser.id}/show-xg-button`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        show_xg_button: showXgButton,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      currentUser.show_xg_button = showXgButton;
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      
+      // Перезагружаем матчи чтобы обновить видимость кнопки
+      if (typeof loadMatches === 'function') {
+        await loadMatches();
+      }
+      
+      showSaveStatus('xgButtonStatus', 'saved');
+    } else {
+      showSaveStatus('xgButtonStatus', 'error');
+      console.error("Ошибка:", result.error);
+    }
+  } catch (error) {
+    console.error("Ошибка при сохранении настройки:", error);
+    showSaveStatus('xgButtonStatus', 'error');
   }
 }
 
