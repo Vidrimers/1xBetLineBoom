@@ -1305,6 +1305,27 @@
                 👥 Напоминания ТГ
               </button>
               <button
+                onclick="toggleXgButton()"
+                style="
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  color: #fff;
+                  border: 1px solid #764ba2;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 140px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Скрыть/показать кнопку xG для всех пользователей"
+              >
+                🎯 Кнопка xG
+              </button>
+              <button
                 onclick="openAwardsPanel()"
                 style="
                   background: rgba(255, 193, 7, 0.7);
@@ -3740,7 +3761,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="js/dict.js"></script>
     <script src="js/bracket.js"></script>
-    <script src="js/index.js?v=48"></script>
+    <script src="js/index.js?v=49"></script>
+    <script src="js/xg-modal.js"></script>
     <script src="js/counting.js"></script>
 
     <!-- Модальное окно для детальных настроек уведомлений -->

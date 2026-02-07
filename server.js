@@ -6937,6 +6937,71 @@ app.get("/api/match-details/:matchId", async (req, res) => {
   }
 });
 
+// GET /api/match-glicko/:matchId - Получить данные Glicko-2 и xG для матча
+app.get("/api/match-glicko/:matchId", async (req, res) => {
+  console.log(`🔍 /api/match-glicko запрос получен, matchId: ${req.params.matchId}`);
+  
+  try {
+    const { matchId } = req.params;
+    
+    if (!matchId) {
+      return res.status(400).json({ error: "Не указан matchId" });
+    }
+    
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      console.error(`❌ SSTATS_API_KEY не задан в переменных окружения`);
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+    
+    // Получаем sstats_match_id из БД
+    const match = db.prepare('SELECT sstats_match_id, team1_name, team2_name FROM matches WHERE id = ?').get(matchId);
+    
+    if (!match || !match.sstats_match_id) {
+      console.error(`❌ Матч не найден или нет sstats_match_id, matchId: ${matchId}`);
+      return res.status(404).json({ error: "Матч не найден или нет данных SStats" });
+    }
+    
+    const url = `${SSTATS_API_BASE}/Games/glicko/${match.sstats_match_id}`;
+    console.log(`📊 SStats API запрос Glicko-2: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-Key": apiKey,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ SStats API ошибка: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ error: errorText || response.statusText });
+    }
+    
+    const glickoData = await response.json();
+    
+    if (glickoData.status !== "OK") {
+      console.error(`❌ SStats API статус не OK:`, glickoData);
+      return res.status(500).json({ error: "SStats API вернул ошибку" });
+    }
+    
+    const data = glickoData.data;
+    console.log(`✅ Glicko-2 данные получены для матча ${match.team1_name} vs ${match.team2_name}`);
+    
+    res.json({
+      matchId: matchId,
+      sstatsMatchId: match.sstats_match_id,
+      team1: match.team1_name,
+      team2: match.team2_name,
+      glicko: data.glicko,
+      fixture: data.fixture
+    });
+    
+  } catch (error) {
+    console.error("❌ /api/match-glicko ошибка:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/yesterday-matches - Получить завершенные матчи сгруппированные по датам
 app.get("/api/yesterday-matches", async (req, res) => {
   console.log(`🔍 /api/yesterday-matches запрос получен, eventId: ${req.query.eventId}`);
@@ -13240,6 +13305,99 @@ app.put("/api/admin/group-reminders-card-visibility", (req, res) => {
     });
   } catch (error) {
     console.error('Ошибка при изменении видимости карточки:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/toggle-xg-button - Показать/скрыть кнопку xG для всех пользователей
+app.post("/api/admin/toggle-xg-button", (req, res) => {
+  try {
+    const { admin_username, hidden } = req.body;
+
+    if (!admin_username) {
+      return res.status(400).json({ error: "Требуется admin_username" });
+    }
+
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    if (admin_username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+
+    // Создаём таблицу если её нет (уже должна существовать)
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS global_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_by TEXT
+      )
+    `).run();
+
+    // Сохраняем настройку
+    db.prepare(`
+      INSERT INTO global_settings (key, value, updated_by)
+      VALUES ('xg_button_hidden', ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = CURRENT_TIMESTAMP,
+        updated_by = excluded.updated_by
+    `).run(hidden ? 'true' : 'false', admin_username);
+
+    console.log(`🔧 Админ ${admin_username} ${hidden ? 'скрыл' : 'показал'} кнопку xG для всех пользователей`);
+
+    res.json({ 
+      success: true, 
+      hidden,
+      message: hidden ? 'Кнопка xG скрыта для всех пользователей' : 'Кнопка xG показана для всех пользователей'
+    });
+  } catch (error) {
+    console.error('Ошибка при изменении видимости кнопки xG:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/xg-button-visibility - Получить статус видимости кнопки xG
+app.get("/api/xg-button-visibility", (req, res) => {
+  try {
+    const setting = db.prepare(`
+      SELECT value FROM global_settings WHERE key = 'xg_button_hidden'
+    `).get();
+
+    const hidden = setting ? setting.value === 'true' : false;
+
+    res.json({ hidden });
+  } catch (error) {
+    console.error('Ошибка при получении видимости кнопки xG:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/notify-xg-modal-opened - Уведомить админа об открытии модалки xG
+app.post("/api/notify-xg-modal-opened", async (req, res) => {
+  try {
+    const { username, eventName } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ error: "Требуется username" });
+    }
+
+    console.log(`📊 Пользователь ${username} открыл модалку xG для турнира: ${eventName || 'N/A'}`);
+
+    // Отправляем уведомление админу
+    try {
+      await notifyAdmin(
+        `📊 <b>Открыта модалка xG</b>\n\n` +
+        `👤 Пользователь: <b>${username}</b>\n` +
+        `🏆 Турнир: <b>${eventName || 'Не указан'}</b>`
+      );
+      console.log('✅ Уведомление админу отправлено');
+    } catch (error) {
+      console.error('Ошибка отправки уведомления админу:', error);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Ошибка при уведомлении об открытии модалки xG:', error);
     res.status(500).json({ error: error.message });
   }
 });

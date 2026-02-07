@@ -2609,7 +2609,28 @@ async function displayMatches() {
     // Рендерим кнопки сетки в matches-container (всегда обновляем, даже если пусто)
     const matchesBracketButtons = document.getElementById('matchesBracketButtons');
     if (matchesBracketButtons) {
-      matchesBracketButtons.innerHTML = bracketsHTML;
+      // Проверяем видимость кнопки xG
+      let xgButtonHTML = '';
+      try {
+        const xgVisibilityResponse = await fetch('/api/xg-button-visibility');
+        if (xgVisibilityResponse.ok) {
+          const xgVisibility = await xgVisibilityResponse.json();
+          if (!xgVisibility.hidden) {
+            xgButtonHTML = `
+              <button class="round-filter-btn xg-filter-btn" 
+                      onclick="openXgModal()" 
+                      title="Прогнозы Glicko-2 и xG"
+                      style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                🎯 xG
+              </button>
+            `;
+          }
+        }
+      } catch (err) {
+        console.error('Ошибка проверки видимости кнопки xG:', err);
+      }
+      
+      matchesBracketButtons.innerHTML = bracketsHTML + xgButtonHTML;
     }
 
     // Рендерим кнопки туров в roundsFilterScroll
