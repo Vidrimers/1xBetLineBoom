@@ -22,6 +22,16 @@ async function openXgModal() {
   const currentRound = currentRoundFilter || 'all';
   const roundName = currentRound === 'all' ? 'Все туры' : currentRound;
   
+  // Если выбрано "Все туры" - предупреждаем пользователя
+  if (currentRound === 'all') {
+    await showCustomAlert(
+      'Пожалуйста, выберите конкретный тур для просмотра прогнозов xG.\n\nЭто поможет сэкономить лимит запросов к API.',
+      'Выберите тур',
+      '⚠️'
+    );
+    return;
+  }
+  
   // Отправляем уведомление админу
   try {
     await fetch('/api/notify-xg-modal-opened', {
@@ -38,10 +48,7 @@ async function openXgModal() {
   }
   
   // Получаем матчи текущего тура
-  const matchesForRound = matches.filter(m => {
-    if (currentRound === 'all') return true;
-    return m.round === currentRound;
-  });
+  const matchesForRound = matches.filter(m => m.round === currentRound);
   
   if (matchesForRound.length === 0) {
     await showCustomAlert('Нет матчей для отображения прогнозов', 'Информация', 'ℹ️');
