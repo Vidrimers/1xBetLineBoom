@@ -185,10 +185,18 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   // Добавляем кнопки реакций для личных чатов (если не отключено и это личный чат)
   if (!options.noReactionButtons && chatIdNum > 0 && chatIdNum !== TELEGRAM_CHAT_ID) {
     options.reply_markup = {
-      inline_keyboard: [[
-        { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
-        { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
-      ]]
+      inline_keyboard: [
+        [
+          { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
+          { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
+          { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+        ],
+        [
+          { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
+          { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
+          { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
+        ]
+      ]
     };
     console.log(`🔘 Добавлены кнопки реакций для личного чата ${chatIdNum}`);
   }
@@ -576,10 +584,18 @@ export async function sendUserMessage(userId, message, options = {}) {
     if (!options.noReactionButtons && userId > 0) { // userId > 0 означает личный чат
       const reactionButtons = {
         reply_markup: {
-          inline_keyboard: [[
-            { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
-            { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
-          ]]
+          inline_keyboard: [
+            [
+              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
+              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
+              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+            ],
+            [
+              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
+              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
+              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
+            ]
+          ]
         }
       };
       

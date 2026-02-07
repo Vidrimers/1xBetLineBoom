@@ -1534,8 +1534,14 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
         const replyMarkup = {
           inline_keyboard: [
             [
-              { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
-              { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
+              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
+              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+            ],
+            [
+              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
+              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
+              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
             ]
           ]
         };
@@ -11385,8 +11391,14 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
         const replyMarkup = {
           inline_keyboard: [
             [
-              { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
-              { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
+              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
+              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+            ],
+            [
+              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
+              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
+              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
             ]
           ]
         };
@@ -11432,8 +11444,14 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
         const replyMarkup = {
           inline_keyboard: [
             [
-              { text: "👍 Спасибо", callback_data: `reaction_positive_${Date.now()}` },
-              { text: "👎 Не понравилось", callback_data: `reaction_negative_${Date.now()}` }
+              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
+              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
+              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+            ],
+            [
+              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
+              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
+              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
             ]
           ]
         };
