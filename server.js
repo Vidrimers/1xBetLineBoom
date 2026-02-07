@@ -1534,14 +1534,18 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
         const replyMarkup = {
           inline_keyboard: [
             [
-              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
-              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
-              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+              { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+              { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+              { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+              { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+              { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
             ],
             [
-              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
-              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
-              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
+              { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+              { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+              { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+              { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+              { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
             ]
           ]
         };
@@ -11391,14 +11395,18 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
         const replyMarkup = {
           inline_keyboard: [
             [
-              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
-              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
-              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+              { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+              { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+              { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+              { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+              { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
             ],
             [
-              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
-              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
-              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
+              { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+              { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+              { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+              { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+              { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
             ]
           ]
         };
@@ -11444,14 +11452,18 @@ app.post("/api/admin/send-feature-announcement", async (req, res) => {
         const replyMarkup = {
           inline_keyboard: [
             [
-              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
-              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
-              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+              { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+              { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+              { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+              { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+              { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
             ],
             [
-              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
-              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
-              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
+              { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+              { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+              { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+              { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+              { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
             ]
           ]
         };

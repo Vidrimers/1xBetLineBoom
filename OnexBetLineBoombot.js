@@ -49,6 +49,10 @@ if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID || !TELEGRAM_CHAT_ID) {
 let bot = null;
 let botStarted = false; // Флаг для предотвращения повторного запуска
 
+// Хранилище счетчиков реакций для сообщений в группе
+// Формат: Map<messageId, Map<emoji, Set<userId>>>
+const groupReactions = new Map();
+
 // Файл очереди для неотправленных уведомлений (JSONL)
 const NOTIF_QUEUE_FILE = path.join(
   process.cwd(),
@@ -187,18 +191,45 @@ async function sendMessageWithThread(chatId, text, options = {}) {
     options.reply_markup = {
       inline_keyboard: [
         [
-          { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
-          { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
-          { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+          { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+          { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+          { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+          { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+          { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
         ],
         [
-          { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
-          { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
-          { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
+          { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+          { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+          { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+          { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+          { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
         ]
       ]
     };
     console.log(`🔘 Добавлены кнопки реакций для личного чата ${chatIdNum}`);
+  }
+  
+  // Добавляем кнопки реакций для группы (если не отключено и это группа)
+  if (!options.noReactionButtons && chatIdNum === TELEGRAM_CHAT_ID) {
+    options.reply_markup = {
+      inline_keyboard: [
+        [
+          { text: "👍", callback_data: `group_reaction_thumbsup` },
+          { text: "🔥", callback_data: `group_reaction_fire` },
+          { text: "❤️", callback_data: `group_reaction_heart` },
+          { text: "🫡", callback_data: `group_reaction_salute` },
+          { text: "😂", callback_data: `group_reaction_laugh` }
+        ],
+        [
+          { text: "👎", callback_data: `group_reaction_thumbsdown` },
+          { text: "😐", callback_data: `group_reaction_neutral` },
+          { text: "💩", callback_data: `group_reaction_poop` },
+          { text: "🤡", callback_data: `group_reaction_clown` },
+          { text: "🤮", callback_data: `group_reaction_vomit` }
+        ]
+      ]
+    };
+    console.log(`🔘 Добавлены кнопки реакций для группы ${chatIdNum}`);
   }
 
   const messageOptions = {
@@ -586,14 +617,18 @@ export async function sendUserMessage(userId, message, options = {}) {
         reply_markup: {
           inline_keyboard: [
             [
-              { text: "👍 Супер", callback_data: `reaction_positive_${Date.now()}` },
-              { text: "🔥 Огонь", callback_data: `reaction_positive_${Date.now() + 1}` },
-              { text: "❤️ Класс", callback_data: `reaction_positive_${Date.now() + 2}` }
+              { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+              { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+              { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+              { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+              { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
             ],
             [
-              { text: "👎 Не зашло", callback_data: `reaction_negative_${Date.now()}` },
-              { text: "😐 Так себе", callback_data: `reaction_negative_${Date.now() + 1}` },
-              { text: "💩 Ужас", callback_data: `reaction_negative_${Date.now() + 2}` }
+              { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+              { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+              { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+              { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+              { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
             ]
           ]
         }
@@ -2161,7 +2196,29 @@ export async function startBot() {
       // ===== ОБРАБОТКА КНОПОК РЕАКЦИЙ =====
       if (data.startsWith("reaction_")) {
         const reactionType = data.includes("positive") ? "positive" : "negative";
-        const emoji = reactionType === "positive" ? "👍" : "👎";
+        
+        // Извлекаем конкретную эмоджи из callback_data
+        const emojiMap = {
+          "thumbsup": "👍",
+          "fire": "🔥",
+          "heart": "❤️",
+          "salute": "🫡",
+          "laugh": "😂",
+          "thumbsdown": "👎",
+          "neutral": "😐",
+          "poop": "💩",
+          "clown": "🤡",
+          "vomit": "🤮"
+        };
+        
+        // Ищем ключ эмоджи в callback_data
+        let emoji = reactionType === "positive" ? "👍" : "👎"; // fallback
+        for (const [key, value] of Object.entries(emojiMap)) {
+          if (data.includes(key)) {
+            emoji = value;
+            break;
+          }
+        }
         
         console.log(`👍 Реакция от @${username}: ${emoji} (через кнопку)`);
         
@@ -2179,7 +2236,7 @@ export async function startBot() {
           console.error("Ошибка удаления кнопок:", error.message);
         }
         
-        // Отправляем уведомление админу
+        // Отправляем уведомление админу с конкретной эмоджи
         try {
           await bot.sendMessage(
             TELEGRAM_ADMIN_ID,
@@ -2222,6 +2279,113 @@ export async function startBot() {
         }
         
         return; // Выходим, чтобы не обрабатывать дальше
+      }
+      
+      // ===== ОБРАБОТКА ГРУППОВЫХ РЕАКЦИЙ =====
+      if (data.startsWith("group_reaction_")) {
+        const emojiKey = data.replace("group_reaction_", "");
+        const emojiMap = {
+          "thumbsup": "👍",
+          "fire": "🔥",
+          "heart": "❤️",
+          "salute": "🫡",
+          "laugh": "😂",
+          "thumbsdown": "👎",
+          "neutral": "😐",
+          "poop": "💩",
+          "clown": "🤡",
+          "vomit": "🤮"
+        };
+        
+        const emoji = emojiMap[emojiKey] || "👍";
+        const messageId = msg.message_id;
+        
+        console.log(`📊 Групповая реакция от @${username}: ${emoji} на сообщение ${messageId}`);
+        
+        // Инициализируем хранилище для этого сообщения если его нет
+        if (!groupReactions.has(messageId)) {
+          groupReactions.set(messageId, new Map());
+        }
+        
+        const messageReactions = groupReactions.get(messageId);
+        
+        // Инициализируем Set для этой эмоджи если его нет
+        if (!messageReactions.has(emoji)) {
+          messageReactions.set(emoji, new Set());
+        }
+        
+        const emojiUsers = messageReactions.get(emoji);
+        
+        // Проверяем, уже нажимал ли пользователь эту кнопку
+        if (emojiUsers.has(userId)) {
+          // Пользователь уже нажимал - убираем его реакцию
+          emojiUsers.delete(userId);
+          console.log(`➖ Убрана реакция ${emoji} от @${username}`);
+          
+          // Если больше никто не нажимал эту эмоджи - удаляем её из Map
+          if (emojiUsers.size === 0) {
+            messageReactions.delete(emoji);
+          }
+        } else {
+          // Пользователь еще не нажимал - добавляем реакцию
+          emojiUsers.add(userId);
+          console.log(`➕ Добавлена реакция ${emoji} от @${username}`);
+        }
+        
+        // Формируем обновленные кнопки с счетчиками
+        const allEmojis = ["👍", "🔥", "❤️", "🫡", "😂", "👎", "😐", "💩", "🤡", "🤮"];
+        const emojiToKey = {
+          "👍": "thumbsup",
+          "🔥": "fire",
+          "❤️": "heart",
+          "🫡": "salute",
+          "😂": "laugh",
+          "👎": "thumbsdown",
+          "😐": "neutral",
+          "💩": "poop",
+          "🤡": "clown",
+          "🤮": "vomit"
+        };
+        
+        const row1 = [];
+        const row2 = [];
+        
+        allEmojis.forEach((e, index) => {
+          const count = messageReactions.get(e)?.size || 0;
+          const buttonText = count > 0 ? `${e} ${count}` : e;
+          const button = {
+            text: buttonText,
+            callback_data: `group_reaction_${emojiToKey[e]}`
+          };
+          
+          if (index < 5) {
+            row1.push(button);
+          } else {
+            row2.push(button);
+          }
+        });
+        
+        // Обновляем кнопки
+        try {
+          await bot.editMessageReplyMarkup(
+            { inline_keyboard: [row1, row2] },
+            {
+              chat_id: chatId,
+              message_id: messageId
+            }
+          );
+          console.log("✅ Кнопки обновлены со счетчиками");
+        } catch (error) {
+          console.error("Ошибка обновления кнопок:", error.message);
+        }
+        
+        // Отвечаем пользователю через answerCallbackQuery
+        await bot.answerCallbackQuery(callbackQuery.id, {
+          text: emojiUsers.has(userId) ? `Вы поставили ${emoji}` : `Вы убрали ${emoji}`,
+          show_alert: false
+        });
+        
+        return; // Выходим
       }
       
       // ===== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ CALLBACK =====
