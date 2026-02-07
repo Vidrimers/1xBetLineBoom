@@ -2379,6 +2379,38 @@ export async function startBot() {
           console.error("Ошибка обновления кнопок:", error.message);
         }
         
+        // Определяем тип реакции для выбора фразы
+        const positiveEmojis = ["👍", "🔥", "❤️", "🫡", "😂"];
+        const reactionType = positiveEmojis.includes(emoji) ? "positive" : "negative";
+        
+        // Загружаем фразы из файлов
+        let phrases = [];
+        try {
+          const fileName = reactionType === "positive" ? "js/positive-reactions.json" : "js/negative-reactions.json";
+          const fileContent = fs.readFileSync(fileName, "utf8");
+          phrases = JSON.parse(fileContent);
+          console.log(`📄 Загружено ${phrases.length} фраз из ${fileName}`);
+        } catch (error) {
+          console.error("Ошибка загрузки фраз:", error);
+          phrases = reactionType === "positive" ? ["Спасибо! 😊"] : ["Ну и ладно! 😤"];
+        }
+        
+        // Выбираем случайную фразу и отправляем в группу (только если реакция добавлена, не убрана)
+        if (emojiUsers.has(userId)) {
+          const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+          console.log(`💬 Отправляем фразу в группу: ${randomPhrase}`);
+          
+          try {
+            await sendMessageWithThread(chatId, randomPhrase, { 
+              noReactionButtons: true,
+              __msg: msg 
+            });
+            console.log("✅ Ответ в группу отправлен");
+          } catch (error) {
+            console.error("Ошибка отправки ответа в группу:", error);
+          }
+        }
+        
         // Отвечаем пользователю через answerCallbackQuery
         await bot.answerCallbackQuery(callbackQuery.id, {
           text: emojiUsers.has(userId) ? `Вы поставили ${emoji}` : `Вы убрали ${emoji}`,
