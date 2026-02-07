@@ -186,8 +186,8 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   const msg = options.__msg || null;
   delete options.__msg; // Удаляем из опций перед отправкой
 
-  // Добавляем кнопки реакций для личных чатов (если не отключено и это личный чат)
-  if (!options.noReactionButtons && chatIdNum > 0 && chatIdNum !== TELEGRAM_CHAT_ID) {
+  // Добавляем кнопки реакций для личных чатов (если не отключено и это личный чат, но НЕ админ)
+  if (!options.noReactionButtons && chatIdNum > 0 && chatIdNum !== TELEGRAM_CHAT_ID && chatIdNum !== TELEGRAM_ADMIN_ID) {
     options.reply_markup = {
       inline_keyboard: [
         [
@@ -611,8 +611,8 @@ export async function sendUserMessage(userId, message, options = {}) {
       return;
     }
     
-    // Добавляем кнопки реакций для личных чатов (если не отключено)
-    if (!options.noReactionButtons && userId > 0) { // userId > 0 означает личный чат
+    // Добавляем кнопки реакций для личных чатов (если не отключено и это НЕ админ)
+    if (!options.noReactionButtons && userId > 0 && userId !== TELEGRAM_ADMIN_ID) {
       const reactionButtons = {
         reply_markup: {
           inline_keyboard: [
