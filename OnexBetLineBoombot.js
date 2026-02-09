@@ -2893,10 +2893,11 @@ export async function handleWebhookUpdate(update) {
               break;
             }
           }
+          return; // Выходим, чтобы не обрабатывать дальше
         }
       }
       
-      // Эмулируем событие message для остальных обработчиков
+      // Эмулируем событие message для остальных обработчиков (включая bot.onText)
       bot.emit('message', update.message);
     }
     
