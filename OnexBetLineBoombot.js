@@ -2882,22 +2882,25 @@ export async function handleWebhookUpdate(update) {
       if (text && text.startsWith('/')) {
         console.log(`🔧 Webhook: обнаружена команда ${text}`);
         
-        // Проверяем каждую команду и вызываем соответствующий обработчик
-        if (text.startsWith('/start')) {
-          const match = text.match(/\/start(.*)/);
-          // Находим обработчик /start и вызываем его
-          const handlers = bot._textRegexpCallbacks || [];
-          for (const handler of handlers) {
-            if (handler.regexp.test(text)) {
-              await handler.callback(update.message, match);
-              break;
-            }
+        // Находим все обработчики команд
+        const handlers = bot._textRegexpCallbacks || [];
+        let commandHandled = false;
+        
+        for (const handler of handlers) {
+          if (handler.regexp.test(text)) {
+            const match = text.match(handler.regexp);
+            await handler.callback(update.message, match);
+            commandHandled = true;
+            break;
           }
-          return; // Выходим, чтобы не обрабатывать дальше
+        }
+        
+        if (commandHandled) {
+          return; // Команда обработана, выходим
         }
       }
       
-      // Эмулируем событие message для остальных обработчиков (включая bot.onText)
+      // Эмулируем событие message для остальных обработчиков
       bot.emit('message', update.message);
     }
     
