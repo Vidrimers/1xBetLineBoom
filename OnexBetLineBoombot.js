@@ -273,8 +273,8 @@ export async function replyInThread(msg, text, options = {}) {
 
     const chatId = msg.chat.id;
     const messageOptions = {
-      ...options,
       parse_mode: "HTML",
+      ...options, // options должны быть ПОСЛЕ parse_mode, чтобы не перезаписывались
     };
 
     // Если сообщение было в потоке, отвечаем в тот же поток
@@ -282,6 +282,8 @@ export async function replyInThread(msg, text, options = {}) {
       messageOptions.message_thread_id = msg.message_thread_id;
       console.log(`📨 Ответ в поток ${msg.message_thread_id}`);
     }
+
+    console.log(`📤 Отправка сообщения с опциями:`, JSON.stringify(messageOptions, null, 2));
 
     return await bot.sendMessage(chatId, text, messageOptions);
   } catch (error) {
@@ -1004,6 +1006,34 @@ export async function startBot() {
   // Запускаем background worker для повторной отправки уведомлений
   startNotifWorker();
 
+  // Настраиваем кнопку меню бота для личных чатов
+  try {
+    await bot.setChatMenuButton({
+      chat_id: undefined, // undefined = для всех личных чатов
+      menu_button: {
+        type: 'commands'
+      }
+    });
+    
+    // Устанавливаем команды бота чтобы они отображались в меню
+    await bot.setMyCommands([
+      { command: 'menu', description: '📱 Главное меню' },
+      { command: 'start', description: '🚀 Начать работу' },
+      { command: 'status', description: '📊 Статус сервера' },
+      { command: 'tournaments', description: '📅 Все турниры' },
+      { command: 'my_bets', description: '💰 Мои ставки' },
+      { command: 'next_match', description: '⚽ Ближайший матч' },
+      { command: 'stats', description: '📈 Моя статистика' },
+      { command: 'profile', description: '👤 Мой профиль' },
+      { command: 'my_awards', description: '🏆 Мои награды' },
+      { command: 'help', description: '❓ Справка' }
+    ]);
+    
+    console.log("✅ Кнопка меню бота и команды настроены");
+  } catch (error) {
+    console.error("⚠️ Ошибка настройки кнопки меню:", error.message);
+  }
+
   // При завершении процесса корректно останавливаем воркер
   process.on("exit", () => {
     stopNotifWorker();
@@ -1017,18 +1047,31 @@ export async function startBot() {
     process.exit(0);
   });
 
-  // ===== ГЛАВНОЕ МЕНЮ (КНОПКИ) =====
+  // ===== ГЛАВНОЕ МЕНЮ =====
+  // Для личных чатов - убираем keyboard кнопки (используем инлайн-кнопки через /menu)
   const mainMenuKeyboard = {
     reply_markup: {
+      remove_keyboard: true
+    }
+  };
+
+  // Для групп - оставляем keyboard кнопки
+  const groupKeyboard = {
+    reply_markup: {
       keyboard: [
-        ["📊 Статус", "📅 Турниры"],
-        ["💰 Мои ставки", "👤 Профиль"],
-        ["🏆 Мои награды", "📈 Статистика"],
-        ["⚽ Ближайший матч", "🌐 Открыть сайт"],
+        [{ text: "📊 Статус" }, { text: "📅 Турниры" }],
+        [{ text: "💰 Мои ставки" }, { text: "⚽ Ближайший матч" }],
+        [{ text: "📈 Статистика" }, { text: "👤 Профиль" }],
+        [{ text: "🏆 Мои награды" }, { text: "🌐 Открыть сайт", web_app: { url: PUBLIC_URL } }]
       ],
       resize_keyboard: true,
-      one_time_keyboard: false,
-    },
+      one_time_keyboard: false
+    }
+  };
+
+  // Функция для выбора правильной клавиатуры в зависимости от типа чата
+  const getKeyboardForChat = (msg) => {
+    return msg.chat.type === 'private' ? mainMenuKeyboard : groupKeyboard;
   };
 
   // ===== ОБРАБОТЧИКИ КОМАНД =====
@@ -1074,13 +1117,13 @@ export async function startBot() {
             ? `🎉 Добро пожаловать!\n\n✅ Вы успешно авторизовались на сайте!\n👤 Ваше имя: ${result.user.username}\n\n💡 Имя можно изменить в профиле на сайте.`
             : `✅ Вы успешно авторизовались на сайте!\n👤 Ваше имя: ${result.user.username}`;
           
-          replyInThread(msg, welcomeMessage, mainMenuKeyboard);
+          replyInThread(msg, welcomeMessage, getKeyboardForChat(msg));
         } else {
           console.log(`❌ Ошибка авторизации: ${result.error}`);
           replyInThread(
             msg,
             `❌ Ошибка авторизации: ${result.error || 'Неизвестная ошибка'}\n\nПопробуйте снова.`,
-            mainMenuKeyboard
+            getKeyboardForChat(msg)
           );
         }
       } catch (error) {
@@ -1088,7 +1131,7 @@ export async function startBot() {
         replyInThread(
           msg,
           `❌ Произошла ошибка при авторизации. Попробуйте позже.`,
-          mainMenuKeyboard
+          getKeyboardForChat(msg)
         );
       }
       return;
@@ -1112,7 +1155,7 @@ export async function startBot() {
             msg,
             `❌ У вас не установлен username в Telegram!\n\n` +
             `Чтобы привязать аккаунт, сначала установите username в настройках Telegram.`,
-            mainMenuKeyboard
+            getKeyboardForChat(msg)
           );
           return;
         }
@@ -1140,7 +1183,7 @@ export async function startBot() {
             `👤 Ваш username: @${telegramUsername}\n` +
             `🔗 Аккаунт привязан к профилю\n\n` +
             `Теперь вы будете получать уведомления о матчах!`,
-            mainMenuKeyboard
+            getKeyboardForChat(msg)
           );
         } else {
           console.log(`❌ Ошибка при привязке: ${result.error}`);
@@ -1148,7 +1191,7 @@ export async function startBot() {
             msg,
             `❌ Ошибка при привязке: ${result.error || 'Неизвестная ошибка'}\n\n` +
             `Попробуйте привязать другой.`,
-            mainMenuKeyboard
+            getKeyboardForChat(msg)
           );
         }
       } catch (error) {
@@ -1158,7 +1201,7 @@ export async function startBot() {
           msg,
           `❌ Произошла ошибка при привязке: ${error.message}\n\n` +
           `Попробуйте привязать позже.`,
-          mainMenuKeyboard
+          getKeyboardForChat(msg)
         );
       }
       return;
@@ -1171,7 +1214,7 @@ export async function startBot() {
         `🎯 Я бот для 1xBetLineBoom - сайта для ставок на матчи.\n\n` +
         `Используй кнопки ниже или команды:\n` +
         `/help - показать справку`,
-      mainMenuKeyboard
+      getKeyboardForChat(msg)
     );
   });
 
@@ -1186,6 +1229,7 @@ export async function startBot() {
       msg,
       `<b>📖 Справка по командам:</b>\n\n` +
         `<b>/start</b> - начало работы\n` +
+        `<b>/menu</b> - главное меню\n` +
         `<b>/help</b> - эта справка\n` +
         `<b>/status</b> - проверить статус сервера\n` +
         `<b>/tournaments</b> - показать все турниры\n` +
@@ -1193,8 +1237,55 @@ export async function startBot() {
         `<b>/next_match</b> - ближайший матч\n` +
         `<b>/stats</b> - моя статистика\n` +
         `<b>/profile</b> - показать профиль\n`,
-      mainMenuKeyboard
+      getKeyboardForChat(msg)
     );
+  });
+
+  // Команда /menu - главное меню с инлайн-кнопками
+  bot.onText(/\/menu/, (msg) => {
+    const chatId = msg.chat.id;
+    const isPrivateChat = msg.chat.type === 'private';
+
+    // Логируем действие
+    logUserAction(msg, "Нажата команда /menu");
+
+    // Создаём инлайн-кнопки для меню
+    const menuButtons = [
+      [
+        { text: '📊 Статус', callback_data: 'menu_status' },
+        { text: '📅 Турниры', callback_data: 'menu_tournaments' }
+      ],
+      [
+        { text: '💰 Мои ставки', callback_data: 'menu_mybets' },
+        { text: '⚽ Ближайший матч', callback_data: 'menu_nextmatch' }
+      ],
+      [
+        { text: '📈 Статистика', callback_data: 'menu_stats' },
+        { text: '👤 Профиль', callback_data: 'menu_profile' }
+      ],
+      [
+        { text: '🏆 Мои награды', callback_data: 'menu_awards' }
+      ]
+    ];
+
+    // Добавляем кнопку "Открыть сайт" только если это не localhost
+    if (!PUBLIC_URL.includes('localhost') && !PUBLIC_URL.includes('127.0.0.1') && !PUBLIC_URL.includes('192.168.')) {
+      menuButtons.push([
+        { text: '🌐 Открыть сайт', url: PUBLIC_URL }
+      ]);
+    }
+
+    const menuOptions = {
+      reply_markup: {
+        inline_keyboard: menuButtons
+      }
+    };
+
+    const menuMessage = isPrivateChat
+      ? `<b>📱 Главное меню</b>\n\nВыберите действие:`
+      : `<b>📱 Главное меню</b>\n\nВыберите действие:\n\n💡 Для удобства используйте кнопку "Меню" в личном чате с ботом.`;
+
+    replyInThread(msg, menuMessage, menuOptions);
   });
 
   // Команда /status и кнопка 📊 Статус
@@ -2073,97 +2164,31 @@ export async function startBot() {
     // Игнорируем команды (начинаются с /)
     if (text && text.startsWith("/")) return;
 
-    switch (text) {
-      case "📊 Статус":
-        handleStatus(msg);
-        break;
-      case "📅 Турниры":
-        handleTournaments(msg.chat.id, msg).catch((err) => {
-          console.error("Ошибка в handleTournaments:", err);
-          sendMessageWithThread(
-            msg.chat.id,
-            "⚠️ Ошибка при загрузке турниров",
-            {
-              __msg: msg,
-              parse_mode: "HTML",
-            }
-          );
-        });
-        break;
-      case "💰 Мои ставки":
-        handleMyBets(msg.chat.id, msg).catch((err) => {
-          console.error("Ошибка в handleMyBets:", err);
-          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке ставок", {
-            __msg: msg,
-            parse_mode: "HTML",
-          });
-        });
-        break;
-      case "👤 Профиль":
-        handleProfile(msg).catch((err) => {
-          console.error("Ошибка в handleProfile:", err);
-          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке профиля", {
-            __msg: msg,
-            parse_mode: "HTML",
-          });
-        });
-        break;
-      case "🏆 Мои награды":
-        handleMyAwards(msg.chat.id, msg).catch((err) => {
-          console.error("Ошибка в handleMyAwards:", err);
-          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке наград", {
-            __msg: msg,
-            parse_mode: "HTML",
-          });
-        });
-        break;
-      case "📈 Статистика":
-        handleStats(msg).catch((err) => {
-          console.error("Ошибка в handleStats:", err);
-          sendMessageWithThread(
-            msg.chat.id,
-            "⚠️ Ошибка при загрузке статистики",
-            {
-              __msg: msg,
-              parse_mode: "HTML",
-            }
-          );
-        });
-        break;
-      case "⚽ Ближайший матч":
-        handleNextMatch(msg.chat.id, msg).catch((err) => {
-          console.error("Ошибка в handleNextMatch:", err);
-          sendMessageWithThread(msg.chat.id, "⚠️ Ошибка при загрузке матчей", {
-            __msg: msg,
-            parse_mode: "HTML",
-          });
-        });
-        break;
-      case "🌐 Открыть сайт":
-        logUserAction(msg, "Нажата кнопка: Открыть сайт");
-        // Проверяем что PUBLIC_URL не localhost перед отправкой кнопки
-        if (PUBLIC_URL.includes('localhost') || PUBLIC_URL.includes('127.0.0.1') || PUBLIC_URL.includes('192.168.')) {
-          sendMessageWithThread(chatId, `🌐 <b>Сайт:</b> 1xbetlineboom.xyz\n\n⚠️ Локальный сервер недоступен извне`, {
-            parse_mode: "HTML",
-            __msg: msg,
-          });
-        } else {
-          sendMessageWithThread(chatId, `1xbetlineboom.xyz`, {
-            parse_mode: "HTML",
-            __msg: msg,
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "Жмакни чтобы перейти",
-                    url: PUBLIC_URL,
-                  },
-                ],
-              ],
-            },
-          });
-        }
-        break;
+    // Обработка keyboard кнопок в группах
+    if (msg.chat.type !== 'private' && text) {
+      switch (text) {
+        case "📊 Статус":
+          handleStatus(msg);
+          break;
+        case "📅 Турниры":
+          handleTournaments(chatId, msg);
+          break;
+        case "💰 Мои ставки":
+          handleMyBets(chatId, msg);
+          break;
+        case "⚽ Ближайший матч":
+          handleNextMatch(chatId, msg);
+          break;
+        case "📈 Статистика":
+          handleStats(msg);
+          break;
+        case "👤 Профиль":
+          handleProfile(msg);
+          break;
+        case "🏆 Мои награды":
+          handleMyAwards(chatId, msg);
+          break;
+      }
     }
   });
 
@@ -2193,6 +2218,44 @@ export async function startBot() {
     console.log(`📲 Получен callback: ${data}`);
     
     try {
+      // ===== ОБРАБОТКА КНОПОК МЕНЮ =====
+      if (data.startsWith("menu_")) {
+        // Отвечаем на callback чтобы убрать "часики"
+        await bot.answerCallbackQuery(callbackQuery.id);
+        
+        // Создаём объект msg для совместимости с существующими функциями
+        const fakeMsg = {
+          chat: { id: chatId, type: msg.chat.type },
+          from: callbackQuery.from,
+          message_id: msg.message_id
+        };
+        
+        switch (data) {
+          case "menu_status":
+            handleStatus(fakeMsg);
+            break;
+          case "menu_tournaments":
+            handleTournaments(chatId, fakeMsg);
+            break;
+          case "menu_mybets":
+            handleMyBets(chatId, fakeMsg);
+            break;
+          case "menu_nextmatch":
+            handleNextMatch(chatId, fakeMsg);
+            break;
+          case "menu_stats":
+            handleStats(fakeMsg);
+            break;
+          case "menu_profile":
+            handleProfile(fakeMsg);
+            break;
+          case "menu_awards":
+            handleMyAwards(chatId, fakeMsg);
+            break;
+        }
+        return;
+      }
+      
       // ===== ОБРАБОТКА КНОПОК РЕАКЦИЙ =====
       if (data.startsWith("reaction_")) {
         const reactionType = data.includes("positive") ? "positive" : "negative";
