@@ -283,8 +283,6 @@ export async function replyInThread(msg, text, options = {}) {
       console.log(`📨 Ответ в поток ${msg.message_thread_id}`);
     }
 
-    console.log(`📤 Отправка сообщения с опциями:`, JSON.stringify(messageOptions, null, 2));
-
     return await bot.sendMessage(chatId, text, messageOptions);
   } catch (error) {
     console.error("Ошибка при отправке ответа в потоке:", error.message);
@@ -1062,7 +1060,7 @@ export async function startBot() {
         [{ text: "📊 Статус" }, { text: "📅 Турниры" }],
         [{ text: "💰 Мои ставки" }, { text: "⚽ Ближайший матч" }],
         [{ text: "📈 Статистика" }, { text: "👤 Профиль" }],
-        [{ text: "🏆 Мои награды" }, { text: "🌐 Открыть сайт", web_app: { url: PUBLIC_URL } }]
+        [{ text: "🏆 Мои награды" }, { text: "🌐 Открыть сайт" }]
       ],
       resize_keyboard: true,
       one_time_keyboard: false
@@ -2187,6 +2185,9 @@ export async function startBot() {
           break;
         case "🏆 Мои награды":
           handleMyAwards(chatId, msg);
+          break;
+        case "🌐 Открыть сайт":
+          replyInThread(msg, `🌐 Сайт: ${PUBLIC_URL}`);
           break;
       }
     }
