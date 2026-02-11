@@ -4019,11 +4019,79 @@ app.post("/api/brackets/:bracketId/predictions", (req, res) => {
         }
         
         if (message) {
-          sendUserMessage(telegramUser.chat_id, message).catch(err => {
-            console.error(`Ошибка отправки уведомления пользователю ${user_id}:`, err);
-          });
+          // Отправляем уведомление пользователю через Telegram API
+          const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+          if (TELEGRAM_BOT_TOKEN) {
+            fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: telegramUser.chat_id,
+                text: message,
+                parse_mode: 'HTML'
+              })
+            }).catch(err => {
+              console.error(`Ошибка отправки уведомления пользователю ${user_id}:`, err);
+            });
+          }
         }
       }
+    }
+    
+    // Отправляем уведомление админу
+    try {
+      const event = db.prepare("SELECT name FROM events WHERE id = ?").get(bracket.event_id);
+      const eventName = event ? event.name : "Турнир";
+      
+      const stageNames = {
+        'round_of_16': '1/16 финала',
+        'round_of_8': '1/8 финала',
+        'quarter_finals': '1/4 финала',
+        'semi_finals': '1/2 финала',
+        'final': 'Финал'
+      };
+      
+      // Разделяем на новые и измененные прогнозы
+      const newPredictions = [];
+      const changedPredictions = [];
+      
+      predictions.forEach(p => {
+        const key = `${p.stage}_${p.match_index}`;
+        const oldWinner = existingPredictions[key];
+        
+        if (oldWinner && oldWinner !== p.predicted_winner) {
+          changedPredictions.push({
+            stage: stageNames[p.stage] || p.stage,
+            oldWinner: oldWinner,
+            newWinner: p.predicted_winner
+          });
+        } else if (!oldWinner) {
+          newPredictions.push({
+            stage: stageNames[p.stage] || p.stage,
+            winner: p.predicted_winner
+          });
+        }
+      });
+      
+      let adminMessage = '';
+      
+      if (changedPredictions.length > 0) {
+        adminMessage = `🔄 <b>Прогноз в сетке изменен</b>\n\n👤 <b>Пользователь:</b> ${user.username}\n📊 <b>Турнир:</b> ${eventName}\n🏆 <b>Сетка:</b> ${bracket.name}\n\n`;
+        changedPredictions.forEach(p => {
+          adminMessage += `<b>${p.stage}:</b>\n  ❌ Было: ${p.oldWinner}\n  ✅ Стало: ${p.newWinner}\n\n`;
+        });
+      } else if (newPredictions.length > 0) {
+        adminMessage = `🎯 <b>Новый прогноз в сетке</b>\n\n👤 <b>Пользователь:</b> ${user.username}\n📊 <b>Турнир:</b> ${eventName}\n🏆 <b>Сетка:</b> ${bracket.name}\n\n`;
+        newPredictions.forEach(p => {
+          adminMessage += `<b>${p.stage}:</b> ${p.winner}\n`;
+        });
+      }
+      
+      if (adminMessage) {
+        await notifyAdmin(adminMessage);
+      }
+    } catch (err) {
+      console.error(`Ошибка отправки уведомления админу:`, err);
     }
     
     res.json({ success: true });
