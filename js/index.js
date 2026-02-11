@@ -3343,8 +3343,10 @@ async function placeScorePrediction(matchId, prediction) {
   // Если поле пустое, считаем как 0
   const scoreTeam1 = scoreTeam1Input ? (scoreTeam1Input.value === '' ? 0 : parseInt(scoreTeam1Input.value)) : null;
   const scoreTeam2 = scoreTeam2Input ? (scoreTeam2Input.value === '' ? 0 : parseInt(scoreTeam2Input.value)) : null;
-  const yellowCards = yellowCardsInput ? (yellowCardsInput.value === '' ? null : parseInt(yellowCardsInput.value)) : null;
-  const redCards = redCardsInput ? (redCardsInput.value === '' ? null : parseInt(redCardsInput.value)) : null;
+  
+  // Для карточек: если поле существует и пустое, считаем как 0 (это валидный прогноз!)
+  const yellowCards = yellowCardsInput ? (yellowCardsInput.value === '' ? 0 : parseInt(yellowCardsInput.value)) : null;
+  const redCards = redCardsInput ? (redCardsInput.value === '' ? 0 : parseInt(redCardsInput.value)) : null;
 
   // Валидация счета если есть поля
   if (scoreTeam1 !== null && scoreTeam2 !== null) {
