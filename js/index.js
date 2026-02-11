@@ -4403,8 +4403,9 @@ async function deleteBet(betId) {
     const parameterType = bet?.parameter_type;
     const isFinalBet = bet?.is_final_bet;
 
-    // Если это была обычная ставка (не финальная) - СНАЧАЛА удаляем прогноз на счет
+    // Если это была обычная ставка (не финальная) - СНАЧАЛА удаляем прогнозы на счет и карточки
     if (!isFinalBet && matchId) {
+      // Удаляем прогноз на счет
       try {
         const deleteScoreResponse = await fetch(`/api/score-predictions/${matchId}`, {
           method: "DELETE",
@@ -4423,6 +4424,37 @@ async function deleteBet(betId) {
         }
       } catch (error) {
         console.log("⚠️ Ошибка при удалении прогноза на счет:", error);
+      }
+
+      // Удаляем прогноз на карточки
+      try {
+        const deleteCardsResponse = await fetch(`/api/cards-predictions/${matchId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+          }),
+        });
+        
+        if (deleteCardsResponse.ok) {
+          console.log("✅ Прогноз на карточки удален");
+        } else {
+          console.log("⚠️ Прогноз на карточки не найден или уже удален");
+        }
+      } catch (error) {
+        console.log("⚠️ Ошибка при удалении прогноза на карточки:", error);
+      }
+
+      // Очищаем прогнозы в объекте матча
+      const match = matches.find(m => m.id === matchId);
+      if (match) {
+        match.predicted_score_team1 = null;
+        match.predicted_score_team2 = null;
+        match.predicted_yellow_cards = null;
+        match.predicted_red_cards = null;
+        console.log(`🧹 Очищены прогнозы для матча ${matchId}`);
       }
     }
 

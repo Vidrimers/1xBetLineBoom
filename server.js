@@ -8397,6 +8397,31 @@ app.delete("/api/score-predictions/:matchId", async (req, res) => {
   }
 });
 
+// DELETE /api/cards-predictions/:matchId - Удалить прогноз на карточки
+app.delete("/api/cards-predictions/:matchId", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { user_id } = req.body;
+
+    // Проверяем существует ли прогноз
+    const prediction = db
+      .prepare("SELECT id FROM cards_predictions WHERE user_id = ? AND match_id = ?")
+      .get(user_id, matchId);
+
+    if (!prediction) {
+      return res.status(404).json({ error: "Прогноз не найден" });
+    }
+
+    db.prepare("DELETE FROM cards_predictions WHERE user_id = ? AND match_id = ?")
+      .run(user_id, matchId);
+
+    res.json({ message: "Прогноз на карточки удален" });
+  } catch (error) {
+    console.error("Ошибка при удалении прогноза на карточки:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/match-bet-stats/:matchId - Получить статистику ставок по матчу
 app.get("/api/match-bet-stats/:matchId", (req, res) => {
   try {
