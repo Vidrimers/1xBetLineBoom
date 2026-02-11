@@ -2528,8 +2528,8 @@ async function displayMatches() {
         return round;
       }
     }
-    // Если все туры завершены, возвращаем первый
-    return rounds[0];
+    // Если все туры завершены, возвращаем последний
+    return rounds[rounds.length - 1] || rounds[0];
   }
 
   // Показываем фильтры только если есть хотя бы один тур или финальные матчи
@@ -2656,6 +2656,18 @@ async function displayMatches() {
         )
         .join("")}
     `;
+
+    // Прокручиваем к последнему туру (используем requestAnimationFrame для надёжности)
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const roundsScroll = document.getElementById("roundsFilterScroll");
+        if (roundsScroll) {
+          // Прокручиваем к концу (к последнему туру)
+          roundsScroll.scrollLeft = roundsScroll.scrollWidth;
+          console.log(`📜 Прокрутка к последнему туру: scrollLeft=${roundsScroll.scrollLeft}, scrollWidth=${roundsScroll.scrollWidth}, активен: ${currentRoundFilter}`);
+        }
+      }, 300); // Увеличена задержка для надёжности
+    });
   } else {
     roundsFilterContainer.style.display = "none";
     currentRoundFilter = "all"; // Сбрасываем фильтр если туров и финальных матчей нет
@@ -5312,7 +5324,8 @@ async function showTournamentParticipantBets(userId, username, eventId) {
     
     // Находим первый незавершенный тур для установки активным
     const firstUnfinishedRound = sortedRounds.find(round => !completedRoundsSet.has(round));
-    const defaultActiveRound = firstUnfinishedRound || sortedRounds[0];
+    // Если все туры завершены, выбираем последний тур
+    const defaultActiveRound = firstUnfinishedRound || sortedRounds[sortedRounds.length - 1] || sortedRounds[0];
     
     roundsFilter.innerHTML =
       `<button class="round-filter-btn" data-round="all" 
@@ -5335,6 +5348,16 @@ async function showTournamentParticipantBets(userId, username, eventId) {
           </button>`;
         })
         .join("");
+
+    // Прокручиваем к последнему туру
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (roundsFilter) {
+          roundsFilter.scrollLeft = roundsFilter.scrollWidth;
+          console.log(`📜 Прокрутка турнирных туров: scrollLeft=${roundsFilter.scrollLeft}, scrollWidth=${roundsFilter.scrollWidth}, активен: ${defaultActiveRound}`);
+        }
+      }, 300);
+    });
 
     // Сохраняем данные для фильтрации
     window.currentTournamentBets = bets;
