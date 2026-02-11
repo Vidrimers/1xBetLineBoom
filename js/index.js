@@ -2469,6 +2469,33 @@ async function displayTournamentWinner(eventId) {
 }
 
 async function displayMatches() {
+  // ===== СОХРАНЯЕМ ВВЕДЁННЫЕ ЗНАЧЕНИЯ ПЕРЕД ОБНОВЛЕНИЕМ =====
+  const savedInputValues = {};
+  const focusedElement = document.activeElement;
+  let hasFocusOnInput = false;
+  
+  // Проверяем есть ли фокус на полях ввода прогнозов
+  if (focusedElement && (
+    focusedElement.id?.includes('scoreTeam') || 
+    focusedElement.id?.includes('yellowCards') || 
+    focusedElement.id?.includes('redCards')
+  )) {
+    hasFocusOnInput = true;
+    console.log(`⏸️ Пользователь вводит данные в поле ${focusedElement.id}, пропускаем обновление`);
+    return; // Не обновляем если пользователь вводит данные
+  }
+  
+  // Сохраняем все введённые значения из полей
+  document.querySelectorAll('input[id^="scoreTeam"], input[id^="yellowCards"], input[id^="redCards"]').forEach(input => {
+    if (input.value && input.value.trim() !== '') {
+      savedInputValues[input.id] = input.value;
+    }
+  });
+  
+  if (Object.keys(savedInputValues).length > 0) {
+    console.log(`💾 Сохранены введённые значения:`, savedInputValues);
+  }
+  
   const matchesContainer = document.getElementById("matchesContainer");
   const roundsFilterContainer = document.getElementById(
     "roundsFilterContainer"
@@ -3155,6 +3182,17 @@ async function displayMatches() {
   initMatchResultToggles();
   initAdminActionToggles();
   initMatchRowClickHandlers();
+  
+  // ===== ВОССТАНАВЛИВАЕМ ВВЕДЁННЫЕ ЗНАЧЕНИЯ =====
+  if (Object.keys(savedInputValues).length > 0) {
+    Object.entries(savedInputValues).forEach(([inputId, value]) => {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.value = value;
+        console.log(`♻️ Восстановлено значение ${value} в поле ${inputId}`);
+      }
+    });
+  }
   
   // Загружаем статистику для всех матчей БЕЗ анимации
   filteredMatches.forEach(match => {
