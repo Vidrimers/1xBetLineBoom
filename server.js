@@ -225,6 +225,51 @@ async function notifyAdmin(message) {
   }
 }
 
+// Функция для отправки уведомления пользователю
+async function notifyUser(user_id, message) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.log("⚠️ Telegram не настроен, уведомление не отправлено");
+    return;
+  }
+
+  try {
+    // Получаем информацию о пользователе
+    const user = db.prepare("SELECT telegram_username, telegram_notifications_enabled FROM users WHERE id = ?").get(user_id);
+    
+    if (!user || !user.telegram_username || user.telegram_notifications_enabled === 0) {
+      console.log(`⚠️ Пользователь ${user_id} не привязал Telegram или отключил уведомления`);
+      return;
+    }
+
+    // Получаем chat_id пользователя
+    const cleanUsername = user.telegram_username.toLowerCase();
+    const tgUser = db.prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?").get(cleanUsername);
+
+    if (!tgUser || !tgUser.chat_id) {
+      console.log(`⚠️ Chat ID не найден для пользователя ${user.telegram_username}`);
+      return;
+    }
+
+    await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: tgUser.chat_id,
+          text: message,
+          parse_mode: 'HTML'
+        }),
+      }
+    );
+    console.log(`✅ Уведомление отправлено пользователю ${user.telegram_username}`);
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления пользователю:", error);
+  }
+}
+
 // Переопределяем console.log для логирования
 const originalLog = console.log;
 const originalError = console.error;
@@ -7901,6 +7946,27 @@ app.delete("/api/bets/:betId", async (req, res) => {
 
     db.prepare("DELETE FROM bets WHERE id = ?").run(betId);
 
+    // Удаляем связанные прогнозы на счёт и карточки для этого матча и пользователя
+    try {
+      const deletedScorePredictions = db.prepare(
+        "DELETE FROM score_predictions WHERE user_id = ? AND match_id = ?"
+      ).run(bet.user_id, bet.match_id);
+      
+      if (deletedScorePredictions.changes > 0) {
+        console.log(`🗑️ Удалён прогноз на счёт для матча ${bet.match_id}`);
+      }
+
+      const deletedCardsPredictions = db.prepare(
+        "DELETE FROM cards_predictions WHERE user_id = ? AND match_id = ?"
+      ).run(bet.user_id, bet.match_id);
+      
+      if (deletedCardsPredictions.changes > 0) {
+        console.log(`🗑️ Удалён прогноз на карточки для матча ${bet.match_id}`);
+      }
+    } catch (e) {
+      console.warn(`⚠️ Ошибка при удалении связанных прогнозов: ${e.message}`);
+    }
+
     // Если это была финальная ставка - проверяем есть ли еще ставки на этот матч
     if (bet.is_final_bet) {
       const remainingBets = db
@@ -8260,6 +8326,44 @@ app.post("/api/cards-predictions", async (req, res) => {
         "INSERT INTO cards_predictions (user_id, match_id, yellow_cards, red_cards) VALUES (?, ?, ?, ?)"
       ).run(user_id, match_id, yellow_cards, red_cards);
     }
+
+    // Получаем информацию о матче для уведомления
+    const matchInfo = db.prepare(`
+      SELECT m.team1_name, m.team2_name, m.match_date, e.name as event_name
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.id = ?
+    `).get(match_id);
+
+    // Формируем текст прогноза
+    let predictionText = [];
+    if (yellow_cards !== null && match.yellow_cards_prediction_enabled) {
+      predictionText.push(`🟨 Жёлтые карточки: ${yellow_cards}`);
+    }
+    if (red_cards !== null && match.red_cards_prediction_enabled) {
+      predictionText.push(`🟥 Красные карточки: ${red_cards}`);
+    }
+
+    // Отправляем уведомление пользователю
+    const userMessage = 
+      `✅ <b>Прогноз на карточки сохранён!</b>\n\n` +
+      `⚽ <b>Матч:</b> ${matchInfo.team1_name} vs ${matchInfo.team2_name}\n` +
+      `🏆 <b>Турнир:</b> ${matchInfo.event_name}\n` +
+      `📅 <b>Дата:</b> ${new Date(matchInfo.match_date).toLocaleString('ru-RU')}\n\n` +
+      `${predictionText.join('\n')}`;
+
+    await notifyUser(user_id, userMessage);
+
+    // Отправляем уведомление админу
+    const adminMessage = 
+      `📊 <b>Новый прогноз на карточки</b>\n\n` +
+      `👤 <b>Пользователь:</b> ${user.username}\n` +
+      `⚽ <b>Матч:</b> ${matchInfo.team1_name} vs ${matchInfo.team2_name}\n` +
+      `🏆 <b>Турнир:</b> ${matchInfo.event_name}\n` +
+      `📅 <b>Дата:</b> ${new Date(matchInfo.match_date).toLocaleString('ru-RU')}\n\n` +
+      `${predictionText.join('\n')}`;
+
+    await notifyAdmin(adminMessage);
 
     res.json({ message: "Прогноз на карточки сохранен" });
   } catch (error) {
