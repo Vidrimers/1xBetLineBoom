@@ -3900,7 +3900,7 @@ app.get("/api/brackets/:bracketId/predictions/:userId", async (req, res) => {
 });
 
 // Сохранить прогнозы пользователя
-app.post("/api/brackets/:bracketId/predictions", (req, res) => {
+app.post("/api/brackets/:bracketId/predictions", async (req, res) => {
   try {
     const { bracketId } = req.params;
     const { user_id, predictions } = req.body;
@@ -4161,10 +4161,42 @@ app.delete("/api/brackets/:bracketId/predictions/:userId/:stage/:matchIndex", (r
           
           const message = `🗑️ Прогноз в сетке плей-офф удален!\n\n📊 Турнир: ${eventName}\n🏆 Сетка: ${bracket.name}\n⚽ Стадия: ${stageNames[stage] || stage}`;
           
-          sendUserMessage(telegramUser.chat_id, message).catch(err => {
-            console.error(`Ошибка отправки уведомления пользователю ${userId}:`, err);
-          });
+          // Отправляем через Telegram API
+          const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+          if (TELEGRAM_BOT_TOKEN) {
+            fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: telegramUser.chat_id,
+                text: message,
+                parse_mode: 'HTML'
+              })
+            }).catch(err => {
+              console.error(`Ошибка отправки уведомления пользователю ${userId}:`, err);
+            });
+          }
         }
+      }
+      
+      // Отправляем уведомление админу
+      if (user) {
+        const event = db.prepare("SELECT name FROM events WHERE id = ?").get(bracket.event_id);
+        const eventName = event ? event.name : "Турнир";
+        
+        const stageNames = {
+          'round_of_16': '1/16 финала',
+          'round_of_8': '1/8 финала',
+          'quarter_finals': '1/4 финала',
+          'semi_finals': '1/2 финала',
+          'final': 'Финал'
+        };
+        
+        const adminMessage = `🗑️ <b>Прогноз в сетке удален</b>\n\n👤 <b>Пользователь:</b> ${user.username}\n📊 <b>Турнир:</b> ${eventName}\n🏆 <b>Сетка:</b> ${bracket.name}\n⚽ <b>Стадия:</b> ${stageNames[stage] || stage}`;
+        
+        notifyAdmin(adminMessage).catch(err => {
+          console.error(`Ошибка отправки уведомления админу:`, err);
+        });
       }
     }
     
