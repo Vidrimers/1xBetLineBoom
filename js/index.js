@@ -2657,17 +2657,21 @@ async function displayMatches() {
         .join("")}
     `;
 
-    // Прокручиваем к последнему туру (используем requestAnimationFrame для надёжности)
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const roundsScroll = document.getElementById("roundsFilterScroll");
-        if (roundsScroll) {
-          // Прокручиваем к концу (к последнему туру)
-          roundsScroll.scrollLeft = roundsScroll.scrollWidth;
-          console.log(`📜 Прокрутка к последнему туру: scrollLeft=${roundsScroll.scrollLeft}, scrollWidth=${roundsScroll.scrollWidth}, активен: ${currentRoundFilter}`);
-        }
-      }, 300); // Увеличена задержка для надёжности
-    });
+    // Прокручиваем к последнему туру (прокручиваем КОНТЕЙНЕР, а не внутренний div!)
+    const scrollToEnd = () => {
+      const roundsContainer = document.getElementById("roundsFilterContainer"); // Внешний контейнер!
+      if (roundsContainer) {
+        const maxScroll = roundsContainer.scrollWidth - roundsContainer.clientWidth;
+        roundsContainer.scrollLeft = maxScroll;
+        console.log(`📜 Прокрутка к последнему туру: scrollLeft=${roundsContainer.scrollLeft}, maxScroll=${maxScroll}, scrollWidth=${roundsContainer.scrollWidth}, clientWidth=${roundsContainer.clientWidth}, активен: ${currentRoundFilter}`);
+      }
+    };
+    
+    // Множественные попытки с разными задержками
+    setTimeout(scrollToEnd, 100);
+    setTimeout(scrollToEnd, 300);
+    setTimeout(scrollToEnd, 600);
+    setTimeout(scrollToEnd, 1000);
   } else {
     roundsFilterContainer.style.display = "none";
     currentRoundFilter = "all"; // Сбрасываем фильтр если туров и финальных матчей нет
@@ -5349,15 +5353,20 @@ async function showTournamentParticipantBets(userId, username, eventId) {
         })
         .join("");
 
-    // Прокручиваем к последнему туру
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        if (roundsFilter) {
-          roundsFilter.scrollLeft = roundsFilter.scrollWidth;
-          console.log(`📜 Прокрутка турнирных туров: scrollLeft=${roundsFilter.scrollLeft}, scrollWidth=${roundsFilter.scrollWidth}, активен: ${defaultActiveRound}`);
-        }
-      }, 300);
-    });
+    // Прокручиваем к последнему туру (прокручиваем КОНТЕЙНЕР tournamentRoundsFilter!)
+    const scrollToEnd = () => {
+      const tournamentRoundsContainer = document.getElementById("tournamentRoundsFilter"); // Внешний контейнер!
+      if (tournamentRoundsContainer) {
+        const maxScroll = tournamentRoundsContainer.scrollWidth - tournamentRoundsContainer.clientWidth;
+        tournamentRoundsContainer.scrollLeft = maxScroll;
+        console.log(`📜 Прокрутка турнирных туров: scrollLeft=${tournamentRoundsContainer.scrollLeft}, maxScroll=${maxScroll}, scrollWidth=${tournamentRoundsContainer.scrollWidth}, clientWidth=${tournamentRoundsContainer.clientWidth}, активен: ${defaultActiveRound}`);
+      }
+    };
+    
+    // Множественные попытки с разными задержками
+    setTimeout(scrollToEnd, 100);
+    setTimeout(scrollToEnd, 300);
+    setTimeout(scrollToEnd, 600);
 
     // Сохраняем данные для фильтрации
     window.currentTournamentBets = bets;
