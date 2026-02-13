@@ -11458,6 +11458,30 @@ app.put("/api/user/:userId/notify-on-view", async (req, res) => {
       newValue: notifyNames[notify_on_view]
     });
 
+    // Отправляем уведомление админу
+    const time = new Date().toLocaleString("ru-RU", {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    const message = 
+      `⚙️ <b>ИЗМЕНЕНИЕ НАСТРОЕК</b>\n\n` +
+      `👤 Пользователь: ${user.username}\n` +
+      `${user.telegram_username ? `📱 Telegram: @${user.telegram_username}\n` : ""}` +
+      `✏️ Настройка: 👀 Уведомления о просмотре\n` +
+      `📊 Новое значение: ${notifyNames[notify_on_view]}\n` +
+      `🕐 Время: ${time}`;
+
+    try {
+      await sendAdminNotification(message);
+    } catch (error) {
+      console.error("Ошибка отправки уведомления админу:", error);
+    }
+
     res.json({ success: true, notify_on_view });
   } catch (error) {
     res.status(500).json({ error: error.message });
