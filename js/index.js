@@ -132,7 +132,17 @@ async function luckyBetForCurrentRound() {
     const options = ["team1", "draw", "team2"];
     const random = Math.floor(Math.random() * options.length);
     const prediction = options[random];
+    
+    // Генерируем рандомный счет (0-5 голов для каждой команды)
+    const team1Score = Math.floor(Math.random() * 6);
+    const team2Score = Math.floor(Math.random() * 6);
+    
+    // Генерируем рандомные карточки (общее количество в матче)
+    const yellowCards = Math.floor(Math.random() * 9); // 0-8 желтых карточек
+    const redCards = Math.floor(Math.random() * 4); // 0-3 красных карточек
+    
     try {
+      // Отправляем ставку на результат
       await fetch("/api/bets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -143,6 +153,35 @@ async function luckyBetForCurrentRound() {
           amount: 0,
         }),
       });
+      
+      // Отправляем прогноз на счет если включен для матча
+      if (match.score_prediction_enabled) {
+        await fetch("/api/score-predictions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            match_id: match.id,
+            score_team1: team1Score,
+            score_team2: team2Score,
+          }),
+        });
+      }
+      
+      // Отправляем прогноз на карточки если включен для матча
+      if (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) {
+        await fetch("/api/cards-predictions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            match_id: match.id,
+            yellow_cards: match.yellow_cards_prediction_enabled ? yellowCards : null,
+            red_cards: match.red_cards_prediction_enabled ? redCards : null,
+          }),
+        });
+      }
+      
     } catch (e) {
       console.error("Ошибка при отправке случайной ставки:", e);
     }
