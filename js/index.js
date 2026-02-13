@@ -129,13 +129,19 @@ async function luckyBetForCurrentRound() {
   
   // Для каждого такого матча делаем случайную ставку
   for (const match of matchesToBet) {
-    const options = ["team1", "draw", "team2"];
-    const random = Math.floor(Math.random() * options.length);
-    const prediction = options[random];
-    
     // Генерируем рандомный счет (0-5 голов для каждой команды)
     const team1Score = Math.floor(Math.random() * 6);
     const team2Score = Math.floor(Math.random() * 6);
+    
+    // Определяем результат на основе счета
+    let prediction;
+    if (team1Score > team2Score) {
+      prediction = "team1";
+    } else if (team2Score > team1Score) {
+      prediction = "team2";
+    } else {
+      prediction = "draw";
+    }
     
     // Генерируем рандомные карточки (общее количество в матче)
     const yellowCards = Math.floor(Math.random() * 9); // 0-8 желтых карточек
