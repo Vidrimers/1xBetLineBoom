@@ -2537,10 +2537,6 @@ async function displayMatches() {
     }
   });
   
-  if (Object.keys(savedInputValues).length > 0) {
-    console.log(`💾 Сохранены введённые значения:`, savedInputValues);
-  }
-  
   const matchesContainer = document.getElementById("matchesContainer");
   const roundsFilterContainer = document.getElementById(
     "roundsFilterContainer"
@@ -3234,7 +3230,6 @@ async function displayMatches() {
       const input = document.getElementById(inputId);
       if (input) {
         input.value = value;
-        console.log(`♻️ Восстановлено значение ${value} в поле ${inputId}`);
       }
     });
   }
