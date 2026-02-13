@@ -7127,6 +7127,15 @@ app.get("/api/match-glicko/:matchId", async (req, res) => {
     
     if (glickoData.status !== "OK") {
       console.error(`❌ SStats API статус не OK:`, glickoData);
+      
+      // Если это ошибка "отсутствует Glicko аналитика" - возвращаем специальный статус
+      if (glickoData.message && glickoData.message.includes('отсутствует Glicko аналитика')) {
+        return res.status(404).json({ 
+          error: "Glicko аналитика пока недоступна для этого матча",
+          reason: "future_match"
+        });
+      }
+      
       return res.status(500).json({ error: "SStats API вернул ошибку" });
     }
     
@@ -7488,6 +7497,205 @@ app.get("/api/yesterday-matches", async (req, res) => {
   } catch (error) {
     console.error(`❌ /api/yesterday-matches критическая ошибка: ${error.message}`);
     console.error(`❌ Stack trace:`, error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/fill-upcoming-sstats-ids - Заполнить sstats_match_id для будущих матчей конкретного тура
+app.post("/api/admin/fill-upcoming-sstats-ids", async (req, res) => {
+  console.log(`🔍 /api/admin/fill-upcoming-sstats-ids запрос получен`);
+  
+  try {
+    const { eventId, round } = req.body;
+    
+    if (!eventId) {
+      return res.status(400).json({ error: "eventId обязателен" });
+    }
+    
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+    
+    // Получаем информацию о турнире
+    const event = db.prepare("SELECT * FROM events WHERE id = ?").get(eventId);
+    
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+    
+    // Получаем leagueId и year из event
+    const leagueId = event.sstats_league_id;
+    const year = event.year;
+    
+    if (!leagueId || !year) {
+      return res.status(400).json({ error: "У турнира не указан sstats_league_id или year" });
+    }
+    
+    // Загружаем словарь команд для перевода названий
+    let teamTranslations = {};
+    const dictionaryFile = event.team_file; // Используем team_file из events
+    
+    if (dictionaryFile) {
+      try {
+        const fs = await import('fs/promises');
+        const dictData = JSON.parse(await fs.readFile(dictionaryFile, 'utf-8'));
+        teamTranslations = dictData.teams || {};
+        console.log(`✅ Загружен словарь команд: ${Object.keys(teamTranslations).length} команд`);
+      } catch (err) {
+        console.warn(`⚠️ Не удалось загрузить словарь из ${dictionaryFile}:`, err.message);
+      }
+    }
+    
+    // Функция для перевода названия команды из русского в английский
+    const translateTeamName = (russianName) => {
+      return teamTranslations[russianName] || russianName;
+    };
+    
+    console.log(`📅 Ищем будущие матчи без sstats_match_id для турнира ${event.name}${round ? `, тур: ${round}` : ''}`);
+    
+    // Получаем будущие матчи без sstats_match_id (опционально фильтруем по туру)
+    let query = `
+      SELECT *
+      FROM matches
+      WHERE event_id = ?
+        AND sstats_match_id IS NULL
+        AND match_date > datetime('now')
+    `;
+    
+    const params = [eventId];
+    
+    if (round && round !== 'all') {
+      query += ` AND round = ?`;
+      params.push(round);
+    }
+    
+    query += ` ORDER BY match_date ASC`;
+    
+    const upcomingMatches = db.prepare(query).all(...params);
+    
+    if (upcomingMatches.length === 0) {
+      console.log(`✅ Все будущие матчи${round ? ` тура ${round}` : ''} уже имеют sstats_match_id`);
+      return res.json({ 
+        message: `Все будущие матчи${round ? ` тура ${round}` : ''} уже имеют sstats_match_id`,
+        matchesUpdated: 0
+      });
+    }
+    
+    console.log(`📊 Найдено ${upcomingMatches.length} будущих матчей без sstats_match_id`);
+    
+    // Определяем диапазон дат для запроса к SStats API
+    const dates = upcomingMatches.map(m => new Date(m.match_date));
+    const minDate = new Date(Math.min(...dates));
+    const maxDate = new Date(Math.max(...dates));
+    
+    minDate.setDate(minDate.getDate() - 1);
+    maxDate.setDate(maxDate.getDate() + 1);
+    
+    const dateFrom = minDate.toISOString().slice(0, 10);
+    const dateTo = maxDate.toISOString().slice(0, 10);
+    
+    const url = `${SSTATS_API_BASE}/games/list?LeagueId=${leagueId}&From=${dateFrom}&To=${dateTo}`;
+    console.log(`📊 SStats API запрос матчей для диапазона ${dateFrom} - ${dateTo}: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-Key": apiKey,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ SStats API ошибка: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ error: errorText || response.statusText });
+    }
+    
+    const sstatsData = await response.json();
+    
+    if (sstatsData.status !== "OK") {
+      console.error(`❌ SStats API статус не OK:`, sstatsData);
+      return res.status(500).json({ error: "SStats API вернул ошибку" });
+    }
+    
+    const sstatsMatches = sstatsData.data || [];
+    console.log(`✅ SStats API: получено ${sstatsMatches.length} матчей для диапазона ${dateFrom} - ${dateTo}`);
+    
+    // Функция нормализации названия команды
+    const normalizeTeamName = (name) => {
+      if (!name) return '';
+      return name
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[^a-zа-я0-9]/g, '');
+    };
+    
+    let matchesUpdated = 0;
+    
+    // Для каждого матча из БД ищем совпадение в SStats
+    for (const match of upcomingMatches) {
+      // Переводим русские названия в английские
+      const team1English = translateTeamName(match.team1_name);
+      const team2English = translateTeamName(match.team2_name);
+      
+      const team1Normalized = normalizeTeamName(team1English);
+      const team2Normalized = normalizeTeamName(team2English);
+      const matchDate = new Date(match.match_date);
+      
+      console.log(`🔍 Ищем: ${match.team1_name} (${team1English}) vs ${match.team2_name} (${team2English})`);
+      
+      // Ищем совпадение по командам и дате (в пределах 24 часов)
+      const sstatsMatch = sstatsMatches.find(sm => {
+        const sstatsTeam1 = normalizeTeamName(sm.homeTeam?.name);
+        const sstatsTeam2 = normalizeTeamName(sm.awayTeam?.name);
+        const sstatsDate = new Date(sm.date);
+        const dateDiff = Math.abs(matchDate - sstatsDate) / (1000 * 60 * 60); // разница в часах
+        
+        // Проверяем совпадение команд (с учетом частичного совпадения)
+        const team1Match = 
+          sstatsTeam1.includes(team1Normalized) || 
+          team1Normalized.includes(sstatsTeam1) ||
+          sstatsTeam1 === team1Normalized ||
+          (team1Normalized.length >= 4 && sstatsTeam1.length >= 4 && 
+           team1Normalized.substring(0, 4) === sstatsTeam1.substring(0, 4));
+        
+        const team2Match = 
+          sstatsTeam2.includes(team2Normalized) || 
+          team2Normalized.includes(sstatsTeam2) ||
+          sstatsTeam2 === team2Normalized ||
+          (team2Normalized.length >= 4 && sstatsTeam2.length >= 4 && 
+           team2Normalized.substring(0, 4) === sstatsTeam2.substring(0, 4));
+        
+        const isMatch = dateDiff < 24 && team1Match && team2Match;
+        
+        if (dateDiff < 24 && (team1Match || team2Match)) {
+          console.log(`  🔍 Частичное совпадение: ${sm.homeTeam?.name} vs ${sm.awayTeam?.name} (дата OK: ${dateDiff.toFixed(1)}ч, команды: ${team1Match ? '✓' : '✗'}/${team2Match ? '✓' : '✗'})`);
+        }
+        
+        return isMatch;
+      });
+      
+      if (sstatsMatch) {
+        // Обновляем sstats_match_id в БД
+        db.prepare('UPDATE matches SET sstats_match_id = ? WHERE id = ?')
+          .run(sstatsMatch.id, match.id);
+        
+        matchesUpdated++;
+        console.log(`✅ Обновлен sstats_match_id для матча ${match.id}: ${match.team1_name} vs ${match.team2_name} -> ${sstatsMatch.id}`);
+      } else {
+        console.log(`❌ Не найдено совпадение для: ${match.team1_name} vs ${match.team2_name}, дата: ${matchDate.toLocaleDateString('ru-RU')}`);
+      }
+    }
+    
+    console.log(`✅ Обновлено ${matchesUpdated} из ${upcomingMatches.length} будущих матчей`);
+    
+    res.json({ 
+      message: `Обновлено ${matchesUpdated} из ${upcomingMatches.length} будущих матчей`,
+      matchesUpdated: matchesUpdated,
+      totalMatches: upcomingMatches.length
+    });
+    
+  } catch (error) {
+    console.error(`❌ /api/admin/fill-upcoming-sstats-ids ошибка: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });

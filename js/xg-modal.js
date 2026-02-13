@@ -47,7 +47,35 @@ async function openXgModal() {
     console.error('Ошибка отправки уведомления:', err);
   }
   
-  // Получаем матчи текущего тура
+  // Сначала пытаемся заполнить sstats_match_id для будущих матчей
+  try {
+    console.log('🔄 Попытка заполнить sstats_match_id для будущих матчей...');
+    const fillResponse = await fetch('/api/admin/fill-upcoming-sstats-ids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        eventId: currentEventId,
+        round: currentRound // Передаем текущий тур
+      })
+    });
+    
+    if (fillResponse.ok) {
+      const fillResult = await fillResponse.json();
+      console.log(`✅ Заполнение sstats_match_id завершено: ${fillResult.matchesUpdated} матчей обновлено`);
+      
+      // Если были обновления - перезагружаем матчи
+      if (fillResult.matchesUpdated > 0) {
+        console.log('🔄 Перезагрузка матчей после обновления sstats_match_id...');
+        await loadMatches();
+      }
+    } else {
+      console.error('❌ Ошибка при заполнении sstats_match_id:', await fillResponse.text());
+    }
+  } catch (err) {
+    console.warn('⚠️ Не удалось заполнить sstats_match_id:', err);
+  }
+  
+  // Получаем матчи текущего тура (после возможного обновления)
   const matchesForRound = matches.filter(m => m.round === currentRound);
   
   if (matchesForRound.length === 0) {
@@ -55,7 +83,7 @@ async function openXgModal() {
     return;
   }
   
-  // Создаем модальное окно
+  // ТОЛЬКО ПОСЛЕ заполнения sstats_match_id создаем модальное окно
   const modal = document.createElement('div');
   modal.id = 'xgModal';
   modal.className = 'modal';
@@ -120,7 +148,7 @@ async function loadXgDataForMatches(matchesList) {
     
     container.appendChild(matchCard);
     
-    // Загружаем данные для этого матча
+    // Загружаем данные для этого матча с задержкой чтобы не превысить лимит API
     try {
       const response = await fetch(`/api/match-glicko/${match.id}`);
       const dataContainer = document.getElementById(`xg-data-${match.id}`);
@@ -128,7 +156,17 @@ async function loadXgDataForMatches(matchesList) {
       if (!dataContainer) continue;
       
       if (!response.ok) {
-        dataContainer.innerHTML = '<span style="color: #ff9800;">Данные недоступны</span>';
+        // Проверяем причину ошибки
+        try {
+          const errorData = await response.json();
+          if (errorData.reason === 'future_match') {
+            dataContainer.innerHTML = '<span style="color: #ff9800;">⏳ Аналитика будет доступна ближе к началу матча</span>';
+          } else {
+            dataContainer.innerHTML = '<span style="color: #ff9800;">Данные недоступны</span>';
+          }
+        } catch {
+          dataContainer.innerHTML = '<span style="color: #ff9800;">Данные недоступны</span>';
+        }
         continue;
       }
       
@@ -194,6 +232,11 @@ async function loadXgDataForMatches(matchesList) {
       if (dataContainer) {
         dataContainer.innerHTML = '<span style="color: #f44336;">Ошибка загрузки</span>';
       }
+    }
+    
+    // Задержка 1 секунда между запросами чтобы не превысить лимит API (60 запросов в минуту)
+    if (matchesList.indexOf(match) < matchesList.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 }
