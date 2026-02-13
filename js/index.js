@@ -5312,6 +5312,18 @@ async function showTournamentParticipantBets(userId, username, eventId) {
   try {
     console.log("Загружаем ставки для юзера:", userId, "в турнире:", eventId);
 
+    // Отправляем уведомление о просмотре ставок (если смотрит не владелец)
+    if (currentUser && currentUser.id !== userId) {
+      fetch('/api/notify-view-bets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          viewedUserId: userId,
+          eventId: eventId
+        })
+      }).catch(err => console.error('Ошибка отправки уведомления о просмотре ставок:', err));
+    }
+
     // Получаем ставки участника в турнире, передаем viewerId и viewerUsername
     const viewerId = currentUser?.id || null;
     const viewerUsername = currentUser?.username || null;
@@ -7943,6 +7955,13 @@ async function loadDetailedNotificationSettings() {
       // Обновляем состояние disabled для зависимой настройки
       updateOnlyActiveTournamentsState();
     }
+    
+    // Загружаем настройку уведомлений о просмотре
+    const notifyOnViewResponse = await fetch(`/api/user/${currentUser.id}/notify-on-view`);
+    if (notifyOnViewResponse.ok) {
+      const notifyOnViewData = await notifyOnViewResponse.json();
+      document.getElementById("notifOnView").checked = notifyOnViewData.notify_on_view !== 0;
+    }
   } catch (error) {
     console.error("Ошибка загрузки настроек уведомлений:", error);
   }
@@ -8039,6 +8058,14 @@ async function saveDetailedNotificationSettings() {
       const error = await response.json();
       console.error("Ошибка сохранения настроек:", error);
     }
+    
+    // Сохраняем настройку уведомлений о просмотре
+    const notifyOnView = document.getElementById("notifOnView").checked ? 1 : 0;
+    await fetch(`/api/user/${currentUser.id}/notify-on-view`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notify_on_view: notifyOnView }),
+    });
     
     // Обновляем состояние disabled для зависимой настройки
     updateOnlyActiveTournamentsState();
@@ -16164,6 +16191,18 @@ async function showUserBracketPredictionsInline(userId, username = 'Пользо
     }
     
     const bracket = brackets[0];
+    
+    // Отправляем уведомление о просмотре сетки (если смотрит не владелец)
+    if (currentUser && currentUser.id !== userId) {
+      fetch('/api/notify-view-bracket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          viewedUserId: userId,
+          eventId: eventId
+        })
+      }).catch(err => console.error('Ошибка отправки уведомления о просмотре сетки:', err));
+    }
     
     // Сохраняем username для использования в модалке
     window.viewingUserBracketName = username;

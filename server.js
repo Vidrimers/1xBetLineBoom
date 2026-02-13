@@ -11406,6 +11406,202 @@ app.put("/api/user/:userId/show-xg-button", async (req, res) => {
   }
 });
 
+// GET /api/user/:userId/notify-on-view - Получить настройку уведомлений о просмотре
+app.get("/api/user/:userId/notify-on-view", (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = db
+      .prepare("SELECT notify_on_view FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.json({
+      notify_on_view: user.notify_on_view !== undefined ? user.notify_on_view : 1,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/user/:userId/notify-on-view - Сохранить настройку уведомлений о просмотре
+app.put("/api/user/:userId/notify-on-view", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { notify_on_view } = req.body;
+
+    if (notify_on_view === undefined || ![0, 1].includes(notify_on_view)) {
+      return res.status(400).json({ error: "Неверное значение notify_on_view" });
+    }
+
+    const user = db
+      .prepare("SELECT username, telegram_username FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    db.prepare("UPDATE users SET notify_on_view = ? WHERE id = ?").run(notify_on_view, userId);
+
+    // Записываем в логи
+    const notifyNames = {
+      1: 'Включено',
+      0: 'Отключено'
+    };
+    
+    writeBetLog("settings", {
+      username: user.username,
+      setting: "'Уведомления о просмотре'",
+      newValue: notifyNames[notify_on_view]
+    });
+
+    res.json({ success: true, notify_on_view });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/notify-view-bets - Уведомить пользователя о просмотре его ставок
+app.post("/api/notify-view-bets", async (req, res) => {
+  try {
+    const { viewedUserId, eventId } = req.body;
+
+    if (!viewedUserId || !eventId) {
+      return res.status(400).json({ error: "Не указаны viewedUserId или eventId" });
+    }
+
+    // Получаем информацию о пользователе чьи ставки смотрят
+    const user = db.prepare("SELECT username, telegram_username, notify_on_view FROM users WHERE id = ?").get(viewedUserId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем включены ли уведомления
+    if (user.notify_on_view === 0) {
+      return res.json({ success: true, notified: false, reason: "notifications_disabled" });
+    }
+
+    // Получаем информацию о турнире
+    const event = db.prepare("SELECT name FROM events WHERE id = ?").get(eventId);
+    
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+
+    // Отправляем уведомление пользователю
+    if (user.telegram_username) {
+      try {
+        const cleanUsername = user.telegram_username.toLowerCase();
+        const tgUser = db
+          .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
+          .get(cleanUsername);
+
+        if (tgUser?.chat_id) {
+          const time = new Date().toLocaleString("ru-RU", { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+          });
+
+          const message = 
+            `📊 <b>ПРОСМОТР СТАВОК</b>\n\n` +
+            `👤 Твои ставки кто-то посмотрел, будь бдительнее, малютка ${user.username} ;-)\n\n` +
+            `🏆 Турнир: ${event.name}\n` +
+            `🕐 Время: ${time}`;
+
+          await sendUserMessage(tgUser.chat_id, message);
+          
+          return res.json({ success: true, notified: true });
+        }
+      } catch (err) {
+        console.error("⚠️ Ошибка отправки уведомления о просмотре ставок:", err.message);
+        return res.status(500).json({ error: "Ошибка отправки уведомления" });
+      }
+    }
+
+    res.json({ success: true, notified: false, reason: "no_telegram" });
+  } catch (error) {
+    console.error("❌ Ошибка в /api/notify-view-bets:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/notify-view-bracket - Уведомить пользователя о просмотре его сетки
+app.post("/api/notify-view-bracket", async (req, res) => {
+  try {
+    const { viewedUserId, eventId } = req.body;
+
+    if (!viewedUserId || !eventId) {
+      return res.status(400).json({ error: "Не указаны viewedUserId или eventId" });
+    }
+
+    // Получаем информацию о пользователе чью сетку смотрят
+    const user = db.prepare("SELECT username, telegram_username, notify_on_view FROM users WHERE id = ?").get(viewedUserId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Проверяем включены ли уведомления
+    if (user.notify_on_view === 0) {
+      return res.json({ success: true, notified: false, reason: "notifications_disabled" });
+    }
+
+    // Получаем информацию о турнире
+    const event = db.prepare("SELECT name FROM events WHERE id = ?").get(eventId);
+    
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+
+    // Отправляем уведомление пользователю
+    if (user.telegram_username) {
+      try {
+        const cleanUsername = user.telegram_username.toLowerCase();
+        const tgUser = db
+          .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
+          .get(cleanUsername);
+
+        if (tgUser?.chat_id) {
+          const time = new Date().toLocaleString("ru-RU", { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+          });
+
+          const message = 
+            `🎯 <b>ПРОСМОТР СЕТКИ</b>\n\n` +
+            `👤 Твою сетку кто-то посмотрел, будь бдительнее, малютка ${user.username} ;-)\n\n` +
+            `🏆 Турнир: ${event.name}\n` +
+            `🕐 Время: ${time}`;
+
+          await sendUserMessage(tgUser.chat_id, message);
+          
+          return res.json({ success: true, notified: true });
+        }
+      } catch (err) {
+        console.error("⚠️ Ошибка отправки уведомления о просмотре сетки:", err.message);
+        return res.status(500).json({ error: "Ошибка отправки уведомления" });
+      }
+    }
+
+    res.json({ success: true, notified: false, reason: "no_telegram" });
+  } catch (error) {
+    console.error("❌ Ошибка в /api/notify-view-bracket:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/user/:userId/event/:eventId/reminders - Получить настройки напоминаний для турнира
 app.get("/api/user/:userId/event/:eventId/reminders", (req, res) => {
   try {
