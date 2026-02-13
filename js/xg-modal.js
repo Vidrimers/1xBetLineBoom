@@ -329,7 +329,7 @@ async function toggleXgButton() {
 // Обновить данные xG из API
 async function refreshXgData() {
   // Показываем предупреждение с подтверждением
-  const confirmed = await showCustomConfirm(
+  const confirmed = await showXgConfirm(
     'Частые запросы на сервер парсинга нежелательны, поэтому обновление данных ограничено один раз в 6 часов.\n\nВы уверены что хотите обновить данные?',
     'Обновление данных xG',
     '⚠️'
@@ -402,8 +402,8 @@ async function refreshXgData() {
   await loadXgDataForMatches(matchesForRound, true);
 }
 
-// Функция для показа кастомного confirm диалога
-async function showCustomConfirm(message, title = 'Подтверждение', icon = '❓') {
+// Функция для показа кастомного confirm диалога для xG модалки
+async function showXgConfirm(message, title = 'Подтверждение', icon = '❓') {
   return new Promise((resolve) => {
     const modal = document.createElement('div');
     modal.className = 'modal';

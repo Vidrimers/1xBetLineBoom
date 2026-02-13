@@ -8059,14 +8059,6 @@ async function saveDetailedNotificationSettings() {
       console.error("Ошибка сохранения настроек:", error);
     }
     
-    // Сохраняем настройку уведомлений о просмотре
-    const notifyOnView = document.getElementById("notifOnView").checked ? 1 : 0;
-    await fetch(`/api/user/${currentUser.id}/notify-on-view`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notify_on_view: notifyOnView }),
-    });
-    
     // Обновляем состояние disabled для зависимой настройки
     updateOnlyActiveTournamentsState();
     
@@ -8082,6 +8074,22 @@ async function saveDetailedNotificationSettings() {
     }
   } catch (error) {
     console.error("Ошибка сохранения настроек уведомлений:", error);
+  }
+}
+
+// Сохранить настройку "Уведомления о просмотре"
+async function saveNotifyOnViewSettings() {
+  if (!currentUser) return;
+
+  try {
+    const notifyOnView = document.getElementById("notifOnView").checked ? 1 : 0;
+    await fetch(`/api/user/${currentUser.id}/notify-on-view`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notify_on_view: notifyOnView }),
+    });
+  } catch (error) {
+    console.error("Ошибка сохранения настройки уведомлений о просмотре:", error);
   }
 }
 
