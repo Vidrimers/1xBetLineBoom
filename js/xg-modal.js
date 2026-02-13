@@ -408,7 +408,7 @@ async function showCustomConfirm(message, title = 'Подтверждение', 
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'flex';
-    modal.style.zIndex = '10001'; // Выше чем модалка xG
+    modal.style.zIndex = '100002'; // Выше чем модалка xG (100000)
     
     modal.innerHTML = `
       <div class="modal-content" style="max-width: 500px;">
@@ -418,10 +418,42 @@ async function showCustomConfirm(message, title = 'Подтверждение', 
         <div style="padding: 20px;">
           <p style="color: #e0e6f0; line-height: 1.6; white-space: pre-line;">${message}</p>
           <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
-            <button class="btn-secondary" id="confirmCancel" style="padding: 10px 20px;">
+            <button 
+              class="btn-secondary" 
+              id="confirmCancel" 
+              style="
+                padding: 10px 20px;
+                background: rgba(60, 64, 74, 0.8);
+                border: 1px solid rgba(90, 159, 212, 0.3);
+                color: #b0b8c8;
+                cursor: pointer;
+                border-radius: 6px;
+                font-size: 1em;
+                transition: all 0.2s;
+              "
+              onmouseover="this.style.background='rgba(70, 74, 84, 0.9)'"
+              onmouseout="this.style.background='rgba(60, 64, 74, 0.8)'"
+            >
               Отмена
             </button>
-            <button class="btn-primary" id="confirmYes" style="padding: 10px 20px;">
+            <button 
+              class="btn-primary" 
+              id="confirmYes" 
+              style="
+                padding: 10px 20px;
+                background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+                border: 1px solid #4caf50;
+                color: white;
+                cursor: pointer;
+                border-radius: 6px;
+                font-size: 1em;
+                font-weight: 500;
+                transition: all 0.2s;
+                box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+              "
+              onmouseover="this.style.background='linear-gradient(135deg, #45a049 0%, #3d8b40 100%)'; this.style.boxShadow='0 4px 12px rgba(76, 175, 80, 0.4)'"
+              onmouseout="this.style.background='linear-gradient(135deg, #4caf50 0%, #45a049 100%)'; this.style.boxShadow='0 2px 8px rgba(76, 175, 80, 0.3)'"
+            >
               Да, обновить
             </button>
           </div>
