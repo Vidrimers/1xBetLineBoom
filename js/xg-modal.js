@@ -93,7 +93,17 @@ async function openXgModal() {
     <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <h2>🎯 Прогнозы xG и Glicko-2</h2>
-        <button class="modal-close" onclick="closeXgModal()">&times;</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button 
+            class="btn-secondary" 
+            onclick="refreshXgData()"
+            style="padding: 8px 16px; font-size: 0.9em;"
+            title="Обновить данные из API"
+          >
+            🔄 Обновить
+          </button>
+          <button class="modal-close" onclick="closeXgModal()">&times;</button>
+        </div>
       </div>
       <div style="padding: 20px;">
         <div style="margin-bottom: 15px; color: #b0b8c8;">
@@ -124,7 +134,7 @@ async function openXgModal() {
 }
 
 // Загрузить данные xG для матчей
-async function loadXgDataForMatches(matchesList) {
+async function loadXgDataForMatches(matchesList, refresh = false) {
   const container = document.getElementById('xgMatchesList');
   if (!container) return;
   
@@ -150,7 +160,11 @@ async function loadXgDataForMatches(matchesList) {
     
     // Загружаем данные для этого матча с задержкой чтобы не превысить лимит API
     try {
-      const response = await fetch(`/api/match-glicko/${match.id}`);
+      const url = refresh 
+        ? `/api/match-glicko/${match.id}?refresh=true`
+        : `/api/match-glicko/${match.id}`;
+      
+      const response = await fetch(url);
       const dataContainer = document.getElementById(`xg-data-${match.id}`);
       
       if (!dataContainer) continue;
@@ -309,4 +323,132 @@ async function toggleXgButton() {
       '❌'
     );
   }
+}
+
+
+// Обновить данные xG из API
+async function refreshXgData() {
+  // Показываем предупреждение с подтверждением
+  const confirmed = await showCustomConfirm(
+    'Частые запросы на сервер парсинга нежелательны, поэтому обновление данных ограничено один раз в 6 часов.\n\nВы уверены что хотите обновить данные?',
+    'Обновление данных xG',
+    '⚠️'
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+  
+  // Получаем текущий тур
+  const currentRound = currentRoundFilter || 'all';
+  
+  // Получаем матчи текущего тура
+  const matchesForRound = matches.filter(m => m.round === currentRound);
+  
+  if (matchesForRound.length === 0) {
+    await showCustomAlert('Нет матчей для обновления', 'Информация', 'ℹ️');
+    return;
+  }
+  
+  // Проверяем время последнего обновления для каждого матча
+  let canUpdate = false;
+  const now = new Date();
+  const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+  
+  for (const match of matchesForRound) {
+    try {
+      const response = await fetch(`/api/match-glicko/${match.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.cached && data.cachedAt) {
+          const cachedDate = new Date(data.cachedAt);
+          if (cachedDate < sixHoursAgo) {
+            canUpdate = true;
+            break;
+          }
+        } else if (!data.cached) {
+          // Если данных нет в кэше - можно обновлять
+          canUpdate = true;
+          break;
+        }
+      } else {
+        // Если данных нет - можно обновлять
+        canUpdate = true;
+        break;
+      }
+    } catch (err) {
+      console.error('Ошибка проверки времени кэша:', err);
+      canUpdate = true;
+      break;
+    }
+  }
+  
+  if (!canUpdate) {
+    await showCustomAlert(
+      'Данные были обновлены менее 6 часов назад. Пожалуйста, подождите перед следующим обновлением.',
+      'Слишком частое обновление',
+      '⏱️'
+    );
+    return;
+  }
+  
+  // Показываем индикатор загрузки
+  const container = document.getElementById('xgMatchesList');
+  if (container) {
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #b0b8c8;">🔄 Обновление данных из API...</div>';
+  }
+  
+  // Перезагружаем данные с параметром refresh=true
+  await loadXgDataForMatches(matchesForRound, true);
+}
+
+// Функция для показа кастомного confirm диалога
+async function showCustomConfirm(message, title = 'Подтверждение', icon = '❓') {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.style.zIndex = '10001'; // Выше чем модалка xG
+    
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h2>${icon} ${title}</h2>
+        </div>
+        <div style="padding: 20px;">
+          <p style="color: #e0e6f0; line-height: 1.6; white-space: pre-line;">${message}</p>
+          <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+            <button class="btn-secondary" id="confirmCancel" style="padding: 10px 20px;">
+              Отмена
+            </button>
+            <button class="btn-primary" id="confirmYes" style="padding: 10px 20px;">
+              Да, обновить
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const handleYes = () => {
+      document.body.removeChild(modal);
+      resolve(true);
+    };
+    
+    const handleCancel = () => {
+      document.body.removeChild(modal);
+      resolve(false);
+    };
+    
+    document.getElementById('confirmYes').addEventListener('click', handleYes);
+    document.getElementById('confirmCancel').addEventListener('click', handleCancel);
+    
+    // Закрытие по клику вне контента
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    });
+  });
 }
