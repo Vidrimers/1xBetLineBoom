@@ -7089,23 +7089,50 @@ app.get("/api/match-glicko/:matchId", async (req, res) => {
   
   try {
     const { matchId } = req.params;
+    const { refresh } = req.query; // Параметр для принудительного обновления
     
     if (!matchId) {
       return res.status(400).json({ error: "Не указан matchId" });
     }
     
-    const apiKey = process.env.SSTATS_API_KEY;
-    if (!apiKey) {
-      console.error(`❌ SSTATS_API_KEY не задан в переменных окружения`);
-      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
-    }
-    
-    // Получаем sstats_match_id из БД
+    // Получаем информацию о матче из БД
     const match = db.prepare('SELECT sstats_match_id, team1_name, team2_name FROM matches WHERE id = ?').get(matchId);
     
     if (!match || !match.sstats_match_id) {
       console.error(`❌ Матч не найден или нет sstats_match_id, matchId: ${matchId}`);
       return res.status(404).json({ error: "Матч не найден или нет данных SStats" });
+    }
+    
+    // Проверяем есть ли данные в кэше (если не запрошено обновление)
+    if (refresh !== 'true') {
+      const cached = db.prepare('SELECT * FROM glicko_cache WHERE match_id = ?').get(matchId);
+      
+      if (cached) {
+        console.log(`✅ Данные Glicko-2 получены из кэша для матча ${match.team1_name} vs ${match.team2_name}`);
+        return res.json({
+          matchId: matchId,
+          sstatsMatchId: match.sstats_match_id,
+          team1: match.team1_name,
+          team2: match.team2_name,
+          glicko: {
+            homeRating: cached.home_rating,
+            awayRating: cached.away_rating,
+            homeXg: cached.home_xg,
+            awayXg: cached.away_xg,
+            homeWinProbability: cached.home_win_probability,
+            awayWinProbability: cached.away_win_probability
+          },
+          cached: true,
+          cachedAt: cached.cached_at
+        });
+      }
+    }
+    
+    // Если данных нет в кэше или запрошено обновление - загружаем из API
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      console.error(`❌ SSTATS_API_KEY не задан в переменных окружения`);
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
     }
     
     const url = `${SSTATS_API_BASE}/Games/glicko/${match.sstats_match_id}`;
@@ -7140,8 +7167,28 @@ app.get("/api/match-glicko/:matchId", async (req, res) => {
     }
     
     const data = glickoData.data;
-    console.log(`✅ Glicko-2 данные получены для матча ${match.team1_name} vs ${match.team2_name}`);
-    console.log(`📊 Структура данных glicko:`, JSON.stringify(data.glicko, null, 2));
+    console.log(`✅ Glicko-2 данные получены из API для матча ${match.team1_name} vs ${match.team2_name}`);
+    
+    // Сохраняем данные в кэш
+    try {
+      db.prepare(`
+        INSERT OR REPLACE INTO glicko_cache 
+        (match_id, sstats_match_id, home_rating, away_rating, home_xg, away_xg, home_win_probability, away_win_probability, cached_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(
+        matchId,
+        match.sstats_match_id,
+        data.glicko?.homeRating || null,
+        data.glicko?.awayRating || null,
+        data.glicko?.homeXg || null,
+        data.glicko?.awayXg || null,
+        data.glicko?.homeWinProbability || null,
+        data.glicko?.awayWinProbability || null
+      );
+      console.log(`💾 Данные Glicko-2 сохранены в кэш`);
+    } catch (cacheError) {
+      console.warn(`⚠️ Не удалось сохранить в кэш:`, cacheError.message);
+    }
     
     res.json({
       matchId: matchId,
@@ -7149,7 +7196,8 @@ app.get("/api/match-glicko/:matchId", async (req, res) => {
       team1: match.team1_name,
       team2: match.team2_name,
       glicko: data.glicko,
-      fixture: data.fixture
+      fixture: data.fixture,
+      cached: false
     });
     
   } catch (error) {

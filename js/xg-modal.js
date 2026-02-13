@@ -191,6 +191,11 @@ async function loadXgDataForMatches(matchesList) {
         }
       }
       
+      // Индикатор кэша
+      const cacheIndicator = data.cached 
+        ? `<div style="font-size: 0.8em; color: #888; margin-top: 8px;">💾 Из кэша (${new Date(data.cachedAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})</div>`
+        : '';
+      
       dataContainer.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 8px;">
           ${glicko.homeRating && glicko.awayRating ? `
@@ -223,6 +228,7 @@ async function loadXgDataForMatches(matchesList) {
           ` : ''}
           
           ${favoriteText ? `<div style="margin-top: 5px;">${favoriteText}</div>` : ''}
+          ${cacheIndicator}
         </div>
       `;
       
