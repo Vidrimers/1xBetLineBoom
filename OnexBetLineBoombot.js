@@ -1266,10 +1266,11 @@ export async function startBot() {
       ]
     ];
 
-    // Добавляем кнопку "Открыть сайт" только если это не localhost
+    // Добавляем кнопки "Открыть сайт" только если это не localhost
     if (!PUBLIC_URL.includes('localhost') && !PUBLIC_URL.includes('127.0.0.1') && !PUBLIC_URL.includes('192.168.')) {
       menuButtons.push([
-        { text: '🌐 Открыть сайт', url: PUBLIC_URL }
+        { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+        { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
       ]);
     }
 
@@ -2187,7 +2188,17 @@ export async function startBot() {
           handleMyAwards(chatId, msg);
           break;
         case "🌐 Открыть сайт":
-          replyInThread(msg, `🌐 Сайт: ${PUBLIC_URL}`);
+          // Отправляем сообщение с inline кнопками для выбора способа доступа
+          replyInThread(msg, '🌐 Выберите способ доступа к сайту:', {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                  { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                ]
+              ]
+            }
+          });
           break;
       }
     }
