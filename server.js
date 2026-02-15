@@ -18763,32 +18763,235 @@ function filterNewsByTournament(news, tournament) {
     return news;
   }
   
-  // Ключевые слова для каждого турнира
-  const keywords = {
-    'ucl': ['лига чемпионов', 'champions league', 'лч', 'ucl'],
-    'uel': ['лига европы', 'europa league', 'ле', 'uel'],
-    'uecl': ['лига конференций', 'conference league', 'лк', 'uecl'],
-    'supercup': ['суперкубок уефа', 'super cup', 'суперкубок'],
-    'worldcup': ['чемпионат мира', 'world cup', 'чм', 'мундиаль'],
-    'euro': ['евро', 'euro', 'чемпионат европы', 'european championship'],
-    'epl': ['апл', 'премьер-лига', 'premier league', 'английская', 'манчестер', 'ливерпуль', 'челси', 'арсенал'],
-    'rpl': ['рпл', 'российская премьер-лига', 'зенит', 'спартак', 'цска', 'динамо', 'краснодар'],
-    'seriea': ['серия а', 'serie a', 'ювентус', 'интер', 'милан', 'рома', 'наполи'],
-    'bundesliga': ['бундеслига', 'bundesliga', 'бавария', 'боруссия', 'лейпциг'],
-    'ligue1': ['лига 1', 'ligue 1', 'пsg', 'пари сен-жермен', 'марсель', 'лион']
-  };
+  // Получаем ключевые слова из БД
+  const includeKeywords = db.prepare(`
+    SELECT keyword, priority FROM rss_keywords 
+    WHERE tournament = ? AND type = 'include'
+    ORDER BY priority DESC
+  `).all(tournament);
   
-  const tournamentKeywords = keywords[tournament];
-  if (!tournamentKeywords) {
-    return news;
+  const excludeKeywords = db.prepare(`
+    SELECT keyword FROM rss_keywords 
+    WHERE (tournament = ? OR tournament = 'all') AND type = 'exclude'
+  `).all(tournament);
+  
+  if (includeKeywords.length === 0) {
+    return [];
   }
   
-  // Фильтруем новости по ключевым словам
-  return news.filter(item => {
+  // Фильтруем новости
+  const filteredNews = news.filter(item => {
     const text = `${item.title} ${item.description}`.toLowerCase();
-    return tournamentKeywords.some(keyword => text.includes(keyword.toLowerCase()));
+    
+    // Проверяем исключения (если есть хоть одно - новость отбрасывается)
+    const hasExclude = excludeKeywords.some(kw => 
+      text.includes(kw.keyword.toLowerCase())
+    );
+    
+    if (hasExclude) {
+      return false;
+    }
+    
+    // Проверяем включения
+    const matchedKeyword = includeKeywords.find(kw => 
+      text.includes(kw.keyword.toLowerCase())
+    );
+    
+    if (matchedKeyword) {
+      // Сохраняем приоритет для сортировки
+      item._priority = matchedKeyword.priority;
+      return true;
+    }
+    
+    return false;
   });
+  
+  // Сортируем по приоритету (выше приоритет - выше в списке)
+  filteredNews.sort((a, b) => (b._priority || 0) - (a._priority || 0));
+  
+  // Удаляем служебное поле
+  filteredNews.forEach(item => delete item._priority);
+  
+  return filteredNews;
 }
+
+// GET /api/rss-keywords - Получить все ключевые слова
+app.get("/api/rss-keywords", (req, res) => {
+  try {
+    const keywords = db.prepare(`
+      SELECT * FROM rss_keywords 
+      ORDER BY tournament, priority DESC, keyword
+    `).all();
+    
+    res.json({ success: true, keywords });
+  } catch (error) {
+    console.error("❌ Ошибка получения ключевых слов:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/rss-keywords/:tournament - Получить ключевые слова для турнира
+app.get("/api/rss-keywords/:tournament", (req, res) => {
+  try {
+    const { tournament } = req.params;
+    
+    const keywords = db.prepare(`
+      SELECT * FROM rss_keywords 
+      WHERE tournament = ? OR tournament = 'all'
+      ORDER BY type DESC, priority DESC, keyword
+    `).all(tournament);
+    
+    res.json({ success: true, keywords });
+  } catch (error) {
+    console.error("❌ Ошибка получения ключевых слов:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/rss-keywords - Добавить ключевое слово (только для админа)
+app.post("/api/admin/rss-keywords", (req, res) => {
+  try {
+    const { username, tournament, keyword, type, priority } = req.body;
+    
+    // Проверка прав админа
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+    
+    if (!user || user.username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+    
+    if (!tournament || !keyword || !type) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    
+    // Проверяем, не существует ли уже такое ключевое слово
+    const existing = db.prepare(`
+      SELECT id FROM rss_keywords 
+      WHERE tournament = ? AND keyword = ? AND type = ?
+    `).get(tournament, keyword, type);
+    
+    if (existing) {
+      return res.status(400).json({ error: "Keyword already exists" });
+    }
+    
+    const result = db.prepare(`
+      INSERT INTO rss_keywords (tournament, keyword, type, priority)
+      VALUES (?, ?, ?, ?)
+    `).run(tournament, keyword, type, priority || 0);
+    
+    const newKeyword = db.prepare("SELECT * FROM rss_keywords WHERE id = ?").get(result.lastInsertRowid);
+    
+    // Очищаем кэш RSS новостей
+    rssNewsCache.data = null;
+    rssNewsCache.timestamp = 0;
+    
+    // Уведомление админу
+    const typeEmojis = { 'include': '✅', 'exclude': '❌' };
+    const adminMessage = 
+      `${typeEmojis[type]} <b>ДОБАВЛЕНО КЛЮЧЕВОЕ СЛОВО</b>\n\n` +
+      `🏆 Турнир: ${tournament}\n` +
+      `🔑 Слово: "${keyword}"\n` +
+      `📊 Тип: ${type}\n` +
+      `⭐ Приоритет: ${priority || 0}\n\n` +
+      `👤 Админ: ${username}`;
+    
+    notifyAdmin(adminMessage).catch(err => {
+      console.error("⚠️ Не удалось отправить уведомление админу:", err);
+    });
+    
+    res.json({ success: true, keyword: newKeyword });
+  } catch (error) {
+    console.error("❌ Ошибка добавления ключевого слова:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/rss-keywords/:id - Удалить ключевое слово (только для админа)
+app.delete("/api/admin/rss-keywords/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username } = req.body;
+    
+    // Проверка прав админа
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+    
+    if (!user || user.username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+    
+    // Получаем информацию о ключевом слове перед удалением
+    const keyword = db.prepare("SELECT * FROM rss_keywords WHERE id = ?").get(id);
+    
+    if (!keyword) {
+      return res.status(404).json({ error: "Keyword not found" });
+    }
+    
+    db.prepare("DELETE FROM rss_keywords WHERE id = ?").run(id);
+    
+    // Очищаем кэш RSS новостей
+    rssNewsCache.data = null;
+    rssNewsCache.timestamp = 0;
+    
+    // Уведомление админу
+    const typeEmojis = { 'include': '✅', 'exclude': '❌' };
+    const adminMessage = 
+      `${typeEmojis[keyword.type]} <b>УДАЛЕНО КЛЮЧЕВОЕ СЛОВО</b>\n\n` +
+      `🏆 Турнир: ${keyword.tournament}\n` +
+      `🔑 Слово: "${keyword.keyword}"\n` +
+      `📊 Тип: ${keyword.type}\n\n` +
+      `👤 Админ: ${username}`;
+    
+    notifyAdmin(adminMessage).catch(err => {
+      console.error("⚠️ Не удалось отправить уведомление админу:", err);
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка удаления ключевого слова:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/rss-keywords/:id - Обновить ключевое слово (только для админа)
+app.put("/api/admin/rss-keywords/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, keyword, type, priority } = req.body;
+    
+    // Проверка прав админа
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+    
+    if (!user || user.username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+    
+    const existing = db.prepare("SELECT * FROM rss_keywords WHERE id = ?").get(id);
+    
+    if (!existing) {
+      return res.status(404).json({ error: "Keyword not found" });
+    }
+    
+    db.prepare(`
+      UPDATE rss_keywords 
+      SET keyword = ?, type = ?, priority = ?
+      WHERE id = ?
+    `).run(keyword, type, priority, id);
+    
+    const updated = db.prepare("SELECT * FROM rss_keywords WHERE id = ?").get(id);
+    
+    // Очищаем кэш RSS новостей
+    rssNewsCache.data = null;
+    rssNewsCache.timestamp = 0;
+    
+    res.json({ success: true, keyword: updated });
+  } catch (error) {
+    console.error("❌ Ошибка обновления ключевого слова:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // POST /api/notify-news-view - Уведомление админу о просмотре новостей
 app.post("/api/notify-news-view", async (req, res) => {

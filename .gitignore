@@ -43,6 +43,7 @@ live.txt
 Glicko2.txt
 add-news-table.cjs
 add-news-reactions-table.cjs
+add-rss-keywords-table.cjs
 
 Autoparsing.js
 

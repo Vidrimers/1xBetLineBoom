@@ -1348,6 +1348,29 @@
                 onmouseout="this.style.transform='scale(1)'"
                 title="Скрыть/показать карточку напоминаний для всех пользователей"
               >
+                🔔 Напоминания группы
+              </button>
+              <button
+                onclick="openRssKeywordsModal()"
+                style="
+                  background: rgba(33, 150, 243, 0.7);
+                  color: #e3f2fd;
+                  border: 1px solid #2196f3;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Управление ключевыми словами для фильтрации RSS новостей"
+              >
+                🔑 Ключевые слова RSS
+              </button>
                 👥 Напоминания ТГ
               </button>
               <button
@@ -6029,6 +6052,147 @@
             <div style="text-align: center; padding: 40px; color: #b0b8c8;">
               <div class="spinner"></div>
               <p>Загрузка новостей...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для управления ключевыми словами RSS -->
+    <div id="rssKeywordsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'rssKeywordsModal', closeRssKeywordsModal)">
+      <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto">
+        <div class="modal-header">
+          <h2>🔑 Управление ключевыми словами RSS</h2>
+          <button class="close-btn" onclick="closeRssKeywordsModal()">×</button>
+        </div>
+        
+        <div style="padding: 20px">
+          <!-- Форма добавления нового ключевого слова -->
+          <div style="
+            background: rgba(90, 159, 212, 0.1);
+            border: 1px solid rgba(90, 159, 212, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+          ">
+            <h3 style="margin: 0 0 15px 0; color: #5a9fd4;">➕ Добавить ключевое слово</h3>
+            <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
+              <div>
+                <label style="display: block; margin-bottom: 5px; color: #b0b8c8; font-size: 0.9em;">Турнир</label>
+                <select id="newKeywordTournament" style="
+                  width: 100%;
+                  padding: 8px;
+                  background: rgba(30, 35, 45, 0.8);
+                  border: 1px solid rgba(90, 159, 212, 0.3);
+                  border-radius: 4px;
+                  color: #e0e6f0;
+                  font-size: 0.95em;
+                ">
+                  <option value="all">Все (глобальные)</option>
+                  <option value="ucl">Лига чемпионов</option>
+                  <option value="uel">Лига Европы</option>
+                  <option value="uecl">Лига конференций</option>
+                  <option value="supercup">Суперкубок УЕФА</option>
+                  <option value="worldcup">Чемпионат мира</option>
+                  <option value="euro">Евро</option>
+                  <option value="epl">АПЛ</option>
+                  <option value="rpl">РПЛ</option>
+                  <option value="seriea">Серия А</option>
+                  <option value="bundesliga">Бундеслига</option>
+                  <option value="ligue1">Лига 1</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: 5px; color: #b0b8c8; font-size: 0.9em;">Ключевое слово</label>
+                <input type="text" id="newKeywordText" placeholder="Введите слово или фразу" style="
+                  width: 100%;
+                  padding: 8px;
+                  background: rgba(30, 35, 45, 0.8);
+                  border: 1px solid rgba(90, 159, 212, 0.3);
+                  border-radius: 4px;
+                  color: #e0e6f0;
+                  font-size: 0.95em;
+                ">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: 5px; color: #b0b8c8; font-size: 0.9em;">Тип</label>
+                <select id="newKeywordType" style="
+                  width: 100%;
+                  padding: 8px;
+                  background: rgba(30, 35, 45, 0.8);
+                  border: 1px solid rgba(90, 159, 212, 0.3);
+                  border-radius: 4px;
+                  color: #e0e6f0;
+                  font-size: 0.95em;
+                ">
+                  <option value="include">✅ Включить</option>
+                  <option value="exclude">❌ Исключить</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: 5px; color: #b0b8c8; font-size: 0.9em;">Приоритет</label>
+                <input type="number" id="newKeywordPriority" value="5" min="0" max="10" style="
+                  width: 100%;
+                  padding: 8px;
+                  background: rgba(30, 35, 45, 0.8);
+                  border: 1px solid rgba(90, 159, 212, 0.3);
+                  border-radius: 4px;
+                  color: #e0e6f0;
+                  font-size: 0.95em;
+                ">
+              </div>
+              <button onclick="addRssKeyword()" style="
+                padding: 8px 20px;
+                background: rgba(76, 175, 80, 0.7);
+                color: #c8e6c9;
+                border: 1px solid #4caf50;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.95em;
+                transition: all 0.3s ease;
+                white-space: nowrap;
+              ">
+                ➕ Добавить
+              </button>
+            </div>
+          </div>
+
+          <!-- Фильтр по турнирам -->
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 8px; color: #b0b8c8; font-size: 0.9em;">Фильтр по турниру:</label>
+            <select id="keywordsFilterTournament" onchange="filterKeywordsByTournament()" style="
+              padding: 8px 12px;
+              background: rgba(30, 35, 45, 0.8);
+              border: 1px solid rgba(90, 159, 212, 0.3);
+              border-radius: 4px;
+              color: #e0e6f0;
+              font-size: 0.95em;
+            ">
+              <option value="all_view">Все турниры</option>
+              <option value="all">Глобальные (все турниры)</option>
+              <option value="ucl">Лига чемпионов</option>
+              <option value="uel">Лига Европы</option>
+              <option value="uecl">Лига конференций</option>
+              <option value="supercup">Суперкубок УЕФА</option>
+              <option value="worldcup">Чемпионат мира</option>
+              <option value="euro">Евро</option>
+              <option value="epl">АПЛ</option>
+              <option value="rpl">РПЛ</option>
+              <option value="seriea">Серия А</option>
+              <option value="bundesliga">Бундеслига</option>
+              <option value="ligue1">Лига 1</option>
+            </select>
+          </div>
+
+          <!-- Список ключевых слов -->
+          <div id="rssKeywordsList" style="
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          ">
+            <div style="text-align: center; padding: 40px; color: #b0b8c8;">
+              <div class="spinner"></div>
+              <p>Загрузка ключевых слов...</p>
             </div>
           </div>
         </div>
