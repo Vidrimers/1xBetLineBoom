@@ -16327,11 +16327,12 @@ async function sendAnnouncementToAll() {
   const text = document.getElementById('announcementText').value.trim();
   
   if (!title || !text) {
-    alert('Заполните все поля');
+    await showCustomAlert('Заполните все поля');
     return;
   }
   
-  if (!confirm('Отправить объявление всем пользователям с включенными уведомлениями?')) {
+  const confirmed = await showCustomConfirm('Отправить объявление всем пользователям с включенными уведомлениями?');
+  if (!confirmed) {
     return;
   }
   
