@@ -1476,20 +1476,7 @@ export async function startBot() {
         return;
       }
 
-      // Получаем события (турниры) для сопоставления event_id
-      const eventsResponse = await fetch(`${SERVER_URL}/api/events`);
-      if (!eventsResponse.ok) {
-        throw new Error("Failed to fetch events");
-      }
-      const events = await eventsResponse.json();
-
-      // Создаем map для быстрого поиска названия турнира по event_id
-      const eventMap = {};
-      events.forEach((event) => {
-        eventMap[event.id] = event.name;
-      });
-
-      // Получаем ставки конкретного пользователя
+      // Получаем ставки пользователя
       const betsResponse = await fetch(
         `${SERVER_URL}/api/user/${user.id}/bets`
       );
@@ -1498,14 +1485,11 @@ export async function startBot() {
       }
       const userBets = await betsResponse.json();
 
-      // Фильтруем только ставки в ожидании (winner === null)
-      const userPendingBets = userBets.filter((bet) => !bet.winner);
-
-      if (userPendingBets.length === 0) {
+      if (userBets.length === 0) {
         await sendMessageWithThread(
           chatId,
           `💰 <b>Мои ставки:</b>\n\n` +
-            `<i>Активных ставок нет</i>\n\n` +
+            `<i>Ставок нет</i>\n\n` +
             `💡 Сделайте ставку на сайте.`,
           opts("noBets", {
             parse_mode: "HTML",
@@ -1514,40 +1498,68 @@ export async function startBot() {
         return;
       }
 
-      // Формируем сообщение со ставками
-      let messageText = `💰 <b>Мои активные ставки:</b>\n\n`;
+      // Получаем события (турниры)
+      const eventsResponse = await fetch(`${SERVER_URL}/api/events`);
+      if (!eventsResponse.ok) {
+        throw new Error("Failed to fetch events");
+      }
+      const events = await eventsResponse.json();
 
-      userPendingBets.slice(0, 10).forEach((bet, index) => {
-        // Форматируем дату и время из match_date
-        let matchDate = "—";
-        let matchTime = "";
+      // Находим турниры где есть ставки пользователя
+      const eventIds = [...new Set(userBets.map(bet => bet.event_id))];
+      const eventsWithBets = events.filter(e => eventIds.includes(e.id));
 
-        if (bet.match_date) {
-          const matchDateTime = new Date(bet.match_date);
-          if (!isNaN(matchDateTime.getTime())) {
-            matchDate = matchDateTime.toLocaleDateString("ru-RU", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            });
-            matchTime = matchDateTime.toLocaleTimeString("ru-RU", {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+      if (eventsWithBets.length === 0) {
+        await sendMessageWithThread(
+          chatId,
+          `💰 <b>Мои ставки:</b>\n\n` +
+            `<i>Турниры не найдены</i>`,
+          opts("noEvents", {
+            parse_mode: "HTML",
+          })
+        );
+        return;
+      }
+
+      // Формируем inline кнопки с турнирами
+      const eventButtons = eventsWithBets.map(event => {
+        const eventBets = userBets.filter(bet => bet.event_id === event.id);
+        const pendingBets = eventBets.filter(bet => !bet.winner);
+        
+        return [{
+          text: `${event.name} (${pendingBets.length}/${eventBets.length})`,
+          callback_data: `mybets_event_${event.id}_${user.id}`
+        }];
+      });
+      
+      eventButtons.push([{
+        text: '❌ Закрыть',
+        callback_data: 'mybets_cancel'
+      }]);
+
+      await sendMessageWithThread(
+        chatId,
+        `💰 <b>Мои ставки:</b>\n\n` +
+          `Выберите турнир:`,
+        opts("selectEvent", {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: eventButtons
           }
-        }
-
-        // Получаем название турнира по event_id
-        const tournamentName =
-          bet.event_id && eventMap[bet.event_id]
-            ? eventMap[bet.event_id]
-            : "Турнир не найден";
-
-        // Форматируем прогноз (преобразуем team1/team2/draw в названия команд или Ничья)
-        let predictionText = bet.prediction;
-        if (bet.prediction === "team1") {
-          predictionText = bet.team1_name;
-        } else if (bet.prediction === "team2") {
+        })
+      );
+    } catch (error) {
+      console.error("Error in handleMyBets:", error);
+      await sendMessageWithThread(
+        chatId,
+        `💰 <b>Мои ставки:</b>\n\n` +
+          `<i>⚠️ Ошибка при загрузке ставок</i>`,
+        opts("error", {
+          parse_mode: "HTML",
+        })
+      );
+    }
+  };
           predictionText = bet.team2_name;
         } else if (bet.prediction === "draw") {
           predictionText = "Ничья";
@@ -2251,14 +2263,104 @@ export async function startBot() {
     const opts = (text, baseOpts = {}) =>
       msg ? { ...baseOpts, __msg: msg } : baseOpts;
 
-    await sendMessageWithThread(
-      chatId,
-      `🎲 <b>Случайная ставка</b>\n\n` +
-        `<i>Функция в разработке...</i>\n\n` +
-        `💡 Скоро вы сможете делать рандомные ставки прямо из бота!`,
-      opts("luckybet", {
-        parse_mode: "HTML",
-      })
+    try {
+      const telegramUsername = msg?.from?.username || "";
+      
+      // Получаем данные пользователя
+      const response = await fetch(`${SERVER_URL}/api/participants`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch participants");
+      }
+      const participants = await response.json();
+
+      // Ищем пользователя
+      const user = participants.find(
+        (p) =>
+          (p.telegram_username &&
+            p.telegram_username.toLowerCase() ===
+              telegramUsername.toLowerCase()) ||
+          (msg?.from?.first_name &&
+            p.username &&
+            p.username.toLowerCase() === msg.from.first_name.toLowerCase())
+      );
+
+      if (!user) {
+        await sendMessageWithThread(
+          chatId,
+          `🎲 <b>Случайная ставка</b>\n\n` +
+            `Профиль не привязан. Привяжите его на сайте в разделе "⚙️ Настройки".`,
+          opts("noProfile", {
+            parse_mode: "HTML",
+          })
+        );
+        return;
+      }
+
+      // Получаем активные турниры
+      const eventsResponse = await fetch(`${SERVER_URL}/api/events`);
+      if (!eventsResponse.ok) {
+        throw new Error("Failed to fetch events");
+      }
+      const events = await eventsResponse.json();
+      
+      // Фильтруем активные турниры (не заблокированные и не будущие)
+      const activeEvents = events.filter(e => {
+        if (e.locked_reason) return false;
+        if (e.start_date) {
+          const startDate = new Date(e.start_date);
+          if (startDate > new Date()) return false;
+        }
+        return true;
+      });
+
+      if (activeEvents.length === 0) {
+        await sendMessageWithThread(
+          chatId,
+          `🎲 <b>Случайная ставка</b>\n\n` +
+            `<i>Нет активных турниров</i>`,
+          opts("noEvents", {
+            parse_mode: "HTML",
+          })
+        );
+        return;
+      }
+
+      // Формируем inline кнопки с турнирами
+      const eventButtons = activeEvents.map(event => [{
+        text: event.name,
+        callback_data: `luckybet_event_${event.id}_${user.id}`
+      }]);
+      
+      eventButtons.push([{
+        text: '❌ Отмена',
+        callback_data: 'luckybet_cancel'
+      }]);
+
+      await sendMessageWithThread(
+        chatId,
+        `🎲 <b>Случайная ставка</b>\n\n` +
+          `Выберите турнир:`,
+        opts("selectEvent", {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: eventButtons
+          }
+        })
+      );
+    } catch (error) {
+      console.error("Error in handleLuckyBet:", error);
+      await sendMessageWithThread(
+        chatId,
+        `🎲 <b>Случайная ставка</b>\n\n` +
+          `<i>⚠️ Ошибка при загрузке турниров</i>`,
+        opts("error", {
+          parse_mode: "HTML",
+        })
+      );
+    }
+  };
+
+  bot.onText(/\/my_awards/, (msg) => handleMyAwards(msg.chat.id, msg));
     );
   };
 
@@ -2387,6 +2489,472 @@ export async function startBot() {
             break;
         }
         return;
+      }
+      
+      // ===== ОБРАБОТКА КНОПОК СЛУЧАЙНОЙ СТАВКИ =====
+      if (data.startsWith("luckybet_")) {
+        await bot.answerCallbackQuery(callbackQuery.id);
+        
+        if (data === "luckybet_cancel") {
+          await bot.editMessageText(
+            `🎲 <b>Случайная ставка</b>\n\n<i>Отменено</i>`,
+            {
+              chat_id: chatId,
+              message_id: msg.message_id,
+              parse_mode: "HTML"
+            }
+          );
+          return;
+        }
+        
+        // Обработка выбора турнира: luckybet_event_{eventId}_{userId}
+        if (data.startsWith("luckybet_event_")) {
+          const parts = data.split("_");
+          const eventId = parseInt(parts[2]);
+          const userId = parseInt(parts[3]);
+          
+          try {
+            // Получаем матчи турнира
+            const matchesResponse = await fetch(`${SERVER_URL}/api/events/${eventId}/matches`);
+            if (!matchesResponse.ok) {
+              throw new Error("Failed to fetch matches");
+            }
+            const matches = await matchesResponse.json();
+            
+            // Получаем ставки пользователя
+            const betsResponse = await fetch(`${SERVER_URL}/api/user/${userId}/bets`);
+            if (!betsResponse.ok) {
+              throw new Error("Failed to fetch bets");
+            }
+            const bets = await betsResponse.json();
+            
+            // Находим туры где пользователь ещё не ставил
+            const matchesByRound = {};
+            matches.forEach(match => {
+              if (!match.round) return;
+              if (!matchesByRound[match.round]) {
+                matchesByRound[match.round] = [];
+              }
+              matchesByRound[match.round].push(match);
+            });
+            
+            // Фильтруем туры где есть матчи без ставок
+            const roundsWithoutBets = [];
+            for (const [round, roundMatches] of Object.entries(matchesByRound)) {
+              const hasUnbettedMatches = roundMatches.some(match => {
+                const matchDate = new Date(match.match_date);
+                const now = new Date();
+                if (matchDate <= now) return false; // Матч уже прошёл
+                
+                return !bets.some(bet => bet.match_id === match.id);
+              });
+              
+              if (hasUnbettedMatches) {
+                roundsWithoutBets.push(round);
+              }
+            }
+            
+            if (roundsWithoutBets.length === 0) {
+              await bot.editMessageText(
+                `🎲 <b>Случайная ставка</b>\n\n<i>Нет туров без ставок в этом турнире</i>`,
+                {
+                  chat_id: chatId,
+                  message_id: msg.message_id,
+                  parse_mode: "HTML"
+                }
+              );
+              return;
+            }
+            
+            // Формируем кнопки с турами
+            const roundButtons = roundsWithoutBets.map(round => [{
+              text: round,
+              callback_data: `luckybet_round_${eventId}_${userId}_${encodeURIComponent(round)}`
+            }]);
+            
+            roundButtons.push([{
+              text: '❌ Отмена',
+              callback_data: 'luckybet_cancel'
+            }]);
+            
+            await bot.editMessageText(
+              `🎲 <b>Случайная ставка</b>\n\n` +
+              `Выберите тур:`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: roundButtons
+                }
+              }
+            );
+          } catch (error) {
+            console.error("Error in luckybet_event:", error);
+            await bot.editMessageText(
+              `🎲 <b>Случайная ставка</b>\n\n<i>⚠️ Ошибка при загрузке туров</i>`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+          }
+          return;
+        }
+        
+        // Обработка выбора тура: luckybet_round_{eventId}_{userId}_{round}
+        if (data.startsWith("luckybet_round_")) {
+          const parts = data.split("_");
+          const eventId = parseInt(parts[2]);
+          const userId = parseInt(parts[3]);
+          const round = decodeURIComponent(parts.slice(4).join("_"));
+          
+          // Показываем кнопки подтверждения
+          await bot.editMessageText(
+            `🎲 <b>Случайная ставка</b>\n\n` +
+            `Тур: <b>${round}</b>\n\n` +
+            `Будут сделаны рандомные прогнозы на все матчи тура (результат, счет, карточки).\n\n` +
+            `Продолжить?`,
+            {
+              chat_id: chatId,
+              message_id: msg.message_id,
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '🎲 Рискнуть', callback_data: `luckybet_confirm_${eventId}_${userId}_${encodeURIComponent(round)}` },
+                    { text: '❌ Отмена', callback_data: 'luckybet_cancel' }
+                  ]
+                ]
+              }
+            }
+          );
+          return;
+        }
+        
+        // Обработка подтверждения: luckybet_confirm_{eventId}_{userId}_{round}
+        if (data.startsWith("luckybet_confirm_")) {
+          const parts = data.split("_");
+          const eventId = parseInt(parts[2]);
+          const userId = parseInt(parts[3]);
+          const round = decodeURIComponent(parts.slice(4).join("_"));
+          
+          try {
+            // Получаем матчи тура
+            const matchesResponse = await fetch(`${SERVER_URL}/api/events/${eventId}/matches`);
+            if (!matchesResponse.ok) {
+              throw new Error("Failed to fetch matches");
+            }
+            const allMatches = await matchesResponse.json();
+            const matches = allMatches.filter(m => m.round === round);
+            
+            // Получаем ставки пользователя
+            const betsResponse = await fetch(`${SERVER_URL}/api/user/${userId}/bets`);
+            if (!betsResponse.ok) {
+              throw new Error("Failed to fetch bets");
+            }
+            const bets = await betsResponse.json();
+            
+            // Фильтруем матчи без ставок и будущие
+            const matchesToBet = matches.filter(match => {
+              const matchDate = new Date(match.match_date);
+              const now = new Date();
+              if (matchDate <= now) return false;
+              
+              return !bets.some(bet => bet.match_id === match.id);
+            });
+            
+            if (matchesToBet.length === 0) {
+              await bot.editMessageText(
+                `🎲 <b>Случайная ставка</b>\n\n<i>Нет доступных матчей для ставок</i>`,
+                {
+                  chat_id: chatId,
+                  message_id: msg.message_id,
+                  parse_mode: "HTML"
+                }
+              );
+              return;
+            }
+            
+            // Делаем рандомные ставки
+            const results = [];
+            for (const match of matchesToBet) {
+              // Генерируем рандомный счет
+              const team1Score = Math.floor(Math.random() * 6);
+              const team2Score = Math.floor(Math.random() * 6);
+              
+              // Определяем результат
+              let prediction;
+              if (team1Score > team2Score) {
+                prediction = "team1";
+              } else if (team2Score > team1Score) {
+                prediction = "team2";
+              } else {
+                prediction = "draw";
+              }
+              
+              // Генерируем карточки
+              const yellowCards = Math.floor(Math.random() * 9);
+              const redCards = Math.floor(Math.random() * 4);
+              
+              try {
+                // Ставка на результат
+                await fetch(`${SERVER_URL}/api/bets`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    user_id: userId,
+                    match_id: match.id,
+                    prediction: prediction,
+                    amount: 0
+                  })
+                });
+                
+                // Прогноз на счет
+                if (match.score_prediction_enabled) {
+                  await fetch(`${SERVER_URL}/api/score-predictions`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      user_id: userId,
+                      match_id: match.id,
+                      score_team1: team1Score,
+                      score_team2: team2Score
+                    })
+                  });
+                }
+                
+                // Прогноз на карточки
+                if (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) {
+                  await fetch(`${SERVER_URL}/api/cards-predictions`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      user_id: userId,
+                      match_id: match.id,
+                      yellow_cards: match.yellow_cards_prediction_enabled ? yellowCards : null,
+                      red_cards: match.red_cards_prediction_enabled ? redCards : null
+                    })
+                  });
+                }
+                
+                results.push({
+                  match: `${match.team1_name} vs ${match.team2_name}`,
+                  prediction: prediction === "team1" ? match.team1_name : prediction === "team2" ? match.team2_name : "Ничья",
+                  score: `${team1Score}:${team2Score}`,
+                  cards: `🟨${yellowCards} 🟥${redCards}`
+                });
+              } catch (error) {
+                console.error(`Error betting on match ${match.id}:`, error);
+              }
+            }
+            
+            // Формируем сообщение с результатами
+            let messageText = `🎲 <b>Случайная ставка</b>\n\n` +
+              `✅ Сделано ставок: ${results.length}\n\n`;
+            
+            results.forEach((result, index) => {
+              messageText += 
+                `<b>${index + 1}. ${result.match}</b>\n` +
+                `   Результат: ${result.prediction}\n` +
+                `   Счет: ${result.score}\n` +
+                `   Карточки: ${result.cards}\n\n`;
+            });
+            
+            messageText += `💡 Удачи! 🍀`;
+            
+            await bot.editMessageText(
+              messageText,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+          } catch (error) {
+            console.error("Error in luckybet_confirm:", error);
+            await bot.editMessageText(
+              `🎲 <b>Случайная ставка</b>\n\n<i>⚠️ Ошибка при создании ставок</i>`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+          }
+          return;
+        }
+      }
+      
+      // ===== ОБРАБОТКА КНОПОК "МОИ СТАВКИ" =====
+      if (data.startsWith("mybets_")) {
+        await bot.answerCallbackQuery(callbackQuery.id);
+        
+        if (data === "mybets_cancel") {
+          await bot.editMessageText(
+            `💰 <b>Мои ставки</b>\n\n<i>Закрыто</i>`,
+            {
+              chat_id: chatId,
+              message_id: msg.message_id,
+              parse_mode: "HTML"
+            }
+          );
+          return;
+        }
+        
+        // Обработка выбора турнира: mybets_event_{eventId}_{userId}
+        if (data.startsWith("mybets_event_")) {
+          const parts = data.split("_");
+          const eventId = parseInt(parts[2]);
+          const userId = parseInt(parts[3]);
+          
+          try {
+            // Получаем ставки пользователя
+            const betsResponse = await fetch(`${SERVER_URL}/api/user/${userId}/bets`);
+            if (!betsResponse.ok) {
+              throw new Error("Failed to fetch bets");
+            }
+            const allBets = await betsResponse.json();
+            
+            // Фильтруем ставки по турниру
+            const eventBets = allBets.filter(bet => bet.event_id === eventId);
+            
+            if (eventBets.length === 0) {
+              await bot.editMessageText(
+                `💰 <b>Мои ставки</b>\n\n<i>Нет ставок в этом турнире</i>`,
+                {
+                  chat_id: chatId,
+                  message_id: msg.message_id,
+                  parse_mode: "HTML"
+                }
+              );
+              return;
+            }
+            
+            // Получаем название турнира
+            const eventsResponse = await fetch(`${SERVER_URL}/api/events`);
+            if (!eventsResponse.ok) {
+              throw new Error("Failed to fetch events");
+            }
+            const events = await eventsResponse.json();
+            const event = events.find(e => e.id === eventId);
+            const eventName = event ? event.name : "Турнир";
+            
+            // Фильтруем активные ставки (в ожидании)
+            const pendingBets = eventBets.filter(bet => !bet.winner);
+            
+            // Формируем сообщение
+            let messageText = `💰 <b>Мои ставки: ${eventName}</b>\n\n`;
+            
+            if (pendingBets.length === 0) {
+              messageText += `<i>Нет активных ставок</i>\n\n`;
+            } else {
+              messageText += `<b>Активные ставки (${pendingBets.length}):</b>\n\n`;
+              
+              pendingBets.slice(0, 10).forEach((bet, index) => {
+                // Форматируем дату
+                let matchDate = "—";
+                let matchTime = "";
+                if (bet.match_date) {
+                  const matchDateTime = new Date(bet.match_date);
+                  if (!isNaN(matchDateTime.getTime())) {
+                    matchDate = matchDateTime.toLocaleDateString("ru-RU", {
+                      day: "2-digit",
+                      month: "2-digit"
+                    });
+                    matchTime = matchDateTime.toLocaleTimeString("ru-RU", {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    });
+                  }
+                }
+                
+                // Форматируем прогноз
+                let predictionText = bet.prediction;
+                if (bet.prediction === "team1") {
+                  predictionText = bet.team1_name;
+                } else if (bet.prediction === "team2") {
+                  predictionText = bet.team2_name;
+                } else if (bet.prediction === "draw") {
+                  predictionText = "Ничья";
+                }
+                
+                messageText +=
+                  `<b>${index + 1}. ${bet.team1_name} vs ${bet.team2_name}</b>\n` +
+                  `   Прогноз: ${predictionText}\n` +
+                  `   📅 ${matchDate} ${matchTime}\n\n`;
+              });
+              
+              if (pendingBets.length > 10) {
+                messageText += `📌 Показано 10 из ${pendingBets.length}\n\n`;
+              }
+            }
+            
+            const completedBets = eventBets.filter(bet => bet.winner);
+            if (completedBets.length > 0) {
+              const wonBets = completedBets.filter(bet => bet.result === "won").length;
+              const lostBets = completedBets.filter(bet => bet.result === "lost").length;
+              const accuracy = completedBets.length > 0 ? ((wonBets / completedBets.length) * 100).toFixed(1) : 0;
+              
+              messageText += `\n📊 <b>Статистика:</b>\n`;
+              messageText += `   Завершено: ${completedBets.length}\n`;
+              messageText += `   Угадано: ${wonBets} | Не угадано: ${lostBets}\n`;
+              messageText += `   Точность: ${accuracy}%\n`;
+            }
+            
+            messageText += `\n💡 Полный список на сайте`;
+            
+            await bot.editMessageText(
+              messageText,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: [[
+                    { text: '🔙 Назад', callback_data: `mybets_back_${userId}` },
+                    { text: '❌ Закрыть', callback_data: 'mybets_cancel' }
+                  ]]
+                }
+              }
+            );
+          } catch (error) {
+            console.error("Error in mybets_event:", error);
+            await bot.editMessageText(
+              `💰 <b>Мои ставки</b>\n\n<i>⚠️ Ошибка при загрузке ставок</i>`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+          }
+          return;
+        }
+        
+        // Обработка кнопки "Назад": mybets_back_{userId}
+        if (data.startsWith("mybets_back_")) {
+          const userId = parseInt(data.split("_")[2]);
+          
+          // Создаём фейковый msg для вызова handleMyBets
+          const fakeMsg = {
+            chat: { id: chatId, type: msg.chat.type },
+            from: callbackQuery.from,
+            message_id: msg.message_id
+          };
+          
+          // Удаляем старое сообщение
+          try {
+            await bot.deleteMessage(chatId, msg.message_id);
+          } catch (e) {
+            console.error("Error deleting message:", e);
+          }
+          
+          // Вызываем handleMyBets заново
+          await handleMyBets(chatId, fakeMsg);
+          return;
+        }
       }
       
       // ===== ОБРАБОТКА КНОПОК РЕАКЦИЙ =====
