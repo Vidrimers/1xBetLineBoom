@@ -6190,6 +6190,45 @@ app.post("/api/awards", (req, res) => {
 
     console.log(`✓ Награда выдана пользователю ${user_id}: ${award_type}`);
 
+    // Создаём автоматическую новость о награде
+    try {
+      const awardUser = db.prepare("SELECT username FROM users WHERE id = ?").get(user_id);
+      const eventInfo = event_id ? db.prepare("SELECT name FROM events WHERE id = ?").get(event_id) : null;
+      
+      const awardTypeNames = {
+        'winner': 'Победитель турнира',
+        'top3': 'Топ-3 турнира',
+        'best_predictor': 'Лучший прогнозист',
+        'lucky': 'Счастливчик',
+        'milestone': 'Достижение',
+        'special': 'Особая награда',
+        'custom': 'Награда'
+      };
+      
+      const awardName = awardTypeNames[award_type] || 'Награда';
+      
+      let newsTitle = `🏆 ${awardUser.username} получил награду!`;
+      let newsMessage = `${emoji} ${awardName}`;
+      
+      if (eventInfo) {
+        newsMessage += `\n🏆 Турнир: ${eventInfo.name}`;
+      }
+      
+      if (description) {
+        newsMessage += `\n📝 ${description}`;
+      }
+      
+      db.prepare(`
+        INSERT INTO news (type, title, message, created_at)
+        VALUES (?, ?, ?, datetime('now'))
+      `).run('achievement', newsTitle, newsMessage);
+      
+      console.log(`✓ Создана новость о награде для ${awardUser.username}`);
+    } catch (newsError) {
+      console.error("⚠️ Ошибка создания новости о награде:", newsError);
+      // Не прерываем выполнение, награда уже выдана
+    }
+
     res.json({
       success: true,
       message: "Награда успешно выдана",

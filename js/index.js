@@ -4771,7 +4771,7 @@ function switchTab(tabName) {
     setTimeout(() => {
       content.style.opacity = "1";
     }, 10);
-    document.querySelectorAll(".tab-btn")[4].classList.add("active");
+    document.querySelectorAll(".tab-btn")[5].classList.add("active");
     loadSettings();
   } else if (tabName === "news") {
     const content = document.getElementById("news-content");
@@ -7940,20 +7940,6 @@ async function loadNewsTab() {
       btn.classList.add('active');
     }
   });
-  
-  // Отправляем уведомление админу о просмотре новостей
-  if (currentUser && currentUser.username) {
-    fetch("/api/notify-news-view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: currentUser.username,
-        type: 'news'
-      })
-    }).catch(err => {
-      console.error("⚠️ Ошибка отправки уведомления:", err);
-    });
-  }
   
   // Загружаем новости
   await loadNewsList(true);
