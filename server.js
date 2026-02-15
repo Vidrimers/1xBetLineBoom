@@ -19311,8 +19311,7 @@ app.post("/api/admin/panel-config/reset", (req, res) => {
             { id: 'db-structure', text: '🗄️ Структура БД', action: 'runUtilityScript("check-tables")' },
             { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()' },
             { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()' },
-            { id: 'tests', text: '🧪 Тесты', action: 'openTestsModal()' },
-            { id: 'configure-categories', text: '⚙️ Настроить категории', action: 'openConfigureCategoriesModal()' }
+            { id: 'tests', text: '🧪 Тесты', action: 'openTestsModal()' }
           ]
         }
       ]
