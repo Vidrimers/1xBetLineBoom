@@ -18790,6 +18790,53 @@ function filterNewsByTournament(news, tournament) {
   });
 }
 
+// POST /api/notify-news-view - Уведомление админу о просмотре новостей
+app.post("/api/notify-news-view", async (req, res) => {
+  try {
+    const { username, type } = req.body; // type: 'news' или 'rss'
+    
+    if (!username || !type) {
+      return res.status(400).json({ error: "Missing username or type" });
+    }
+    
+    const typeEmojis = {
+      'news': '📢',
+      'rss': '🌐'
+    };
+    
+    const typeNames = {
+      'news': 'Новости',
+      'rss': 'Другие новости (RSS)'
+    };
+    
+    const emoji = typeEmojis[type] || '📰';
+    const typeName = typeNames[type] || type;
+    
+    const time = new Date().toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    
+    const adminMessage = 
+      `${emoji} <b>ПРОСМОТР: ${typeName}</b>\n\n` +
+      `👤 Пользователь: <b>${username}</b>\n` +
+      `🕐 Время: ${time}`;
+    
+    // Отправляем уведомление асинхронно
+    notifyAdmin(adminMessage).catch(err => {
+      console.error("⚠️ Не удалось отправить уведомление админу:", err);
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка отправки уведомления:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/news - Добавить новость (только для админа)
 app.post("/api/admin/news", async (req, res) => {
   try {

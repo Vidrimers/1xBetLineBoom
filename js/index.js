@@ -7941,6 +7941,20 @@ async function loadNewsTab() {
     }
   });
   
+  // Отправляем уведомление админу о просмотре новостей
+  if (currentUser && currentUser.username) {
+    fetch("/api/notify-news-view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: currentUser.username,
+        type: 'news'
+      })
+    }).catch(err => {
+      console.error("⚠️ Ошибка отправки уведомления:", err);
+    });
+  }
+  
   // Загружаем новости
   await loadNewsList(true);
 }
@@ -21828,6 +21842,20 @@ async function openRssNewsModal() {
   if (modal) {
     document.body.style.overflow = 'hidden';
     modal.style.display = "flex";
+    
+    // Отправляем уведомление админу о просмотре RSS новостей
+    if (currentUser && currentUser.username) {
+      fetch("/api/notify-news-view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentUser.username,
+          type: 'rss'
+        })
+      }).catch(err => {
+        console.error("⚠️ Ошибка отправки уведомления:", err);
+      });
+    }
     
     // Загружаем новости
     await loadRssNews('all');
