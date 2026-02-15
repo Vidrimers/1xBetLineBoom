@@ -13100,6 +13100,75 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
               console.log(`✅ Автоматически создана новость о рекорде пользователя ${user.username}: ${streak} подряд`);
             }
           }
+          
+          // Проверяем достижения по точному счёту
+          const exactScoreCount = db.prepare(`
+            SELECT COUNT(*) as count
+            FROM score_predictions sp
+            JOIN matches m ON m.id = sp.match_id
+            JOIN match_scores ms ON ms.match_id = m.id
+            WHERE sp.user_id = ? 
+            AND sp.score_team1 = ms.score_team1 
+            AND sp.score_team2 = ms.score_team2
+            AND m.winner IS NOT NULL
+          `).get(user.id).count;
+          
+          // Если угадано 5+ точных счётов, создаём новость
+          if (exactScoreCount >= 5 && exactScoreCount % 5 === 0) {
+            const existingScoreNews = db.prepare(`
+              SELECT id FROM news 
+              WHERE type = 'achievement' 
+              AND message LIKE ?
+              AND created_at > datetime('now', '-7 days')
+            `).get(`%${user.username}%${exactScoreCount}%точных счёт%`);
+            
+            if (!existingScoreNews) {
+              const newsTitle = `⚽ Мастер счёта: ${exactScoreCount} точных прогнозов!`;
+              const newsMessage = `Пользователь ${user.username} угадал ${exactScoreCount} точных счётов!\n\n🎯 Невероятная точность! Продолжай в том же духе!`;
+              
+              db.prepare(`
+                INSERT INTO news (type, title, message)
+                VALUES (?, ?, ?)
+              `).run('achievement', newsTitle, newsMessage);
+              
+              console.log(`✅ Автоматически создана новость о точных счётах пользователя ${user.username}: ${exactScoreCount}`);
+            }
+          }
+          
+          // Проверяем достижения по карточкам
+          const cardsCount = db.prepare(`
+            SELECT COUNT(*) as count
+            FROM cards_predictions cp
+            JOIN matches m ON m.id = cp.match_id
+            WHERE cp.user_id = ? 
+            AND (
+              (cp.yellow_cards = m.yellow_cards AND m.yellow_cards IS NOT NULL)
+              OR (cp.red_cards = m.red_cards AND m.red_cards IS NOT NULL)
+            )
+            AND m.winner IS NOT NULL
+          `).get(user.id).count;
+          
+          // Если угадано 5+ карточек, создаём новость
+          if (cardsCount >= 5 && cardsCount % 5 === 0) {
+            const existingCardsNews = db.prepare(`
+              SELECT id FROM news 
+              WHERE type = 'achievement' 
+              AND message LIKE ?
+              AND created_at > datetime('now', '-7 days')
+            `).get(`%${user.username}%${cardsCount}%карточ%`);
+            
+            if (!existingCardsNews) {
+              const newsTitle = `🟨🟥 Мастер карточек: ${cardsCount} точных прогнозов!`;
+              const newsMessage = `Пользователь ${user.username} угадал ${cardsCount} прогнозов на карточки!\n\n🎯 Отличное чутьё на дисциплину! Так держать!`;
+              
+              db.prepare(`
+                INSERT INTO news (type, title, message)
+                VALUES (?, ?, ?)
+              `).run('achievement', newsTitle, newsMessage);
+              
+              console.log(`✅ Автоматически создана новость о карточках пользователя ${user.username}: ${cardsCount}`);
+            }
+          }
         }
       } catch (error) {
         console.error("❌ Ошибка проверки рекордов:", error);
