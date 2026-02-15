@@ -22269,7 +22269,7 @@ function renderAdminPanelAccordion(config) {
           class="admin-category-header" 
           onclick="toggleCategory('${category.id}')"
           style="
-            padding: 15px;
+            padding: 5px 15px;
             background: rgba(90, 159, 212, 0.1);
             cursor: pointer;
             display: flex;
@@ -22462,7 +22462,7 @@ async function openConfigureCategoriesModal() {
       <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid rgba(255, 255, 255, 0.1);">
         <button onclick="switchConfigTab('categories')" id="configTab-categories" style="
           flex: 1;
-          padding: 12px;
+          padding: 5px 15px;
           background: rgba(90, 159, 212, 0.3);
           border: none;
           border-bottom: 3px solid #5a9fd4;
@@ -22473,7 +22473,7 @@ async function openConfigureCategoriesModal() {
         ">📁 Категории</button>
         <button onclick="switchConfigTab('buttons')" id="configTab-buttons" style="
           flex: 1;
-          padding: 12px;
+          padding: 5px 15px;
           background: transparent;
           border: none;
           border-bottom: 3px solid transparent;
@@ -22484,7 +22484,7 @@ async function openConfigureCategoriesModal() {
         ">🔘 Кнопки</button>
         <button onclick="switchConfigTab('reset')" id="configTab-reset" style="
           flex: 1;
-          padding: 12px;
+          padding: 5px 15px;
           background: transparent;
           border: none;
           border-bottom: 3px solid transparent;
