@@ -4278,6 +4278,24 @@ app.post("/api/admin/brackets", (req, res) => {
     
     console.log(`✅ Сетка "${name}" создана для турнира ${event_id} (начало: ${start_stage || 'round_of_16'})`);
     
+    // Автоматически создаём новость о начале плей-офф
+    try {
+      const event = db.prepare("SELECT name FROM events WHERE id = ?").get(event_id);
+      if (event) {
+        const newsTitle = `🔥 Начало плей-офф: ${event.name}`;
+        const newsMessage = `Турнир "${event.name}" переходит в стадию плей-офф!\n\n🏆 Сетка: ${name}\n📅 Начало: ${start_date}\n\n⚡ Самое интересное только начинается! Делайте свои прогнозы на сетку!`;
+        
+        db.prepare(`
+          INSERT INTO news (type, title, message)
+          VALUES (?, ?, ?)
+        `).run('tournament', newsTitle, newsMessage);
+        
+        console.log(`✅ Автоматически создана новость о начале плей-офф: ${event.name}`);
+      }
+    } catch (error) {
+      console.error("❌ Ошибка создания новости о плей-офф:", error);
+    }
+    
     res.json({ 
       success: true, 
       bracket_id: result.lastInsertRowid 
@@ -6474,6 +6492,27 @@ app.post("/api/bets", async (req, res) => {
         );
         // Не прерываем процесс создания ставки если ошибка в отправке уведомления
       }
+    }
+
+    // Проверяем milestone достижения по количеству ставок
+    try {
+      const totalBets = db.prepare("SELECT COUNT(*) as count FROM bets").get().count;
+      const milestones = [200, 500, 800, 1000];
+      
+      // Проверяем достигнут ли новый milestone
+      if (milestones.includes(totalBets)) {
+        const newsTitle = `🎉 Milestone: ${totalBets} ставок!`;
+        const newsMessage = `Платформа достигла ${totalBets} ставок!\n\nСпасибо всем игрокам за активное участие! 🎯\n\nПродолжайте делать прогнозы и соревнуйтесь за первые места! 🏆`;
+        
+        db.prepare(`
+          INSERT INTO news (type, title, message)
+          VALUES (?, ?, ?)
+        `).run('achievement', newsTitle, newsMessage);
+        
+        console.log(`✅ Автоматически создана новость о milestone: ${totalBets} ставок`);
+      }
+    } catch (error) {
+      console.error("❌ Ошибка проверки milestone:", error);
     }
 
     res.json({
@@ -12091,6 +12130,28 @@ app.post("/api/admin/events", async (req, res) => {
         // Не возвращаем ошибку, турнир уже создан
       }
     }
+    
+    // Автоматически создаём новость о новом турнире
+    try {
+      const newsTitle = `Новый турнир: ${name}`;
+      let newsMessage = `Создан новый турнир "${name}"!`;
+      if (description) {
+        newsMessage += `\n\n${description}`;
+      }
+      if (start_date && end_date) {
+        newsMessage += `\n\n📅 Даты проведения: ${start_date} - ${end_date}`;
+      }
+      newsMessage += `\n\n🎯 Делайте свои прогнозы и соревнуйтесь с другими игроками!`;
+      
+      db.prepare(`
+        INSERT INTO news (type, title, message)
+        VALUES (?, ?, ?)
+      `).run('announcement', newsTitle, newsMessage);
+      
+      console.log(`✅ Автоматически создана новость о турнире: ${name}`);
+    } catch (error) {
+      console.error("❌ Ошибка создания новости о турнире:", error);
+    }
 
     res.json({
       id: result.lastInsertRowid,
@@ -12984,6 +13045,65 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
           tournament: event?.name || "Неизвестно"
         });
       }
+      
+      // Проверяем рекорды пользователей после установки результата
+      try {
+        // Получаем всех пользователей с их ставками на этот матч
+        const usersWithBets = db.prepare(`
+          SELECT DISTINCT u.id, u.username
+          FROM users u
+          JOIN bets b ON b.user_id = u.id
+          WHERE b.match_id = ?
+        `).all(matchId);
+        
+        for (const user of usersWithBets) {
+          // Получаем последние ставки пользователя (упорядоченные по дате матча)
+          const recentBets = db.prepare(`
+            SELECT b.id, b.prediction, m.winner, m.match_date
+            FROM bets b
+            JOIN matches m ON m.id = b.match_id
+            WHERE b.user_id = ? AND m.winner IS NOT NULL
+            ORDER BY m.match_date DESC
+            LIMIT 15
+          `).all(user.id);
+          
+          // Считаем серию правильных прогнозов
+          let streak = 0;
+          for (const bet of recentBets) {
+            const isCorrect = bet.prediction === bet.winner;
+            if (isCorrect) {
+              streak++;
+            } else {
+              break; // Прерываем серию при первом неправильном прогнозе
+            }
+          }
+          
+          // Если серия >= 10, создаём новость о рекорде
+          if (streak >= 10) {
+            // Проверяем не создавали ли мы уже новость об этом рекорде
+            const existingNews = db.prepare(`
+              SELECT id FROM news 
+              WHERE type = 'achievement' 
+              AND message LIKE ?
+              AND created_at > datetime('now', '-7 days')
+            `).get(`%${user.username}%${streak}%подряд%`);
+            
+            if (!existingNews) {
+              const newsTitle = `🔥 Рекорд: ${streak} точных прогнозов подряд!`;
+              const newsMessage = `Пользователь ${user.username} установил рекорд - ${streak} точных прогнозов подряд!\n\n🎯 Невероятная серия! Так держать!`;
+              
+              db.prepare(`
+                INSERT INTO news (type, title, message)
+                VALUES (?, ?, ?)
+              `).run('achievement', newsTitle, newsMessage);
+              
+              console.log(`✅ Автоматически создана новость о рекорде пользователя ${user.username}: ${streak} подряд`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("❌ Ошибка проверки рекордов:", error);
+      }
 
       return res.json({
         message: "Статус матча успешно изменен",
@@ -13430,6 +13550,21 @@ app.put("/api/admin/events/:eventId/lock", (req, res) => {
       }
 
       sendTournamentWinnerNotification(event.name, winner.username);
+      
+      // Автоматически создаём новость о победителе турнира
+      try {
+        const newsTitle = `🏆 Победитель турнира: ${event.name}`;
+        const newsMessage = `Поздравляем победителя турнира "${event.name}"!\n\n👑 Победитель: ${winner.username}\n🎯 Угаданных прогнозов: ${winner.wins}\n\n🎉 Отличная игра! Так держать!`;
+        
+        db.prepare(`
+          INSERT INTO news (type, title, message)
+          VALUES (?, ?, ?)
+        `).run('achievement', newsTitle, newsMessage);
+        
+        console.log(`✅ Автоматически создана новость о победителе турнира: ${event.name}`);
+      } catch (error) {
+        console.error("❌ Ошибка создания новости о победителе:", error);
+      }
     }
 
     res.json({
