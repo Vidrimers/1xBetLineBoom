@@ -4660,3 +4660,49 @@ body.theme-cyberpunk .countTournaments button.active {
   line-height: 1.5;
   margin-top: 8px;
 }
+
+
+/* ============================================
+   АККОРДЕОН АДМИН-ПАНЕЛИ
+   ============================================ */
+
+.admin-category {
+  transition: all 0.3s ease;
+}
+
+.admin-category-header {
+  user-select: none;
+}
+
+.admin-category-header:active {
+  transform: scale(0.98);
+}
+
+.admin-category-content {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+/* Адаптив для аккордеона */
+@media (max-width: 768px) {
+  .admin-category-content {
+    padding: 10px !important;
+    gap: 8px !important;
+  }
+  
+  .admin-category-content button,
+  .admin-category-content a {
+    font-size: 0.9em !important;
+    padding: 10px 15px !important;
+  }
+}

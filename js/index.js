@@ -10848,6 +10848,11 @@ async function loadSettings() {
     // Загружаем настройку кнопки "Мне повезет"
     await loadLuckyButtonSettings();
     
+    // Загружаем конфигурацию админ-панели для админов
+    if (currentUser.isAdmin) {
+      await loadAdminPanelConfig();
+    }
+    
     // Загружаем настройку кнопки xG
     await loadXgButtonSettings();
     
@@ -22210,4 +22215,261 @@ async function deleteRssKeyword(id) {
     console.error("❌ Ошибка удаления ключевого слова:", error);
     await showCustomAlert(`❌ Ошибка: ${error.message}`);
   }
+}
+
+
+// ============================================
+// АККОРДЕОН АДМИН-ПАНЕЛИ
+// ============================================
+
+// Загрузить конфигурацию админ-панели
+async function loadAdminPanelConfig() {
+  const container = document.getElementById('adminPanelAccordion');
+  
+  if (!container) return;
+  
+  try {
+    const response = await fetch('/api/admin/panel-config');
+    
+    if (!response.ok) {
+      throw new Error('Ошибка загрузки конфигурации');
+    }
+    
+    const data = await response.json();
+    renderAdminPanelAccordion(data.config);
+    
+  } catch (error) {
+    console.error('❌ Ошибка загрузки конфигурации админ-панели:', error);
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #f44336;">❌ Ошибка загрузки админ-панели</div>';
+  }
+}
+
+// Отрисовать аккордеон админ-панели
+function renderAdminPanelAccordion(config) {
+  const container = document.getElementById('adminPanelAccordion');
+  
+  if (!container || !config || !config.categories) return;
+  
+  let html = '';
+  
+  config.categories.forEach(category => {
+    const isCollapsed = category.collapsed !== false;
+    
+    html += `
+      <div class="admin-category" style="
+        background: rgba(30, 35, 45, 0.5);
+        border: 1px solid rgba(90, 159, 212, 0.3);
+        border-radius: 8px;
+        overflow: hidden;
+      ">
+        <div 
+          class="admin-category-header" 
+          onclick="toggleCategory('${category.id}')"
+          style="
+            padding: 15px;
+            background: rgba(90, 159, 212, 0.1);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+          "
+          onmouseover="this.style.background='rgba(90, 159, 212, 0.2)'"
+          onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'"
+        >
+          <span style="color: #5a9fd4; font-weight: 600; font-size: 1em;">
+            ${category.name}
+          </span>
+          <span id="category-arrow-${category.id}" style="
+            color: #5a9fd4;
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+            ${isCollapsed ? '' : 'transform: rotate(180deg);'}
+          ">▼</span>
+        </div>
+        
+        <div 
+          id="category-content-${category.id}" 
+          class="admin-category-content"
+          style="
+            display: ${isCollapsed ? 'none' : 'flex'};
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+          "
+        >
+          ${category.buttons.map(button => renderButton(button)).join('')}
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+// Отрисовать кнопку
+function renderButton(button) {
+  // Определяем стиль кнопки по её ID
+  const buttonStyles = {
+    'migrate-logs': { bg: 'rgba(255, 152, 0, 0.7)', border: '#ff9800', color: '#fff' },
+    'clear-logs': { bg: 'rgba(244, 67, 54, 0.7)', border: '#f44336', color: '#ffb3b3' },
+    'open-logs': { bg: 'rgba(90, 159, 212, 0.7)', border: '#3a7bd5', color: '#e0e6f0' },
+    'database': { bg: 'rgba(76, 175, 80, 0.7)', border: '#4caf50', color: '#c8e6c9' },
+    'orphaned': { bg: 'rgba(255, 87, 34, 0.7)', border: '#ff5722', color: '#ffccbc' },
+    'users-list': { bg: 'rgba(58, 123, 213, 0.8)', border: '#3a7bd5', color: '#e0e6f0' },
+    'moderators': { bg: 'rgba(156, 39, 176, 0.7)', border: '#9c27b0', color: '#f0e6ff' },
+    'bugs': { bg: 'rgba(244, 67, 54, 0.8)', border: '#f44336', color: '#fff' },
+    'add-news': { bg: 'rgba(33, 150, 243, 0.7)', border: '#2196f3', color: '#e3f2fd' },
+    'announcement': { bg: 'rgba(255, 87, 34, 0.7)', border: '#ff5722', color: '#ffccbc' },
+    'rss-keywords': { bg: 'rgba(33, 150, 243, 0.7)', border: '#2196f3', color: '#e3f2fd' },
+    'awards': { bg: 'rgba(255, 193, 7, 0.7)', border: '#fbc02d', color: '#fff8e1' },
+    'xg-button': { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: '#764ba2', color: '#fff' },
+    'group-reminders': { bg: 'rgba(255, 87, 34, 0.7)', border: '#ff5722', color: '#ffe0d6' },
+    'notifications-queue': { bg: 'rgba(90, 159, 212, 0.7)', border: '#3a7bd5', color: '#e0e6f0' },
+    'manage-notifications': { bg: 'rgba(76, 175, 80, 0.7)', border: '#4caf50', color: '#c8e6c9' },
+    'manage-dates': { bg: 'rgba(33, 150, 243, 0.7)', border: '#2196f3', color: '#e3f2fd' },
+    'event-ids': { bg: 'rgba(0, 150, 136, 0.7)', border: '#009688', color: '#b2dfdb' },
+    'db-structure': { bg: 'rgba(121, 85, 72, 0.7)', border: '#795548', color: '#d7ccc8' },
+    'deactivate-old': { bg: 'rgba(255, 152, 0, 0.7)', border: '#ff9800', color: '#ffe0b2' },
+    'update-sstats': { bg: 'rgba(233, 30, 99, 0.7)', border: '#e91e63', color: '#f8bbd0' },
+    'tests': { bg: 'rgba(76, 175, 80, 0.8)', border: '#4caf50', color: '#c8e6c9' },
+    'configure-categories': { bg: 'rgba(103, 58, 183, 0.7)', border: '#673ab7', color: '#e1bee7' }
+  };
+  
+  const style = buttonStyles[button.id] || { bg: 'rgba(90, 159, 212, 0.7)', border: '#3a7bd5', color: '#e0e6f0' };
+  
+  // Если это ссылка
+  if (button.type === 'link') {
+    return `
+      <a
+        href="#"
+        onclick="${button.action}; return false;"
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: ${style.bg};
+          color: ${style.color};
+          text-decoration: none;
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-size: 0.95em;
+          transition: all 0.3s ease;
+          border: 1px solid ${style.border};
+          white-space: nowrap;
+        "
+        onmouseover="this.style.transform='scale(1.05)'"
+        onmouseout="this.style.transform='scale(1)'"
+      >
+        ${button.text}
+      </a>
+    `;
+  }
+  
+  // Обычная кнопка
+  return `
+    <button
+      onclick="${button.action}"
+      style="
+        background: ${style.bg};
+        color: ${style.color};
+        border: 1px solid ${style.border};
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95em;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+      "
+      onmouseover="this.style.transform='scale(1.05)'"
+      onmouseout="this.style.transform='scale(1)'"
+    >
+      ${button.text}
+    </button>
+  `;
+}
+
+// Переключить категорию (свернуть/развернуть)
+function toggleCategory(categoryId) {
+  const content = document.getElementById(`category-content-${categoryId}`);
+  const arrow = document.getElementById(`category-arrow-${categoryId}`);
+  
+  if (!content || !arrow) return;
+  
+  const isCollapsed = content.style.display === 'none';
+  
+  if (isCollapsed) {
+    content.style.display = 'flex';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    content.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Открыть модалку настройки категорий
+async function openConfigureCategoriesModal() {
+  const modal = document.createElement('div');
+  modal.id = 'configureCategoriesModal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 800px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">⚙️ Настройка категорий админ-панели</h3>
+      
+      <div style="
+        background: rgba(255, 152, 0, 0.2);
+        border-left: 4px solid #ff9800;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        color: #ffe0b2;
+      ">
+        ⚠️ Функционал в разработке. Скоро здесь можно будет:
+        <ul style="margin: 10px 0 0 20px; padding: 0;">
+          <li>Переименовывать категории</li>
+          <li>Добавлять новые категории</li>
+          <li>Удалять категории</li>
+          <li>Перемещать кнопки между категориями</li>
+          <li>Изменять порядок категорий</li>
+          <li>Сбросить к дефолтным настройкам</li>
+        </ul>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button onclick="document.getElementById('configureCategoriesModal').remove()" style="
+          flex: 1;
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        ">Закрыть</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
 }

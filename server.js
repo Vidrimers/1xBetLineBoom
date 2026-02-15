@@ -19159,6 +19159,75 @@ app.post("/api/admin/news", async (req, res) => {
   }
 });
 
+// GET /api/admin/panel-config - Получить конфигурацию админ-панели
+app.get("/api/admin/panel-config", (req, res) => {
+  try {
+    const config = db.prepare(`
+      SELECT config_data, updated_at, updated_by 
+      FROM admin_panel_config 
+      ORDER BY id DESC 
+      LIMIT 1
+    `).get();
+    
+    if (!config) {
+      return res.status(404).json({ error: "Конфигурация не найдена" });
+    }
+    
+    res.json({
+      success: true,
+      config: JSON.parse(config.config_data),
+      updated_at: config.updated_at,
+      updated_by: config.updated_by
+    });
+  } catch (error) {
+    console.error("❌ Ошибка получения конфигурации админ-панели:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/panel-config - Сохранить конфигурацию админ-панели (только для админа)
+app.post("/api/admin/panel-config", (req, res) => {
+  try {
+    const { username, config } = req.body;
+    
+    // Проверка прав админа
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+    
+    if (!user || user.username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Доступ запрещён" });
+    }
+    
+    if (!config || !config.categories) {
+      return res.status(400).json({ error: "Неверный формат конфигурации" });
+    }
+    
+    // Сохраняем конфигурацию
+    db.prepare(`
+      INSERT INTO admin_panel_config (config_data, updated_by, updated_at)
+      VALUES (?, ?, datetime('now'))
+    `).run(JSON.stringify(config), username);
+    
+    console.log(`✅ Конфигурация админ-панели обновлена пользователем ${username}`);
+    
+    // Уведомление админу
+    const adminMessage = 
+      `⚙️ <b>КОНФИГУРАЦИЯ АДМИН-ПАНЕЛИ ОБНОВЛЕНА</b>\n\n` +
+      `👤 Пользователь: ${username}\n` +
+      `📊 Категорий: ${config.categories.length}\n` +
+      `🕐 ${new Date().toLocaleString("ru-RU")}`;
+    
+    notifyAdmin(adminMessage).catch(err => {
+      console.error("⚠️ Не удалось отправить уведомление админу:", err);
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка сохранения конфигурации админ-панели:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Запускаем проверку каждые 5 минут
 const AUTO_COUNT_INTERVAL = 5 * 60 * 1000; // 5 минут
 setInterval(checkAndAutoCount, AUTO_COUNT_INTERVAL);
