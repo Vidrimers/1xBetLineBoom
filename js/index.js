@@ -21816,3 +21816,119 @@ async function deactivateSelectedEvents() {
     await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
   }
 }
+
+
+// ===== RSS НОВОСТИ =====
+
+let currentRssTournament = 'all';
+
+// Открыть модалку RSS новостей
+async function openRssNewsModal() {
+  const modal = document.getElementById("rssNewsModal");
+  if (modal) {
+    document.body.style.overflow = 'hidden';
+    modal.style.display = "flex";
+    
+    // Загружаем новости
+    await loadRssNews('all');
+  }
+}
+
+// Закрыть модалку RSS новостей
+function closeRssNewsModal() {
+  const modal = document.getElementById("rssNewsModal");
+  if (modal) {
+    document.body.style.overflow = '';
+    modal.style.display = "none";
+  }
+}
+
+// Загрузить RSS новости
+async function loadRssNews(tournament) {
+  currentRssTournament = tournament;
+  const container = document.getElementById("rssNewsContainer");
+  
+  if (!container) return;
+  
+  // Показываем загрузку
+  container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><div class="spinner"></div><p>Загрузка новостей...</p></div>';
+  
+  try {
+    const response = await fetch(`/api/rss-news?tournament=${tournament}`);
+    
+    if (!response.ok) {
+      throw new Error("Ошибка загрузки RSS новостей");
+    }
+    
+    const data = await response.json();
+    const news = data.news;
+    
+    if (!news || news.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📰 Новостей не найдено</div>';
+      return;
+    }
+    
+    // Формируем HTML с новостями
+    let html = '';
+    
+    news.forEach((item) => {
+      // Форматируем дату
+      const newsDate = new Date(item.pubDate);
+      const formattedDate = newsDate.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      
+      // Обрезаем описание до 200 символов
+      let description = item.description || '';
+      if (description.length > 200) {
+        description = description.substring(0, 200) + '...';
+      }
+      
+      html += `
+        <div class="rss-news-item">
+          <div>
+            <a href="${item.link}" target="_blank" rel="noopener noreferrer">
+              ${item.title}
+            </a>
+            <span class="rss-news-source">${item.source}</span>
+          </div>
+          ${description ? `<div class="rss-news-description">${description}</div>` : ''}
+          <div class="rss-news-date">📅 ${formattedDate}</div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Показываем информацию о кэше
+    if (data.cached) {
+      console.log("📰 RSS новости загружены из кэша");
+    } else {
+      console.log(`📰 Загружено ${news.length} свежих RSS новостей`);
+    }
+    
+  } catch (error) {
+    console.error("❌ Ошибка загрузки RSS новостей:", error);
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки новостей</div>';
+  }
+}
+
+// Фильтр RSS новостей по турниру
+async function filterRssNews(tournament) {
+  currentRssTournament = tournament;
+  
+  // Обновляем активную кнопку фильтра
+  document.querySelectorAll('.rss-filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.tournament === tournament) {
+      btn.classList.add('active');
+    }
+  });
+  
+  // Загружаем новости
+  await loadRssNews(tournament);
+}

@@ -6,6 +6,7 @@ import multer from "multer";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { execSync, spawnSync } from "child_process";
+import Parser from "rss-parser";
 import {
   startBot,
   notifyIllegalBet,
@@ -28,6 +29,21 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Инициализация RSS парсера
+const rssParser = new Parser({
+  timeout: 10000,
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+  }
+});
+
+// Кэш для RSS новостей (обновляется раз в 30 минут)
+let rssNewsCache = {
+  data: null,
+  timestamp: 0,
+  ttl: 30 * 60 * 1000 // 30 минут
+};
 
 const app = express();
 const PORT = process.env.PORT || 1984;
@@ -18679,6 +18695,100 @@ app.delete("/api/admin/news/:id", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// GET /api/rss-news - Получить RSS новости с фильтрацией по турнирам
+app.get("/api/rss-news", async (req, res) => {
+  try {
+    const tournament = req.query.tournament || 'all';
+    
+    // Проверяем кэш
+    const now = Date.now();
+    if (rssNewsCache.data && (now - rssNewsCache.timestamp) < rssNewsCache.ttl) {
+      console.log("📰 Возвращаем RSS новости из кэша");
+      const filteredNews = filterNewsByTournament(rssNewsCache.data, tournament);
+      return res.json({ success: true, news: filteredNews, cached: true });
+    }
+    
+    console.log("📰 Загружаем свежие RSS новости...");
+    
+    // Парсим RSS ленты
+    const sources = [
+      'http://www.sports.ru/rss/rubric.xml?s=208', // Sports.ru футбол
+      'https://www.gazeta.ru/export/rss/sport.xml' // Gazeta.ru спорт
+    ];
+    
+    let allNews = [];
+    
+    for (const source of sources) {
+      try {
+        const feed = await rssParser.parseURL(source);
+        const newsItems = feed.items.map(item => ({
+          title: item.title,
+          link: item.link,
+          description: item.contentSnippet || item.content || '',
+          pubDate: item.pubDate,
+          source: source.includes('sports.ru') ? 'Sports.ru' : 'Gazeta.ru'
+        }));
+        allNews = allNews.concat(newsItems);
+      } catch (error) {
+        console.error(`❌ Ошибка парсинга ${source}:`, error.message);
+      }
+    }
+    
+    // Сортируем по дате (новые первыми)
+    allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    
+    // Ограничиваем до 100 новостей
+    allNews = allNews.slice(0, 100);
+    
+    // Сохраняем в кэш
+    rssNewsCache.data = allNews;
+    rssNewsCache.timestamp = now;
+    
+    console.log(`✅ Загружено ${allNews.length} RSS новостей`);
+    
+    // Фильтруем по турниру
+    const filteredNews = filterNewsByTournament(allNews, tournament);
+    
+    res.json({ success: true, news: filteredNews, cached: false });
+  } catch (error) {
+    console.error("❌ Ошибка получения RSS новостей:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Функция фильтрации новостей по турниру
+function filterNewsByTournament(news, tournament) {
+  if (tournament === 'all') {
+    return news;
+  }
+  
+  // Ключевые слова для каждого турнира
+  const keywords = {
+    'ucl': ['лига чемпионов', 'champions league', 'лч', 'ucl'],
+    'uel': ['лига европы', 'europa league', 'ле', 'uel'],
+    'uecl': ['лига конференций', 'conference league', 'лк', 'uecl'],
+    'supercup': ['суперкубок уефа', 'super cup', 'суперкубок'],
+    'worldcup': ['чемпионат мира', 'world cup', 'чм', 'мундиаль'],
+    'euro': ['евро', 'euro', 'чемпионат европы', 'european championship'],
+    'epl': ['апл', 'премьер-лига', 'premier league', 'английская', 'манчестер', 'ливерпуль', 'челси', 'арсенал'],
+    'rpl': ['рпл', 'российская премьер-лига', 'зенит', 'спартак', 'цска', 'динамо', 'краснодар'],
+    'seriea': ['серия а', 'serie a', 'ювентус', 'интер', 'милан', 'рома', 'наполи'],
+    'bundesliga': ['бундеслига', 'bundesliga', 'бавария', 'боруссия', 'лейпциг'],
+    'ligue1': ['лига 1', 'ligue 1', 'пsg', 'пари сен-жермен', 'марсель', 'лион']
+  };
+  
+  const tournamentKeywords = keywords[tournament];
+  if (!tournamentKeywords) {
+    return news;
+  }
+  
+  // Фильтруем новости по ключевым словам
+  return news.filter(item => {
+    const text = `${item.title} ${item.description}`.toLowerCase();
+    return tournamentKeywords.some(keyword => text.includes(keyword.toLowerCase()));
+  });
+}
 
 // POST /api/admin/news - Добавить новость (только для админа)
 app.post("/api/admin/news", async (req, res) => {

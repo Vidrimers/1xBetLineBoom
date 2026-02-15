@@ -1753,7 +1753,26 @@
         style="display: none; margin-top: -5px"
       >
         <div class="section">
-          <h2 style="margin-bottom: 15px;">📢 Новости</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0;">📢 Новости</h2>
+            <button 
+              onclick="openRssNewsModal()"
+              style="
+                background: rgba(90, 159, 212, 0.7);
+                color: #e0e6f0;
+                border: 1px solid #3a7bd5;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.9em;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              🌐 Другие новости
+            </button>
+          </div>
           
           <!-- Фильтр по типам -->
           <div id="newsFilters" style="
@@ -5946,6 +5965,71 @@
             >
               📢 Опубликовать
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для RSS новостей -->
+    <div id="rssNewsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'rssNewsModal', closeRssNewsModal)">
+      <div class="modal-content" style="max-width: 900px; max-height: 85vh; overflow-y: auto">
+        <div class="modal-header">
+          <h2>🌐 Другие новости</h2>
+          <button class="close-btn" onclick="closeRssNewsModal()">×</button>
+        </div>
+        
+        <div style="padding: 20px">
+          <!-- Фильтр по турнирам -->
+          <div id="rssTournamentFilters" style="
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+          ">
+            <button class="rss-filter-btn active" data-tournament="all" onclick="filterRssNews('all')">
+              Все
+            </button>
+            <button class="rss-filter-btn" data-tournament="ucl" onclick="filterRssNews('ucl')">
+              🏆 Лига чемпионов
+            </button>
+            <button class="rss-filter-btn" data-tournament="uel" onclick="filterRssNews('uel')">
+              🥈 Лига Европы
+            </button>
+            <button class="rss-filter-btn" data-tournament="uecl" onclick="filterRssNews('uecl')">
+              🥉 Лига конференций
+            </button>
+            <button class="rss-filter-btn" data-tournament="supercup" onclick="filterRssNews('supercup')">
+              🏅 Суперкубок УЕФА
+            </button>
+            <button class="rss-filter-btn" data-tournament="worldcup" onclick="filterRssNews('worldcup')">
+              🌍 Чемпионат мира
+            </button>
+            <button class="rss-filter-btn" data-tournament="euro" onclick="filterRssNews('euro')">
+              🇪🇺 Евро
+            </button>
+            <button class="rss-filter-btn" data-tournament="epl" onclick="filterRssNews('epl')">
+              🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ
+            </button>
+            <button class="rss-filter-btn" data-tournament="rpl" onclick="filterRssNews('rpl')">
+              🇷🇺 РПЛ
+            </button>
+            <button class="rss-filter-btn" data-tournament="seriea" onclick="filterRssNews('seriea')">
+              🇮🇹 Серия А
+            </button>
+            <button class="rss-filter-btn" data-tournament="bundesliga" onclick="filterRssNews('bundesliga')">
+              🇩🇪 Бундеслига
+            </button>
+            <button class="rss-filter-btn" data-tournament="ligue1" onclick="filterRssNews('ligue1')">
+              🇫🇷 Лига 1
+            </button>
+          </div>
+          
+          <!-- Список новостей -->
+          <div id="rssNewsContainer">
+            <div style="text-align: center; padding: 40px; color: #b0b8c8;">
+              <div class="spinner"></div>
+              <p>Загрузка новостей...</p>
+            </div>
           </div>
         </div>
       </div>
