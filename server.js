@@ -19228,6 +19228,122 @@ app.post("/api/admin/panel-config", (req, res) => {
   }
 });
 
+// POST /api/admin/panel-config/reset - Сбросить конфигурацию к дефолтной (только для админа)
+app.post("/api/admin/panel-config/reset", (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    // Проверка прав админа
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+    
+    if (!user || user.username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Доступ запрещён" });
+    }
+    
+    // Дефолтная конфигурация
+    const defaultConfig = {
+      categories: [
+        {
+          id: 'system',
+          name: '📊 Система и логи',
+          icon: '📊',
+          collapsed: true,
+          buttons: [
+            { id: 'migrate-logs', text: '🔄 Обновить логи', action: 'migrateLogs()' },
+            { id: 'clear-logs', text: '🗑️ Очистить логи', action: 'clearLogs()' },
+            { id: 'open-logs', text: '📋 Открыть логи', action: 'window.open("/log.html", "_blank")', type: 'link' },
+            { id: 'database', text: '💾 База данных', action: 'openDatabaseModal()' },
+            { id: 'orphaned', text: '🔍 Проверить orphaned', action: 'checkOrphanedData()' }
+          ]
+        },
+        {
+          id: 'users',
+          name: '👥 Пользователи и модерация',
+          icon: '👥',
+          collapsed: false,
+          buttons: [
+            { id: 'users-list', text: '👥 Пользователи', action: 'loadAdminUsers()' },
+            { id: 'moderators', text: '🛡️ Модераторы', action: 'openModeratorsPanel()' },
+            { id: 'bugs', text: '🐛 Баги', action: 'openBugReportsModal()' }
+          ]
+        },
+        {
+          id: 'content',
+          name: '📢 Контент и новости',
+          icon: '📢',
+          collapsed: false,
+          buttons: [
+            { id: 'add-news', text: '📢 Добавить новость', action: 'openNewsModal()' },
+            { id: 'announcement', text: '📢 Объявление', action: 'openAnnouncementModal()' },
+            { id: 'rss-keywords', text: '🔑 Ключевые слова RSS', action: 'openRssKeywordsModal()' },
+            { id: 'awards', text: '🏆 Награды', action: 'openAwardsPanel()' }
+          ]
+        },
+        {
+          id: 'interface',
+          name: '⚙️ Настройки интерфейса',
+          icon: '⚙️',
+          collapsed: false,
+          buttons: [
+            { id: 'xg-button', text: '🎯 Кнопка xG', action: 'toggleXgButton()' },
+            { id: 'group-reminders', text: '🔔 Напоминания группы', action: 'toggleGroupRemindersCardVisibility()' }
+          ]
+        },
+        {
+          id: 'notifications',
+          name: '🔔 Уведомления',
+          icon: '🔔',
+          collapsed: false,
+          buttons: [
+            { id: 'notifications-queue', text: '📬 Очередь уведомлений', action: 'window.open("/admin/notifications", "_blank")', type: 'link' },
+            { id: 'manage-notifications', text: '🔔 Управление уведомлениями', action: 'openNotificationsModal()' }
+          ]
+        },
+        {
+          id: 'utilities',
+          name: '🛠️ Утилиты и инструменты',
+          icon: '🛠️',
+          collapsed: true,
+          buttons: [
+            { id: 'manage-dates', text: '📅 Управление датами', action: 'openDatesManagementModal()' },
+            { id: 'event-ids', text: '🏆 ID турниров', action: 'runUtilityScript("check-event-id")' },
+            { id: 'db-structure', text: '🗄️ Структура БД', action: 'runUtilityScript("check-tables")' },
+            { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()' },
+            { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()' },
+            { id: 'tests', text: '🧪 Тесты', action: 'openTestsModal()' },
+            { id: 'configure-categories', text: '⚙️ Настроить категории', action: 'openConfigureCategoriesModal()' }
+          ]
+        }
+      ]
+    };
+    
+    // Сохраняем дефолтную конфигурацию
+    db.prepare(`
+      INSERT INTO admin_panel_config (config_data, updated_by, updated_at)
+      VALUES (?, ?, datetime('now'))
+    `).run(JSON.stringify(defaultConfig), username);
+    
+    console.log(`✅ Конфигурация админ-панели сброшена к дефолту пользователем ${username}`);
+    
+    // Уведомление админу
+    const adminMessage = 
+      `🔄 <b>КОНФИГУРАЦИЯ АДМИН-ПАНЕЛИ СБРОШЕНА</b>\n\n` +
+      `👤 Пользователь: ${username}\n` +
+      `📊 Восстановлена дефолтная конфигурация\n` +
+      `🕐 ${new Date().toLocaleString("ru-RU")}`;
+    
+    notifyAdmin(adminMessage).catch(err => {
+      console.error("⚠️ Не удалось отправить уведомление админу:", err);
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка сброса конфигурации админ-панели:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Запускаем проверку каждые 5 минут
 const AUTO_COUNT_INTERVAL = 5 * 60 * 1000; // 5 минут
 setInterval(checkAndAutoCount, AUTO_COUNT_INTERVAL);
