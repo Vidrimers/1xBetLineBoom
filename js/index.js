@@ -6887,21 +6887,32 @@ async function checkOrphanedData() {
       totalOrphaned.awards +
       totalOrphaned.final_parameters;
 
-    let message = `📊 ORPHANED ДАННЫЕ В БД:\n\n`;
-    message += `🔴 Матчи без события: ${totalOrphaned.matches}\n`;
-    message += `🔴 Ставки на удалённые матчи: ${totalOrphaned.bets}\n`;
-    message += `🔴 Финальные ставки: ${totalOrphaned.final_bets}\n`;
-    message += `🔴 Напоминания: ${totalOrphaned.reminders}\n`;
-    message += `🔴 Награды: ${totalOrphaned.awards}\n`;
-    message += `🔴 Параметры финала: ${totalOrphaned.final_parameters}\n\n`;
-
     if (totalCount === 0) {
-      message += `✅ БД ЧИСТАЯ! Orphaned данных не найдено.`;
-      await showCustomAlert(message, "Проверка завершена", "✅");
+      await showCustomAlert(
+        '<div style="text-align: center; padding: 20px;">' +
+        '<div style="font-size: 3em; margin-bottom: 15px;">✅</div>' +
+        '<div style="font-size: 1.2em; color: #4caf50; font-weight: 600; margin-bottom: 10px;">БД ЧИСТАЯ!</div>' +
+        '<div style="color: #b0b8c8;">Orphaned данных не найдено</div>' +
+        '</div>',
+        "Проверка завершена",
+        "✅"
+      );
     } else {
-      message += `⚠️ Найдено ${totalCount} orphaned записей.\n\n`;
-      message += `Очистить orphaned данные?\n`;
-      message += `(Это удалит все найденные orphaned данные из БД)`;
+      const message = 
+        '<div style="padding: 10px;">' +
+        '<div style="font-size: 1.1em; color: #ff9800; font-weight: 600; margin-bottom: 15px; text-align: center;">⚠️ Найдено ' + totalCount + ' orphaned записей</div>' +
+        '<div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">' +
+        '<div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: 0.95em;">' +
+        '<div style="color: #e0e6f0;">🔴 Матчи без события:</div><div style="color: #f44336; font-weight: 600; text-align: right;">' + totalOrphaned.matches + '</div>' +
+        '<div style="color: #e0e6f0;">🔴 Ставки на удалённые матчи:</div><div style="color: #f44336; font-weight: 600; text-align: right;">' + totalOrphaned.bets + '</div>' +
+        '<div style="color: #e0e6f0;">🔴 Финальные ставки:</div><div style="color: #f44336; font-weight: 600; text-align: right;">' + totalOrphaned.final_bets + '</div>' +
+        '<div style="color: #e0e6f0;">🔴 Напоминания:</div><div style="color: #f44336; font-weight: 600; text-align: right;">' + totalOrphaned.reminders + '</div>' +
+        '<div style="color: #e0e6f0;">🔴 Награды:</div><div style="color: #f44336; font-weight: 600; text-align: right;">' + totalOrphaned.awards + '</div>' +
+        '<div style="color: #e0e6f0;">🔴 Параметры финала:</div><div style="color: #f44336; font-weight: 600; text-align: right;">' + totalOrphaned.final_parameters + '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div style="color: #b0b8c8; font-size: 0.9em; text-align: center; line-height: 1.5;">Очистить orphaned данные?<br/><span style="color: #888;">(Это удалит все найденные orphaned данные из БД)</span></div>' +
+        '</div>';
 
       const confirmed = await showCustomConfirm(message, "Очистка orphaned данных", "⚠️");
       if (confirmed) {
@@ -11228,11 +11239,15 @@ async function toggleGroupRemindersCardVisibility() {
         '✅'
       );
     } else {
-      await showCustomAlert(result.error || 'Ошибка при изменении видимости', 'Ошибка', '❌');
+      await showCustomAlert(result.error || 'Не удалось изменить видимость карточки', 'Ошибка', '❌');
     }
   } catch (error) {
     console.error('Ошибка при переключении видимости карточки:', error);
-    await showCustomAlert('Произошла ошибка при изменении видимости', 'Ошибка', '❌');
+    await showCustomAlert(
+      'Не удалось изменить видимость карточки.\n\nПроверьте подключение к серверу.',
+      'Ошибка',
+      '❌'
+    );
   }
 }
 
@@ -13688,11 +13703,17 @@ console.log(
 // Обновить файл логов без удаления содержимого (миграция)
 async function migrateLogs() {
   if (!isAdmin()) {
-    alert("Недостаточно прав");
+    await showCustomAlert("Недостаточно прав", "Доступ запрещён", "❌");
     return;
   }
 
-  if (!confirm("Обновить файл логов, добавив код отображения размера файла?\n\nСодержимое логов НЕ будет удалено.")) {
+  const confirmed = await showCustomConfirm(
+    "Обновить файл логов, добавив код отображения размера файла?\n\nСодержимое логов НЕ будет удалено.",
+    "Обновление логов",
+    "🔄"
+  );
+  
+  if (!confirmed) {
     return;
   }
 
@@ -13707,27 +13728,37 @@ async function migrateLogs() {
 
     if (response.ok) {
       if (result.alreadyMigrated) {
-        alert("ℹ️ " + result.message);
+        await showCustomAlert(result.message, "Информация", "ℹ️");
       } else {
-        alert("✅ " + result.message + "\n\nОбновите страницу логов чтобы увидеть изменения.");
+        await showCustomAlert(
+          result.message + "\n\nОбновите страницу логов чтобы увидеть изменения.",
+          "Успешно",
+          "✅"
+        );
       }
     } else {
-      alert("Ошибка: " + result.error);
+      await showCustomAlert(result.error, "Ошибка", "❌");
     }
   } catch (error) {
     console.error("Ошибка при обновлении логов:", error);
-    alert("Ошибка при обновлении логов");
+    await showCustomAlert("Ошибка при обновлении логов", "Ошибка", "❌");
   }
 }
 
 // Очистка логов
 async function clearLogs() {
   if (!canViewLogs()) {
-    alert("Недостаточно прав");
+    await showCustomAlert("Недостаточно прав", "Доступ запрещён", "❌");
     return;
   }
 
-  if (!confirm("Вы уверены, что хотите очистить все логи ставок?")) {
+  const confirmed = await showCustomConfirm(
+    "Вы уверены, что хотите очистить все логи ставок?",
+    "Очистка логов",
+    "⚠️"
+  );
+  
+  if (!confirmed) {
     return;
   }
 
@@ -13741,13 +13772,13 @@ async function clearLogs() {
     const result = await response.json();
 
     if (response.ok) {
-      alert("✅ Логи успешно очищены!");
+      await showCustomAlert("Логи успешно очищены!", "Успешно", "✅");
     } else {
-      alert("Ошибка: " + result.error);
+      await showCustomAlert(result.error, "Ошибка", "❌");
     }
   } catch (error) {
     console.error("Ошибка при очистке логов:", error);
-    alert("Ошибка при очистке логов");
+    await showCustomAlert("Ошибка при очистке логов", "Ошибка", "❌");
   }
 }
 
@@ -22347,7 +22378,7 @@ function renderButton(button) {
     return `
       <a
         href="#"
-        onclick="${button.action}; return false;"
+        onclick="${button.action}"
         style="
           display: flex;
           align-items: center;
