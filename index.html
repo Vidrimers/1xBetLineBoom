@@ -1371,8 +1371,29 @@
               >
                 🔑 Ключевые слова RSS
               </button>
+              <!-- Закомментировано: функционал не реализован
+              <button
+                onclick="openPersonalRemindersPanel()"
+                style="
+                  background: rgba(103, 58, 183, 0.7);
+                  color: #e1bee7;
+                  border: 1px solid #673ab7;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 180px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Просмотр персональных напоминаний пользователей"
+              >
                 👥 Напоминания ТГ
               </button>
+              -->
               <button
                 onclick="toggleXgButton()"
                 style="
@@ -6062,7 +6083,7 @@
     <div id="rssKeywordsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'rssKeywordsModal', closeRssKeywordsModal)">
       <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto">
         <div class="modal-header">
-          <h2>🔑 Управление ключевыми словами RSS</h2>
+          <h2>🔑 Ключевые слова RSS</h2>
           <button class="close-btn" onclick="closeRssKeywordsModal()">×</button>
         </div>
         
@@ -6076,7 +6097,7 @@
             margin-bottom: 20px;
           ">
             <h3 style="margin: 0 0 15px 0; color: #5a9fd4;">➕ Добавить ключевое слово</h3>
-            <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
+            <div id="addKeywordForm" style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
               <div>
                 <label style="display: block; margin-bottom: 5px; color: #b0b8c8; font-size: 0.9em;">Турнир</label>
                 <select id="newKeywordTournament" style="

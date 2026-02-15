@@ -22085,7 +22085,7 @@ function filterKeywordsByTournament() {
       const typeColor = kw.type === 'include' ? '#4caf50' : '#f44336';
       
       html += `
-        <div style="
+        <div class="keyword-item" style="
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -22094,7 +22094,7 @@ function filterKeywordsByTournament() {
           border: 1px solid rgba(90, 159, 212, 0.2);
           border-radius: 4px;
         ">
-          <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+          <div class="keyword-info" style="display: flex; align-items: center; gap: 10px; flex: 1;">
             <span style="font-size: 1.2em;">${typeEmoji}</span>
             <span style="color: #e0e6f0; font-size: 0.95em;">${kw.keyword}</span>
             <span style="
@@ -22112,7 +22112,7 @@ function filterKeywordsByTournament() {
               font-size: 0.85em;
             ">⭐ ${kw.priority}</span>
           </div>
-          <button onclick="deleteRssKeyword(${kw.id})" style="
+          <button class="keyword-delete-btn" onclick="deleteRssKeyword(${kw.id})" style="
             padding: 6px 12px;
             background: rgba(244, 67, 54, 0.7);
             color: #ffb3b3;

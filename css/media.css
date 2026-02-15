@@ -3592,3 +3592,63 @@
     max-width: 100%;
   }
 }
+
+
+/* ===== АДАПТИВ ДЛЯ МОДАЛКИ КЛЮЧЕВЫХ СЛОВ RSS ===== */
+@media (max-width: 768px) {
+  /* Форма добавления ключевого слова */
+  #addKeywordForm {
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
+  
+  #addKeywordForm > div {
+    width: 100%;
+  }
+  
+  #addKeywordForm button {
+    width: 100%;
+  }
+  
+  /* Модалка ключевых слов */
+  #rssKeywordsModal .modal-content {
+    max-width: 95% !important;
+    margin: 10px;
+  }
+  
+  /* Фильтр по турнирам */
+  #keywordsFilterTournament {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Уменьшаем отступы в модалке на маленьких экранах */
+  #rssKeywordsModal .modal-content > div {
+    padding: 15px !important;
+  }
+  
+  #rssKeywordsModal h2 {
+    font-size: 1em;
+  }
+  
+  #rssKeywordsModal h3 {
+    font-size: 1em;
+  }
+  
+  /* Карточки ключевых слов - вертикальный layout */
+  .keyword-item {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px;
+  }
+  
+  .keyword-info {
+    flex-wrap: wrap !important;
+  }
+  
+  .keyword-delete-btn {
+    width: 100% !important;
+    margin-top: 5px;
+  }
+}
