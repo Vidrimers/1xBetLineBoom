@@ -1389,6 +1389,27 @@
                 🏆 Награды
               </button>
               <button
+                onclick="openNewsModal()"
+                style="
+                  background: rgba(33, 150, 243, 0.7);
+                  color: #e3f2fd;
+                  border: 1px solid #2196f3;
+                  padding: 12px 20px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 0.95em;
+                  transition: all 0.3s ease;
+                  white-space: nowrap;
+                  flex: 1 1 auto;
+                  min-width: 140px;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Добавить новость для пользователей"
+              >
+                📢 Добавить новость
+              </button>
+              <button
                 onclick="checkOrphanedData()"
                 style="
                   background: rgba(255, 87, 34, 0.7);
@@ -5686,5 +5707,181 @@
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно для добавления новости -->
+    <div id="newsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'newsModal', closeNewsModal)">
+      <div class="modal-content" style="max-width: 600px">
+        <div class="modal-header">
+          <h2>📢 Добавить новость</h2>
+          <button class="close-btn" onclick="closeNewsModal()">×</button>
+        </div>
+        
+        <div style="padding: 20px">
+          <!-- Тип новости -->
+          <div style="margin-bottom: 20px">
+            <label style="display: block; margin-bottom: 10px; color: #e0e6f0; font-weight: 500">
+              Тип новости:
+            </label>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <button 
+                class="news-type-btn" 
+                data-type="tournament"
+                onclick="selectNewsType('tournament')"
+                style="
+                  flex: 1;
+                  min-width: 120px;
+                  padding: 12px;
+                  background: rgba(255, 152, 0, 0.2);
+                  border: 2px solid rgba(255, 152, 0, 0.5);
+                  border-radius: 8px;
+                  color: #ffb74d;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 1em;
+                "
+              >
+                🏆 Турниры
+              </button>
+              <button 
+                class="news-type-btn" 
+                data-type="system"
+                onclick="selectNewsType('system')"
+                style="
+                  flex: 1;
+                  min-width: 120px;
+                  padding: 12px;
+                  background: rgba(33, 150, 243, 0.2);
+                  border: 2px solid rgba(33, 150, 243, 0.5);
+                  border-radius: 8px;
+                  color: #64b5f6;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 1em;
+                "
+              >
+                ⚙️ Система
+              </button>
+              <button 
+                class="news-type-btn" 
+                data-type="achievement"
+                onclick="selectNewsType('achievement')"
+                style="
+                  flex: 1;
+                  min-width: 120px;
+                  padding: 12px;
+                  background: rgba(76, 175, 80, 0.2);
+                  border: 2px solid rgba(76, 175, 80, 0.5);
+                  border-radius: 8px;
+                  color: #81c784;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 1em;
+                "
+              >
+                🏅 Достижения
+              </button>
+              <button 
+                class="news-type-btn" 
+                data-type="announcement"
+                onclick="selectNewsType('announcement')"
+                style="
+                  flex: 1;
+                  min-width: 120px;
+                  padding: 12px;
+                  background: rgba(156, 39, 176, 0.2);
+                  border: 2px solid rgba(156, 39, 176, 0.5);
+                  border-radius: 8px;
+                  color: #ba68c8;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 1em;
+                "
+              >
+                📣 Анонсы
+              </button>
+            </div>
+          </div>
+
+          <!-- Заголовок -->
+          <div style="margin-bottom: 20px">
+            <label for="newsTitle" style="display: block; margin-bottom: 8px; color: #e0e6f0; font-weight: 500">
+              Заголовок:
+            </label>
+            <input
+              type="text"
+              id="newsTitle"
+              placeholder="Введите заголовок новости"
+              style="
+                width: 100%;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                color: #e0e6f0;
+                font-size: 1em;
+              "
+            />
+          </div>
+
+          <!-- Текст новости -->
+          <div style="margin-bottom: 20px">
+            <label for="newsMessage" style="display: block; margin-bottom: 8px; color: #e0e6f0; font-weight: 500">
+              Текст новости:
+            </label>
+            <textarea
+              id="newsMessage"
+              placeholder="Введите текст новости"
+              rows="5"
+              style="
+                width: 100%;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                color: #e0e6f0;
+                font-size: 1em;
+                resize: vertical;
+              "
+            ></textarea>
+          </div>
+
+          <!-- Кнопки -->
+          <div style="display: flex; gap: 10px; justify-content: flex-end">
+            <button
+              onclick="closeNewsModal()"
+              style="
+                padding: 12px 24px;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 8px;
+                color: #b0b8c8;
+                cursor: pointer;
+                font-size: 1em;
+                transition: all 0.3s;
+              "
+            >
+              Отмена
+            </button>
+            <button
+              onclick="publishNews()"
+              style="
+                padding: 12px 24px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border: none;
+                border-radius: 8px;
+                color: white;
+                cursor: pointer;
+                font-size: 1em;
+                font-weight: 500;
+                transition: all 0.3s;
+              "
+            >
+              📢 Опубликовать
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>

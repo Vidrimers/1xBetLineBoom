@@ -18259,6 +18259,114 @@ app.post("/api/admin/deactivate-events", (req, res) => {
   }
 });
 
+// ===== API ДЛЯ НОВОСТЕЙ =====
+
+// GET /api/news - Получить последние новости
+app.get("/api/news", (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const type = req.query.type; // Фильтр по типу (опционально)
+    
+    let query = "SELECT * FROM news";
+    let params = [];
+    
+    if (type) {
+      query += " WHERE type = ?";
+      params.push(type);
+    }
+    
+    query += " ORDER BY created_at DESC LIMIT ?";
+    params.push(limit);
+    
+    const news = db.prepare(query).all(...params);
+    
+    res.json({ success: true, news });
+  } catch (error) {
+    console.error("❌ Ошибка получения новостей:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/news - Добавить новость (только для админа)
+app.post("/api/admin/news", async (req, res) => {
+  try {
+    const { username, type, title, message } = req.body;
+    
+    // Проверка прав админа
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+    
+    if (!user || user.username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    // Проверка обязательных полей
+    if (!type || !title || !message) {
+      return res.status(400).json({ error: "Не указаны обязательные поля" });
+    }
+    
+    // Проверка типа новости
+    const validTypes = ['tournament', 'system', 'achievement', 'announcement'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: "Неверный тип новости" });
+    }
+    
+    // Добавляем новость
+    const result = db.prepare(`
+      INSERT INTO news (type, title, message)
+      VALUES (?, ?, ?)
+    `).run(type, title, message);
+    
+    const newsId = result.lastInsertRowid;
+    
+    // Получаем добавленную новость
+    const news = db.prepare("SELECT * FROM news WHERE id = ?").get(newsId);
+    
+    // Логируем действие
+    writeBetLog("admin", {
+      username: username,
+      action: "Добавлена новость",
+      details: `Тип: ${type}, Заголовок: ${title}`
+    });
+    
+    // Отправляем уведомление админу
+    const typeEmojis = {
+      'tournament': '🏆',
+      'system': '⚙️',
+      'achievement': '🏅',
+      'announcement': '📣'
+    };
+    
+    const time = new Date().toLocaleString("ru-RU", {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    
+    const adminMessage = 
+      `📢 <b>НОВОСТЬ ОПУБЛИКОВАНА</b>\n\n` +
+      `${typeEmojis[type]} Тип: ${type}\n` +
+      `📝 Заголовок: ${title}\n` +
+      `💬 Текст: ${message}\n\n` +
+      `👤 Автор: ${username}\n` +
+      `🕐 Время: ${time}`;
+    
+    try {
+      await sendAdminNotification(adminMessage);
+    } catch (error) {
+      console.error("Ошибка отправки уведомления админу:", error);
+    }
+    
+    res.json({ success: true, news });
+  } catch (error) {
+    console.error("❌ Ошибка добавления новости:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Запускаем проверку каждые 5 минут
 const AUTO_COUNT_INTERVAL = 5 * 60 * 1000; // 5 минут
 setInterval(checkAndAutoCount, AUTO_COUNT_INTERVAL);

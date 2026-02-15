@@ -1058,9 +1058,9 @@ export async function startBot() {
     reply_markup: {
       keyboard: [
         [{ text: "📊 Статус" }, { text: "📅 Турниры" }],
-        [{ text: "💰 Мои ставки" }, { text: "⚽ Ближайший матч" }],
-        [{ text: "📈 Статистика" }, { text: "👤 Профиль" }],
-        [{ text: "🏆 Мои награды" }, { text: "🌐 Открыть сайт" }]
+        [{ text: "⚽ Ближайший матч" }, { text: "📈 Статистика" }],
+        [{ text: "👤 Профиль" }, { text: "🏆 Мои награды" }],
+        [{ text: "📢 Новости" }, { text: "🌐 Открыть сайт" }]
       ],
       resize_keyboard: true,
       one_time_keyboard: false
@@ -1262,7 +1262,11 @@ export async function startBot() {
         { text: '👤 Профиль', callback_data: 'menu_profile' }
       ],
       [
-        { text: '🏆 Мои награды', callback_data: 'menu_awards' }
+        { text: '🏆 Мои награды', callback_data: 'menu_awards' },
+        { text: '🎲 Случайная ставка', callback_data: 'menu_luckybet' }
+      ],
+      [
+        { text: '📢 Новости', callback_data: 'menu_news' }
       ]
     ];
 
@@ -2150,6 +2154,114 @@ export async function startBot() {
     }
   };
 
+  // Обработчик кнопки 📢 Новости
+  const handleNews = async (chatIdOrMsg, legacyMsg = null) => {
+    const msg =
+      chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
+        ? chatIdOrMsg
+        : legacyMsg;
+    const chatId = msg ? msg.chat.id : chatIdOrMsg;
+
+    if (msg) logUserAction(msg, "Нажата кнопка: Новости");
+
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
+
+    try {
+      // Получаем новости с сервера
+      const response = await fetch(`${SERVER_URL}/api/news?limit=10`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch news");
+      }
+      const data = await response.json();
+      const news = data.news;
+
+      if (!news || news.length === 0) {
+        await sendMessageWithThread(
+          chatId,
+          `📢 <b>Новости:</b>\n\n` +
+            `<i>Новостей пока нет</i>`,
+          opts("noNews", {
+            parse_mode: "HTML",
+          })
+        );
+        return;
+      }
+
+      // Эмодзи для типов новостей
+      const typeEmojis = {
+        'tournament': '🏆',
+        'system': '⚙️',
+        'achievement': '🏅',
+        'announcement': '📣'
+      };
+
+      // Формируем сообщение с новостями
+      let messageText = `📢 <b>Новости:</b>\n\n`;
+
+      news.forEach((item, index) => {
+        // Форматируем дату
+        const newsDate = new Date(item.created_at);
+        const formattedDate = newsDate.toLocaleString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+
+        const emoji = typeEmojis[item.type] || '📰';
+        
+        messageText +=
+          `${emoji} <b>${item.title}</b>\n` +
+          `${item.message}\n` +
+          `<i>📅 ${formattedDate}</i>\n\n`;
+      });
+
+      await sendMessageWithThread(
+        chatId,
+        messageText,
+        opts("news", {
+          parse_mode: "HTML",
+        })
+      );
+    } catch (error) {
+      console.error("Error in handleNews:", error);
+      await sendMessageWithThread(
+        chatId,
+        `📢 <b>Новости:</b>\n\n` +
+          `<i>⚠️ Ошибка при загрузке новостей</i>`,
+        opts("error", {
+          parse_mode: "HTML",
+        })
+      );
+    }
+  };
+
+  // Обработчик кнопки 🎲 Случайная ставка
+  const handleLuckyBet = async (chatIdOrMsg, legacyMsg = null) => {
+    const msg =
+      chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
+        ? chatIdOrMsg
+        : legacyMsg;
+    const chatId = msg ? msg.chat.id : chatIdOrMsg;
+
+    if (msg) logUserAction(msg, "Нажата кнопка: Случайная ставка");
+
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
+
+    await sendMessageWithThread(
+      chatId,
+      `🎲 <b>Случайная ставка</b>\n\n` +
+        `<i>Функция в разработке...</i>\n\n` +
+        `💡 Скоро вы сможете делать рандомные ставки прямо из бота!`,
+      opts("luckybet", {
+        parse_mode: "HTML",
+      })
+    );
+  };
+
   bot.onText(/\/my_awards/, (msg) => handleMyAwards(msg.chat.id, msg));
 
   // ===== ОБРАБОТКА КНОПОК =====
@@ -2186,6 +2298,9 @@ export async function startBot() {
           break;
         case "🏆 Мои награды":
           handleMyAwards(chatId, msg);
+          break;
+        case "📢 Новости":
+          handleNews(chatId, msg);
           break;
         case "🌐 Открыть сайт":
           // Отправляем сообщение с inline кнопками для выбора способа доступа
@@ -2263,6 +2378,12 @@ export async function startBot() {
             break;
           case "menu_awards":
             handleMyAwards(chatId, fakeMsg);
+            break;
+          case "menu_luckybet":
+            handleLuckyBet(chatId, fakeMsg);
+            break;
+          case "menu_news":
+            handleNews(chatId, fakeMsg);
             break;
         }
         return;

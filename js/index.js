@@ -7729,6 +7729,114 @@ function closeDevicesModal() {
   }
 }
 
+// ===== ФУНКЦИИ ДЛЯ МОДАЛКИ НОВОСТЕЙ =====
+
+let selectedNewsType = null;
+
+// Открыть модальное окно добавления новости
+function openNewsModal() {
+  const modal = document.getElementById("newsModal");
+  if (modal) {
+    // Сбрасываем форму
+    document.getElementById("newsTitle").value = "";
+    document.getElementById("newsMessage").value = "";
+    selectedNewsType = null;
+    
+    // Сбрасываем выделение кнопок типа
+    document.querySelectorAll('.news-type-btn').forEach(btn => {
+      btn.style.opacity = '0.6';
+      btn.style.borderWidth = '2px';
+    });
+    
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = "flex";
+  }
+}
+
+// Закрыть модальное окно добавления новости
+function closeNewsModal() {
+  const modal = document.getElementById("newsModal");
+  if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
+    modal.style.display = "none";
+  }
+}
+
+// Выбрать тип новости
+function selectNewsType(type) {
+  selectedNewsType = type;
+  
+  // Обновляем визуальное состояние кнопок
+  document.querySelectorAll('.news-type-btn').forEach(btn => {
+    if (btn.getAttribute('data-type') === type) {
+      btn.style.opacity = '1';
+      btn.style.borderWidth = '3px';
+    } else {
+      btn.style.opacity = '0.6';
+      btn.style.borderWidth = '2px';
+    }
+  });
+}
+
+// Опубликовать новость
+async function publishNews() {
+  const title = document.getElementById("newsTitle").value.trim();
+  const message = document.getElementById("newsMessage").value.trim();
+  
+  // Валидация
+  if (!selectedNewsType) {
+    await showCustomAlert("Выберите тип новости", "Ошибка", "⚠️");
+    return;
+  }
+  
+  if (!title) {
+    await showCustomAlert("Введите заголовок новости", "Ошибка", "⚠️");
+    return;
+  }
+  
+  if (!message) {
+    await showCustomAlert("Введите текст новости", "Ошибка", "⚠️");
+    return;
+  }
+  
+  try {
+    const response = await fetch("/api/admin/news", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: currentUser.username,
+        type: selectedNewsType,
+        title: title,
+        message: message
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Ошибка при публикации новости");
+    }
+    
+    const result = await response.json();
+    
+    await showCustomAlert(
+      `Новость успешно опубликована!\n\nТип: ${selectedNewsType}\nЗаголовок: ${title}`,
+      "Успех",
+      "✅"
+    );
+    
+    closeNewsModal();
+  } catch (error) {
+    console.error("Ошибка публикации новости:", error);
+    await showCustomAlert(
+      `Не удалось опубликовать новость:\n${error.message}`,
+      "Ошибка",
+      "❌"
+    );
+  }
+}
+
 // Открыть модальное окно багрепорта
 function openBugReportModal() {
   if (!currentUser) {
