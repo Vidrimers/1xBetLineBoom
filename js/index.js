@@ -11210,7 +11210,14 @@ async function toggleGroupRemindersCardVisibility() {
   try {
     const card = document.getElementById('groupRemindersCard');
     const btn = document.getElementById('toggleGroupRemindersCardBtn');
-    const isCurrentlyHidden = card.style.display === 'none';
+    
+    // Проверяем существование элементов
+    if (!card) {
+      console.warn('Элемент groupRemindersCard не найден на странице');
+      // Всё равно отправляем запрос на сервер для изменения настройки
+    }
+    
+    const isCurrentlyHidden = card ? card.style.display === 'none' : false;
 
     // Переключаем видимость
     const newVisibility = !isCurrentlyHidden;
@@ -11227,11 +11234,17 @@ async function toggleGroupRemindersCardVisibility() {
     const result = await response.json();
 
     if (response.ok) {
-      card.style.display = newVisibility ? 'none' : 'block';
-      btn.textContent = newVisibility ? '👁️ Показать напоминания ТГ' : '🚫 Скрыть напоминания ТГ';
-      btn.style.background = newVisibility ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
-      btn.style.color = newVisibility ? '#c8e6c9' : '#ffe0d6';
-      btn.style.borderColor = newVisibility ? '#4caf50' : '#ff5722';
+      // Обновляем UI только если элементы существуют
+      if (card) {
+        card.style.display = newVisibility ? 'none' : 'block';
+      }
+      
+      if (btn) {
+        btn.textContent = newVisibility ? '👁️ Показать напоминания ТГ' : '🚫 Скрыть напоминания ТГ';
+        btn.style.background = newVisibility ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
+        btn.style.color = newVisibility ? '#c8e6c9' : '#ffe0d6';
+        btn.style.borderColor = newVisibility ? '#4caf50' : '#ff5722';
+      }
       
       await showCustomAlert(
         newVisibility ? 'Карточка скрыта для всех пользователей' : 'Карточка показана для всех пользователей',
@@ -22378,7 +22391,7 @@ function renderButton(button) {
     return `
       <a
         href="#"
-        onclick="${button.action}"
+        onclick='${button.action}; return false;'
         style="
           display: flex;
           align-items: center;
@@ -22404,7 +22417,7 @@ function renderButton(button) {
   // Обычная кнопка
   return `
     <button
-      onclick="${button.action}"
+      onclick='${button.action}'
       style="
         background: ${style.bg};
         color: ${style.color};
