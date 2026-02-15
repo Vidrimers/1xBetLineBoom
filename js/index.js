@@ -7764,6 +7764,148 @@ function closeNewsModal() {
   }
 }
 
+// Открыть модальное окно просмотра новостей на сайте
+async function openNewsModalSite() {
+  const modal = document.getElementById("newsViewModal");
+  if (modal) {
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = "flex";
+    
+    // Загружаем новости
+    await loadNewsForSite();
+  }
+}
+
+// Закрыть модальное окно просмотра новостей
+function closeNewsViewModal() {
+  const modal = document.getElementById("newsViewModal");
+  if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
+    modal.style.display = "none";
+  }
+}
+
+// Загрузить новости для отображения на сайте
+async function loadNewsForSite() {
+  const container = document.getElementById("newsViewContainer");
+  
+  if (!container) return;
+  
+  // Показываем загрузку
+  container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><div class="spinner"></div><p>Загрузка новостей...</p></div>';
+  
+  try {
+    const response = await fetch("/api/news?limit=20");
+    
+    if (!response.ok) {
+      throw new Error("Ошибка загрузки новостей");
+    }
+    
+    const data = await response.json();
+    const news = data.news;
+    
+    if (!news || news.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📢 Новостей пока нет</div>';
+      return;
+    }
+    
+    // Эмодзи для типов новостей
+    const typeEmojis = {
+      'tournament': '🏆',
+      'system': '⚙️',
+      'achievement': '🏅',
+      'announcement': '📣'
+    };
+    
+    const typeNames = {
+      'tournament': 'Турниры',
+      'system': 'Система',
+      'achievement': 'Достижения',
+      'announcement': 'Анонсы'
+    };
+    
+    const typeColors = {
+      'tournament': 'rgba(255, 152, 0, 0.2)',
+      'system': 'rgba(33, 150, 243, 0.2)',
+      'achievement': 'rgba(76, 175, 80, 0.2)',
+      'announcement': 'rgba(156, 39, 176, 0.2)'
+    };
+    
+    const typeBorderColors = {
+      'tournament': 'rgba(255, 152, 0, 0.5)',
+      'system': 'rgba(33, 150, 243, 0.5)',
+      'achievement': 'rgba(76, 175, 80, 0.5)',
+      'announcement': 'rgba(156, 39, 176, 0.5)'
+    };
+    
+    // Формируем HTML с новостями
+    let html = '';
+    
+    news.forEach((item, index) => {
+      // Форматируем дату
+      const newsDate = new Date(item.created_at);
+      const formattedDate = newsDate.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      
+      const emoji = typeEmojis[item.type] || '📰';
+      const typeName = typeNames[item.type] || item.type;
+      const bgColor = typeColors[item.type] || 'rgba(255, 255, 255, 0.05)';
+      const borderColor = typeBorderColors[item.type] || 'rgba(255, 255, 255, 0.1)';
+      
+      html += `
+        <div style="
+          background: ${bgColor};
+          border: 1px solid ${borderColor};
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 15px;
+          transition: all 0.3s;
+        ">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.5em;">${emoji}</span>
+              <span style="
+                background: rgba(255, 255, 255, 0.1);
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 0.85em;
+                color: #b0b8c8;
+              ">${typeName}</span>
+            </div>
+            <span style="color: #7a8394; font-size: 0.9em;">📅 ${formattedDate}</span>
+          </div>
+          
+          <h3 style="
+            color: #e0e6f0;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            font-weight: 600;
+          ">${item.title}</h3>
+          
+          <p style="
+            color: #b0b8c8;
+            margin: 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+          ">${item.message}</p>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+  } catch (error) {
+    console.error("Ошибка загрузки новостей:", error);
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки новостей</div>';
+  }
+}
+
 // Выбрать тип новости
 function selectNewsType(type) {
   selectedNewsType = type;

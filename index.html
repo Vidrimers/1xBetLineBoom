@@ -60,6 +60,9 @@
           <button class="tab-btn" onclick="switchTab('profile')">
             👤 Профиль
           </button>
+          <button class="tab-btn" onclick="openNewsModalSite()">
+            📢 Новости
+          </button>
           <button class="tab-btn" onclick="switchTab('settings')">
             ⚙️ Настройки
           </button>
@@ -5879,6 +5882,20 @@
               📢 Опубликовать
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для просмотра новостей на сайте -->
+    <div id="newsViewModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'newsViewModal', closeNewsViewModal)">
+      <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto">
+        <div class="modal-header">
+          <h2>📢 Новости</h2>
+          <button class="close-btn" onclick="closeNewsViewModal()">×</button>
+        </div>
+        
+        <div id="newsViewContainer" style="padding: 20px">
+          <!-- Новости будут загружены сюда -->
         </div>
       </div>
     </div>
