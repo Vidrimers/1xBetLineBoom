@@ -6853,15 +6853,17 @@ async function restoreBackup(filename) {
 // Проверить orphaned данные в БД
 async function checkOrphanedData() {
   if (!canManageOrphaned()) {
-    alert("❌ У вас нет прав для проверки orphaned данных");
+    await showCustomAlert("У вас нет прав для проверки orphaned данных", "Доступ запрещён", "❌");
     return;
   }
 
   try {
     const btn = document.querySelector('[onclick="checkOrphanedData()"]');
-    const originalText = btn.textContent;
-    btn.textContent = "⏳ Проверка...";
-    btn.disabled = true;
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+      btn.textContent = "⏳ Проверка...";
+      btn.disabled = true;
+    }
 
     // Используем currentUser.username - сервер проверит права
     const response = await fetch(
@@ -6895,19 +6897,20 @@ async function checkOrphanedData() {
 
     if (totalCount === 0) {
       message += `✅ БД ЧИСТАЯ! Orphaned данных не найдено.`;
-      alert(message);
+      await showCustomAlert(message, "Проверка завершена", "✅");
     } else {
       message += `⚠️ Найдено ${totalCount} orphaned записей.\n\n`;
       message += `Очистить orphaned данные?\n`;
       message += `(Это удалит все найденные orphaned данные из БД)`;
 
-      if (confirm(message)) {
+      const confirmed = await showCustomConfirm(message, "Очистка orphaned данных", "⚠️");
+      if (confirmed) {
         cleanupOrphanedData();
       }
     }
   } catch (error) {
     console.error("Ошибка при проверке orphaned данных:", error);
-    alert(`❌ Ошибка при проверке orphaned данных:\n${error.message}`);
+    await showCustomAlert(`Ошибка при проверке orphaned данных:\n${error.message}`, "Ошибка", "❌");
   } finally {
     const btn = document.querySelector('[onclick="checkOrphanedData()"]');
     if (btn) {
@@ -22293,7 +22296,8 @@ function renderAdminPanelAccordion(config) {
           class="admin-category-content"
           style="
             display: ${isCollapsed ? 'none' : 'flex'};
-            flex-direction: column;
+            flex-direction: row;
+            flex-wrap: wrap;
             gap: 10px;
             padding: 15px;
           "
