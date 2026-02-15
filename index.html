@@ -60,7 +60,7 @@
           <button class="tab-btn" onclick="switchTab('profile')">
             👤 Профиль
           </button>
-          <button class="tab-btn" onclick="openNewsModalSite()">
+          <button class="tab-btn" onclick="switchTab('news')">
             📢 Новости
           </button>
           <button class="tab-btn" onclick="switchTab('settings')">
@@ -1742,6 +1742,71 @@
                 👥 Пользователи
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Содержимое вкладки Новости -->
+      <div
+        class="content"
+        id="news-content"
+        style="display: none; margin-top: -5px"
+      >
+        <div class="section">
+          <h2 style="margin-bottom: 15px;">📢 Новости</h2>
+          
+          <!-- Фильтр по типам -->
+          <div id="newsFilters" style="
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+          ">
+            <button class="news-filter-btn active" data-type="all" onclick="filterNews('all')">
+              Все
+            </button>
+            <button class="news-filter-btn" data-type="tournament" onclick="filterNews('tournament')">
+              🏆 Турниры
+            </button>
+            <button class="news-filter-btn" data-type="system" onclick="filterNews('system')">
+              ⚙️ Система
+            </button>
+            <button class="news-filter-btn" data-type="achievement" onclick="filterNews('achievement')">
+              🏅 Достижения
+            </button>
+            <button class="news-filter-btn" data-type="announcement" onclick="filterNews('announcement')">
+              📣 Анонсы
+            </button>
+          </div>
+          
+          <!-- Список новостей -->
+          <div id="newsListContainer" style="margin-bottom: 20px;">
+            <div style="text-align: center; padding: 40px; color: #b0b8c8;">
+              <div class="spinner"></div>
+              <p>Загрузка новостей...</p>
+            </div>
+          </div>
+          
+          <!-- Кнопка "Еще ранее" -->
+          <div id="loadMoreNewsContainer" style="text-align: center; display: none;">
+            <button 
+              id="loadMoreNewsBtn"
+              onclick="loadMoreNews()"
+              style="
+                background: rgba(58, 123, 213, 0.7);
+                color: #e0e6f0;
+                border: 1px solid #3a7bd5;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1em;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              📜 Еще ранее
+            </button>
           </div>
         </div>
       </div>
@@ -5882,20 +5947,6 @@
               📢 Опубликовать
             </button>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Модальное окно для просмотра новостей на сайте -->
-    <div id="newsViewModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'newsViewModal', closeNewsViewModal)">
-      <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto">
-        <div class="modal-header">
-          <h2>📢 Новости</h2>
-          <button class="close-btn" onclick="closeNewsViewModal()">×</button>
-        </div>
-        
-        <div id="newsViewContainer" style="padding: 20px">
-          <!-- Новости будут загружены сюда -->
         </div>
       </div>
     </div>

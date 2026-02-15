@@ -4710,6 +4710,9 @@ function switchTab(tabName) {
     .getElementById("settings-content")
     .style.setProperty("display", "none", "important");
   document
+    .getElementById("news-content")
+    .style.setProperty("display", "none", "important");
+  document
     .getElementById("counting-content")
     .style.setProperty("display", "none", "important");
 
@@ -4770,6 +4773,15 @@ function switchTab(tabName) {
     }, 10);
     document.querySelectorAll(".tab-btn")[4].classList.add("active");
     loadSettings();
+  } else if (tabName === "news") {
+    const content = document.getElementById("news-content");
+    content.style.setProperty("display", "flex", "important");
+    content.style.opacity = "0";
+    setTimeout(() => {
+      content.style.opacity = "1";
+    }, 10);
+    document.querySelectorAll(".tab-btn")[4].classList.add("active");
+    loadNewsTab();
   } else if (tabName === "counting") {
     const content = document.getElementById("counting-content");
     content.style.setProperty("display", "flex", "important");
@@ -7903,6 +7915,354 @@ async function loadNewsForSite() {
   } catch (error) {
     console.error("Ошибка загрузки новостей:", error);
     container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки новостей</div>';
+  }
+}
+
+// ===== НОВОСТИ НА САЙТЕ (ВКЛАДКА) =====
+
+// Переменные для пагинации новостей
+let newsOffset = 0;
+let newsLimit = 50;
+let currentNewsFilter = 'all';
+let hasMoreNews = true;
+
+// Загрузить вкладку новостей
+async function loadNewsTab() {
+  // Сбрасываем пагинацию при открытии вкладки
+  newsOffset = 0;
+  hasMoreNews = true;
+  currentNewsFilter = 'all';
+  
+  // Сбрасываем активный фильтр
+  document.querySelectorAll('.news-filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.type === 'all') {
+      btn.classList.add('active');
+    }
+  });
+  
+  // Загружаем новости
+  await loadNewsList(true);
+}
+
+// Загрузить список новостей
+async function loadNewsList(reset = false) {
+  const container = document.getElementById("newsListContainer");
+  
+  if (!container) return;
+  
+  // Если reset, очищаем контейнер и сбрасываем offset
+  if (reset) {
+    newsOffset = 0;
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><div class="spinner"></div><p>Загрузка новостей...</p></div>';
+  } else {
+    // Показываем загрузку в кнопке
+    const loadMoreBtn = document.getElementById("loadMoreNewsBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; margin: 0 auto;"></div>';
+      loadMoreBtn.disabled = true;
+    }
+  }
+  
+  try {
+    // Формируем URL с параметрами
+    let url = `/api/news?limit=${newsLimit}&offset=${newsOffset}`;
+    if (currentNewsFilter !== 'all') {
+      url += `&type=${currentNewsFilter}`;
+    }
+    // Добавляем username для получения реакций пользователя
+    if (currentUser) {
+      url += `&username=${encodeURIComponent(currentUser.username)}`;
+    }
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error("Ошибка загрузки новостей");
+    }
+    
+    const data = await response.json();
+    const news = data.news;
+    
+    // Проверяем есть ли еще новости
+    hasMoreNews = news.length === newsLimit;
+    
+    // Обновляем offset для следующей загрузки
+    newsOffset += news.length;
+    
+    if (reset && (!news || news.length === 0)) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📢 Новостей пока нет</div>';
+      document.getElementById("loadMoreNewsContainer").style.display = "none";
+      return;
+    }
+    
+    // Эмодзи для типов новостей
+    const typeEmojis = {
+      'tournament': '🏆',
+      'system': '⚙️',
+      'achievement': '🏅',
+      'announcement': '📣'
+    };
+    
+    const typeNames = {
+      'tournament': 'Турниры',
+      'system': 'Система',
+      'achievement': 'Достижения',
+      'announcement': 'Анонсы'
+    };
+    
+    const typeColors = {
+      'tournament': 'rgba(255, 152, 0, 0.2)',
+      'system': 'rgba(33, 150, 243, 0.2)',
+      'achievement': 'rgba(76, 175, 80, 0.2)',
+      'announcement': 'rgba(156, 39, 176, 0.2)'
+    };
+    
+    const typeBorderColors = {
+      'tournament': 'rgba(255, 152, 0, 0.5)',
+      'system': 'rgba(33, 150, 243, 0.5)',
+      'achievement': 'rgba(76, 175, 80, 0.5)',
+      'announcement': 'rgba(156, 39, 176, 0.5)'
+    };
+    
+    // Формируем HTML с новостями
+    let html = reset ? '' : container.innerHTML;
+    
+    news.forEach((item) => {
+      // Форматируем дату
+      const newsDate = new Date(item.created_at);
+      const formattedDate = newsDate.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      
+      const emoji = typeEmojis[item.type] || '📰';
+      const typeName = typeNames[item.type] || item.type;
+      const bgColor = typeColors[item.type] || 'rgba(255, 255, 255, 0.05)';
+      const borderColor = typeBorderColors[item.type] || 'rgba(255, 255, 255, 0.1)';
+      
+      // Проверяем является ли пользователь админом
+      const isAdmin = currentUser && currentUser.isAdmin === true;
+      
+      html += `
+        <div class="news-item" style="
+          background: ${bgColor};
+          border: 1px solid ${borderColor};
+        " data-news-id="${item.id}">
+          ${isAdmin ? `<button class="news-delete-btn" onclick="deleteNews(${item.id})" title="Удалить новость">×</button>` : ''}
+          
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.5em;">${emoji}</span>
+              <span style="
+                background: rgba(255, 255, 255, 0.1);
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 0.85em;
+                color: #b0b8c8;
+              ">${typeName}</span>
+            </div>
+            <span style="color: #7a8394; font-size: 0.9em;">📅 ${formattedDate}</span>
+          </div>
+          
+          <h3 style="
+            color: #e0e6f0;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            font-weight: 600;
+          ">${item.title}</h3>
+          
+          <p style="
+            color: #b0b8c8;
+            margin: 0 0 15px 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+          ">${item.message}</p>
+          
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button 
+              class="news-reaction-btn ${item.user_reaction === 'like' ? 'active' : ''}" 
+              onclick="reactToNews(${item.id}, 'like')"
+              data-news-id="${item.id}"
+              data-reaction="like"
+            >
+              👍 <span class="like-count">${item.likes || 0}</span>
+            </button>
+            <button 
+              class="news-reaction-btn dislike ${item.user_reaction === 'dislike' ? 'active' : ''}" 
+              onclick="reactToNews(${item.id}, 'dislike')"
+              data-news-id="${item.id}"
+              data-reaction="dislike"
+            >
+              👎 <span class="dislike-count">${item.dislikes || 0}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Показываем/скрываем кнопку "Еще ранее"
+    const loadMoreContainer = document.getElementById("loadMoreNewsContainer");
+    if (hasMoreNews) {
+      loadMoreContainer.style.display = "block";
+      const loadMoreBtn = document.getElementById("loadMoreNewsBtn");
+      if (loadMoreBtn) {
+        loadMoreBtn.innerHTML = '📜 Еще ранее';
+        loadMoreBtn.disabled = false;
+      }
+    } else {
+      loadMoreContainer.style.display = "none";
+    }
+    
+  } catch (error) {
+    console.error("❌ Ошибка загрузки новостей:", error);
+    if (reset) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки новостей</div>';
+    } else {
+      const loadMoreBtn = document.getElementById("loadMoreNewsBtn");
+      if (loadMoreBtn) {
+        loadMoreBtn.innerHTML = '❌ Ошибка';
+        loadMoreBtn.disabled = false;
+      }
+    }
+  }
+}
+
+// Загрузить еще новости
+async function loadMoreNews() {
+  await loadNewsList(false);
+}
+
+// Фильтр новостей по типу
+async function filterNews(type) {
+  currentNewsFilter = type;
+  
+  // Обновляем активную кнопку фильтра
+  document.querySelectorAll('.news-filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.type === type) {
+      btn.classList.add('active');
+    }
+  });
+  
+  // Перезагружаем новости
+  await loadNewsList(true);
+}
+
+// Реакция на новость (лайк/дизлайк)
+async function reactToNews(newsId, reaction) {
+  if (!currentUser) {
+    alert("Сначала войдите в аккаунт");
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/news/${newsId}/reaction`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: currentUser.username,
+        reaction: reaction
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error("Ошибка отправки реакции");
+    }
+    
+    const data = await response.json();
+    
+    // Обновляем счетчики и активные кнопки
+    const newsItem = document.querySelector(`.news-item[data-news-id="${newsId}"]`);
+    if (newsItem) {
+      const likeBtn = newsItem.querySelector('[data-reaction="like"]');
+      const dislikeBtn = newsItem.querySelector('[data-reaction="dislike"]');
+      const likeCount = likeBtn.querySelector('.like-count');
+      const dislikeCount = dislikeBtn.querySelector('.dislike-count');
+      
+      // Обновляем счетчики
+      likeCount.textContent = data.likes || 0;
+      dislikeCount.textContent = data.dislikes || 0;
+      
+      // Обновляем активные кнопки
+      likeBtn.classList.remove('active');
+      dislikeBtn.classList.remove('active');
+      
+      if (data.user_reaction === 'like') {
+        likeBtn.classList.add('active');
+      } else if (data.user_reaction === 'dislike') {
+        dislikeBtn.classList.add('active');
+      }
+    }
+    
+  } catch (error) {
+    console.error("❌ Ошибка реакции на новость:", error);
+    alert("Ошибка отправки реакции");
+  }
+}
+
+// Удалить новость (только админ)
+async function deleteNews(newsId) {
+  if (!currentUser) {
+    await showCustomAlert("Сначала войдите в аккаунт", "Ошибка", "❌");
+    return;
+  }
+  
+  const confirmed = await showCustomConfirm(
+    "Вы уверены, что хотите удалить эту новость?",
+    "Удаление новости",
+    "🗑️"
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/news/${newsId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: currentUser.username
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Ошибка удаления новости");
+    }
+    
+    // Удаляем элемент из DOM
+    const newsItem = document.querySelector(`.news-item[data-news-id="${newsId}"]`);
+    if (newsItem) {
+      newsItem.style.opacity = '0';
+      newsItem.style.transform = 'translateX(-20px)';
+      setTimeout(() => {
+        newsItem.remove();
+        
+        // Проверяем остались ли новости
+        const container = document.getElementById("newsListContainer");
+        if (container && container.children.length === 0) {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📢 Новостей пока нет</div>';
+          document.getElementById("loadMoreNewsContainer").style.display = "none";
+        }
+      }, 300);
+    }
+    
+    await showCustomAlert("Новость успешно удалена", "Успех", "✅");
+    
+  } catch (error) {
+    console.error("❌ Ошибка удаления новости:", error);
+    await showCustomAlert(error.message || "Ошибка удаления новости", "Ошибка", "❌");
   }
 }
 

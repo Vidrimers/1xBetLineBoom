@@ -167,7 +167,7 @@
     width: 40%;
     /* max-width: 100%; */
     height: auto;
-    height: 50vh;
+    height: 60vh;
     padding: 20px;
     background: rgba(30, 34, 44, 0.98);
     z-index: 1000;
@@ -1854,7 +1854,7 @@
     width: 50%;
     flex: 1;
     padding: 10px 0;
-    height: 50vh;
+    height: 60vh;
     /* max-width: 100%;
     padding: 4px;
     margin: 0 auto 5px;

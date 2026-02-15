@@ -6532,6 +6532,7 @@ app.get("/api/user/:userId/bets", async (req, res) => {
       SELECT b.*, 
              m.team1_name, m.team2_name, m.winner, 
              m.status as match_status, m.round, m.is_final, m.match_date,
+             m.event_id,
              m.yellow_cards as actual_yellow_cards,
              m.red_cards as actual_red_cards,
              e.name as event_name, 
@@ -18265,24 +18266,212 @@ app.post("/api/admin/deactivate-events", (req, res) => {
 app.get("/api/news", (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
+    const offset = parseInt(req.query.offset) || 0;
     const type = req.query.type; // Фильтр по типу (опционально)
+    const username = req.query.username; // Для получения реакций пользователя
     
-    let query = "SELECT * FROM news";
+    let query = `
+      SELECT 
+        n.*,
+        (SELECT COUNT(*) FROM news_reactions WHERE news_id = n.id AND reaction = 'like') as likes,
+        (SELECT COUNT(*) FROM news_reactions WHERE news_id = n.id AND reaction = 'dislike') as dislikes
+    `;
+    
+    // Если передан username, добавляем реакцию пользователя
+    if (username) {
+      query += `,
+        (SELECT reaction FROM news_reactions WHERE news_id = n.id AND username = ?) as user_reaction
+      `;
+    }
+    
+    query += " FROM news n";
+    
     let params = [];
     
-    if (type) {
-      query += " WHERE type = ?";
+    // Добавляем username в параметры если он есть
+    if (username) {
+      params.push(username);
+    }
+    
+    if (type && type !== 'all') {
+      query += " WHERE n.type = ?";
       params.push(type);
     }
     
-    query += " ORDER BY created_at DESC LIMIT ?";
-    params.push(limit);
+    query += " ORDER BY n.created_at DESC LIMIT ? OFFSET ?";
+    params.push(limit, offset);
     
     const news = db.prepare(query).all(...params);
     
     res.json({ success: true, news });
   } catch (error) {
     console.error("❌ Ошибка получения новостей:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/news/:id/reaction - Добавить/изменить реакцию на новость
+app.post("/api/news/:id/reaction", async (req, res) => {
+  try {
+    const newsId = parseInt(req.params.id);
+    const { username, reaction } = req.body;
+    
+    // Проверка обязательных полей
+    if (!username || !reaction) {
+      return res.status(400).json({ error: "Не указаны обязательные поля" });
+    }
+    
+    // Проверка типа реакции
+    if (!['like', 'dislike'].includes(reaction)) {
+      return res.status(400).json({ error: "Неверный тип реакции" });
+    }
+    
+    // Проверяем существует ли новость
+    const news = db.prepare("SELECT * FROM news WHERE id = ?").get(newsId);
+    if (!news) {
+      return res.status(404).json({ error: "Новость не найдена" });
+    }
+    
+    // Проверяем существует ли уже реакция пользователя
+    const existingReaction = db.prepare(`
+      SELECT * FROM news_reactions WHERE news_id = ? AND username = ?
+    `).get(newsId, username);
+    
+    if (existingReaction) {
+      if (existingReaction.reaction === reaction) {
+        // Если пользователь нажал на ту же кнопку - удаляем реакцию
+        db.prepare(`
+          DELETE FROM news_reactions WHERE news_id = ? AND username = ?
+        `).run(newsId, username);
+      } else {
+        // Если пользователь изменил реакцию - обновляем
+        db.prepare(`
+          UPDATE news_reactions SET reaction = ? WHERE news_id = ? AND username = ?
+        `).run(reaction, newsId, username);
+      }
+    } else {
+      // Добавляем новую реакцию
+      db.prepare(`
+        INSERT INTO news_reactions (news_id, username, reaction)
+        VALUES (?, ?, ?)
+      `).run(newsId, username, reaction);
+    }
+    
+    // Получаем обновленные счетчики
+    const likes = db.prepare(`
+      SELECT COUNT(*) as count FROM news_reactions WHERE news_id = ? AND reaction = 'like'
+    `).get(newsId).count;
+    
+    const dislikes = db.prepare(`
+      SELECT COUNT(*) as count FROM news_reactions WHERE news_id = ? AND reaction = 'dislike'
+    `).get(newsId).count;
+    
+    // Получаем текущую реакцию пользователя
+    const userReaction = db.prepare(`
+      SELECT reaction FROM news_reactions WHERE news_id = ? AND username = ?
+    `).get(newsId, username);
+    
+    // Отправляем уведомление админу
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username, telegram_username FROM users WHERE username = ?").get(username);
+    
+    const reactionEmoji = reaction === 'like' ? '👍' : '👎';
+    const reactionText = reaction === 'like' ? 'Лайк' : 'Дизлайк';
+    
+    const time = new Date().toLocaleString("ru-RU", {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    
+    const adminMessage = 
+      `📢 <b>ОЦЕНКА НОВОСТИ</b>\n\n` +
+      `👤 Пользователь: ${user.username}\n` +
+      (user.telegram_username ? `📱 Telegram: @${user.telegram_username}\n` : '') +
+      `📰 Новость: ${news.title}\n` +
+      `${reactionEmoji} Оценка: ${reactionText}\n\n` +
+      `🕐 Время: ${time}`;
+    
+    try {
+      await sendAdminNotification(adminMessage);
+    } catch (error) {
+      console.error("Ошибка отправки уведомления админу:", error);
+    }
+    
+    res.json({ 
+      success: true, 
+      likes, 
+      dislikes,
+      user_reaction: userReaction ? userReaction.reaction : null
+    });
+  } catch (error) {
+    console.error("❌ Ошибка добавления реакции:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/news/:id - Удалить новость (только для админа)
+app.delete("/api/admin/news/:id", async (req, res) => {
+  try {
+    const newsId = parseInt(req.params.id);
+    const { username } = req.body;
+    
+    // Проверка прав админа
+    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+    const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
+    
+    if (!user || user.username !== ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    // Проверяем существует ли новость
+    const news = db.prepare("SELECT * FROM news WHERE id = ?").get(newsId);
+    if (!news) {
+      return res.status(404).json({ error: "Новость не найдена" });
+    }
+    
+    // Удаляем реакции на новость
+    db.prepare("DELETE FROM news_reactions WHERE news_id = ?").run(newsId);
+    
+    // Удаляем новость
+    db.prepare("DELETE FROM news WHERE id = ?").run(newsId);
+    
+    // Логируем действие
+    writeBetLog("admin", {
+      username: username,
+      action: "Удалена новость",
+      details: `ID: ${newsId}, Заголовок: ${news.title}`
+    });
+    
+    // Отправляем уведомление админу
+    const time = new Date().toLocaleString("ru-RU", {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    
+    const adminMessage = 
+      `🗑️ <b>НОВОСТЬ УДАЛЕНА</b>\n\n` +
+      `📰 Заголовок: ${news.title}\n` +
+      `💬 Текст: ${news.message}\n\n` +
+      `👤 Удалил: ${username}\n` +
+      `🕐 Время: ${time}`;
+    
+    try {
+      await sendAdminNotification(adminMessage);
+    } catch (error) {
+      console.error("Ошибка отправки уведомления админу:", error);
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка удаления новости:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

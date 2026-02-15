@@ -42,6 +42,7 @@ positive-reactions.json
 live.txt
 Glicko2.txt
 add-news-table.cjs
+add-news-reactions-table.cjs
 
 Autoparsing.js
 

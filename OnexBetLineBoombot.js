@@ -1560,42 +1560,6 @@ export async function startBot() {
       );
     }
   };
-          predictionText = bet.team2_name;
-        } else if (bet.prediction === "draw") {
-          predictionText = "Ничья";
-        }
-
-        messageText +=
-          `<b>${index + 1}. ${bet.team1_name} vs ${bet.team2_name}</b>\n` +
-          `🎯 Прогноз: <b>${predictionText}</b>\n\n`;
-      });
-
-      if (userPendingBets.length > 10) {
-        messageText += `📌 Показано 10 из ${userPendingBets.length} ставок\n\n`;
-      }
-
-      messageText += `💡 Полный список на сайте.`;
-
-      await sendMessageWithThread(
-        chatId,
-        messageText,
-        opts("list", {
-          parse_mode: "HTML",
-        })
-      );
-    } catch (error) {
-      console.error("Error in handleMyBets:", error);
-      await sendMessageWithThread(
-        chatId,
-        `💰 <b>Мои ставки:</b>\n\n` +
-          `<i>⚠️ Ошибка при загрузке ставок</i>\n\n` +
-          `💡 Используйте сайт для управления ставками.`,
-        opts("error", {
-          parse_mode: "HTML",
-        })
-      );
-    }
-  };
 
   bot.onText(/\/my_bets/, (msg) => handleMyBets(msg.chat.id, msg));
 
@@ -2250,6 +2214,9 @@ export async function startBot() {
     }
   };
 
+  // Временное хранилище для данных случайной ставки
+  const luckyBetRoundsCache = new Map();
+
   // Обработчик кнопки 🎲 Случайная ставка
   const handleLuckyBet = async (chatIdOrMsg, legacyMsg = null) => {
     const msg =
@@ -2358,10 +2325,6 @@ export async function startBot() {
         })
       );
     }
-  };
-
-  bot.onText(/\/my_awards/, (msg) => handleMyAwards(msg.chat.id, msg));
-    );
   };
 
   bot.onText(/\/my_awards/, (msg) => handleMyAwards(msg.chat.id, msg));
@@ -2566,10 +2529,14 @@ export async function startBot() {
               return;
             }
             
-            // Формируем кнопки с турами
-            const roundButtons = roundsWithoutBets.map(round => [{
+            // Сохраняем данные туров в кэш
+            const cacheKey = `${chatId}_${eventId}_${userId}`;
+            luckyBetRoundsCache.set(cacheKey, roundsWithoutBets);
+            
+            // Формируем кнопки с турами (используем индекс вместо названия)
+            const roundButtons = roundsWithoutBets.map((round, index) => [{
               text: round,
-              callback_data: `luckybet_round_${eventId}_${userId}_${encodeURIComponent(round)}`
+              callback_data: `luckybet_round_${eventId}_${userId}_${index}`
             }]);
             
             roundButtons.push([{
@@ -2603,12 +2570,30 @@ export async function startBot() {
           return;
         }
         
-        // Обработка выбора тура: luckybet_round_{eventId}_{userId}_{round}
+        // Обработка выбора тура: luckybet_round_{eventId}_{userId}_{roundIndex}
         if (data.startsWith("luckybet_round_")) {
           const parts = data.split("_");
           const eventId = parseInt(parts[2]);
           const userId = parseInt(parts[3]);
-          const round = decodeURIComponent(parts.slice(4).join("_"));
+          const roundIndex = parseInt(parts[4]);
+          
+          // Получаем название тура из кэша
+          const cacheKey = `${chatId}_${eventId}_${userId}`;
+          const rounds = luckyBetRoundsCache.get(cacheKey);
+          
+          if (!rounds || !rounds[roundIndex]) {
+            await bot.editMessageText(
+              `🎲 <b>Случайная ставка</b>\n\n<i>⚠️ Данные устарели, попробуйте снова</i>`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+            return;
+          }
+          
+          const round = rounds[roundIndex];
           
           // Показываем кнопки подтверждения
           await bot.editMessageText(
@@ -2623,7 +2608,7 @@ export async function startBot() {
               reply_markup: {
                 inline_keyboard: [
                   [
-                    { text: '🎲 Рискнуть', callback_data: `luckybet_confirm_${eventId}_${userId}_${encodeURIComponent(round)}` },
+                    { text: '🎲 Рискнуть', callback_data: `luckybet_confirm_${eventId}_${userId}_${roundIndex}` },
                     { text: '❌ Отмена', callback_data: 'luckybet_cancel' }
                   ]
                 ]
@@ -2633,12 +2618,30 @@ export async function startBot() {
           return;
         }
         
-        // Обработка подтверждения: luckybet_confirm_{eventId}_{userId}_{round}
+        // Обработка подтверждения: luckybet_confirm_{eventId}_{userId}_{roundIndex}
         if (data.startsWith("luckybet_confirm_")) {
           const parts = data.split("_");
           const eventId = parseInt(parts[2]);
           const userId = parseInt(parts[3]);
-          const round = decodeURIComponent(parts.slice(4).join("_"));
+          const roundIndex = parseInt(parts[4]);
+          
+          // Получаем название тура из кэша
+          const cacheKey = `${chatId}_${eventId}_${userId}`;
+          const rounds = luckyBetRoundsCache.get(cacheKey);
+          
+          if (!rounds || !rounds[roundIndex]) {
+            await bot.editMessageText(
+              `🎲 <b>Случайная ставка</b>\n\n<i>⚠️ Данные устарели, попробуйте снова</i>`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+            return;
+          }
+          
+          const round = rounds[roundIndex];
           
           try {
             // Получаем матчи тура
@@ -2763,6 +2766,9 @@ export async function startBot() {
             });
             
             messageText += `💡 Удачи! 🍀`;
+            
+            // Очищаем кэш после успешного создания ставок
+            luckyBetRoundsCache.delete(cacheKey);
             
             await bot.editMessageText(
               messageText,
