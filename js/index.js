@@ -22357,37 +22357,36 @@ function renderAdminPanelAccordion(config) {
 
 // Отрисовать кнопку
 function renderButton(button) {
-  // Определяем стиль кнопки по её ID
-  const buttonStyles = {
-    'migrate-logs': { bg: 'rgba(255, 152, 0, 0.7)', border: '#ff9800', color: '#fff' },
-    'clear-logs': { bg: 'rgba(244, 67, 54, 0.7)', border: '#f44336', color: '#ffb3b3' },
-    'open-logs': { bg: 'rgba(90, 159, 212, 0.7)', border: '#3a7bd5', color: '#e0e6f0' },
-    'database': { bg: 'rgba(76, 175, 80, 0.7)', border: '#4caf50', color: '#c8e6c9' },
-    'orphaned': { bg: 'rgba(255, 87, 34, 0.7)', border: '#ff5722', color: '#ffccbc' },
-    'users-list': { bg: 'rgba(58, 123, 213, 0.8)', border: '#3a7bd5', color: '#e0e6f0' },
-    'moderators': { bg: 'rgba(156, 39, 176, 0.7)', border: '#9c27b0', color: '#f0e6ff' },
-    'bugs': { bg: 'rgba(244, 67, 54, 0.8)', border: '#f44336', color: '#fff' },
-    'add-news': { bg: 'rgba(33, 150, 243, 0.7)', border: '#2196f3', color: '#e3f2fd' },
-    'announcement': { bg: 'rgba(255, 87, 34, 0.7)', border: '#ff5722', color: '#ffccbc' },
-    'rss-keywords': { bg: 'rgba(33, 150, 243, 0.7)', border: '#2196f3', color: '#e3f2fd' },
-    'awards': { bg: 'rgba(255, 193, 7, 0.7)', border: '#fbc02d', color: '#fff8e1' },
-    'xg-button': { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: '#764ba2', color: '#fff' },
-    'group-reminders': { bg: 'rgba(255, 87, 34, 0.7)', border: '#ff5722', color: '#ffe0d6' },
-    'notifications-queue': { bg: 'rgba(90, 159, 212, 0.7)', border: '#3a7bd5', color: '#e0e6f0' },
-    'manage-notifications': { bg: 'rgba(76, 175, 80, 0.7)', border: '#4caf50', color: '#c8e6c9' },
-    'manage-dates': { bg: 'rgba(33, 150, 243, 0.7)', border: '#2196f3', color: '#e3f2fd' },
-    'event-ids': { bg: 'rgba(0, 150, 136, 0.7)', border: '#009688', color: '#b2dfdb' },
-    'db-structure': { bg: 'rgba(121, 85, 72, 0.7)', border: '#795548', color: '#d7ccc8' },
-    'deactivate-old': { bg: 'rgba(255, 152, 0, 0.7)', border: '#ff9800', color: '#ffe0b2' },
-    'update-sstats': { bg: 'rgba(233, 30, 99, 0.7)', border: '#e91e63', color: '#f8bbd0' },
-    'tests': { bg: 'rgba(76, 175, 80, 0.8)', border: '#4caf50', color: '#c8e6c9' },
-    'configure-categories': { bg: 'rgba(103, 58, 183, 0.7)', border: '#673ab7', color: '#e1bee7' }
-  };
+  // Определяем цвет строго по типу кнопки
+  let bgColor, borderColor, textColor;
   
-  const style = buttonStyles[button.id] || { bg: 'rgba(90, 159, 212, 0.7)', border: '#3a7bd5', color: '#e0e6f0' };
+  if (button.type === 'toggle') {
+    // Зелёный для тоглов
+    bgColor = 'rgba(76, 175, 80, 0.7)';
+    borderColor = '#4caf50';
+    textColor = '#c8e6c9';
+  } else if (button.type === 'external') {
+    // Серый для внешних ссылок
+    bgColor = 'rgba(120, 120, 120, 0.7)';
+    borderColor = '#888';
+    textColor = '#e0e0e0';
+  } else {
+    // Синий для модалок (по умолчанию)
+    bgColor = 'rgba(90, 159, 212, 0.7)';
+    borderColor = '#3a7bd5';
+    textColor = '#e0e6f0';
+  }
   
-  // Если это ссылка
-  if (button.type === 'link') {
+  // Добавляем иконку справа в зависимости от типа
+  let buttonText = button.text;
+  if (button.type === 'toggle' && !buttonText.includes('🔀')) {
+    buttonText = buttonText + ' 🔀';
+  } else if (button.type === 'external' && !buttonText.includes('🔗')) {
+    buttonText = buttonText + ' 🔗';
+  }
+  
+  // Если это внешняя ссылка
+  if (button.type === 'external') {
     return `
       <a
         href="#"
@@ -22396,32 +22395,32 @@ function renderButton(button) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: ${style.bg};
-          color: ${style.color};
+          background: ${bgColor};
+          color: ${textColor};
           text-decoration: none;
           padding: 12px 20px;
           border-radius: 8px;
           font-size: 0.95em;
           transition: all 0.3s ease;
-          border: 1px solid ${style.border};
+          border: 1px solid ${borderColor};
           white-space: nowrap;
         "
         onmouseover="this.style.transform='scale(1.05)'"
         onmouseout="this.style.transform='scale(1)'"
       >
-        ${button.text}
+        ${buttonText}
       </a>
     `;
   }
   
-  // Обычная кнопка
+  // Обычная кнопка (модалка или тогл)
   return `
     <button
       onclick='${button.action}'
       style="
-        background: ${style.bg};
-        color: ${style.color};
-        border: 1px solid ${style.border};
+        background: ${bgColor};
+        color: ${textColor};
+        border: 1px solid ${borderColor};
         padding: 12px 20px;
         border-radius: 8px;
         cursor: pointer;
@@ -22432,7 +22431,7 @@ function renderButton(button) {
       onmouseover="this.style.transform='scale(1.05)'"
       onmouseout="this.style.transform='scale(1)'"
     >
-      ${button.text}
+      ${buttonText}
     </button>
   `;
 }

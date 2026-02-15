@@ -19250,11 +19250,11 @@ app.post("/api/admin/panel-config/reset", (req, res) => {
           icon: '📊',
           collapsed: true,
           buttons: [
-            { id: 'migrate-logs', text: '🔄 Обновить логи', action: 'migrateLogs()' },
-            { id: 'clear-logs', text: '🗑️ Очистить логи', action: 'clearLogs()' },
-            { id: 'open-logs', text: '📋 Открыть логи', action: 'window.open("/log.html", "_blank")', type: 'link' },
-            { id: 'database', text: '💾 База данных', action: 'openDatabaseModal()' },
-            { id: 'orphaned', text: '🔍 Проверить orphaned', action: 'checkOrphanedData()' }
+            { id: 'migrate-logs', text: '🔄 Обновить логи', action: 'migrateLogs()', type: 'modal' },
+            { id: 'clear-logs', text: '🗑️ Очистить логи', action: 'clearLogs()', type: 'modal' },
+            { id: 'open-logs', text: '📋 Открыть логи', action: 'window.open("/log.html", "_blank")', type: 'external' },
+            { id: 'database', text: '💾 База данных', action: 'openDatabaseModal()', type: 'modal' },
+            { id: 'orphaned', text: '🔍 Проверить orphaned', action: 'checkOrphanedData()', type: 'modal' }
           ]
         },
         {
@@ -19263,9 +19263,9 @@ app.post("/api/admin/panel-config/reset", (req, res) => {
           icon: '👥',
           collapsed: false,
           buttons: [
-            { id: 'users-list', text: '👥 Пользователи', action: 'loadAdminUsers()' },
-            { id: 'moderators', text: '🛡️ Модераторы', action: 'openModeratorsPanel()' },
-            { id: 'bugs', text: '🐛 Баги', action: 'openBugReportsModal()' }
+            { id: 'users-list', text: '👥 Пользователи', action: 'loadAdminUsers()', type: 'modal' },
+            { id: 'moderators', text: '🛡️ Модераторы', action: 'openModeratorsPanel()', type: 'modal' },
+            { id: 'bugs', text: '🐛 Баги', action: 'openBugReportsModal()', type: 'modal' }
           ]
         },
         {
@@ -19274,10 +19274,10 @@ app.post("/api/admin/panel-config/reset", (req, res) => {
           icon: '📢',
           collapsed: false,
           buttons: [
-            { id: 'add-news', text: '📢 Добавить новость', action: 'openNewsModal()' },
-            { id: 'announcement', text: '📢 Объявление', action: 'openAnnouncementModal()' },
-            { id: 'rss-keywords', text: '🔑 Ключевые слова RSS', action: 'openRssKeywordsModal()' },
-            { id: 'awards', text: '🏆 Награды', action: 'openAwardsPanel()' }
+            { id: 'add-news', text: '📢 Добавить новость', action: 'openNewsModal()', type: 'modal' },
+            { id: 'announcement', text: '📢 Объявление', action: 'openAnnouncementModal()', type: 'modal' },
+            { id: 'rss-keywords', text: '🔑 Ключевые слова RSS', action: 'openRssKeywordsModal()', type: 'modal' },
+            { id: 'awards', text: '🏆 Награды', action: 'openAwardsPanel()', type: 'modal' }
           ]
         },
         {
@@ -19286,8 +19286,8 @@ app.post("/api/admin/panel-config/reset", (req, res) => {
           icon: '⚙️',
           collapsed: false,
           buttons: [
-            { id: 'xg-button', text: '🎯 Кнопка xG', action: 'toggleXgButton()' },
-            { id: 'group-reminders', text: '🔔 Напоминания группы', action: 'toggleGroupRemindersCardVisibility()' }
+            { id: 'xg-button', text: '🎯 Кнопка xG', action: 'toggleXgButton()', type: 'toggle' },
+            { id: 'group-reminders', text: '🔔 Напоминания группы', action: 'toggleGroupRemindersCardVisibility()', type: 'toggle' }
           ]
         },
         {
@@ -19296,8 +19296,8 @@ app.post("/api/admin/panel-config/reset", (req, res) => {
           icon: '🔔',
           collapsed: false,
           buttons: [
-            { id: 'notifications-queue', text: '📬 Очередь уведомлений', action: 'window.open("/admin/notifications", "_blank")', type: 'link' },
-            { id: 'manage-notifications', text: '🔔 Управление уведомлениями', action: 'openNotificationsModal()' }
+            { id: 'notifications-queue', text: '📬 Очередь уведомлений', action: 'window.open("/admin/notifications", "_blank")', type: 'external' },
+            { id: 'manage-notifications', text: '🔔 Управление уведомлениями', action: 'openNotificationsModal()', type: 'modal' }
           ]
         },
         {
@@ -19306,12 +19306,12 @@ app.post("/api/admin/panel-config/reset", (req, res) => {
           icon: '🛠️',
           collapsed: true,
           buttons: [
-            { id: 'manage-dates', text: '📅 Управление датами', action: 'openDatesManagementModal()' },
-            { id: 'event-ids', text: '🏆 ID турниров', action: 'runUtilityScript("check-event-id")' },
-            { id: 'db-structure', text: '🗄️ Структура БД', action: 'runUtilityScript("check-tables")' },
-            { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()' },
-            { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()' },
-            { id: 'tests', text: '🧪 Тесты', action: 'openTestsModal()' }
+            { id: 'manage-dates', text: '📅 Управление датами', action: 'openDatesManagementModal()', type: 'modal' },
+            { id: 'event-ids', text: '🏆 ID турниров', action: 'runUtilityScript("check-event-id")', type: 'modal' },
+            { id: 'db-structure', text: '🗄️ Структура БД', action: 'runUtilityScript("check-tables")', type: 'modal' },
+            { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()', type: 'modal' },
+            { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()', type: 'modal' },
+            { id: 'tests', text: '🧪 Тесты', action: 'openTestsModal()', type: 'modal' }
           ]
         }
       ]
