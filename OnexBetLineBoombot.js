@@ -187,7 +187,8 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   delete options.__msg; // Удаляем из опций перед отправкой
 
   // Добавляем кнопки реакций для личных чатов (если не отключено и это личный чат, но НЕ админ)
-  if (!options.noReactionButtons && chatIdNum > 0 && chatIdNum !== TELEGRAM_CHAT_ID && chatIdNum !== TELEGRAM_ADMIN_ID) {
+  // НО только если нет своих кнопок в reply_markup
+  if (!options.noReactionButtons && !options.reply_markup && chatIdNum > 0 && chatIdNum !== TELEGRAM_CHAT_ID && chatIdNum !== TELEGRAM_ADMIN_ID) {
     options.reply_markup = {
       inline_keyboard: [
         [
@@ -210,7 +211,8 @@ async function sendMessageWithThread(chatId, text, options = {}) {
   }
   
   // Добавляем кнопки реакций для группы (если не отключено и это группа)
-  if (!options.noReactionButtons && chatIdNum === TELEGRAM_CHAT_ID) {
+  // НО только если нет своих кнопок в reply_markup
+  if (!options.noReactionButtons && !options.reply_markup && chatIdNum === TELEGRAM_CHAT_ID) {
     options.reply_markup = {
       inline_keyboard: [
         [
@@ -2270,6 +2272,8 @@ export async function startBot() {
       }
       const events = await eventsResponse.json();
       
+      console.log(`[LuckyBet] Всего турниров: ${events.length}`);
+      
       // Фильтруем активные турниры (не заблокированные и не будущие)
       const activeEvents = events.filter(e => {
         if (e.locked_reason) return false;
@@ -2279,6 +2283,9 @@ export async function startBot() {
         }
         return true;
       });
+      
+      console.log(`[LuckyBet] Активных турниров после фильтра: ${activeEvents.length}`);
+      console.log(`[LuckyBet] Активные турниры:`, activeEvents.map(e => e.name));
 
       if (activeEvents.length === 0) {
         await sendMessageWithThread(
