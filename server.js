@@ -8812,7 +8812,7 @@ app.post("/api/cards-predictions", async (req, res) => {
       `⚽ <b>Матч:</b> ${matchInfo.team1_name} vs ${matchInfo.team2_name}\n` +
       `🏆 <b>Турнир:</b> ${matchInfo.event_name}\n` +
       `📅 <b>Дата:</b> ${new Date(matchInfo.match_date).toLocaleString('ru-RU')}\n\n` +
-      `${predictionText.join('\n')}`;
+      `Система прогноза на карточки работает`;
 
     await notifyAdmin(adminMessage);
 
@@ -15647,35 +15647,12 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
 
     const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
 
-    // Отправляем в группу
-    for (const chatId of chatIds) {
-      try {
-        const response = await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: message,
-              parse_mode: "HTML",
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          console.error(
-            `❌ Ошибка отправки в чат ${chatId}:`,
-            response.statusText
-          );
-        } else {
-          console.log(`✅ Результаты отправлены в чат ${chatId}`);
-        }
-      } catch (error) {
-        console.error(`❌ Ошибка отправки результатов в чат ${chatId}:`, error);
-      }
+    // Отправляем в группу через sendGroupNotification (с кнопками реакций)
+    try {
+      await sendGroupNotification(message);
+      console.log(`✅ Результаты отправлены в группу`);
+    } catch (error) {
+      console.error(`❌ Ошибка отправки результатов в группу:`, error);
     }
 
     // Отправляем персонализированные сообщения в личку пользователям

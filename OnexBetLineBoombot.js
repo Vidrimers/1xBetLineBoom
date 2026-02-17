@@ -687,7 +687,6 @@ export async function notifyNewBet(
     `💰 <b>НОВАЯ СТАВКА!</b>\n\n` +
     `👤 Пользователь: <b>${username}</b>\n` +
     `⚽ Матч: <b>${team1}</b> vs <b>${team2}</b>\n` +
-    `🎯 Прогноз: <b>${prediction}</b>\n` +
     `🏆 Турнир: ${eventName || "Неизвестный"}\n` +
     `⏰ ${new Date().toLocaleString("ru-RU")}`;
 
@@ -708,10 +707,9 @@ export async function notifyNewScorePrediction(
     `📊 <b>НОВЫЙ ПРОГНОЗ НА СЧЕТ!</b>\n\n` +
     `👤 Пользователь: <b>${username}</b>\n` +
     `⚽ Матч: <b>${team1}</b> vs <b>${team2}</b>\n` +
-    `🎯 Прогноз: <b>${prediction}</b>\n` +
-    `🎯 Прогноз счета: <b>${scoreTeam1}-${scoreTeam2}</b>\n` +
     `🏆 Турнир: ${eventName || "Неизвестный"}\n` +
-    `⏰ ${new Date().toLocaleString("ru-RU")}`;
+    `⏰ ${new Date().toLocaleString("ru-RU")}\n\n` +
+    `Система прогноза на счет работает`;
 
   await sendAdminNotification(message);
 }
