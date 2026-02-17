@@ -18753,7 +18753,8 @@ app.get("/api/rss-news", async (req, res) => {
     // Парсим RSS ленты
     const sources = [
       'http://www.sports.ru/rss/rubric.xml?s=208', // Sports.ru футбол
-      'https://www.gazeta.ru/export/rss/sport.xml' // Gazeta.ru спорт
+      'https://www.gazeta.ru/export/rss/sport.xml', // Gazeta.ru спорт
+      'https://www.sport-express.ru/services/materials/news/football/se/' // Спорт-Экспресс футбол
     ];
     
     let allNews = [];
