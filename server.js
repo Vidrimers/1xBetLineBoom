@@ -15783,21 +15783,9 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
             }
           }
 
-          // Отправляем личное сообщение
+          // Отправляем личное сообщение через sendUserMessage (с кнопками реакций)
           try {
-            const response = await fetch(
-              `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  chat_id: telegramUser.telegram_id,
-                  text: personalMessage,
-                  parse_mode: "HTML",
-                }),
-              }
+            await sendUserMessage(telegramUser.telegram_id, personalMessage);
             );
 
             if (!response.ok) {
