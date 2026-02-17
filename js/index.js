@@ -127,6 +127,10 @@ async function luckyBetForCurrentRound() {
   // Ждем 2 секунды пока кубик крутится
   await new Promise(resolve => setTimeout(resolve, 2000));
   
+  // Подсчитываем сколько матчей с прогнозами на счёт и карточки
+  let scorePredictionsCount = 0;
+  let cardsPredictionsCount = 0;
+  
   // Для каждого такого матча делаем случайную ставку
   for (const match of matchesToBet) {
     // Генерируем рандомный счет (0-5 голов для каждой команды)
@@ -172,6 +176,7 @@ async function luckyBetForCurrentRound() {
             score_team2: team2Score,
           }),
         });
+        scorePredictionsCount++;
       }
       
       // Отправляем прогноз на карточки если включен для матча
@@ -186,6 +191,7 @@ async function luckyBetForCurrentRound() {
             red_cards: match.red_cards_prediction_enabled ? redCards : null,
           }),
         });
+        cardsPredictionsCount++;
       }
       
     } catch (e) {
@@ -204,6 +210,8 @@ async function luckyBetForCurrentRound() {
         eventName: currentEvent ? currentEvent.name : "Неизвестный турнир",
         round: currentRoundFilter,
         matchesCount: matchesToBet.length,
+        scorePredictions: scorePredictionsCount,
+        cardsPredictions: cardsPredictionsCount,
       }),
     });
   } catch (e) {

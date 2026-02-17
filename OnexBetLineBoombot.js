@@ -2760,6 +2760,38 @@ export async function startBot() {
               }
             }
             
+            // Подсчитываем статистику для уведомления админу
+            let scorePredictionsCount = 0;
+            let cardsPredictionsCount = 0;
+            
+            results.forEach(result => {
+              if (result.score !== 'Не ставилось') scorePredictionsCount++;
+              if (result.cards !== 'Не ставилось') cardsPredictionsCount++;
+            });
+            
+            // Отправляем уведомление админу
+            try {
+              const luckyMessage = `🎲 СЛУЧАЙНАЯ СТАВКА
+
+👤 Пользователь: ${user.username}
+🆔 ID: ${user.id}
+${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+
+🏆 Турнир: ${event.name}
+🎯 Тур: ${round}
+⚽ Матчей: ${results.length}
+
+📊 Прогнозы:
+${scorePredictionsCount > 0 ? `✅ Счёт: ${scorePredictionsCount} из ${results.length}` : '❌ Счёт: не ставилось'}
+${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} из ${results.length}` : '❌ Карточки: не ставилось'}
+
+💭 Пользователь решил положиться на удачу!`;
+              
+              await sendAdminNotification(luckyMessage);
+            } catch (err) {
+              console.error("Ошибка отправки уведомления админу о случайной ставке:", err);
+            }
+            
             // Формируем сообщение с результатами
             let messageText = `🎲 <b>Случайная ставка</b>\n\n` +
               `✅ Сделано ставок: ${results.length}\n\n`;

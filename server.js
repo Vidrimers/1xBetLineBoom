@@ -15168,7 +15168,7 @@ app.post("/api/admin/notify-illegal-bet", async (req, res) => {
 
 // POST /api/admin/notify-lucky-bet - Уведомить админа о случайной ставке
 app.post("/api/admin/notify-lucky-bet", async (req, res) => {
-  const { userId, eventName, round, matchesCount } = req.body;
+  const { userId, eventName, round, matchesCount, scorePredictions, cardsPredictions } = req.body;
 
   try {
     // Получаем информацию о пользователе
@@ -15192,6 +15192,10 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
 🏆 Турнир: ${eventName}
 🎯 Тур: ${round}
 ⚽ Матчей: ${matchesCount}
+
+📊 Прогнозы:
+${scorePredictions > 0 ? `✅ Счёт: ${scorePredictions} из ${matchesCount}` : '❌ Счёт: не ставилось'}
+${cardsPredictions > 0 ? `✅ Карточки: ${cardsPredictions} из ${matchesCount}` : '❌ Карточки: не ставилось'}
 
 💭 Пользователь решил положиться на удачу!`;
 
@@ -18762,12 +18766,23 @@ app.get("/api/rss-news", async (req, res) => {
     for (const source of sources) {
       try {
         const feed = await rssParser.parseURL(source);
+        
+        // Определяем источник по URL
+        let sourceName = 'Неизвестный источник';
+        if (source.includes('sports.ru')) {
+          sourceName = 'Sports.ru';
+        } else if (source.includes('gazeta.ru')) {
+          sourceName = 'Gazeta.ru';
+        } else if (source.includes('sport-express.ru')) {
+          sourceName = 'Спорт-Экспресс';
+        }
+        
         const newsItems = feed.items.map(item => ({
           title: item.title,
           link: item.link,
           description: item.contentSnippet || item.content || '',
           pubDate: item.pubDate,
-          source: source.includes('sports.ru') ? 'Sports.ru' : 'Gazeta.ru'
+          source: sourceName
         }));
         allNews = allNews.concat(newsItems);
       } catch (error) {
