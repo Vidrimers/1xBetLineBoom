@@ -5052,6 +5052,25 @@ app.post("/api/user", async (req, res) => {
       notifyAdmin(message).catch(err => {
         console.error("⚠️ Не удалось отправить уведомление о новом пользователе:", err);
       });
+      
+      // 👤 Новый пользователь - топ-5 по счету
+      try {
+        const totalUsers = db.prepare("SELECT COUNT(*) as count FROM users").get().count;
+        
+        if (totalUsers <= 5) {
+          const newsTitle = `👤 Новый участник: ${username}`;
+          const newsMessage = `Добро пожаловать на платформу, ${username}!\n\n🎉 Вы ${totalUsers}-й участник нашего сообщества!\n\n🎯 Делайте прогнозы и соревнуйтесь за первые места!`;
+          
+          db.prepare(`
+            INSERT INTO news (type, title, message)
+            VALUES (?, ?, ?)
+          `).run('system', newsTitle, newsMessage);
+          
+          console.log(`✅ Автоматически создана новость о новом пользователе: ${username} (${totalUsers}-й)`);
+        }
+      } catch (error) {
+        console.error("❌ Ошибка создания новости о новом пользователе:", error);
+      }
 
       res.json(user);
     } else {
@@ -6552,7 +6571,12 @@ app.post("/api/bets", async (req, res) => {
     // Проверяем milestone достижения по количеству ставок
     try {
       const totalBets = db.prepare("SELECT COUNT(*) as count FROM bets").get().count;
+      
+      // Расширенный список milestones: 200, 500, 800, 1000, затем каждые 500
       const milestones = [200, 500, 800, 1000];
+      if (totalBets > 1000 && totalBets % 500 === 0) {
+        milestones.push(totalBets);
+      }
       
       // Проверяем достигнут ли новый milestone
       if (milestones.includes(totalBets)) {
@@ -6568,6 +6592,36 @@ app.post("/api/bets", async (req, res) => {
       }
     } catch (error) {
       console.error("❌ Ошибка проверки milestone:", error);
+    }
+    
+    // 🎂 Юбилей пользователя - 10, 50, 100 ставок
+    try {
+      const userBetsCount = db.prepare("SELECT COUNT(*) as count FROM bets WHERE user_id = ?").get(user_id).count;
+      const userMilestones = [10, 50, 100];
+      
+      if (userMilestones.includes(userBetsCount)) {
+        // Проверяем не создавали ли уже новость об этом юбилее
+        const existingNews = db.prepare(`
+          SELECT id FROM news 
+          WHERE type = 'achievement' 
+          AND message LIKE ?
+          AND created_at > datetime('now', '-7 days')
+        `).get(`%${user.username}%${userBetsCount}%ставок%`);
+        
+        if (!existingNews) {
+          const newsTitle = `🎂 Юбилей: ${userBetsCount} ставок!`;
+          const newsMessage = `Пользователь ${user.username} сделал ${userBetsCount} ставок!\n\n🎉 Отличная активность! Так держать!`;
+          
+          db.prepare(`
+            INSERT INTO news (type, title, message)
+            VALUES (?, ?, ?)
+          `).run('achievement', newsTitle, newsMessage);
+          
+          console.log(`✅ Автоматически создана новость о юбилее пользователя ${user.username}: ${userBetsCount} ставок`);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Ошибка проверки юбилея пользователя:", error);
     }
 
     res.json({
@@ -13156,6 +13210,28 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
             }
           }
           
+          // 🎯 Серия угаданных ставок - 3, 5 подряд (10+ уже есть выше)
+          if (streak === 3 || streak === 5) {
+            const existingStreakNews = db.prepare(`
+              SELECT id FROM news 
+              WHERE type = 'achievement' 
+              AND message LIKE ?
+              AND created_at > datetime('now', '-7 days')
+            `).get(`%${user.username}%${streak}%подряд%`);
+            
+            if (!existingStreakNews) {
+              const newsTitle = `🎯 Серия: ${streak} точных прогнозов подряд!`;
+              const newsMessage = `Пользователь ${user.username} угадал ${streak} прогнозов подряд!\n\n🔥 Отличная серия! Продолжай в том же духе!`;
+              
+              db.prepare(`
+                INSERT INTO news (type, title, message)
+                VALUES (?, ?, ?)
+              `).run('achievement', newsTitle, newsMessage);
+              
+              console.log(`✅ Автоматически создана новость о серии пользователя ${user.username}: ${streak} подряд`);
+            }
+          }
+          
           // Проверяем достижения по точному счёту
           const exactScoreCount = db.prepare(`
             SELECT COUNT(*) as count
@@ -13227,6 +13303,161 @@ ${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${
         }
       } catch (error) {
         console.error("❌ Ошибка проверки рекордов:", error);
+      }
+      
+      // 🏆 Лидер недели/месяца - смена лидера рейтинга
+      // 📈 Прогресс - пользователь поднялся на N позиций в рейтинге
+      try {
+        // Получаем текущий рейтинг
+        const currentRanking = db.prepare(`
+          SELECT 
+            u.id,
+            u.username,
+            SUM(CASE 
+              WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
+                CASE 
+                  WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                    CASE 
+                      WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                           (b.prediction = 'team2' AND m.winner = 'team2') OR
+                           (b.prediction = 'draw' AND m.winner = 'draw') OR
+                           (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                           (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                           CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+                           CASE 
+                             WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                                  ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                                  sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+                             THEN 1 
+                             ELSE 0 
+                           END
+                      ELSE 0 
+                    END
+                  WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                    CASE 
+                      WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
+                      WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
+                      WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                      WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
+                      WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
+                      WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                      ELSE 0
+                    END
+                  ELSE 0
+                END 
+              ELSE 0 
+            END) as total_points
+          FROM users u
+          LEFT JOIN bets b ON b.user_id = u.id
+          LEFT JOIN matches m ON b.match_id = m.id
+          LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+          LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+          LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+          GROUP BY u.id, u.username
+          HAVING total_points > 0
+          ORDER BY total_points DESC
+        `).all();
+        
+        // Проверяем смену лидера (сравниваем с предыдущим лидером из таблицы leader_history)
+        if (currentRanking.length > 0) {
+          const currentLeader = currentRanking[0];
+          
+          // Создаём таблицу для истории лидеров если её нет
+          db.exec(`
+            CREATE TABLE IF NOT EXISTS leader_history (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id INTEGER NOT NULL,
+              username TEXT NOT NULL,
+              points INTEGER NOT NULL,
+              changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+          
+          const lastLeader = db.prepare(`
+            SELECT user_id, username, points FROM leader_history 
+            ORDER BY changed_at DESC LIMIT 1
+          `).get();
+          
+          // Если лидер сменился
+          if (!lastLeader || lastLeader.user_id !== currentLeader.id) {
+            // Сохраняем нового лидера
+            db.prepare(`
+              INSERT INTO leader_history (user_id, username, points)
+              VALUES (?, ?, ?)
+            `).run(currentLeader.id, currentLeader.username, currentLeader.total_points);
+            
+            // Создаём новость о смене лидера
+            if (lastLeader) {
+              const newsTitle = `🏆 Новый лидер: ${currentLeader.username}!`;
+              const newsMessage = `Пользователь ${currentLeader.username} вышел на первое место в рейтинге!\n\n📊 Очков: ${currentLeader.total_points}\n\n🎉 Поздравляем с лидерством!`;
+              
+              db.prepare(`
+                INSERT INTO news (type, title, message)
+                VALUES (?, ?, ?)
+              `).run('achievement', newsTitle, newsMessage);
+              
+              console.log(`✅ Автоматически создана новость о новом лидере: ${currentLeader.username}`);
+            }
+          }
+        }
+        
+        // 📈 Прогресс - проверяем изменение позиций для всех пользователей
+        // Создаём таблицу для истории позиций если её нет
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS ranking_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            position INTEGER NOT NULL,
+            points INTEGER NOT NULL,
+            checked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        
+        // Сохраняем текущие позиции и проверяем прогресс
+        currentRanking.forEach((user, index) => {
+          const currentPosition = index + 1;
+          
+          // Получаем последнюю сохранённую позицию
+          const lastPosition = db.prepare(`
+            SELECT position FROM ranking_history 
+            WHERE user_id = ? 
+            ORDER BY checked_at DESC LIMIT 1
+          `).get(user.id);
+          
+          // Сохраняем текущую позицию
+          db.prepare(`
+            INSERT INTO ranking_history (user_id, username, position, points)
+            VALUES (?, ?, ?, ?)
+          `).run(user.id, user.username, currentPosition, user.total_points);
+          
+          // Если пользователь поднялся на 3+ позиции
+          if (lastPosition && lastPosition.position - currentPosition >= 3) {
+            const positionsUp = lastPosition.position - currentPosition;
+            
+            // Проверяем не создавали ли уже новость об этом прогрессе
+            const existingProgressNews = db.prepare(`
+              SELECT id FROM news 
+              WHERE type = 'achievement' 
+              AND message LIKE ?
+              AND created_at > datetime('now', '-1 days')
+            `).get(`%${user.username}%поднялся%`);
+            
+            if (!existingProgressNews) {
+              const newsTitle = `📈 Прогресс: +${positionsUp} позиций!`;
+              const newsMessage = `Пользователь ${user.username} поднялся на ${positionsUp} ${positionsUp === 3 ? 'позиции' : 'позиций'} в рейтинге!\n\n🎯 Текущая позиция: ${currentPosition}\n📊 Очков: ${user.total_points}\n\n🔥 Отличная динамика!`;
+              
+              db.prepare(`
+                INSERT INTO news (type, title, message)
+                VALUES (?, ?, ?)
+              `).run('achievement', newsTitle, newsMessage);
+              
+              console.log(`✅ Автоматически создана новость о прогрессе: ${user.username} (+${positionsUp} позиций)`);
+            }
+          }
+        });
+      } catch (error) {
+        console.error("❌ Ошибка проверки лидера и прогресса:", error);
       }
 
       return res.json({
@@ -16604,6 +16835,144 @@ app.post("/api/admin/final-parameters-results", (req, res) => {
     console.log(
       `✓ Результаты финальных параметров установлены для матча ${matchId}`
     );
+    
+    // 🎲 Везунчик - угадал сложную ставку (финал с параметрами)
+    // 💯 Рекорд очков за матч - новый рекорд по очкам за один матч
+    try {
+      // Получаем всех пользователей с финальными ставками на этот матч
+      const usersWithFinalBets = db.prepare(`
+        SELECT DISTINCT u.id, u.username
+        FROM users u
+        JOIN bets b ON b.user_id = u.id
+        WHERE b.match_id = ? AND b.is_final_bet = 1
+      `).all(matchId);
+      
+      const match = db.prepare("SELECT team1_name, team2_name, winner FROM matches WHERE id = ?").get(matchId);
+      
+      for (const user of usersWithFinalBets) {
+        // Подсчитываем очки за этот матч
+        let matchPoints = 0;
+        let correctParams = 0;
+        
+        // Проверяем основной результат
+        const mainBet = db.prepare(`
+          SELECT prediction FROM bets 
+          WHERE user_id = ? AND match_id = ? AND is_final_bet = 0
+        `).get(user.id, matchId);
+        
+        if (mainBet && match.winner) {
+          const isCorrect = mainBet.prediction === match.winner;
+          if (isCorrect) {
+            matchPoints += 3; // За финальный матч 3 очка
+          }
+        }
+        
+        // Проверяем финальные параметры
+        const finalBets = db.prepare(`
+          SELECT parameter_type, prediction FROM bets 
+          WHERE user_id = ? AND match_id = ? AND is_final_bet = 1
+        `).all(user.id, matchId);
+        
+        for (const bet of finalBets) {
+          let isCorrect = false;
+          
+          if (bet.parameter_type === 'yellow_cards' && yellow_cards !== undefined) {
+            isCorrect = parseInt(bet.prediction) === yellow_cards;
+          } else if (bet.parameter_type === 'red_cards' && red_cards !== undefined) {
+            isCorrect = parseInt(bet.prediction) === red_cards;
+          } else if (bet.parameter_type === 'corners' && corners !== undefined) {
+            isCorrect = parseInt(bet.prediction) === corners;
+          } else if (bet.parameter_type === 'penalties_in_game' && penalties_in_game) {
+            isCorrect = bet.prediction === penalties_in_game;
+          } else if (bet.parameter_type === 'extra_time' && extra_time) {
+            isCorrect = bet.prediction === extra_time;
+          } else if (bet.parameter_type === 'penalties_at_end' && penalties_at_end) {
+            isCorrect = bet.prediction === penalties_at_end;
+          }
+          
+          if (isCorrect) {
+            matchPoints += 2;
+            correctParams++;
+          }
+        }
+        
+        // 🎲 Везунчик - угадал 3+ финальных параметра
+        if (correctParams >= 3) {
+          const existingLuckyNews = db.prepare(`
+            SELECT id FROM news 
+            WHERE type = 'achievement' 
+            AND message LIKE ?
+            AND created_at > datetime('now', '-7 days')
+          `).get(`%${user.username}%${match.team1_name}%${match.team2_name}%`);
+          
+          if (!existingLuckyNews) {
+            const newsTitle = `🎲 Везунчик: ${correctParams} параметров!`;
+            const newsMessage = `Пользователь ${user.username} угадал ${correctParams} финальных параметра в матче ${match.team1_name} vs ${match.team2_name}!\n\n🔥 Невероятная удача и интуиция!`;
+            
+            db.prepare(`
+              INSERT INTO news (type, title, message)
+              VALUES (?, ?, ?)
+            `).run('achievement', newsTitle, newsMessage);
+            
+            console.log(`✅ Автоматически создана новость о везунчике: ${user.username} (${correctParams} параметров)`);
+          }
+        }
+        
+        // 💯 Рекорд очков за матч - если набрал 10+ очков за один матч
+        if (matchPoints >= 10) {
+          // Проверяем это ли максимум для этого пользователя
+          const maxPoints = db.prepare(`
+            SELECT MAX(points) as max FROM (
+              SELECT 
+                m.id as match_id,
+                SUM(CASE 
+                  WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                    CASE WHEN b.prediction = m.winner THEN 3 ELSE 0 END
+                  WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                    CASE 
+                      WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
+                      WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
+                      WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                      WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
+                      WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
+                      WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                      ELSE 0
+                    END
+                  ELSE 0
+                END) as points
+              FROM bets b
+              JOIN matches m ON b.match_id = m.id
+              LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id
+              WHERE b.user_id = ? AND m.id != ?
+              GROUP BY m.id
+            )
+          `).get(user.id, matchId);
+          
+          if (!maxPoints.max || matchPoints > maxPoints.max) {
+            const existingRecordNews = db.prepare(`
+              SELECT id FROM news 
+              WHERE type = 'achievement' 
+              AND message LIKE ?
+              AND created_at > datetime('now', '-7 days')
+            `).get(`%${user.username}%${matchPoints}%очков за матч%`);
+            
+            if (!existingRecordNews) {
+              const newsTitle = `💯 Рекорд: ${matchPoints} очков за матч!`;
+              const newsMessage = `Пользователь ${user.username} установил личный рекорд - ${matchPoints} очков за один матч!\n\n🏆 Матч: ${match.team1_name} vs ${match.team2_name}\n\n🎯 Невероятный результат!`;
+              
+              db.prepare(`
+                INSERT INTO news (type, title, message)
+                VALUES (?, ?, ?)
+              `).run('achievement', newsTitle, newsMessage);
+              
+              console.log(`✅ Автоматически создана новость о рекорде очков: ${user.username} (${matchPoints} очков)`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Ошибка проверки везунчика и рекорда очков:", error);
+    }
 
     res.json({
       message: "Результаты финальных параметров успешно установлены",
