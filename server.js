@@ -66,6 +66,7 @@ async function sendTelegramMessage(chatId, message) {
 const SSTATS_LEAGUE_MAPPING = {
   'CL': 2,    // UEFA Champions League ✅
   'EL': 3,    // UEFA Europa League ✅
+  'ECL': 848, // UEFA Conference League ✅
   'PL': 39,   // Premier League ✅
   'BL1': 78,  // Bundesliga ✅
   'PD': 140,  // La Liga ✅
@@ -81,6 +82,7 @@ const SSTATS_LEAGUE_MAPPING = {
 const COMPETITION_DICTIONARY_MAPPING = {
   'CL': 'names/LeagueOfChampionsTeams.json',
   'EL': 'names/EuropaLeague.json',
+  'ECL': 'names/ConferenceLeague.json',
   'PL': 'names/PremierLeague.json',
   'BL1': 'names/Bundesliga.json',
   'PD': 'names/LaLiga.json',
@@ -96,6 +98,7 @@ const COMPETITION_DICTIONARY_MAPPING = {
 const PLAYERS_DICTIONARY_MAPPING = {
   'CL': 'names/LeagueOfChampionsPlayers.json',
   'EL': 'names/EuropaLeaguePlayers.json',
+  'ECL': 'names/ConferenceLeaguePlayers.json',
   'PL': 'names/PremierLeaguePlayers.json',
   'BL1': 'names/BundesligaPlayers.json',
   'PD': 'names/LaLigaPlayers.json',
@@ -18119,6 +18122,7 @@ app.get("/api/test/score-points/:userId", (req, res) => {
 const ICON_TO_COMPETITION = {
   'img/cups/champions-league.png': 'CL',
   'img/cups/european-league.png': 'EL',
+  'img/cups/conference-league.png': 'ECL',
   'img/cups/england-premier-league.png': 'PL',
   'img/cups/bundesliga.png': 'BL1',
   'img/cups/spain-la-liga.png': 'PD',
