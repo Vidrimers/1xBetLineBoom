@@ -15786,17 +15786,7 @@ app.post("/api/admin/send-counting-results", async (req, res) => {
           // Отправляем личное сообщение через sendUserMessage (с кнопками реакций)
           try {
             await sendUserMessage(telegramUser.telegram_id, personalMessage);
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json();
-              console.error(
-                `❌ Ошибка отправки личного сообщения ${user.username} (${telegramUser.telegram_id}):`,
-                errorData
-              );
-            } else {
-              console.log(`✅ Личное сообщение отправлено ${user.username} (${telegramUser.telegram_id})`);
-            }
+            console.log(`✅ Личное сообщение отправлено ${user.username} (${telegramUser.telegram_id})`);
           } catch (error) {
             console.error(`❌ Ошибка отправки личного сообщения ${user.username}:`, error);
           }
