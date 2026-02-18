@@ -6556,7 +6556,7 @@ app.post("/api/bets", async (req, res) => {
       
       // Проверяем достигнут ли новый milestone
       if (milestones.includes(totalBets)) {
-        const newsTitle = `🎉 Milestone: ${totalBets} ставок!`;
+        const newsTitle = `🎉 Достижение: ${totalBets} ставок!`;
         const newsMessage = `Платформа достигла ${totalBets} ставок!\n\nСпасибо всем игрокам за активное участие! 🎯\n\nПродолжайте делать прогнозы и соревнуйтесь за первые места! 🏆`;
         
         db.prepare(`
@@ -6564,7 +6564,7 @@ app.post("/api/bets", async (req, res) => {
           VALUES (?, ?, ?)
         `).run('achievement', newsTitle, newsMessage);
         
-        console.log(`✅ Автоматически создана новость о milestone: ${totalBets} ставок`);
+        console.log(`✅ Автоматически создана новость о достижении: ${totalBets} ставок`);
       }
     } catch (error) {
       console.error("❌ Ошибка проверки milestone:", error);
