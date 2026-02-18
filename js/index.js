@@ -13841,6 +13841,7 @@ let parsedMatches = [];
 const ICON_TO_COMPETITION = {
   'img/cups/champions-league.png': 'CL',
   'img/cups/european-league.png': 'EL',
+  'img/cups/conference-league.png': 'ECL',
   'img/cups/england-premier-league.png': 'PL',
   'img/cups/bundesliga.png': 'BL1',
   'img/cups/spain-la-liga.png': 'PD',
@@ -13869,7 +13870,7 @@ function openBulkParseModal() {
   // Определяем код турнира по иконке
   const tournamentCode = ICON_TO_COMPETITION[currentEvent.icon];
   if (!tournamentCode) {
-    alert(`❌ Парсинг не поддерживается для турнира "${currentEvent.name}". Поддерживаются только турниры с иконками: Champions League, Europa League, Premier League, Bundesliga, La Liga, Serie A, Ligue 1, RPL`);
+    alert(`❌ Парсинг не поддерживается для турнира "${currentEvent.name}". Поддерживаются только турниры с иконками: Champions League, Europa League, Conference League, Premier League, Bundesliga, La Liga, Serie A, Ligue 1, RPL`);
     return;
   }
   
