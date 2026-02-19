@@ -1239,15 +1239,8 @@ export async function startBot() {
     );
   });
 
-  // Команда /menu - главное меню с инлайн-кнопками
-  bot.onText(/\/menu/, (msg) => {
-    const chatId = msg.chat.id;
-    const isPrivateChat = msg.chat.type === 'private';
-
-    // Логируем действие
-    logUserAction(msg, "Нажата команда /menu");
-
-    // Создаём инлайн-кнопки для меню
+  // Функция для создания кнопок главного меню
+  const createMenuButtons = () => {
     const menuButtons = [
       [
         { text: '📊 Статус', callback_data: 'menu_status' },
@@ -1263,20 +1256,33 @@ export async function startBot() {
       ],
       [
         { text: '🏆 Мои награды', callback_data: 'menu_awards' },
-        { text: '🎲 Случайная ставка', callback_data: 'menu_luckybet' }
+        { text: '🎲 Мне повезет', callback_data: 'menu_luckybet' }
       ],
       [
-        { text: '📢 Новости', callback_data: 'menu_news' }
+        { text: '📢 Новости', callback_data: 'menu_news' },
+        { text: '🐛 Багрепорт', callback_data: 'menu_bugreport' }
       ]
     ];
 
-    // Добавляем кнопки "Открыть сайт" только если это не localhost
+    // Добавляем кнопку "Открыть сайт" только если это не localhost
     if (!PUBLIC_URL.includes('localhost') && !PUBLIC_URL.includes('127.0.0.1') && !PUBLIC_URL.includes('192.168.')) {
       menuButtons.push([
-        { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-        { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+        { text: '🌐 Открыть сайт', callback_data: 'menu_opensite' }
       ]);
     }
+
+    return menuButtons;
+  };
+
+  // Команда /menu - главное меню с инлайн-кнопками
+  bot.onText(/\/menu/, (msg) => {
+    const chatId = msg.chat.id;
+    const isPrivateChat = msg.chat.type === 'private';
+
+    // Логируем действие
+    logUserAction(msg, "Нажата команда /menu");
+
+    const menuButtons = createMenuButtons();
 
     const menuOptions = {
       reply_markup: {
@@ -2217,6 +2223,88 @@ export async function startBot() {
   // Временное хранилище для данных случайной ставки
   const luckyBetRoundsCache = new Map();
 
+  // Хранилище состояний пользователей для багрепортов
+  const bugReportStates = new Map();
+
+  // Обработчик кнопки 🐛 Багрепорт
+  const handleBugReport = async (chatIdOrMsg, legacyMsg = null) => {
+    const msg =
+      chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
+        ? chatIdOrMsg
+        : legacyMsg;
+    const chatId = msg ? msg.chat.id : chatIdOrMsg;
+    const userId = msg ? msg.from.id : null;
+
+    if (msg) logUserAction(msg, "Нажата кнопка: Багрепорт");
+
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
+
+    try {
+      const telegramUsername = msg?.from?.username || "";
+      const firstName = msg?.from?.first_name || "пользователь";
+
+      // Получаем данные пользователя с сайта
+      const response = await fetch(`${SERVER_URL}/api/participants`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch participants");
+      }
+      const participants = await response.json();
+
+      // Ищем пользователя по telegram_username
+      const user = participants.find(
+        (p) =>
+          (p.telegram_username &&
+            p.telegram_username.toLowerCase() ===
+              telegramUsername.toLowerCase()) ||
+          (msg?.from?.first_name &&
+            p.username &&
+            p.username.toLowerCase() === msg.from.first_name.toLowerCase())
+      );
+
+      if (!user) {
+        await sendMessageWithThread(
+          chatId,
+          `🐛 <b>Багрепорт</b>\n\n` +
+            `Профиль не привязан. Привяжите его на сайте в разделе "⚙️ Настройки".`,
+          opts("noProfile", {
+            parse_mode: "HTML",
+          })
+        );
+        return;
+      }
+
+      // Сохраняем состояние пользователя
+      bugReportStates.set(userId, {
+        userId: user.id,
+        username: user.username,
+        chatId: chatId,
+        waitingForText: true
+      });
+
+      await sendMessageWithThread(
+        chatId,
+        `🐛 <b>Багрепорт</b>\n\n` +
+          `Опишите проблему, которую вы обнаружили.\n\n` +
+          `Напишите сообщение в этот чат, и оно будет отправлено администратору.\n\n` +
+          `Для отмены отправьте /cancel`,
+        opts("waitingForText", {
+          parse_mode: "HTML",
+        })
+      );
+    } catch (error) {
+      console.error("Error in handleBugReport:", error);
+      await sendMessageWithThread(
+        chatId,
+        `🐛 <b>Багрепорт</b>\n\n` +
+          `<i>⚠️ Ошибка при инициализации багрепорта</i>`,
+        opts("error", {
+          parse_mode: "HTML",
+        })
+      );
+    }
+  };
+
   // Обработчик кнопки 🎲 Случайная ставка
   const handleLuckyBet = async (chatIdOrMsg, legacyMsg = null) => {
     const msg =
@@ -2335,12 +2423,63 @@ export async function startBot() {
   bot.onText(/\/my_awards/, (msg) => handleMyAwards(msg.chat.id, msg));
 
   // ===== ОБРАБОТКА КНОПОК =====
-  bot.on("message", (msg) => {
+  bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
+    const userId = msg.from?.id;
 
     // Регистрируем telegram пользователя (сохраняем связку username → chat_id)
     registerTelegramUser(msg);
+
+    // Проверяем, ожидает ли пользователь ввода багрепорта
+    if (userId && bugReportStates.has(userId)) {
+      const state = bugReportStates.get(userId);
+      
+      if (text === '/cancel') {
+        bugReportStates.delete(userId);
+        await replyInThread(msg, '🐛 <b>Багрепорт отменен</b>', { parse_mode: 'HTML' });
+        return;
+      }
+
+      if (state.waitingForText && text && !text.startsWith('/')) {
+        // Отправляем багрепорт на сервер
+        try {
+          const response = await fetch(`${SERVER_URL}/api/bug-report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: state.userId,
+              username: state.username,
+              bugText: text,
+              images: [] // В Telegram боте пока без изображений
+            })
+          });
+
+          if (response.ok) {
+            await replyInThread(
+              msg,
+              `✅ <b>Багрепорт отправлен!</b>\n\n` +
+              `Спасибо за помощь в улучшении сайта! 🙏\n\n` +
+              `Администратор получил ваше сообщение и рассмотрит его в ближайшее время.`,
+              { parse_mode: 'HTML' }
+            );
+            bugReportStates.delete(userId);
+          } else {
+            throw new Error('Failed to send bug report');
+          }
+        } catch (error) {
+          console.error('Error sending bug report:', error);
+          await replyInThread(
+            msg,
+            `❌ <b>Ошибка при отправке багрепорта</b>\n\n` +
+            `Попробуйте позже или напишите администратору напрямую.`,
+            { parse_mode: 'HTML' }
+          );
+          bugReportStates.delete(userId);
+        }
+        return;
+      }
+    }
 
     // Игнорируем команды (начинаются с /)
     if (text && text.startsWith("/")) return;
@@ -2454,6 +2593,45 @@ export async function startBot() {
             break;
           case "menu_news":
             handleNews(chatId, fakeMsg);
+            break;
+          case "menu_opensite":
+            // Показываем подменю с выбором способа доступа
+            bot.editMessageText(
+              '🌐 <b>Открыть сайт</b>\n\nВыберите способ доступа:',
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: 'HTML',
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                      { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                    ],
+                    [
+                      { text: '← Назад', callback_data: 'menu_back' }
+                    ]
+                  ]
+                }
+              }
+            );
+            break;
+          case "menu_bugreport":
+            handleBugReport(chatId, fakeMsg);
+            break;
+          case "menu_back":
+            // Возвращаемся в главное меню
+            bot.editMessageText(
+              `<b>📱 Главное меню</b>\n\nВыберите действие:`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: createMenuButtons()
+                }
+              }
+            );
             break;
         }
         return;
