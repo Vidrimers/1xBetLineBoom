@@ -19017,7 +19017,7 @@ app.get("/api/news/:id/reactions/:type", async (req, res) => {
     
     // Получаем список пользователей с их реакциями и аватарками
     const users = db.prepare(`
-      SELECT nr.username, nr.created_at, u.avatar
+      SELECT nr.username, nr.created_at, u.avatar, u.id as user_id
       FROM news_reactions nr
       LEFT JOIN users u ON nr.username = u.username
       WHERE nr.news_id = ? AND nr.reaction = ?
@@ -19027,6 +19027,7 @@ app.get("/api/news/:id/reactions/:type", async (req, res) => {
     res.json({ 
       success: true, 
       users: users.map(u => ({
+        userId: u.user_id,
         username: u.username,
         avatar: u.avatar
       }))

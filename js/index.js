@@ -8109,7 +8109,7 @@ async function loadNewsList(reset = false) {
               class="news-reaction-btn ${item.user_reaction === 'like' ? 'active' : ''}" 
               onclick="reactToNews(${item.id}, 'like')"
               onmouseenter="showReactionTooltip(${item.id}, 'like', this)"
-              onmouseleave="hideReactionTooltip()"
+              onmouseleave="scheduleHideTooltip()"
               data-news-id="${item.id}"
               data-reaction="like"
             >
@@ -8119,7 +8119,7 @@ async function loadNewsList(reset = false) {
               class="news-reaction-btn dislike ${item.user_reaction === 'dislike' ? 'active' : ''}" 
               onclick="reactToNews(${item.id}, 'dislike')"
               onmouseenter="showReactionTooltip(${item.id}, 'dislike', this)"
-              onmouseleave="hideReactionTooltip()"
+              onmouseleave="scheduleHideTooltip()"
               data-news-id="${item.id}"
               data-reaction="dislike"
             >
@@ -8237,11 +8237,21 @@ async function reactToNews(newsId, reaction) {
 // Показать tooltip с пользователями, поставившими реакцию
 let tooltipTimeout = null;
 let currentTooltip = null;
+let hideTooltipTimeout = null;
 
 async function showReactionTooltip(newsId, reactionType, buttonElement) {
-  // Очищаем предыдущий таймаут
+  // Очищаем таймауты
   if (tooltipTimeout) {
     clearTimeout(tooltipTimeout);
+  }
+  if (hideTooltipTimeout) {
+    clearTimeout(hideTooltipTimeout);
+  }
+  
+  // Удаляем старый tooltip если он есть
+  if (currentTooltip) {
+    currentTooltip.remove();
+    currentTooltip = null;
   }
   
   // Небольшая задержка перед показом tooltip
@@ -8263,7 +8273,7 @@ async function showReactionTooltip(newsId, reactionType, buttonElement) {
         const usersHtml = data.users.map(user => {
           const avatarUrl = user.avatar || '/img/default-avatar.jpg';
           return `
-            <div class="tooltip-user">
+            <div class="tooltip-user" onclick="showUserProfile(${user.userId}, '${user.username.replace(/'/g, "\\'")}'); hideReactionTooltip();">
               <img src="${avatarUrl}" alt="${user.username}" class="tooltip-avatar" onerror="this.src='/img/default-avatar.jpg'">
               <span class="tooltip-username">${user.username}</span>
             </div>
@@ -8279,6 +8289,17 @@ async function showReactionTooltip(newsId, reactionType, buttonElement) {
         tooltip.style.top = (rect.top - 10) + 'px';
         tooltip.style.transform = 'translateY(-100%)';
         
+        // Добавляем обработчики для tooltip
+        tooltip.addEventListener('mouseenter', () => {
+          if (hideTooltipTimeout) {
+            clearTimeout(hideTooltipTimeout);
+          }
+        });
+        
+        tooltip.addEventListener('mouseleave', () => {
+          scheduleHideTooltip();
+        });
+        
         document.body.appendChild(tooltip);
         currentTooltip = tooltip;
       }
@@ -8288,11 +8309,21 @@ async function showReactionTooltip(newsId, reactionType, buttonElement) {
   }, 300); // Задержка 300мс перед показом
 }
 
+function scheduleHideTooltip() {
+  hideTooltipTimeout = setTimeout(() => {
+    hideReactionTooltip();
+  }, 200); // Небольшая задержка перед скрытием
+}
+
 function hideReactionTooltip() {
-  // Очищаем таймаут
+  // Очищаем таймауты
   if (tooltipTimeout) {
     clearTimeout(tooltipTimeout);
     tooltipTimeout = null;
+  }
+  if (hideTooltipTimeout) {
+    clearTimeout(hideTooltipTimeout);
+    hideTooltipTimeout = null;
   }
   
   // Удаляем tooltip

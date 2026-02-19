@@ -4571,7 +4571,7 @@ body.theme-cyberpunk .countTournaments button.active {
   font-size: 0.9em;
   line-height: 1.6;
   z-index: 10000;
-  pointer-events: none;
+  pointer-events: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   max-width: 250px;
   word-wrap: break-word;
@@ -4582,13 +4582,15 @@ body.theme-cyberpunk .countTournaments button.active {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .tooltip-user:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(76, 175, 80, 0.2);
+  transform: translateX(2px);
 }
 
 .tooltip-avatar {
@@ -4598,11 +4600,22 @@ body.theme-cyberpunk .countTournaments button.active {
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.tooltip-user:hover .tooltip-avatar {
+  transform: scale(1.1);
+  border-color: #4caf50;
 }
 
 .tooltip-username {
   color: #e0e0e0;
   font-size: 0.9em;
+  transition: color 0.2s ease;
+}
+
+.tooltip-user:hover .tooltip-username {
+  color: #4caf50;
 }
 
 @keyframes tooltipFadeIn {
