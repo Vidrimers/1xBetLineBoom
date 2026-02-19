@@ -9319,6 +9319,32 @@ function filterBugReports(status) {
               ${report.telegram_username ? `<span class="bug-report-telegram">@${report.telegram_username}</span>` : ''}
             </div>
             <div class="bug-report-date">🕐 ${createdAt}</div>
+            <button 
+              class="bug-report-delete-btn"
+              onclick="deleteBugReport(${report.id})"
+              title="Удалить багрепорт"
+              style="
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background: rgba(244, 67, 54, 0.2);
+                color: #f44336;
+                border: 1px solid #f44336;
+                cursor: pointer;
+                font-size: 18px;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                transition: all 0.3s ease;
+              "
+              onmouseover="this.style.background='rgba(244, 67, 54, 0.4)'"
+              onmouseout="this.style.background='rgba(244, 67, 54, 0.2)'"
+            >×</button>
           </div>
           <div class="bug-report-text">${report.bug_text}</div>
           ${imagesHtml}
@@ -9390,6 +9416,42 @@ async function changeBugStatus(id, status) {
   } catch (error) {
     console.error("Ошибка при изменении статуса:", error);
     await showCustomAlert("Ошибка при обновлении статуса", "Ошибка", "❌");
+  }
+}
+
+// Удалить багрепорт
+async function deleteBugReport(id) {
+  if (!currentUser || currentUser.username !== ADMIN_DB_NAME) return;
+
+  const confirmed = await showCustomConfirm(
+    "Вы уверены, что хотите удалить этот багрепорт? Все связанные изображения также будут удалены.",
+    "Подтверждение удаления",
+    "⚠️"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/bug-reports/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: currentUser.username
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      await showCustomAlert("Багрепорт успешно удален", "Успех", "✅");
+      // Перезагружаем список багрепортов
+      await loadBugReports();
+    } else {
+      await showCustomAlert(result.error || "Ошибка при удалении", "Ошибка", "❌");
+    }
+  } catch (error) {
+    console.error("Ошибка при удалении багрепорта:", error);
+    await showCustomAlert("Ошибка при удалении багрепорта", "Ошибка", "❌");
   }
 }
 

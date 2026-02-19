@@ -15124,6 +15124,39 @@ ${status === 'rejected' ? '❌ Это не баг, это фича.' : ''}`;
   }
 });
 
+// DELETE /api/admin/bug-reports/:id - Удалить багрепорт
+app.delete("/api/admin/bug-reports/:id", async (req, res) => {
+  const { id } = req.params;
+  const { username: adminUsername } = req.body;
+
+  // Проверяем, является ли пользователь админом
+  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  try {
+    // Проверяем существование багрепорта
+    const bugReport = db.prepare("SELECT id FROM bug_reports WHERE id = ?").get(id);
+
+    if (!bugReport) {
+      return res.status(404).json({ error: "Багрепорт не найден" });
+    }
+
+    // Удаляем изображения (благодаря ON DELETE CASCADE они удалятся автоматически)
+    // Но можно явно удалить для логирования
+    const deletedImages = db.prepare("DELETE FROM bug_report_images WHERE bug_report_id = ?").run(id);
+    
+    // Удаляем сам багрепорт
+    db.prepare("DELETE FROM bug_reports WHERE id = ?").run(id);
+
+    console.log(`✅ Багрепорт #${id} удален вместе с ${deletedImages.changes} изображениями`);
+    res.json({ success: true, message: "Багрепорт удален" });
+  } catch (error) {
+    console.error("Ошибка при удалении багрепорта:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/test-group-notification - Отправить тестовое уведомление в группу
 app.post("/api/admin/test-group-notification", async (req, res) => {
   const { username: adminUsername, testMode } = req.body;

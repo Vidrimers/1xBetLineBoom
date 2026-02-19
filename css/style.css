@@ -3375,6 +3375,7 @@ input:checked + .slider:before {
   padding: 15px;
   border-left: 4px solid #ff9800;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .bug-report-card:hover {
@@ -3406,6 +3407,7 @@ input:checked + .slider:before {
   gap: 15px;
   margin-bottom: 10px;
   flex-wrap: wrap;
+  padding-right: 40px;
 }
 
 .bug-report-id {
