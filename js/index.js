@@ -8108,6 +8108,8 @@ async function loadNewsList(reset = false) {
             <button 
               class="news-reaction-btn ${item.user_reaction === 'like' ? 'active' : ''}" 
               onclick="reactToNews(${item.id}, 'like')"
+              onmouseenter="showReactionTooltip(${item.id}, 'like', this)"
+              onmouseleave="hideReactionTooltip()"
               data-news-id="${item.id}"
               data-reaction="like"
             >
@@ -8116,6 +8118,8 @@ async function loadNewsList(reset = false) {
             <button 
               class="news-reaction-btn dislike ${item.user_reaction === 'dislike' ? 'active' : ''}" 
               onclick="reactToNews(${item.id}, 'dislike')"
+              onmouseenter="showReactionTooltip(${item.id}, 'dislike', this)"
+              onmouseleave="hideReactionTooltip()"
               data-news-id="${item.id}"
               data-reaction="dislike"
             >
@@ -8227,6 +8231,62 @@ async function reactToNews(newsId, reaction) {
   } catch (error) {
     console.error("❌ Ошибка реакции на новость:", error);
     alert("Ошибка отправки реакции");
+  }
+}
+
+// Показать tooltip с пользователями, поставившими реакцию
+let tooltipTimeout = null;
+let currentTooltip = null;
+
+async function showReactionTooltip(newsId, reactionType, buttonElement) {
+  // Очищаем предыдущий таймаут
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+  }
+  
+  // Небольшая задержка перед показом tooltip
+  tooltipTimeout = setTimeout(async () => {
+    try {
+      const response = await fetch(`/api/news/${newsId}/reactions/${reactionType}`);
+      if (!response.ok) {
+        throw new Error("Ошибка загрузки данных");
+      }
+      
+      const data = await response.json();
+      
+      if (data.users && data.users.length > 0) {
+        // Создаем tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'reaction-tooltip';
+        tooltip.innerHTML = data.users.join('<br>');
+        
+        // Позиционируем tooltip
+        const rect = buttonElement.getBoundingClientRect();
+        tooltip.style.position = 'fixed';
+        tooltip.style.left = rect.left + 'px';
+        tooltip.style.top = (rect.top - 10) + 'px';
+        tooltip.style.transform = 'translateY(-100%)';
+        
+        document.body.appendChild(tooltip);
+        currentTooltip = tooltip;
+      }
+    } catch (error) {
+      console.error("❌ Ошибка загрузки списка пользователей:", error);
+    }
+  }, 300); // Задержка 300мс перед показом
+}
+
+function hideReactionTooltip() {
+  // Очищаем таймаут
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = null;
+  }
+  
+  // Удаляем tooltip
+  if (currentTooltip) {
+    currentTooltip.remove();
+    currentTooltip = null;
   }
 }
 

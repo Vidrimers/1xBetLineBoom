@@ -19004,6 +19004,35 @@ app.post("/api/news/:id/reaction", async (req, res) => {
   }
 });
 
+// GET /api/news/:id/reactions/:type - Получить список пользователей, поставивших реакцию
+app.get("/api/news/:id/reactions/:type", async (req, res) => {
+  try {
+    const newsId = parseInt(req.params.id);
+    const reactionType = req.params.type;
+    
+    // Проверка типа реакции
+    if (!['like', 'dislike'].includes(reactionType)) {
+      return res.status(400).json({ error: "Неверный тип реакции" });
+    }
+    
+    // Получаем список пользователей с их реакциями
+    const users = db.prepare(`
+      SELECT username, created_at
+      FROM news_reactions
+      WHERE news_id = ? AND reaction = ?
+      ORDER BY created_at DESC
+    `).all(newsId, reactionType);
+    
+    res.json({ 
+      success: true, 
+      users: users.map(u => u.username)
+    });
+  } catch (error) {
+    console.error("❌ Ошибка получения реакций:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/admin/news/:id - Удалить новость (только для админа)
 app.delete("/api/admin/news/:id", async (req, res) => {
   try {
