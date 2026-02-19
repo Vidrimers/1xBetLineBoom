@@ -13160,17 +13160,36 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
       }
 
       db.prepare(
-        "UPDATE matches SET status = ?, result = ?, winner = ?, team1_score = ?, team2_score = ? WHERE id = ?"
-      ).run(status, result || null, winner, req.body.score_team1 || null, req.body.score_team2 || null, matchId);
+        "UPDATE matches SET status = ?, result = ?, winner = ?, team1_score = ?, team2_score = ?, yellow_cards = ?, red_cards = ? WHERE id = ?"
+      ).run(
+        status, 
+        result || null, 
+        winner, 
+        req.body.score_team1 || null, 
+        req.body.score_team2 || null,
+        req.body.yellow_cards !== undefined ? req.body.yellow_cards : null,
+        req.body.red_cards !== undefined ? req.body.red_cards : null,
+        matchId
+      );
 
       // Уведомление админу если это модератор
       if (isModerator && username) {
         const match = db.prepare("SELECT team1_name, team2_name FROM matches WHERE id = ?").get(matchId);
         const event = db.prepare("SELECT e.name FROM events e JOIN matches m ON m.event_id = e.id WHERE m.id = ?").get(matchId);
         const resultText = result === 'team1_win' ? match.team1_name : result === 'team2_win' ? match.team2_name : 'Ничья';
-        const details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}
-📊 Результат: ${resultText}
-${req.body.score_team1 !== undefined ? `⚽ Счет: ${req.body.score_team1}:${req.body.score_team2}` : ''}`;
+        
+        let details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}
+📊 Результат: ${resultText}`;
+        
+        if (req.body.score_team1 !== undefined) {
+          details += `\n⚽ Счет: ${req.body.score_team1}:${req.body.score_team2}`;
+        }
+        if (req.body.yellow_cards !== undefined) {
+          details += `\n🟨 Желтые карточки: ${req.body.yellow_cards}`;
+        }
+        if (req.body.red_cards !== undefined) {
+          details += `\n🟥 Красные карточки: ${req.body.red_cards}`;
+        }
         
         await notifyModeratorAction(username, "Установка результата матча", details);
         
@@ -18576,8 +18595,15 @@ function updateMatchesFromAPI(matches) {
       SET status = 'finished',
           winner = ?,
           team1_score = ?,
-          team2_score = ?
+          team2_score = ?,
+          yellow_cards = ?,
+          red_cards = ?
       WHERE id = ?
+    `);
+    
+    const insertScoreStmt = db.prepare(`
+      INSERT OR REPLACE INTO match_scores (match_id, score_team1, score_team2)
+      VALUES (?, ?, ?)
     `);
     
     for (const { dbMatch, apiMatch } of matches) {
@@ -18607,9 +18633,16 @@ function updateMatchesFromAPI(matches) {
       const score1 = isReversed ? awayScore : homeScore;
       const score2 = isReversed ? homeScore : awayScore;
       
-      updateStmt.run(winner, score1, score2, dbMatch.id);
+      // Получаем карточки из API (если есть)
+      const yellowCards = apiMatch.yellowCards || null;
+      const redCards = apiMatch.redCards || null;
       
-      console.log(`✅ Обновлен матч: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})`);
+      updateStmt.run(winner, score1, score2, yellowCards, redCards, dbMatch.id);
+      
+      // Сохраняем счет в таблицу match_scores
+      insertScoreStmt.run(dbMatch.id, score1, score2);
+      
+      console.log(`✅ Обновлен матч: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})${yellowCards !== null ? ` | 🟨${yellowCards}` : ''}${redCards !== null ? ` | 🟥${redCards}` : ''}`);
     }
     
     return true;

@@ -5515,9 +5515,7 @@ function displayTournamentParticipantBets(bets) {
 
   // Логируем первую ставку для проверки данных
   if (bets.length > 0) {
-    console.log("Пример ставки:", bets[0]);
-    console.log("Прогноз на счет:", bets[0].score_team1, "-", bets[0].score_team2);
-    console.log("Фактический счет:", bets[0].actual_score_team1, "-", bets[0].actual_score_team2);
+    console.log("Загружено ставок:", bets.length);
   }
 
   betsList.innerHTML = bets
@@ -5580,7 +5578,7 @@ function displayTournamentParticipantBets(bets) {
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
                 📊 Счет: <span style="${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
-                    ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
+                    ? Number(bet.score_team1) === Number(bet.actual_score_team1) && Number(bet.score_team2) === Number(bet.actual_score_team2)
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
                       : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
                     : ''
@@ -5598,7 +5596,7 @@ function displayTournamentParticipantBets(bets) {
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
                 🟨 Желтые: <span style="${
                   bet.actual_yellow_cards != null && bet.result !== 'pending'
-                    ? bet.yellow_cards === bet.actual_yellow_cards
+                    ? Number(bet.yellow_cards) === Number(bet.actual_yellow_cards)
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
                       : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
                     : ''
@@ -5616,7 +5614,7 @@ function displayTournamentParticipantBets(bets) {
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
                 🟥 Красные: <span style="${
                   bet.actual_red_cards != null && bet.result !== 'pending'
-                    ? bet.red_cards === bet.actual_red_cards
+                    ? Number(bet.red_cards) === Number(bet.actual_red_cards)
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
                       : 'border: 1px solid #f44336; padding: 2px 5px; border-radius: 3px;'
                     : ''
