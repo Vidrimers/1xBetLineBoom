@@ -4,6 +4,7 @@
 const COMPETITION_DICTIONARY_MAPPING = {
   'CL': '/names/LeagueOfChampionsTeams.json',
   'EL': '/names/EuropaLeague.json',
+  'ECL': '/names/ConferenceLeague.json',
   'PL': '/names/PremierLeague.json',
   'BL1': '/names/Bundesliga.json',
   'PD': '/names/LaLiga.json',
@@ -178,6 +179,10 @@ function loadCounting() {
         <button id="comp-EL" onclick="selectCompetition('EL')" title="Europa League">
           <img src="img/cups/european-league.png" alt="EL" style="width: 20px; height: 20px; object-fit: contain;" />
           Europa League
+        </button>
+        <button id="comp-ECL" onclick="selectCompetition('ECL')" title="Conference League">
+          <img src="img/cups/conference-league.png" alt="ECL" style="width: 20px; height: 20px; object-fit: contain;" />
+          Conference League
         </button>
         <button id="comp-EC" onclick="selectCompetition('EC')" title="Euro">
           <img src="img/cups/uefa-euro.png" alt="EC" style="width: 20px; height: 20px; object-fit: contain;" />

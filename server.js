@@ -7031,6 +7031,7 @@ app.get("/api/live-matches", async (req, res) => {
       'DED': path.join(__dirname, 'names', 'Eredivisie.json'),
       'CL': path.join(__dirname, 'names', 'LeagueOfChampionsTeams.json'),
       'EL': path.join(__dirname, 'names', 'EuropaLeague.json'),
+      'ECL': path.join(__dirname, 'names', 'ConferenceLeague.json'),
       'RPL': path.join(__dirname, 'names', 'RussianPremierLeague.json')
     };
     
@@ -7529,6 +7530,7 @@ app.get("/api/yesterday-matches", async (req, res) => {
             'DED': path.join(__dirname, 'names', 'Eredivisie.json'),
             'CL': path.join(__dirname, 'names', 'LeagueOfChampionsTeams.json'),
             'EL': path.join(__dirname, 'names', 'EuropaLeague.json'),
+            'ECL': path.join(__dirname, 'names', 'ConferenceLeague.json'),
             'RPL': path.join(__dirname, 'names', 'RussianPremierLeague.json')
           };
           
@@ -18374,6 +18376,8 @@ function translateTeamNameToEnglish(russianName, competitionCode) {
   // Загружаем словарь для турнира
   const dictionaryFiles = {
     'CL': 'names/LeagueOfChampionsTeams.json',
+    'EL': 'names/EuropaLeague.json',
+    'ECL': 'names/ConferenceLeague.json',
     'PL': 'names/PremierLeague.json',
     'LL': 'names/LaLiga.json',
     'SA': 'names/SerieA.json',

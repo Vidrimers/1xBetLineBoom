@@ -14811,6 +14811,7 @@ async function loadParsePreview() {
     const dictionaryMapping = {
       'CL': '/names/LeagueOfChampionsTeams.json',
       'EL': '/names/EuropaLeague.json',
+      'ECL': '/names/ConferenceLeague.json',
       'PL': '/names/PremierLeague.json',
       'BL1': '/names/Bundesliga.json',
       'PD': '/names/LaLiga.json',
