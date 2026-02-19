@@ -9176,6 +9176,9 @@ async function loadBugReports() {
 
     allBugReports = bugReports;
 
+    // Обновляем счетчики на кнопках фильтра
+    updateBugReportFilterCounts();
+
     // Определяем фильтр по умолчанию
     const hasNew = bugReports.some(r => r.status === 'new');
     const hasInProgress = bugReports.some(r => r.status === 'in_progress');
@@ -9336,6 +9339,30 @@ function filterBugReports(status) {
         </div>
       `;
     }).join('');
+}
+
+// Обновить счетчики на кнопках фильтра
+function updateBugReportFilterCounts() {
+  const counts = {
+    new: allBugReports.filter(r => r.status === 'new').length,
+    in_progress: allBugReports.filter(r => r.status === 'in_progress').length,
+    resolved: allBugReports.filter(r => r.status === 'resolved').length,
+    rejected: allBugReports.filter(r => r.status === 'rejected').length
+  };
+
+  document.querySelectorAll('.bug-filter-btn').forEach(btn => {
+    const status = btn.dataset.status;
+    const count = counts[status] || 0;
+    
+    const labels = {
+      'new': '🆕 Новый',
+      'in_progress': '🔄 В работе',
+      'resolved': '✅ Решено',
+      'rejected': '❌ Отклонено'
+    };
+    
+    btn.textContent = `${labels[status]} (${count})`;
+  });
 }
 
 // Изменить статус багрепорта
