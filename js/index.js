@@ -9174,14 +9174,66 @@ async function loadBugReports() {
     
     console.log("📦 Получено багрепортов:", bugReports.length);
 
-    const listContainer = document.getElementById("bugReportsList");
+    allBugReports = bugReports;
 
-    if (!Array.isArray(bugReports) || bugReports.length === 0) {
-      listContainer.innerHTML = '<div class="empty-message">Нет багрепортов</div>';
-      return;
+    // Определяем фильтр по умолчанию
+    const hasNew = bugReports.some(r => r.status === 'new');
+    const hasInProgress = bugReports.some(r => r.status === 'in_progress');
+    
+    if (hasNew) {
+      currentBugReportFilter = 'new';
+    } else if (hasInProgress) {
+      currentBugReportFilter = 'in_progress';
+    } else {
+      currentBugReportFilter = 'new'; // По умолчанию все равно new
     }
 
-    listContainer.innerHTML = bugReports.map(report => {
+    // Применяем фильтр
+    filterBugReports(currentBugReportFilter);
+  } catch (error) {
+    console.error("Ошибка при загрузке багрепортов:", error);
+    document.getElementById("bugReportsList").innerHTML = 
+      '<div class="empty-message">Ошибка загрузки багрепортов</div>';
+  }
+}
+
+// Фильтрация багрепортов по статусу
+function filterBugReports(status) {
+  currentBugReportFilter = status;
+  
+  // Обновляем активную кнопку фильтра
+  document.querySelectorAll('.bug-filter-btn').forEach(btn => {
+    if (btn.dataset.status === status) {
+      btn.classList.add('active');
+      btn.style.background = 'rgba(90, 159, 212, 0.2)';
+      btn.style.color = '#5a9fd4';
+      btn.style.borderColor = '#5a9fd4';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'rgba(255, 255, 255, 0.05)';
+      btn.style.color = '#aaa';
+      btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    }
+  });
+
+  // Фильтруем багрепорты
+  const filteredReports = allBugReports.filter(r => r.status === status);
+  
+  const listContainer = document.getElementById("bugReportsList");
+
+  if (filteredReports.length === 0) {
+    const statusText = {
+      'new': 'новых',
+      'in_progress': 'в работе',
+      'resolved': 'решенных',
+      'rejected': 'отклоненных'
+    }[status] || 'багрепортов';
+    
+    listContainer.innerHTML = `<div class="empty-message">Нет ${statusText} багрепортов</div>`;
+    return;
+  }
+
+  listContainer.innerHTML = filteredReports.map(report => {
       const createdAt = new Date(report.created_at).toLocaleString("ru-RU");
       const statusIcon = {
         'new': '🆕',
@@ -9284,11 +9336,6 @@ async function loadBugReports() {
         </div>
       `;
     }).join('');
-  } catch (error) {
-    console.error("Ошибка при загрузке багрепортов:", error);
-    document.getElementById("bugReportsList").innerHTML = 
-      '<div class="empty-message">Ошибка загрузки багрепортов</div>';
-  }
 }
 
 // Изменить статус багрепорта
@@ -9322,6 +9369,8 @@ async function changeBugStatus(id, status) {
 // Переменные для просмотра изображений багрепорта
 let currentBugReportImages = [];
 let currentImageIndex = 0;
+let allBugReports = []; // Все багрепорты
+let currentBugReportFilter = 'new'; // Текущий фильтр
 
 // Открыть модальное окно просмотра изображений багрепорта
 async function openBugReportImagesModal(bugReportId, startIndex = 0) {

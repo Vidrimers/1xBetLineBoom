@@ -1489,6 +1489,85 @@
             </button>
           </div>
           <div class="modal-body">
+            <!-- Фильтр по статусам -->
+            <div style="
+              display: flex;
+              gap: 8px;
+              margin-bottom: 15px;
+              padding-bottom: 15px;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+              flex-wrap: wrap;
+            ">
+              <button 
+                class="bug-filter-btn active" 
+                data-status="new"
+                onclick="filterBugReports('new')"
+                style="
+                  padding: 8px 16px;
+                  background: rgba(90, 159, 212, 0.2);
+                  color: #5a9fd4;
+                  border: 1px solid #5a9fd4;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 14px;
+                  transition: all 0.3s ease;
+                "
+              >
+                🆕 Новый
+              </button>
+              <button 
+                class="bug-filter-btn" 
+                data-status="in_progress"
+                onclick="filterBugReports('in_progress')"
+                style="
+                  padding: 8px 16px;
+                  background: rgba(255, 255, 255, 0.05);
+                  color: #aaa;
+                  border: 1px solid rgba(255, 255, 255, 0.2);
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 14px;
+                  transition: all 0.3s ease;
+                "
+              >
+                🔄 В работе
+              </button>
+              <button 
+                class="bug-filter-btn" 
+                data-status="resolved"
+                onclick="filterBugReports('resolved')"
+                style="
+                  padding: 8px 16px;
+                  background: rgba(255, 255, 255, 0.05);
+                  color: #aaa;
+                  border: 1px solid rgba(255, 255, 255, 0.2);
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 14px;
+                  transition: all 0.3s ease;
+                "
+              >
+                ✅ Решено
+              </button>
+              <button 
+                class="bug-filter-btn" 
+                data-status="rejected"
+                onclick="filterBugReports('rejected')"
+                style="
+                  padding: 8px 16px;
+                  background: rgba(255, 255, 255, 0.05);
+                  color: #aaa;
+                  border: 1px solid rgba(255, 255, 255, 0.2);
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 14px;
+                  transition: all 0.3s ease;
+                "
+              >
+                ❌ Отклонено
+              </button>
+            </div>
+            
             <div id="bugReportsList" style="display: flex; flex-direction: column; gap: 15px">
               <div class="empty-message">Загружаем багрепорты...</div>
             </div>
