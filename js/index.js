@@ -8475,6 +8475,9 @@ function openBugReportModal() {
   if (modal) {
     // Очищаем поле ввода
     document.getElementById("bugReportText").value = "";
+    // Очищаем изображения
+    bugReportImages = [];
+    updateBugReportImagesPreview();
     // Блокируем скролл body
     document.body.style.overflow = 'hidden';
     modal.style.display = "flex";
@@ -8485,11 +8488,255 @@ function openBugReportModal() {
 function closeBugReportModal() {
   const modal = document.getElementById("bugReportModal");
   if (modal) {
+    // Очищаем изображения
+    bugReportImages = [];
+    updateBugReportImagesPreview();
+    // Очищаем текст
+    document.getElementById("bugReportText").value = "";
     // Разблокируем скролл body
     document.body.style.overflow = '';
     modal.style.display = "none";
   }
 }
+
+// Массив для хранения изображений багрепорта
+let bugReportImages = [];
+
+// Обработка загрузки изображений через input
+async function handleBugReportImages(event) {
+  const files = Array.from(event.target.files);
+  await addBugReportImages(files);
+  // Очищаем input для возможности повторной загрузки тех же файлов
+  event.target.value = '';
+}
+
+// Добавление изображений в багрепорт
+async function addBugReportImages(files) {
+  const maxImages = 6;
+  const maxSizeBytes = 1024 * 1024; // 1 МБ
+  
+  // Проверяем лимит
+  if (bugReportImages.length >= maxImages) {
+    await showCustomAlert(`Максимум ${maxImages} изображений`, "Ограничение", "⚠️");
+    return;
+  }
+  
+  // Фильтруем только изображения
+  const imageFiles = files.filter(file => file.type.startsWith('image/'));
+  
+  if (imageFiles.length === 0) {
+    await showCustomAlert("Выберите изображения", "Ошибка", "❌");
+    return;
+  }
+  
+  // Ограничиваем количество добавляемых файлов
+  const availableSlots = maxImages - bugReportImages.length;
+  const filesToProcess = imageFiles.slice(0, availableSlots);
+  
+  if (imageFiles.length > availableSlots) {
+    await showCustomAlert(
+      `Можно добавить только ${availableSlots} изображений. Остальные будут пропущены.`,
+      "Ограничение",
+      "⚠️"
+    );
+  }
+  
+  // Обрабатываем каждый файл
+  for (const file of filesToProcess) {
+    try {
+      // Сжимаем изображение если нужно
+      const compressedBlob = await compressImage(file, maxSizeBytes);
+      
+      // Конвертируем в base64
+      const base64 = await blobToBase64(compressedBlob);
+      
+      bugReportImages.push({
+        name: file.name,
+        data: base64,
+        size: compressedBlob.size
+      });
+    } catch (error) {
+      console.error('Ошибка обработки изображения:', error);
+      await showCustomAlert(`Ошибка обработки ${file.name}`, "Ошибка", "❌");
+    }
+  }
+  
+  updateBugReportImagesPreview();
+}
+
+// Сжатие изображения до нужного размера
+async function compressImage(file, maxSizeBytes) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Начинаем с оригинального размера
+        let width = img.width;
+        let height = img.height;
+        let quality = 0.9;
+        
+        // Функция для попытки сжатия
+        const tryCompress = () => {
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Ошибка создания blob'));
+              return;
+            }
+            
+            // Если размер подходит или качество слишком низкое - возвращаем результат
+            if (blob.size <= maxSizeBytes || quality <= 0.1) {
+              resolve(blob);
+              return;
+            }
+            
+            // Уменьшаем качество или размер
+            if (quality > 0.5) {
+              quality -= 0.1;
+            } else {
+              // Уменьшаем размеры на 10%
+              width = Math.floor(width * 0.9);
+              height = Math.floor(height * 0.9);
+              quality = 0.9;
+            }
+            
+            // Пробуем снова
+            tryCompress();
+          }, file.type || 'image/jpeg', quality);
+        };
+        
+        tryCompress();
+      };
+      
+      img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
+      img.src = e.target.result;
+    };
+    
+    reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Конвертация Blob в Base64
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Обновление превью изображений
+function updateBugReportImagesPreview() {
+  const preview = document.getElementById('bugReportImagesPreview');
+  
+  if (bugReportImages.length === 0) {
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+    return;
+  }
+  
+  preview.style.display = 'flex';
+  preview.innerHTML = bugReportImages.map((img, index) => `
+    <div style="
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    ">
+      <img 
+        src="${img.data}" 
+        alt="${img.name}"
+        style="
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        "
+      />
+      <button
+        onclick="removeBugReportImage(${index})"
+        style="
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(244, 67, 54, 0.9);
+          color: white;
+          border: none;
+          cursor: pointer;
+          font-size: 16px;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+        "
+        title="Удалить"
+      >×</button>
+      <div style="
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        font-size: 10px;
+        padding: 2px 4px;
+        text-align: center;
+      ">
+        ${(img.size / 1024).toFixed(0)} КБ
+      </div>
+    </div>
+  `).join('');
+}
+
+// Удаление изображения из багрепорта
+function removeBugReportImage(index) {
+  bugReportImages.splice(index, 1);
+  updateBugReportImagesPreview();
+}
+
+// Обработка вставки изображений через Ctrl+V
+document.addEventListener('DOMContentLoaded', () => {
+  const bugReportModal = document.getElementById('bugReportModal');
+  
+  if (bugReportModal) {
+    bugReportModal.addEventListener('paste', async (e) => {
+      // Проверяем, что модальное окно открыто
+      if (bugReportModal.style.display !== 'flex') return;
+      
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      const imageFiles = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+      
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        await addBugReportImages(imageFiles);
+      }
+    });
+  }
+});
 
 // Открыть модальное окно с информацией о входе через Telegram (для экрана логина)
 function openTelegramInfoModal() {
@@ -8849,7 +9096,12 @@ async function sendBugReport() {
       body: JSON.stringify({
         userId: currentUser.id,
         username: currentUser.username,
-        bugText: bugText
+        bugText: bugText,
+        images: bugReportImages.map(img => ({
+          name: img.name,
+          data: img.data,
+          size: img.size
+        }))
       })
     });
 
@@ -8945,6 +9197,64 @@ async function loadBugReports() {
         'rejected': 'Отклонено'
       }[report.status] || 'Неизвестно';
 
+      // Генерируем HTML для миниатюр изображений
+      const imagesHtml = report.images && report.images.length > 0 ? `
+        <div class="bug-report-images" style="
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        ">
+          <div style="color: #aaa; font-size: 12px; width: 100%; margin-bottom: 5px;">
+            📎 Прикрепленные изображения (${report.images.length}):
+          </div>
+          ${report.images.map((img, index) => `
+            <div 
+              class="bug-report-image-thumb"
+              onclick="openBugReportImagesModal(${report.id}, ${index})"
+              style="
+                width: 80px;
+                height: 80px;
+                border-radius: 6px;
+                overflow: hidden;
+                border: 2px solid rgba(90, 159, 212, 0.3);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+              "
+              onmouseover="this.style.borderColor='rgba(90, 159, 212, 0.8)'; this.style.transform='scale(1.05)'"
+              onmouseout="this.style.borderColor='rgba(90, 159, 212, 0.3)'; this.style.transform='scale(1)'"
+              title="Нажмите для просмотра"
+            >
+              <img 
+                src="${img.image_data}" 
+                alt="${img.image_name || 'Изображение'}"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: cover;
+                "
+              />
+              <div style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(0, 0, 0, 0.7);
+                color: white;
+                font-size: 9px;
+                padding: 2px;
+                text-align: center;
+              ">
+                ${(img.image_size / 1024).toFixed(0)} КБ
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
       return `
         <div class="bug-report-card" data-status="${report.status}">
           <div class="bug-report-header">
@@ -8956,6 +9266,7 @@ async function loadBugReports() {
             <div class="bug-report-date">🕐 ${createdAt}</div>
           </div>
           <div class="bug-report-text">${report.bug_text}</div>
+          ${imagesHtml}
           <div class="bug-report-footer">
             <div class="bug-report-status">
               ${statusIcon} <span>${statusText}</span>
@@ -9007,6 +9318,133 @@ async function changeBugStatus(id, status) {
     await showCustomAlert("Ошибка при обновлении статуса", "Ошибка", "❌");
   }
 }
+
+// Переменные для просмотра изображений багрепорта
+let currentBugReportImages = [];
+let currentImageIndex = 0;
+
+// Открыть модальное окно просмотра изображений багрепорта
+async function openBugReportImagesModal(bugReportId, startIndex = 0) {
+  try {
+    // Получаем данные багрепорта с изображениями
+    const response = await fetch(`/api/admin/bug-reports?username=${currentUser.username}`);
+    const bugReports = await response.json();
+    
+    const report = bugReports.find(r => r.id === bugReportId);
+    
+    if (!report || !report.images || report.images.length === 0) {
+      await showCustomAlert("Изображения не найдены", "Ошибка", "❌");
+      return;
+    }
+    
+    currentBugReportImages = report.images;
+    currentImageIndex = startIndex;
+    
+    const modal = document.getElementById('bugReportImagesModal');
+    const title = document.getElementById('bugReportImagesTitle');
+    
+    title.textContent = `📷 Изображения багрепорта #${bugReportId}`;
+    
+    displayCurrentBugReportImage();
+    
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+  } catch (error) {
+    console.error("Ошибка при открытии изображений:", error);
+    await showCustomAlert("Ошибка при загрузке изображений", "Ошибка", "❌");
+  }
+}
+
+// Отобразить текущее изображение
+function displayCurrentBugReportImage() {
+  const container = document.getElementById('bugReportImagesContainer');
+  const counter = document.getElementById('imageCounter');
+  const prevBtn = document.getElementById('prevImageBtn');
+  const nextBtn = document.getElementById('nextImageBtn');
+  
+  if (currentBugReportImages.length === 0) return;
+  
+  const img = currentBugReportImages[currentImageIndex];
+  
+  container.innerHTML = `
+    <div style="
+      max-width: 100%;
+      max-height: calc(90vh - 200px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    ">
+      <img 
+        src="${img.image_data}" 
+        alt="${img.image_name || 'Изображение'}"
+        style="
+          max-width: 100%;
+          max-height: calc(90vh - 250px);
+          object-fit: contain;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        "
+      />
+      <div style="
+        color: #aaa;
+        font-size: 14px;
+        text-align: center;
+      ">
+        <div>${img.image_name || 'Без названия'}</div>
+        <div>Размер: ${(img.image_size / 1024).toFixed(2)} КБ</div>
+      </div>
+    </div>
+  `;
+  
+  // Обновляем счетчик
+  counter.textContent = `${currentImageIndex + 1} / ${currentBugReportImages.length}`;
+  
+  // Управляем кнопками навигации
+  prevBtn.disabled = currentImageIndex === 0;
+  nextBtn.disabled = currentImageIndex === currentBugReportImages.length - 1;
+  
+  prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+  nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+  prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer';
+  nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer';
+}
+
+// Навигация по изображениям
+function navigateBugReportImage(direction) {
+  const newIndex = currentImageIndex + direction;
+  
+  if (newIndex >= 0 && newIndex < currentBugReportImages.length) {
+    currentImageIndex = newIndex;
+    displayCurrentBugReportImage();
+  }
+}
+
+// Закрыть модальное окно просмотра изображений
+function closeBugReportImagesModal() {
+  const modal = document.getElementById('bugReportImagesModal');
+  if (modal) {
+    document.body.style.overflow = '';
+    modal.style.display = 'none';
+    currentBugReportImages = [];
+    currentImageIndex = 0;
+  }
+}
+
+// Добавляем поддержку клавиш стрелок для навигации
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('bugReportImagesModal');
+  if (modal && modal.style.display === 'flex') {
+    if (e.key === 'ArrowLeft') {
+      navigateBugReportImage(-1);
+    } else if (e.key === 'ArrowRight') {
+      navigateBugReportImage(1);
+    } else if (e.key === 'Escape') {
+      closeBugReportImagesModal();
+    }
+  }
+});
 
 // Загрузить список устройств
 async function loadDevicesList() {

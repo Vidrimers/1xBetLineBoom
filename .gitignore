@@ -5,6 +5,7 @@ img/avatar/
 .DS_Store
 npm/
 backups/
+migrations/
 package-lock.json
 .env
 .env copy

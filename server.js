@@ -2964,6 +2964,32 @@ try {
   console.error("❌ Ошибка миграции user_notification_settings:", error);
 }
 
+// Таблица багрепортов
+db.exec(`
+  CREATE TABLE IF NOT EXISTS bug_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    username TEXT NOT NULL,
+    bug_text TEXT NOT NULL,
+    status TEXT DEFAULT 'new',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )
+`);
+
+// Таблица изображений багрепортов
+db.exec(`
+  CREATE TABLE IF NOT EXISTS bug_report_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bug_report_id INTEGER NOT NULL,
+    image_data TEXT NOT NULL,
+    image_name TEXT,
+    image_size INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (bug_report_id) REFERENCES bug_reports(id) ON DELETE CASCADE
+  )
+`);
+
 // ===== API ENDPOINTS =====
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)
@@ -14876,7 +14902,7 @@ ${user.telegram_username ? `🤖 Писал боту: ${hasBotContact ? "✅ Д�
 // POST /api/bug-report - Отправить багрепорт админу
 app.post("/api/bug-report", async (req, res) => {
   try {
-    const { userId, username, bugText } = req.body;
+    const { userId, username, bugText, images } = req.body;
 
     if (!userId || !username || !bugText) {
       return res.status(400).json({ error: "Не все данные предоставлены" });
@@ -14887,6 +14913,20 @@ app.post("/api/bug-report", async (req, res) => {
       INSERT INTO bug_reports (user_id, username, bug_text, status)
       VALUES (?, ?, ?, 'new')
     `).run(userId, username, bugText);
+
+    const bugReportId = result.lastInsertRowid;
+
+    // Сохраняем изображения если они есть
+    if (images && Array.isArray(images) && images.length > 0) {
+      const insertImage = db.prepare(`
+        INSERT INTO bug_report_images (bug_report_id, image_data, image_name, image_size)
+        VALUES (?, ?, ?, ?)
+      `);
+
+      for (const img of images) {
+        insertImage.run(bugReportId, img.data, img.name, img.size);
+      }
+    }
 
     // Получаем информацию о пользователе
     const user = db
@@ -14901,15 +14941,16 @@ app.post("/api/bug-report", async (req, res) => {
     }
 
     const time = new Date().toLocaleString("ru-RU");
-    const message = `🐛 СООБЩЕНИЕ ОБ ОШИБКЕ #${result.lastInsertRowid}
+    const message = `🐛 СООБЩЕНИЕ ОБ ОШИБКЕ #${bugReportId}
 
 👤 От пользователя: ${username}
 ${user?.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
 🕐 Время: ${time}
 
 📝 Описание проблемы:
-${bugText}`;
+${bugText}${images && images.length > 0 ? `\n\n📎 Прикреплено изображений: ${images.length}` : ""}`;
 
+    // Отправляем текстовое сообщение
     const telegramResponse = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
@@ -14926,7 +14967,39 @@ ${bugText}`;
       throw new Error("Ошибка отправки в Telegram");
     }
 
-    console.log(`✅ Багрепорт #${result.lastInsertRowid} от ${username} отправлен админу`);
+    // Отправляем изображения если они есть
+    if (images && images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        
+        try {
+          // Конвертируем base64 в Buffer
+          const base64Data = img.data.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Создаем Blob из Buffer
+          const blob = new Blob([buffer], { type: 'image/jpeg' });
+          
+          // Создаем FormData
+          const formData = new FormData();
+          formData.append('chat_id', TELEGRAM_ADMIN_ID);
+          formData.append('photo', blob, img.name || `image_${i + 1}.jpg`);
+          formData.append('caption', `📷 Изображение ${i + 1}/${images.length} к багрепорту #${bugReportId}`);
+
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+            {
+              method: 'POST',
+              body: formData
+            }
+          );
+        } catch (imgError) {
+          console.error(`⚠️ Ошибка отправки изображения ${i + 1}:`, imgError);
+        }
+      }
+    }
+
+    console.log(`✅ Багрепорт #${bugReportId} от ${username} отправлен админу${images && images.length > 0 ? ` с ${images.length} изображениями` : ''}`);
     res.json({ success: true, message: "Багрепорт отправлен" });
   } catch (error) {
     console.error("Ошибка при отправке багрепорта:", error);
@@ -14958,7 +15031,22 @@ app.get("/api/admin/bug-reports", (req, res) => {
       ORDER BY br.created_at DESC
     `).all();
 
-    res.json(bugReports);
+    // Для каждого багрепорта получаем изображения
+    const bugReportsWithImages = bugReports.map(report => {
+      const images = db.prepare(`
+        SELECT id, image_name, image_size, image_data
+        FROM bug_report_images
+        WHERE bug_report_id = ?
+        ORDER BY created_at ASC
+      `).all(report.id);
+
+      return {
+        ...report,
+        images: images || []
+      };
+    });
+
+    res.json(bugReportsWithImages);
   } catch (error) {
     console.error("Ошибка при получении багрепортов:", error);
     res.status(500).json({ error: error.message });

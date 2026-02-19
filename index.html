@@ -1496,6 +1496,71 @@
         </div>
       </div>
 
+      <!-- Модальное окно для просмотра изображений багрепорта -->
+      <div id="bugReportImagesModal" class="modal" style="display: none" onclick="if(event.target.id === 'bugReportImagesModal') closeBugReportImagesModal()">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+          <div class="modal-header">
+            <h2 id="bugReportImagesTitle">📷 Изображения багрепорта</h2>
+            <button class="modal-close" onclick="closeBugReportImagesModal()">&times;</button>
+          </div>
+          <div class="modal-body" style="padding: 20px; overflow: auto; max-height: calc(90vh - 120px);">
+            <div id="bugReportImagesContainer" style="
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+              align-items: center;
+            ">
+              <!-- Изображения будут добавлены динамически -->
+            </div>
+            <div style="
+              display: flex;
+              justify-content: center;
+              gap: 10px;
+              margin-top: 20px;
+              padding-top: 20px;
+              border-top: 1px solid rgba(255, 255, 255, 0.1);
+            ">
+              <button 
+                id="prevImageBtn"
+                onclick="navigateBugReportImage(-1)"
+                style="
+                  padding: 10px 20px;
+                  background: rgba(90, 159, 212, 0.2);
+                  color: #5a9fd4;
+                  border: 1px solid #5a9fd4;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 14px;
+                "
+              >
+                ← Предыдущее
+              </button>
+              <span id="imageCounter" style="
+                display: flex;
+                align-items: center;
+                color: #aaa;
+                font-size: 14px;
+              "></span>
+              <button 
+                id="nextImageBtn"
+                onclick="navigateBugReportImage(1)"
+                style="
+                  padding: 10px 20px;
+                  background: rgba(90, 159, 212, 0.2);
+                  color: #5a9fd4;
+                  border: 1px solid #5a9fd4;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 14px;
+                "
+              >
+                Следующее →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Модальное окно для пересчета результатов -->
       <div id="recountModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'recountModal', closeRecountModal)">
         <div class="modal-content" style="max-width: 500px">
@@ -3392,6 +3457,50 @@
               margin-bottom: 15px;
             "
           ></textarea>
+          
+          <!-- Блок для загрузки изображений -->
+          <div style="margin-bottom: 15px;">
+            <input 
+              type="file" 
+              id="bugReportImageInput" 
+              accept="image/*" 
+              multiple 
+              style="display: none;"
+              onchange="handleBugReportImages(event)"
+            />
+            <button 
+              onclick="document.getElementById('bugReportImageInput').click()"
+              style="
+                padding: 8px 16px;
+                background: rgba(90, 159, 212, 0.2);
+                color: #5a9fd4;
+                border: 1px solid #5a9fd4;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              "
+            >
+              📎 Прикрепить изображения (макс. 6)
+            </button>
+            <p style="color: #888; font-size: 12px; margin-top: 8px;">
+              Можно также вставить изображения через Ctrl+V. Макс. размер: 1 МБ
+            </p>
+          </div>
+          
+          <!-- Превью изображений -->
+          <div id="bugReportImagesPreview" style="
+            display: none;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+          "></div>
+          
           <div style="display: flex; gap: 10px; justify-content: flex-end">
             <button 
               onclick="closeBugReportModal()"
