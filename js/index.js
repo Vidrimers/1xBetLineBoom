@@ -1754,7 +1754,7 @@ function generateEventHTML(
             ${
               isCompleted
                 ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
-                : `<button onclick="openLockEventModal(${event.id}, '${event.name}')" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'">🔒</button>`
+                : `<button onclick="openLockEventModal(${event.id}, '${event.name.replace(/'/g, "\\'")}')  style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'">🔒</button>`
             }
             ${canDeleteTournaments() ? `<button class="event-delete-btn" onclick="deleteEvent(${
               event.id
@@ -2882,7 +2882,7 @@ async function displayMatches() {
                     : match.score_prediction_enabled
                     ? `
                 <button
-                  onclick="openScoreMatchResultModal(${match.id}, '${match.team1_name}', '${match.team2_name}')"
+                  onclick="openScoreMatchResultModal(${match.id}, '${match.team1_name.replace(/'/g, "\\'")}', '${match.team2_name.replace(/'/g, "\\'")}')"
                   style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.8em;"
                   onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
                   onmouseout="this.style.background='transparent'; this.style.color='rgb(224, 230, 240)'"
@@ -2940,8 +2940,8 @@ async function displayMatches() {
                       : ""
                   }
                   ${canEditMatches() ? `<button onclick="openEditMatchModal(${match.id}, '${
-                    match.team1_name
-                  }', '${match.team2_name}', '${match.match_date || ""}', '${
+                    match.team1_name.replace(/'/g, "\\'")
+                  }', '${match.team2_name.replace(/'/g, "\\'")}', '${match.match_date || ""}', '${
                     match.round || ""
                   }')"
                     style="background: transparent; border: 1px solid #3a7bd5; color: #7ab0e0; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
@@ -3012,7 +3012,7 @@ async function displayMatches() {
                     <button class="bet-btn team1 ${
                       userBetOnMatch?.prediction === "team1" ? "selected" : ""
                     }" onclick="placeBet(${match.id}, '${
-        match.team1_name
+        match.team1_name.replace(/'/g, "\\'")
       }', 'team1')" ${
         effectiveStatus !== "pending"
           ? "disabled"
@@ -3036,7 +3036,7 @@ async function displayMatches() {
                     <button class="bet-btn team2 ${
                       userBetOnMatch?.prediction === "team2" ? "selected" : ""
                     }" onclick="placeBet(${match.id}, '${
-        match.team2_name
+        match.team2_name.replace(/'/g, "\\'")
       }', 'team2')" ${
         effectiveStatus !== "pending"
           ? "disabled"
