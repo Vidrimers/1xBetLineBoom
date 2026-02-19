@@ -623,16 +623,6 @@ function checkBetsResults(bets, fdMatches) {
       const betTeam1Normalized = normalizeForComparison(bet.team1_name);
       const betTeam2Normalized = normalizeForComparison(bet.team2_name);
 
-      // Отладочный лог для первого матча
-      if (fdMatches.indexOf(m) === 0 && bets.indexOf(bet) === 0) {
-        console.log('🔍 Отладка сопоставления:');
-        console.log('API команды:', m.homeTeam.name, 'vs', m.awayTeam.name);
-        console.log('API нормализовано:', homeTeamNormalized, 'vs', awayTeamNormalized);
-        console.log('Ставка команды:', bet.team1_name, 'vs', bet.team2_name);
-        console.log('Ставка нормализовано:', betTeam1Normalized, 'vs', betTeam2Normalized);
-        console.log('teamMappings:', teamMappings);
-      }
-
       return (
         (homeTeamNormalized === betTeam1Normalized &&
           awayTeamNormalized === betTeam2Normalized) ||
@@ -683,6 +673,11 @@ function checkBetsResults(bets, fdMatches) {
         actualScore: { home: homeScore, away: awayScore }
       });
     } else {
+      // Логируем ненайденный матч
+      console.warn(`⚠️ Матч не найден: ${bet.team1_name} vs ${bet.team2_name}`);
+      console.log(`   Нормализовано: ${normalizeForComparison(bet.team1_name)} vs ${normalizeForComparison(bet.team2_name)}`);
+      console.log(`   Доступные матчи из API:`, fdMatches.map(m => `${m.homeTeam.name} vs ${m.awayTeam.name}`));
+      
       results.push({
         ...bet,
         result: "not_found",
