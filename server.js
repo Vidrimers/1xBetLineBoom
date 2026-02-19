@@ -15124,6 +15124,33 @@ ${status === 'rejected' ? '❌ Это не баг, это фича.' : ''}`;
   }
 });
 
+// GET /api/user/bug-reports - Получить багрепорты пользователя
+app.get("/api/user/bug-reports", (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ error: "userId обязателен" });
+  }
+
+  try {
+    const bugReports = db.prepare(`
+      SELECT 
+        id,
+        bug_text,
+        status,
+        created_at
+      FROM bug_reports
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+    `).all(userId);
+
+    res.json(bugReports);
+  } catch (error) {
+    console.error("Ошибка при получении багрепортов пользователя:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/admin/bug-reports/:id - Удалить багрепорт
 app.delete("/api/admin/bug-reports/:id", async (req, res) => {
   const { id } = req.params;

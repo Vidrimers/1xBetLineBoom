@@ -2226,7 +2226,7 @@ export async function startBot() {
   // Хранилище состояний пользователей для багрепортов
   const bugReportStates = new Map();
 
-  // Обработчик кнопки 🐛 Багрепорт
+  // Обработчик кнопки 🐛 Багрепорт - показываем меню выбора
   const handleBugReport = async (chatIdOrMsg, legacyMsg = null) => {
     const msg =
       chatIdOrMsg && typeof chatIdOrMsg === "object" && chatIdOrMsg.chat
@@ -2242,7 +2242,6 @@ export async function startBot() {
 
     try {
       const telegramUsername = msg?.from?.username || "";
-      const firstName = msg?.from?.first_name || "пользователь";
 
       // Получаем данные пользователя с сайта
       const response = await fetch(`${SERVER_URL}/api/participants`);
@@ -2274,22 +2273,22 @@ export async function startBot() {
         return;
       }
 
-      // Сохраняем состояние пользователя
-      bugReportStates.set(userId, {
-        userId: user.id,
-        username: user.username,
-        chatId: chatId,
-        waitingForText: true
-      });
-
+      // Показываем меню выбора
       await sendMessageWithThread(
         chatId,
-        `🐛 <b>Багрепорт</b>\n\n` +
-          `Опишите проблему, которую вы обнаружили.\n\n` +
-          `Напишите сообщение в этот чат, и оно будет отправлено администратору.\n\n` +
-          `Для отмены отправьте /cancel`,
-        opts("waitingForText", {
+        `🐛 <b>Багрепорт</b>\n\nВыберите действие:`,
+        opts("bugReportMenu", {
           parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '📋 Мои багрепорты', callback_data: `bugreport_my_${user.id}` }
+              ],
+              [
+                { text: '✍️ Написать багрепорт', callback_data: `bugreport_write_${user.id}` }
+              ]
+            ]
+          }
         })
       );
     } catch (error) {
@@ -2301,6 +2300,185 @@ export async function startBot() {
         opts("error", {
           parse_mode: "HTML",
         })
+      );
+    }
+  };
+
+  // Обработчик "Написать багрепорт"
+  const handleWriteBugReport = async (chatId, userId, user, msg) => {
+    const opts = (text, baseOpts = {}) =>
+      msg ? { ...baseOpts, __msg: msg } : baseOpts;
+
+    // Сохраняем состояние пользователя
+    bugReportStates.set(userId, {
+      userId: user.id,
+      username: user.username,
+      chatId: chatId,
+      waitingForText: true
+    });
+
+    await sendMessageWithThread(
+      chatId,
+      `🐛 <b>Написать багрепорт</b>\n\n` +
+        `Опишите проблему, которую вы обнаружили.\n\n` +
+        `Напишите сообщение в этот чат, и оно будет отправлено администратору.\n\n` +
+        `Для отмены отправьте /cancel`,
+      opts("waitingForText", {
+        parse_mode: "HTML",
+      })
+    );
+  };
+
+  // Обработчик "Мои багрепорты" - показываем статусы
+  const handleMyBugReports = async (chatId, userId, user, msg) => {
+    try {
+      // Получаем багрепорты пользователя
+      const response = await fetch(`${SERVER_URL}/api/user/bug-reports?userId=${user.id}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch bug reports");
+      }
+      const bugReports = await response.json();
+
+      // Подсчитываем количество по статусам
+      const counts = {
+        new: bugReports.filter(r => r.status === 'new').length,
+        in_progress: bugReports.filter(r => r.status === 'in_progress').length,
+        resolved: bugReports.filter(r => r.status === 'resolved').length,
+        rejected: bugReports.filter(r => r.status === 'rejected').length
+      };
+
+      await bot.editMessageText(
+        `📋 <b>Мои багрепорты</b>\n\nВыберите статус для просмотра:`,
+        {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: `🆕 Новые (${counts.new})`, callback_data: `bugreport_status_new_${user.id}` }
+              ],
+              [
+                { text: `🔄 В работе (${counts.in_progress})`, callback_data: `bugreport_status_in_progress_${user.id}` }
+              ],
+              [
+                { text: `✅ Решены (${counts.resolved})`, callback_data: `bugreport_status_resolved_${user.id}` }
+              ],
+              [
+                { text: `❌ Отклонены (${counts.rejected})`, callback_data: `bugreport_status_rejected_${user.id}` }
+              ],
+              [
+                { text: '◀️ Назад', callback_data: 'menu_bugreport' }
+              ]
+            ]
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Error in handleMyBugReports:", error);
+      await bot.editMessageText(
+        `📋 <b>Мои багрепорты</b>\n\n` +
+          `<i>⚠️ Ошибка при загрузке багрепортов</i>`,
+        {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "HTML"
+        }
+      );
+    }
+  };
+
+  // Обработчик просмотра багрепортов по статусу
+  const handleBugReportsByStatus = async (chatId, userId, user, status, msg) => {
+    try {
+      // Получаем багрепорты пользователя
+      const response = await fetch(`${SERVER_URL}/api/user/bug-reports?userId=${user.id}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch bug reports");
+      }
+      const bugReports = await response.json();
+
+      // Фильтруем по статусу
+      const filteredReports = bugReports.filter(r => r.status === status);
+
+      const statusEmoji = {
+        'new': '🆕',
+        'in_progress': '🔄',
+        'resolved': '✅',
+        'rejected': '❌'
+      };
+
+      const statusText = {
+        'new': 'Новые',
+        'in_progress': 'В работе',
+        'resolved': 'Решены',
+        'rejected': 'Отклонены'
+      };
+
+      if (filteredReports.length === 0) {
+        await bot.editMessageText(
+          `${statusEmoji[status]} <b>${statusText[status]}</b>\n\n` +
+            `У вас нет багрепортов с этим статусом.`,
+          {
+            chat_id: chatId,
+            message_id: msg.message_id,
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '◀️ Назад', callback_data: `bugreport_my_${user.id}` }
+                ]
+              ]
+            }
+          }
+        );
+        return;
+      }
+
+      // Формируем список багрепортов
+      let message = `${statusEmoji[status]} <b>${statusText[status]}</b>\n\n`;
+      
+      filteredReports.forEach((report, index) => {
+        const date = new Date(report.created_at).toLocaleString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const shortText = report.bug_text.length > 100 
+          ? report.bug_text.substring(0, 100) + '...' 
+          : report.bug_text;
+        
+        message += `<b>#${report.id}</b> | ${date}\n`;
+        message += `${shortText}\n\n`;
+      });
+
+      await bot.editMessageText(
+        message,
+        {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '◀️ Назад', callback_data: `bugreport_my_${user.id}` }
+              ]
+            ]
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Error in handleBugReportsByStatus:", error);
+      await bot.editMessageText(
+        `<i>⚠️ Ошибка при загрузке багрепортов</i>`,
+        {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "HTML"
+        }
       );
     }
   };
@@ -2633,6 +2811,108 @@ export async function startBot() {
               }
             );
             break;
+        }
+        return;
+      }
+
+      // ===== ОБРАБОТКА КНОПОК БАГРЕПОРТОВ =====
+      if (data.startsWith("bugreport_")) {
+        await bot.answerCallbackQuery(callbackQuery.id);
+
+        try {
+          const telegramUsername = callbackQuery.from?.username || "";
+          
+          // Получаем данные пользователя с сайта
+          const response = await fetch(`${SERVER_URL}/api/participants`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch participants");
+          }
+          const participants = await response.json();
+
+          // Ищем пользователя по telegram_username
+          const user = participants.find(
+            (p) =>
+              (p.telegram_username &&
+                p.telegram_username.toLowerCase() ===
+                  telegramUsername.toLowerCase()) ||
+              (callbackQuery.from?.first_name &&
+                p.username &&
+                p.username.toLowerCase() === callbackQuery.from.first_name.toLowerCase())
+          );
+
+          if (!user) {
+            await bot.editMessageText(
+              `🐛 <b>Багрепорт</b>\n\n` +
+                `Профиль не привязан. Привяжите его на сайте в разделе "⚙️ Настройки".`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+            return;
+          }
+
+          // bugreport_my_{userId} - показать мои багрепорты
+          if (data.startsWith("bugreport_my_")) {
+            await handleMyBugReports(chatId, callbackQuery.from.id, user, msg);
+            return;
+          }
+
+          // bugreport_write_{userId} - написать багрепорт
+          if (data.startsWith("bugreport_write_")) {
+            await bot.editMessageText(
+              `🐛 <b>Написать багрепорт</b>\n\n` +
+                `Опишите проблему, которую вы обнаружили.\n\n` +
+                `Напишите сообщение в этот чат, и оно будет отправлено администратору.\n\n` +
+                `Для отмены отправьте /cancel`,
+              {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                parse_mode: "HTML"
+              }
+            );
+
+            // Сохраняем состояние пользователя
+            bugReportStates.set(callbackQuery.from.id, {
+              userId: user.id,
+              username: user.username,
+              chatId: chatId,
+              waitingForText: true
+            });
+            return;
+          }
+
+          // bugreport_status_{status}_{userId} - показать багрепорты по статусу
+          if (data.startsWith("bugreport_status_")) {
+            const parts = data.split("_");
+            // Для статуса in_progress нужно объединить части
+            let status;
+            let userIdFromCallback;
+            
+            if (parts[2] === "in" && parts[3] === "progress") {
+              status = "in_progress";
+              userIdFromCallback = parts[4];
+            } else {
+              status = parts[2];
+              userIdFromCallback = parts[3];
+            }
+            
+            await handleBugReportsByStatus(chatId, callbackQuery.from.id, user, status, msg);
+            return;
+          }
+
+        } catch (error) {
+          console.error("Error in bugreport callback:", error);
+          await bot.editMessageText(
+            `🐛 <b>Багрепорт</b>\n\n` +
+              `<i>⚠️ Ошибка при обработке запроса</i>`,
+            {
+              chat_id: chatId,
+              message_id: msg.message_id,
+              parse_mode: "HTML"
+            }
+          );
         }
         return;
       }
