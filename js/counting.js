@@ -405,6 +405,7 @@ function selectCompetition(code) {
     WC: "World Cup",
     CL: "Champions League",
     EL: "Europa League",
+    ECL: "Conference League",
     EC: "Euro",
     BL1: "Bundesliga",
     DED: "Eredivisie",
@@ -675,8 +676,6 @@ function checkBetsResults(bets, fdMatches) {
     } else {
       // Логируем ненайденный матч
       console.warn(`⚠️ Матч не найден: ${bet.team1_name} vs ${bet.team2_name}`);
-      console.log(`   Нормализовано: ${normalizeForComparison(bet.team1_name)} vs ${normalizeForComparison(bet.team2_name)}`);
-      console.log(`   Доступные матчи из API:`, fdMatches.map(m => `${m.homeTeam.name} vs ${m.awayTeam.name}`));
       
       results.push({
         ...bet,
