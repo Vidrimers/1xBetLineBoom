@@ -803,7 +803,7 @@ function displayCalculationResults(results, originalBets) {
       // Информация о прогнозе на счет
       let scorePredictionHtml = '';
       if (bet.hasScorePrediction) {
-        if (bet.result !== "not_found") {
+        if (bet.result !== "not_found" && bet.actualScore && bet.actualScore.home !== null && bet.actualScore.away !== null) {
           const scoreIcon = bet.scoreIsWon ? '🎯' : '❌';
           const scoreColor = bet.scoreIsWon ? '#4caf50' : '#f44336';
           const scoreBg = bet.scoreIsWon ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
@@ -813,7 +813,7 @@ function displayCalculationResults(results, originalBets) {
             </div>
           `;
         } else {
-          // Матч не найден, но прогноз был
+          // Матч не найден или счет не установлен, но прогноз был
           scorePredictionHtml = `
             <div style="font-size: 0.85em; margin-bottom: 4px; padding: 4px 6px; background: rgba(255, 152, 0, 0.2); border-radius: 4px; border-left: 2px solid #ff9800;">
               🎯 Прогноз счета: <strong>${bet.score_team1}:${bet.score_team2}</strong>
