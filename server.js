@@ -16692,6 +16692,25 @@ app.post("/api/admin/recount-results", async (req, res) => {
           const chatIds = TELEGRAM_CHAT_ID.split(",").map((id) => id.trim());
           for (const chatId of chatIds) {
             try {
+              const replyMarkup = {
+                inline_keyboard: [
+                  [
+                    { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+                    { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+                    { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+                    { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+                    { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
+                  ],
+                  [
+                    { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+                    { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+                    { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+                    { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+                    { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
+                  ]
+                ]
+              };
+              
               await fetch(
                 `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
                 {
@@ -16701,6 +16720,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
                     chat_id: chatId,
                     text: message,
                     parse_mode: "HTML",
+                    reply_markup: replyMarkup,
                   }),
                 }
               );
@@ -16794,6 +16814,25 @@ app.post("/api/admin/recount-results", async (req, res) => {
             }
             
             try {
+              const replyMarkup = {
+                inline_keyboard: [
+                  [
+                    { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+                    { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+                    { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+                    { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+                    { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
+                  ],
+                  [
+                    { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+                    { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+                    { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+                    { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+                    { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
+                  ]
+                ]
+              };
+              
               await fetch(
                 `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
                 {
@@ -16803,6 +16842,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
                     chat_id: stats.telegramId,
                     text: personalMessage,
                     parse_mode: "HTML",
+                    reply_markup: replyMarkup,
                   }),
                 }
               );
