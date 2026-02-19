@@ -19015,17 +19015,21 @@ app.get("/api/news/:id/reactions/:type", async (req, res) => {
       return res.status(400).json({ error: "Неверный тип реакции" });
     }
     
-    // Получаем список пользователей с их реакциями
+    // Получаем список пользователей с их реакциями и аватарками
     const users = db.prepare(`
-      SELECT username, created_at
-      FROM news_reactions
-      WHERE news_id = ? AND reaction = ?
-      ORDER BY created_at DESC
+      SELECT nr.username, nr.created_at, u.avatar
+      FROM news_reactions nr
+      LEFT JOIN users u ON nr.username = u.username
+      WHERE nr.news_id = ? AND nr.reaction = ?
+      ORDER BY nr.created_at DESC
     `).all(newsId, reactionType);
     
     res.json({ 
       success: true, 
-      users: users.map(u => u.username)
+      users: users.map(u => ({
+        username: u.username,
+        avatar: u.avatar
+      }))
     });
   } catch (error) {
     console.error("❌ Ошибка получения реакций:", error.message);

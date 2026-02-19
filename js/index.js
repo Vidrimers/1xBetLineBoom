@@ -8258,7 +8258,19 @@ async function showReactionTooltip(newsId, reactionType, buttonElement) {
         // Создаем tooltip
         const tooltip = document.createElement('div');
         tooltip.className = 'reaction-tooltip';
-        tooltip.innerHTML = data.users.join('<br>');
+        
+        // Формируем HTML с аватарками и именами
+        const usersHtml = data.users.map(user => {
+          const avatarUrl = user.avatar || '/img/default-avatar.jpg';
+          return `
+            <div class="tooltip-user">
+              <img src="${avatarUrl}" alt="${user.username}" class="tooltip-avatar" onerror="this.src='/img/default-avatar.jpg'">
+              <span class="tooltip-username">${user.username}</span>
+            </div>
+          `;
+        }).join('');
+        
+        tooltip.innerHTML = usersHtml;
         
         // Позиционируем tooltip
         const rect = buttonElement.getBoundingClientRect();
