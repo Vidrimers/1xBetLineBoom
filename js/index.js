@@ -5344,6 +5344,75 @@ async function showTournamentParticipantBets(userId, username, eventId) {
       }).catch(err => console.error('Ошибка отправки уведомления о просмотре ставок:', err));
     }
 
+    // Загружаем словарь для перевода названий команд
+    let teamTranslations = {};
+    
+    // Определяем турнир по eventId и загружаем соответствующий словарь
+    const eventResponse = await fetch(`/api/event/${eventId}`);
+    if (eventResponse.ok) {
+      const eventData = await eventResponse.json();
+      const competition = eventData.competition;
+      
+      const dictionaryMapping = {
+        'CL': '/names/LeagueOfChampionsTeams.json',
+        'EL': '/names/EuropaLeague.json',
+        'ECL': '/names/ConferenceLeague.json',
+        'PL': '/names/PremierLeague.json',
+        'BL1': '/names/Bundesliga.json',
+        'PD': '/names/LaLiga.json',
+        'SA': '/names/SerieA.json',
+        'FL1': '/names/Ligue1.json',
+        'DED': '/names/Eredivisie.json',
+        'RPL': '/names/RussianPremierLeague.json',
+        'WC': '/names/Countries.json',
+        'EC': '/names/Countries.json'
+      };
+      
+      const dictionaryFile = dictionaryMapping[competition];
+      
+      if (dictionaryFile) {
+        try {
+          const dictResponse = await fetch(dictionaryFile);
+          if (dictResponse.ok) {
+            const dictData = await dictResponse.json();
+            const teams = dictData.teams || {};
+            
+            // Функция для удаления диакритических знаков
+            const removeDiacritics = (str) => {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            };
+            
+            // Создаем обратный маппинг: Английское -> Русское
+            for (const [russian, english] of Object.entries(teams)) {
+              const englishLower = english.toLowerCase();
+              const englishNormalized = removeDiacritics(englishLower);
+              
+              // Сохраняем оригинальное название
+              if (!teamTranslations[englishLower] || russian.length < teamTranslations[englishLower].length) {
+                teamTranslations[englishLower] = russian;
+              }
+              
+              // Сохраняем нормализованное название (без диакритических знаков)
+              if (englishNormalized !== englishLower) {
+                if (!teamTranslations[englishNormalized] || russian.length < teamTranslations[englishNormalized].length) {
+                  teamTranslations[englishNormalized] = russian;
+                }
+              }
+            }
+            
+            console.log(`✅ Загружен словарь для ${competition}: ${Object.keys(teamTranslations).length} команд`);
+          }
+        } catch (err) {
+          console.warn(`⚠️ Не удалось загрузить словарь из ${dictionaryFile}`);
+        }
+      }
+    }
+    
+    // Сохраняем функцию перевода в глобальную область для использования в displayTournamentParticipantBets
+    window.translateTeamNameForBets = (englishName) => {
+      return teamTranslations[englishName.toLowerCase()] || englishName;
+    };
+
     // Получаем ставки участника в турнире, передаем viewerId и viewerUsername
     const viewerId = currentUser?.id || null;
     const viewerUsername = currentUser?.username || null;
@@ -5521,6 +5590,10 @@ function displayTournamentParticipantBets(bets) {
   betsList.innerHTML = bets
     .map(
       (bet) => {
+        // Переводим названия команд на русский
+        const team1 = window.translateTeamNameForBets ? window.translateTeamNameForBets(bet.team1) : bet.team1;
+        const team2 = window.translateTeamNameForBets ? window.translateTeamNameForBets(bet.team2) : bet.team2;
+        
         // Проверяем, завершен ли тур
         const completedRounds = window.completedTournamentRounds || new Set();
         const isRoundFinished = completedRounds.has(bet.round);
@@ -5539,7 +5612,7 @@ function displayTournamentParticipantBets(bets) {
         : "#ff9800"
     };">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <strong style="color: #7ab0e0;">${bet.team1} vs ${bet.team2}</strong>
+        <strong style="color: #7ab0e0;">${team1} vs ${team2}</strong>
         ${shouldHideBet ? 
           `<span style="background: #9e9e9e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
             🔒 Скрыто
