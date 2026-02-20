@@ -16695,18 +16695,18 @@ app.post("/api/admin/recount-results", async (req, res) => {
               const replyMarkup = {
                 inline_keyboard: [
                   [
-                    { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
-                    { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
-                    { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
-                    { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
-                    { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
+                    { text: "👍", callback_data: `group_reaction_thumbsup` },
+                    { text: "🔥", callback_data: `group_reaction_fire` },
+                    { text: "❤️", callback_data: `group_reaction_heart` },
+                    { text: "🫡", callback_data: `group_reaction_salute` },
+                    { text: "😂", callback_data: `group_reaction_laugh` }
                   ],
                   [
-                    { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
-                    { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
-                    { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
-                    { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
-                    { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
+                    { text: "👎", callback_data: `group_reaction_thumbsdown` },
+                    { text: "😐", callback_data: `group_reaction_neutral` },
+                    { text: "💩", callback_data: `group_reaction_poop` },
+                    { text: "🤡", callback_data: `group_reaction_clown` },
+                    { text: "🤮", callback_data: `group_reaction_vomit` }
                   ]
                 ]
               };
