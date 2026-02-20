@@ -16711,17 +16711,25 @@ app.post("/api/admin/recount-results", async (req, res) => {
                 ]
               };
               
+              const requestBody = {
+                chat_id: chatId,
+                text: message,
+                parse_mode: "HTML",
+                reply_markup: replyMarkup,
+              };
+              
+              // Добавляем thread_id если он указан
+              const THREAD_ID = process.env.TELEGRAM_THREAD_ID;
+              if (THREAD_ID) {
+                requestBody.message_thread_id = parseInt(THREAD_ID);
+              }
+              
               await fetch(
                 `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    chat_id: chatId,
-                    text: message,
-                    parse_mode: "HTML",
-                    reply_markup: replyMarkup,
-                  }),
+                  body: JSON.stringify(requestBody),
                 }
               );
               console.log(`✅ Результаты пересчета отправлены в группу ${chatId}`);
