@@ -16719,7 +16719,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
               };
               
               // Добавляем thread_id если он указан
-              const THREAD_ID = process.env.TELEGRAM_THREAD_ID;
+              const THREAD_ID = process.env.THREAD_ID;
               if (THREAD_ID) {
                 requestBody.message_thread_id = parseInt(THREAD_ID);
               }
