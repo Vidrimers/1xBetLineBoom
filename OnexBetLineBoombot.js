@@ -3487,19 +3487,11 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
         
         console.log(`👍 Реакция от @${username}: ${emoji} (через кнопку)`);
         
-        // Удаляем кнопки после нажатия
-        try {
-          await bot.editMessageReplyMarkup(
-            { inline_keyboard: [] }, // Пустая клавиатура = удаление кнопок
-            {
-              chat_id: chatId,
-              message_id: msg.message_id
-            }
-          );
-          console.log("🗑️ Кнопки удалены после нажатия");
-        } catch (error) {
-          console.error("Ошибка удаления кнопок:", error.message);
-        }
+        // Отвечаем на callback, чтобы убрать "часики" (кнопки остаются)
+        await bot.answerCallbackQuery(callbackQuery.id, {
+          text: `Вы поставили ${emoji}`,
+          show_alert: false
+        });
         
         // Отправляем уведомление админу с конкретной эмоджи
         try {
