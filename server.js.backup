@@ -16507,6 +16507,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
           red_cards = NULL
       WHERE DATE(match_date) = ?
         AND round = ?
+        AND result IS NULL
     `);
 
     const resetResult = resetStmt.run(date, round);
