@@ -18719,6 +18719,8 @@ async function updateMatchesFromAPI(matches) {
             } else {
               console.log(`  ⚠️ Массив events не найден в ответе API`);
             }
+          } else {
+            console.warn(`  ⚠️ Ошибка запроса карточек для матча ${dbMatch.id}: HTTP ${detailsResponse.status}`);
           }
         } catch (error) {
           console.warn(`  ⚠️ Не удалось получить карточки для матча ${dbMatch.id}:`, error.message);
