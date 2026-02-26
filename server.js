@@ -3404,6 +3404,45 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
             AND bk.event_id = ?
             AND bp.predicted_winner = br.actual_winner
         ), 0)) as event_won,
+        (SUM(CASE 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
+            CASE 
+              -- Обычные ставки (не финальные параметры)
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1
+                  ELSE 0 
+                END
+              -- Финальные параметры
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0
+            END 
+          ELSE 0 
+        END) + COALESCE((
+          SELECT COUNT(*)
+          FROM bracket_predictions bp
+          INNER JOIN bracket_results br ON bp.bracket_id = br.bracket_id 
+            AND bp.stage = br.stage 
+            AND bp.match_index = br.match_index
+          INNER JOIN brackets bk ON bp.bracket_id = bk.id
+          WHERE bp.user_id = u.id 
+            AND bk.event_id = ?
+            AND bp.predicted_winner = br.actual_winner
+        ), 0)) as event_won_count,
         SUM(CASE 
           WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
             CASE 
@@ -3420,13 +3459,13 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
               -- Финальные параметры
               WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
                 CASE 
-                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 2
-                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 2
-                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 2
-                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 2
-                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 2
-                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 2
-                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 2
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
                   ELSE 0
                 END
               ELSE 0 
@@ -3447,7 +3486,7 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
       ORDER BY event_won DESC, event_bets DESC, event_lost ASC
     `
       )
-      .all(eventId, eventId);
+      .all(eventId, eventId, eventId);
 
     res.json(participants);
   } catch (error) {

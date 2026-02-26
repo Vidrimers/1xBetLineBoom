@@ -5328,7 +5328,7 @@ async function displayTournamentParticipants(
         <div class="participant-name">${participant.username}</div>
         <div class="participant-stats">
           <span>Ставок в турнире: ${participant.event_bets || 0} |</span>
-          <span>Угаданных: ${participant.event_won || 0} |</span>
+          <span>Угаданных: ${participant.event_won_count || 0} |</span>
           <span>Неугаданных: ${participant.event_lost || 0} |</span>
           <span>В ожидании: ${participant.event_pending || 0}</span>
         </div>
