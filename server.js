@@ -6808,8 +6808,8 @@ app.get("/api/fd-matches", async (req, res) => {
     // Фильтруем по датам и статусу на сервере
     const filteredGames = (sstatsData.data || []).filter(game => {
       // Если includeFuture=true, пропускаем все матчи
-      // Если includeFuture=false, только завершенные (status: 8 = Finished)
-      if (includeFuture !== 'true' && game.status !== 8) return false;
+      // Если includeFuture=false, только завершенные (status: 8, 9, 10 = Finished, After ET, After Penalties)
+      if (includeFuture !== 'true' && ![8, 9, 10].includes(game.status)) return false;
       
       // Проверяем что дата матча в нужном диапазоне
       const gameDate = game.date.split('T')[0]; // Берем только дату без времени
@@ -6845,7 +6845,7 @@ app.get("/api/fd-matches", async (req, res) => {
       return {
         id: game.id,
         utcDate: game.date,
-        status: game.status === 8 ? 'FINISHED' : 'SCHEDULED',
+        status: [8, 9, 10].includes(game.status) ? 'FINISHED' : 'SCHEDULED',
         round: roundName,
         homeTeam: {
           id: game.homeTeam.id,

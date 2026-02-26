@@ -20040,8 +20040,7 @@ function displayDetailedStats(details, matchData) {
                  (game.statusName && game.statusName.toLowerCase().includes('live'));
                  
   const isFinished = game.statusName === 'Finished' || 
-                     game.status === 8 || 
-                     game.status === 7 || // Full Time
+                     [7, 8, 9, 10].includes(game.status) || // 7=Full Time, 8=Finished, 9=After ET, 10=After Penalties
                      (game.statusName && (game.statusName.toLowerCase().includes('finished') || game.statusName.toLowerCase().includes('ft')));
                      
   const hasStarted = isLive || isFinished || (game.homeResult !== null && game.homeResult !== undefined);
