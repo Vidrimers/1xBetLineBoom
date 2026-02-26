@@ -10721,9 +10721,6 @@ async function openRecountModal() {
     return;
   }
   
-  // Показываем индикатор загрузки
-  const loadingMsg = await showCustomAlert("Подготовка к пересчету...", "Загрузка", "⏳");
-  
   try {
     // Очищаем прогнозы для матчей с отключенными чекбоксами
     const cleanupResponse = await fetch('/api/admin/cleanup-disabled-predictions', {
@@ -10740,11 +10737,6 @@ async function openRecountModal() {
     }
   } catch (error) {
     console.error("⚠️ Ошибка очистки прогнозов:", error);
-  }
-  
-  // Закрываем индикатор загрузки
-  if (loadingMsg && loadingMsg.close) {
-    loadingMsg.close();
   }
   
   // Устанавливаем текущую дату по умолчанию
