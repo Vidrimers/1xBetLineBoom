@@ -18615,14 +18615,16 @@ async function checkDateCompletion(dateGroup) {
     
     console.log(`📊 Сопоставлено матчей: ${matchedMatches.length} из ${dbMatches.length}`);
     
-    // Проверяем что все матчи завершены (status: 8)
+    // Проверяем что все матчи завершены
+    // Статусы завершения: 8 = Finished, 9 = Finished after extra time, 10 = Finished after penalties
+    const finishedStatuses = [8, 9, 10];
     const allFinished = matchedMatches.length > 0 && 
-                       matchedMatches.every(({ apiMatch }) => apiMatch.status === 8);
+                       matchedMatches.every(({ apiMatch }) => finishedStatuses.includes(apiMatch.status));
     
     console.log(`✅ Все матчи завершены: ${allFinished}`);
     
     if (!allFinished && matchedMatches.length > 0) {
-      const notFinished = matchedMatches.filter(({ apiMatch }) => apiMatch.status !== 8);
+      const notFinished = matchedMatches.filter(({ apiMatch }) => !finishedStatuses.includes(apiMatch.status));
       console.log(`⏸️ Незавершенные матчи (${notFinished.length}):`);
       notFinished.forEach(({ dbMatch, apiMatch }) => {
         console.log(`  - ${dbMatch.team1_name} - ${dbMatch.team2_name}: status=${apiMatch.status} (${apiMatch.statusName})`);
