@@ -1513,13 +1513,15 @@ export async function startBot() {
 
       // Находим турниры где есть ставки пользователя
       const eventIds = [...new Set(userBets.map(bet => bet.event_id))];
-      const eventsWithBets = events.filter(e => eventIds.includes(e.id));
+      // Фильтруем только активные турниры (status = 'active')
+      const eventsWithBets = events.filter(e => eventIds.includes(e.id) && e.status === 'active');
 
       if (eventsWithBets.length === 0) {
         await sendMessageWithThread(
           chatId,
           `💰 <b>Мои ставки:</b>\n\n` +
-            `<i>Турниры не найдены</i>`,
+            `<i>Нет активных турниров с вашими ставками</i>\n\n` +
+            `💡 Активные турниры появятся здесь после начала`,
           opts("noEvents", {
             parse_mode: "HTML",
           })
@@ -3396,7 +3398,7 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
             if (completedBets.length > 0) {
               const wonBets = completedBets.filter(bet => bet.result === "won").length;
               const lostBets = completedBets.filter(bet => bet.result === "lost").length;
-              const accuracy = completedBets.length > 0 ? ((wonBets / completedBets.length) * 100).toFixed(1) : 0;
+              const accuracy = completedBets.length > 0 ? ((wonBets / completedBets.length) * 100).toFixed(1) : "0.0";
               
               messageText += `\n📊 <b>Статистика:</b>\n`;
               messageText += `   Завершено: ${completedBets.length}\n`;
@@ -3413,10 +3415,16 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
                 message_id: msg.message_id,
                 parse_mode: "HTML",
                 reply_markup: {
-                  inline_keyboard: [[
-                    { text: '🔙 Назад', callback_data: `mybets_back_${userId}` },
-                    { text: '❌ Закрыть', callback_data: 'mybets_cancel' }
-                  ]]
+                  inline_keyboard: [
+                    [
+                      { text: '🌐 С VPN', url: `${PUBLIC_URL}` },
+                      { text: '🇷🇺 Без VPN', url: `${PUBLIC_URL}` }
+                    ],
+                    [
+                      { text: '🔙 Назад', callback_data: `mybets_back_${userId}` },
+                      { text: '❌ Закрыть', callback_data: 'mybets_cancel' }
+                    ]
+                  ]
                 }
               }
             );
