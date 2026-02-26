@@ -3417,8 +3417,8 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
                 reply_markup: {
                   inline_keyboard: [
                     [
-                      { text: '🌐 С VPN', url: `${PUBLIC_URL}` },
-                      { text: '🇷🇺 Без VPN', url: `${PUBLIC_URL}` }
+                      { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                      { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
                     ],
                     [
                       { text: '🔙 Назад', callback_data: `mybets_back_${userId}` },
