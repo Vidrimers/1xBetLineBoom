@@ -16506,7 +16506,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
     };
 
     // Проверяем завершение матчей
-    const { allFinished, matches: matchedMatches } = await checkDateCompletion(dateGroup);
+    const { allFinished, matches: matchedMatches } = await checkDateCompletion(dateGroup, true);
 
     if (!allFinished) {
       return res.status(400).json({ 
@@ -18492,7 +18492,7 @@ function getActiveDates() {
 /**
  * Проверить завершение всех матчей для конкретной даты
  */
-async function checkDateCompletion(dateGroup) {
+async function checkDateCompletion(dateGroup, forceUpdate = false) {
   try {
     const { event_id, competition_code, round, date } = dateGroup;
     
@@ -18519,8 +18519,8 @@ async function checkDateCompletion(dateGroup) {
     const finishedCount = allDbMatches.filter(m => m.status === 'finished').length;
     console.log(`📊 Матчей для ${date}: ${allDbMatches.length}, завершено: ${finishedCount}`);
     
-    // Если все уже завершены в БД - возвращаем их для подсчета
-    if (finishedCount === allDbMatches.length) {
+    // Если все уже завершены в БД и НЕ принудительное обновление - возвращаем их для подсчета
+    if (finishedCount === allDbMatches.length && !forceUpdate) {
       console.log(`✅ Все матчи уже завершены в БД для ${date}`);
       return { 
         allFinished: true, 
@@ -18528,8 +18528,8 @@ async function checkDateCompletion(dateGroup) {
       };
     }
     
-    // Есть незавершенные - проверяем через API
-    const dbMatches = allDbMatches.filter(m => m.status !== 'finished');
+    // Есть незавершенные ИЛИ принудительное обновление - проверяем через API
+    const dbMatches = forceUpdate ? allDbMatches : allDbMatches.filter(m => m.status !== 'finished');
     
     // Запрашиваем матчи из API
     const leagueId = SSTATS_LEAGUE_MAPPING[competition_code];
