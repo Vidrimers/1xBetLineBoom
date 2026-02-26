@@ -18257,28 +18257,33 @@ async function loadLiveMatches() {
           transition: all 0.3s ease;
           position: relative;
           overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
         " onmouseover="this.style.background='rgba(90, 159, 212, 0.1)'; this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${hasLiveMatches ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
           
           ${hasLiveMatches ? '<span class="live-indicator" style="position: absolute; top: 20px; right: 20px; width: 10px; height: 10px;"></span>' : ''}
           
-          <div style="text-align: center; margin-bottom: 15px;">
-            ${event.icon ? (
-              event.icon.startsWith('img/') || event.icon.startsWith('http') 
-                ? `<img src="${event.icon}" alt="иконка" style="width: 60px; height: 60px; object-fit: contain; background: ${event.background_color === 'transparent' || !event.background_color ? 'rgba(224, 230, 240, .4)' : event.background_color}; padding: 5px; border-radius: 5px;">`
-                : `<span style="font-size: 3em; display: block; background: ${event.background_color === 'transparent' || !event.background_color ? 'rgba(224, 230, 240, .4)' : event.background_color}; width: 60px; height: 60px; line-height: 60px; margin: 0 auto; border-radius: 5px;">${event.icon}</span>`
-            ) : ''}
+          <div>
+            <div style="text-align: center; margin-bottom: 15px;">
+              ${event.icon ? (
+                event.icon.startsWith('img/') || event.icon.startsWith('http') 
+                  ? `<img src="${event.icon}" alt="иконка" style="width: 60px; height: 60px; object-fit: contain; background: ${event.background_color === 'transparent' || !event.background_color ? 'rgba(224, 230, 240, .4)' : event.background_color}; padding: 5px; border-radius: 5px;">`
+                  : `<span style="font-size: 3em; display: block; background: ${event.background_color === 'transparent' || !event.background_color ? 'rgba(224, 230, 240, .4)' : event.background_color}; width: 60px; height: 60px; line-height: 60px; margin: 0 auto; border-radius: 5px;">${event.icon}</span>`
+              ) : ''}
+            </div>
+            
+            <h3 style="color: #e0e6f0; margin: 0 0 15px 0; font-size: 1.1em; text-align: center;">
+              ${event.name}
+            </h3>
+            
+            ${event.start_date || event.end_date ? `
+              <p style="color: #b0b8c8; font-size: 0.85em; margin: 0 0 15px 0; text-align: center; opacity: 0.6;">
+                ${event.start_date ? `📅 с ${new Date(event.start_date).toLocaleDateString('ru-RU')}` : ''}
+                ${event.end_date ? ` по ${new Date(event.end_date).toLocaleDateString('ru-RU')}` : ''}
+              </p>
+            ` : ''}
           </div>
-          
-          <h3 style="color: #e0e6f0; margin: 0 0 15px 0; font-size: 1.1em; text-align: center;">
-            ${event.name}
-          </h3>
-          
-          ${event.start_date || event.end_date ? `
-            <p style="color: #b0b8c8; font-size: 0.85em; margin: 0 0 15px 0; text-align: center; opacity: 0.6;">
-              ${event.start_date ? `📅 с ${new Date(event.start_date).toLocaleDateString('ru-RU')}` : ''}
-              ${event.end_date ? ` по ${new Date(event.end_date).toLocaleDateString('ru-RU')}` : ''}
-            </p>
-          ` : ''}
           
           <button onclick="event.stopPropagation(); selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'">
             <span style="color: #7ab0e0; font-weight: 600; font-size: 0.95em;">
