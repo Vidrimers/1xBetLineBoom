@@ -18689,11 +18689,11 @@ async function updateMatchesFromAPI(matches) {
       
       // Получаем карточки из API
       // /games/list не возвращает карточки, нужен запрос к /Games/{id}
-      let yellowCards = apiMatch.yellowCards || null;
-      let redCards = apiMatch.redCards || null;
+      let yellowCards = null;
+      let redCards = null;
       
-      // Если карточек нет и есть sstats_match_id, делаем дополнительный запрос
-      if ((yellowCards === null || redCards === null) && apiMatch.id) {
+      // Если есть sstats_match_id, делаем дополнительный запрос
+      if (apiMatch.id) {
         try {
           const detailsUrl = `${SSTATS_API_BASE}/Games/${apiMatch.id}`;
           console.log(`  🔍 Запрос карточек для матча ${dbMatch.team1_name} - ${dbMatch.team2_name}: ${detailsUrl}`);
@@ -18706,12 +18706,18 @@ async function updateMatchesFromAPI(matches) {
             const detailsData = await detailsResponse.json();
             const gameDetails = detailsData.data?.game || detailsData.game;
             
-            if (gameDetails) {
-              // Получаем карточки из детальной информации
-              yellowCards = gameDetails.yellowCards || null;
-              redCards = gameDetails.redCards || null;
+            // events находится в data.events, а не в game.events
+            const eventsArray = detailsData.data?.events || detailsData.events;
+            
+            if (eventsArray && Array.isArray(eventsArray)) {
+              // Считаем карточки из массива событий
+              // Ищем по названию события, т.к. type может меняться
+              yellowCards = eventsArray.filter(e => e.name === 'Yellow Card').length;
+              redCards = eventsArray.filter(e => e.name === 'Red Card').length;
               
-              console.log(`  ✅ Карточки получены: 🟨${yellowCards || '?'} 🟥${redCards || '?'}`);
+              console.log(`  ✅ Карточки получены из events: 🟨${yellowCards} 🟥${redCards}`);
+            } else {
+              console.log(`  ⚠️ Массив events не найден в ответе API`);
             }
           }
         } catch (error) {
@@ -19066,24 +19072,36 @@ app.get("/api/admin/check-cards/:matchId", async (req, res) => {
         const game = apiData.data?.game || apiData.game;
         
         if (game) {
+          // Получаем карточки из массива events (находится в data.events)
+          let yellowCards = null;
+          let redCards = null;
+          
+          const eventsArray = apiData.data?.events || apiData.events;
+          
+          if (eventsArray && Array.isArray(eventsArray)) {
+            yellowCards = eventsArray.filter(e => e.name === 'Yellow Card').length;
+            redCards = eventsArray.filter(e => e.name === 'Red Card').length;
+          }
+          
           result.api_data = {
-            yellow_cards: game.yellowCards,
-            red_cards: game.redCards,
+            yellow_cards: yellowCards,
+            red_cards: redCards,
             status: game.status,
             statusName: game.statusName,
             homeTeam: game.homeTeam?.name,
             awayTeam: game.awayTeam?.name,
             homeResult: game.homeResult,
-            awayResult: game.awayResult
+            awayResult: game.awayResult,
+            events_count: eventsArray?.length || 0
           };
           
           // Проверяем совпадение прогнозов
           result.predictions = result.predictions.map(p => ({
             ...p,
-            yellow_correct: game.yellowCards !== undefined ? p.yellow === game.yellowCards : null,
-            red_correct: game.redCards !== undefined ? p.red === game.redCards : null,
-            both_correct: game.yellowCards !== undefined && game.redCards !== undefined 
-              ? (p.yellow === game.yellowCards && p.red === game.redCards)
+            yellow_correct: yellowCards !== null ? p.yellow === yellowCards : null,
+            red_correct: redCards !== null ? p.red === redCards : null,
+            both_correct: yellowCards !== null && redCards !== null 
+              ? (p.yellow === yellowCards && p.red === redCards)
               : null
           }));
         }
