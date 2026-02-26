@@ -16517,7 +16517,7 @@ app.post("/api/admin/recount-results", async (req, res) => {
     // Обновляем матчи из API
     const matchesWithApi = matchedMatches.filter(m => m.apiMatch !== null);
     if (matchesWithApi.length > 0) {
-      const updated = updateMatchesFromAPI(matchesWithApi);
+      const updated = await updateMatchesFromAPI(matchesWithApi);
       if (!updated) {
         return res.status(500).json({ error: "Не удалось обновить результаты матчей" });
       }
@@ -18642,7 +18642,7 @@ async function checkDateCompletion(dateGroup) {
 /**
  * Обновить матчи в БД из API
  */
-function updateMatchesFromAPI(matches) {
+async function updateMatchesFromAPI(matches) {
   try {
     const updateStmt = db.prepare(`
       UPDATE matches
@@ -18687,9 +18687,37 @@ function updateMatchesFromAPI(matches) {
       const score1 = isReversed ? awayScore : homeScore;
       const score2 = isReversed ? homeScore : awayScore;
       
-      // Получаем карточки из API (если есть)
-      const yellowCards = apiMatch.yellowCards || null;
-      const redCards = apiMatch.redCards || null;
+      // Получаем карточки из API
+      // /games/list не возвращает карточки, нужен запрос к /Games/{id}
+      let yellowCards = apiMatch.yellowCards || null;
+      let redCards = apiMatch.redCards || null;
+      
+      // Если карточек нет и есть sstats_match_id, делаем дополнительный запрос
+      if ((yellowCards === null || redCards === null) && apiMatch.id) {
+        try {
+          const detailsUrl = `${SSTATS_API_BASE}/Games/${apiMatch.id}`;
+          console.log(`  🔍 Запрос карточек для матча ${dbMatch.team1_name} - ${dbMatch.team2_name}: ${detailsUrl}`);
+          
+          const detailsResponse = await fetch(detailsUrl, {
+            headers: { "X-API-Key": SSTATS_API_KEY }
+          });
+          
+          if (detailsResponse.ok) {
+            const detailsData = await detailsResponse.json();
+            const gameDetails = detailsData.data?.game || detailsData.game;
+            
+            if (gameDetails) {
+              // Получаем карточки из детальной информации
+              yellowCards = gameDetails.yellowCards || null;
+              redCards = gameDetails.redCards || null;
+              
+              console.log(`  ✅ Карточки получены: 🟨${yellowCards || '?'} 🟥${redCards || '?'}`);
+            }
+          }
+        } catch (error) {
+          console.warn(`  ⚠️ Не удалось получить карточки для матча ${dbMatch.id}:`, error.message);
+        }
+      }
       
       updateStmt.run(winner, score1, score2, yellowCards, redCards, dbMatch.id);
       
@@ -18736,7 +18764,7 @@ async function triggerAutoCountingForDate(dateGroup) {
     // Обновляем матчи в БД (только если есть данные из API)
     const matchesWithApi = matches.filter(m => m.apiMatch !== null);
     if (matchesWithApi.length > 0) {
-      const updated = updateMatchesFromAPI(matchesWithApi);
+      const updated = await updateMatchesFromAPI(matchesWithApi);
       
       if (!updated) {
         console.error(`❌ Не удалось обновить матчи для ${date}`);
