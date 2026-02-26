@@ -18998,9 +18998,20 @@ app.post("/api/admin/toggle-auto-counting", (req, res) => {
   });
 });
 
+// Эндпоинт для получения списка обработанных дат
+app.get("/api/admin/processed-dates", (req, res) => {
+  try {
+    const dates = db.prepare('SELECT * FROM auto_counting_processed ORDER BY date_key').all();
+    res.json({ success: true, dates });
+  } catch (error) {
+    console.error('❌ Ошибка получения обработанных дат:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Эндпоинт для очистки обработанных дат (для повторного подсчета)
 app.post("/api/admin/clear-processed-dates", (req, res) => {
-  const { username } = req.body;
+  const { username, dateKeys } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
   
   if (username !== ADMIN_DB_NAME) {
@@ -19008,17 +19019,36 @@ app.post("/api/admin/clear-processed-dates", (req, res) => {
   }
   
   try {
-    // Очищаем из памяти
-    processedDates.clear();
+    if (!dateKeys || dateKeys.length === 0) {
+      // Очищаем все даты (старое поведение)
+      processedDates.clear();
+      db.prepare('DELETE FROM auto_counting_processed').run();
+      console.log(`🧹 Очищены все обработанные даты автоподсчета`);
+      
+      return res.json({ 
+        success: true,
+        message: 'Все обработанные даты очищены. Автоподсчет запустится заново при следующей проверке.'
+      });
+    }
     
-    // Очищаем из БД
-    db.prepare('DELETE FROM auto_counting_processed').run();
+    // Очищаем конкретные даты
+    const deleteStmt = db.prepare('DELETE FROM auto_counting_processed WHERE date_key = ?');
+    let deletedCount = 0;
     
-    console.log(`🧹 Очищены все обработанные даты автоподсчета`);
+    dateKeys.forEach(dateKey => {
+      const result = deleteStmt.run(dateKey);
+      deletedCount += result.changes;
+      
+      // Удаляем из памяти
+      processedDates.delete(dateKey);
+    });
+    
+    console.log(`🧹 Очищено ${deletedCount} обработанных дат автоподсчета`);
     
     res.json({ 
       success: true,
-      message: 'Обработанные даты очищены. Автоподсчет запустится заново при следующей проверке.'
+      message: `Очищено ${deletedCount} дат. Автоподсчет пересчитает их при следующей проверке.`,
+      deletedCount
     });
   } catch (error) {
     console.error('❌ Ошибка очистки обработанных дат:', error);
