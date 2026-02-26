@@ -4843,8 +4843,32 @@ function displayParticipants(participants) {
     return a.username.localeCompare(b.username, 'ru');
   });
 
+  // Вычисляем места с учетом одинаковых показателей
+  const placesMap = new Map();
+  let currentPlace = 1;
+  
+  sortedParticipants.forEach((participant, index) => {
+    if (index === 0) {
+      placesMap.set(index, 1);
+    } else {
+      const prev = sortedParticipants[index - 1];
+      const currentWins = (participant.won_icons || []).length;
+      const prevWins = (prev.won_icons || []).length;
+      
+      // Если количество побед одинаковое - то же место
+      if (currentWins === prevWins) {
+        placesMap.set(index, placesMap.get(index - 1));
+      } else {
+        // Следующее место учитывает количество участников на предыдущем месте
+        currentPlace = index + 1;
+        placesMap.set(index, currentPlace);
+      }
+    }
+  });
+
   participantsList.innerHTML = sortedParticipants
     .map((participant, index) => {
+      const place = placesMap.get(index);
       // Формируем трофеи из иконок турниров
       const wonIcons = participant.won_icons || [];
       let trophies = "";
@@ -4867,7 +4891,7 @@ function displayParticipants(participants) {
     <div class="participant-item " onclick="showUserProfile(${
       participant.id
     }, '${participant.username.replace(/'/g, "\\'")}')">
-      <div class="participant-rank">#${index + 1}</div>
+      <div class="participant-rank">#${place}</div>
       <img src="${participant.avatar || "img/default-avatar.jpg"}" alt="${
         participant.username
       }" class="participant-avatar" />
@@ -5238,24 +5262,24 @@ async function displayTournamentParticipants(
     return (a.event_lost || 0) - (b.event_lost || 0);
   });
 
-  // Вычисляем места с учетом одинаковых показателей (последовательная нумерация)
+  // Вычисляем места с учетом одинаковых показателей
   const placesMap = new Map();
-  let displayPlace = 1;
+  let currentPlace = 1;
   
   sortedParticipants.forEach((participant, index) => {
     if (index === 0) {
       placesMap.set(index, 1);
     } else {
       const prev = sortedParticipants[index - 1];
-      // Если все показатели одинаковые - то же место
+      // Если все критерии сортировки одинаковые - то же место
       if (participant.event_won === prev.event_won && 
-          participant.event_bets === prev.event_bets && 
+          participant.max_win_streak === prev.max_win_streak && 
           participant.event_lost === prev.event_lost) {
         placesMap.set(index, placesMap.get(index - 1));
       } else {
-        // Следующее место = предыдущее отображаемое место + 1
-        displayPlace = placesMap.get(index - 1) + 1;
-        placesMap.set(index, displayPlace);
+        // Следующее место учитывает количество участников на предыдущем месте
+        currentPlace = index + 1;
+        placesMap.set(index, currentPlace);
       }
     }
   });
