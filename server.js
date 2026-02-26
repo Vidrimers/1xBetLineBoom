@@ -8056,7 +8056,14 @@ app.post("/api/favorite-matches", async (req, res) => {
           return false;
         }
         
-        // Если дата прошла, но нет результата - идет (LIVE)
+        // Проверяем что матч не слишком старый (максимум 3 часа с начала)
+        const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        if (matchDate < threeHoursAgo) {
+          console.log(`  Матч ${match.id}: слишком старый (больше 3 часов)`);
+          return false;
+        }
+        
+        // Если дата прошла, но нет результата и прошло меньше 3 часов - идет (LIVE)
         console.log(`  Матч ${match.id}: LIVE ✅`);
         return true;
       })
