@@ -1407,13 +1407,21 @@ export async function startBot() {
         messageText += `\n\n`;
       });
 
-      messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для просмотра всех деталей</a>`;
+      messageText += `💡 Полный список на сайте`;
 
       await sendMessageWithThread(
         chatId,
         messageText,
         opts("list", {
           parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+              ]
+            ]
+          }
         })
       );
     } catch (error) {
@@ -1630,8 +1638,7 @@ export async function startBot() {
           `<b>Юзернейм в тг:</b> <code>@${telegramUsername}</code>\n` +
           `<b>Имя на сайте:</b> ${siteUsername}\n` +
           `<b>ID:</b> ${msg.from.id}\n` +
-          `<b>Личные уведомления:</b> ${notificationStatus}\n\n` +
-          `💡 Для просмотра полного профиля используйте сайт.`,
+          `<b>Личные уведомления:</b> ${notificationStatus}`,
         opts("success", {
           parse_mode: "HTML",
         })
@@ -1644,8 +1651,7 @@ export async function startBot() {
           `<b>Имя в тг:</b> ${firstName}\n` +
           `<b>Username в тг:</b> @${telegramUsername}\n` +
           `<b>ID:</b> ${msg.from.id}\n` +
-          `<b>Личные уведомления:</b> —\n\n` +
-          `💡 Для просмотра полного профиля используйте сайт.`,
+          `<b>Личные уведомления:</b> —`,
         opts("error", {
           parse_mode: "HTML",
         })
@@ -1825,13 +1831,21 @@ export async function startBot() {
           messageText += `🏆 <b>Турнир:</b> ${match.event_name || "—"}\n\n`;
         });
 
-        messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
+        messageText += `💡 Полный список на сайте`;
 
         await sendMessageWithThread(
           chatId,
           messageText,
           opts("list", {
             parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                  { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                ]
+              ]
+            }
           })
         );
         return;
@@ -1881,13 +1895,21 @@ export async function startBot() {
         messageText += `🏆 <b>Турнир:</b> ${match.event_name || "—"}\n\n`;
       });
 
-      messageText += `💡 <a href="${SERVER_URL}">Открыть сайт для ставок</a>`;
+      messageText += `💡 Полный список на сайте`;
 
       await sendMessageWithThread(
         chatId,
         messageText,
         opts("future", {
           parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+              ]
+            ]
+          }
         })
       );
     } catch (error) {
@@ -2000,6 +2022,14 @@ export async function startBot() {
           `💡 Детальная статистика доступна на сайте.`,
         opts("stats", {
           parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+              ]
+            ]
+          }
         })
       );
     } catch (error) {
@@ -2122,6 +2152,14 @@ export async function startBot() {
         messageText,
         opts("awards", {
           parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
+                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+              ]
+            ]
+          }
         })
       );
     } catch (error) {
@@ -3344,7 +3382,7 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
             const event = events.find(e => e.id === eventId);
             const eventName = event ? event.name : "Турнир";
             
-            // Фильтруем активные ставки (в ожидании)
+            // Фильтруем активные ставки (матчи без результата)
             const pendingBets = eventBets.filter(bet => !bet.winner);
             
             // Формируем сообщение
@@ -3394,10 +3432,12 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
               }
             }
             
+            // Подсчет завершенных ставок (матчи с результатом)
             const completedBets = eventBets.filter(bet => bet.winner);
             if (completedBets.length > 0) {
-              const wonBets = completedBets.filter(bet => bet.result === "won").length;
-              const lostBets = completedBets.filter(bet => bet.result === "lost").length;
+              // Правильный подсчет: сравниваем prediction с winner
+              const wonBets = completedBets.filter(bet => bet.prediction === bet.winner).length;
+              const lostBets = completedBets.filter(bet => bet.prediction !== bet.winner).length;
               const accuracy = completedBets.length > 0 ? ((wonBets / completedBets.length) * 100).toFixed(1) : "0.0";
               
               messageText += `\n📊 <b>Статистика:</b>\n`;
