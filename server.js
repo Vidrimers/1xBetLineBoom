@@ -7207,16 +7207,26 @@ app.get("/api/live-matches", async (req, res) => {
     const matches = todayMatches.map(game => {
       const originalTeam1 = game.homeTeam?.name || 'Команда 1';
       const originalTeam2 = game.awayTeam?.name || 'Команда 2';
+      const translatedTeam1 = translateTeam(originalTeam1);
+      const translatedTeam2 = translateTeam(originalTeam2);
+      
+      // Предупреждение если перевод не найден
+      if (translatedTeam1 === originalTeam1 && originalTeam1 !== 'Команда 1') {
+        console.warn(`⚠️ Перевод не найден для команды: "${originalTeam1}"`);
+      }
+      if (translatedTeam2 === originalTeam2 && originalTeam2 !== 'Команда 2') {
+        console.warn(`⚠️ Перевод не найден для команды: "${originalTeam2}"`);
+      }
       
       return {
         id: game.id,
         event_id: parseInt(eventId),
-        team1: translateTeam(originalTeam1),
-        team2: translateTeam(originalTeam2),
+        team1: translatedTeam1,
+        team2: translatedTeam2,
         team1_original: originalTeam1,
         team2_original: originalTeam2,
         match_time: game.date,
-        status: game.statusName === 'Finished' ? 'finished' : 
+        status: game.statusName?.includes('Finished') ? 'finished' : 
                 game.statusName === 'Not Started' ? 'scheduled' : 'live',
         score: game.homeResult !== null && game.awayResult !== null 
           ? `${game.homeResult}:${game.awayResult}` 
@@ -7228,9 +7238,9 @@ app.get("/api/live-matches", async (req, res) => {
     
     console.log(`✅ Найдено ${matches.length} матчей на сегодня для ${event.name}`);
     if (matches.length > 0) {
-      console.log('Пример перевода:', {
-        original: matches[0].team1_original,
-        translated: matches[0].team1
+      console.log('📋 Все матчи с переводом:');
+      matches.forEach((m, i) => {
+        console.log(`  ${i + 1}. ${m.team1_original} -> ${m.team1} vs ${m.team2_original} -> ${m.team2} (status: ${m.statusName})`);
       });
     }
     
