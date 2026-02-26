@@ -4397,6 +4397,12 @@ function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, del
                     ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
                     : ""
                 }
+                ${
+                  bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.match_status === 'finished' && 
+                  bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2 && bet.result !== 'won'
+                    ? ' <span style="color: #ff9800; font-size: 0.85em;">(не засчитано)</span>'
+                    : ""
+                }
               </div>`
             : ""
         }
@@ -4415,6 +4421,12 @@ function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, del
                     ? ` | Результат: <strong>${bet.actual_yellow_cards}</strong>`
                     : ""
                 }
+                ${
+                  bet.actual_yellow_cards != null && bet.match_status === 'finished' && 
+                  bet.yellow_cards === bet.actual_yellow_cards && bet.result !== 'won'
+                    ? ' <span style="color: #ff9800; font-size: 0.85em;">(не засчитано)</span>'
+                    : ""
+                }
               </div>`
             : ""
         }
@@ -4431,6 +4443,12 @@ function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, del
                 ${
                   bet.actual_red_cards != null && bet.match_status === 'finished'
                     ? ` | Результат: <strong>${bet.actual_red_cards}</strong>`
+                    : ""
+                }
+                ${
+                  bet.actual_red_cards != null && bet.match_status === 'finished' && 
+                  bet.red_cards === bet.actual_red_cards && bet.result !== 'won'
+                    ? ' <span style="color: #ff9800; font-size: 0.85em;">(не засчитано)</span>'
                     : ""
                 }
               </div>`
@@ -5685,6 +5703,12 @@ function displayTournamentParticipantBets(bets) {
                     ? ` | Результат: <strong>${bet.actual_score_team1}-${bet.actual_score_team2}</strong>`
                     : ""
                 }
+                ${
+                  bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending' && 
+                  Number(bet.score_team1) === Number(bet.actual_score_team1) && Number(bet.score_team2) === Number(bet.actual_score_team2) && bet.result !== 'won'
+                    ? ' <span style="color: #ff9800; font-size: 0.85em;">(не засчитано)</span>'
+                    : ""
+                }
               </div>`
             : ""
         }
@@ -5703,6 +5727,12 @@ function displayTournamentParticipantBets(bets) {
                     ? ` | Результат: <strong>${bet.actual_yellow_cards}</strong>`
                     : ""
                 }
+                ${
+                  bet.actual_yellow_cards != null && bet.result !== 'pending' && 
+                  Number(bet.yellow_cards) === Number(bet.actual_yellow_cards) && bet.result !== 'won'
+                    ? ' <span style="color: #ff9800; font-size: 0.85em;">(не засчитано)</span>'
+                    : ""
+                }
               </div>`
             : ""
         }
@@ -5719,6 +5749,12 @@ function displayTournamentParticipantBets(bets) {
                 ${
                   bet.actual_red_cards != null && bet.result !== 'pending'
                     ? ` | Результат: <strong>${bet.actual_red_cards}</strong>`
+                    : ""
+                }
+                ${
+                  bet.actual_red_cards != null && bet.result !== 'pending' && 
+                  Number(bet.red_cards) === Number(bet.actual_red_cards) && bet.result !== 'won'
+                    ? ' <span style="color: #ff9800; font-size: 0.85em;">(не засчитано)</span>'
                     : ""
                 }
               </div>`
