@@ -13380,6 +13380,20 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
                                   sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
                              THEN 1 
                              ELSE 0 
+                           END +
+                           CASE 
+                             WHEN m.yellow_cards_prediction_enabled = 1 AND
+                                  cp.yellow_cards IS NOT NULL AND m.yellow_cards IS NOT NULL AND
+                                  cp.yellow_cards = m.yellow_cards
+                             THEN 1
+                             ELSE 0
+                           END +
+                           CASE 
+                             WHEN m.red_cards_prediction_enabled = 1 AND
+                                  cp.red_cards IS NOT NULL AND m.red_cards IS NOT NULL AND
+                                  cp.red_cards = m.red_cards
+                             THEN 1
+                             ELSE 0
                            END
                       ELSE 0 
                     END
@@ -13403,6 +13417,7 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
           LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
           LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
           LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+          LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
           GROUP BY u.id, u.username
           HAVING total_points > 0
           ORDER BY total_points DESC
