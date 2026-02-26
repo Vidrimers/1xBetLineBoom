@@ -19009,6 +19009,97 @@ app.get("/api/admin/processed-dates", (req, res) => {
   }
 });
 
+// ВРЕМЕННЫЙ endpoint для проверки карточек из API
+app.get("/api/admin/check-cards/:matchId", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    
+    // Получаем информацию о матче из БД
+    const match = db.prepare(`
+      SELECT m.*, e.icon
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.id = ?
+    `).get(matchId);
+    
+    if (!match) {
+      return res.status(404).json({ error: 'Матч не найден' });
+    }
+    
+    // Получаем прогноз пользователя
+    const prediction = db.prepare(`
+      SELECT cp.*, u.username
+      FROM cards_predictions cp
+      JOIN users u ON cp.user_id = u.id
+      WHERE cp.match_id = ?
+    `).all(matchId);
+    
+    const result = {
+      match: {
+        id: match.id,
+        team1: match.team1_name,
+        team2: match.team2_name,
+        date: match.match_date,
+        sstats_id: match.sstats_match_id,
+        yellow_cards_db: match.yellow_cards,
+        red_cards_db: match.red_cards
+      },
+      predictions: prediction.map(p => ({
+        username: p.username,
+        yellow: p.yellow_cards,
+        red: p.red_cards
+      })),
+      api_data: null
+    };
+    
+    // Запрашиваем из API если есть sstats_match_id
+    if (match.sstats_match_id) {
+      const apiUrl = `${SSTATS_API_BASE}/Games/${match.sstats_match_id}`;
+      console.log(`🔍 Запрос к API: ${apiUrl}`);
+      
+      const apiResponse = await fetch(apiUrl, {
+        headers: { "X-API-Key": SSTATS_API_KEY }
+      });
+      
+      if (apiResponse.ok) {
+        const apiData = await apiResponse.json();
+        const game = apiData.data?.game || apiData.game;
+        
+        if (game) {
+          result.api_data = {
+            yellow_cards: game.yellowCards,
+            red_cards: game.redCards,
+            status: game.status,
+            statusName: game.statusName,
+            homeTeam: game.homeTeam?.name,
+            awayTeam: game.awayTeam?.name,
+            homeResult: game.homeResult,
+            awayResult: game.awayResult
+          };
+          
+          // Проверяем совпадение прогнозов
+          result.predictions = result.predictions.map(p => ({
+            ...p,
+            yellow_correct: game.yellowCards !== undefined ? p.yellow === game.yellowCards : null,
+            red_correct: game.redCards !== undefined ? p.red === game.redCards : null,
+            both_correct: game.yellowCards !== undefined && game.redCards !== undefined 
+              ? (p.yellow === game.yellowCards && p.red === game.redCards)
+              : null
+          }));
+        }
+      } else {
+        result.api_error = `HTTP ${apiResponse.status}`;
+      }
+    }
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('❌ Ошибка проверки карточек:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Эндпоинт для очистки обработанных дат (для повторного подсчета)
 app.post("/api/admin/clear-processed-dates", (req, res) => {
   const { username, dateKeys } = req.body;

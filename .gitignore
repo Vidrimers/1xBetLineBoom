@@ -48,6 +48,7 @@ add-news-reactions-table.cjs
 add-rss-keywords-table.cjs
 add-admin-panel-config-table.cjs
 remove-configure-button.cjs
+check-david-milan-cards.cjs
 
 Autoparsing.js
 
