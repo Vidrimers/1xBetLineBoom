@@ -4777,3 +4777,112 @@ body.theme-cyberpunk .countTournaments button.active {
     padding: 10px 15px !important;
   }
 }
+
+/* Модальное окно входа */
+.login-modal {
+  z-index: 10000;
+}
+
+.login-modal .modal-content {
+  max-width: 500px;
+  background: rgba(26, 32, 44, 0.98);
+  backdrop-filter: blur(10px);
+}
+
+.login-modal-content .user-input {
+  margin-top: 0;
+}
+
+/* Blur эффект для заднего фона когда открыта модалка входа */
+body.login-modal-open .container {
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+body.login-modal-open {
+  overflow: hidden;
+}
+
+/* Стили для кнопки ВХОД */
+.login-tab-btn {
+  animation: pulse-login 2s infinite;
+}
+
+@keyframes pulse-login {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(84, 169, 235, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(84, 169, 235, 0);
+  }
+}
+
+/* Режим гостя - блокировка взаимодействия со ставками */
+.guest-mode .bet-btn,
+.guest-mode .score-prediction-btn,
+.guest-mode .cards-prediction-btn,
+.guest-mode .lucky-btn {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.guest-mode .match-card {
+  position: relative;
+}
+
+/* Оверлей для гостевого режима на карточках матчей */
+.guest-mode .match-card .bet-buttons::before {
+  content: '🔒 Войдите для ставок';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(26, 32, 44, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5a9fd4;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 8px;
+}
+
+.guest-mode .match-card:hover .bet-buttons::before {
+  opacity: 1;
+}
+
+/* Адаптивность для модального окна входа */
+@media (max-width: 768px) {
+  .login-modal .modal-content {
+    max-width: 95%;
+    margin: 20px;
+  }
+  
+  .login-modal-content .welcome-info {
+    padding: 15px !important;
+  }
+  
+  .login-modal-content .welcome-info h3 {
+    font-size: 1.1em !important;
+  }
+  
+  .login-modal-content .welcome-info p {
+    font-size: 0.85em !important;
+  }
+}
+
+/* Скрываем оверлей на мобильных для лучшей производительности */
+@media (max-width: 768px) {
+  .guest-mode .match-card::after {
+    display: none;
+  }
+  
+  .guest-mode .match-card {
+    position: relative;
+  }
+}

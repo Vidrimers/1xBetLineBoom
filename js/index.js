@@ -443,13 +443,25 @@ function moveAuthButtonToProfile() {
 function moveAuthButtonToLoginForm() {
   const authBtn = document.getElementById("authBtn");
   const userInput = document.querySelector(".user-input");
+  
+  // Проверяем что элементы существуют
   if (!authBtn || !userInput) return;
+  
+  // Проверяем видимость через getComputedStyle
+  const computedStyle = window.getComputedStyle(userInput);
+  if (computedStyle.display === 'none') return; // Не перемещаем если форма скрыта
+  
   const countingBtn = document.getElementById("countingBtn");
   if (userInput.contains(authBtn)) return;
-  if (countingBtn) {
-    userInput.insertBefore(authBtn, countingBtn);
-  } else {
-    userInput.appendChild(authBtn);
+  
+  try {
+    if (countingBtn && countingBtn.parentNode === userInput) {
+      userInput.insertBefore(authBtn, countingBtn);
+    } else {
+      userInput.appendChild(authBtn);
+    }
+  } catch (e) {
+    console.warn('⚠️ Не удалось переместить кнопку авторизации:', e);
   }
 }
 
@@ -1064,6 +1076,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Загружаем тему из localStorage для незалогиненных пользователей
     await loadSavedTheme();
+    
+    // Включаем гостевой режим для незалогиненных пользователей
+    initGuestMode();
   }
 
   // Запускаем периодическую проверку сессии каждые 60 секунд (снижена частота)
@@ -1174,6 +1189,136 @@ function getDeviceInfo() {
   }
 
   return { deviceInfo, browser, os };
+}
+
+// ===== ГОСТЕВОЙ РЕЖИМ И МОДАЛЬНОЕ ОКНО ВХОДА =====
+
+// Открыть модальное окно входа
+function openLoginModal() {
+  const modal = document.getElementById('loginModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.classList.add('login-modal-open');
+    
+    // Фокус на поле ввода
+    setTimeout(() => {
+      const input = document.getElementById('usernameModal');
+      if (input) input.focus();
+    }, 100);
+  }
+}
+
+// Закрыть модальное окно входа
+function closeLoginModal() {
+  const modal = document.getElementById('loginModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.classList.remove('login-modal-open');
+  }
+}
+
+// Вход из модального окна
+async function loginFromModal() {
+  const username = document.getElementById('usernameModal')?.value.trim();
+  
+  if (!username) {
+    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "⚠️");
+    return;
+  }
+  
+  // Копируем значение в основной input и вызываем initUser
+  document.getElementById('username').value = username;
+  
+  // Закрываем модалку
+  closeLoginModal();
+  
+  // Вызываем стандартную функцию входа
+  await initUser();
+}
+
+// Инициализация гостевого режима
+function initGuestMode() {
+  console.log('🔓 Инициализация гостевого режима');
+  
+  // Добавляем класс гостевого режима
+  const container = document.querySelector('.container');
+  if (container) {
+    container.classList.add('guest-mode');
+  }
+  
+  // Показываем кнопку ВХОД вместо Настройки
+  const settingsBtn = document.getElementById('settingsTabBtn');
+  const loginBtn = document.getElementById('loginTabBtn');
+  
+  if (settingsBtn) settingsBtn.style.display = 'none';
+  if (loginBtn) loginBtn.style.display = 'inline-block';
+  
+  // Показываем контент (турниры и матчи)
+  loadEventsList();
+  
+  // Блокируем взаимодействие со ставками
+  blockBettingForGuests();
+}
+
+// Блокировка взаимодействия со ставками для гостей
+function blockBettingForGuests() {
+  // Добавляем обработчик на document для перехвата всех кликов
+  document.addEventListener('click', (e) => {
+    if (!document.querySelector('.container.guest-mode')) return;
+    
+    // Проверяем клик по вкладкам (кроме "Ставки")
+    const tabBtn = e.target.closest('.tab-btn');
+    if (tabBtn && !tabBtn.classList.contains('login-tab-btn')) {
+      const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      const index = tabs.indexOf(tabBtn);
+      
+      // Индексы: 0-LIVE, 1-Ставки, 2-Таблица, 3-Профиль, 4-Новости, 5-Настройки
+      if (index !== 1) { // Не блокируем вкладку "Ставки"
+        e.preventDefault();
+        e.stopPropagation();
+        openLoginModal();
+        return;
+      }
+    }
+    
+    // Блокируем кнопку "Мне повезет"
+    if (e.target.closest('.lucky-btn')) {
+      e.preventDefault();
+      e.stopPropagation();
+      openLoginModal();
+      return;
+    }
+    
+    // Блокируем клики по карточкам матчей для ставок
+    const matchCard = e.target.closest('.match-card');
+    if (matchCard) {
+      const betButton = e.target.closest('.bet-btn, .score-prediction-btn, .cards-prediction-btn');
+      if (betButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        openLoginModal();
+        return;
+      }
+    }
+  }, true); // Используем capture phase для перехвата до других обработчиков
+}
+
+// Выход из гостевого режима (после успешного входа)
+function exitGuestMode() {
+  console.log('🔐 Выход из гостевого режима');
+  
+  // Убираем класс гостевого режима
+  const container = document.querySelector('.container');
+  if (container) {
+    container.classList.remove('guest-mode');
+  }
+  
+  // Скрываем кнопку ВХОД и показываем Настройки
+  const settingsBtn = document.getElementById('settingsTabBtn');
+  const loginBtn = document.getElementById('loginTabBtn');
+  
+  if (settingsBtn) settingsBtn.style.display = 'inline-block';
+  if (loginBtn) loginBtn.style.display = 'none';
 }
 
 async function initUser() {
@@ -1384,6 +1529,9 @@ async function initUser() {
     loadEventsList();
     loadMyBets();
     
+    // Выходим из гостевого режима если он был активен
+    exitGuestMode();
+    
     // Запускаем обновление индикатора LIVE
     updateLiveIndicator();
     // pollFavoriteMatches запускается автоматически при открытии вкладки LIVE
@@ -1443,6 +1591,9 @@ async function logoutUser() {
   // Очищаем ставки
   document.getElementById("myBetsList").innerHTML =
     '<div class="empty-message">У вас пока нет ставок</div>';
+  
+  // Включаем гостевой режим
+  initGuestMode();
 }
 
 // Функция авторизации через Telegram
@@ -4698,6 +4849,13 @@ document.addEventListener('click', (e) => {
 
 // ===== ВКЛАДКИ =====
 function switchTab(tabName) {
+  // Проверяем гостевой режим - разрешаем только вкладку "Ставки"
+  const isGuestMode = document.querySelector('.container.guest-mode');
+  if (isGuestMode && tabName !== 'allbets') {
+    openLoginModal();
+    return;
+  }
+  
   // Останавливаем автообновление LIVE матчей при переключении на другую вкладку
   if (tabName !== 'live') {
     stopLiveMatchesAutoUpdate();
@@ -23999,3 +24157,21 @@ async function saveConfigChanges() {
     await showCustomAlert('Ошибка сохранения конфигурации', 'Ошибка', '❌');
   }
 }
+
+// Закрытие модалки входа по клику вне её
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('loginModal');
+  if (modal && e.target === modal) {
+    closeLoginModal();
+  }
+});
+
+// Закрытие модалки входа по Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('loginModal');
+    if (modal && modal.style.display === 'flex') {
+      closeLoginModal();
+    }
+  }
+});
