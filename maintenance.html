@@ -226,8 +226,22 @@
         </p>
         <div class="loader"></div>
         <div class="status">
-            <p>⏱️ Ожидаемое время: 5-&infin; минут</p>
+            <p id="time-text">⏱️ Ожидаемое время: 5-15 минут</p>
         </div>
     </div>
+    
+    <script>
+        // Меняем текст времени при глитче
+        let isInfinite = false;
+        setInterval(() => {
+            const timeText = document.getElementById('time-text');
+            if (isInfinite) {
+                timeText.innerHTML = '⏱️ Ожидаемое время: 5-15 минут';
+            } else {
+                timeText.innerHTML = '⏱️ Ожидаемое время: &infin; минут';
+            }
+            isInfinite = !isInfinite;
+        }, 5000); // Каждые 5 секунд (совпадает с анимацией shake)
+    </script>
 </body>
 </html>
