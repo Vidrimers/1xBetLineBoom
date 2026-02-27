@@ -4780,13 +4780,24 @@ body.theme-cyberpunk .countTournaments button.active {
 
 /* Модальное окно входа */
 .login-modal {
-  z-index: 10000;
+  z-index: 100000;
+}
+
+/* Модальное окно информации о Telegram - должно быть поверх модального окна входа */
+#telegramInfoModal {
+  z-index: 999999 !important;
+  background: rgba(0, 0, 0, 0.8) !important; /* Свой фон вместо наследования */
 }
 
 .login-modal .modal-content {
   max-width: 500px;
   background: rgba(26, 32, 44, 0.98);
   backdrop-filter: blur(10px);
+}
+
+/* Убираем backdrop-filter когда открыта модалка с информацией о Telegram */
+body.telegram-info-open .login-modal .modal-content {
+  backdrop-filter: none;
 }
 
 .login-modal-content .user-input {

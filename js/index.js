@@ -436,6 +436,10 @@ function moveAuthButtonToProfile() {
   const placeholder = document.getElementById("profileAuthPlaceholder");
   if (!authBtn || !placeholder) return;
   if (!placeholder.contains(authBtn)) {
+    // Показываем кнопку и убираем все скрывающие стили
+    authBtn.style.display = '';
+    authBtn.style.position = '';
+    authBtn.style.left = '';
     placeholder.appendChild(authBtn);
   }
 }
@@ -483,7 +487,8 @@ function setAuthButtonToLoginState() {
   authBtn.innerHTML = "Войти";
   authBtn.onclick = () => initUser();
   moveAuthButtonToLoginForm();
-  showTelegramAuthButtons();
+  // НЕ показываем кнопки Telegram в гостевом режиме
+  // showTelegramAuthButtons();
 }
 
 // Скрыть кнопки Telegram авторизации
@@ -1253,6 +1258,9 @@ function initGuestMode() {
   if (settingsBtn) settingsBtn.style.display = 'none';
   if (loginBtn) loginBtn.style.display = 'inline-block';
   
+  // Скрываем кнопки Telegram (они есть только в модалке)
+  hideTelegramAuthButtons();
+  
   // Показываем контент (турниры и матчи)
   loadEventsList();
   
@@ -1754,6 +1762,12 @@ async function checkTelegramAuthStatus(authToken) {
         // Загружаем турниры, матчи и ставки пользователя
         loadEventsList();
         loadMyBets();
+        
+        // Выходим из гостевого режима
+        exitGuestMode();
+        
+        // Закрываем модалку входа если она открыта
+        closeLoginModal();
         
         // Запускаем обновление индикатора LIVE
         updateLiveIndicator();
@@ -9029,21 +9043,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Открыть модальное окно с информацией о входе через Telegram (для экрана логина)
 function openTelegramInfoModal() {
+  console.log('openTelegramInfoModal вызвана!');
   const modal = document.getElementById("telegramInfoModal");
+  const loginModal = document.getElementById("loginModal");
+  console.log('telegramInfoModal:', modal);
+  console.log('loginModal:', loginModal);
   if (modal) {
+    // УБИРАЕМ класс login-modal-open с body чтобы убрать blur с контейнера
+    document.body.classList.remove('login-modal-open');
+    // Добавляем класс к body чтобы убрать backdrop-filter
+    document.body.classList.add('telegram-info-open');
+    // Временно закрываем модалку входа полностью
+    if (loginModal) {
+      console.log('Скрываем loginModal');
+      loginModal.dataset.wasOpen = 'true'; // Запоминаем что она была открыта
+      loginModal.style.display = 'none';
+      loginModal.style.visibility = 'hidden'; // Дополнительно скрываем
+      loginModal.style.opacity = '0'; // И делаем прозрачной
+      loginModal.style.pointerEvents = 'none'; // Отключаем события
+    }
     // Блокируем скролл body
     document.body.style.overflow = 'hidden';
     modal.style.display = "flex";
+    // Принудительно устанавливаем z-index выше всех модалок
+    modal.style.zIndex = "200000";
+    console.log('telegramInfoModal открыта, display:', modal.style.display, 'z-index:', modal.style.zIndex);
+    
+    // Проверяем через 100мс что loginModal действительно скрыта
+    setTimeout(() => {
+      console.log('Проверка через 100мс - loginModal display:', loginModal.style.display, 'computed:', window.getComputedStyle(loginModal).display);
+    }, 100);
   }
 }
 
 // Закрыть модальное окно с информацией о входе через Telegram
 function closeTelegramInfoModal() {
   const modal = document.getElementById("telegramInfoModal");
+  const loginModal = document.getElementById("loginModal");
   if (modal) {
+    // Убираем класс с body
+    document.body.classList.remove('telegram-info-open');
     // Разблокируем скролл body
     document.body.style.overflow = '';
     modal.style.display = "none";
+    // Возвращаем модалку входа если она была открыта
+    if (loginModal && loginModal.dataset.wasOpen === 'true') {
+      // ВОЗВРАЩАЕМ класс login-modal-open на body
+      document.body.classList.add('login-modal-open');
+      loginModal.style.display = 'flex';
+      loginModal.style.visibility = '';
+      loginModal.style.opacity = '';
+      loginModal.style.pointerEvents = '';
+      delete loginModal.dataset.wasOpen;
+    }
   }
 }
 
