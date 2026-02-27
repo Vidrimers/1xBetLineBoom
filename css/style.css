@@ -3552,6 +3552,23 @@ input:checked + .slider:before {
   /* padding: 20px; */
   overflow-x: auto;
   overflow-y: visible;
+  
+  &::before{
+    content: "";
+  position: absolute;
+  inset: 0;
+  background: url('../img/lc-bracket-bg.jpg')  center / cover no-repeat;
+  filter: blur(5px);
+  z-index: -1;
+  }
+  &::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3); /* затемнение */
+  z-index: -1;
+}
+
 }
 
 /* Новая структура сетки - все стадии слева направо */

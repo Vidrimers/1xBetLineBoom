@@ -501,16 +501,19 @@ function handleBracketResize() {
 function isBracketClosed(bracket, stageId = null) {
   if (!bracket) return false;
   
-  // Если указана конкретная стадия, проверяем её дату блокировки
-  if (stageId && bracket.lock_dates) {
-    const lockDate = getEffectiveLockDate(bracket, stageId);
-    if (lockDate) {
-      const now = new Date();
-      return now >= new Date(lockDate);
-    }
+  // Если не указана конкретная стадия, проверяем первую стадию сетки
+  if (!stageId) {
+    stageId = bracket.start_stage || getFirstFilledStage(bracket?.matches) || 'round_of_16';
   }
   
-  // Fallback на старую логику для обратной совместимости
+  // Проверяем дату блокировки для стадии
+  const lockDate = getEffectiveLockDate(bracket, stageId);
+  if (lockDate) {
+    const now = new Date();
+    return now >= new Date(lockDate);
+  }
+  
+  // Fallback на старую логику если нет lock_dates
   if (!bracket.start_date) return false;
   
   const startDate = new Date(bracket.start_date);
@@ -613,7 +616,28 @@ function renderBracketModal(isClosed) {
   }
   
   const isManuallyLocked = currentBracket.is_locked === 1;
-  const isAutoLocked = isClosed && !isManuallyLocked && !isViewingOtherUserBracket;
+  
+  // Проверяем все стадии на блокировку
+  const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+  const startStage = currentBracket.start_stage || getFirstFilledStage(currentBracket?.matches) || 'round_of_16';
+  const startIndex = stageOrder.indexOf(startStage);
+  const availableStages = startIndex >= 0 ? stageOrder.slice(startIndex) : stageOrder;
+  
+  // Находим открытые и закрытые стадии
+  const openStages = [];
+  const closedStages = [];
+  availableStages.forEach(stage => {
+    if (isBracketClosed(currentBracket, stage)) {
+      closedStages.push(stage);
+    } else {
+      openStages.push(stage);
+    }
+  });
+  
+  const hasOpenStages = openStages.length > 0;
+  const allStagesClosed = openStages.length === 0;
+  
+  const isAutoLocked = allStagesClosed && !isManuallyLocked && !isViewingOtherUserBracket;
   const isLocked = isClosed || isManuallyLocked || isViewingOtherUserBracket; // Блокируем при просмотре чужих прогнозов
   
   let statusBadge = '';
@@ -627,23 +651,41 @@ function renderBracketModal(isClosed) {
       lockReasonText = '<div style="color: #ff9800; font-size: 0.75em; margin-top: 2px;">Причина: Заблокировано администратором</div>';
     } else if (isAutoLocked) {
       statusBadge = '<div style="color: #f44336; font-size: 0.9em;">🔒 Ставки закрыты</div>';
-      lockReasonText = '<div style="color: #f44336; font-size: 0.75em; margin-top: 2px;">Причина: Плей-офф начался или закончен, ставки больше не принимаются</div>';
-    } else {
+      lockReasonText = '<div style="color: #f44336; font-size: 0.75em; margin-top: 2px;">Причина: Все стадии плей-офф закрыты</div>';
+    } else if (hasOpenStages) {
       statusBadge = '<div style="color: #4caf50; font-size: 0.9em;">✅ Ставки открыты</div>';
       
-      // Форматируем дату и время блокировки
-      if (currentBracket.start_date) {
-        const lockDate = new Date(currentBracket.start_date);
-        const dateStr = lockDate.toLocaleDateString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        });
-        const timeStr = lockDate.toLocaleTimeString('ru-RU', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        lockDateText = `<div style="color: #b0b8c8; font-size: 0.75em; margin-top: 2px;">(будет заблокировано ${dateStr} в ${timeStr})</div>`;
+      // Показываем информацию о следующей блокировке
+      if (openStages.length > 0) {
+        const nextOpenStage = openStages[0];
+        const nextLockDate = getEffectiveLockDate(currentBracket, nextOpenStage);
+        if (nextLockDate) {
+          const lockDate = new Date(nextLockDate);
+          const dateStr = lockDate.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+          const timeStr = lockDate.toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          const stageNames = {
+            'round_of_16': '1/16',
+            'round_of_8': '1/8',
+            'quarter_finals': '1/4',
+            'semi_finals': '1/2',
+            'final': 'Финал'
+          };
+          
+          lockDateText = `<div style="color: #b0b8c8; font-size: 0.75em; margin-top: 2px;">(${stageNames[nextOpenStage]} будет заблокирована ${dateStr} в ${timeStr})</div>`;
+        }
+      }
+      
+      // Если есть закрытые стадии, показываем предупреждение
+      if (closedStages.length > 0) {
+        lockReasonText = '<div style="color: #ff9800; font-size: 0.75em; margin-top: 2px;">⚠️ Некоторые стадии уже закрыты для ставок</div>';
       }
     }
   } else {

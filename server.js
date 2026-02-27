@@ -4014,12 +4014,53 @@ app.post("/api/brackets/:bracketId/predictions", async (req, res) => {
       return res.status(403).json({ error: "Сетка заблокирована администратором" });
     }
     
-    // Проверяем автоматическую блокировку по дате
-    const startDate = new Date(bracket.start_date);
+    // Проверяем блокировку для каждой стадии отдельно
     const now = new Date();
+    let lockDates = {};
     
-    if (now >= startDate) {
-      return res.status(403).json({ error: "Ставки в сетке закрыты" });
+    // Парсим lock_dates если они есть
+    if (bracket.lock_dates) {
+      try {
+        lockDates = typeof bracket.lock_dates === 'string' 
+          ? JSON.parse(bracket.lock_dates) 
+          : bracket.lock_dates;
+      } catch (e) {
+        console.error('Ошибка парсинга lock_dates:', e);
+      }
+    }
+    
+    // Проверяем каждый прогноз на блокировку его стадии
+    for (const prediction of predictions) {
+      const stage = prediction.stage;
+      
+      // Получаем эффективную дату блокировки для стадии
+      let effectiveLockDate = bracket.start_date; // Дефолтная дата
+      
+      if (lockDates[stage]) {
+        // Если для стадии указана своя дата - используем её
+        effectiveLockDate = lockDates[stage];
+      } else {
+        // Иначе ищем предыдущую заполненную дату
+        const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+        const currentIndex = stageOrder.indexOf(stage);
+        
+        if (currentIndex > 0) {
+          for (let i = currentIndex - 1; i >= 0; i--) {
+            if (lockDates[stageOrder[i]]) {
+              effectiveLockDate = lockDates[stageOrder[i]];
+              break;
+            }
+          }
+        }
+      }
+      
+      // Проверяем блокировку для этой стадии
+      if (effectiveLockDate && now >= new Date(effectiveLockDate)) {
+        return res.status(403).json({ 
+          error: `Ставки для стадии ${stage} закрыты`,
+          stage: stage
+        });
+      }
     }
     
     // Проверяем существующие прогнозы для определения, новые они или измененные
@@ -4211,12 +4252,48 @@ app.delete("/api/brackets/:bracketId/predictions/:userId/:stage/:matchIndex", (r
       return res.status(403).json({ error: "Сетка заблокирована администратором" });
     }
     
-    // Проверяем автоматическую блокировку по дате
-    const startDate = new Date(bracket.start_date);
+    // Проверяем блокировку для конкретной стадии
     const now = new Date();
+    let lockDates = {};
     
-    if (now >= startDate) {
-      return res.status(403).json({ error: "Ставки в сетке закрыты" });
+    // Парсим lock_dates если они есть
+    if (bracket.lock_dates) {
+      try {
+        lockDates = typeof bracket.lock_dates === 'string' 
+          ? JSON.parse(bracket.lock_dates) 
+          : bracket.lock_dates;
+      } catch (e) {
+        console.error('Ошибка парсинга lock_dates:', e);
+      }
+    }
+    
+    // Получаем эффективную дату блокировки для стадии
+    let effectiveLockDate = bracket.start_date; // Дефолтная дата
+    
+    if (lockDates[stage]) {
+      // Если для стадии указана своя дата - используем её
+      effectiveLockDate = lockDates[stage];
+    } else {
+      // Иначе ищем предыдущую заполненную дату
+      const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+      const currentIndex = stageOrder.indexOf(stage);
+      
+      if (currentIndex > 0) {
+        for (let i = currentIndex - 1; i >= 0; i--) {
+          if (lockDates[stageOrder[i]]) {
+            effectiveLockDate = lockDates[stageOrder[i]];
+            break;
+          }
+        }
+      }
+    }
+    
+    // Проверяем блокировку для этой стадии
+    if (effectiveLockDate && now >= new Date(effectiveLockDate)) {
+      return res.status(403).json({ 
+        error: `Ставки для стадии ${stage} закрыты`,
+        stage: stage
+      });
     }
     
     // Удаляем прогноз
