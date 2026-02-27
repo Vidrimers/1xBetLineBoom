@@ -4781,6 +4781,8 @@ body.theme-cyberpunk .countTournaments button.active {
 /* Модальное окно входа */
 .login-modal {
   z-index: 100000;
+  align-items: flex-start !important; /* Выравнивание сверху вместо центра */
+  padding-top: 20px; /* Отступ сверху */
 }
 
 /* Модальное окно информации о Telegram - должно быть поверх модального окна входа */
@@ -4802,6 +4804,7 @@ body.telegram-info-open .login-modal .modal-content {
 
 .login-modal-content .user-input {
   margin-top: 0;
+  flex-direction: row !important; /* Всегда в ряд, даже на мобильных */
 }
 
 /* Blur эффект для заднего фона когда открыта модалка входа */
@@ -4872,6 +4875,16 @@ body.login-modal-open {
   .login-modal .modal-content {
     max-width: 95%;
     margin: 20px;
+    min-height: 90vh !important;
+    max-height: 90vh !important;
+    overflow-y: auto;
+  }
+  
+  .login-modal .modal-content .modal-body {
+    flex: 1;
+    min-height: calc(90vh - 100px) !important;
+    max-height: none !important;
+    overflow-y: auto !important;
   }
   
   .login-modal-content .welcome-info {
