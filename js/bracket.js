@@ -9,6 +9,7 @@ let hasUnsavedChanges = false; // Флаг несохраненных измен
 let originalBracketMatches = null; // Сохраненное состояние для отката
 let isViewingOtherUserBracket = false; // Флаг просмотра чужих прогнозов
 let viewingUserId = null; // ID пользователя, чьи прогнозы просматриваем
+let shouldHideFutureStages = false; // Флаг скрытия незапущенных стадий (зависит от настройки show_bets)
 let allTeams = [];
 
 // Структура сетки плей-офф
@@ -58,12 +59,25 @@ async function rebuildBracketFromPredictions() {
   console.log('🔄 rebuildBracketFromPredictions: начало восстановления');
   console.log('📋 Прогнозы:', JSON.parse(JSON.stringify(bracketPredictions)));
   
+  // Получаем lock_dates для проверки
+  const lockDates = currentBracket?.lock_dates || {};
+  const now = new Date();
+  
   // Проходим по всем стадиям в порядке
   for (let i = 0; i < stageOrder.length - 1; i++) {
     const currentStageId = stageOrder[i];
     const nextStageId = stageOrder[i + 1];
     
     console.log(`\n🔍 Проверяем ${currentStageId} -> ${nextStageId}`);
+    
+    // Если просматриваем чужую сетку, проверяем не скрыта ли следующая стадия
+    if (isViewingOtherUserBracket && lockDates[nextStageId]) {
+      const stageLockDate = new Date(lockDates[nextStageId]);
+      if (now < stageLockDate) {
+        console.log(`🔒 Стадия ${nextStageId} еще не началась (${lockDates[nextStageId]}) - пропускаем восстановление прогнозов`);
+        continue; // Пропускаем эту стадию
+      }
+    }
     
     // Если есть прогнозы для текущей стадии
     if (bracketPredictions[currentStageId]) {
@@ -422,6 +436,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
         }
         
         const predictions = data.predictions || data; // Поддержка старого формата
+        shouldHideFutureStages = data.hideUnstartedStages || false; // Сохраняем флаг скрытия незапущенных стадий
         bracketPredictions = {};
         predictions.forEach(p => {
           bracketPredictions[p.stage] = bracketPredictions[p.stage] || {};
@@ -1140,10 +1155,6 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   const isWinner = prediction && prediction === teamName;
   const highlightClass = isWinner ? 'bracket-team-winner' : '';
   
-  // Проверяем, является ли команда дубликатом
-  const isDuplicate = isDuplicateTeam(teamName);
-  const duplicateStyle = isDuplicate ? 'background: rgba(73, 117, 221, 0.1);' : '';
-  
   // Режим редактирования для админа - только для начальной стадии из БД
   const editableStages = getEditableStages(currentBracket);
   const isEditableStage = editableStages.includes(stageId);
@@ -1195,14 +1206,70 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   
   console.log(`🔍 renderTeamSlot (VIEW): ${stageId}[${matchIndex}][${teamIndex}], tempTeams:`, tempTeams, 'teamName:', teamName);
   
+  // Если просматриваем чужую сетку, проверяем не скрыта ли эта стадия
+  let shouldHideTeam = false;
+  let hiddenStageDate = null;
+  if (isViewingOtherUserBracket && shouldHideFutureStages && currentBracket?.lock_dates) {
+    const lockDates = currentBracket.lock_dates;
+    const now = new Date();
+    
+    // Проверяем есть ли дата для этой стадии
+    if (lockDates[stageId]) {
+      const stageLockDate = new Date(lockDates[stageId]);
+      if (now < stageLockDate) {
+        shouldHideTeam = true;
+        hiddenStageDate = stageLockDate;
+        console.log(`🔒 Скрываем команду в ${stageId} - стадия еще не началась`);
+      }
+    } else {
+      // Если для этой стадии нет даты, проверяем предыдущие стадии
+      // Если хотя бы одна предыдущая стадия еще не началась - скрываем и эту
+      const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+      const currentStageIndex = stageOrder.indexOf(stageId);
+      
+      if (currentStageIndex > 0) {
+        // Проверяем все предыдущие стадии
+        for (let i = 0; i < currentStageIndex; i++) {
+          const prevStage = stageOrder[i];
+          if (lockDates[prevStage]) {
+            const prevStageLockDate = new Date(lockDates[prevStage]);
+            if (now < prevStageLockDate) {
+              shouldHideTeam = true;
+              hiddenStageDate = prevStageLockDate;
+              console.log(`🔒 Скрываем команду в ${stageId} - предыдущая стадия ${prevStage} еще не началась`);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Если команда должна быть скрыта, показываем "—"
+  const displayTeamName = shouldHideTeam ? null : teamName;
+  
+  // Проверяем дубликаты только для видимых команд
+  const isDuplicate = !shouldHideTeam && isDuplicateTeam(teamName);
+  const duplicateStyle = isDuplicate ? 'background: rgba(73, 117, 221, 0.1);' : '';
+  
+  // Формируем текст для скрытых команд
+  let hiddenText = '—';
+  if (shouldHideTeam && hiddenStageDate) {
+    const dateStr = hiddenStageDate.toLocaleDateString('ru-RU', { 
+      day: 'numeric', 
+      month: 'long' 
+    });
+    hiddenText = `<span style="color: #ff9800; font-size: 0.85em;">🔒 Откроется ${dateStr}</span>`;
+  }
+  
   // Проверяем блокировку конкретной колонки
   const isStageClosed = isBracketClosed(currentBracket, stageId);
-  const isClickable = !isStageClosed && teamName && !hasMultipleTeams;
-  const clickHandler = isClickable ? `onclick="selectBracketWinner('${stageId}', ${matchIndex}, '${teamName.replace(/'/g, "\\'")}')"` : '';
+  const isClickable = !isStageClosed && displayTeamName && !hasMultipleTeams && !isViewingOtherUserBracket;
+  const clickHandler = isClickable ? `onclick="selectBracketWinner('${stageId}', ${matchIndex}, '${displayTeamName.replace(/'/g, "\\'")}')"` : '';
   const cursorStyle = isClickable ? 'cursor: pointer;' : '';
   
   // Если есть две команды - показываем их через "/" с предупреждением
-  let displayText = teamName || '—';
+  let displayText = displayTeamName || (shouldHideTeam ? hiddenText : '—');
   let warningIcon = '';
   let disabledStyle = '';
   
@@ -1228,6 +1295,14 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
 // Выбрать победителя матча (клик по команде)
 async function selectBracketWinner(stageId, matchIndex, teamName) {
   if (!currentUser || !currentBracket) return;
+  
+  // Запрещаем изменять чужие прогнозы
+  if (isViewingOtherUserBracket) {
+    if (typeof showCustomAlert === 'function') {
+      showCustomAlert('Вы не можете изменять чужие прогнозы', 'Доступ запрещен', '🚫');
+    }
+    return;
+  }
   
   // Проверяем, закрыта ли конкретная колонка
   const isStageClosed = isBracketClosed(currentBracket, stageId);
@@ -1633,7 +1708,7 @@ function updateNextStageDisplay(nextStageId, nextMatchIndex) {
         
         // Обновляем обработчик клика
         const isStageClosed = isBracketClosed(currentBracket, nextStageId);
-        if (!isStageClosed) {
+        if (!isStageClosed && !isViewingOtherUserBracket) {
           slot.onclick = () => selectBracketWinner(nextStageId, nextMatchIndex, teamName);
           slot.style.cursor = 'pointer';
         }
@@ -1768,6 +1843,7 @@ async function closeBracketModal() {
   originalBracketMatches = null; // Очищаем сохраненное состояние
   isViewingOtherUserBracket = false; // Сбрасываем флаг просмотра чужих прогнозов
   viewingUserId = null; // Сбрасываем ID просматриваемого пользователя
+  shouldHideFutureStages = false; // Сбрасываем флаг скрытия незапущенных стадий
 }
 
 // Переключить режим редактирования сетки

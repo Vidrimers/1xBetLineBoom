@@ -5409,9 +5409,10 @@ async function displayTournamentParticipants(
 
   // Проверяем наличие сетки плей-офф для этого турнира
   let hasBracket = false;
+  let brackets = null;
   if (eventId) {
     try {
-      const brackets = await loadBracketsForEvent(eventId);
+      brackets = await loadBracketsForEvent(eventId);
       hasBracket = brackets && brackets.length > 0;
       // Если дата не была передана, получаем её из загруженной сетки
       if (!bracketStartDate && hasBracket) {
@@ -5424,10 +5425,37 @@ async function displayTournamentParticipants(
 
   // Проверяем, началась ли сетка плей-офф
   let isBracketStarted = false;
-  if (bracketStartDate) {
-    const startDate = new Date(bracketStartDate);
+  if (hasBracket && brackets && brackets.length > 0) {
+    const bracket = brackets[0];
     const now = new Date();
-    isBracketStarted = now >= startDate;
+    
+    // Проверяем lock_dates для каждой стадии
+    if (bracket.lock_dates) {
+      try {
+        const lockDates = typeof bracket.lock_dates === 'string' 
+          ? JSON.parse(bracket.lock_dates) 
+          : bracket.lock_dates;
+        
+        // Проверяем все стадии - если хотя бы одна еще не началась, сетка считается не начавшейся
+        const allStagesStarted = Object.values(lockDates).every(dateStr => {
+          const stageDate = new Date(dateStr);
+          return now >= stageDate;
+        });
+        
+        isBracketStarted = allStagesStarted;
+      } catch (e) {
+        console.error('Ошибка парсинга lock_dates:', e);
+        // Fallback на старую логику
+        if (bracketStartDate) {
+          const startDate = new Date(bracketStartDate);
+          isBracketStarted = now >= startDate;
+        }
+      }
+    } else if (bracketStartDate) {
+      // Если нет lock_dates, используем start_date
+      const startDate = new Date(bracketStartDate);
+      isBracketStarted = now >= startDate;
+    }
   }
 
   // Получаем максимальные серии для всех участников

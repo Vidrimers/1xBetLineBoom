@@ -3958,24 +3958,61 @@ app.get("/api/brackets/:bracketId/predictions/:userId", async (req, res) => {
       
       const showBets = targetUser.show_bets || 'always';
       
-      // Если настройка 'after_start', проверяем дату начала сетки
+      // Если настройка 'after_start', проверяем даты начала стадий
       if (showBets === 'after_start') {
         const bracket = db
-          .prepare("SELECT start_date FROM brackets WHERE id = ?")
+          .prepare("SELECT start_date, lock_dates FROM brackets WHERE id = ?")
           .get(bracketId);
         
-        if (bracket && bracket.start_date) {
-          const startDate = new Date(bracket.start_date);
+        if (bracket) {
           const now = new Date();
           
-          // Если сетка еще не началась, возвращаем пустой массив
-          if (now < startDate) {
+          // Парсим lock_dates (даты блокировки для каждой стадии)
+          let lockDates = {};
+          if (bracket.lock_dates) {
+            try {
+              lockDates = JSON.parse(bracket.lock_dates);
+            } catch (e) {
+              console.error('Ошибка парсинга lock_dates:', e);
+            }
+          }
+          
+          // Получаем все прогнозы пользователя
+          const allPredictions = db
+            .prepare("SELECT * FROM bracket_predictions WHERE bracket_id = ? AND user_id = ?")
+            .all(bracketId, userId);
+          
+          // Фильтруем прогнозы: показываем только те стадии которые уже начались
+          const visiblePredictions = allPredictions.filter(pred => {
+            const stageDate = lockDates[pred.stage];
+            if (!stageDate) {
+              // Если нет даты для стадии, используем общую дату начала сетки
+              if (bracket.start_date) {
+                const startDate = new Date(bracket.start_date);
+                return now >= startDate;
+              }
+              return true; // Если вообще нет дат, показываем
+            }
+            
+            const stageLockDate = new Date(stageDate);
+            return now >= stageLockDate;
+          });
+          
+          // Если все прогнозы скрыты, возвращаем сообщение
+          if (visiblePredictions.length === 0 && allPredictions.length > 0) {
             return res.json({ 
               predictions: [], 
               hidden: true, 
-              message: "Пользователь скрыл свои прогнозы до начала плей-офф" 
+              message: "Пользователь скрыл свои прогнозы до начала стадий плей-офф" 
             });
           }
+          
+          // Возвращаем только видимые прогнозы
+          return res.json({ 
+            predictions: visiblePredictions, 
+            hidden: false,
+            hideUnstartedStages: true // Флаг что нужно скрывать незапущенные стадии
+          });
         }
       }
     }
