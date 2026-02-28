@@ -142,14 +142,25 @@
             }
         }
         
+        .logo-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
         .logo {
             max-width: 200px;
             height: auto;
-            margin-bottom: 20px;
-            animation: pulse 2s ease-in-out infinite;
+            animation: pulse-logo 2s ease-in-out infinite;
+            display: block;
         }
         
         @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        @keyframes pulse-logo {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
@@ -182,15 +193,22 @@
             font-weight: 600;
         }
         
+        .loader-wrapper {
+            position: absolute;
+            top: 63%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 2s ease-in-out infinite;
+            z-index: 10;
+        }
+        
         .loader {
-            display: inline-block;
             width: 50px;
             height: 50px;
-            border: 5px solid #f3f3f3;
+            border: 5px solid rgba(243, 243, 243, 0.8);
             border-top: 5px solid #667eea;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-top: 20px;
         }
         
         @keyframes spin {
@@ -215,7 +233,12 @@
 </head>
 <body>
     <div class="container">
-        <img src="img/logo_404.webp" alt="1xBetLineBoom" class="logo">
+        <div class="logo-wrapper">
+            <img src="img/logo_404.webp" alt="1xBetLineBoom" class="logo">
+            <div class="loader-wrapper">
+                <div class="loader"></div>
+            </div>
+        </div>
         <h1>Ведутся технические работы</h1>
         <p>
             Проводится обслуживание сервера для улучшения качества работы сайта.
@@ -224,7 +247,6 @@
         <p>
             Сайт скоро заработает. Нужно набраться терпения и зайти через несколько минут.
         </p>
-        <div class="loader"></div>
         <div class="status">
             <p id="time-text">⏱️ Ожидаемое время: 5-15 минут</p>
         </div>

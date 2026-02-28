@@ -3867,22 +3867,10 @@ app.get("/api/brackets/:bracketId", (req, res) => {
       return res.status(404).json({ error: "Сетка не найдена" });
     }
     
-    // 🔍 ЛОГИРОВАНИЕ: что пришло из базы
-    console.log('📥 GET /api/brackets/:bracketId - данные из базы:', {
-      id: bracket.id,
-      name: bracket.name,
-      matches_raw: bracket.matches ? bracket.matches.substring(0, 200) + '...' : null
-    });
-    
     // Парсим matches из JSON если есть
     if (bracket.matches) {
       try {
         bracket.matches = JSON.parse(bracket.matches);
-        console.log('✅ Matches распарсены, ключи:', Object.keys(bracket.matches));
-        console.log('🔍 round_of_8 в matches:', bracket.matches.round_of_8 ? 'ЕСТЬ' : 'НЕТ');
-        if (bracket.matches.round_of_8) {
-          console.log('🔍 round_of_8[1]:', bracket.matches.round_of_8[1]);
-        }
       } catch (e) {
         console.error('Ошибка парсинга matches:', e);
         bracket.matches = {};
@@ -4543,14 +4531,6 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
     const { bracketId } = req.params;
     const { username, matches, temporary_teams } = req.body;
     
-    // 🔍 ЛОГИРОВАНИЕ: что пришло на сервер
-    console.log('📥 SERVER: Получены данные от клиента:', {
-      bracketId,
-      username,
-      round_of_8_match_1: matches?.round_of_8?.[1],
-      temporary_teams_round_of_8: temporary_teams?.round_of_8
-    });
-    
     if (!username) {
       return res.status(401).json({ error: "Требуется авторизация" });
     }
@@ -4583,33 +4563,15 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
     });
     
     // Обновляем команды в сетке и временные команды (сохраняем как JSON)
-    const matchesJson = JSON.stringify(matches);
-    const tempTeamsJson = JSON.stringify(temporary_teams || {});
-    
-    // 🔍 ЛОГИРОВАНИЕ: что сохраняем в базу
-    console.log('💾 SERVER: Сохраняем в базу данных:', {
-      bracketId,
-      matchesJson: matchesJson.substring(0, 200) + '...',
-      round_of_8_match_1_before_save: matches?.round_of_8?.[1]
-    });
-    
     const result = db.prepare(`
       UPDATE brackets 
       SET matches = ?, temporary_teams = ?
       WHERE id = ?
     `).run(
-      matchesJson, 
-      tempTeamsJson,
+      JSON.stringify(matches), 
+      JSON.stringify(temporary_teams || {}),
       bracketId
     );
-    
-    // 🔍 ЛОГИРОВАНИЕ: проверяем что сохранилось
-    const savedBracket = db.prepare(`
-      SELECT matches FROM brackets WHERE id = ?
-    `).get(bracketId);
-    
-    const savedMatches = JSON.parse(savedBracket.matches);
-    console.log('✅ SERVER: Сохранено в базу, проверка round_of_8[1]:', savedMatches?.round_of_8?.[1]);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: "Сетка не найдена" });

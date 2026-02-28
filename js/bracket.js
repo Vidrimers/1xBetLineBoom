@@ -380,13 +380,6 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     console.log('✅ Сетка загружена');
     currentBracket = await response.json();
-    console.log('🔍 Загруженная сетка из API:', {
-      id: currentBracket.id,
-      name: currentBracket.name,
-      has_round_of_8: !!currentBracket.matches?.round_of_8,
-      round_of_8_match_1: currentBracket.matches?.round_of_8?.[1],
-      matches_keys: Object.keys(currentBracket.matches || {})
-    });
     isEditingBracket = false;
     
     // Получаем иконку турнира
@@ -437,13 +430,9 @@ async function openBracketModal(bracketId, viewUserId = null) {
         
         // Сохраняем оригинальные команды от админа перед восстановлением из прогнозов
         const originalMatches = JSON.parse(JSON.stringify(currentBracket.matches || {}));
-        console.log('📋 Оригинальные команды от админа:', originalMatches);
-        console.log('🔍 originalMatches.round_of_8[1]:', originalMatches.round_of_8?.[1]);
         
         // Восстанавливаем команды в последующих стадиях на основе прогнозов
         await rebuildBracketFromPredictions();
-        console.log('📋 После rebuildBracketFromPredictions:', JSON.parse(JSON.stringify(currentBracket.matches)));
-        console.log('🔍 После rebuild round_of_8[1]:', currentBracket.matches.round_of_8?.[1]);
         
         // Восстанавливаем команды админа (они имеют приоритет над прогнозами)
         Object.keys(originalMatches).forEach(stageId => {
@@ -458,18 +447,13 @@ async function openBracketModal(bracketId, viewUserId = null) {
             
             // Восстанавливаем команды админа если они были установлены
             if (originalMatch.team1 && originalMatch.team1.trim() !== '') {
-              console.log(`🔄 Восстанавливаем team1 в ${stageId} матч ${matchIndex}: ${originalMatch.team1}`);
               currentBracket.matches[stageId][matchIndex].team1 = originalMatch.team1;
             }
             if (originalMatch.team2 && originalMatch.team2.trim() !== '') {
-              console.log(`🔄 Восстанавливаем team2 в ${stageId} матч ${matchIndex}: ${originalMatch.team2}`);
               currentBracket.matches[stageId][matchIndex].team2 = originalMatch.team2;
             }
           });
         });
-        
-        console.log('✅ Команды админа восстановлены после rebuildBracketFromPredictions');
-        console.log('📋 Финальное состояние matches:', JSON.parse(JSON.stringify(currentBracket.matches)));
       } else {
         bracketPredictions = {};
       }
@@ -1900,13 +1884,6 @@ async function saveBracketTeams() {
     const matches = currentBracket.matches || {};
     const temporary_teams = currentBracket.temporary_teams || {};
     
-    // 🔍 ЛОГИРОВАНИЕ: что отправляем на сервер
-    console.log('📤 saveBracketTeams: Отправляем на сервер:', {
-      matches: matches,
-      temporary_teams: temporary_teams,
-      round_of_8_match_1: matches.round_of_8?.[1]
-    });
-    
     // Отправляем данные на сервер
     const response = await fetch(`/api/admin/brackets/${currentBracket.id}/teams`, {
       method: 'PUT',
@@ -2096,11 +2073,9 @@ function selectTeamForSlot(stageId, matchIndex, teamIndex, teamName, event) {
     if (currentTeam === teamName) {
       // Повторный клик на ту же команду - удаляем её
       currentBracket.matches[stageId][matchIndex][teamKey] = '';
-      console.log(`🗑️ selectTeamForSlot: Удалена команда ${stageId}[${matchIndex}][${teamKey}]`);
     } else {
       // Устанавливаем новую команду
       currentBracket.matches[stageId][matchIndex][teamKey] = teamName;
-      console.log(`✅ selectTeamForSlot: Установлена команда ${stageId}[${matchIndex}][${teamKey}] = ${teamName}`);
     }
     
     // Очищаем временные команды
@@ -2113,10 +2088,6 @@ function selectTeamForSlot(stageId, matchIndex, teamIndex, teamName, event) {
       document.body.style.overflow = '';
     }
   }
-  
-  // 🔍 ЛОГИРОВАНИЕ: текущее состояние matches после изменения
-  console.log(`🔍 selectTeamForSlot: Текущее состояние matches[${stageId}][${matchIndex}]:`, 
-    currentBracket.matches[stageId][matchIndex]);
   
   // Отмечаем несохраненные изменения
   hasUnsavedChanges = true;
