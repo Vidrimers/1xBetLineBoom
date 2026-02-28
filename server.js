@@ -13948,6 +13948,98 @@ app.put("/api/admin/matches/:matchId", async (req, res) => {
   }
 });
 
+// POST /api/matches/:matchId/events/player - Добавить/обновить имя игрока в событии
+app.post("/api/matches/:matchId/events/player", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { 
+      sstats_event_id, 
+      event_type, 
+      minute, 
+      extra_minute,
+      team_id, 
+      player_name, 
+      assist_player_name 
+    } = req.body;
+
+    console.log(`📝 Добавление имени игрока в событие:`, {
+      matchId,
+      sstats_event_id,
+      event_type,
+      minute,
+      player_name
+    });
+
+    // Проверяем существует ли уже запись для этого события
+    const existingEvent = db.prepare(`
+      SELECT id FROM match_events 
+      WHERE match_id = ? AND sstats_event_id = ?
+    `).get(matchId, sstats_event_id);
+
+    if (existingEvent) {
+      // Обновляем существующую запись
+      db.prepare(`
+        UPDATE match_events 
+        SET player_name = ?, assist_player_name = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(player_name, assist_player_name || null, existingEvent.id);
+      
+      console.log(`✅ Имя игрока обновлено для события ID: ${existingEvent.id}`);
+    } else {
+      // Создаем новую запись
+      db.prepare(`
+        INSERT INTO match_events 
+        (match_id, event_type, minute, extra_minute, team_id, player_name, assist_player_name, sstats_event_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        matchId, 
+        event_type, 
+        minute, 
+        extra_minute || null,
+        team_id, 
+        player_name, 
+        assist_player_name || null,
+        sstats_event_id
+      );
+      
+      console.log(`✅ Новое событие с именем игрока создано`);
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Имя игрока успешно сохранено" 
+    });
+  } catch (error) {
+    console.error("❌ Ошибка при сохранении имени игрока:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/matches/:matchId/events/players - Получить сохраненные имена игроков для событий матча
+app.get("/api/matches/:matchId/events/players", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+
+    const events = db.prepare(`
+      SELECT 
+        sstats_event_id,
+        event_type,
+        minute,
+        extra_minute,
+        team_id,
+        player_name,
+        assist_player_name
+      FROM match_events
+      WHERE match_id = ?
+    `).all(matchId);
+
+    res.json({ success: true, events });
+  } catch (error) {
+    console.error("❌ Ошибка при получении имен игроков:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/admin/events/:eventId - Удалить событие (для админа и модераторов с правами)
 app.delete("/api/admin/events/:eventId", async (req, res) => {
   const { eventId } = req.params;

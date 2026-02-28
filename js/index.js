@@ -20252,7 +20252,7 @@ async function showLiveTeamStats(matchData) {
       if (detailsResponse.ok) {
         const details = await detailsResponse.json();
         console.log('✅ Детали получены:', details);
-        displayDetailedStats(details, matchData);
+        await displayDetailedStats(details, matchData);
         return;
       } else {
         console.warn('⚠️ Не удалось загрузить детали:', {
@@ -20344,7 +20344,7 @@ function displayBasicStats(matchData) {
   content.innerHTML = html;
 }
 
-function displayDetailedStats(details, matchData) {
+async function displayDetailedStats(details, matchData) {
   const content = document.getElementById('liveTeamStatsContent');
   const game = details.game;
   const stats = details.statistics;
@@ -20437,6 +20437,9 @@ function displayDetailedStats(details, matchData) {
   
   // Сохраняем данные для переключения вкладок
   window.currentLiveStatsData = { details, matchData, stats, events, lineupPlayers, game };
+  
+  // Загружаем сохраненные имена игроков
+  await loadSavedEventPlayers(details.id);
   
   // Показываем статистику по умолчанию
   switchLiveStatsTab('statistics');
@@ -20645,6 +20648,8 @@ function renderEvents(events, game) {
       // Переводим имена игроков
       // Если имя игрока не указано, пытаемся найти его по ID в списке игроков
       let playerName = 'N/A';
+      let isPlayerNameMissing = false;
+      
       if (event.player?.name) {
         playerName = translatePlayerName(event.player.name);
       } else if (event.player?.id && window.currentLiveStatsData?.lineupPlayers) {
@@ -20652,6 +20657,13 @@ function renderEvents(events, game) {
         if (player && player.name) {
           playerName = translatePlayerName(player.name);
         }
+      }
+      
+      // Проверяем есть ли сохраненное имя игрока в БД
+      if (window.savedEventPlayers && window.savedEventPlayers[event.id]) {
+        playerName = window.savedEventPlayers[event.id].player_name;
+      } else if (playerName === 'N/A' && (isGoal || isYellowCard || isRedCard)) {
+        isPlayerNameMissing = true;
       }
       
       const assistName = event.assistPlayer ? translatePlayerName(event.assistPlayer.name) : null;
@@ -20686,7 +20698,20 @@ function renderEvents(events, game) {
           </div>
           <div style="flex: 1;">
             <div style="color: #e0e6f0; font-size: 0.85em; font-weight: 600;">
-              ${playerName}
+              ${isPlayerNameMissing ? 
+                `<span class="editable-player-name" 
+                       data-event-id="${event.id}" 
+                       data-event-type="${event.type === 1 ? 'goal' : event.type === 2 ? 'yellow_card' : 'red_card'}"
+                       data-minute="${event.elapsed}"
+                       data-extra-minute="${event.extra || ''}"
+                       data-team-id="${event.teamId}"
+                       style="cursor: pointer; border-bottom: 2px dashed #5a9fd4; padding-bottom: 2px;"
+                       onclick="openPlayerNameEditor(this)"
+                       title="Нажмите, чтобы добавить имя игрока">
+                  ${playerName}
+                </span>` 
+                : playerName
+              }
             </div>
             <div style="color: #b0b8c8; font-size: 0.75em;">
               ${eventName}${assistName ? ` (ассист: ${assistName})` : ''}
@@ -24298,3 +24323,238 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// ============================================
+// Редактирование имен игроков в событиях
+// ============================================
+
+// Глобальная переменная для хранения сохраненных имен игроков
+window.savedEventPlayers = {};
+
+// Загрузка сохраненных имен игроков для матча
+async function loadSavedEventPlayers(matchId) {
+  try {
+    const response = await fetch(`/api/matches/${matchId}/events/players`);
+    const data = await response.json();
+    
+    if (data.success && data.events) {
+      window.savedEventPlayers = {};
+      data.events.forEach(event => {
+        window.savedEventPlayers[event.sstats_event_id] = event;
+      });
+      console.log('✅ Загружены сохраненные имена игроков:', window.savedEventPlayers);
+    }
+  } catch (error) {
+    console.error('❌ Ошибка загрузки сохраненных имен игроков:', error);
+  }
+}
+
+// Открытие редактора имени игрока
+function openPlayerNameEditor(element) {
+  const eventId = element.dataset.eventId;
+  const eventType = element.dataset.eventType;
+  const minute = element.dataset.minute;
+  const extraMinute = element.dataset.extraMinute;
+  const teamId = element.dataset.teamId;
+  
+  // Создаем поле ввода с автодополнением
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Начните вводить имя...';
+  input.style.cssText = `
+    width: 200px;
+    padding: 5px 8px;
+    background: rgba(50, 55, 70, 0.9);
+    border: 2px solid #5a9fd4;
+    color: #e0e6f0;
+    border-radius: 4px;
+    font-size: 0.85em;
+    outline: none;
+  `;
+  
+  // Создаем список автодополнения
+  const suggestionsList = document.createElement('div');
+  suggestionsList.style.cssText = `
+    position: absolute;
+    background: rgba(30, 35, 50, 0.98);
+    border: 1px solid #5a9fd4;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  `;
+  
+  // Заменяем элемент на поле ввода
+  element.replaceWith(input);
+  input.parentElement.style.position = 'relative';
+  input.parentElement.appendChild(suggestionsList);
+  input.focus();
+  
+  // Загружаем словарь игроков
+  let playersDictionary = [];
+  const matchData = window.currentLiveStatsData;
+  
+  if (matchData && matchData.game && matchData.game.season && matchData.game.season.league) {
+    const leagueId = matchData.game.season.league.id;
+    // Маппинг League ID на код турнира
+    const leagueCodeMap = {
+      2: 'CL',    // Champions League
+      3: 'EL',    // Europa League
+      848: 'ECL', // Conference League
+      39: 'PL',   // Premier League
+      78: 'BL1',  // Bundesliga
+      140: 'PD',  // La Liga
+      135: 'SA',  // Serie A
+      61: 'FL1',  // Ligue 1
+      88: 'DED',  // Eredivisie
+      235: 'RPL', // Russian Premier League
+      1: 'WC',    // World Cup
+      4: 'EC'     // Euro Championship
+    };
+    const competitionCode = leagueCodeMap[leagueId] || 'RPL';
+    
+    loadPlayersDictionary(competitionCode).then(players => {
+      playersDictionary = players;
+    });
+  }
+  
+  // Обработка ввода с автодополнением
+  input.addEventListener('input', () => {
+    const query = input.value.toLowerCase().trim();
+    
+    if (query.length < 2) {
+      suggestionsList.style.display = 'none';
+      return;
+    }
+    
+    // Фильтруем игроков
+    const matches = playersDictionary.filter(player => 
+      player.toLowerCase().includes(query)
+    ).slice(0, 10);
+    
+    if (matches.length === 0) {
+      suggestionsList.style.display = 'none';
+      return;
+    }
+    
+    // Отображаем подсказки
+    suggestionsList.innerHTML = matches.map(player => `
+      <div class="player-suggestion" style="
+        padding: 8px 12px;
+        cursor: pointer;
+        color: #e0e6f0;
+        font-size: 0.85em;
+        border-bottom: 1px solid rgba(90, 159, 212, 0.2);
+      " onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" 
+         onmouseout="this.style.background='transparent'"
+         onclick="selectPlayer('${player.replace(/'/g, "\\'")}', '${eventId}', '${eventType}', ${minute}, '${extraMinute}', ${teamId})">
+        ${player}
+      </div>
+    `).join('');
+    
+    suggestionsList.style.display = 'block';
+  });
+  
+  // Обработка Enter
+  input.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      const playerName = input.value.trim();
+      if (playerName) {
+        await savePlayerName(playerName, eventId, eventType, minute, extraMinute, teamId);
+      }
+    } else if (e.key === 'Escape') {
+      // Возвращаем N/A
+      input.replaceWith(element);
+      suggestionsList.remove();
+    }
+  });
+  
+  // Обработка потери фокуса
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (input.parentElement) {
+        input.replaceWith(element);
+        suggestionsList.remove();
+      }
+    }, 200);
+  });
+}
+
+// Выбор игрока из списка
+async function selectPlayer(playerName, eventId, eventType, minute, extraMinute, teamId) {
+  await savePlayerName(playerName, eventId, eventType, minute, extraMinute, teamId);
+}
+
+// Сохранение имени игрока
+async function savePlayerName(playerName, eventId, eventType, minute, extraMinute, teamId) {
+  try {
+    const matchId = window.currentLiveStatsData?.details?.id;
+    if (!matchId) {
+      console.error('❌ ID матча не найден');
+      return;
+    }
+    
+    const response = await fetch(`/api/matches/${matchId}/events/player`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sstats_event_id: parseInt(eventId),
+        event_type: eventType,
+        minute: parseInt(minute),
+        extra_minute: extraMinute ? parseInt(extraMinute) : null,
+        team_id: parseInt(teamId),
+        player_name: playerName
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      console.log('✅ Имя игрока сохранено:', playerName);
+      
+      // Обновляем кэш
+      window.savedEventPlayers[eventId] = { player_name: playerName };
+      
+      // Перезагружаем вкладку событий
+      switchLiveStatsTab('events');
+    } else {
+      console.error('❌ Ошибка сохранения:', data.error);
+      await showCustomAlert('Ошибка сохранения имени игрока', 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('❌ Ошибка сохранения имени игрока:', error);
+    await showCustomAlert('Ошибка сохранения имени игрока', 'Ошибка', '❌');
+  }
+}
+
+// Загрузка словаря игроков для турнира
+async function loadPlayersDictionary(competitionCode) {
+  const dictionaryMap = {
+    'CL': 'names/LeagueOfChampionsPlayers.json',
+    'EL': 'names/EuropaLeaguePlayers.json',
+    'ECL': 'names/ConferenceLeaguePlayers.json',
+    'PL': 'names/PremierLeaguePlayers.json',
+    'BL1': 'names/BundesligaPlayers.json',
+    'PD': 'names/LaLigaPlayers.json',
+    'SA': 'names/SerieAPlayers.json',
+    'FL1': 'names/Ligue1Players.json',
+    'DED': 'names/EredivisiePlayers.json',
+    'RPL': 'names/RussianPremierLeaguePlayers.json',
+    'WC': 'names/PlayerNames.json',
+    'EC': 'names/PlayerNames.json'
+  };
+  
+  const dictionaryPath = dictionaryMap[competitionCode] || 'names/PlayerNames.json';
+  
+  try {
+    const response = await fetch(`/${dictionaryPath}`);
+    const data = await response.json();
+    // Возвращаем массив русских имен (ключи объекта)
+    return Object.keys(data);
+  } catch (error) {
+    console.error('❌ Ошибка загрузки словаря игроков:', error);
+    return [];
+  }
+}
