@@ -7464,6 +7464,17 @@ app.get("/api/match-details/:matchId", async (req, res) => {
     console.log(`📊 Доступные поля:`, Object.keys(data || {}).join(', '));
     console.log(`⚽ События: ${data?.events?.length || 0}, Статистика: ${data?.statistics?.length || 0}, Игроки: ${data?.lineupPlayers?.length || 0}`);
     
+    // Логируем структуру событий для отладки
+    if (data?.events && data.events.length > 0) {
+      console.log(`🔍 Пример события:`, JSON.stringify(data.events[0], null, 2));
+      const eventsWithoutPlayer = data.events.filter(e => !e.player || !e.player.name);
+      if (eventsWithoutPlayer.length > 0) {
+        console.log(`⚠️ События без имени игрока (${eventsWithoutPlayer.length}):`, 
+          eventsWithoutPlayer.map(e => ({ type: e.type, elapsed: e.elapsed, playerId: e.player?.id }))
+        );
+      }
+    }
+    
     res.json(data);
     
   } catch (error) {

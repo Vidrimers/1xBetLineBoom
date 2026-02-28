@@ -20643,7 +20643,17 @@ function renderEvents(events, game) {
       const isSubstitution = event.type === 3;
       
       // Переводим имена игроков
-      const playerName = translatePlayerName(event.player?.name || 'N/A');
+      // Если имя игрока не указано, пытаемся найти его по ID в списке игроков
+      let playerName = 'N/A';
+      if (event.player?.name) {
+        playerName = translatePlayerName(event.player.name);
+      } else if (event.player?.id && window.currentLiveStatsData?.lineupPlayers) {
+        const player = window.currentLiveStatsData.lineupPlayers.find(p => p.id === event.player.id);
+        if (player && player.name) {
+          playerName = translatePlayerName(player.name);
+        }
+      }
+      
       const assistName = event.assistPlayer ? translatePlayerName(event.assistPlayer.name) : null;
       
       // Определяем цвет фона и границы в зависимости от типа события
