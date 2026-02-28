@@ -20117,6 +20117,7 @@ function determineTournamentCode(icon) {
     'img/cups/spain-la-liga.png': 'PD',
     'img/cups/serie-a.png': 'SA',
     'img/cups/france-league-ligue-1.png': 'FL1',
+    'img/cups/rpl.png': 'RPL',
     'img/cups/world-cup.png': 'WC'
   };
   
