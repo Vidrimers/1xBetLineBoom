@@ -31,6 +31,27 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             animation: glitch 4s infinite, shake 5s infinite;
             position: relative;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        
+        .container.matrix-mode {
+            background: #0d0208;
+        }
+        
+        .container.matrix-mode h1,
+        .container.matrix-mode p,
+        .container.matrix-mode .letter {
+            color: #00ff41 !important;
+            text-shadow: 0 0 5px #00ff41;
+        }
+        
+        .container.matrix-mode .status {
+            background: rgba(0, 255, 65, 0.1);
+            border-left-color: #00ff41;
+        }
+        
+        .container.matrix-mode .status p {
+            color: #00ff41 !important;
         }
         
         .container::before,
@@ -172,11 +193,45 @@
             font-weight: 700;
         }
         
+        h1 .letter {
+            display: inline-block;
+            animation: letter-shake 4s infinite;
+        }
+        
+        @keyframes letter-shake {
+            0%, 85%, 100% {
+                transform: translate(0, 0);
+            }
+            86% {
+                transform: translate(calc(var(--shake-x) * 1px), calc(var(--shake-y) * 1px));
+            }
+            87% {
+                transform: translate(calc(var(--shake-x) * -1px), calc(var(--shake-y) * -1px));
+            }
+            88% {
+                transform: translate(calc(var(--shake-y) * 1px), calc(var(--shake-x) * 1px));
+            }
+            89% {
+                transform: translate(calc(var(--shake-y) * -1px), calc(var(--shake-x) * -1px));
+            }
+            90% {
+                transform: translate(calc(var(--shake-x) * 0.5px), calc(var(--shake-y) * 0.5px));
+            }
+            91% {
+                transform: translate(0, 0);
+            }
+        }
+        
         p {
             color: #666;
             font-size: 18px;
             line-height: 1.6;
             margin-bottom: 30px;
+        }
+        
+        p .letter {
+            display: inline-block;
+            animation: letter-shake 4s infinite;
         }
         
         .status {
@@ -253,6 +308,56 @@
     </div>
     
     <script>
+        // Оборачиваем каждую букву в span для анимации
+        function wrapLetters(element) {
+            const text = element.textContent;
+            element.innerHTML = '';
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                
+                // Пробелы оставляем как есть
+                if (char === ' ') {
+                    element.appendChild(document.createTextNode(' '));
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'letter';
+                    span.textContent = char;
+                    
+                    // Случайные значения для тряски каждой буквы
+                    const shakeX = Math.random() * 6 - 3; // от -3 до 3
+                    const shakeY = Math.random() * 6 - 3;
+                    span.style.setProperty('--shake-x', shakeX);
+                    span.style.setProperty('--shake-y', shakeY);
+                    
+                    element.appendChild(span);
+                }
+            }
+        }
+        
+        // Применяем к заголовку и параграфам
+        document.addEventListener('DOMContentLoaded', () => {
+            wrapLetters(document.querySelector('h1'));
+            document.querySelectorAll('p:not(#time-text)').forEach(p => wrapLetters(p));
+        });
+        
+        // Эффект Матрицы в случайный момент
+        function triggerMatrixMode() {
+            const container = document.querySelector('.container');
+            container.classList.add('matrix-mode');
+            
+            setTimeout(() => {
+                container.classList.remove('matrix-mode');
+            }, 2000); // Длится 2 секунды
+            
+            // Следующий эффект через случайное время (10-30 секунд)
+            const nextTrigger = Math.random() * 20000 + 10000;
+            setTimeout(triggerMatrixMode, nextTrigger);
+        }
+        
+        // Запускаем первый эффект через 5-15 секунд после загрузки
+        setTimeout(triggerMatrixMode, Math.random() * 10000 + 5000);
+        
         // Меняем текст времени при глитче
         let isInfinite = false;
         setInterval(() => {
