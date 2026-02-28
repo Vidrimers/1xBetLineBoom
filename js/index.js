@@ -20438,8 +20438,8 @@ async function displayDetailedStats(details, matchData) {
   // Сохраняем данные для переключения вкладок
   window.currentLiveStatsData = { details, matchData, stats, events, lineupPlayers, game };
   
-  // Загружаем сохраненные имена игроков
-  await loadSavedEventPlayers(details.id);
+  // Загружаем сохраненные имена игроков (используем ID из БД, а не из SStats)
+  await loadSavedEventPlayers(matchData.id);
   
   // Показываем статистику по умолчанию
   switchLiveStatsTab('statistics');
@@ -24490,11 +24490,17 @@ async function selectPlayer(playerName, eventId, eventType, minute, extraMinute,
 // Сохранение имени игрока
 async function savePlayerName(playerName, eventId, eventType, minute, extraMinute, teamId) {
   try {
-    const matchId = window.currentLiveStatsData?.details?.id;
+    // Ищем ID матча в разных местах
+    const matchId = window.currentLiveStatsData?.matchData?.id || 
+                    window.currentLiveStatsData?.details?.id;
+    
     if (!matchId) {
-      console.error('❌ ID матча не найден');
+      console.error('❌ ID матча не найден', window.currentLiveStatsData);
+      await showCustomAlert('ID матча не найден. Попробуйте перезагрузить статистику.', 'Ошибка', '❌');
       return;
     }
+    
+    console.log('📝 Сохранение имени игрока:', { matchId, playerName, eventId });
     
     const response = await fetch(`/api/matches/${matchId}/events/player`, {
       method: 'POST',
