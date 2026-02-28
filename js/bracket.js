@@ -55,17 +55,26 @@ function getEditableStages(bracket) {
 async function rebuildBracketFromPredictions() {
   const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
   
+  console.log('🔄 rebuildBracketFromPredictions: начало восстановления');
+  console.log('📋 Прогнозы:', JSON.parse(JSON.stringify(bracketPredictions)));
+  
   // Проходим по всем стадиям в порядке
   for (let i = 0; i < stageOrder.length - 1; i++) {
     const currentStageId = stageOrder[i];
     const nextStageId = stageOrder[i + 1];
     
+    console.log(`\n🔍 Проверяем ${currentStageId} -> ${nextStageId}`);
+    
     // Если есть прогнозы для текущей стадии
     if (bracketPredictions[currentStageId]) {
+      console.log(`  Найдены прогнозы для ${currentStageId}:`, bracketPredictions[currentStageId]);
+      
       Object.keys(bracketPredictions[currentStageId]).forEach(matchIndex => {
         const winner = bracketPredictions[currentStageId][matchIndex];
         const nextMatchIndex = Math.floor(matchIndex / 2);
         const teamPosition = matchIndex % 2;
+        
+        console.log(`  Матч ${matchIndex}: победитель "${winner}" -> ${nextStageId} матч ${nextMatchIndex} слот ${teamPosition}`);
         
         // Создаем структуру если её нет
         if (!currentBracket.matches) {
@@ -78,12 +87,33 @@ async function rebuildBracketFromPredictions() {
           currentBracket.matches[nextStageId][nextMatchIndex] = {};
         }
         
-        // Добавляем победителя в следующую стадию
+        // Получаем текущие команды в следующей стадии (установленные админом)
+        const nextMatch = currentBracket.matches[nextStageId][nextMatchIndex];
+        
+        // Проверяем, установил ли админ команды в этом слоте
+        const targetTeamField = teamPosition === 0 ? 'team1' : 'team2';
+        const adminTeamInSlot = nextMatch[targetTeamField] || '';
+        
+        // Проверяем есть ли временные команды (temporary_teams) в этом слоте
+        const tempTeams = currentBracket.temporary_teams?.[nextStageId]?.[nextMatchIndex]?.[teamPosition];
+        const hasTempTeams = tempTeams && Array.isArray(tempTeams) && tempTeams.length > 0;
+        
+        // Если админ установил ЛЮБЫЕ команды в этом слоте (обычные или temporary)
+        // то этот слот больше не связан с предыдущей стадией
+        const hasAdminTeams = adminTeamInSlot.trim() !== '' || hasTempTeams;
+        
+        if (hasAdminTeams) {
+          console.log(`⚠️ Слот ${targetTeamField} в ${nextStageId} матч ${nextMatchIndex} управляется админом - пропускаем прогноз "${winner}"`);
+          return; // Не подставляем команду из прогноза
+        }
+        
+        // Если админ не установил команды в этом слоте, подставляем из прогноза
         if (teamPosition === 0) {
           currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
         } else {
           currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
         }
+        console.log(`✅ Прогноз "${winner}" добавлен в ${nextStageId} матч ${nextMatchIndex} (слот ${targetTeamField})`);
       });
     }
   }
@@ -350,6 +380,13 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     console.log('✅ Сетка загружена');
     currentBracket = await response.json();
+    console.log('🔍 Загруженная сетка из API:', {
+      id: currentBracket.id,
+      name: currentBracket.name,
+      has_round_of_8: !!currentBracket.matches?.round_of_8,
+      round_of_8_match_1: currentBracket.matches?.round_of_8?.[1],
+      matches_keys: Object.keys(currentBracket.matches || {})
+    });
     isEditingBracket = false;
     
     // Получаем иконку турнира
@@ -398,8 +435,41 @@ async function openBracketModal(bracketId, viewUserId = null) {
           bracketPredictions[p.stage][p.match_index] = p.predicted_winner;
         });
         
+        // Сохраняем оригинальные команды от админа перед восстановлением из прогнозов
+        const originalMatches = JSON.parse(JSON.stringify(currentBracket.matches || {}));
+        console.log('📋 Оригинальные команды от админа:', originalMatches);
+        console.log('🔍 originalMatches.round_of_8[1]:', originalMatches.round_of_8?.[1]);
+        
         // Восстанавливаем команды в последующих стадиях на основе прогнозов
         await rebuildBracketFromPredictions();
+        console.log('📋 После rebuildBracketFromPredictions:', JSON.parse(JSON.stringify(currentBracket.matches)));
+        console.log('🔍 После rebuild round_of_8[1]:', currentBracket.matches.round_of_8?.[1]);
+        
+        // Восстанавливаем команды админа (они имеют приоритет над прогнозами)
+        Object.keys(originalMatches).forEach(stageId => {
+          Object.keys(originalMatches[stageId]).forEach(matchIndex => {
+            const originalMatch = originalMatches[stageId][matchIndex];
+            if (!currentBracket.matches[stageId]) {
+              currentBracket.matches[stageId] = {};
+            }
+            if (!currentBracket.matches[stageId][matchIndex]) {
+              currentBracket.matches[stageId][matchIndex] = {};
+            }
+            
+            // Восстанавливаем команды админа если они были установлены
+            if (originalMatch.team1 && originalMatch.team1.trim() !== '') {
+              console.log(`🔄 Восстанавливаем team1 в ${stageId} матч ${matchIndex}: ${originalMatch.team1}`);
+              currentBracket.matches[stageId][matchIndex].team1 = originalMatch.team1;
+            }
+            if (originalMatch.team2 && originalMatch.team2.trim() !== '') {
+              console.log(`🔄 Восстанавливаем team2 в ${stageId} матч ${matchIndex}: ${originalMatch.team2}`);
+              currentBracket.matches[stageId][matchIndex].team2 = originalMatch.team2;
+            }
+          });
+        });
+        
+        console.log('✅ Команды админа восстановлены после rebuildBracketFromPredictions');
+        console.log('📋 Финальное состояние matches:', JSON.parse(JSON.stringify(currentBracket.matches)));
       } else {
         bracketPredictions = {};
       }
@@ -1217,6 +1287,33 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
   if (!bracketPredictions[stageId]) {
     bracketPredictions[stageId] = {};
   }
+  
+  // Если была предыдущая ставка на другую команду, очищаем её из следующих стадий
+  if (currentPrediction && currentPrediction !== teamName) {
+    console.log(`🔄 Смена ставки с "${currentPrediction}" на "${teamName}" в ${stageId} матч ${matchIndex}`);
+    
+    // Очищаем старую команду из следующих стадий
+    const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
+    const currentStageIndex = stageOrder.indexOf(stageId);
+    if (currentStageIndex < stageOrder.length - 1) {
+      const nextStageId = stageOrder[currentStageIndex + 1];
+      const nextMatchIndex = Math.floor(matchIndex / 2);
+      const teamPosition = matchIndex % 2;
+      
+      // Очищаем слот в следующей стадии
+      if (currentBracket.matches?.[nextStageId]?.[nextMatchIndex]) {
+        const targetField = teamPosition === 0 ? 'team1' : 'team2';
+        if (currentBracket.matches[nextStageId][nextMatchIndex][targetField] === currentPrediction) {
+          currentBracket.matches[nextStageId][nextMatchIndex][targetField] = '';
+          console.log(`  🗑️ Очищен слот ${targetField} в ${nextStageId} матч ${nextMatchIndex}`);
+          
+          // Обновляем отображение
+          updateNextStageDisplay(nextStageId, nextMatchIndex);
+        }
+      }
+    }
+  }
+  
   bracketPredictions[stageId][matchIndex] = teamName;
   
   // Обновляем только визуальное отображение без перерисовки всей модалки
@@ -1290,10 +1387,38 @@ async function promoteTeamToNextStage(currentStageId, currentMatchIndex, teamNam
   
   console.log('🔍 promoteTeamToNextStage: Backup temporary_teams:', tempTeamsBackup);
   
-  if (teamPosition === 0) {
-    currentBracket.matches[nextStageId][nextMatchIndex].team1 = teamName;
+  // Проверяем, установил ли админ команды в следующей стадии
+  const nextMatch = currentBracket.matches[nextStageId][nextMatchIndex];
+  const targetField = teamPosition === 0 ? 'team1' : 'team2';
+  const adminTeamInSlot = nextMatch[targetField] || '';
+  
+  // Проверяем есть ли временные команды (temporary_teams) в этом слоте
+  const tempTeams = currentBracket.temporary_teams?.[nextStageId]?.[nextMatchIndex]?.[teamPosition];
+  const hasTempTeams = tempTeams && Array.isArray(tempTeams) && tempTeams.length > 0;
+  
+  // Если есть временные команды, проверяем что прогноз соответствует одной из них
+  if (hasTempTeams) {
+    if (tempTeams.includes(teamName)) {
+      // Команда из прогноза есть в списке временных команд - можно поставить
+      if (teamPosition === 0) {
+        currentBracket.matches[nextStageId][nextMatchIndex].team1 = teamName;
+      } else {
+        currentBracket.matches[nextStageId][nextMatchIndex].team2 = teamName;
+      }
+      console.log(`✅ Команда "${teamName}" из temporary_teams добавлена в ${nextStageId} матч ${nextMatchIndex} (слот ${targetField})`);
+    } else {
+      console.log(`⚠️ Команда "${teamName}" не найдена в temporary_teams ${nextStageId} матч ${nextMatchIndex}: ${tempTeams.join(', ')}`);
+    }
+  } else if (adminTeamInSlot.trim() === '') {
+    // Если админ НЕ установил команду в этом слоте и нет temporary_teams, подставляем из прогноза
+    if (teamPosition === 0) {
+      currentBracket.matches[nextStageId][nextMatchIndex].team1 = teamName;
+    } else {
+      currentBracket.matches[nextStageId][nextMatchIndex].team2 = teamName;
+    }
+    console.log(`✅ Команда "${teamName}" добавлена в ${nextStageId} матч ${nextMatchIndex} (слот ${targetField})`);
   } else {
-    currentBracket.matches[nextStageId][nextMatchIndex].team2 = teamName;
+    console.log(`⚠️ Слот ${targetField} в ${nextStageId} матч ${nextMatchIndex} уже занят админом: "${adminTeamInSlot}"`);
   }
   
   // Восстанавливаем ВСЕ временные команды после обновления
@@ -1438,6 +1563,8 @@ async function saveSingleBracketPrediction(stageId, matchIndex, teamName) {
       predicted_winner: teamName
     }];
     
+    console.log(`📤 Отправка прогноза: ${stageId} матч ${matchIndex} - ${teamName}`);
+    
     const response = await fetch(`/api/brackets/${currentBracket.id}/predictions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1447,15 +1574,19 @@ async function saveSingleBracketPrediction(stageId, matchIndex, teamName) {
       })
     });
     
+    console.log(`📥 Ответ сервера: статус ${response.status}`);
+    
     if (!response.ok) {
-      throw new Error('Ошибка сохранения прогноза');
+      const errorData = await response.json();
+      console.error('❌ Ошибка от сервера:', errorData);
+      throw new Error(errorData.error || 'Ошибка сохранения прогноза');
     }
     
     console.log('✅ Прогноз автоматически сохранен');
   } catch (error) {
     console.error('Ошибка при автосохранении прогноза:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Не удалось сохранить прогноз', 'Ошибка', '❌');
+      await showCustomAlert(`Не удалось сохранить прогноз: ${error.message}`, 'Ошибка', '❌');
     }
   }
 }
@@ -1769,6 +1900,13 @@ async function saveBracketTeams() {
     const matches = currentBracket.matches || {};
     const temporary_teams = currentBracket.temporary_teams || {};
     
+    // 🔍 ЛОГИРОВАНИЕ: что отправляем на сервер
+    console.log('📤 saveBracketTeams: Отправляем на сервер:', {
+      matches: matches,
+      temporary_teams: temporary_teams,
+      round_of_8_match_1: matches.round_of_8?.[1]
+    });
+    
     // Отправляем данные на сервер
     const response = await fetch(`/api/admin/brackets/${currentBracket.id}/teams`, {
       method: 'PUT',
@@ -1958,9 +2096,11 @@ function selectTeamForSlot(stageId, matchIndex, teamIndex, teamName, event) {
     if (currentTeam === teamName) {
       // Повторный клик на ту же команду - удаляем её
       currentBracket.matches[stageId][matchIndex][teamKey] = '';
+      console.log(`🗑️ selectTeamForSlot: Удалена команда ${stageId}[${matchIndex}][${teamKey}]`);
     } else {
       // Устанавливаем новую команду
       currentBracket.matches[stageId][matchIndex][teamKey] = teamName;
+      console.log(`✅ selectTeamForSlot: Установлена команда ${stageId}[${matchIndex}][${teamKey}] = ${teamName}`);
     }
     
     // Очищаем временные команды
@@ -1973,6 +2113,10 @@ function selectTeamForSlot(stageId, matchIndex, teamIndex, teamName, event) {
       document.body.style.overflow = '';
     }
   }
+  
+  // 🔍 ЛОГИРОВАНИЕ: текущее состояние matches после изменения
+  console.log(`🔍 selectTeamForSlot: Текущее состояние matches[${stageId}][${matchIndex}]:`, 
+    currentBracket.matches[stageId][matchIndex]);
   
   // Отмечаем несохраненные изменения
   hasUnsavedChanges = true;

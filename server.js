@@ -3867,10 +3867,22 @@ app.get("/api/brackets/:bracketId", (req, res) => {
       return res.status(404).json({ error: "Сетка не найдена" });
     }
     
+    // 🔍 ЛОГИРОВАНИЕ: что пришло из базы
+    console.log('📥 GET /api/brackets/:bracketId - данные из базы:', {
+      id: bracket.id,
+      name: bracket.name,
+      matches_raw: bracket.matches ? bracket.matches.substring(0, 200) + '...' : null
+    });
+    
     // Парсим matches из JSON если есть
     if (bracket.matches) {
       try {
         bracket.matches = JSON.parse(bracket.matches);
+        console.log('✅ Matches распарсены, ключи:', Object.keys(bracket.matches));
+        console.log('🔍 round_of_8 в matches:', bracket.matches.round_of_8 ? 'ЕСТЬ' : 'НЕТ');
+        if (bracket.matches.round_of_8) {
+          console.log('🔍 round_of_8[1]:', bracket.matches.round_of_8[1]);
+        }
       } catch (e) {
         console.error('Ошибка парсинга matches:', e);
         bracket.matches = {};
@@ -4531,6 +4543,14 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
     const { bracketId } = req.params;
     const { username, matches, temporary_teams } = req.body;
     
+    // 🔍 ЛОГИРОВАНИЕ: что пришло на сервер
+    console.log('📥 SERVER: Получены данные от клиента:', {
+      bracketId,
+      username,
+      round_of_8_match_1: matches?.round_of_8?.[1],
+      temporary_teams_round_of_8: temporary_teams?.round_of_8
+    });
+    
     if (!username) {
       return res.status(401).json({ error: "Требуется авторизация" });
     }
@@ -4563,25 +4583,77 @@ app.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
     });
     
     // Обновляем команды в сетке и временные команды (сохраняем как JSON)
+    const matchesJson = JSON.stringify(matches);
+    const tempTeamsJson = JSON.stringify(temporary_teams || {});
+    
+    // 🔍 ЛОГИРОВАНИЕ: что сохраняем в базу
+    console.log('💾 SERVER: Сохраняем в базу данных:', {
+      bracketId,
+      matchesJson: matchesJson.substring(0, 200) + '...',
+      round_of_8_match_1_before_save: matches?.round_of_8?.[1]
+    });
+    
     const result = db.prepare(`
       UPDATE brackets 
       SET matches = ?, temporary_teams = ?
       WHERE id = ?
     `).run(
-      JSON.stringify(matches), 
-      JSON.stringify(temporary_teams || {}),
+      matchesJson, 
+      tempTeamsJson,
       bracketId
     );
+    
+    // 🔍 ЛОГИРОВАНИЕ: проверяем что сохранилось
+    const savedBracket = db.prepare(`
+      SELECT matches FROM brackets WHERE id = ?
+    `).get(bracketId);
+    
+    const savedMatches = JSON.parse(savedBracket.matches);
+    console.log('✅ SERVER: Сохранено в базу, проверка round_of_8[1]:', savedMatches?.round_of_8?.[1]);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: "Сетка не найдена" });
     }
     
-    console.log(`✅ Команды в сетке ${bracketId} обновлены`);
+    // Очищаем неправильные прогнозы пользователей
+    // Проходим по всем стадиям и матчам
+    let cleanedPredictionsCount = 0;
+    Object.keys(matches).forEach(stageId => {
+      Object.keys(matches[stageId]).forEach(matchIndex => {
+        const match = matches[stageId][matchIndex];
+        const team1 = match.team1 || '';
+        const team2 = match.team2 || '';
+        
+        // Получаем все прогнозы для этого матча
+        const predictions = db.prepare(`
+          SELECT user_id, predicted_winner 
+          FROM bracket_predictions 
+          WHERE bracket_id = ? AND stage = ? AND match_index = ?
+        `).all(bracketId, stageId, matchIndex);
+        
+        // Удаляем прогнозы, где команда больше не участвует в матче
+        predictions.forEach(pred => {
+          const predictedTeam = pred.predicted_winner;
+          // Если прогнозируемая команда не является ни team1, ни team2 - удаляем прогноз
+          if (predictedTeam !== team1 && predictedTeam !== team2) {
+            db.prepare(`
+              DELETE FROM bracket_predictions 
+              WHERE bracket_id = ? AND user_id = ? AND stage = ? AND match_index = ?
+            `).run(bracketId, pred.user_id, stageId, matchIndex);
+            
+            cleanedPredictionsCount++;
+            console.log(`🗑️ Удален неправильный прогноз пользователя ${pred.user_id}: ${predictedTeam} в ${stageId} матч ${matchIndex}`);
+          }
+        });
+      });
+    });
+    
+    console.log(`✅ Команды в сетке ${bracketId} обновлены. Очищено прогнозов: ${cleanedPredictionsCount}`);
     
     res.json({ 
       success: true, 
-      bracket_id: bracketId 
+      bracket_id: bracketId,
+      cleaned_predictions: cleanedPredictionsCount
     });
   } catch (error) {
     console.error("Ошибка обновления команд в сетке:", error);
@@ -4634,9 +4706,14 @@ app.put("/api/brackets/:bracketId/structure", (req, res) => {
       }
     });
     
-    // Также сохраняем начальные стадии из старых данных, если их нет в новых
+    // ВАЖНО: Сохраняем ВСЕ остальные стадии из старых данных (которые установил админ)
     Object.keys(currentMatches).forEach(stageId => {
-      if (editableStages.includes(stageId) && !filteredMatches[stageId]) {
+      if (!editableStages.includes(stageId)) {
+        // Это стадия которую установил админ (например round_of_8, quarter_finals)
+        // НЕ УДАЛЯЕМ её, сохраняем как есть
+        filteredMatches[stageId] = currentMatches[stageId];
+      } else if (!filteredMatches[stageId]) {
+        // Это начальная стадия которая есть в старых данных но нет в новых
         filteredMatches[stageId] = currentMatches[stageId];
       }
     });
