@@ -4095,6 +4095,14 @@ async function loadMyBets() {
   }
 
   try {
+    // Сохраняем состояние открытых тоглов перед перерисовкой
+    const openToggles = [];
+    document.querySelectorAll('[id$="-content"]').forEach(content => {
+      if (content.style.display === 'flex') {
+        openToggles.push(content.id);
+      }
+    });
+
     const response = await fetch(`/api/user/${currentUser.id}/bets`);
     const bets = await response.json();
     console.log(
@@ -4123,6 +4131,30 @@ async function loadMyBets() {
     });
 
     displayMyBets(bets);
+    
+    // Восстанавливаем состояние открытых тоглов после перерисовки
+    setTimeout(() => {
+      openToggles.forEach(toggleId => {
+        const content = document.getElementById(toggleId);
+        if (content) {
+          const toggleIdBase = toggleId.replace('-content', '');
+          const arrow1 = document.getElementById(`${toggleIdBase}-arrow`);
+          const arrow2 = document.getElementById(`${toggleIdBase}-arrow2`);
+          
+          content.style.display = 'flex';
+          if (arrow1) arrow1.textContent = '▲';
+          if (arrow2) arrow2.textContent = '▲';
+          
+          // Убираем анимацию при восстановлении
+          const betItems = content.querySelectorAll('.bet-item');
+          betItems.forEach(item => {
+            item.style.opacity = '1';
+            item.style.transform = 'translateX(0)';
+          });
+        }
+      });
+    }, 0);
+    
     if (isMatchUpdatingEnabled) {
       displayMatches(); // Перерисовываем матчи чтобы выделить с ставками
       // initToggleStates вызовется в конце displayMatches
