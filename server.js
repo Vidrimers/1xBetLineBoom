@@ -7712,7 +7712,11 @@ app.get("/api/live-matches", async (req, res) => {
         match_time: game.date,
         status: game.statusName?.includes('Finished') ? 'finished' : 
                 game.statusName === 'Not Started' ? 'scheduled' :
-                ['Postponed', 'Cancelled', 'Abandoned', 'Technical Loss', 'Walk Over'].includes(game.statusName) ? 'cancelled' :
+                game.statusName === 'Postponed' ? 'postponed' :
+                game.statusName === 'Cancelled' ? 'cancelled' :
+                game.statusName === 'Abandoned' ? 'abandoned' :
+                game.statusName === 'Technical Loss' ? 'technical_loss' :
+                game.statusName === 'Walk Over' ? 'walkover' :
                 'live',
         score: game.homeResult !== null && game.awayResult !== null 
           ? `${game.homeResult}:${game.awayResult}` 

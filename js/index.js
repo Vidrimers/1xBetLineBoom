@@ -18703,6 +18703,7 @@ async function showLiveEventMatches(eventId) {
         const timeStr = formatMatchTimeOnly(match.match_time);
         const isLive = match.status === 'live' || match.status === 'in_progress' || match.status === 'LIVE';
         const isFinished = match.status === 'finished' || match.status === 'completed';
+        const isCancelled = ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(match.status);
         const hasStarted = isLive || isFinished;
         
         // Проверяем есть ли ставка на этот матч и на какую команду
@@ -18720,11 +18721,11 @@ async function showLiveEventMatches(eventId) {
         const shouldUnderlineTeam2 = (betTeam === match.team2 || isDraw);
         
         html += `
-          <div class="live-match-card ${isLive ? 'is-live' : ''}" data-match-id="${match.id}" 
+          <div class="live-match-card ${isLive ? 'is-live' : ''} ${isCancelled ? 'match-cancelled' : ''}" data-match-id="${match.id}" 
             onclick='showLiveTeamStats(${JSON.stringify(match).replace(/'/g, "\\'")})'
             style="
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid ${isLive ? '#f44336' : isFinished ? '#4caf50' : 'rgba(90, 159, 212, 0.5)'};
+            background: ${isCancelled ? 'rgba(60, 60, 60, 0.7)' : 'rgba(255, 255, 255, 0.05)'};
+            border: 2px solid ${isCancelled ? '#666' : isLive ? '#f44336' : isFinished ? '#4caf50' : 'rgba(90, 159, 212, 0.5)'};
             border-radius: 8px;
             padding: 15px;
             transition: all 0.3s ease;
@@ -18744,12 +18745,12 @@ async function showLiveEventMatches(eventId) {
             ` : ''}
             
             <div style="text-align: center; margin-bottom: 10px;">
-              <div style="color: ${isLive ? '#f44336' : '#b0b8c8'}; font-size: 0.85em; font-weight: 600;">
-                ${isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '🕐 ' + timeStr}
+              <div style="color: ${isCancelled ? '#ff5722' : isLive ? '#f44336' : '#b0b8c8'}; font-size: 0.85em; font-weight: 600;">
+                ${isCancelled ? '⚠️ ОТМЕНА' : isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '🕐 ' + timeStr}
               </div>
             </div>
             
-            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; ${isCancelled ? 'filter: grayscale(100%);' : ''}">
               <div style="color: #e0e6f0; font-size: 0.95em; font-weight: 600; margin-bottom: ${hasStarted && match.score ? '5px' : '8px'}; line-height: 1.3;">
                 ${shouldUnderlineTeam1 ? `<span style="position: relative; display: inline-block;">${match.team1}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #4caf50;"></span></span>` : match.team1}
               </div>
