@@ -1259,6 +1259,11 @@ button:active {
   color: #d88080;
 }
 
+.bet-status.cancelled {
+  background: rgba(255, 87, 34, 0.3);
+  color: #ff9800;
+}
+
 .empty-message {
   text-align: center;
   color: #b0b8c8;
@@ -4927,3 +4932,4 @@ body.login-modal-open {
     position: relative;
   }
 }
+

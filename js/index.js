@@ -104,11 +104,12 @@ async function luckyBetForCurrentRound() {
     alert("Сначала выберите тур");
     return;
   }
-  // Находим все матчи выбранного тура, которые еще не завершены и на которые пользователь не ставил
+  // Находим все матчи выбранного тура, которые еще не завершены/отменены и на которые пользователь не ставил
   const matchesToBet = matches.filter(
     (m) =>
       m.round === currentRoundFilter &&
       getMatchStatusByDate(m) !== "finished" &&
+      !['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(getMatchStatusByDate(m)) &&
       !userBets.some((b) => b.match_id === m.id)
   );
   if (matchesToBet.length === 0) {
@@ -2227,7 +2228,12 @@ function closeAdminButtons() {
 
 // Определяем статус матча на основе даты
 function getMatchStatusByDate(match) {
-  // Сначала проверяем явный статус finished (только если есть победитель)
+  // Сначала проверяем специальные статусы (отменённые/перенесённые)
+  if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(match.status)) {
+    return match.status; // Возвращаем как есть
+  }
+  
+  // Проверяем явный статус finished (только если есть победитель)
   if (match.status === "finished" || match.winner) {
     return "finished";
   }
@@ -2738,11 +2744,17 @@ async function displayMatches() {
   // Сохраняем отсортированные туры глобально для использования в модалке
   window.sortedRounds = rounds;
 
-  // Проверяем, завершены ли все матчи в каждом туре
+  // Проверяем, завершены ли все матчи в каждом туре (исключая отменённые/перенесённые)
   function isRoundFinished(round) {
     const roundMatches = matches.filter((m) => m.round === round);
     if (roundMatches.length === 0) return false;
-    return roundMatches.every((m) => getMatchStatusByDate(m) === "finished");
+    
+    // Матч считается обработанным, если он завершён или отменён/перенесён
+    return roundMatches.every((m) => {
+      const status = getMatchStatusByDate(m);
+      return status === "finished" || 
+             ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(status);
+    });
   }
 
   // Находим первый незавершённый тур
@@ -2755,9 +2767,11 @@ async function displayMatches() {
       const finalMatches = matches.filter(
         (m) => m.is_final === 1 || m.is_final === true
       );
-      const allFinalFinished = finalMatches.every(
-        (m) => getMatchStatusByDate(m) === "finished"
-      );
+      const allFinalFinished = finalMatches.every((m) => {
+        const status = getMatchStatusByDate(m);
+        return status === "finished" || 
+               ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(status);
+      });
       if (!allFinalFinished) {
         return "🏆 Финал";
       }
@@ -2981,9 +2995,17 @@ async function displayMatches() {
     if (a === "Без даты") return 1;
     if (b === "Без даты") return -1;
     
-    // Проверяем, все ли матчи завершены в каждой дате
-    const allFinishedA = matchesByDate[a].every(m => getMatchStatusByDate(m) === "finished");
-    const allFinishedB = matchesByDate[b].every(m => getMatchStatusByDate(m) === "finished");
+    // Проверяем, все ли матчи завершены в каждой дате (включая отменённые/перенесённые)
+    const allFinishedA = matchesByDate[a].every(m => {
+      const status = getMatchStatusByDate(m);
+      return status === "finished" || 
+             ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(status);
+    });
+    const allFinishedB = matchesByDate[b].every(m => {
+      const status = getMatchStatusByDate(m);
+      return status === "finished" || 
+             ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(status);
+    });
     
     // Если в одной дате все завершены, а в другой нет - незавершенная идет первой
     if (allFinishedA && !allFinishedB) return 1;  // A вниз
@@ -3023,12 +3045,13 @@ async function displayMatches() {
       } else if (effectiveStatus === "finished") {
         statusBadge =
           '<span style="display: inline-block; padding: 3px 8px; background: rgba(100, 100, 100, 0.8); color: #e0e0e0; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">✓ ЗАВЕРШЕН</span>';
+      } else if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(effectiveStatus)) {
+        statusBadge =
+          '<span style="display: inline-block; padding: 3px 8px; background: #ff5722; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">⚠️ ОТМЕНА</span>';
       }
 
       const matchHtml = `
-        <div class="match-row ${betClass}" data-match-id="${
-        match.id
-      }" style="position: relative;">
+        <div class="match-row ${betClass}" data-match-id="${match.id}" style="position: relative;">
             ${
               canManageMatches()
                 ? `
@@ -4178,7 +4201,14 @@ function displayMyBets(bets) {
     let statusClass = "pending";
     let statusText = "⏳ В ожидании";
     let normalizedPrediction = bet.prediction;
+    let isCancelled = false; // Флаг для отменённых матчей
 
+    // Проверяем, отменён ли матч
+    if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(bet.match_status)) {
+      statusClass = "cancelled";
+      statusText = "⚠️ Отмена";
+      isCancelled = true;
+    } else {
         // Если это финальная ставка на параметр матча (желтые карты, красные карты и т.д.)
         if (bet.is_final_bet) {
           const params = bet.final_parameters;
@@ -4303,6 +4333,7 @@ function displayMyBets(bets) {
             }
           }
         }
+    } // Закрываем блок else для не отменённых матчей
 
         // Показываем кнопку удаления: админу/модератору всегда, остальным только для матчей со статусом "pending"
         const canDelete = canManageMatches() || bet.match_status === "pending";
@@ -4316,7 +4347,8 @@ function displayMyBets(bets) {
           statusText,
           normalizedPrediction,
           deleteBtn,
-          eventName: bet.event_name || "Турнир не указан"
+          eventName: bet.event_name || "Турнир не указан",
+          isCancelled // Добавляем флаг отменённого матча
         };
       });
 
@@ -4520,8 +4552,8 @@ function displayMyBets(bets) {
       `;
       
       // Ставки этой группы
-      group.bets.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn }) => {
-        html += generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn);
+      group.bets.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled }) => {
+        html += generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled);
       });
     });
     
@@ -4534,9 +4566,14 @@ function displayMyBets(bets) {
 }
 
 // Вспомогательная функция для генерации HTML одной ставки
-function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn) {
+function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled = false) {
+  // Стили для отменённых матчей: зачёркнутый текст и чёрно-белый фильтр
+  const cancelledStyle = isCancelled 
+    ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' 
+    : '';
+  
   return `
-    <div class="bet-item ${statusClass}" data-bet-id="${bet.id}">
+    <div class="bet-item ${statusClass}" data-bet-id="${bet.id}" style="${cancelledStyle}">
         <div class="bet-info">
             <span class="bet-match">${bet.team1_name} vs ${bet.team2_name}</span>
             <span class="bet-status ${statusClass}">${statusText}</span>
@@ -5875,10 +5912,15 @@ function displayTournamentParticipantBets(bets) {
         // В завершенных турах всегда показываем ставки
         const shouldHideBet = bet.is_hidden && !isRoundFinished;
         
+        // Проверяем, отменён ли матч
+        const isCancelled = ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(bet.match_status);
+        
         return `
     <div style="background: #1a1a2e; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid ${
       shouldHideBet
         ? "#9e9e9e"
+        : isCancelled
+        ? "#ff5722"
         : bet.result === "won"
         ? "#4caf50"
         : bet.result === "lost"
@@ -5886,10 +5928,14 @@ function displayTournamentParticipantBets(bets) {
         : "#ff9800"
     };">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <strong style="color: #7ab0e0;">${team1} vs ${team2}</strong>
+        <strong style="color: #7ab0e0; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">${team1} vs ${team2}</strong>
         ${shouldHideBet ? 
           `<span style="background: #9e9e9e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
             🔒 Скрыто
+          </span>` :
+          isCancelled ?
+          `<span style="background: #ff5722; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
+            ⚠️ Отмена
           </span>` :
           `<span style="background: ${
             bet.result === "won"
@@ -5912,7 +5958,7 @@ function displayTournamentParticipantBets(bets) {
         `<div style="color: #ffa726; font-size: 0.9em; font-style: italic;">
           🔒 Ставка скрыта до начала матча
         </div>` :
-        `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+        `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
           Ставка: <strong>${bet.prediction_display || bet.prediction}</strong>
           ${
             bet.result !== "pending"
@@ -5922,7 +5968,7 @@ function displayTournamentParticipantBets(bets) {
         </div>
         ${
           bet.score_team1 !== null && bet.score_team1 !== undefined && bet.score_team2 !== null && bet.score_team2 !== undefined
-            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
                 📊 Счет: <span style="${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
                     ? Number(bet.score_team1) === Number(bet.actual_score_team1) && Number(bet.score_team2) === Number(bet.actual_score_team2)
@@ -5946,7 +5992,7 @@ function displayTournamentParticipantBets(bets) {
         }
         ${
           bet.yellow_cards !== null && bet.yellow_cards !== undefined
-            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
                 🟨 Желтые: <span style="${
                   bet.actual_yellow_cards != null && bet.result !== 'pending'
                     ? Number(bet.yellow_cards) === Number(bet.actual_yellow_cards)
@@ -5970,7 +6016,7 @@ function displayTournamentParticipantBets(bets) {
         }
         ${
           bet.red_cards !== null && bet.red_cards !== undefined
-            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px;">
+            ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
                 🟥 Красные: <span style="${
                   bet.actual_red_cards != null && bet.result !== 'pending'
                     ? Number(bet.red_cards) === Number(bet.actual_red_cards)
@@ -5995,7 +6041,7 @@ function displayTournamentParticipantBets(bets) {
       }
       ${
         bet.round
-          ? `<div style="color: #666; font-size: 0.85em;">${bet.round}</div>`
+          ? `<div style="color: #666; font-size: 0.85em; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">${bet.round}</div>`
           : ""
       }
     </div>

@@ -5407,6 +5407,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
           m.team1_name as team1,
           m.team2_name as team2,
           m.winner,
+          m.status as match_status,
           m.round as round,
           m.match_date,
           0 as is_final_bet,
@@ -5460,6 +5461,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
           m.team1_name as team1,
           m.team2_name as team2,
           m.winner,
+          m.status as match_status,
           m.round as round,
           m.match_date,
           1 as is_final_bet,
@@ -6988,7 +6990,21 @@ app.post("/api/bets", async (req, res) => {
 
     // Дополнительная проверка статуса из БД (если админ установил вручную)
     if (match.status && match.status !== "pending") {
-      // Отправляем уведомление админу
+      // Проверяем специальные статусы (отменённые/перенесённые)
+      if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(match.status)) {
+        const statusNames = {
+          'cancelled': 'отменён',
+          'postponed': 'перенесён',
+          'abandoned': 'прерван',
+          'technical_loss': 'техническое поражение',
+          'walkover': 'неявка'
+        };
+        return res
+          .status(400)
+          .json({ error: `Матч ${statusNames[match.status] || 'недоступен для ставок'}` });
+      }
+      
+      // Отправляем уведомление админу для других статусов
       let statusText = match.status;
       await notifyIllegalBet(
         user?.username || "неизвестный",
@@ -7319,6 +7335,10 @@ app.get("/api/fd-matches", async (req, res) => {
     const filteredGames = (sstatsData.data || []).filter(game => {
       // Если includeFuture=true, пропускаем все матчи
       // Если includeFuture=false, только завершенные (status: 8, 9, 10 = Finished, After ET, After Penalties)
+      // Исключаем специальные статусы: 11=Postponed, 12=Cancelled, 13=Abandoned, 14=Technical Loss, 15=Walk Over
+      const specialStatuses = [11, 12, 13, 14, 15];
+      if (specialStatuses.includes(game.status)) return false; // Не показываем отменённые/перенесённые матчи
+      
       if (includeFuture !== 'true' && ![8, 9, 10].includes(game.status)) return false;
       
       // Проверяем что дата матча в нужном диапазоне
@@ -7355,7 +7375,8 @@ app.get("/api/fd-matches", async (req, res) => {
       return {
         id: game.id,
         utcDate: game.date,
-        status: [8, 9, 10].includes(game.status) ? 'FINISHED' : 'SCHEDULED',
+        status: [8, 9, 10].includes(game.status) ? 'FINISHED' : 
+                [11, 12, 13, 14, 15].includes(game.status) ? 'CANCELLED' : 'SCHEDULED',
         round: roundName,
         homeTeam: {
           id: game.homeTeam.id,
@@ -7690,7 +7711,9 @@ app.get("/api/live-matches", async (req, res) => {
         team2_original: originalTeam2,
         match_time: game.date,
         status: game.statusName?.includes('Finished') ? 'finished' : 
-                game.statusName === 'Not Started' ? 'scheduled' : 'live',
+                game.statusName === 'Not Started' ? 'scheduled' :
+                ['Postponed', 'Cancelled', 'Abandoned', 'Technical Loss', 'Walk Over'].includes(game.statusName) ? 'cancelled' :
+                'live',
         score: game.homeResult !== null && game.awayResult !== null 
           ? `${game.homeResult}:${game.awayResult}` 
           : null,
@@ -8841,7 +8864,12 @@ app.get("/api/live-match-stats", async (req, res) => {
       team2: match.team2_name,
       score: match.score || null,
       status: match.status === 'live' || match.status === 'in_progress' ? '🔴 LIVE' : 
-              match.status === 'finished' ? '✅ Завершен' : 
+              match.status === 'finished' ? '✅ Завершен' :
+              match.status === 'cancelled' ? '❌ Отменён' :
+              match.status === 'postponed' ? '⏸️ Перенесён' :
+              match.status === 'abandoned' ? '⚠️ Прерван' :
+              match.status === 'technical_loss' ? '⚠️ Тех. поражение' :
+              match.status === 'walkover' ? '⚠️ Неявка' :
               'Предстоящий',
       matchTime: match.match_time,
       elapsed: match.elapsed || null,
@@ -9006,14 +9034,15 @@ app.delete("/api/bets/:betId", async (req, res) => {
       return res.status(403).json({ error: "Эта ставка не принадлежит вам" });
     }
 
-    // Проверяем статус матча - нельзя удалять ставки на начавшиеся/завершённые матчи (кроме админа)
+    // Проверяем статус матча - нельзя удалять ставки на начавшиеся/завершённые/отменённые матчи (кроме админа)
     if (!isAdmin) {
       if (
         match &&
-        (match.status === "ongoing" || match.status === "finished")
+        (match.status === "ongoing" || match.status === "finished" || 
+         ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(match.status))
       ) {
         return res.status(403).json({
-          error: "Нельзя удалить ставку — матч уже начался или завершён",
+          error: "Нельзя удалить ставку — матч уже начался, завершён или отменён",
         });
       }
     }
@@ -19159,21 +19188,25 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
       return { allFinished: false, matches: [] };
     }
     
-    // Проверяем сколько матчей уже завершено
+    // Проверяем сколько матчей уже завершено или отменено/перенесено
     const finishedCount = allDbMatches.filter(m => m.status === 'finished').length;
-    console.log(`📊 Матчей для ${date}: ${allDbMatches.length}, завершено: ${finishedCount}`);
+    const cancelledCount = allDbMatches.filter(m => ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(m.status)).length;
+    console.log(`📊 Матчей для ${date}: ${allDbMatches.length}, завершено: ${finishedCount}, отменено/перенесено: ${cancelledCount}`);
     
-    // Если все уже завершены в БД и НЕ принудительное обновление - возвращаем их для подсчета
-    if (finishedCount === allDbMatches.length && !forceUpdate) {
-      console.log(`✅ Все матчи уже завершены в БД для ${date}`);
+    // Если все уже завершены/отменены в БД и НЕ принудительное обновление - возвращаем их для подсчета
+    const processedCount = finishedCount + cancelledCount;
+    if (processedCount === allDbMatches.length && !forceUpdate) {
+      console.log(`✅ Все матчи уже обработаны в БД для ${date}`);
       return { 
         allFinished: true, 
         matches: allDbMatches.map(dbMatch => ({ dbMatch, apiMatch: null }))
       };
     }
     
-    // Есть незавершенные ИЛИ принудительное обновление - проверяем через API
-    const dbMatches = forceUpdate ? allDbMatches : allDbMatches.filter(m => m.status !== 'finished');
+    // Есть необработанные ИЛИ принудительное обновление - проверяем через API
+    const dbMatches = forceUpdate ? allDbMatches : allDbMatches.filter(m => 
+      !['finished', 'cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(m.status)
+    );
     
     // Запрашиваем матчи из API
     const leagueId = SSTATS_LEAGUE_MAPPING[competition_code];
@@ -19259,19 +19292,42 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
     
     console.log(`📊 Сопоставлено матчей: ${matchedMatches.length} из ${dbMatches.length}`);
     
-    // Проверяем что все матчи завершены
+    // Проверяем что все матчи завершены или отменены
     // Статусы завершения: 8 = Finished, 9 = Finished after extra time, 10 = Finished after penalties
+    // Специальные статусы (не учитываются): 11=Postponed, 12=Cancelled, 13=Abandoned, 14=Technical Loss, 15=Walk Over
     const finishedStatuses = [8, 9, 10];
-    const allFinished = matchedMatches.length > 0 && 
-                       matchedMatches.every(({ apiMatch }) => finishedStatuses.includes(apiMatch.status));
+    const specialStatuses = [11, 12, 13, 14, 15]; // Отменённые/перенесённые - не учитываются
     
-    console.log(`✅ Все матчи завершены: ${allFinished}`);
+    const allFinished = matchedMatches.length > 0 && 
+                       matchedMatches.every(({ apiMatch }) => 
+                         finishedStatuses.includes(apiMatch.status) || specialStatuses.includes(apiMatch.status)
+                       );
+    
+    console.log(`✅ Все матчи завершены или отменены: ${allFinished}`);
     
     if (!allFinished && matchedMatches.length > 0) {
-      const notFinished = matchedMatches.filter(({ apiMatch }) => !finishedStatuses.includes(apiMatch.status));
+      const notFinished = matchedMatches.filter(({ apiMatch }) => 
+        !finishedStatuses.includes(apiMatch.status) && !specialStatuses.includes(apiMatch.status)
+      );
       console.log(`⏸️ Незавершенные матчи (${notFinished.length}):`);
       notFinished.forEach(({ dbMatch, apiMatch }) => {
         console.log(`  - ${dbMatch.team1_name} - ${dbMatch.team2_name}: status=${apiMatch.status} (${apiMatch.statusName})`);
+      });
+    }
+    
+    // Логируем отменённые/перенесённые матчи отдельно
+    const specialMatches = matchedMatches.filter(({ apiMatch }) => specialStatuses.includes(apiMatch.status));
+    if (specialMatches.length > 0) {
+      console.log(`⚠️ Отменённые/перенесённые матчи (${specialMatches.length}):`);
+      specialMatches.forEach(({ dbMatch, apiMatch }) => {
+        const statusNames = {
+          11: 'Перенесён',
+          12: 'Отменён',
+          13: 'Прерван',
+          14: 'Техническое поражение',
+          15: 'Неявка'
+        };
+        console.log(`  - ${dbMatch.team1_name} - ${dbMatch.team2_name}: ${statusNames[apiMatch.status] || apiMatch.statusName}`);
       });
     }
     
@@ -19288,7 +19344,7 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
  */
 async function updateMatchesFromAPI(matches) {
   try {
-    const updateStmt = db.prepare(`
+    const updateFinishedStmt = db.prepare(`
       UPDATE matches
       SET status = 'finished',
           winner = ?,
@@ -19299,12 +19355,51 @@ async function updateMatchesFromAPI(matches) {
       WHERE id = ?
     `);
     
+    const updateSpecialStmt = db.prepare(`
+      UPDATE matches
+      SET status = ?
+      WHERE id = ?
+    `);
+    
     const insertScoreStmt = db.prepare(`
       INSERT OR REPLACE INTO match_scores (match_id, score_team1, score_team2)
       VALUES (?, ?, ?)
     `);
     
+    // Маппинг специальных статусов
+    const specialStatusMap = {
+      11: 'postponed',      // Перенесён
+      12: 'cancelled',      // Отменён
+      13: 'abandoned',      // Прерван
+      14: 'technical_loss', // Техническое поражение
+      15: 'walkover'        // Неявка
+    };
+    
+    const specialStatusNames = {
+      11: 'Перенесён',
+      12: 'Отменён',
+      13: 'Прерван',
+      14: 'Техническое поражение',
+      15: 'Неявка'
+    };
+    
     for (const { dbMatch, apiMatch } of matches) {
+      // Проверяем специальные статусы (отменённые/перенесённые)
+      if ([11, 12, 13, 14, 15].includes(apiMatch.status)) {
+        const dbStatus = specialStatusMap[apiMatch.status];
+        const statusName = specialStatusNames[apiMatch.status];
+        
+        updateSpecialStmt.run(dbStatus, dbMatch.id);
+        console.log(`⚠️ Матч отмечен как "${statusName}": ${dbMatch.team1_name} - ${dbMatch.team2_name}`);
+        continue; // Пропускаем дальнейшую обработку для этого матча
+      }
+      
+      // Обрабатываем только завершённые матчи (статусы 8, 9, 10)
+      if (![8, 9, 10].includes(apiMatch.status)) {
+        console.log(`⏭️ Пропускаем матч (статус ${apiMatch.status}): ${dbMatch.team1_name} - ${dbMatch.team2_name}`);
+        continue;
+      }
+      
       const homeScore = apiMatch.homeResult;
       const awayScore = apiMatch.awayResult;
       
@@ -19371,7 +19466,7 @@ async function updateMatchesFromAPI(matches) {
         }
       }
       
-      updateStmt.run(winner, score1, score2, yellowCards, redCards, dbMatch.id);
+      updateFinishedStmt.run(winner, score1, score2, yellowCards, redCards, dbMatch.id);
       
       // Сохраняем счет в таблицу match_scores
       insertScoreStmt.run(dbMatch.id, score1, score2);
@@ -19431,7 +19526,7 @@ async function triggerAutoCountingForDate(dateGroup) {
     saveProcessedDate(dateKey);
     console.log(`✅ Дата ${dateKey} помечена как обработанная`);
     
-    // Получаем ставки за эту дату
+    // Получаем ставки за эту дату (исключаем отменённые/перенесённые матчи)
     const bets = db.prepare(`
       SELECT 
         b.*,
