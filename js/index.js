@@ -3047,11 +3047,14 @@ async function displayMatches() {
           '<span style="display: inline-block; padding: 3px 8px; background: rgba(100, 100, 100, 0.8); color: #e0e0e0; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">✓ ЗАВЕРШЕН</span>';
       } else if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(effectiveStatus)) {
         statusBadge =
-          '<span style="display: inline-block; padding: 3px 8px; background: #ff5722; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">⚠️ ОТМЕНА</span>';
+          '<span class="match-status-cancelled" style="display: inline-block; padding: 3px 8px; background: #ff5722; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">⚠️ ОТМЕНА</span>';
       }
 
+      // Определяем, отменён ли матч
+      const isCancelled = ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(effectiveStatus);
+
       const matchHtml = `
-        <div class="match-row ${betClass}" data-match-id="${match.id}" style="position: relative;">
+        <div class="match-row ${betClass} ${isCancelled ? 'match-cancelled' : ''}" data-match-id="${match.id}" style="position: relative;">
             ${
               canManageMatches()
                 ? `
@@ -3191,10 +3194,10 @@ async function displayMatches() {
                 }
                 ${
                   match.match_date
-                    ? `<div class="match-date" style="text-align: center; font-size: 0.8em; color: #b0b8c8; margin: 10px auto;">${formatMatchTime(
+                    ? `<div class="match-date" style="text-align: center; font-size: 0.8em; color: #b0b8c8; margin: 10px auto;"><span class="match-date-text">${formatMatchTime(
                         match.match_date
-                      )}${statusBadge}</div>`
-                    : `<div class="match-noDate" style="text-align: center; font-size: 0.8em; color: #666; margin: 10px auto;">Дата не указана${statusBadge}</div>`
+                      )}</span>${statusBadge}</div>`
+                    : `<div class="match-noDate" style="text-align: center; font-size: 0.8em; color: #666; margin: 10px auto;"><span class="match-date-text">Дата не указана</span>${statusBadge}</div>`
                 }
                 <div class="bet-buttons-three">
                     <button class="bet-btn team1 ${

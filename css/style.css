@@ -4933,3 +4933,20 @@ body.login-modal-open {
   }
 }
 
+
+/* Отменённые матчи - серый фон и border */
+.match-row.match-cancelled {
+  background: rgba(60, 60, 60, 0.7) !important;
+  border-left-color: #666 !important;
+}
+
+/* Grayscale только для содержимого, БЕЗ кнопки статуса */
+.match-row.match-cancelled .match-admin-panel,
+.match-row.match-cancelled .match-admin-actions,
+.match-row.match-cancelled .match-vs,
+.match-row.match-cancelled .match-round-row,
+.match-row.match-cancelled .match-cards-row,
+.match-row.match-cancelled .bet-buttons-three,
+.match-row.match-cancelled .match-date-text {
+  filter: grayscale(100%);
+}
