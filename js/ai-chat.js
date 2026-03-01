@@ -44,18 +44,10 @@ class AIChat {
     chatBtn.className = 'ai-chat-btn';
     chatBtn.id = 'aiChatBtn';
     chatBtn.innerHTML = `
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Футбольный мяч -->
-        <circle cx="50" cy="50" r="48" fill="white" stroke="#333" stroke-width="2"/>
-        <!-- Пятиугольники мяча -->
-        <path d="M50 10 L60 25 L55 40 L45 40 L40 25 Z" fill="#333"/>
-        <path d="M20 30 L35 28 L40 40 L30 50 L18 45 Z" fill="#333"/>
-        <path d="M80 30 L82 45 L70 50 L60 40 L65 28 Z" fill="#333"/>
-        <path d="M25 70 L30 58 L42 58 L48 68 L38 78 Z" fill="#333"/>
-        <path d="M75 70 L62 78 L52 68 L58 58 L70 58 Z" fill="#333"/>
-        <!-- Текст AI -->
-        <text x="50" y="58" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#667eea" text-anchor="middle">AI</text>
-      </svg>
+      <span style="font-size: 36px; position: relative;">
+        ⚽
+        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: bold; color: #667eea; text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;">AI</span>
+      </span>
     `;
     document.body.appendChild(chatBtn);
 
