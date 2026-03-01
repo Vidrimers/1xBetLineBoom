@@ -4,19 +4,38 @@ class AIChat {
     this.messages = [];
     this.isOpen = false;
     this.isTyping = false;
+    this.userAvatar = '/img/default-avatar.jpg'; // Дефолтный аватар
     
     this.init();
   }
 
-  init() {
+  async init() {
     // Создаём элементы чата
     this.createChatElements();
     
     // Привязываем события
     this.bindEvents();
     
+    // Загружаем аватар пользователя
+    await this.loadUserAvatar();
+    
     // Загружаем историю из localStorage
     this.loadHistory();
+  }
+
+  async loadUserAvatar() {
+    // Получаем текущего пользователя
+    if (window.currentUser && window.currentUser.id) {
+      try {
+        const response = await fetch(`/api/user/${window.currentUser.id}/profile?viewerUsername=${encodeURIComponent(window.currentUser.username)}`);
+        if (response.ok) {
+          const userData = await response.json();
+          this.userAvatar = userData.avatar || '/img/default-avatar.jpg';
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки аватара:', error);
+      }
+    }
   }
 
   createChatElements() {
@@ -167,12 +186,9 @@ class AIChat {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message user';
     
-    // Получаем аватар пользователя
-    const userAvatar = window.currentUser?.avatar || '/img/default-avatar.jpg';
-    
     messageDiv.innerHTML = `
       <div class="message-avatar">
-        <img src="${userAvatar}" alt="User" onerror="this.src='/img/default-avatar.jpg'">
+        <img src="${this.userAvatar}" alt="User" onerror="this.src='/img/default-avatar.jpg'">
       </div>
       <div class="message-content">${this.escapeHtml(text)}</div>
     `;
