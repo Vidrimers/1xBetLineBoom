@@ -165,6 +165,33 @@ class AIChat {
     const text = this.chatInput.value.trim();
     if (!text || this.isTyping) return;
 
+    // Проверяем авторизацию
+    let currentUsername = null;
+    let currentUser = null;
+    
+    if (window.currentUser) {
+      currentUser = window.currentUser;
+      currentUsername = window.currentUser.username;
+    } else {
+      const savedUser = localStorage.getItem("currentUser");
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+          currentUsername = currentUser.username;
+        } catch (e) {}
+      }
+    }
+
+    // Если пользователь не залогинен - отказываем
+    if (!currentUsername) {
+      this.addUserMessage(text);
+      this.chatInput.value = '';
+      setTimeout(() => {
+        this.addAIMessage('Извини, я не отвечаю незнакомым персонажам 🤷‍♂️ Войди в систему, чтобы я мог тебе помочь!');
+      }, 500);
+      return;
+    }
+
     // Добавляем сообщение пользователя
     this.addUserMessage(text);
     this.chatInput.value = '';
@@ -177,19 +204,8 @@ class AIChat {
     this.showTyping();
 
     try {
-      // Получаем имя текущего пользователя
-      let currentUsername = null;
-      if (window.currentUser) {
-        currentUsername = window.currentUser.username;
-      } else {
-        const savedUser = localStorage.getItem("currentUser");
-        if (savedUser) {
-          try {
-            const user = JSON.parse(savedUser);
-            currentUsername = user.username;
-          } catch (e) {}
-        }
-      }
+      // Получаем контекст текущей страницы
+      const pageContext = this.getCurrentPageContext();
 
       // Отправляем на сервер
       const response = await fetch('/api/ai-chat', {
@@ -199,7 +215,8 @@ class AIChat {
         },
         body: JSON.stringify({
           messages: this.messages,
-          username: currentUsername
+          username: currentUsername,
+          context: pageContext
         })
       });
 
@@ -224,6 +241,65 @@ class AIChat {
       this.hideTyping();
       this.addAIMessage('Не удалось отправить сообщение. Проверь подключение к интернету.');
     }
+  }
+
+  getCurrentPageContext() {
+    const context = {
+      section: 'unknown',
+      event: null,
+      round: null,
+      modal: null,
+      bracket: null
+    };
+
+    // Определяем текущую секцию по активной вкладке
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab) {
+      const tabText = activeTab.textContent.toLowerCase();
+      if (tabText.includes('турнир')) context.section = 'tournaments';
+      else if (tabText.includes('сетк')) context.section = 'brackets';
+      else if (tabText.includes('настройк')) context.section = 'settings';
+      else if (tabText.includes('лог')) context.section = 'logs';
+    }
+
+    // Получаем текущий турнир из глобальной переменной
+    if (window.currentEvent) {
+      context.event = {
+        id: window.currentEvent.id,
+        name: window.currentEvent.name,
+        competition: window.currentEvent.competition
+      };
+    }
+
+    // Получаем текущий тур
+    if (window.currentRoundFilter) {
+      context.round = window.currentRoundFilter;
+    }
+
+    // Проверяем открытые модальные окна
+    const tournamentModal = document.getElementById('tournamentModal');
+    if (tournamentModal && tournamentModal.style.display !== 'none') {
+      context.modal = 'tournament';
+    }
+
+    const bracketModal = document.getElementById('bracketModal');
+    if (bracketModal && bracketModal.style.display !== 'none') {
+      context.modal = 'bracket';
+      // Пытаемся получить ID текущей сетки
+      if (window.currentBracket) {
+        context.bracket = {
+          id: window.currentBracket.id,
+          name: window.currentBracket.name
+        };
+      }
+    }
+
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal && settingsModal.style.display !== 'none') {
+      context.modal = 'settings';
+    }
+
+    return context;
   }
 
   addUserMessage(text) {
