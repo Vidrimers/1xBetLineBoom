@@ -86,36 +86,57 @@ export async function sendToAI(messages, context = {}) {
   // Системный промпт для AI
   const systemPrompt = `Ты - помощник на сайте прогнозов на футбол "1xBetLineBoom".
 
+КРИТИЧЕСКИ ВАЖНО - ЧИТАЙ ВНИМАТЕЛЬНО:
+Ниже в этом промпте тебе предоставлены РЕАЛЬНЫЕ ДАННЫЕ с сайта. Это НЕ примеры, это АКТУАЛЬНАЯ информация из базы данных.
+Когда пользователь спрашивает "кто лидирует" или "сколько очков у X" - ты ОБЯЗАН использовать данные из секции "ТАБЛИЦА ЛИДЕРОВ" ниже.
+НИКОГДА не говори "я не имею доступа к данным" если данные есть в этом промпте!
+
 Твоя задача:
-- Помогать пользователям с турнирами и прогнозами на сайте
-- Отвечать на вопросы о турнирах, участниках и их результатах
-- Помогать сравнивать участников и оценивать шансы догнать лидеров
-- Объяснять правила и механику сайта (включая сетки плей-офф)
-- Помогать анализировать матчи
-- Отвечать на вопросы о футболе
-- УВАЖАТЬ приватность пользователей - если ставки скрыты, сообщи об этом
-- Использовать контекст текущей страницы для более точных ответов
+- Отвечать на вопросы используя ТОЛЬКО предоставленные данные
+- Помогать сравнивать участников и оценивать шансы
+- Объяснять правила и механику сайта
+- Анализировать матчи
+- УВАЖАТЬ приватность (если ставки скрыты 🔒)
 
-Правила:
-- Отвечай кратко и по делу (максимум 3-4 предложения)
-- Используй эмодзи для наглядности (⚽ 📊 💰 ⚠️ 🏆 🔒)
-- Всегда на русском языке
-- Если не знаешь точного ответа - честно скажи об этом
-- Это сайт ПРОГНОЗОВ, а не ставок на деньги
-- При сравнении пользователей учитывай количество оставшихся матчей
-- Если ставки пользователя скрыты (🔒) - НЕ показывай их и объясни что они приватные
-- Если пользователь спрашивает "кто лидирует" или "какие матчи" - используй контекст текущего турнира
+Правила ответов:
+- Кратко (максимум 3-4 предложения)
+- Используй эмодзи (⚽ 📊 💰 ⚠️ 🏆 🔒)
+- Всегда на русском
+- Это сайт ПРОГНОЗОВ, не ставок на деньги
 
-${context.pageContext ? `\n📍 КОНТЕКСТ СТРАНИЦЫ:\n${context.pageContext}\n` : ''}
-${context.events ? `\nАктивные турниры на сайте:\n${context.events}` : ''}
-${context.participants ? `\nТаблица лидеров:\n${context.participants}` : ''}
-${context.userStats ? `\n${context.userStats}` : ''}
-${context.comparison ? `\n${context.comparison}` : ''}
-${context.bets ? `\n${context.bets}` : ''}
-${context.brackets ? `\n${context.brackets}` : ''}
-${context.remainingMatches ? `\n${context.remainingMatches}` : ''}
-${context.matches ? `\nПредстоящие матчи:\n${context.matches}` : ''}
-${context.stats ? `\nСтатистика:\n${context.stats}` : ''}`;
+ПРИМЕРЫ ПРАВИЛЬНЫХ ОТВЕТОВ:
+
+Вопрос: "Кто лидирует?"
+✅ ПРАВИЛЬНО: "Лидирует [имя из таблицы] с [X] очками! 🏆"
+❌ НЕПРАВИЛЬНО: "Я не имею доступа к таблице лидеров"
+
+Вопрос: "Сколько очков у меня?"
+✅ ПРАВИЛЬНО: "У тебя [X] очков, ты на [Y] месте 📊"
+❌ НЕПРАВИЛЬНО: "Я не могу посмотреть твою статистику"
+
+Вопрос: "Смогу ли я догнать [имя]?"
+✅ ПРАВИЛЬНО: "У [имя] [X] очков, у тебя [Y]. Разница [Z] очков, осталось [N] матчей. [Вывод]"
+❌ НЕПРАВИЛЬНО: "Мне нужен доступ к данным"
+
+═══════════════════════════════════════════════════════
+📊 ДАННЫЕ С САЙТА (ИСПОЛЬЗУЙ ИХ ДЛЯ ОТВЕТОВ):
+═══════════════════════════════════════════════════════
+
+${context.pageContext ? `📍 КОНТЕКСТ СТРАНИЦЫ:\n${context.pageContext}\n` : ''}
+${context.events ? `\n🏆 АКТИВНЫЕ ТУРНИРЫ:\n${context.events}\n` : ''}
+${context.participants ? `\n📊 ТАБЛИЦА ЛИДЕРОВ (РЕАЛЬНЫЕ ДАННЫЕ - ИСПОЛЬЗУЙ ИХ!):\n${context.participants}\n` : ''}
+${context.userStats ? `\n👤 СТАТИСТИКА ПОЛЬЗОВАТЕЛЯ:\n${context.userStats}\n` : ''}
+${context.comparison ? `\n⚖️ СРАВНЕНИЕ:\n${context.comparison}\n` : ''}
+${context.bets ? `\n🎯 СТАВКИ:\n${context.bets}\n` : ''}
+${context.brackets ? `\n🏅 СЕТКИ ПЛЕЙ-ОФФ:\n${context.brackets}\n` : ''}
+${context.remainingMatches ? `\n⏱️ ${context.remainingMatches}\n` : ''}
+${context.matches ? `\n⚽ ПРЕДСТОЯЩИЕ МАТЧИ:\n${context.matches}\n` : ''}
+${context.stats ? `\n📈 СТАТИСТИКА:\n${context.stats}\n` : ''}
+
+═══════════════════════════════════════════════════════
+
+Если какой-то секции нет выше - только тогда скажи что данных нет.
+Если секция есть - ОБЯЗАТЕЛЬНО используй её данные в ответе!`;
 
   try {
     // Пробуем Gemini
@@ -262,12 +283,13 @@ export function getEventsFromDB(db) {
       SELECT 
         id,
         name,
-        competition,
+        description,
         start_date,
         end_date,
-        is_active
+        status,
+        icon
       FROM events
-      WHERE is_active = 1
+      WHERE status = 'active'
       ORDER BY start_date DESC
       LIMIT 20
     `).all();
@@ -294,10 +316,15 @@ export function getTournamentParticipants(db, eventId) {
         COUNT(CASE WHEN b.points = 1 THEN 1 END) as outcome_predictions,
         COUNT(CASE WHEN b.points = 0 THEN 1 END) as wrong_predictions
       FROM users u
-      LEFT JOIN bets b ON b.user_id = u.id AND b.event_id = ?
-      WHERE u.id IN (
-        SELECT DISTINCT user_id FROM bets WHERE event_id = ?
-      )
+      LEFT JOIN bets b ON b.user_id = u.id
+      LEFT JOIN matches m ON m.id = b.match_id
+      WHERE m.event_id = ?
+        AND u.id IN (
+          SELECT DISTINCT b2.user_id 
+          FROM bets b2
+          JOIN matches m2 ON m2.id = b2.match_id
+          WHERE m2.event_id = ?
+        )
       GROUP BY u.id
       ORDER BY total_points DESC
     `).all(eventId, eventId);
@@ -328,9 +355,13 @@ export function getUserTournamentStats(db, eventId, username) {
         COUNT(CASE WHEN b.points = 3 THEN 1 END) as exact_predictions,
         COUNT(CASE WHEN b.points = 1 THEN 1 END) as outcome_predictions,
         COUNT(CASE WHEN b.points = 0 THEN 1 END) as wrong_predictions,
-        (SELECT COUNT(*) FROM bets WHERE event_id = ? AND user_id = u.id AND points IS NULL) as pending_bets
+        (SELECT COUNT(*) 
+         FROM bets b2 
+         JOIN matches m2 ON m2.id = b2.match_id 
+         WHERE m2.event_id = ? AND b2.user_id = u.id AND b2.points IS NULL) as pending_bets
       FROM users u
-      LEFT JOIN bets b ON b.user_id = u.id AND b.event_id = ?
+      LEFT JOIN bets b ON b.user_id = u.id
+      LEFT JOIN matches m ON m.id = b.match_id AND m.event_id = ?
       WHERE u.id = ?
       GROUP BY u.id
     `).get(eventId, eventId, user.id);
@@ -339,14 +370,16 @@ export function getUserTournamentStats(db, eventId, username) {
     const position = db.prepare(`
       SELECT COUNT(*) + 1 as position
       FROM (
-        SELECT user_id, SUM(CASE WHEN points > 0 THEN points ELSE 0 END) as pts
-        FROM bets
-        WHERE event_id = ?
-        GROUP BY user_id
+        SELECT b.user_id, SUM(CASE WHEN b.points > 0 THEN b.points ELSE 0 END) as pts
+        FROM bets b
+        JOIN matches m ON m.id = b.match_id
+        WHERE m.event_id = ?
+        GROUP BY b.user_id
         HAVING pts > (
-          SELECT SUM(CASE WHEN points > 0 THEN points ELSE 0 END)
-          FROM bets
-          WHERE event_id = ? AND user_id = ?
+          SELECT SUM(CASE WHEN b2.points > 0 THEN b2.points ELSE 0 END)
+          FROM bets b2
+          JOIN matches m2 ON m2.id = b2.match_id
+          WHERE m2.event_id = ? AND b2.user_id = ?
         )
       )
     `).get(eventId, eventId, user.id);
@@ -398,7 +431,7 @@ export function getRemainingMatches(db, eventId) {
       SELECT COUNT(*) as count
       FROM matches m
       WHERE m.event_id = ?
-        AND m.status IN ('SCHEDULED', 'TIMED', 'IN_PLAY')
+        AND m.status IN ('pending', 'SCHEDULED', 'TIMED', 'IN_PLAY')
     `).get(eventId);
     
     return matches ? matches.count : 0;
@@ -487,14 +520,14 @@ export function getUserBets(db, eventId, username, requestingUser) {
     const bets = db.prepare(`
       SELECT 
         b.*,
-        m.homeTeam,
-        m.awayTeam,
-        m.utcDate,
+        m.team1_name as homeTeam,
+        m.team2_name as awayTeam,
+        m.match_date as utcDate,
         m.status as matchStatus
       FROM bets b
       JOIN matches m ON m.id = b.match_id
-      WHERE b.user_id = ? AND b.event_id = ?
-      ORDER BY m.utcDate DESC
+      WHERE b.user_id = ? AND m.event_id = ?
+      ORDER BY m.match_date DESC
       LIMIT 20
     `).all(user.id, eventId);
     

@@ -206,6 +206,14 @@ class AIChat {
     try {
       // Получаем контекст текущей страницы
       const pageContext = this.getCurrentPageContext();
+      
+      // Логируем контекст для отладки
+      console.log('🤖 AI Chat - Отправка запроса:');
+      console.log('  - Пользователь:', currentUsername);
+      console.log('  - Контекст страницы:', pageContext);
+      console.log('  - Текущий турнир:', pageContext.event ? pageContext.event.name : 'не выбран');
+      console.log('  - currentEventId:', window.currentEventId);
+      console.log('  - events доступны:', window.events ? 'Да' : 'Нет');
 
       // Отправляем на сервер
       const response = await fetch('/api/ai-chat', {
@@ -262,13 +270,16 @@ class AIChat {
       else if (tabText.includes('лог')) context.section = 'logs';
     }
 
-    // Получаем текущий турнир из глобальной переменной
-    if (window.currentEvent) {
-      context.event = {
-        id: window.currentEvent.id,
-        name: window.currentEvent.name,
-        competition: window.currentEvent.competition
-      };
+    // Получаем текущий турнир из глобальных переменных
+    if (window.currentEventId && window.events) {
+      const currentEvent = window.events.find(e => e.id === window.currentEventId);
+      if (currentEvent) {
+        context.event = {
+          id: currentEvent.id,
+          name: currentEvent.name,
+          description: currentEvent.description
+        };
+      }
     }
 
     // Получаем текущий тур
