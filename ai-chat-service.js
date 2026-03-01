@@ -232,6 +232,28 @@ export function formatMatchButtons(matches) {
 }
 
 /**
+ * Получает детальную информацию о матче
+ */
+export function getMatchDetails(db, matchId) {
+  try {
+    const match = db.prepare(`
+      SELECT 
+        m.*,
+        GROUP_CONCAT(DISTINCT p.username) as predictors
+      FROM matches m
+      LEFT JOIN predictions p ON p.matchId = m.id
+      WHERE m.id = ?
+      GROUP BY m.id
+    `).get(matchId);
+    
+    return match;
+  } catch (error) {
+    console.error('❌ Ошибка получения деталей матча:', error);
+    return null;
+  }
+}
+
+/**
  * Получает список турниров из базы данных
  */
 export function getEventsFromDB(db) {
