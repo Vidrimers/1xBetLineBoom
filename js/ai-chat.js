@@ -25,8 +25,17 @@ class AIChat {
     chatBtn.className = 'ai-chat-btn';
     chatBtn.id = 'aiChatBtn';
     chatBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Футбольный мяч -->
+        <circle cx="50" cy="50" r="48" fill="white" stroke="#333" stroke-width="2"/>
+        <!-- Пятиугольники мяча -->
+        <path d="M50 10 L60 25 L55 40 L45 40 L40 25 Z" fill="#333"/>
+        <path d="M20 30 L35 28 L40 40 L30 50 L18 45 Z" fill="#333"/>
+        <path d="M80 30 L82 45 L70 50 L60 40 L65 28 Z" fill="#333"/>
+        <path d="M25 70 L30 58 L42 58 L48 68 L38 78 Z" fill="#333"/>
+        <path d="M75 70 L62 78 L52 68 L58 58 L70 58 Z" fill="#333"/>
+        <!-- Текст AI -->
+        <text x="50" y="58" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#667eea" text-anchor="middle">AI</text>
       </svg>
     `;
     document.body.appendChild(chatBtn);
@@ -157,8 +166,14 @@ class AIChat {
   addUserMessage(text) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message user';
+    
+    // Получаем аватар пользователя
+    const userAvatar = window.currentUser?.avatar || '/img/default-avatar.jpg';
+    
     messageDiv.innerHTML = `
-      <div class="message-avatar">👤</div>
+      <div class="message-avatar">
+        <img src="${userAvatar}" alt="User" onerror="this.src='/img/default-avatar.jpg'">
+      </div>
       <div class="message-content">${this.escapeHtml(text)}</div>
     `;
     this.chatMessages.appendChild(messageDiv);
@@ -179,7 +194,9 @@ class AIChat {
     }
     
     messageDiv.innerHTML = `
-      <div class="message-avatar">🤖</div>
+      <div class="message-avatar">
+        <img src="/img/default-avatar.jpg" alt="AI" onerror="this.src='/img/default-avatar.jpg'">
+      </div>
       <div class="message-content">
         ${this.escapeHtml(text)}
         ${buttonsHTML}
@@ -250,7 +267,9 @@ class AIChat {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message ai typing-message';
     typingDiv.innerHTML = `
-      <div class="message-avatar">🤖</div>
+      <div class="message-avatar">
+        <img src="/img/default-avatar.jpg" alt="AI" onerror="this.src='/img/default-avatar.jpg'">
+      </div>
       <div class="message-content typing-indicator">
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
