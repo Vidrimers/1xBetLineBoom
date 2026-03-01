@@ -177,6 +177,20 @@ class AIChat {
     this.showTyping();
 
     try {
+      // Получаем имя текущего пользователя
+      let currentUsername = null;
+      if (window.currentUser) {
+        currentUsername = window.currentUser.username;
+      } else {
+        const savedUser = localStorage.getItem("currentUser");
+        if (savedUser) {
+          try {
+            const user = JSON.parse(savedUser);
+            currentUsername = user.username;
+          } catch (e) {}
+        }
+      }
+
       // Отправляем на сервер
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
@@ -184,7 +198,8 @@ class AIChat {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: this.messages
+          messages: this.messages,
+          username: currentUsername
         })
       });
 

@@ -29,7 +29,16 @@ import {
   detectButtons,
   getMatchesFromDB,
   formatMatchButtons,
-  getMatchDetails
+  getMatchDetails,
+  getEventsFromDB,
+  getTournamentParticipants,
+  getUserTournamentStats,
+  compareUsers,
+  getRemainingMatches,
+  getTournamentBrackets,
+  checkUserPrivacy,
+  getUserBets,
+  getUserBracketPredictions
 } from "./ai-chat-service.js";
 
 dotenv.config();
@@ -3002,7 +3011,7 @@ db.exec(`
 // AI Chat endpoint
 app.post("/api/ai-chat", async (req, res) => {
   try {
-    const { messages, action, actionData } = req.body;
+    const { messages, action, actionData, username } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: "Неверный формат сообщений" });
@@ -3042,7 +3051,6 @@ app.post("/api/ai-chat", async (req, res) => {
         });
       }
 
-      // Формируем контекст для AI
       const matchContext = `
 Матч: ${match.homeTeam} - ${match.awayTeam}
 Дата: ${new Date(match.utcDate).toLocaleString('ru-RU')}
@@ -3051,7 +3059,6 @@ app.post("/api/ai-chat", async (req, res) => {
 ${match.predictors ? `Прогнозы сделали: ${match.predictors}` : ''}
       `.trim();
 
-      // Отправляем в AI для анализа
       const aiResponse = await sendToAI([
         ...messages,
         { role: 'user', content: `Проанализируй этот матч: ${matchContext}` }
@@ -3072,17 +3079,118 @@ ${match.predictors ? `Прогнозы сделали: ${match.predictors}` : ''
       });
     }
 
-    // Получаем контекст из базы (последние матчи)
+    // Получаем контекст из базы
     const recentMatches = getMatchesFromDB(db);
+    const events = getEventsFromDB(db);
+    
+    // Получаем участников всех активных турниров
+    let allParticipants = [];
+    let userStats = null;
+    let remainingMatches = 0;
+    
+    if (events.length > 0) {
+      const currentEvent = events[0]; // Берём первый активный турнир
+      allParticipants = getTournamentParticipants(db, currentEvent.id);
+      remainingMatches = getRemainingMatches(db, currentEvent.id);
+      
+      // Если передано имя пользователя, получаем его статистику
+      if (username) {
+        userStats = getUserTournamentStats(db, currentEvent.id, username);
+      }
+    }
+    
+    // Проверяем, спрашивает ли пользователь о сравнении или ставках
+    const lowerMsg = lastMessage.content.toLowerCase();
+    let comparisonContext = '';
+    let betsContext = '';
+    let bracketsContext = '';
+    
+    // Получаем информацию о сетках
+    if (events.length > 0) {
+      const brackets = getTournamentBrackets(db, events[0].id);
+      if (brackets.length > 0) {
+        bracketsContext = `Сетки плей-офф в турнире:\n${brackets.map(b => `- ${b.name} (старт: ${b.start_stage})`).join('\n')}`;
+      }
+    }
+    
+    // Проверяем вопросы о ставках других пользователей
+    if ((lowerMsg.includes('ставк') || lowerMsg.includes('прогноз') || lowerMsg.includes('выбор')) && events.length > 0) {
+      const words = lastMessage.content.split(/\s+/);
+      for (const word of words) {
+        if (word.length > 2 && (!username || word.toLowerCase() !== username.toLowerCase())) {
+          const betsResult = getUserBets(db, events[0].id, word, username);
+          if (betsResult.error === 'PRIVACY_RESTRICTED') {
+            betsContext = betsResult.message;
+            break;
+          } else if (betsResult.success && betsResult.bets) {
+            const recentBets = betsResult.bets.slice(0, 5).map(bet => 
+              `${bet.homeTeam} - ${bet.awayTeam}: ${bet.prediction || `${bet.score_team1}:${bet.score_team2}`} (${bet.points !== null ? bet.points + ' очков' : 'ожидает'})`
+            ).join('\n');
+            betsContext = `Последние ставки ${word}:\n${recentBets}`;
+            break;
+          }
+        }
+      }
+    }
+    
+    if ((lowerMsg.includes('догна') || lowerMsg.includes('обогна') || lowerMsg.includes('сравн')) && username && events.length > 0) {
+      // Пытаемся найти имя другого пользователя в сообщении
+      const words = lastMessage.content.split(/\s+/);
+      for (const word of words) {
+        if (word.length > 2 && word !== username) {
+          const comparison = compareUsers(db, events[0].id, username, word);
+          if (comparison) {
+            comparisonContext = `
+Сравнение участников:
+${comparison.user1.username}: ${comparison.user1.total_points} очков (${comparison.user1.position} место)
+${comparison.user2.username}: ${comparison.user2.total_points} очков (${comparison.user2.position} место)
+
+Разница: ${Math.abs(comparison.difference)} очков
+Осталось матчей: ${remainingMatches}
+Ожидающих прогнозов у ${comparison.user1.username}: ${comparison.user1.pending_bets}
+${comparison.canCatchUp ? '✅ Догнать возможно!' : '⚠️ Догнать будет сложно'}
+            `.trim();
+            break;
+          }
+        }
+      }
+    }
+    
+    // Формируем контекст для AI
     const matchesContext = recentMatches.length > 0 
       ? recentMatches.slice(0, 5).map(m => 
           `${m.homeTeam} - ${m.awayTeam} (${new Date(m.utcDate).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`
         ).join('\n')
       : '';
+    
+    const eventsContext = events.length > 0
+      ? events.map(e => `${e.name} (${e.competition}) - ${e.is_active ? 'Активен' : 'Завершён'}`).join('\n')
+      : '';
+    
+    const participantsContext = allParticipants.length > 0
+      ? allParticipants.slice(0, 10).map((p, i) => 
+          `${i + 1}. ${p.username}: ${p.total_points} очков (${p.exact_predictions} точных, ${p.outcome_predictions} исходов)`
+        ).join('\n')
+      : '';
+    
+    const userStatsContext = userStats
+      ? `Статистика ${userStats.username} в турнире:
+Позиция: ${userStats.position} место
+Очки: ${userStats.total_points}
+Прогнозов: ${userStats.total_bets} (${userStats.exact_predictions} точных, ${userStats.outcome_predictions} исходов, ${userStats.wrong_predictions} неверных)
+Ожидает результатов: ${userStats.pending_bets}`
+      : '';
 
     // Отправляем в AI
     const aiResponse = await sendToAI(messages, { 
-      matches: matchesContext 
+      matches: matchesContext,
+      events: eventsContext,
+      participants: participantsContext,
+      userStats: userStatsContext,
+      comparison: comparisonContext,
+      bets: betsContext,
+      brackets: bracketsContext,
+      remainingMatches: remainingMatches > 0 ? `Осталось матчей в турнире: ${remainingMatches}` : ''
     });
 
     res.json(aiResponse);

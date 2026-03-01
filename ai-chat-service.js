@@ -84,22 +84,34 @@ async function callGroq(messages, systemPrompt) {
  */
 export async function sendToAI(messages, context = {}) {
   // Системный промпт для AI
-  const systemPrompt = `Ты - помощник на сайте ставок на футбол.
+  const systemPrompt = `Ты - помощник на сайте прогнозов на футбол "1xBetLineBoom".
 
 Твоя задача:
-- Помогать пользователям анализировать матчи
-- Находить выгодные ставки
-- Объяснять статистику команд
-- Отвечать на вопросы о футболе и ставках
+- Помогать пользователям с турнирами и прогнозами на сайте
+- Отвечать на вопросы о турнирах, участниках и их результатах
+- Помогать сравнивать участников и оценивать шансы догнать лидеров
+- Объяснять правила и механику сайта (включая сетки плей-офф)
+- Помогать анализировать матчи
+- Отвечать на вопросы о футболе
+- УВАЖАТЬ приватность пользователей - если ставки скрыты, сообщи об этом
 
 Правила:
 - Отвечай кратко и по делу (максимум 3-4 предложения)
-- Используй эмодзи для наглядности (⚽ 📊 💰 ⚠️)
+- Используй эмодзи для наглядности (⚽ 📊 💰 ⚠️ 🏆 🔒)
 - Всегда на русском языке
 - Если не знаешь точного ответа - честно скажи об этом
-- Не давай финансовых советов, только анализ
+- Это сайт ПРОГНОЗОВ, а не ставок на деньги
+- При сравнении пользователей учитывай количество оставшихся матчей
+- Если ставки пользователя скрыты (🔒) - НЕ показывай их и объясни что они приватные
 
-${context.matches ? `\nДоступные матчи:\n${context.matches}` : ''}
+${context.events ? `\nАктивные турниры на сайте:\n${context.events}` : ''}
+${context.participants ? `\nТаблица лидеров:\n${context.participants}` : ''}
+${context.userStats ? `\n${context.userStats}` : ''}
+${context.comparison ? `\n${context.comparison}` : ''}
+${context.bets ? `\n${context.bets}` : ''}
+${context.brackets ? `\n${context.brackets}` : ''}
+${context.remainingMatches ? `\n${context.remainingMatches}` : ''}
+${context.matches ? `\nПредстоящие матчи:\n${context.matches}` : ''}
 ${context.stats ? `\nСтатистика:\n${context.stats}` : ''}`;
 
   try {
@@ -143,6 +155,31 @@ export function detectButtons(userMessage) {
   }
   
   return null;
+}
+
+/**
+ * Определяет тип вопроса для добавления контекста
+ */
+export function detectQuestionType(userMessage) {
+  const lowerMsg = userMessage.toLowerCase();
+  
+  if (lowerMsg.includes('турнир') || lowerMsg.includes('соревнован')) {
+    return 'tournaments';
+  }
+  
+  if (lowerMsg.includes('участник') || lowerMsg.includes('игрок') || lowerMsg.includes('лидер') || lowerMsg.includes('таблиц')) {
+    return 'participants';
+  }
+  
+  if (lowerMsg.includes('правил') || lowerMsg.includes('как работа') || lowerMsg.includes('как играть')) {
+    return 'rules';
+  }
+  
+  if (lowerMsg.includes('статистик') || lowerMsg.includes('результат')) {
+    return 'stats';
+  }
+  
+  return 'general';
 }
 
 /**
@@ -192,23 +229,326 @@ export function formatMatchButtons(matches) {
 }
 
 /**
- * Получает детальную информацию о матче
+ * Получает список турниров из базы данных
  */
-export function getMatchDetails(db, matchId) {
+export function getEventsFromDB(db) {
   try {
-    const match = db.prepare(`
+    const events = db.prepare(`
       SELECT 
-        m.*,
-        GROUP_CONCAT(DISTINCT p.username) as predictors
-      FROM matches m
-      LEFT JOIN predictions p ON p.matchId = m.id
-      WHERE m.id = ?
-      GROUP BY m.id
-    `).get(matchId);
+        id,
+        name,
+        competition,
+        start_date,
+        end_date,
+        is_active
+      FROM events
+      WHERE is_active = 1
+      ORDER BY start_date DESC
+      LIMIT 20
+    `).all();
     
-    return match;
+    return events;
   } catch (error) {
-    console.error('❌ Ошибка получения деталей матча:', error);
+    console.error('❌ Ошибка получения турниров:', error);
+    return [];
+  }
+}
+
+/**
+ * Получает участников турнира с детальной статистикой
+ */
+export function getTournamentParticipants(db, eventId) {
+  try {
+    const participants = db.prepare(`
+      SELECT 
+        u.id,
+        u.username,
+        COUNT(DISTINCT b.id) as total_bets,
+        SUM(CASE WHEN b.points > 0 THEN b.points ELSE 0 END) as total_points,
+        COUNT(CASE WHEN b.points = 3 THEN 1 END) as exact_predictions,
+        COUNT(CASE WHEN b.points = 1 THEN 1 END) as outcome_predictions,
+        COUNT(CASE WHEN b.points = 0 THEN 1 END) as wrong_predictions
+      FROM users u
+      LEFT JOIN bets b ON b.user_id = u.id AND b.event_id = ?
+      WHERE u.id IN (
+        SELECT DISTINCT user_id FROM bets WHERE event_id = ?
+      )
+      GROUP BY u.id
+      ORDER BY total_points DESC
+    `).all(eventId, eventId);
+    
+    return participants;
+  } catch (error) {
+    console.error('❌ Ошибка получения участников:', error);
+    return [];
+  }
+}
+
+/**
+ * Получает детальную информацию о конкретном участнике турнира
+ */
+export function getUserTournamentStats(db, eventId, username) {
+  try {
+    const user = db.prepare(`
+      SELECT id FROM users WHERE username = ? COLLATE NOCASE
+    `).get(username);
+    
+    if (!user) return null;
+    
+    const stats = db.prepare(`
+      SELECT 
+        u.username,
+        COUNT(DISTINCT b.id) as total_bets,
+        SUM(CASE WHEN b.points > 0 THEN b.points ELSE 0 END) as total_points,
+        COUNT(CASE WHEN b.points = 3 THEN 1 END) as exact_predictions,
+        COUNT(CASE WHEN b.points = 1 THEN 1 END) as outcome_predictions,
+        COUNT(CASE WHEN b.points = 0 THEN 1 END) as wrong_predictions,
+        (SELECT COUNT(*) FROM bets WHERE event_id = ? AND user_id = u.id AND points IS NULL) as pending_bets
+      FROM users u
+      LEFT JOIN bets b ON b.user_id = u.id AND b.event_id = ?
+      WHERE u.id = ?
+      GROUP BY u.id
+    `).get(eventId, eventId, user.id);
+    
+    // Получаем позицию в турнире
+    const position = db.prepare(`
+      SELECT COUNT(*) + 1 as position
+      FROM (
+        SELECT user_id, SUM(CASE WHEN points > 0 THEN points ELSE 0 END) as pts
+        FROM bets
+        WHERE event_id = ?
+        GROUP BY user_id
+        HAVING pts > (
+          SELECT SUM(CASE WHEN points > 0 THEN points ELSE 0 END)
+          FROM bets
+          WHERE event_id = ? AND user_id = ?
+        )
+      )
+    `).get(eventId, eventId, user.id);
+    
+    if (stats) {
+      stats.position = position.position;
+    }
+    
+    return stats;
+  } catch (error) {
+    console.error('❌ Ошибка получения статистики пользователя:', error);
+    return null;
+  }
+}
+
+/**
+ * Сравнивает двух пользователей в турнире
+ */
+export function compareUsers(db, eventId, username1, username2) {
+  try {
+    const user1Stats = getUserTournamentStats(db, eventId, username1);
+    const user2Stats = getUserTournamentStats(db, eventId, username2);
+    
+    if (!user1Stats || !user2Stats) return null;
+    
+    const difference = user2Stats.total_points - user1Stats.total_points;
+    const maxPointsPerBet = 3;
+    const betsNeeded = Math.ceil(Math.abs(difference) / maxPointsPerBet);
+    
+    return {
+      user1: user1Stats,
+      user2: user2Stats,
+      difference: difference,
+      betsNeeded: betsNeeded,
+      canCatchUp: user1Stats.pending_bets >= betsNeeded
+    };
+  } catch (error) {
+    console.error('❌ Ошибка сравнения пользователей:', error);
+    return null;
+  }
+}
+
+/**
+ * Получает оставшиеся матчи в турнире
+ */
+export function getRemainingMatches(db, eventId) {
+  try {
+    const matches = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM matches m
+      WHERE m.event_id = ?
+        AND m.status IN ('SCHEDULED', 'TIMED', 'IN_PLAY')
+    `).get(eventId);
+    
+    return matches ? matches.count : 0;
+  } catch (error) {
+    console.error('❌ Ошибка получения оставшихся матчей:', error);
+    return 0;
+  }
+}
+
+/**
+ * Получает информацию о сетках турнира
+ */
+export function getTournamentBrackets(db, eventId) {
+  try {
+    const brackets = db.prepare(`
+      SELECT 
+        id,
+        name,
+        start_date,
+        start_stage,
+        lock_dates
+      FROM brackets
+      WHERE event_id = ?
+      ORDER BY start_date DESC
+    `).all(eventId);
+    
+    return brackets;
+  } catch (error) {
+    console.error('❌ Ошибка получения сеток:', error);
+    return [];
+  }
+}
+
+/**
+ * Проверяет настройки приватности пользователя
+ */
+export function checkUserPrivacy(db, username) {
+  try {
+    const user = db.prepare(`
+      SELECT show_bets FROM users WHERE username = ? COLLATE NOCASE
+    `).get(username);
+    
+    if (!user) return { exists: false, showBets: false };
+    
+    // show_bets может быть: 'always', 'after_match', 'never'
+    return {
+      exists: true,
+      showBets: user.show_bets || 'always',
+      canShowNow: user.show_bets === 'always'
+    };
+  } catch (error) {
+    console.error('❌ Ошибка проверки приватности:', error);
+    return { exists: false, showBets: false };
+  }
+}
+
+/**
+ * Получает ставки пользователя (с учётом приватности)
+ */
+export function getUserBets(db, eventId, username, requestingUser) {
+  try {
+    // Проверяем приватность
+    const privacy = checkUserPrivacy(db, username);
+    
+    if (!privacy.exists) {
+      return { error: 'USER_NOT_FOUND', message: 'Пользователь не найден' };
+    }
+    
+    // Если это сам пользователь запрашивает свои ставки - показываем
+    if (requestingUser && requestingUser.toLowerCase() === username.toLowerCase()) {
+      privacy.canShowNow = true;
+    }
+    
+    if (!privacy.canShowNow) {
+      return { 
+        error: 'PRIVACY_RESTRICTED', 
+        message: `${username} скрыл свои ставки от других пользователей 🔒`,
+        showBets: privacy.showBets
+      };
+    }
+    
+    const user = db.prepare(`
+      SELECT id FROM users WHERE username = ? COLLATE NOCASE
+    `).get(username);
+    
+    const bets = db.prepare(`
+      SELECT 
+        b.*,
+        m.homeTeam,
+        m.awayTeam,
+        m.utcDate,
+        m.status as matchStatus
+      FROM bets b
+      JOIN matches m ON m.id = b.match_id
+      WHERE b.user_id = ? AND b.event_id = ?
+      ORDER BY m.utcDate DESC
+      LIMIT 20
+    `).all(user.id, eventId);
+    
+    return { success: true, bets: bets };
+  } catch (error) {
+    console.error('❌ Ошибка получения ставок:', error);
+    return { error: 'DATABASE_ERROR', message: 'Ошибка получения данных' };
+  }
+}
+
+/**
+ * Получает прогнозы пользователя в сетке (с учётом приватности)
+ */
+export function getUserBracketPredictions(db, bracketId, username, requestingUser) {
+  try {
+    // Проверяем приватность
+    const privacy = checkUserPrivacy(db, username);
+    
+    if (!privacy.exists) {
+      return { error: 'USER_NOT_FOUND', message: 'Пользователь не найден' };
+    }
+    
+    // Если это сам пользователь - показываем
+    if (requestingUser && requestingUser.toLowerCase() === username.toLowerCase()) {
+      privacy.canShowNow = true;
+    }
+    
+    if (!privacy.canShowNow) {
+      return { 
+        error: 'PRIVACY_RESTRICTED', 
+        message: `${username} скрыл свои прогнозы от других пользователей 🔒`
+      };
+    }
+    
+    const user = db.prepare(`
+      SELECT id FROM users WHERE username = ? COLLATE NOCASE
+    `).get(username);
+    
+    const predictions = db.prepare(`
+      SELECT 
+        bp.*,
+        COUNT(*) as total_predictions,
+        SUM(CASE WHEN bp.points > 0 THEN bp.points ELSE 0 END) as total_points
+      FROM bracket_predictions bp
+      WHERE bp.bracket_id = ? AND bp.user_id = ?
+      GROUP BY bp.user_id
+    `).get(bracketId, user.id);
+    
+    return { success: true, predictions: predictions };
+  } catch (error) {
+    console.error('❌ Ошибка получения прогнозов сетки:', error);
+    return { error: 'DATABASE_ERROR', message: 'Ошибка получения данных' };
+  }
+}
+
+/**
+ * Получает статистику пользователя
+ */
+export function getUserStats(db, username) {
+  try {
+    const user = db.prepare(`
+      SELECT id FROM users WHERE username = ?
+    `).get(username);
+    
+    if (!user) return null;
+    
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(DISTINCT b.event_id) as tournaments_played,
+        COUNT(b.id) as total_bets,
+        SUM(CASE WHEN b.points > 0 THEN b.points ELSE 0 END) as total_points,
+        AVG(CASE WHEN b.points > 0 THEN b.points ELSE 0 END) as avg_points
+      FROM bets b
+      WHERE b.user_id = ?
+    `).get(user.id);
+    
+    return stats;
+  } catch (error) {
+    console.error('❌ Ошибка получения статистики:', error);
     return null;
   }
 }
