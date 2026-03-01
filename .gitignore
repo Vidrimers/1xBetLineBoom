@@ -4,6 +4,7 @@ img/avatar/
 .vscode/
 .DS_Store
 npm/
+.kiro/
 backups/
 migrations/
 package-lock.json
