@@ -5919,11 +5919,11 @@ function displayTournamentParticipantBets(bets) {
         const isCancelled = ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(bet.match_status);
         
         return `
-    <div style="background: #1a1a2e; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid ${
+    <div style="background: ${isCancelled ? 'rgba(60, 60, 60, 0.7)' : '#1a1a2e'}; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid ${
       shouldHideBet
         ? "#9e9e9e"
         : isCancelled
-        ? "#ff5722"
+        ? "#666"
         : bet.result === "won"
         ? "#4caf50"
         : bet.result === "lost"
