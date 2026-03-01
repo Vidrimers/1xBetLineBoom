@@ -24,6 +24,13 @@ import {
   notifyReminderDeleted,
   stopBot,
 } from "./OnexBetLineBoombot.js";
+import {
+  sendToAI,
+  detectButtons,
+  getMatchesFromDB,
+  formatMatchButtons,
+  getMatchDetails
+} from "./ai-chat-service.js";
 
 dotenv.config();
 
@@ -2991,6 +2998,104 @@ db.exec(`
 `);
 
 // ===== API ENDPOINTS =====
+
+// AI Chat endpoint
+app.post("/api/ai-chat", async (req, res) => {
+  try {
+    const { messages, action, actionData } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Неверный формат сообщений" });
+    }
+
+    const lastMessage = messages[messages.length - 1];
+    
+    // Обработка действий с кнопками
+    if (action === 'select_tournament') {
+      const tournamentCode = actionData.toUpperCase();
+      const matches = getMatchesFromDB(db, tournamentCode);
+      
+      if (matches.length === 0) {
+        return res.json({
+          text: `К сожалению, нет предстоящих матчей в этом турнире.`,
+          provider: 'system'
+        });
+      }
+
+      const buttons = formatMatchButtons(matches);
+      return res.json({
+        text: `Матчи турнира:`,
+        buttons: buttons,
+        buttonType: 'matches',
+        provider: 'system'
+      });
+    }
+
+    if (action === 'select_match') {
+      const matchId = parseInt(actionData.replace('match_', ''));
+      const match = getMatchDetails(db, matchId);
+      
+      if (!match) {
+        return res.json({
+          text: 'Матч не найден',
+          provider: 'system'
+        });
+      }
+
+      // Формируем контекст для AI
+      const matchContext = `
+Матч: ${match.homeTeam} - ${match.awayTeam}
+Дата: ${new Date(match.utcDate).toLocaleString('ru-RU')}
+Турнир: ${match.competition}
+Статус: ${match.status}
+${match.predictors ? `Прогнозы сделали: ${match.predictors}` : ''}
+      `.trim();
+
+      // Отправляем в AI для анализа
+      const aiResponse = await sendToAI([
+        ...messages,
+        { role: 'user', content: `Проанализируй этот матч: ${matchContext}` }
+      ], { stats: matchContext });
+
+      return res.json(aiResponse);
+    }
+
+    // Проверяем нужны ли кнопки
+    const buttonSuggestion = detectButtons(lastMessage.content);
+    
+    if (buttonSuggestion) {
+      return res.json({
+        text: 'Выбери турнир:',
+        buttons: buttonSuggestion.buttons,
+        buttonType: buttonSuggestion.type,
+        provider: 'system'
+      });
+    }
+
+    // Получаем контекст из базы (последние матчи)
+    const recentMatches = getMatchesFromDB(db);
+    const matchesContext = recentMatches.length > 0 
+      ? recentMatches.slice(0, 5).map(m => 
+          `${m.homeTeam} - ${m.awayTeam} (${new Date(m.utcDate).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`
+        ).join('\n')
+      : '';
+
+    // Отправляем в AI
+    const aiResponse = await sendToAI(messages, { 
+      matches: matchesContext 
+    });
+
+    res.json(aiResponse);
+
+  } catch (error) {
+    console.error('❌ Ошибка AI chat:', error);
+    res.status(500).json({ 
+      error: 'Ошибка обработки запроса',
+      text: 'Извини, произошла ошибка. Попробуй ещё раз.',
+      provider: 'error'
+    });
+  }
+});
 
 // 0. Получить конфигурацию (включая ADMIN_LOGIN)
 app.get("/api/config", (req, res) => {
