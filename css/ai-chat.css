@@ -14,20 +14,29 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: var(--ai-primary);
+    background: transparent;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.3s, box-shadow 0.3s;
+    transition: transform 0.3s;
     z-index: 9999;
 }
 
 .ai-chat-btn:hover {
     transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    background: transparent;
+    box-shadow: none;
+}
+
+.ai-chat-ball {
+    display: inline-block;
+    transition: transform 0.6s ease;
+}
+
+.ai-chat-btn:hover .ai-chat-ball {
+    transform: rotate(360deg);
 }
 
 .ai-chat-btn svg {
@@ -36,14 +45,14 @@
     fill: white;
 }
 
-/* Окно чата */
+/* Окно чата - дефолтная тема */
 .ai-chat-window {
     position: fixed;
     bottom: 100px;
     right: 30px;
     width: 400px;
     height: 600px;
-    background: #ffffff;
+    background: #1e2530;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     display: flex;
@@ -53,7 +62,7 @@
     pointer-events: none;
     transition: opacity 0.3s, transform 0.3s, background 0.3s;
     z-index: 9998;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ai-chat-window.active {
@@ -99,7 +108,7 @@
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Область сообщений */
+/* Область сообщений - дефолтная тема */
 .ai-chat-messages {
     flex: 1;
     padding: 20px;
@@ -107,7 +116,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: #ffffff;
+    background: #1e2530;
     transition: background 0.3s;
 }
 
@@ -181,15 +190,18 @@
 }
 
 .message.ai .message-content {
-    background: var(--card-bg);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-color);
-    border-radius: 12px 12px 12px 4px;
+    border-radius: 18px 18px 18px 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .message.user .message-content {
     background: var(--success-color, #4CAF50);
     color: white;
-    border-radius: 12px 12px 4px 12px;
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Кнопки выбора */
@@ -320,33 +332,233 @@
     }
 }
 
-/* Тёмная тема */
-[data-theme="dark"] .ai-chat-window {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    background: var(--bg-color);
+/* === АДАПТАЦИЯ ПОД ТЕМЫ САЙТА === */
+
+/* Hacker Green */
+body.theme-hacker-green .ai-chat-window {
+    background: #001100;
+    border-color: #00ff00;
 }
 
-[data-theme="dark"] .message.ai .message-content {
-    background: var(--card-bg);
+body.theme-hacker-green .ai-chat-messages {
+    background: #001100;
 }
 
-[data-theme="dark"] .ai-chat-header {
-    background: linear-gradient(135deg, #4a5fc1 0%, #5a3d7a 100%);
+body.theme-hacker-green .ai-chat-header {
+    background: linear-gradient(135deg, #003300 0%, #005500 100%);
 }
 
-[data-theme="dark"] .ai-chat-messages {
-    background: var(--bg-color);
+body.theme-hacker-green .message.ai .message-content {
+    background: #003300;
+    color: #00ff00;
+    box-shadow: 0 2px 8px rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
 }
 
-/* Светлая тема */
-[data-theme="light"] .ai-chat-window {
-    background: #ffffff;
+body.theme-hacker-green .message.user .message-content {
+    background: #00aa00;
+    color: #000000;
+    box-shadow: 0 2px 8px rgba(0, 255, 0, 0.3);
 }
 
-[data-theme="light"] .ai-chat-messages {
-    background: #ffffff;
+body.theme-hacker-green .ai-chat-input {
+    background: #001100;
+    border-color: #00ff00;
+    color: #00ff00;
 }
 
-[data-theme="light"] .ai-chat-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+body.theme-hacker-green .message-button {
+    background: #00aa00;
+    color: #000000;
+}
+
+/* Solarized */
+body.theme-solarized .ai-chat-window {
+    background: #073642;
+    border-color: #586e75;
+}
+
+body.theme-solarized .ai-chat-messages {
+    background: #073642;
+}
+
+body.theme-solarized .ai-chat-header {
+    background: linear-gradient(135deg, #268bd2 0%, #2aa198 100%);
+}
+
+body.theme-solarized .message.ai .message-content {
+    background: #104a5f;
+    color: #93a1a1;
+    box-shadow: 0 2px 8px rgba(38, 139, 210, 0.2);
+    border: 1px solid #586e75;
+}
+
+body.theme-solarized .message.user .message-content {
+    background: #268bd2;
+    color: #fdf6e3;
+    box-shadow: 0 2px 8px rgba(38, 139, 210, 0.3);
+}
+
+body.theme-solarized .ai-chat-input {
+    background: #073642;
+    border-color: #586e75;
+    color: #93a1a1;
+}
+
+body.theme-solarized .message-button {
+    background: #268bd2;
+    color: #fdf6e3;
+}
+
+/* Matrix */
+body.theme-matrix .ai-chat-window {
+    background: #000a00;
+    border-color: #00ff41;
+}
+
+body.theme-matrix .ai-chat-messages {
+    background: #000a00;
+}
+
+body.theme-matrix .ai-chat-header {
+    background: linear-gradient(135deg, #001100 0%, #002200 100%);
+}
+
+body.theme-matrix .message.ai .message-content {
+    background: #002200;
+    color: #00ff41;
+    box-shadow: 0 2px 8px rgba(0, 255, 65, 0.2);
+    border: 1px solid #00ff41;
+}
+
+body.theme-matrix .message.user .message-content {
+    background: #00dd33;
+    color: #000000;
+    box-shadow: 0 2px 8px rgba(0, 255, 65, 0.3);
+}
+
+body.theme-matrix .ai-chat-input {
+    background: #000a00;
+    border-color: #00ff41;
+    color: #00ff41;
+}
+
+body.theme-matrix .message-button {
+    background: #00dd33;
+    color: #000000;
+}
+
+/* Cyberpunk */
+body.theme-cyberpunk .ai-chat-window {
+    background: #0a0014;
+    border-color: #ff00ff;
+}
+
+body.theme-cyberpunk .ai-chat-messages {
+    background: #0a0014;
+}
+
+body.theme-cyberpunk .ai-chat-header {
+    background: linear-gradient(135deg, #1a0a2e 0%, #16213e 100%);
+}
+
+body.theme-cyberpunk .message.ai .message-content {
+    background: #1f2a4e;
+    color: #00ffff;
+    box-shadow: 0 2px 8px rgba(255, 0, 255, 0.3);
+    border: 1px solid #ff00ff;
+}
+
+body.theme-cyberpunk .message.user .message-content {
+    background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(255, 0, 255, 0.4);
+}
+
+body.theme-cyberpunk .ai-chat-input {
+    background: #0a0014;
+    border-color: #ff00ff;
+    color: #00ffff;
+}
+
+body.theme-cyberpunk .message-button {
+    background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+    color: #ffffff;
+}
+
+/* League Champions */
+body.theme-leagueChampions .ai-chat-window {
+    background: #162447;
+    border-color: #1b9ce5;
+}
+
+body.theme-leagueChampions .ai-chat-messages {
+    background: #162447;
+}
+
+body.theme-leagueChampions .ai-chat-header {
+    background: linear-gradient(135deg, #1b9ce5 0%, #00d9ff 100%);
+}
+
+body.theme-leagueChampions .message.ai .message-content {
+    background: #254a78;
+    color: #e8e8e8;
+    box-shadow: 0 2px 8px rgba(27, 156, 229, 0.2);
+    border: 1px solid #1b9ce5;
+}
+
+body.theme-leagueChampions .message.user .message-content {
+    background: #1b9ce5;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(27, 156, 229, 0.3);
+}
+
+body.theme-leagueChampions .ai-chat-input {
+    background: #162447;
+    border-color: #1b9ce5;
+    color: #e8e8e8;
+}
+
+body.theme-leagueChampions .message-button {
+    background: #1b9ce5;
+    color: #ffffff;
+}
+
+/* League Europe */
+body.theme-leagueEurope .ai-chat-window {
+    background: #1a1f2e;
+    border-color: #ffd700;
+}
+
+body.theme-leagueEurope .ai-chat-messages {
+    background: #1a1f2e;
+}
+
+body.theme-leagueEurope .ai-chat-header {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #000000;
+}
+
+body.theme-leagueEurope .message.ai .message-content {
+    background: #2d3548;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
+    border: 1px solid #ffd700;
+}
+
+body.theme-leagueEurope .message.user .message-content {
+    background: #ffd700;
+    color: #000000;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+body.theme-leagueEurope .ai-chat-input {
+    background: #1a1f2e;
+    border-color: #ffd700;
+    color: #ffffff;
+}
+
+body.theme-leagueEurope .message-button {
+    background: #ffd700;
+    color: #000000;
 }

@@ -24,17 +24,51 @@ class AIChat {
   }
 
   async loadUserAvatar() {
+    console.log('AI Chat: Попытка загрузки аватара...');
+    
+    // Пробуем получить currentUser из разных источников
+    let currentUser = window.currentUser;
+    
+    // Если в window нет, пробуем из localStorage
+    if (!currentUser) {
+      const savedUser = localStorage.getItem("currentUser");
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+          console.log('AI Chat: currentUser загружен из localStorage:', currentUser);
+        } catch (e) {
+          console.error('AI Chat: Ошибка парсинга currentUser из localStorage:', e);
+        }
+      }
+    } else {
+      console.log('AI Chat: currentUser найден в window:', currentUser);
+    }
+    
     // Получаем текущего пользователя
-    if (window.currentUser && window.currentUser.id) {
+    if (currentUser && currentUser.id) {
       try {
-        const response = await fetch(`/api/user/${window.currentUser.id}/profile?viewerUsername=${encodeURIComponent(window.currentUser.username)}`);
+        console.log('AI Chat: Отправка запроса на /api/user/' + currentUser.id + '/profile');
+        const response = await fetch(`/api/user/${currentUser.id}/profile?viewerUsername=${encodeURIComponent(currentUser.username)}`);
+        console.log('AI Chat: Ответ получен, status:', response.status);
+        
         if (response.ok) {
           const userData = await response.json();
+          console.log('AI Chat: Данные пользователя:', userData);
           this.userAvatar = userData.avatar || '/img/default-avatar.jpg';
+          console.log('AI Chat: Установлен аватар:', this.userAvatar);
+          
+          // Обновляем аватары в уже отображённых сообщениях пользователя
+          const userAvatars = this.chatMessages.querySelectorAll('.message.user .message-avatar img');
+          console.log('AI Chat: Найдено аватаров для обновления:', userAvatars.length);
+          userAvatars.forEach(img => {
+            img.src = this.userAvatar;
+          });
         }
       } catch (error) {
-        console.error('Ошибка загрузки аватара:', error);
+        console.error('AI Chat: Ошибка загрузки аватара:', error);
       }
+    } else {
+      console.log('AI Chat: Пользователь не залогинен, используется дефолтный аватар');
     }
   }
 
@@ -44,7 +78,7 @@ class AIChat {
     chatBtn.className = 'ai-chat-btn';
     chatBtn.id = 'aiChatBtn';
     chatBtn.innerHTML = `
-      <span style="font-size: 36px; position: relative;">
+      <span class="ai-chat-ball" style="font-size: 36px; position: relative; display: inline-block;">
         ⚽
         <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: bold; color: #667eea; text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;">AI</span>
       </span>
@@ -57,7 +91,7 @@ class AIChat {
     chatWindow.id = 'aiChatWindow';
     chatWindow.innerHTML = `
       <div class="ai-chat-header">
-        <h3>🤖 AI Помощник</h3>
+        <h3>🤖 AI Помощник <span style="font-size: 10px; background: rgba(255, 255, 255, 0.2); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal;">BETA</span></h3>
         <button class="ai-chat-close" id="aiChatClose">×</button>
       </div>
       <div class="ai-chat-messages" id="aiChatMessages"></div>
@@ -104,10 +138,13 @@ class AIChat {
     });
   }
 
-  open() {
+  async open() {
     this.isOpen = true;
     this.chatWindow.classList.add('active');
     this.chatInput.focus();
+    
+    // Перезагружаем аватар при открытии чата (на случай если пользователь залогинился после инициализации)
+    await this.loadUserAvatar();
     
     // Показываем приветствие если чат пустой
     if (this.messages.length === 0) {
