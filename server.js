@@ -3772,7 +3772,12 @@ app.get("/api/events/:eventId/tournament-participants", (req, res) => {
             END 
           ELSE 0 
         END) as event_lost,
-        SUM(CASE WHEN m.winner IS NULL AND fpr.id IS NULL THEN 1 ELSE 0 END) as event_pending
+        SUM(CASE 
+          WHEN m.winner IS NULL AND fpr.id IS NULL 
+            AND m.status NOT IN ('cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover') 
+          THEN 1 
+          ELSE 0 
+        END) as event_pending
       FROM users u
       INNER JOIN bets b ON u.id = b.user_id
       INNER JOIN matches m ON b.match_id = m.id
@@ -3885,7 +3890,12 @@ app.get("/api/events/:eventId/user-bets/:userId", (req, res) => {
             END
           ELSE 0
         END) as event_lost,
-        SUM(CASE WHEN m.winner IS NULL THEN 1 ELSE 0 END) as event_pending
+        SUM(CASE 
+          WHEN m.winner IS NULL 
+            AND m.status NOT IN ('cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover') 
+          THEN 1 
+          ELSE 0 
+        END) as event_pending
       FROM bets b
       INNER JOIN matches m ON b.match_id = m.id
       WHERE b.user_id = ? AND m.event_id = ?
