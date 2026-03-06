@@ -101,33 +101,49 @@ async function rebuildBracketFromPredictions() {
           currentBracket.matches[nextStageId][nextMatchIndex] = {};
         }
         
-        // Получаем текущие команды в следующей стадии (установленные админом)
+        // Получаем текущие команды в следующей стадии
         const nextMatch = currentBracket.matches[nextStageId][nextMatchIndex];
-        
-        // Проверяем, установил ли админ команды в этом слоте
         const targetTeamField = teamPosition === 0 ? 'team1' : 'team2';
-        const adminTeamInSlot = nextMatch[targetTeamField] || '';
+        const teamInSlot = nextMatch[targetTeamField] || '';
         
         // Проверяем есть ли временные команды (temporary_teams) в этом слоте
         const tempTeams = currentBracket.temporary_teams?.[nextStageId]?.[nextMatchIndex]?.[teamPosition];
         const hasTempTeams = tempTeams && Array.isArray(tempTeams) && tempTeams.length > 0;
         
-        // Если админ установил ЛЮБЫЕ команды в этом слоте (обычные или temporary)
-        // то этот слот больше не связан с предыдущей стадией
-        const hasAdminTeams = adminTeamInSlot.trim() !== '' || hasTempTeams;
+        // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: проверяем, является ли следующая стадия НАЧАЛЬНОЙ стадией
+        // Только в начальной стадии команды установлены админом и их нельзя перезаписывать
+        const startStage = currentBracket.start_stage || getFirstFilledStage(currentBracket?.matches) || 'round_of_16';
+        const isNextStageInitial = nextStageId === startStage;
+        
+        // Если следующая стадия - начальная И в слоте есть команда, то это команда админа
+        const hasAdminTeams = isNextStageInitial && (teamInSlot.trim() !== '' || hasTempTeams);
         
         if (hasAdminTeams) {
-          console.log(`⚠️ Слот ${targetTeamField} в ${nextStageId} матч ${nextMatchIndex} управляется админом - пропускаем прогноз "${winner}"`);
+          console.log(`⚠️ Слот ${targetTeamField} в ${nextStageId} матч ${nextMatchIndex} управляется админом (начальная стадия) - пропускаем прогноз "${winner}"`);
           return; // Не подставляем команду из прогноза
         }
         
-        // Если админ не установил команды в этом слоте, подставляем из прогноза
-        if (teamPosition === 0) {
-          currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
+        // Если temporary_teams есть, проверяем что прогноз соответствует одной из них
+        if (hasTempTeams) {
+          if (tempTeams.includes(winner)) {
+            if (teamPosition === 0) {
+              currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
+            } else {
+              currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
+            }
+            console.log(`✅ Прогноз "${winner}" из temporary_teams добавлен в ${nextStageId} матч ${nextMatchIndex} (слот ${targetTeamField})`);
+          } else {
+            console.log(`⚠️ Прогноз "${winner}" не найден в temporary_teams для ${nextStageId} матч ${nextMatchIndex}`);
+          }
         } else {
-          currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
+          // Подставляем команду из прогноза (перезаписываем любую существующую команду)
+          if (teamPosition === 0) {
+            currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
+          } else {
+            currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
+          }
+          console.log(`✅ Прогноз "${winner}" добавлен в ${nextStageId} матч ${nextMatchIndex} (слот ${targetTeamField})`);
         }
-        console.log(`✅ Прогноз "${winner}" добавлен в ${nextStageId} матч ${nextMatchIndex} (слот ${targetTeamField})`);
       });
     }
   }
@@ -443,32 +459,9 @@ async function openBracketModal(bracketId, viewUserId = null) {
           bracketPredictions[p.stage][p.match_index] = p.predicted_winner;
         });
         
-        // Сохраняем оригинальные команды от админа перед восстановлением из прогнозов
-        const originalMatches = JSON.parse(JSON.stringify(currentBracket.matches || {}));
-        
         // Восстанавливаем команды в последующих стадиях на основе прогнозов
+        // rebuildBracketFromPredictions уже учитывает команды админа и не перезаписывает их
         await rebuildBracketFromPredictions();
-        
-        // Восстанавливаем команды админа (они имеют приоритет над прогнозами)
-        Object.keys(originalMatches).forEach(stageId => {
-          Object.keys(originalMatches[stageId]).forEach(matchIndex => {
-            const originalMatch = originalMatches[stageId][matchIndex];
-            if (!currentBracket.matches[stageId]) {
-              currentBracket.matches[stageId] = {};
-            }
-            if (!currentBracket.matches[stageId][matchIndex]) {
-              currentBracket.matches[stageId][matchIndex] = {};
-            }
-            
-            // Восстанавливаем команды админа если они были установлены
-            if (originalMatch.team1 && originalMatch.team1.trim() !== '') {
-              currentBracket.matches[stageId][matchIndex].team1 = originalMatch.team1;
-            }
-            if (originalMatch.team2 && originalMatch.team2.trim() !== '') {
-              currentBracket.matches[stageId][matchIndex].team2 = originalMatch.team2;
-            }
-          });
-        });
       } else {
         bracketPredictions = {};
       }
@@ -1351,25 +1344,16 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
   if (currentPrediction && currentPrediction !== teamName) {
     console.log(`🔄 Смена ставки с "${currentPrediction}" на "${teamName}" в ${stageId} матч ${matchIndex}`);
     
-    // Очищаем старую команду из следующих стадий
+    // Каскадно очищаем старую команду из всех последующих стадий
     const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
     const currentStageIndex = stageOrder.indexOf(stageId);
     if (currentStageIndex < stageOrder.length - 1) {
       const nextStageId = stageOrder[currentStageIndex + 1];
       const nextMatchIndex = Math.floor(matchIndex / 2);
-      const teamPosition = matchIndex % 2;
       
-      // Очищаем слот в следующей стадии
-      if (currentBracket.matches?.[nextStageId]?.[nextMatchIndex]) {
-        const targetField = teamPosition === 0 ? 'team1' : 'team2';
-        if (currentBracket.matches[nextStageId][nextMatchIndex][targetField] === currentPrediction) {
-          currentBracket.matches[nextStageId][nextMatchIndex][targetField] = '';
-          console.log(`  🗑️ Очищен слот ${targetField} в ${nextStageId} матч ${nextMatchIndex}`);
-          
-          // Обновляем отображение
-          updateNextStageDisplay(nextStageId, nextMatchIndex);
-        }
-      }
+      // Используем clearPredictionsFromStage для каскадной очистки всех последующих стадий
+      // Передаем название старой команды для точечной очистки
+      await clearPredictionsFromStage(nextStageId, nextMatchIndex, true, true, currentPrediction);
     }
   }
   
@@ -1519,52 +1503,69 @@ async function clearPredictionsFromStage(stageId, matchIndex, deleteFromDB = fal
   const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
   const currentStageIndex = stageOrder.indexOf(stageId);
   
-  // Очищаем прогноз в текущей стадии
-  if (bracketPredictions[stageId]) {
-    delete bracketPredictions[stageId][matchIndex];
-  }
+  console.log(`🗑️ clearPredictionsFromStage: ${stageId} матч ${matchIndex}, команда: ${deletedTeamName}`);
   
-  // Очищаем слоты команд в следующих стадиях
-  if (clearTeamSlots && currentBracket.matches && currentBracket.matches[stageId] && currentBracket.matches[stageId][matchIndex]) {
+  // Очищаем слоты команд в текущей стадии (только если передано название команды)
+  if (clearTeamSlots && deletedTeamName && currentBracket.matches && currentBracket.matches[stageId] && currentBracket.matches[stageId][matchIndex]) {
     const matchData = currentBracket.matches[stageId][matchIndex];
     
-    // Если передано название удаленной команды, ищем и удаляем именно её
-    if (deletedTeamName) {
-      if (matchData.team1 === deletedTeamName) {
-        currentBracket.matches[stageId][matchIndex].team1 = null;
-      }
-      if (matchData.team2 === deletedTeamName) {
-        currentBracket.matches[stageId][matchIndex].team2 = null;
-      }
-    } else {
-      // Если название не передано, используем старую логику (по позиции)
-      const teamPosition = matchIndex % 2;
-      if (teamPosition === 0) {
-        currentBracket.matches[stageId][matchIndex].team1 = null;
-      } else {
-        currentBracket.matches[stageId][matchIndex].team2 = null;
-      }
+    // Ищем и удаляем только конкретную команду
+    if (matchData.team1 === deletedTeamName) {
+      currentBracket.matches[stageId][matchIndex].team1 = '';
+      console.log(`  ✅ Очищен team1 (${deletedTeamName}) в ${stageId} матч ${matchIndex}`);
+    }
+    if (matchData.team2 === deletedTeamName) {
+      currentBracket.matches[stageId][matchIndex].team2 = '';
+      console.log(`  ✅ Очищен team2 (${deletedTeamName}) в ${stageId} матч ${matchIndex}`);
     }
     
     // Обновляем визуальное отображение слотов команд
     updateNextStageDisplay(stageId, matchIndex);
   }
   
-  // Обновляем визуальное отображение прогноза
-  updateBracketMatchDisplay(stageId, matchIndex, null);
-  
-  // Удаляем прогноз из БД (только для последующих стадий, не для начальной)
-  if (deleteFromDB) {
-    await deleteBracketPrediction(stageId, matchIndex);
+  // Очищаем прогноз в текущей стадии ТОЛЬКО если он совпадает с удаленной командой
+  if (bracketPredictions[stageId] && bracketPredictions[stageId][matchIndex]) {
+    const currentPrediction = bracketPredictions[stageId][matchIndex];
+    
+    // Если передано название команды, очищаем прогноз только если он совпадает
+    if (deletedTeamName) {
+      if (currentPrediction === deletedTeamName) {
+        delete bracketPredictions[stageId][matchIndex];
+        console.log(`  ✅ Очищен прогноз "${deletedTeamName}" в ${stageId} матч ${matchIndex}`);
+        
+        // Обновляем визуальное отображение прогноза
+        updateBracketMatchDisplay(stageId, matchIndex, null);
+        
+        // Удаляем прогноз из БД
+        if (deleteFromDB) {
+          await deleteBracketPrediction(stageId, matchIndex);
+        }
+      } else {
+        console.log(`  ⏭️ Прогноз "${currentPrediction}" не совпадает с удаленной командой "${deletedTeamName}" - оставляем`);
+      }
+    } else {
+      // Если название не передано, очищаем прогноз (старая логика)
+      delete bracketPredictions[stageId][matchIndex];
+      console.log(`  ✅ Очищен прогноз в ${stageId} матч ${matchIndex}`);
+      
+      // Обновляем визуальное отображение прогноза
+      updateBracketMatchDisplay(stageId, matchIndex, null);
+      
+      // Удаляем прогноз из БД
+      if (deleteFromDB) {
+        await deleteBracketPrediction(stageId, matchIndex);
+      }
+    }
   }
   
-  // Если это не финал, очищаем следующую стадию
-  if (currentStageIndex < stageOrder.length - 1) {
+  // Если это не финал, проверяем следующую стадию
+  if (currentStageIndex < stageOrder.length - 1 && deletedTeamName) {
     const nextStageId = stageOrder[currentStageIndex + 1];
     const nextMatchIndex = Math.floor(matchIndex / 2);
     
-    // Для всех последующих стадий включаем удаление из БД и очистку слотов команд
-    // Передаем название удаленной команды дальше
+    console.log(`  🔍 Проверяем следующую стадию: ${nextStageId} матч ${nextMatchIndex}`);
+    
+    // Рекурсивно очищаем только если удаленная команда есть в следующей стадии
     await clearPredictionsFromStage(nextStageId, nextMatchIndex, true, true, deletedTeamName);
   }
   
