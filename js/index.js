@@ -4361,7 +4361,7 @@ function displayMyBets(bets) {
           : "";
 
         return {
-          bet,
+          bet: { ...bet, result: statusClass }, // Добавляем result в объект bet
           statusClass,
           statusText,
           normalizedPrediction,
