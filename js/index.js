@@ -3035,7 +3035,23 @@ async function displayMatches() {
       const userBetOnMatch = userBets.find(
         (bet) => bet.match_id === match.id && !bet.is_final_bet
       );
-      const betClass = userBetOnMatch ? "has-user-bet" : "";
+      
+      // Определяем класс в зависимости от результата ставки
+      let betClass = "";
+      if (userBetOnMatch) {
+        betClass = "has-user-bet";
+        
+        // Если матч завершен, добавляем класс результата
+        if (match.winner) {
+          const isWon = (userBetOnMatch.prediction === 'team1' && match.winner === 'team1') ||
+                        (userBetOnMatch.prediction === 'team2' && match.winner === 'team2') ||
+                        (userBetOnMatch.prediction === 'draw' && match.winner === 'draw') ||
+                        (userBetOnMatch.prediction === match.team1_name && match.winner === 'team1') ||
+                        (userBetOnMatch.prediction === match.team2_name && match.winner === 'team2');
+          
+          betClass += isWon ? " bet-won" : " bet-lost";
+        }
+      }
 
       // Определяем текст и цвет статуса
       let statusBadge = "";

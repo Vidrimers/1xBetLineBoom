@@ -891,6 +891,18 @@ button:active {
   /* box-shadow: 0 0 12px rgba(255, 184, 28, 0.2); */
 }
 
+/* Стили для выигрышных ставок */
+.match-row.has-user-bet.bet-won {
+  background: rgba(60, 80, 50, 0.7);
+  border-left-color: #4caf50;
+}
+
+/* Стили для проигрышных ставок */
+.match-row.has-user-bet.bet-lost {
+  background: rgba(80, 40, 40, 0.7);
+  border-left-color: #f44336;
+}
+
 .match-teams {
   flex: 1;
 }
