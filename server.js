@@ -5386,7 +5386,7 @@ app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
       .map((r) => r.round)
       .filter((r) => r);
 
-    // Получаем завершенные туры (где все матчи имеют winner)
+    // Получаем завершенные туры (где все матчи имеют winner или отменены/перенесены)
     const completedRounds = db
       .prepare(
         `
@@ -5400,7 +5400,13 @@ app.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
             WHERE event_id = ? 
               AND round IS NOT NULL
             GROUP BY round
-            HAVING COUNT(*) = SUM(CASE WHEN winner IS NOT NULL THEN 1 ELSE 0 END)
+            HAVING COUNT(*) = SUM(
+              CASE 
+                WHEN winner IS NOT NULL THEN 1
+                WHEN status IN ('cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover') THEN 1
+                ELSE 0 
+              END
+            )
           )
       `
       )
