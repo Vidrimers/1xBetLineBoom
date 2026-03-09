@@ -673,7 +673,11 @@ function closeModalOnOutsideClick(event, modalId, closeFunction) {
 // Загрузить порядок туров из БД
 async function loadRoundsOrder() {
   try {
-    const response = await fetch("/api/rounds-order");
+    if (!currentEventId) {
+      roundsOrder = [];
+      return;
+    }
+    const response = await fetch(`/api/rounds-order/${currentEventId}`);
     if (response.ok) {
       roundsOrder = await response.json();
     } else {
@@ -688,10 +692,17 @@ async function loadRoundsOrder() {
 // Сохранить порядок туров в БД (только админ)
 async function saveRoundsOrderToStorage() {
   try {
+    if (!currentEventId) {
+      console.error("Нет выбранного турнира");
+      return;
+    }
     const response = await fetch("/api/admin/rounds-order", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rounds: roundsOrder }),
+      body: JSON.stringify({ 
+        rounds: roundsOrder,
+        event_id: currentEventId 
+      }),
     });
 
     if (!response.ok) {
@@ -916,8 +927,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Загружаем конфиг сначала
   await loadConfig();
 
-  // Загружаем сохраненный порядок туров из БД
-  await loadRoundsOrder();
+  // Порядок туров загружается в loadMatches() после выбора турнира
 
   // Проверяем, есть ли пользователь в localStorage
   const savedUser = localStorage.getItem("currentUser");
@@ -2264,6 +2274,9 @@ async function loadMatches(eventId) {
 
     // Сохраняем выбранный турнир в localStorage
     localStorage.setItem('selectedEventId', eventId);
+    
+    // Загружаем порядок туров для этого турнира
+    await loadRoundsOrder();
     
     // Получаем информацию о турнире
     const eventResponse = await fetch("/api/events");

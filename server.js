@@ -3366,12 +3366,15 @@ app.post("/api/notify-admin-login-attempt", async (req, res) => {
   }
 });
 
-// Получить порядок туров (для всех пользователей)
-app.get("/api/rounds-order", (req, res) => {
+// Получить порядок туров для конкретного турнира (для всех пользователей)
+app.get("/api/rounds-order/:eventId", (req, res) => {
   try {
+    const { eventId } = req.params;
+    const key = `rounds_order_${eventId}`;
+    
     const setting = db
-      .prepare("SELECT value FROM site_settings WHERE key = 'rounds_order'")
-      .get();
+      .prepare("SELECT value FROM site_settings WHERE key = ?")
+      .get(key);
 
     if (setting && setting.value) {
       res.json(JSON.parse(setting.value));
@@ -3383,24 +3386,29 @@ app.get("/api/rounds-order", (req, res) => {
   }
 });
 
-// Сохранить порядок туров (только для админа)
+// Сохранить порядок туров для конкретного турнира (только для админа)
 app.put("/api/admin/rounds-order", (req, res) => {
   try {
-    const { rounds } = req.body;
+    const { rounds, event_id } = req.body;
 
     if (!Array.isArray(rounds)) {
       return res.status(400).json({ error: "rounds должен быть массивом" });
     }
 
+    if (!event_id) {
+      return res.status(400).json({ error: "event_id обязателен" });
+    }
+
+    const key = `rounds_order_${event_id}`;
     const value = JSON.stringify(rounds);
 
     db.prepare(
       `
       INSERT INTO site_settings (key, value, updated_at) 
-      VALUES ('rounds_order', ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
     `
-    ).run(value, value);
+    ).run(key, value, value);
 
     res.json({ success: true });
   } catch (error) {
