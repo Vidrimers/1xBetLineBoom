@@ -1148,6 +1148,10 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   const isWinner = prediction && prediction === teamName;
   const highlightClass = isWinner ? 'bracket-team-winner' : '';
   
+  // Проверяем дубликаты сразу в начале функции
+  const isDuplicate = isDuplicateTeam(teamName);
+  const duplicateStyle = isDuplicate ? 'background: rgba(73, 117, 221, 0.1);' : '';
+  
   // Режим редактирования для админа - только для начальной стадии из БД
   const editableStages = getEditableStages(currentBracket);
   const isEditableStage = editableStages.includes(stageId);
@@ -1240,10 +1244,6 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   
   // Если команда должна быть скрыта, показываем "—"
   const displayTeamName = shouldHideTeam ? null : teamName;
-  
-  // Проверяем дубликаты только для видимых команд
-  const isDuplicate = !shouldHideTeam && isDuplicateTeam(teamName);
-  const duplicateStyle = isDuplicate ? 'background: rgba(73, 117, 221, 0.1);' : '';
   
   // Формируем текст для скрытых команд
   let hiddenText = '—';
