@@ -579,18 +579,18 @@
         <div class="section" id="tournamentSection" style="display: none">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2 id="tournamentTitle" style="margin: 0;">📋 Участники турнира</h2>
+            <button
+              id="backToTournaments"
+              class="btn-back"
+              style="background: transparent; color: #e0e6f0; border: 1px solid #3a7bd5; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.3s ease;"
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+              onclick="backToTournaments()"
+              title="Назад к турнирам"
+            >
+              Назад к турнирам
+            </button>
             <div id="tournament-buttons" style="display: flex; gap: 10px;">
-              <button
-                id="backToTournaments"
-                class="btn-back"
-                style="background: transparent; color: #e0e6f0; border: 1px solid #3a7bd5; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.3s ease;"
-                onmouseover="this.style.transform='scale(1.05)'"
-                onmouseout="this.style.transform='scale(1)'"
-                onclick="backToTournaments()"
-                title="Назад к турнирам"
-              >
-                Назад к турнирам
-              </button>
               <button 
                 onclick="openComparisonModal()"
                 style="
