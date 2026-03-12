@@ -19145,13 +19145,21 @@ function translateTeamNameToEnglish(russianName, competitionCode) {
     const dictionary = JSON.parse(fs.readFileSync(dictionaryFile, 'utf8'));
     const teams = dictionary.teams || {};
     
-    // Ищем перевод
-    const englishName = teams[russianName];
+    // Сначала ищем точное совпадение
+    let englishName = teams[russianName];
     if (englishName) {
       return englishName;
     }
     
-    // Если не найден точный перевод, возвращаем оригинал
+    // Если не найдено, ищем без учёта регистра
+    const lowerRussianName = russianName.toLowerCase();
+    for (const [key, value] of Object.entries(teams)) {
+      if (key.toLowerCase() === lowerRussianName) {
+        return value;
+      }
+    }
+    
+    // Если не найден перевод, возвращаем оригинал
     return russianName;
   } catch (error) {
     console.error(`⚠️ Ошибка загрузки словаря ${dictionaryFile}:`, error.message);
