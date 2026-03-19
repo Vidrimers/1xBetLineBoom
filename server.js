@@ -17182,12 +17182,6 @@ app.post("/api/admin/recount-results", async (req, res) => {
     console.log(`✅ Сброшено матчей: ${resetResult.changes}`);
 
     // Шаг 3: Удаляем обработанную дату из списка
-    const dateKey = `${date}_${round}`;
-    if (processedDates.has(dateKey)) {
-      processedDates.delete(dateKey);
-      console.log(`✅ Удалена обработанная дата: ${dateKey}`);
-    }
-
     // Шаг 4: Запускаем автоподсчет для этой даты
     const event = matches[0];
     const competition_code = ICON_TO_COMPETITION[event.icon];
@@ -17195,6 +17189,15 @@ app.post("/api/admin/recount-results", async (req, res) => {
     if (!competition_code) {
       return res.status(400).json({ error: "Не удалось определить турнир" });
     }
+
+    // Удаляем обработанную дату из Set и из БД (правильный ключ с competition_code)
+    const dateKey = `${date}_${round}_${competition_code}`;
+    if (processedDates.has(dateKey)) {
+      processedDates.delete(dateKey);
+      console.log(`✅ Удалена обработанная дата из Set: ${dateKey}`);
+    }
+    db.prepare('DELETE FROM auto_counting_processed WHERE date_key = ?').run(dateKey);
+    console.log(`✅ Удалена обработанная дата из БД: ${dateKey}`);
 
     console.log(`🔄 Запуск автоподсчета для ${date} | ${round}...`);
 
