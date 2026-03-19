@@ -17067,7 +17067,7 @@ app.post("/api/admin/cleanup-disabled-predictions", async (req, res) => {
 
 // POST /api/admin/recount-results - Пересчитать результаты для конкретной даты
 app.post("/api/admin/recount-results", async (req, res) => {
-  const { username, date, round, sendToGroup, sendToUsers } = req.body;
+  const { username, date, round, eventId, sendToGroup, sendToUsers } = req.body;
 
   console.log('🔄 Пересчет результатов:', { username, date, round, sendToGroup, sendToUsers });
 
@@ -17115,7 +17115,8 @@ app.post("/api/admin/recount-results", async (req, res) => {
       JOIN events e ON m.event_id = e.id
       WHERE DATE(m.match_date) = ?
         AND m.round = ?
-    `).all(date, round);
+        ${eventId ? 'AND m.event_id = ?' : ''}
+    `).all(...[date, round, ...(eventId ? [eventId] : [])]);
 
     if (matches.length === 0) {
       return res.status(404).json({ error: "Не найдено матчей для указанной даты и тура" });
@@ -17165,8 +17166,10 @@ app.post("/api/admin/recount-results", async (req, res) => {
       console.log(`🗑️ Удалено прогнозов на красные карточки (чекбокс отключен): ${totalDeletedRed}`);
     }
 
-    // Шаг 2: Сбрасываем результаты этих матчей
-    const resetStmt = db.prepare(`
+    // Шаг 2: Сбрасываем результаты этих матчей (только для выбранного турнира)
+    const matchIdsToReset = matches.map(m => m.id);
+    const placeholdersReset = matchIdsToReset.map(() => '?').join(',');
+    const resetResult = db.prepare(`
       UPDATE matches
       SET status = 'pending',
           winner = NULL,
@@ -17174,20 +17177,11 @@ app.post("/api/admin/recount-results", async (req, res) => {
           team2_score = NULL,
           yellow_cards = NULL,
           red_cards = NULL
-      WHERE DATE(match_date) = ?
-        AND round = ?
-    `);
-
-    const resetResult = resetStmt.run(date, round);
+      WHERE id IN (${placeholdersReset})
+    `).run(...matchIdsToReset);
     console.log(`✅ Сброшено матчей: ${resetResult.changes}`);
 
     // Шаг 3: Удаляем обработанную дату из списка
-    const dateKey = `${date}_${round}`;
-    if (processedDates.has(dateKey)) {
-      processedDates.delete(dateKey);
-      console.log(`✅ Удалена обработанная дата: ${dateKey}`);
-    }
-
     // Шаг 4: Запускаем автоподсчет для этой даты
     const event = matches[0];
     const competition_code = ICON_TO_COMPETITION[event.icon];
@@ -17195,6 +17189,15 @@ app.post("/api/admin/recount-results", async (req, res) => {
     if (!competition_code) {
       return res.status(400).json({ error: "Не удалось определить турнир" });
     }
+
+    // Удаляем обработанную дату из Set и из БД (правильный ключ с competition_code)
+    const dateKey = `${date}_${round}_${competition_code}`;
+    if (processedDates.has(dateKey)) {
+      processedDates.delete(dateKey);
+      console.log(`✅ Удалена обработанная дата из Set: ${dateKey}`);
+    }
+    db.prepare('DELETE FROM auto_counting_processed WHERE date_key = ?').run(dateKey);
+    console.log(`✅ Удалена обработанная дата из БД: ${dateKey}`);
 
     console.log(`🔄 Запуск автоподсчета для ${date} | ${round}...`);
 
@@ -17259,9 +17262,10 @@ app.post("/api/admin/recount-results", async (req, res) => {
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date) = ?
         AND m.round = ?
+        AND m.event_id = ?
         AND m.status = 'finished'
         AND b.is_final_bet = 0
-    `).all(date, round);
+    `).all(date, round, event.event_id);
 
     console.log(`📊 Найдено ставок: ${bets.length}`);
 
