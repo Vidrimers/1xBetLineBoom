@@ -17262,9 +17262,10 @@ app.post("/api/admin/recount-results", async (req, res) => {
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date) = ?
         AND m.round = ?
+        AND m.event_id = ?
         AND m.status = 'finished'
         AND b.is_final_bet = 0
-    `).all(date, round);
+    `).all(date, round, event.event_id);
 
     console.log(`📊 Найдено ставок: ${bets.length}`);
 
