@@ -11253,6 +11253,7 @@ function closeRecountModal() {
 async function confirmRecount() {
   const date = document.getElementById('recountDate').value;
   const round = document.getElementById('recountRound').value.trim();
+  const eventId = document.getElementById('recountEvent').value;
   const sendToGroup = document.getElementById('recountSendToGroup').checked;
   const sendToUsers = document.getElementById('recountSendToUsers').checked;
 
@@ -11316,6 +11317,7 @@ async function confirmRecount() {
         username: currentUser.username,
         date,
         round,
+        eventId,
         sendToGroup,
         sendToUsers
       })
