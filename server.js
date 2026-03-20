@@ -7359,8 +7359,8 @@ app.get("/api/fd-matches", async (req, res) => {
     const filteredGames = (sstatsData.data || []).filter(game => {
       // Если includeFuture=true, пропускаем все матчи
       // Если includeFuture=false, только завершенные (status: 8, 9, 10 = Finished, After ET, After Penalties)
-      // Исключаем специальные статусы: 11=Postponed, 12=Cancelled, 13=Abandoned, 14=Technical Loss, 15=Walk Over
-      const specialStatuses = [11, 12, 13, 14, 15];
+      // Исключаем специальные статусы: 13=Прерван, 14=Перенесён, 15=Отменён, 17=Техническое поражение, 18=Walkover
+      const specialStatuses = [13, 14, 15, 17, 18];
       if (specialStatuses.includes(game.status)) return false; // Не показываем отменённые/перенесённые матчи
       
       if (includeFuture !== 'true' && ![8, 9, 10].includes(game.status)) return false;
@@ -19334,9 +19334,9 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
     
     // Проверяем что все матчи завершены или отменены
     // Статусы завершения: 8 = Finished, 9 = Finished after extra time, 10 = Finished after penalties
-    // Специальные статусы (не учитываются): 11=Postponed, 12=Cancelled, 13=Abandoned, 14=Technical Loss, 15=Walk Over
+    // Специальные статусы (не учитываются): 13=Прерван, 14=Перенесён, 15=Отменён, 17=Техническое поражение, 18=Walkover
     const finishedStatuses = [8, 9, 10];
-    const specialStatuses = [11, 12, 13, 14, 15]; // Отменённые/перенесённые - не учитываются
+    const specialStatuses = [13, 14, 15, 17, 18]; // Отменённые/перенесённые - не учитываются
     
     const allFinished = matchedMatches.length > 0 && 
                        matchedMatches.every(({ apiMatch }) => 
@@ -19406,26 +19406,26 @@ async function updateMatchesFromAPI(matches) {
       VALUES (?, ?, ?)
     `);
     
-    // Маппинг специальных статусов
+    // Маппинг специальных статусов (по документации SStats)
     const specialStatusMap = {
-      11: 'postponed',      // Перенесён
-      12: 'cancelled',      // Отменён
-      13: 'abandoned',      // Прерван
-      14: 'technical_loss', // Техническое поражение
-      15: 'walkover'        // Неявка
+      13: 'abandoned',      // Матч прерван
+      14: 'postponed',      // Матч перенесён
+      15: 'cancelled',      // Матч отменён
+      17: 'technical_loss', // Техническое поражение
+      18: 'walkover'        // Победа без игры (соперник не явился)
     };
     
     const specialStatusNames = {
-      11: 'Перенесён',
-      12: 'Отменён',
       13: 'Прерван',
-      14: 'Техническое поражение',
-      15: 'Неявка'
+      14: 'Перенесён',
+      15: 'Отменён',
+      17: 'Техническое поражение',
+      18: 'Победа без игры'
     };
     
     for (const { dbMatch, apiMatch } of matches) {
       // Проверяем специальные статусы (отменённые/перенесённые)
-      if ([11, 12, 13, 14, 15].includes(apiMatch.status)) {
+      if (specialStatusMap[apiMatch.status]) {
         const dbStatus = specialStatusMap[apiMatch.status];
         const statusName = specialStatusNames[apiMatch.status];
         
@@ -19440,8 +19440,14 @@ async function updateMatchesFromAPI(matches) {
         continue;
       }
       
-      const homeScore = apiMatch.homeResult;
-      const awayScore = apiMatch.awayResult;
+      // Для матчей с доп. временем (9) и пенальти (10) берём счёт за 90 минут (homeFTResult/awayFTResult)
+      // Для обычных матчей (8) берём homeResult/awayResult
+      const homeScore = ([9, 10].includes(apiMatch.status) && apiMatch.homeFTResult != null)
+        ? apiMatch.homeFTResult
+        : apiMatch.homeResult;
+      const awayScore = ([9, 10].includes(apiMatch.status) && apiMatch.awayFTResult != null)
+        ? apiMatch.awayFTResult
+        : apiMatch.awayResult;
       
       // Получаем код турнира для перевода названий
       const event = db.prepare("SELECT icon FROM events WHERE id = ?").get(dbMatch.event_id);
