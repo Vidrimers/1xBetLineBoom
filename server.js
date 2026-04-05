@@ -941,6 +941,27 @@ function writeBetLog(action, data) {
   }
 }
 
+// Проверяет, является ли пользователь участником группы TELEGRAM_CHAT_ID
+async function isUserInGroup(telegramId) {
+  try {
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID || !telegramId) return false;
+
+    const chatId = TELEGRAM_CHAT_ID.split(',')[0].trim(); // берём первый chat_id
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${chatId}&user_id=${telegramId}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.ok) return false;
+    const status = data.result?.status;
+    return ['member', 'administrator', 'creator', 'restricted'].includes(status);
+  } catch (e) {
+    console.warn(`⚠️ Не удалось проверить членство в группе для ${telegramId}:`, e.message);
+    return true; // при ошибке не исключаем пользователя
+  }
+}
+
 // Функция для проверки и отправки напоминаний непроголосовавших пользователей за 3 часа до матча
 async function checkAndRemindNonVoters() {
   console.log(
@@ -1070,9 +1091,22 @@ async function checkAndRemindNonVoters() {
       });
 
       // Находим пользователей, которые НЕ сделали ставки на все матчи
-      const nonVoters = allUsers.filter(
+      const nonVotersRaw = allUsers.filter(
         (user) => !usersWithAllBets.some(u => u.id === user.id)
       );
+
+      // Фильтруем — оставляем только тех, кто состоит в группе
+      const nonVoters = [];
+      for (const user of nonVotersRaw) {
+        if (user.telegram_id) {
+          const inGroup = await isUserInGroup(user.telegram_id);
+          if (inGroup) {
+            nonVoters.push(user);
+          } else {
+            console.log(`⏰ Пользователь ${user.username} (@${user.telegram_username}) не состоит в группе — пропускаем`);
+          }
+        }
+      }
 
       if (nonVoters.length > 0) {
         console.log(
