@@ -1066,7 +1066,7 @@ async function checkAndRemindNonVoters() {
       // Получаем пользователей, у которых включены напоминания в группе
       const allUsers = db
         .prepare(
-          "SELECT id, username, telegram_username FROM users WHERE telegram_group_reminders_enabled = 1"
+          "SELECT id, username, telegram_username, telegram_id FROM users WHERE telegram_group_reminders_enabled = 1"
         )
         .all();
 
