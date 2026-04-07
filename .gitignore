@@ -1,4 +1,6 @@
 node_modules/
+dist/
+logs/
 temp/
 img/avatar/
 refactoring-lm/
