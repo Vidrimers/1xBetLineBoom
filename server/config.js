@@ -5,7 +5,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Корень проекта (на уровень выше папки server/)
-const ROOT_DIR = path.resolve(__dirname, "..");
+export const ROOT_DIR = path.resolve(__dirname, "..");
 
 export const PORT = process.env.PORT || 1984;
 export const SERVER_IP = process.env.SERVER_IP || "localhost";

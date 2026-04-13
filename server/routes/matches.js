@@ -6,7 +6,7 @@ import { db } from '../database/db.js';
 import { notifyAdmin, notifyModeratorAction } from '../services/notificationService.js';
 import { sendUserMessage } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
-import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, ICON_TO_COMPETITION, COMPETITION_DICTIONARY_MAPPING } from '../config.js';
+import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, ICON_TO_COMPETITION, COMPETITION_DICTIONARY_MAPPING, ROOT_DIR } from '../config.js';
 import { processedDates, saveProcessedDate, checkDateCompletion, updateMatchesFromAPI } from '../services/autoCountingService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -58,7 +58,7 @@ router.get("/api/events/:eventId/matches", (req, res) => {
 // GET /api/team-files
 router.get("/api/team-files", (req, res) => {
   try {
-    const namesDir = path.join(__dirname, '../../names');
+    const namesDir = path.join(ROOT_DIR, 'names');
     
     // Проверяем существование папки
     if (!fs.existsSync(namesDir)) {
@@ -361,7 +361,7 @@ router.post("/api/matches/bulk-create", async (req, res) => {
         
         if (mappingFile) {
           try {
-            const mappingData = JSON.parse(fs.readFileSync(path.join(__dirname, '../../', mappingFile), 'utf-8'));
+            const mappingData = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, mappingFile), 'utf-8'));
             const teamMapping = mappingData.teams || {};
             
             // Создаем обратный маппинг: Английское -> Русское

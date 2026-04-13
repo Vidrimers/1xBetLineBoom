@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { sendUserMessage } from '../../OnexBetLineBoombot.js';
+import { ROOT_DIR } from '../config.js';
 
 const router = Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +27,7 @@ router.get("/api/events/:eventId/brackets", (req, res) => {
 // Получить список файлов команд из папки names
 router.get("/api/team-files", (req, res) => {
   try {
-    const namesDir = path.join(__dirname, '../../names');
+    const namesDir = path.join(ROOT_DIR, 'names');
     
     // Проверяем существование папки
     if (!fs.existsSync(namesDir)) {

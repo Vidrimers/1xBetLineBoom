@@ -7,7 +7,7 @@ import { db } from '../database/db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { notifyAdmin } from '../services/notificationService.js';
-import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, COMPETITION_DICTIONARY_MAPPING, PLAYERS_DICTIONARY_MAPPING, ICON_TO_COMPETITION } from '../config.js';
+import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, COMPETITION_DICTIONARY_MAPPING, PLAYERS_DICTIONARY_MAPPING, ICON_TO_COMPETITION, ROOT_DIR } from '../config.js';
 import { normalizeTeamNameForAPI, translateTeamNameToEnglish, normalizeTeamName, getMatchStatus } from '../utils/helpers.js';
 
 const router = Router();
@@ -300,16 +300,16 @@ router.get("/api/live-matches", async (req, res) => {
     
     // Загружаем словарь команд для турнира
     const mappingFiles = {
-      'SA': path.join(__dirname, '../../names', 'SerieA.json'),
-      'PL': path.join(__dirname, '../../names', 'PremierLeague.json'),
-      'BL1': path.join(__dirname, '../../names', 'Bundesliga.json'),
-      'PD': path.join(__dirname, '../../names', 'LaLiga.json'),
-      'FL1': path.join(__dirname, '../../names', 'Ligue1.json'),
-      'DED': path.join(__dirname, '../../names', 'Eredivisie.json'),
-      'CL': path.join(__dirname, '../../names', 'LeagueOfChampionsTeams.json'),
-      'EL': path.join(__dirname, '../../names', 'EuropaLeague.json'),
-      'ECL': path.join(__dirname, '../../names', 'ConferenceLeague.json'),
-      'RPL': path.join(__dirname, '../../names', 'RussianPremierLeague.json')
+      'SA': path.join(ROOT_DIR, 'names', 'SerieA.json'),
+      'PL': path.join(ROOT_DIR, 'names', 'PremierLeague.json'),
+      'BL1': path.join(ROOT_DIR, 'names', 'Bundesliga.json'),
+      'PD': path.join(ROOT_DIR, 'names', 'LaLiga.json'),
+      'FL1': path.join(ROOT_DIR, 'names', 'Ligue1.json'),
+      'DED': path.join(ROOT_DIR, 'names', 'Eredivisie.json'),
+      'CL': path.join(ROOT_DIR, 'names', 'LeagueOfChampionsTeams.json'),
+      'EL': path.join(ROOT_DIR, 'names', 'EuropaLeague.json'),
+      'ECL': path.join(ROOT_DIR, 'names', 'ConferenceLeague.json'),
+      'RPL': path.join(ROOT_DIR, 'names', 'RussianPremierLeague.json')
     };
     
     let teamMapping = {}; // Русское -> Английское
@@ -820,16 +820,16 @@ router.get("/api/yesterday-matches", async (req, res) => {
         if (leagueId && SSTATS_API_KEY) {
           // Загружаем словарь команд для турнира
           const mappingFiles = {
-            'SA': path.join(__dirname, '../../names', 'SerieA.json'),
-            'PL': path.join(__dirname, '../../names', 'PremierLeague.json'),
-            'BL1': path.join(__dirname, '../../names', 'Bundesliga.json'),
-            'PD': path.join(__dirname, '../../names', 'LaLiga.json'),
-            'FL1': path.join(__dirname, '../../names', 'Ligue1.json'),
-            'DED': path.join(__dirname, '../../names', 'Eredivisie.json'),
-            'CL': path.join(__dirname, '../../names', 'LeagueOfChampionsTeams.json'),
-            'EL': path.join(__dirname, '../../names', 'EuropaLeague.json'),
-            'ECL': path.join(__dirname, '../../names', 'ConferenceLeague.json'),
-            'RPL': path.join(__dirname, '../../names', 'RussianPremierLeague.json')
+            'SA': path.join(ROOT_DIR, 'names', 'SerieA.json'),
+            'PL': path.join(ROOT_DIR, 'names', 'PremierLeague.json'),
+            'BL1': path.join(ROOT_DIR, 'names', 'Bundesliga.json'),
+            'PD': path.join(ROOT_DIR, 'names', 'LaLiga.json'),
+            'FL1': path.join(ROOT_DIR, 'names', 'Ligue1.json'),
+            'DED': path.join(ROOT_DIR, 'names', 'Eredivisie.json'),
+            'CL': path.join(ROOT_DIR, 'names', 'LeagueOfChampionsTeams.json'),
+            'EL': path.join(ROOT_DIR, 'names', 'EuropaLeague.json'),
+            'ECL': path.join(ROOT_DIR, 'names', 'ConferenceLeague.json'),
+            'RPL': path.join(ROOT_DIR, 'names', 'RussianPremierLeague.json')
           };
           
           let teamMapping = {}; // Русское -> Английское

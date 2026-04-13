@@ -6,6 +6,7 @@ import { db } from '../database/db.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { sendUserMessage, sendAdminNotification, notifyReminderEnabled, notifyReminderDeleted } from '../../OnexBetLineBoombot.js';
+import { ROOT_DIR } from '../config.js';
 
 const router = Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -952,7 +953,7 @@ router.post("/api/user/:userId/avatar", (req, res) => {
       .get(userId);
     if (user && user.avatar && user.avatar.startsWith("/img/avatar/")) {
       const oldFilename = user.avatar.split("/").pop();
-      const oldFilepath = path.join(__dirname, "../../img", "avatar", oldFilename);
+      const oldFilepath = path.join(ROOT_DIR, "img", "avatar", oldFilename);
       try {
         if (fs.existsSync(oldFilepath)) {
           fs.unlinkSync(oldFilepath);
@@ -969,7 +970,7 @@ router.post("/api/user/:userId/avatar", (req, res) => {
 
     // Сохраняем файл в папку img/avatar/
     const filename = `user_${userId}_avatar.${extension}`;
-    const filepath = path.join(__dirname, "../../img", "avatar", filename);
+    const filepath = path.join(ROOT_DIR, "img", "avatar", filename);
 
     fs.writeFileSync(filepath, buffer);
 
@@ -1010,7 +1011,7 @@ router.delete("/api/user/:userId/avatar", (req, res) => {
     // Если есть аватар - удаляем файл
     if (user.avatar && user.avatar.startsWith("/img/avatar/")) {
       const filename = user.avatar.split("/").pop();
-      const filepath = path.join(__dirname, "../../img", "avatar", filename);
+      const filepath = path.join(ROOT_DIR, "img", "avatar", filename);
 
       try {
         if (fs.existsSync(filepath)) {
