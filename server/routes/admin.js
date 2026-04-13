@@ -3930,36 +3930,7 @@ router.post("/api/admin/toggle-backup-lock", (req, res) => {
   }
 });
 
-// Запуск Telegram бота
-startBot();
 
-// Запуск фоновой задачи для напоминания непроголосовавших пользователей (каждые 5 минут)
-setInterval(checkAndRemindNonVoters, 5 * 60 * 1000);
-console.log(
-  "🔔 Фоновая задача проверки непроголосовавших пользователей запущена (интервал: 5 минут)"
-);
-
-// Запуск фоновой задачи для уведомления о начале матча (каждую минуту)
-setInterval(checkAndNotifyMatchStart, 60 * 1000);
-console.log(
-  "⚽ Фоновая задача уведомления о начале матча запущена (интервал: 1 минута)"
-);
-
-// Запуск фоновой задачи для уведомления за 3 часа до матча (каждые 5 минут)
-setInterval(checkAndNotifyUpcomingMatches, 5 * 60 * 1000);
-// Запускаем сразу при старте сервера
-checkAndNotifyUpcomingMatches();
-console.log(
-  "🔔 Фоновая задача уведомления за 3 часа до матча запущена (интервал: 5 минут)"
-);
-
-// Запуск фоновой задачи для персональных напоминаний из модального окна (каждые 5 минут)
-setInterval(checkAndSendPersonalReminders, 5 * 60 * 1000);
-// Запускаем сразу при старте сервера
-checkAndSendPersonalReminders();
-console.log(
-  "🔔 Фоновая задача персональных напоминаний запущена (интервал: 5 минут)"
-);
 
 // GET /api/admin/orphaned-data - Проверить orphaned данные (для админа и модераторов с правами)
 router.get("/api/admin/orphaned-data", (req, res) => {
@@ -5219,23 +5190,5 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
   }
 });
 
-// Запускаем проверку каждые 5 минут
-const AUTO_COUNT_INTERVAL = 5 * 60 * 1000; // 5 минут
-setInterval(checkAndAutoCount, AUTO_COUNT_INTERVAL);
-
-console.log(`\n🤖 Автоподсчет активирован (проверка каждые 5 минут)\n`);
-
-// Запуск сервера
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `\n🎯 1xBetLineBoom сервер запущен на http://0.0.0.0:${PORT} (доступен на http://144.124.237.222:${PORT})\n`
-  );
-  
-  // Запускаем первую проверку через 30 секунд после старта
-  setTimeout(() => {
-    console.log(`\n🤖 Запуск первой проверки автоподсчета...\n`);
-    checkAndAutoCount();
-  }, 30000);
-});
 
 export default router;
