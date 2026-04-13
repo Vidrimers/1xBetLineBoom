@@ -1,9 +1,14 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { sendUserMessage } from '../../OnexBetLineBoombot.js';
 
 const router = Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 router.get("/api/events/:eventId/brackets", (req, res) => {
   try {
