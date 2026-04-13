@@ -1,0 +1,177 @@
+/* === Общие исключения для всех тем === */
+
+/* bet-delete-btn */
+body.theme-hacker-green .bet-delete-btn,
+body.theme-solarized .bet-delete-btn,
+body.theme-matrix .bet-delete-btn,
+body.theme-cyberpunk .bet-delete-btn,
+body.theme-leagueChampions .bet-delete-btn,
+body.theme-leagueEurope .bet-delete-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .bet-delete-btn:hover,
+body.theme-solarized .bet-delete-btn:hover,
+body.theme-matrix .bet-delete-btn:hover,
+body.theme-cyberpunk .bet-delete-btn:hover,
+body.theme-leagueChampions .bet-delete-btn:hover,
+body.theme-leagueEurope .bet-delete-btn:hover {
+  background: rgba(244, 67, 54, 0.2) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* auth-btn.logout-mode */
+body.theme-hacker-green .auth-btn.logout-mode,
+body.theme-solarized .auth-btn.logout-mode,
+body.theme-matrix .auth-btn.logout-mode,
+body.theme-cyberpunk .auth-btn.logout-mode,
+body.theme-leagueChampions .auth-btn.logout-mode,
+body.theme-leagueEurope .auth-btn.logout-mode {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .auth-btn.logout-mode:hover,
+body.theme-solarized .auth-btn.logout-mode:hover,
+body.theme-matrix .auth-btn.logout-mode:hover,
+body.theme-cyberpunk .auth-btn.logout-mode:hover,
+body.theme-leagueChampions .auth-btn.logout-mode:hover,
+body.theme-leagueEurope .auth-btn.logout-mode:hover {
+  box-shadow: none !important;
+}
+
+/* avatarEditBtn */
+body.theme-hacker-green #avatarEditBtn,
+body.theme-solarized #avatarEditBtn,
+body.theme-matrix #avatarEditBtn,
+body.theme-cyberpunk #avatarEditBtn,
+body.theme-leagueChampions #avatarEditBtn,
+body.theme-leagueEurope #avatarEditBtn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* close-profile-btn — общий сброс для всех тем */
+body.theme-hacker-green .close-profile-btn,
+body.theme-solarized .close-profile-btn,
+body.theme-matrix .close-profile-btn,
+body.theme-cyberpunk .close-profile-btn,
+body.theme-leagueChampions .close-profile-btn,
+body.theme-leagueEurope .close-profile-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* round-filter-btn.finished — завершённые туры (оранжевые) для всех тем */
+body.theme-hacker-green .round-filter-btn.finished,
+body.theme-solarized .round-filter-btn.finished,
+body.theme-matrix .round-filter-btn.finished,
+body.theme-cyberpunk .round-filter-btn.finished,
+body.theme-leagueChampions .round-filter-btn.finished,
+body.theme-leagueEurope .round-filter-btn.finished {
+  background: rgba(255, 152, 0, 0.6) !important;
+  border-color: #f57c00 !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .round-filter-btn.finished:hover,
+body.theme-solarized .round-filter-btn.finished:hover,
+body.theme-matrix .round-filter-btn.finished:hover,
+body.theme-cyberpunk .round-filter-btn.finished:hover,
+body.theme-leagueChampions .round-filter-btn.finished:hover,
+body.theme-leagueEurope .round-filter-btn.finished:hover {
+  background: rgba(255, 152, 0, 0.8) !important;
+  border-color: #c9721c !important;
+}
+
+/* === Переходы между темами === */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.event-card,
+.match-card,
+.header,
+button,
+.btn,
+.section,
+.modal-content {
+  transition: all 0.3s ease;
+}
+
+/* === Устройства в темах === */
+.theme-hacker-green .device-item,
+.theme-matrix .device-item {
+  border-left-color: #00ff00;
+}
+
+.theme-hacker-green .device-item.current-device,
+.theme-matrix .device-item.current-device {
+  border-left-color: #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.theme-hacker-green .device-current-badge,
+.theme-matrix .device-current-badge {
+  background: #00ff00;
+  color: #000;
+}
+
+.theme-solarized .device-item {
+  border-left-color: #268bd2;
+}
+
+.theme-solarized .device-item.current-device {
+  border-left-color: #268bd2;
+  background: rgba(38, 139, 210, 0.1);
+}
+
+.theme-solarized .device-current-badge {
+  background: #268bd2;
+}
+
+.theme-cyberpunk .device-item {
+  border-left-color: #ff00ff;
+}
+
+.theme-cyberpunk .device-item.current-device {
+  border-left-color: #ff00ff;
+  background: rgba(255, 0, 255, 0.1);
+}
+
+.theme-cyberpunk .device-current-badge {
+  background: #ff00ff;
+}
+
+.theme-league-champions .device-item {
+  border-left-color: #0066cc;
+}
+
+.theme-league-champions .device-item.current-device {
+  border-left-color: #0066cc;
+  background: rgba(0, 102, 204, 0.1);
+}
+
+.theme-league-champions .device-current-badge {
+  background: #0066cc;
+}
+
+.theme-league-europe .device-item {
+  border-left-color: #ff9900;
+}
+
+.theme-league-europe .device-item.current-device {
+  border-left-color: #ff9900;
+  background: rgba(255, 153, 0, 0.1);
+}
+
+.theme-league-europe .device-current-badge {
+  background: #ff9900;
+  color: #000;
+}

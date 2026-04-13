@@ -1,0 +1,207 @@
+/* === THEME LEAGUE EUROPE === */
+body.theme-leagueEurope {
+  background: #0f1419 !important;
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope .header {
+  background: linear-gradient(
+    135deg,
+    #1a1f2e 0%,
+    #ffd700 50%,
+    #1a1f2e 100%
+  ) !important;
+  border-bottom: 4px solid #ffd700;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6);
+}
+
+body.theme-leagueEurope .section {
+  background: linear-gradient(135deg, #1a1f2e 0%, #252d3d 100%) !important;
+  border: 2px solid #ffd700;
+}
+
+body.theme-leagueEurope .event-card {
+  background: linear-gradient(135deg, #252d3d 0%, #3a4556 100%) !important;
+  border: 3px solid #ffd700 !important;
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5);
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope .event-card:hover {
+  box-shadow: 0 8px 35px rgba(255, 215, 0, 0.7);
+  transform: translateY(-3px);
+  border-color: #ffed4e;
+}
+
+body.theme-leagueEurope .match-card {
+  background: linear-gradient(135deg, #252d3d 0%, #3a4556 100%) !important;
+  border-left: 5px solid #ffd700 !important;
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope button,
+body.theme-leagueEurope .btn {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+  color: #000000 !important;
+  font-weight: 700;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6);
+}
+
+body.theme-leagueEurope button:hover,
+body.theme-leagueEurope .btn:hover {
+  background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%) !important;
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.8);
+}
+
+body.theme-leagueEurope input,
+body.theme-leagueEurope select,
+body.theme-leagueEurope textarea {
+  background: #1a1f2e !important;
+  border: 2px solid #ffd700 !important;
+  color: #ffffff !important;
+}
+
+body.theme-leagueEurope .modal-content {
+  background: #0f1419 !important;
+  border: 3px solid #ffd700 !important;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.5);
+}
+
+body.theme-leagueEurope .user-profile-modal {
+  background: #1a1f2e !important;
+  border: 3px solid #ffd700 !important;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.5);
+}
+
+/* tab-btn */
+body.theme-leagueEurope .tab-btn {
+  color: #ffd700 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(255, 215, 0, 0.4) inset !important;
+}
+
+body.theme-leagueEurope .tab-btn:hover {
+  color: #ffed4e !important;
+  background: rgba(255, 215, 0, 0.1) !important;
+}
+
+body.theme-leagueEurope .tab-btn.active {
+  color: #ffed4e !important;
+  background: rgba(255, 215, 0, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.6) !important;
+}
+
+/* participant-item */
+body.theme-leagueEurope .participant-item:hover {
+  background: rgba(255, 215, 0, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3) !important;
+}
+
+/* close-profile-btn */
+body.theme-leagueEurope .close-profile-btn {
+  color: #ffd700 !important;
+}
+
+body.theme-leagueEurope .close-profile-btn:hover {
+  /* color: #000000 !important; */
+  color: rgba(255, 247, 203, 0.8) !important;
+  background: rgba(255, 215, 0, 0.8) !important;
+}
+
+/* round-filter-btn */
+body.theme-leagueEurope .round-filter-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #b0b8c8 !important;
+}
+
+body.theme-leagueEurope .round-filter-btn.active {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4) !important;
+  border: 2px solid #ffd700 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* setting-item */
+body.theme-leagueEurope .setting-item,
+body.theme-leagueEurope .settings-item {
+  background: rgba(255, 215, 0, 0.05) !important;
+  border-left-color: #ffd700 !important;
+}
+
+/* mobile-menu-toggle */
+body.theme-leagueEurope .mobile-menu-toggle {
+  background: rgba(26, 31, 46, 0.9) !important;
+  color: #ffd700 !important;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+}
+
+body.theme-leagueEurope .mobile-menu-toggle:hover {
+  background: rgba(26, 31, 46, 1) !important;
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.8) !important;
+}
+
+/* user-section */
+body.theme-leagueEurope .user-section {
+  background: rgba(26, 31, 46, 0.98) !important;
+  border-left: 3px solid #ffd700 !important;
+}
+
+/* mobile-nav-btn */
+body.theme-leagueEurope .mobile-nav-btn {
+  background: rgba(26, 31, 46, 0.9) !important;
+  color: #ffd700 !important;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+}
+
+body.theme-leagueEurope .mobile-nav-btn:hover {
+  background: rgba(26, 31, 46, 1) !important;
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.8) !important;
+}
+
+/* goal-notification */
+body.theme-leagueEurope .goal-notification {
+  background: linear-gradient(135deg, rgba(255, 87, 34, 0.2) 0%, rgba(255, 152, 0, 0.3) 100%) !important;
+  border: 2px solid #ff9800 !important;
+  box-shadow: 0 0 30px rgba(255, 152, 0, 0.6), inset 0 0 20px rgba(255, 87, 34, 0.1) !important;
+}
+
+body.theme-leagueEurope .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 152, 0, 0.4), transparent);
+}
+
+body.theme-leagueEurope .goal-notification-icon {
+  color: #ff9800 !important;
+  text-shadow: 0 0 15px rgba(255, 152, 0, 0.9);
+}
+
+body.theme-leagueEurope .goal-notification-title {
+  color: #ff5722 !important;
+  text-shadow: 0 0 10px rgba(255, 87, 34, 0.7);
+  font-weight: bold;
+}
+
+body.theme-leagueEurope .goal-notification-teams {
+  color: #e0e6f0 !important;
+}
+
+body.theme-leagueEurope .goal-notification-score {
+  color: #ff9800 !important;
+  text-shadow: 0 0 20px rgba(255, 152, 0, 0.9);
+  font-weight: bold;
+}
+
+body.theme-leagueEurope .goal-notification-header button {
+  color: rgba(224, 230, 240, 0.7) !important;
+}
+
+body.theme-leagueEurope .goal-notification-header button:hover {
+  color: #ff9800 !important;
+  text-shadow: 0 0 10px rgba(255, 152, 0, 0.7);
+}

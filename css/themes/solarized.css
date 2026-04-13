@@ -1,0 +1,176 @@
+/* === THEME SOLARIZED === */
+body.theme-solarized {
+  background: #002b36 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .header {
+  background: linear-gradient(135deg, #073642 0%, #002b36 100%) !important;
+  border-bottom: 2px solid #268bd2;
+}
+
+body.theme-solarized .section {
+  background: #073642 !important;
+  border: 1px solid #586e75;
+}
+
+body.theme-solarized .event-card {
+  background: linear-gradient(135deg, #073642 0%, #0d4a5f 100%) !important;
+  border: 2px solid #268bd2 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .match-card {
+  background: #0d4a5f !important;
+  border-left: 4px solid #2aa198 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized button,
+body.theme-solarized .btn {
+  background: linear-gradient(135deg, #268bd2 0%, #2aa198 100%) !important;
+  color: #fdf6e3 !important;
+}
+
+body.theme-solarized input,
+body.theme-solarized select,
+body.theme-solarized textarea {
+  background: #073642 !important;
+  border: 1px solid #586e75 !important;
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .modal-content {
+  background: #002b36 !important;
+  border: 2px solid #268bd2 !important;
+}
+
+body.theme-solarized .user-profile-modal {
+  background: #073642 !important;
+  border: 2px solid #268bd2 !important;
+}
+
+/* tab-btn */
+body.theme-solarized .tab-btn {
+  color: #268bd2 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(38, 139, 210, 0.4) inset !important;
+}
+
+body.theme-solarized .tab-btn:hover {
+  color: #2aa198 !important;
+  background: rgba(38, 139, 210, 0.1) !important;
+}
+
+body.theme-solarized .tab-btn.active {
+  color: #2aa198 !important;
+  background: rgba(38, 139, 210, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(38, 139, 210, 0.6) !important;
+}
+
+/* participant-item */
+body.theme-solarized .participant-item:hover {
+  background: rgba(38, 139, 210, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(38, 139, 210, 0.3) !important;
+}
+
+/* close-profile-btn */
+body.theme-solarized .close-profile-btn {
+  color: #268bd2 !important;
+}
+
+body.theme-solarized .close-profile-btn:hover {
+  color: #268bd2 !important;
+  background: rgba(38, 139, 210, 0.2) !important;
+}
+
+/* round-filter-btn */
+body.theme-solarized .round-filter-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.theme-solarized .round-filter-btn.active {
+  background: linear-gradient(135deg, #268bd2 0%, #2aa198 100%) !important;
+  color: #fdf6e3 !important;
+  box-shadow: 0 0 10px rgba(38, 139, 210, 0.4) !important;
+  border: 2px solid #268bd2 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* setting-item */
+body.theme-solarized .setting-item,
+body.theme-solarized .settings-item {
+  background: rgba(38, 139, 210, 0.1) !important;
+  border-left-color: #268bd2 !important;
+}
+
+/* mobile-menu-toggle */
+body.theme-solarized .mobile-menu-toggle {
+  background: rgba(7, 54, 66, 0.9) !important;
+  color: #268bd2 !important;
+  border: 1px solid #268bd2 !important;
+  box-shadow: 0 0 15px rgba(38, 139, 210, 0.6) !important;
+}
+
+body.theme-solarized .mobile-menu-toggle:hover {
+  background: rgba(7, 54, 66, 1) !important;
+  box-shadow: 0 0 20px rgba(38, 139, 210, 0.8) !important;
+}
+
+/* user-section */
+body.theme-solarized .user-section {
+  background: rgba(7, 54, 66, 0.98) !important;
+  border-left: 3px solid #268bd2 !important;
+}
+
+/* mobile-nav-btn */
+body.theme-solarized .mobile-nav-btn {
+  background: rgba(7, 54, 66, 0.9) !important;
+  color: #268bd2 !important;
+  border: 1px solid #268bd2 !important;
+  box-shadow: 0 0 15px rgba(38, 139, 210, 0.6) !important;
+}
+
+body.theme-solarized .mobile-nav-btn:hover {
+  background: rgba(7, 54, 66, 1) !important;
+  box-shadow: 0 0 20px rgba(38, 139, 210, 0.8) !important;
+}
+
+/* goal-notification */
+body.theme-solarized .goal-notification {
+  background: linear-gradient(135deg, rgba(7, 54, 66, 0.95) 0%, rgba(13, 74, 95, 0.95) 100%) !important;
+  border: 2px solid #268bd2 !important;
+  box-shadow: 0 0 25px rgba(38, 139, 210, 0.5), inset 0 0 15px rgba(42, 161, 152, 0.1) !important;
+}
+
+body.theme-solarized .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(38, 139, 210, 0.3), transparent);
+}
+
+body.theme-solarized .goal-notification-icon {
+  color: #2aa198 !important;
+}
+
+body.theme-solarized .goal-notification-title {
+  color: #268bd2 !important;
+}
+
+body.theme-solarized .goal-notification-teams {
+  color: #93a1a1 !important;
+}
+
+body.theme-solarized .goal-notification-score {
+  color: #2aa198 !important;
+  text-shadow: 0 0 10px rgba(42, 161, 152, 0.5);
+}
+
+body.theme-solarized .goal-notification-header button {
+  color: rgba(147, 161, 161, 0.7) !important;
+}
+
+body.theme-solarized .goal-notification-header button:hover {
+  color: #93a1a1 !important;
+}

@@ -1,0 +1,205 @@
+/* === THEME LEAGUE CHAMPIONS === */
+body.theme-leagueChampions {
+  background: #0a1428 !important;
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .header {
+  background: linear-gradient(
+    135deg,
+    #162447 0%,
+    #1b9ce5 50%,
+    #162447 100%
+  ) !important;
+  border-bottom: 3px solid #1b9ce5;
+  box-shadow: 0 4px 15px rgba(27, 156, 229, 0.5);
+}
+
+body.theme-leagueChampions .section {
+  background: linear-gradient(135deg, #162447 0%, #1f4068 100%) !important;
+  border: 2px solid #1b9ce5;
+}
+
+body.theme-leagueChampions .event-card {
+  background: linear-gradient(135deg, #1f4068 0%, #2a5c8a 100%) !important;
+  border: 3px solid #1b9ce5 !important;
+  box-shadow: 0 6px 20px rgba(27, 156, 229, 0.4);
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .event-card:hover {
+  box-shadow: 0 8px 30px rgba(27, 156, 229, 0.6);
+  transform: translateY(-3px);
+  border-color: #00d9ff;
+}
+
+body.theme-leagueChampions .match-card {
+  background: linear-gradient(135deg, #1f4068 0%, #2a5c8a 100%) !important;
+  border-left: 5px solid #1b9ce5 !important;
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions button,
+body.theme-leagueChampions .btn {
+  background: linear-gradient(135deg, #1b9ce5 0%, #00d9ff 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  border: 2px solid #1b9ce5 !important;
+  box-shadow: 0 4px 15px rgba(27, 156, 229, 0.5);
+}
+
+body.theme-leagueChampions button:hover,
+body.theme-leagueChampions .btn:hover {
+  background: linear-gradient(135deg, #00d9ff 0%, #1b9ce5 100%) !important;
+  box-shadow: 0 6px 20px rgba(27, 156, 229, 0.7);
+}
+
+body.theme-leagueChampions input,
+body.theme-leagueChampions select,
+body.theme-leagueChampions textarea {
+  background: #162447 !important;
+  border: 2px solid #1b9ce5 !important;
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .modal-content {
+  background: #0a1428 !important;
+  border: 3px solid #1b9ce5 !important;
+  box-shadow: 0 0 30px rgba(27, 156, 229, 0.4);
+}
+
+body.theme-leagueChampions .user-profile-modal {
+  background: #162447 !important;
+  border: 3px solid #1b9ce5 !important;
+  box-shadow: 0 0 30px rgba(27, 156, 229, 0.4);
+}
+
+/* tab-btn */
+body.theme-leagueChampions .tab-btn {
+  color: #3b82f6 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(59, 130, 246, 0.4) inset !important;
+}
+
+body.theme-leagueChampions .tab-btn:hover {
+  color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+body.theme-leagueChampions .tab-btn.active {
+  color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.6) !important;
+}
+
+/* participant-item */
+body.theme-leagueChampions .participant-item:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* close-profile-btn */
+body.theme-leagueChampions .close-profile-btn {
+  color: #3b82f6 !important;
+}
+
+body.theme-leagueChampions .close-profile-btn:hover {
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* round-filter-btn */
+body.theme-leagueChampions .round-filter-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.theme-leagueChampions .round-filter-btn.active {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4) !important;
+  border: 2px solid #3b82f6 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* setting-item */
+body.theme-leagueChampions .setting-item,
+body.theme-leagueChampions .settings-item {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-left-color: #3b82f6 !important;
+}
+
+/* mobile-menu-toggle */
+body.theme-leagueChampions .mobile-menu-toggle {
+  background: rgba(22, 36, 71, 0.9) !important;
+  color: #1b9ce5 !important;
+  border: 2px solid #1b9ce5 !important;
+  box-shadow: 0 0 15px rgba(27, 156, 229, 0.5) !important;
+}
+
+body.theme-leagueChampions .mobile-menu-toggle:hover {
+  background: rgba(22, 36, 71, 1) !important;
+  box-shadow: 0 0 20px rgba(27, 156, 229, 0.7) !important;
+}
+
+/* user-section */
+body.theme-leagueChampions .user-section {
+  background: rgba(22, 36, 71, 0.98) !important;
+  border-left: 3px solid #1b9ce5 !important;
+}
+
+/* mobile-nav-btn */
+body.theme-leagueChampions .mobile-nav-btn {
+  background: rgba(22, 36, 71, 0.9) !important;
+  color: #1b9ce5 !important;
+  border: 2px solid #1b9ce5 !important;
+  box-shadow: 0 0 15px rgba(27, 156, 229, 0.5) !important;
+}
+
+body.theme-leagueChampions .mobile-nav-btn:hover {
+  background: rgba(22, 36, 71, 1) !important;
+  box-shadow: 0 0 20px rgba(27, 156, 229, 0.7) !important;
+}
+
+/* goal-notification */
+body.theme-leagueChampions .goal-notification {
+  background: linear-gradient(135deg, rgba(31, 64, 104, 0.95) 0%, rgba(42, 92, 138, 0.95) 100%) !important;
+  border: 2px solid #1b9ce5 !important;
+  box-shadow: 0 0 30px rgba(27, 156, 229, 0.6), inset 0 0 20px rgba(0, 217, 255, 0.1) !important;
+}
+
+body.theme-leagueChampions .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(27, 156, 229, 0.4), transparent);
+}
+
+body.theme-leagueChampions .goal-notification-icon {
+  color: #00d9ff !important;
+  text-shadow: 0 0 15px rgba(0, 217, 255, 0.9);
+}
+
+body.theme-leagueChampions .goal-notification-title {
+  color: #1b9ce5 !important;
+  text-shadow: 0 0 10px rgba(27, 156, 229, 0.7);
+  font-weight: bold;
+}
+
+body.theme-leagueChampions .goal-notification-teams {
+  color: #e8e8e8 !important;
+}
+
+body.theme-leagueChampions .goal-notification-score {
+  color: #00d9ff !important;
+  text-shadow: 0 0 20px rgba(0, 217, 255, 0.9);
+  font-weight: bold;
+}
+
+body.theme-leagueChampions .goal-notification-header button {
+  color: rgba(232, 232, 232, 0.7) !important;
+}
+
+body.theme-leagueChampions .goal-notification-header button:hover {
+  color: #00d9ff !important;
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.7);
+}

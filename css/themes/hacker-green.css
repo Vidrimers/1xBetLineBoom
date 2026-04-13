@@ -1,0 +1,189 @@
+/* === THEME HACKER GREEN === */
+body.theme-hacker-green {
+  background: #000000 !important;
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green * {
+  color: #00ff00;
+}
+
+body.theme-hacker-green .header {
+  background: linear-gradient(135deg, #001100 0%, #003300 100%) !important;
+  border-bottom: 2px solid #00ff00;
+}
+
+body.theme-hacker-green .section {
+  background: #001100 !important;
+  border: 1px solid #00ff00;
+}
+
+body.theme-hacker-green .event-card {
+  background: linear-gradient(135deg, #002200 0%, #004400 100%) !important;
+  border: 2px solid #00ff00 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+body.theme-hacker-green .event-card:hover {
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+body.theme-hacker-green .match-card {
+  background: #003300 !important;
+  border: 1px solid #00ff00 !important;
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green button,
+body.theme-hacker-green .btn {
+  background: linear-gradient(135deg, #00aa00 0%, #00ff00 100%) !important;
+  color: #000000 !important;
+  border: 1px solid #00ff00 !important;
+  font-weight: bold;
+}
+
+body.theme-hacker-green input,
+body.theme-hacker-green select,
+body.theme-hacker-green textarea {
+  background: #001100 !important;
+  border: 1px solid #00ff00 !important;
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green .modal-content {
+  background: #000000 !important;
+  border: 2px solid #00ff00 !important;
+}
+
+body.theme-hacker-green .user-profile-modal {
+  background: #001100 !important;
+  border: 2px solid #00ff00 !important;
+}
+
+/* tab-btn */
+body.theme-hacker-green .tab-btn {
+  color: #00ff00 !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  box-shadow: 6px 6px 8px -6px rgba(0, 255, 0, 0.4) inset !important;
+}
+
+body.theme-hacker-green .tab-btn:hover {
+  color: #00ff00 !important;
+  background: rgba(0, 255, 0, 0.1) !important;
+}
+
+body.theme-hacker-green .tab-btn.active {
+  color: #00ff00 !important;
+  background: rgba(0, 255, 0, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(0, 255, 0, 0.6) !important;
+}
+
+/* participant-item */
+body.theme-hacker-green .participant-item:hover {
+  background: rgba(0, 255, 0, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(0, 255, 0, 0.3) !important;
+}
+
+/* close-profile-btn */
+body.theme-hacker-green .close-profile-btn {
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green .close-profile-btn:hover {
+  color: #00ff00 !important;
+  background: rgba(0, 255, 0, 0.2) !important;
+}
+
+/* round-filter-btn */
+body.theme-hacker-green .round-filter-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green .round-filter-btn.active {
+  background: linear-gradient(135deg, #00aa00 0%, #00ff00 100%) !important;
+  color: #000000 !important;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.4) !important;
+  border: 2px solid #00ff00 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* setting-item */
+body.theme-hacker-green .setting-item,
+body.theme-hacker-green .settings-item {
+  background: rgba(0, 255, 0, 0.05) !important;
+  border-left-color: #00ff00 !important;
+}
+
+/* mobile-menu-toggle */
+body.theme-hacker-green .mobile-menu-toggle {
+  background: rgba(0, 17, 0, 0.9) !important;
+  color: #00ff00 !important;
+  border: 1px solid #00ff00 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.6) !important;
+}
+
+body.theme-hacker-green .mobile-menu-toggle:hover {
+  background: rgba(0, 17, 0, 1) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.8) !important;
+}
+
+/* user-section */
+body.theme-hacker-green .user-section {
+  background: rgba(0, 17, 0, 0.98) !important;
+  border-left: 3px solid #00ff00 !important;
+}
+
+/* mobile-nav-btn */
+body.theme-hacker-green .mobile-nav-btn {
+  background: rgba(0, 17, 0, 0.9) !important;
+  color: #00ff00 !important;
+  border: 1px solid #00ff00 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.6) !important;
+}
+
+body.theme-hacker-green .mobile-nav-btn:hover {
+  background: rgba(0, 17, 0, 1) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.8) !important;
+}
+
+/* goal-notification */
+body.theme-hacker-green .goal-notification {
+  background: linear-gradient(135deg, rgba(0, 50, 0, 0.95) 0%, rgba(0, 100, 0, 0.95) 100%) !important;
+  border: 2px solid #00ff00 !important;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.6), inset 0 0 20px rgba(0, 255, 0, 0.1) !important;
+}
+
+body.theme-hacker-green .goal-notification::before {
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.3), transparent);
+}
+
+body.theme-hacker-green .goal-notification-icon {
+  color: #00ff00 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+}
+
+body.theme-hacker-green .goal-notification-title {
+  color: #00ff00 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
+}
+
+body.theme-hacker-green .goal-notification-teams {
+  color: #00ff00 !important;
+}
+
+body.theme-hacker-green .goal-notification-score {
+  color: #00ff00 !important;
+  text-shadow: 0 0 15px rgba(0, 255, 0, 0.9);
+}
+
+body.theme-hacker-green .goal-notification-header button {
+  color: rgba(0, 255, 0, 0.7) !important;
+}
+
+body.theme-hacker-green .goal-notification-header button:hover {
+  color: #00ff00 !important;
+}
