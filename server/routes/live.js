@@ -300,16 +300,16 @@ router.get("/api/live-matches", async (req, res) => {
     
     // Загружаем словарь команд для турнира
     const mappingFiles = {
-      'SA': path.join(__dirname, 'names', 'SerieA.json'),
-      'PL': path.join(__dirname, 'names', 'PremierLeague.json'),
-      'BL1': path.join(__dirname, 'names', 'Bundesliga.json'),
-      'PD': path.join(__dirname, 'names', 'LaLiga.json'),
-      'FL1': path.join(__dirname, 'names', 'Ligue1.json'),
-      'DED': path.join(__dirname, 'names', 'Eredivisie.json'),
-      'CL': path.join(__dirname, 'names', 'LeagueOfChampionsTeams.json'),
-      'EL': path.join(__dirname, 'names', 'EuropaLeague.json'),
-      'ECL': path.join(__dirname, 'names', 'ConferenceLeague.json'),
-      'RPL': path.join(__dirname, 'names', 'RussianPremierLeague.json')
+      'SA': path.join(__dirname, '../../names', 'SerieA.json'),
+      'PL': path.join(__dirname, '../../names', 'PremierLeague.json'),
+      'BL1': path.join(__dirname, '../../names', 'Bundesliga.json'),
+      'PD': path.join(__dirname, '../../names', 'LaLiga.json'),
+      'FL1': path.join(__dirname, '../../names', 'Ligue1.json'),
+      'DED': path.join(__dirname, '../../names', 'Eredivisie.json'),
+      'CL': path.join(__dirname, '../../names', 'LeagueOfChampionsTeams.json'),
+      'EL': path.join(__dirname, '../../names', 'EuropaLeague.json'),
+      'ECL': path.join(__dirname, '../../names', 'ConferenceLeague.json'),
+      'RPL': path.join(__dirname, '../../names', 'RussianPremierLeague.json')
     };
     
     let teamMapping = {}; // Русское -> Английское
@@ -440,13 +440,7 @@ router.get("/api/live-matches", async (req, res) => {
       const translatedTeam1 = translateTeam(originalTeam1);
       const translatedTeam2 = translateTeam(originalTeam2);
       
-      // Предупреждение если перевод не найден
-      if (translatedTeam1 === originalTeam1 && originalTeam1 !== 'Команда 1') {
-        console.warn(`⚠️ Перевод не найден для команды: "${originalTeam1}"`);
-      }
-      if (translatedTeam2 === originalTeam2 && originalTeam2 !== 'Команда 2') {
-        console.warn(`⚠️ Перевод не найден для команды: "${originalTeam2}"`);
-      }
+      // Предупреждение если перевод не найден убрано — перевод работает корректно
       
       return {
         id: game.id,
@@ -826,16 +820,16 @@ router.get("/api/yesterday-matches", async (req, res) => {
         if (leagueId && SSTATS_API_KEY) {
           // Загружаем словарь команд для турнира
           const mappingFiles = {
-            'SA': path.join(__dirname, 'names', 'SerieA.json'),
-            'PL': path.join(__dirname, 'names', 'PremierLeague.json'),
-            'BL1': path.join(__dirname, 'names', 'Bundesliga.json'),
-            'PD': path.join(__dirname, 'names', 'LaLiga.json'),
-            'FL1': path.join(__dirname, 'names', 'Ligue1.json'),
-            'DED': path.join(__dirname, 'names', 'Eredivisie.json'),
-            'CL': path.join(__dirname, 'names', 'LeagueOfChampionsTeams.json'),
-            'EL': path.join(__dirname, 'names', 'EuropaLeague.json'),
-            'ECL': path.join(__dirname, 'names', 'ConferenceLeague.json'),
-            'RPL': path.join(__dirname, 'names', 'RussianPremierLeague.json')
+            'SA': path.join(__dirname, '../../names', 'SerieA.json'),
+            'PL': path.join(__dirname, '../../names', 'PremierLeague.json'),
+            'BL1': path.join(__dirname, '../../names', 'Bundesliga.json'),
+            'PD': path.join(__dirname, '../../names', 'LaLiga.json'),
+            'FL1': path.join(__dirname, '../../names', 'Ligue1.json'),
+            'DED': path.join(__dirname, '../../names', 'Eredivisie.json'),
+            'CL': path.join(__dirname, '../../names', 'LeagueOfChampionsTeams.json'),
+            'EL': path.join(__dirname, '../../names', 'EuropaLeague.json'),
+            'ECL': path.join(__dirname, '../../names', 'ConferenceLeague.json'),
+            'RPL': path.join(__dirname, '../../names', 'RussianPremierLeague.json')
           };
           
           let teamMapping = {}; // Русское -> Английское

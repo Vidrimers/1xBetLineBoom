@@ -3440,7 +3440,7 @@ router.post("/api/backup", async (req, res) => {
       .slice(0, -5);
     const backupFilename = `1xBetLineBoom_backup_${timestamp}.db`;
     const backupPath = path.join(BACKUPS_DIR, backupFilename);
-    const dbPath = path.join(__dirname, "1xBetLineBoom.db");
+    const dbPath = path.join(__dirname, "../../1xBetLineBoom.db");
 
     // Синхронизируем все изменения в основной файл БД перед копированием
     db.pragma("synchronous = FULL");
@@ -3695,7 +3695,7 @@ router.post("/api/admin/restore-backup", async (req, res) => {
     }
 
     const backupPath = path.join(BACKUPS_DIR, filename);
-    const dbPath = path.join(__dirname, "1xBetLineBoom.db");
+    const dbPath = path.join(__dirname, "../../1xBetLineBoom.db");
 
     // Проверяем что файл бэкапа существует
     if (!fs.existsSync(backupPath)) {

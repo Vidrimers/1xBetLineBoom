@@ -26,7 +26,7 @@ router.get("/api/events/:eventId/brackets", (req, res) => {
 // Получить список файлов команд из папки names
 router.get("/api/team-files", (req, res) => {
   try {
-    const namesDir = path.join(__dirname, 'names');
+    const namesDir = path.join(__dirname, '../../names');
     
     // Проверяем существование папки
     if (!fs.existsSync(namesDir)) {
