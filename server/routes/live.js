@@ -1,5 +1,10 @@
 import { Router } from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { notifyAdmin } from '../services/notificationService.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, COMPETITION_DICTIONARY_MAPPING, PLAYERS_DICTIONARY_MAPPING, ICON_TO_COMPETITION } from '../config.js';
 import { normalizeTeamNameForAPI, translateTeamNameToEnglish, normalizeTeamName, getMatchStatus } from '../utils/helpers.js';
