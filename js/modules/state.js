@@ -135,6 +135,9 @@ export let completedDaysLoaded = {};
 export let completedDaysData = null; // Сохраняем данные с сервера
 export let yesterdayMatchesLoaded = false;
 
+export function setCurrentLiveEventId(val) { currentLiveEventId = val; }
+export function setCompletedDaysData(val) { completedDaysData = val; }
+
 // ===== УВЕДОМЛЕНИЯ О ГОЛАХ =====
 export const matchScores = {};
 export const matchFinishTimes = {};
