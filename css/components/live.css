@@ -1,0 +1,296 @@
+#live-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.live-matches-container {
+  width: 100%;
+}
+
+.live-events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.live-event-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.live-event-card:hover {
+  background: rgba(244, 67, 54, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
+}
+
+.live-event-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f44336, #ff6b6b, #f44336);
+  background-size: 200% 100%;
+  animation: live-gradient 2s linear infinite;
+}
+
+@keyframes live-gradient {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+.live-event-section {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(90, 159, 212, 0.2);
+}
+
+.live-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.match-row.live-match {
+  animation: pulse-border 2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.match-row.live-match::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: #f44336;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-left-color: #f44336;
+  }
+  50% {
+    border-left-color: #ff6b6b;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px #f44336;
+  }
+  50% {
+    box-shadow: 0 0 15px #f44336;
+  }
+}
+
+
+/* ===== ИЗБРАННЫЕ LIVE МАТЧИ ===== */
+.favorite-star {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  user-select: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.favorite-star:hover {
+  transform: scale(1.2);
+}
+
+.favorite-star.active {
+  animation: star-pulse 1s ease-in-out infinite;
+}
+
+@keyframes star-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+/* ===== УВЕДОМЛЕНИЯ О ГОЛАХ ===== */
+#goalNotifications {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  transition: transform 0.3s ease-out;
+}
+
+/* Плавное следование за скроллом на десктопе */
+@media (min-width: 1400px) {
+  #goalNotifications {
+    position: absolute;
+    top: 80px;
+    will-change: transform;
+  }
+}
+
+.goal-notification {
+  /* background: linear-gradient(135deg, rgba(76, 175, 80, 0.95) 0%, rgba(56, 142, 60, 0.95) 100%); */
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0) 0%, rgba(56, 142, 60, 0.5) 100%);
+  border: 2px solid #4caf50;
+  border-radius: 12px;
+  padding: 15px 20px;
+  min-width: 280px;
+  max-width: 350px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(76, 175, 80, 0.3);
+  animation: slideInLeft 0.4s ease-out;
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.goal-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  /* background: linear-gradient(90deg, #4caf50, #8bc34a, #4caf50); */
+background: linear-gradient(90deg, rgba(76, 175, 80, 0.5), rgba(139, 195, 74, 0.1), rgba(76, 175, 80, 0.5));
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.goal-notification.removing {
+  animation: slideOutLeft 0.3s ease-in forwards;
+}
+
+.goal-notification-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.goal-notification-icon {
+  font-size: 24px;
+  animation: goalBounce 0.6s ease-out;
+}
+
+@keyframes goalBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  75% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes goalShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+.goal-notification.shake {
+  animation: goalShake 0.5s ease-in-out;
+  animation-iteration-count: 12; /* 12 раз по 0.5 сек = 6 секунд */
+}
+
+.goal-notification-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.goal-notification-teams {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+.goal-notification-score {
+  font-size: 28px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 8px 0;
+}
+
+
+/* === СТИЛИ ДЛЯ КНОПОК ТУРНИРОВ В ПОДСЧЕТЕ === */
+.goal-notification-header button:hover {
+  color: rgba(255, 255, 255, 1) !important;
+  transform: scale(1.2);
+}
+
+/* Кнопки фильтра новостей */

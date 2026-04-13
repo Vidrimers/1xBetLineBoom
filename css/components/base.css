@@ -1,0 +1,131 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #181c24 0%, #232a36 100%);
+  min-height: 100vh;
+  padding: 20px;
+  color: #e0e6f0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Скрываем контент до логина */
+.container.not-logged-in .tabs,
+.container.not-logged-in #allbets-content,
+.container.not-logged-in #participants-content,
+.container.not-logged-in #profile-content,
+.container.not-logged-in #settings-content,
+.container.not-logged-in #counting-content,
+.container.not-logged-in .profile-section {
+  display: none !important;
+}
+
+.not-logged-in header {
+  flex-direction: column;
+}
+
+.not-logged-in.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 90vh;
+}
+
+.not-logged-in .user-section {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.not-logged-in header img {
+  width: 230px;
+  height: auto;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  color: white;
+  margin-bottom: 10px;
+  animation: slideDown 0.6s ease;
+}
+
+header img {
+  width: 100px;
+  height: auto;
+}
+
+header h1 {
+  font-size: 2em;
+  /* margin-bottom: 10px; */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.user-section {
+  background: rgba(30, 34, 44, 0.85);
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  max-width: 850px;
+  margin: 0 auto 10px;
+}
+
+/* Кнопка мобильного меню (скрыта на десктопе) */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #3a7bd5;
+}
+
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3a7bd5;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 10px auto;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+

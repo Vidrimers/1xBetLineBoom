@@ -1,0 +1,400 @@
+.match-row.has-user-bet {
+  /* background: rgba(20, 40, 70, 0.4); */
+  background: rgba(80, 60, 40, 0.7);
+  border-left-color: #ffb81c;
+  /* box-shadow: 0 0 12px rgba(255, 184, 28, 0.2); */
+}
+
+/* Стили для выигрышных ставок */
+.match-row.has-user-bet.bet-won {
+  background: rgba(60, 80, 50, 0.7);
+  border-left-color: #4caf50;
+}
+
+/* Стили для проигрышных ставок */
+.match-row.has-user-bet.bet-lost {
+  background: rgba(80, 40, 40, 0.7);
+  border-left-color: #f44336;
+}
+
+.match-teams {
+  flex: 1;
+}
+
+.match-vs {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.team {
+  flex: 1;
+  padding: 8px;
+  background: rgba(50, 55, 70, 0.7);
+  border-radius: 5px;
+  text-align: center;
+  font-weight: 600;
+  color: #e0e6f0;
+}
+
+.vs-text {
+  font-weight: bold;
+  color: #5a9fd4;
+  font-size: 0.9em;
+}
+
+/* Прогноз на счет */
+.match-round-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 5px auto 0;
+  gap: 15px;
+}
+
+.score-input {
+  width: 50px;
+  padding: 6px;
+  background: rgba(50, 55, 70, 0.7);
+  border: 1px solid #5a9fd4;
+  color: #e0e6f0;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.8em;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.score-input-left {
+  position: absolute;
+  left: calc((100% - 40px) / 4 - 25px);
+}
+
+.score-input-right {
+  position: absolute;
+  right: calc((100% - 40px) / 4 - 25px);
+}
+
+.score-placeholder {
+  width: 50px;
+}
+
+.score-input:focus {
+  outline: none;
+  border-color: #7ab0e0;
+  background: rgba(58, 123, 213, 0.2);
+}
+
+.score-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.match-round {
+  text-align: center;
+  font-size: 0.8em;
+  color: #5a9fd4;
+  font-weight: 500;
+}
+
+.score-action-btns {
+  position: absolute;
+  right: 0;
+  display: flex;
+  gap: 0;
+}
+
+.score-confirm-btn,
+.score-cancel-btn {
+  padding: 5px 5px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.score-confirm-btn {
+  color: #4db8a8;
+}
+
+.score-confirm-btn:hover {
+  background: rgba(77, 184, 168, 0.2);
+}
+
+.score-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.score-cancel-btn {
+  color: #f44336;
+}
+
+.score-cancel-btn:hover {
+  background: rgba(244, 67, 54, 0.2);
+}
+
+.score-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Кастомный алерт для прогноза на счет */
+.score-alert {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(30, 35, 50, 0.98);
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  padding: 20px 30px;
+  z-index: 10001;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: scoreAlertFadeIn 0.2s ease;
+}
+
+@keyframes scoreAlertFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.score-alert-content {
+  text-align: center;
+}
+
+.score-alert-icon {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+.score-alert-message {
+  color: #e0e6f0;
+  font-size: 0.95em;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.score-alert-button {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.score-alert-button:hover {
+  background: #d32f2f;
+}
+
+.score-alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+}
+
+.bet-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.bet-buttons-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.bet-btn {
+  padding: 3px 12px;
+  font-size: 0.9em;
+  background: rgba(58, 123, 213, 0.8);
+  color: #e0e6f0;
+  border: 1px solid #3a7bd5;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  text-align: center;
+}
+
+.bet-btn:hover {
+  background: rgba(58, 123, 213, 0.95);
+  color: #fff;
+}
+
+.bet-btn:disabled {
+  background: rgba(100, 110, 130, 0.5);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.bet-btn:disabled:hover {
+  background: rgba(100, 110, 130, 0.5);
+}
+
+.bet-btn.team1 {
+  border-left: 3px solid #4caf50;
+}
+
+.bet-btn.draw {
+  border-left: 3px solid #ffb81c;
+}
+
+.bet-btn.team2 {
+  border-left: 3px solid #ff9800;
+}
+
+/* Стиль для выбранной ставки */
+.bet-btn.selected {
+  background: rgba(90, 159, 212, 0.6) !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  /* cursor: default; */
+  cursor: wait;
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.4);
+  transform: scale(0.97);
+}
+
+/* Стиль для процентов в кнопках ставок (вместо названий команд) */
+.bet-percent-wrapper {
+  font-size: 1.1em;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.bet-percent-wrapper.visible {
+  opacity: 1;
+}
+
+/* .bet-btn.selected::after {
+  content: " ✓";
+} */
+
+.my-bets-list {
+  display: flex;
+  flex-direction: column;
+  /* gap: 10px; */
+}
+
+.bet-item {
+  padding: 12px;
+  background: rgba(44, 50, 63, 0.7);
+  border-radius: 8px;
+  border-left: 4px solid #3a7bd5;
+  position: relative;
+  padding-right: 40px;
+  color: #e0e6f0;
+}
+
+.bet-item.pending {
+  border-left-color: #ff9800;
+}
+
+.bet-item.won {
+  background: rgba(60, 80, 50, 0.7);
+  border-left-color: #4caf50;
+  color: #a0d895;
+}
+
+.bet-item.lost {
+  background: rgba(80, 40, 40, 0.7);
+  border-left-color: #f44336;
+  color: #d88080;
+}
+
+.bet-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #b0b8c8;
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.bet-delete-btn:hover {
+  color: #f44336;
+  background: rgba(244, 67, 54, 0.2);
+}
+
+.bet-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.bet-match {
+  font-weight: 600;
+  color: #e0e6f0;
+}
+
+.bet-prediction {
+  padding: 3px 8px;
+  background: rgba(58, 123, 213, 0.8);
+  color: #e0e6f0;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+
+.bet-status {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.bet-status.pending {
+  background: rgba(255, 152, 0, 0.3);
+  color: #ffb74d;
+}
+
+.bet-status.won {
+  background: rgba(76, 175, 80, 0.3);
+  color: #a0d895;
+}
+
+.bet-status.lost {
+  background: rgba(244, 67, 54, 0.3);
+  color: #d88080;
+}
+
+.bet-status.cancelled {
+  background: rgba(255, 87, 34, 0.3);
+  color: #ff9800;
+}
+
+.empty-message {
+  text-align: center;
+  color: #b0b8c8;
+  padding: 30px;
+  font-size: 1.1em;
+}
+
+/* Стили для вкладок */

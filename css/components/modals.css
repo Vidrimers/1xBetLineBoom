@@ -1,0 +1,415 @@
+/* Стили для модального окна */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal.active {
+  display: flex !important;
+}
+
+/* Переопределяем display для модальных окон когда они открыты */
+.modal[style*="display: flex"] {
+  display: flex !important;
+}
+
+#lockEventModal[style*="display: flex"] {
+  display: flex !important;
+}
+
+#importMatchesModal[style*="display: flex"] {
+  display: flex !important;
+}
+
+/* Предотвращаем закрытие модалки при клике на содержимое */
+.modal-content {
+  pointer-events: auto;
+}
+
+/* Стили для модального окна терминала */
+.terminal-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  display: none !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 999999 !important;
+  animation: fadeIn 0.3s ease;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.terminal-modal.active {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.modal-content {
+  background: rgba(40, 44, 54, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideDown 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #3a7bd5;
+  background: rgba(58, 123, 213, 0.8);
+  color: #e0e6f0;
+  border-radius: 10px 10px 0 0;
+}
+
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-action-btn {
+  background: rgba(0, 188, 212, 0.8);
+  color: #fff;
+  border: 1px solid #00bcd4;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  display: none;
+  white-space: nowrap;
+}
+
+.modal-action-btn:hover {
+  background: rgba(0, 188, 212, 1);
+  transform: translateY(-2px);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: transparent;
+  border-radius: none !important;
+  box-shadow: none !important;
+  transform: rotate(720deg) !important;
+}
+
+.modal-body {
+  padding: 20px;
+  color: #e0e6f0;
+  max-height: calc(90vh - 120px); /* Вычитаем высоту header и footer */
+  overflow-y: auto;
+}
+
+.admin-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-user-item {
+  padding: 15px;
+  background: rgba(44, 50, 63, 0.7);
+  border-radius: 8px;
+  border-left: 4px solid #3a7bd5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  color: #e0e6f0;
+}
+
+.admin-user-item:hover {
+  background: rgba(58, 123, 213, 0.7);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+  transform: translateX(5px);
+}
+
+.admin-user-info {
+  flex: 1;
+}
+
+.admin-user-name {
+  font-weight: 600;
+  font-size: 1.1em;
+  margin-bottom: 5px;
+}
+
+.admin-user-stats {
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.admin-user-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-btn {
+  padding: 6px 12px;
+  font-size: 0.75em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.admin-btn-rename {
+  background: #ff9800;
+  color: white;
+}
+
+.admin-btn-rename:hover {
+  background: #f57c00;
+  transform: translateY(-2px);
+}
+
+.admin-btn-settings {
+  background: #9c27b0;
+  color: white;
+  padding: 8px 12px;
+  min-width: 40px;
+}
+
+.admin-btn-settings:hover {
+  background: #7b1fa2;
+  transform: translateY(-2px);
+}
+
+.admin-btn-delete {
+  background: #f44336;
+  color: white;
+}
+
+.admin-btn-delete:hover {
+  background: #d32f2f;
+  transform: translateY(-2px);
+}
+
+.admin-btn-bot-check {
+  background: #00bcd4;
+  color: white;
+}
+
+.admin-btn-bot-check:hover {
+  background: #0097a7;
+  transform: translateY(-2px);
+}
+
+/* Стили для формы */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100001;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+.custom-modal {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: scale(0.9);
+  animation: modalPop 0.3s forwards;
+}
+
+@keyframes modalPop {
+  to { transform: scale(1); }
+}
+
+.custom-modal-title {
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.custom-modal-message {
+  color: #bbb;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.custom-modal-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.custom-modal-input:focus {
+  outline: none;
+  border-color: #4caf50;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.custom-modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.custom-modal-btn {
+  padding: 10px 25px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.custom-modal-btn-primary {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: #fff;
+}
+
+.custom-modal-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.custom-modal-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.custom-modal-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.custom-modal-btn-danger {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: #fff;
+}
+
+.custom-modal-btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+}
+
+/* Дополнительные стили для кастомных модалок с большим контентом */
+.custom-modal {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.custom-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.custom-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.custom-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Багрепорты */
+.modal {
+  animation: modalFadeIn 0.3s ease-out;
+  transform-origin: var(--modal-origin-x, center) var(--modal-origin-y, center);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.3) translate(var(--modal-translate-x, 0), var(--modal-translate-y, 0));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+}
+
+.modal.closing {
+  animation: modalFadeOut 0.2s ease-in forwards;
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.3) translate(var(--modal-translate-x, 0), var(--modal-translate-y, 0));
+  }
+}
+
+
+/* Стили для предстоящих турниров */
