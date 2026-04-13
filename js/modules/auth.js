@@ -9,6 +9,7 @@ import {
 import { showCustomAlert, showCustomConfirm, showCustomPrompt } from './ui.js';
 import { loadSavedTheme } from './themes.js';
 
+
 // ===== КНОПКА АВТОРИЗАЦИИ =====
 
 export function moveAuthButtonToProfile() {

@@ -1,0 +1,247 @@
+import * as state from './state.js';
+import { showCustomAlert, showCustomConfirm } from './ui.js';
+
+// Загрузить порядок туров из БД
+export async function loadRoundsOrder() {
+  try {
+    if (!state.currentEventId) {
+      state.roundsOrder = [];
+      return;
+    }
+    const response = await fetch(`/api/rounds-order/${state.currentEventId}`);
+    if (response.ok) {
+      state.roundsOrder = await response.json();
+    } else {
+      state.roundsOrder = [];
+    }
+  } catch (e) {
+    console.error("Ошибка загрузки порядка туров:", e);
+    state.roundsOrder = [];
+  }
+}
+
+// Сохранить порядок туров в БД (только админ)
+export async function saveRoundsOrderToStorage() {
+  try {
+    if (!state.currentEventId) {
+      console.error("Нет выбранного турнира");
+      return;
+    }
+    const response = await fetch("/api/admin/rounds-order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rounds: state.roundsOrder,
+        event_id: state.currentEventId,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Ошибка сохранения");
+    }
+  } catch (e) {
+    console.error("Ошибка сохранения порядка туров:", e);
+    alert("Ошибка сохранения порядка туров");
+  }
+}
+
+// Открыть модальное окно редактирования порядка туров
+export function openRoundsOrderModal() {
+  // Собираем все туры (включая финал если есть финальные матчи)
+  const uniqueRounds = [
+    ...new Set(state.matches.map((m) => m.round).filter((r) => r && r.trim())),
+  ];
+
+  // Добавляем "🏆 Финал" если есть финальные матчи
+  const hasFinalMatches = state.matches.some(
+    (m) => m.is_final === 1 || m.is_final === true
+  );
+  if (hasFinalMatches && !uniqueRounds.includes("🏆 Финал")) {
+    uniqueRounds.push("🏆 Финал");
+  }
+
+  // Убедимся, что финал есть в roundsOrder если он есть в uniqueRounds
+  if (hasFinalMatches && !state.roundsOrder.includes("🏆 Финал")) {
+    state.roundsOrder.push("🏆 Финал");
+  }
+
+  // Сортируем туры по сохраненному порядку
+  state.tempRoundsOrder = sortRoundsByOrder(uniqueRounds);
+
+  renderRoundsOrderList();
+  document.getElementById("roundsOrderModal").classList.add("active");
+
+  // Блокируем скролл body
+  document.body.style.overflow = 'hidden';
+}
+
+// Закрыть модальное окно
+export function closeRoundsOrderModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById("roundsOrderModal").classList.remove("active");
+
+  // Разблокируем скролл body
+  document.body.style.overflow = '';
+}
+
+// Отрисовать список туров в модальном окне
+export function renderRoundsOrderList() {
+  const list = document.getElementById("roundsOrderList");
+  list.innerHTML = state.tempRoundsOrder
+    .map(
+      (round, index) => `
+      <li class="rounds-order-item" draggable="true" data-index="${index}">
+        <span class="drag-handle">☰</span>
+        <span class="round-name">${round}</span>
+        <button class="delete-round-btn" onclick="deleteRound('${round.replace(/'/g, "\\'")}', ${index})" title="Удалить тур и все его матчи">×</button>
+      </li>
+    `
+    )
+    .join("");
+
+  // Добавляем обработчики drag-and-drop
+  const items = list.querySelectorAll(".rounds-order-item");
+  items.forEach((item) => {
+    item.addEventListener("dragstart", handleDragStart);
+    item.addEventListener("dragend", handleDragEnd);
+    item.addEventListener("dragover", handleDragOver);
+    item.addEventListener("drop", handleDrop);
+    item.addEventListener("dragenter", handleDragEnter);
+    item.addEventListener("dragleave", handleDragLeave);
+  });
+}
+
+// Удалить тур и все его матчи
+export async function deleteRound(roundName, index) {
+  const confirmed = await showCustomConfirm(
+    `Вы уверены, что хотите удалить тур "${roundName}" и все его матчи?`,
+    "Подтверждение удаления",
+    "⚠️"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    // Удаляем тур из временного массива
+    state.tempRoundsOrder.splice(index, 1);
+
+    // Удаляем матчи этого тура из базы данных
+    const response = await fetch(`/api/admin/rounds/${encodeURIComponent(roundName)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: state.currentUser.username,
+        event_id: state.currentEventId,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Ошибка при удалении тура');
+    }
+
+    // Обновляем глобальный массив туров
+    state.roundsOrder = [...state.tempRoundsOrder];
+    await saveRoundsOrderToStorage();
+
+    // Перезагружаем матчи
+    const { loadMatches } = await import('./matches.js');
+    await loadMatches();
+
+    // Перерисовываем список туров в модалке
+    renderRoundsOrderList();
+  } catch (error) {
+    console.error('Ошибка при удалении тура:', error);
+    await showCustomAlert('Не удалось удалить тур', "Ошибка", "❌");
+  }
+}
+
+// ===== Drag-and-drop обработчики =====
+
+function handleDragStart(e) {
+  state.draggedItem = this;
+  this.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+}
+
+function handleDragEnd(e) {
+  this.classList.remove("dragging");
+  document.querySelectorAll(".rounds-order-item").forEach((item) => {
+    item.classList.remove("drag-over");
+  });
+  state.draggedItem = null;
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+}
+
+function handleDragEnter(e) {
+  e.preventDefault();
+  if (this !== state.draggedItem) {
+    this.classList.add("drag-over");
+  }
+}
+
+function handleDragLeave(e) {
+  this.classList.remove("drag-over");
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  this.classList.remove("drag-over");
+
+  if (state.draggedItem && this !== state.draggedItem) {
+    const fromIndex = parseInt(state.draggedItem.dataset.index);
+    const toIndex = parseInt(this.dataset.index);
+
+    // Перемещаем элемент в массиве
+    const item = state.tempRoundsOrder.splice(fromIndex, 1)[0];
+    state.tempRoundsOrder.splice(toIndex, 0, item);
+
+    // Перерисовываем список
+    renderRoundsOrderList();
+  }
+}
+
+// Сохранить порядок туров
+export async function saveRoundsOrder() {
+  state.roundsOrder = [...state.tempRoundsOrder];
+  await saveRoundsOrderToStorage();
+  closeRoundsOrderModal();
+  const { displayMatches } = await import('./matches.js');
+  displayMatches();
+}
+
+// Сортировать туры по сохраненному порядку
+export function sortRoundsByOrder(rounds) {
+  return rounds.sort((a, b) => {
+    const indexA = state.roundsOrder.indexOf(a);
+    const indexB = state.roundsOrder.indexOf(b);
+
+    // Если оба в сохраненном порядке - сортируем по индексу
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    // Если только a в порядке - a идет первым
+    if (indexA !== -1) return -1;
+    // Если только b в порядке - b идет первым
+    if (indexB !== -1) return 1;
+    // Если оба не в порядке - оставляем как есть
+    return 0;
+  });
+}
+
+// Загрузить конфигурацию сервера
+export async function loadConfig() {
+  try {
+    const response = await fetch("/api/config");
+    const config = await response.json();
+    state.ADMIN_LOGIN = config.ADMIN_LOGIN;
+    state.ADMIN_DB_NAME = config.ADMIN_DB_NAME;
+  } catch (error) {
+    console.error("❌ Ошибка при загрузке конфигурации:", error);
+  }
+}
