@@ -573,7 +573,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
     show_penalties_at_end,
   } = req.body;
 
-  console.log("��� PUT /api/admin/matches/:matchId", { matchId, username, status, result });
+  console.log("��� PUT /api/admin/matches/:matchId", { matchId, username, status, result });
 
   const isAdminUser = username === process.env.ADMIN_DB_NAME;
   let isModerator = false;
@@ -647,10 +647,10 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
         const match = db.prepare("SELECT team1_name, team2_name FROM matches WHERE id = ?").get(matchId);
         const event = db.prepare("SELECT e.name FROM events e JOIN matches m ON m.event_id = e.id WHERE m.id = ?").get(matchId);
         const resultText = result === 'team1_win' ? match.team1_name : result === 'team2_win' ? match.team2_name : 'Ничья';
-        let details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}\n��� Результат: ${resultText}`;
+        let details = `⚽ Матч: ${match.team1_name} vs ${match.team2_name}\n��� Результат: ${resultText}`;
         if (req.body.score_team1 !== undefined) details += `\n⚽ Счет: ${req.body.score_team1}:${req.body.score_team2}`;
-        if (req.body.yellow_cards !== undefined) details += `\n��� Желтые карточки: ${req.body.yellow_cards}`;
-        if (req.body.red_cards !== undefined) details += `\n��� Красные карточки: ${req.body.red_cards}`;
+        if (req.body.yellow_cards !== undefined) details += `\n��� Желтые карточки: ${req.body.yellow_cards}`;
+        if (req.body.red_cards !== undefined) details += `\n��� Красные карточки: ${req.body.red_cards}`;
         await notifyModeratorAction(username, "Установка результата матча", details);
         writeBetLog("match_result_set", {
           moderator: username,
@@ -672,14 +672,14 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
           if (streak >= 10) {
             const existingNews = db.prepare(`SELECT id FROM news WHERE type = 'achievement' AND message LIKE ? AND created_at > datetime('now', '-7 days')`).get(`%${user.username}%${streak}%подряд%`);
             if (!existingNews) {
-              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Рекорд: ${streak} точных прогнозов подряд!`, `Пользователь ${user.username} установил рекорд - ${streak} точных прогнозов подряд!\n\n��� Невероятная серия! Так держать!`);
+              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Рекорд: ${streak} точных прогнозов подряд!`, `Пользователь ${user.username} установил рекорд - ${streak} точных прогнозов подряд!\n\n��� Невероятная серия! Так держать!`);
               console.log(`✅ Автоматически создана новость о рекорде пользователя ${user.username}: ${streak} подряд`);
             }
           }
           if (streak === 3 || streak === 5) {
             const existingStreakNews = db.prepare(`SELECT id FROM news WHERE type = 'achievement' AND message LIKE ? AND created_at > datetime('now', '-7 days')`).get(`%${user.username}%${streak}%подряд%`);
             if (!existingStreakNews) {
-              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Серия: ${streak} точных прогнозов подряд!`, `Пользователь ${user.username} угадал ${streak} прогнозов подряд!\n\n��� Отличная серия! Продолжай в том же духе!`);
+              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Серия: ${streak} точных прогнозов подряд!`, `Пользователь ${user.username} угадал ${streak} прогнозов подряд!\n\n��� Отличная серия! Продолжай в том же духе!`);
               console.log(`✅ Автоматически создана новость о серии пользователя ${user.username}: ${streak} подряд`);
             }
           }
@@ -687,7 +687,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
           if (exactScoreCount >= 5 && exactScoreCount % 5 === 0) {
             const existingScoreNews = db.prepare(`SELECT id FROM news WHERE type = 'achievement' AND message LIKE ? AND created_at > datetime('now', '-7 days')`).get(`%${user.username}%${exactScoreCount}%точных счёт%`);
             if (!existingScoreNews) {
-              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `⚽ Мастер счёта: ${exactScoreCount} точных прогнозов!`, `Пользователь ${user.username} угадал ${exactScoreCount} точных счётов!\n\n��� Невероятная точность! Продолжай в том же духе!`);
+              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `⚽ Мастер счёта: ${exactScoreCount} точных прогнозов!`, `Пользователь ${user.username} угадал ${exactScoreCount} точных счётов!\n\n��� Невероятная точность! Продолжай в том же духе!`);
               console.log(`✅ Автоматически создана новость о точных счётах пользователя ${user.username}: ${exactScoreCount}`);
             }
           }
@@ -695,7 +695,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
           if (cardsCount >= 5 && cardsCount % 5 === 0) {
             const existingCardsNews = db.prepare(`SELECT id FROM news WHERE type = 'achievement' AND message LIKE ? AND created_at > datetime('now', '-7 days')`).get(`%${user.username}%${cardsCount}%карточ%`);
             if (!existingCardsNews) {
-              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `������ Мастер карточек: ${cardsCount} точных прогнозов!`, `Пользователь ${user.username} угадал ${cardsCount} прогнозов на карточки!\n\n��� Отличное чутьё на дисциплину! Так держать!`);
+              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `������ Мастер карточек: ${cardsCount} точных прогнозов!`, `Пользователь ${user.username} угадал ${cardsCount} прогнозов на карточки!\n\n��� Отличное чутьё на дисциплину! Так держать!`);
               console.log(`✅ Автоматически создана новость о карточках пользователя ${user.username}: ${cardsCount}`);
             }
           }
@@ -740,7 +740,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
           if (!lastLeader || lastLeader.user_id !== currentLeader.id) {
             db.prepare(`INSERT INTO leader_history (user_id, username, points) VALUES (?, ?, ?)`).run(currentLeader.id, currentLeader.username, currentLeader.total_points);
             if (lastLeader) {
-              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Новый лидер: ${currentLeader.username}!`, `Пользователь ${currentLeader.username} вышел на первое место в рейтинге!\n\n��� Очков: ${currentLeader.total_points}\n\n��� Поздравляем с лидерством!`);
+              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Новый лидер: ${currentLeader.username}!`, `Пользователь ${currentLeader.username} вышел на первое место в рейтинге!\n\n��� Очков: ${currentLeader.total_points}\n\n��� Поздравляем с лидерством!`);
               console.log(`✅ Автоматически создана новость о новом лидере: ${currentLeader.username}`);
             }
           }
@@ -754,7 +754,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
             const positionsUp = lastPosition.position - currentPosition;
             const existingProgressNews = db.prepare(`SELECT id FROM news WHERE type = 'achievement' AND message LIKE ? AND created_at > datetime('now', '-1 days')`).get(`%${user.username}%поднялся%`);
             if (!existingProgressNews) {
-              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Прогресс: +${positionsUp} позиций!`, `Пользователь ${user.username} поднялся на ${positionsUp} ${positionsUp === 3 ? 'позиции' : 'позиций'} в рейтинге!\n\n��� Текущая позиция: ${currentPosition}\n��� Очков: ${user.total_points}\n\n��� Отличная динамика!`);
+              db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('achievement', `��� Прогресс: +${positionsUp} позиций!`, `Пользователь ${user.username} поднялся на ${positionsUp} ${positionsUp === 3 ? 'позиции' : 'позиций'} в рейтинге!\n\n��� Текущая позиция: ${currentPosition}\n��� Очков: ${user.total_points}\n\n��� Отличная динамика!`);
               console.log(`✅ Автоматически создана новость о прогрессе: ${user.username} (+${positionsUp} позиций)`);
             }
           }
@@ -805,21 +805,21 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
 
       if (score_prediction_enabled !== undefined && !score_prediction_enabled) {
         const deletedScores = db.prepare("DELETE FROM score_predictions WHERE match_id = ?").run(matchId);
-        console.log(`���️ Удалено прогнозов на счет: ${deletedScores.changes}`);
+        console.log(`���️ Удалено прогнозов на счет: ${deletedScores.changes}`);
       }
       if (yellow_cards_prediction_enabled !== undefined && !yellow_cards_prediction_enabled) {
         const deletedYellow = db.prepare("UPDATE cards_predictions SET yellow_cards = NULL WHERE match_id = ?").run(matchId);
-        console.log(`���️ Удалено прогнозов на желтые карточки: ${deletedYellow.changes}`);
+        console.log(`���️ Удалено прогнозов на желтые карточки: ${deletedYellow.changes}`);
       }
       if (red_cards_prediction_enabled !== undefined && !red_cards_prediction_enabled) {
         const deletedRed = db.prepare("UPDATE cards_predictions SET red_cards = NULL WHERE match_id = ?").run(matchId);
-        console.log(`���️ Удалено прогнозов на красные карточки: ${deletedRed.changes}`);
+        console.log(`���️ Удалено прогнозов на красные карточки: ${deletedRed.changes}`);
       }
       db.prepare("DELETE FROM cards_predictions WHERE match_id = ? AND yellow_cards IS NULL AND red_cards IS NULL").run(matchId);
 
       if (isModerator && username) {
         const event = db.prepare("SELECT e.name FROM events e JOIN matches m ON m.event_id = e.id WHERE m.id = ?").get(matchId);
-        const details = `⚽ Матч: ${team1_name || currentMatch.team1_name} vs ${team2_name || currentMatch.team2_name}\n��� Дата: ${match_date || currentMatch.match_date || 'не указана'}\n��� Тур: ${round || currentMatch.round || 'не указан'}`;
+        const details = `⚽ Матч: ${team1_name || currentMatch.team1_name} vs ${team2_name || currentMatch.team2_name}\n��� Дата: ${match_date || currentMatch.match_date || 'не указана'}\n��� Тур: ${round || currentMatch.round || 'не указан'}`;
         await notifyModeratorAction(username, "Редактирование матча", details);
         writeBetLog("match_edited", {
           moderator: username,
@@ -842,3 +842,5 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+export default router;

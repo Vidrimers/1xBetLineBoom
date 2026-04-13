@@ -1363,12 +1363,12 @@ router.put("/api/user/:userId/show-bets", async (req, res) => {
           'after_start': 'Только после начала матча'
         };
 
-        const adminMessage = `���️ ИЗМЕНЕНИЕ НАСТРОЙКИ ПОКАЗА СТАВОК
+        const adminMessage = `���️ ИЗМЕНЕНИЕ НАСТРОЙКИ ПОКАЗА СТАВОК
 
 �� Пользователь: ${user.username}
-${user.telegram_username ? `��� Telegram: @${user.telegram_username}` : ""}
+${user.telegram_username ? `��� Telegram: @${user.telegram_username}` : ""}
 ✏️ Новая настройка: ${showBetsNames[show_bets] || show_bets}
-��� Время: ${time}`;
+��� Время: ${time}`;
 
         await fetch(
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -1394,3 +1394,5 @@ ${user.telegram_username ? `��� Telegram: @${user.telegram_username}` : ""}
     res.status(500).json({ error: error.message });
   }
 });
+
+export default router;
