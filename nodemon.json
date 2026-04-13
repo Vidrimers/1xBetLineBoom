@@ -1,0 +1,6 @@
+{
+  "watch": ["server/"],
+  "ext": "js,json",
+  "ignore": ["node_modules/", "backups/", "*.db"],
+  "exec": "node server/index.js"
+}

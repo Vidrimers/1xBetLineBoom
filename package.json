@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server/index.js",
+    "dev": "nodemon server/index.js",
     "dev:old": "node server.js",
     "loc": "set TELEGRAM_BOT_POLLING=false&& node server.js"
   },
@@ -20,5 +20,8 @@
     "multer": "^1.4.5-lts.1",
     "node-telegram-bot-api": "^0.67.0",
     "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
