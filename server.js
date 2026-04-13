@@ -40,6 +40,22 @@ import {
   getUserBets,
   getUserBracketPredictions
 } from "./ai-chat-service.js";
+import {
+  PORT,
+  SERVER_IP,
+  SSTATS_API_KEY,
+  SSTATS_API_BASE,
+  SSTATS_LEAGUE_MAPPING,
+  COMPETITION_DICTIONARY_MAPPING,
+  PLAYERS_DICTIONARY_MAPPING,
+  ICON_TO_COMPETITION,
+  BACKUPS_DIR,
+  LOG_FILE_PATH,
+  MAX_LOG_SIZE,
+  TERMINAL_LOGS_PATH,
+  MAX_TERMINAL_LOGS_SIZE,
+  AWARD_IMAGE_UPLOAD_DIR,
+} from "./server/config.js";
 
 dotenv.config();
 
@@ -62,10 +78,6 @@ let rssNewsCache = {
 };
 
 const app = express();
-const PORT = process.env.PORT || 1984;
-const SERVER_IP = process.env.SERVER_IP || "localhost";
-const SSTATS_API_KEY = process.env.SSTATS_API_KEY;
-const SSTATS_API_BASE = "https://api.sstats.net";
 
 // Функция для отправки сообщения в Telegram
 async function sendTelegramMessage(chatId, message) {
@@ -78,55 +90,13 @@ async function sendTelegramMessage(chatId, message) {
   }
 }
 
-// Маппинг кодов турниров на SStats League IDs
-const SSTATS_LEAGUE_MAPPING = {
-  'CL': 2,    // UEFA Champions League ✅
-  'EL': 3,    // UEFA Europa League ✅
-  'ECL': 848, // UEFA Conference League ✅
-  'PL': 39,   // Premier League ✅
-  'BL1': 78,  // Bundesliga ✅
-  'PD': 140,  // La Liga ✅
-  'SA': 135,  // Serie A ✅
-  'FL1': 61,  // Ligue 1 ✅
-  'DED': 88,  // Eredivisie ✅
-  'RPL': 235, // Russian Premier League ✅
-  'WC': 1,    // World Cup ✅
-  'EC': 4     // Euro Championship ✅
-};
+// Маппинг кодов турниров на SStats League IDs — перенесён в server/config.js
 
-// Маппинг кодов турниров на файлы словарей команд
-const COMPETITION_DICTIONARY_MAPPING = {
-  'CL': 'names/LeagueOfChampionsTeams.json',
-  'EL': 'names/EuropaLeague.json',
-  'ECL': 'names/ConferenceLeague.json',
-  'PL': 'names/PremierLeague.json',
-  'BL1': 'names/Bundesliga.json',
-  'PD': 'names/LaLiga.json',
-  'SA': 'names/SerieA.json',
-  'FL1': 'names/Ligue1.json',
-  'DED': 'names/Eredivisie.json',
-  'RPL': 'names/RussianPremierLeague.json',
-  'WC': 'names/Countries.json',  // World Cup
-  'EC': 'names/Countries.json'   // Euro Championship
-};
+// Маппинг кодов турниров на файлы словарей команд — перенесён в server/config.js
 
-// Маппинг кодов турниров на файлы словарей игроков
-const PLAYERS_DICTIONARY_MAPPING = {
-  'CL': 'names/LeagueOfChampionsPlayers.json',
-  'EL': 'names/EuropaLeaguePlayers.json',
-  'ECL': 'names/ConferenceLeaguePlayers.json',
-  'PL': 'names/PremierLeaguePlayers.json',
-  'BL1': 'names/BundesligaPlayers.json',
-  'PD': 'names/LaLigaPlayers.json',
-  'SA': 'names/SerieAPlayers.json',
-  'FL1': 'names/Ligue1Players.json',
-  'DED': 'names/EredivisiePlayers.json',
-  'RPL': 'names/RussianPremierLeaguePlayers.json',
-  'WC': 'names/PlayerNames.json',  // World Cup - общий словарь
-  'EC': 'names/PlayerNames.json'   // Euro Championship - общий словарь
-};
+// Маппинг кодов турниров на файлы словарей игроков — перенесён в server/config.js
 
-const AWARD_IMAGE_UPLOAD_DIR = path.join(__dirname, "uploads", "award-images");
+// AWARD_IMAGE_UPLOAD_DIR — перенесён в server/config.js
 
 if (!fs.existsSync(AWARD_IMAGE_UPLOAD_DIR)) {
   fs.mkdirSync(AWARD_IMAGE_UPLOAD_DIR, { recursive: true });
@@ -157,13 +127,11 @@ const awardImageUpload = multer({
   },
 });
 
-// Путь к файлу логов
-const LOG_FILE_PATH = path.join(__dirname, "log.html");
-const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10 MB
+// Путь к файлу логов — перенесён в server/config.js
+// MAX_LOG_SIZE — перенесён в server/config.js
 
-// Путь к файлу логов терминала
-const TERMINAL_LOGS_PATH = path.join(__dirname, "terminal-logs.txt");
-const MAX_TERMINAL_LOGS_SIZE = 5 * 1024 * 1024; // 5 MB
+// Путь к файлу логов терминала — перенесён в server/config.js
+// MAX_TERMINAL_LOGS_SIZE — перенесён в server/config.js
 let terminalLogs = [];
 
 // Функция для добавления логов в массив терминала
@@ -350,8 +318,7 @@ try {
   console.error("Ошибка при загрузке логов терминала:", err);
 }
 
-// Путь к папке с бэкапами
-const BACKUPS_DIR = path.join(__dirname, "backups");
+// Путь к папке с бэкапами — перенесён в server/config.js
 
 // Создаем папку backups если её нет
 if (!fs.existsSync(BACKUPS_DIR)) {
@@ -19074,21 +19041,7 @@ app.get("/api/test/score-points/:userId", (req, res) => {
 // АВТОМАТИЧЕСКИЙ ПОДСЧЕТ РЕЗУЛЬТАТОВ
 // ============================================
 
-// Маппинг иконок турниров на коды для API
-const ICON_TO_COMPETITION = {
-  'img/cups/champions-league.png': 'CL',
-  'img/cups/european-league.png': 'EL',
-  'img/cups/conference-league.png': 'ECL',
-  'img/cups/england-premier-league.png': 'PL',
-  'img/cups/bundesliga.png': 'BL1',
-  'img/cups/spain-la-liga.png': 'PD',
-  'img/cups/serie-a.png': 'SA',
-  'img/cups/france-league-ligue-1.png': 'FL1',
-  'img/cups/rpl.png': 'RPL',
-  'img/cups/world-cup.png': 'WC',
-  'img/cups/uefa-euro.png': 'EC',
-  '🇳🇱': 'DED'  // Eredivisie
-};
+// Маппинг иконок турниров на коды для API — перенесён в server/config.js
 
 // Хранилище обработанных дат (чтобы не обрабатывать повторно)
 const processedDates = new Set();

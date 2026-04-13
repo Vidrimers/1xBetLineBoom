@@ -2,22 +2,23 @@
   "name": "1xBetLineBoom",
   "version": "48.0.0",
   "description": "Сайт для ставок",
-  "private": true,
-  "workspaces": [
-    "client",
-    "server"
-  ],
+  "main": "server.js",
+  "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
-    "start": "npm run start --workspace=server",
-    "build": "npm run build --workspace=client",
-    "test": "concurrently \"npm run test --workspace=server\" \"npm run test --workspace=client\"",
-    "lint": "concurrently \"npm run lint --workspace=server\" \"npm run lint --workspace=client\"",
-    "format": "prettier --write \"**/*.{js,jsx,json,css,md}\" --ignore-path .gitignore"
+    "start": "node server.js",
+    "dev": "node server/index.js",
+    "dev:old": "node server.js",
+    "loc": "set TELEGRAM_BOT_POLLING=false&& node server.js"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2",
-    "eslint": "^8.57.0",
-    "prettier": "^3.2.5"
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "better-sqlite3": "^12.5.0",
+    "cropperjs": "^2.1.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "groq-sdk": "^0.37.0",
+    "multer": "^1.4.5-lts.1",
+    "node-telegram-bot-api": "^0.67.0",
+    "rss-parser": "^3.13.0"
   }
 }
