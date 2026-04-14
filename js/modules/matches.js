@@ -1,6 +1,29 @@
 import * as state from './state.js';
-import { setMatches, setCurrentRoundFilter } from './state.js';
+import { setMatches, setCurrentRoundFilter, setRoundsOrder } from './state.js';
 import { loadRoundsOrder, saveRoundsOrderToStorage, sortRoundsByOrder } from './config.js';
+import { canManageMatches, canEditMatches, canDeleteMatches, canManageResults } from './admin.js';
+import { loadAndDisplayBetStats } from './betStats.js';
+
+// Форматирование даты/времени матча
+function formatMatchTime(dateStr) {
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const matchDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.round((matchDay - today) / (1000 * 60 * 60 * 24));
+
+    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const dateFormatted = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+
+    if (diffDays === 0) return `Сегодня ${timeStr}`;
+    if (diffDays === 1) return `Завтра ${timeStr}`;
+    if (diffDays === -1) return `Вчера ${timeStr}`;
+    return `${dateFormatted} ${timeStr}`;
+  } catch (e) {
+    return dateStr;
+  }
+}
 
 // ===== МАТЧИ =====
 
@@ -368,6 +391,14 @@ export async function displayTournamentWinner(eventId) {
 
 // Отобразить матчи текущего события
 export async function displayMatches() {
+  // Получаем актуальные данные из state
+  const matches = state.matches;
+  let currentRoundFilter = state.currentRoundFilter;
+  const currentUser = state.currentUser;
+  const currentEventId = state.currentEventId;
+  const events = state.events;
+  const userBets = state.userBets;
+  const roundsOrder = state.roundsOrder;
   // ===== СОХРАНЯЕМ ВВЕДЁННЫЕ ЗНАЧЕНИЯ ПЕРЕД ОБНОВЛЕНИЕМ =====
   const savedInputValues = {};
   const focusedElement = document.activeElement;
@@ -469,7 +500,7 @@ export async function displayMatches() {
 
   // Если есть финальные матчи и финала нет в roundsOrder, добавляем его
   if (hasFinalMatches && !roundsOrder.includes("🏆 Финал")) {
-    roundsOrder.push("🏆 Финал");
+    setRoundsOrder([...roundsOrder, "🏆 Финал"]);
     // Сохраняем новый порядок в БД
     saveRoundsOrderToStorage().catch((e) =>
       console.error("Ошибка сохранения финала в порядок:", e)
@@ -484,6 +515,7 @@ export async function displayMatches() {
         currentRoundFilter !== "🏆 Финал")
     ) {
       currentRoundFilter = getFirstUnfinishedRound();
+      setCurrentRoundFilter(currentRoundFilter);
     }
 
     roundsFilterContainer.style.display = "block";
@@ -605,6 +637,7 @@ export async function displayMatches() {
   } else {
     roundsFilterContainer.style.display = "none";
     currentRoundFilter = "all"; // Сбрасываем фильтр если туров и финальных матчей нет
+    setCurrentRoundFilter("all");
   }
   // Фильтруем матчи по выбранному туру
   let filteredMatches = matches;

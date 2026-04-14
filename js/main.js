@@ -2,6 +2,7 @@
 
 // ===== ИМПОРТЫ =====
 import * as state from './modules/state.js';
+import { setCurrentUser, setSessionCheckInterval, setMatchUpdateInterval } from './modules/state.js';
 import { originalFetch } from './modules/api.js';
 import {
   showCustomAlert,
@@ -607,7 +608,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (savedUser) {
     const user = JSON.parse(savedUser);
-    state.currentUser = user;
+    setCurrentUser(user);
 
     // Загружаем настройку show_lucky_button с сервера
     try {
@@ -765,7 +766,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Запускаем периодическую проверку сессии каждые 60 секунд
   let sessionCheckFailures = 0;
-  state.sessionCheckInterval = setInterval(async () => {
+  setSessionCheckInterval(setInterval(async () => {
     // Пропускаем проверку если идет переименование пользователя
     if (state.isRenamingUser) {
       console.log("⏸️ Проверка сессии пропущена (идет переименование)");
@@ -802,14 +803,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     }
-  }, 60000);
+  }, 60000));
 
   // Запускаем обновление статусов матчей каждые 30 секунд
-  state.matchUpdateInterval = setInterval(() => {
+  setMatchUpdateInterval(setInterval(() => {
     if (state.matches.length > 0 && state.isMatchUpdatingEnabled) {
       displayMatches();
     }
-  }, 30000);
+  }, 30000));
 
   // Обновляем настройки когда пользователь возвращается на вкладку
   document.addEventListener("visibilitychange", () => {
