@@ -1,4 +1,5 @@
 import * as state from './state.js';
+import { setUserBets } from './state.js';
 import { getMatchStatusByDate, displayMatches, initToggleStates } from './matches.js';
 
 // ===== СТАВКИ =====
@@ -635,7 +636,7 @@ export async function placeFinalBet(matchId, parameterType) {
       // Обновляем список ставок
       const checkResponse = await fetch(`/api/user/${state.currentUser.id}/bets`);
       const bets = await checkResponse.json();
-      state.userBets = bets;
+      setUserBets(bets);
       console.log("💰 Мои ставки:", bets);
 
       // Загружаем параметры финала для корректного отображения статуса
@@ -696,7 +697,7 @@ export async function loadMyBets() {
     console.log(
       `📥 Загружено ${bets.length} ставок для пользователя ${state.currentUser.id}`
     );
-    state.userBets = bets; // Сохраняем в глобальную переменную
+    setUserBets(bets); // Сохраняем в глобальную переменную
 
     // Загружаем параметры финала для проверки ставок
     let finalParameters = {};

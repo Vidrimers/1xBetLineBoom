@@ -6,6 +6,7 @@ import {
   ADMIN_DB_NAME,
   authCheckInterval,
 } from './state.js';
+import { setCurrentUser, setAuthCheckInterval } from './state.js';
 import { showCustomAlert, showCustomConfirm, showCustomPrompt } from './ui.js';
 import { loadSavedTheme } from './themes.js';
 import { loadEventsList } from './events.js';
@@ -391,7 +392,7 @@ export async function initUser() {
 
           // Код верный, продолжаем логин
           // eslint-disable-next-line no-global-assign
-          currentUser = confirmResult;
+          setCurrentUser(confirmResult);
           currentUser.isAdmin = isAdminUser;
 
           // Загружаем права модератора
@@ -408,7 +409,7 @@ export async function initUser() {
     } else {
       // 2FA не требуется
       // eslint-disable-next-line no-global-assign
-      currentUser = result;
+      setCurrentUser(result);
       currentUser.isAdmin = isAdminUser;
 
       // Загружаем права модератора
@@ -512,7 +513,7 @@ export async function logoutUser() {
 
   // Очищаем переменную
   // eslint-disable-next-line no-global-assign
-  currentUser = null;
+  setCurrentUser(null);
 
   // Обновляем классы контейнера для скрытия контента
   const container = document.querySelector(".container");
@@ -628,7 +629,7 @@ export async function checkTelegramAuthStatus(authToken) {
         clearInterval(authCheckInterval);
 
         // eslint-disable-next-line no-global-assign
-        currentUser = result.user;
+        setCurrentUser(result.user);
         currentUser.isAdmin = currentUser.username === ADMIN_DB_NAME;
 
         // Загружаем права модератора

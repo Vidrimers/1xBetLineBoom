@@ -1,4 +1,5 @@
 import * as state from './state.js';
+import { setEvents, setCurrentEventId, setMobileActiveEventId, setEventItemClickHandlersInit } from './state.js';
 
 // ===== СПИСОК СОБЫТИЙ (ТУРНИРОВ) =====
 
@@ -6,7 +7,7 @@ import * as state from './state.js';
 export async function loadEventsList() {
   try {
     const response = await fetch("/api/events");
-    state.events = await response.json();
+    setEvents(await response.json());
     displayEvents();
 
     // При первой загрузке выбираем турнир (только на десктопе)
@@ -242,7 +243,7 @@ export async function selectEvent(eventId, eventName) {
     );
   }
 
-  state.currentEventId = eventId;
+  setCurrentEventId(eventId);
   displayEvents(); // Обновляем выделение
 
   // Очищаем кнопки сетки сразу при переключении турнира
@@ -499,7 +500,7 @@ export function initEventItemClickHandlers() {
   );
 
   const clearHovered = () => {
-    state.mobileActiveEventId = null;
+    setMobileActiveEventId(null);
     eventsList
       .querySelectorAll(".event-item.hovered")
       .forEach((item) => item.classList.remove("hovered"));
@@ -521,7 +522,7 @@ export function initEventItemClickHandlers() {
     }
 
     const isActive = state.mobileActiveEventId === eventId;
-    state.mobileActiveEventId = isActive ? null : eventId;
+    setMobileActiveEventId(isActive ? null : eventId);
     restoreMobileActiveEvent();
   };
 
@@ -551,5 +552,5 @@ export function initEventItemClickHandlers() {
     mobileQuery.addListener(handleMediaChange);
   }
 
-  state.eventItemClickHandlersInit = true;
+  setEventItemClickHandlersInit(true);
 }

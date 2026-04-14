@@ -1,4 +1,5 @@
 import * as state from './state.js';
+import { setMatches, setCurrentRoundFilter } from './state.js';
 import { loadRoundsOrder, saveRoundsOrderToStorage, sortRoundsByOrder } from './config.js';
 
 // ===== МАТЧИ =====
@@ -73,8 +74,8 @@ export async function loadMatches(eventId) {
       ? `/api/events/${eventId}/matches?username=${encodeURIComponent(username)}`
       : `/api/events/${eventId}/matches`;
     const response = await fetch(url);
-    state.matches = await response.json();
-    state.currentRoundFilter = "all"; // Сбрасываем фильтр при загрузке нового турнира
+    setMatches(await response.json());
+    setCurrentRoundFilter("all"); // Сбрасываем фильтр при загрузке нового турнира
     displayMatches();
 
     // Обновляем видимость кнопки "Мне повезет"
@@ -88,7 +89,7 @@ export async function loadMatches(eventId) {
 
 // Фильтрация матчей по туру
 export function filterByRound(round) {
-  state.currentRoundFilter = round;
+  setCurrentRoundFilter(round);
   displayMatches();
 }
 

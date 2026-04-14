@@ -1,22 +1,23 @@
 import * as state from './state.js';
+import { setRoundsOrder, setTempRoundsOrder, setDraggedItem, setADMIN_LOGIN, setADMIN_DB_NAME } from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 // Загрузить порядок туров из БД
 export async function loadRoundsOrder() {
   try {
     if (!state.currentEventId) {
-      state.roundsOrder = [];
+      setRoundsOrder([]);
       return;
     }
     const response = await fetch(`/api/rounds-order/${state.currentEventId}`);
     if (response.ok) {
-      state.roundsOrder = await response.json();
+      setRoundsOrder(await response.json());
     } else {
-      state.roundsOrder = [];
+      setRoundsOrder([]);
     }
   } catch (e) {
     console.error("Ошибка загрузки порядка туров:", e);
-    state.roundsOrder = [];
+    setRoundsOrder([]);
   }
 }
 
@@ -62,11 +63,11 @@ export function openRoundsOrderModal() {
 
   // Убедимся, что финал есть в roundsOrder если он есть в uniqueRounds
   if (hasFinalMatches && !state.roundsOrder.includes("🏆 Финал")) {
-    state.roundsOrder.push("🏆 Финал");
+    setRoundsOrder([...state.roundsOrder, "🏆 Финал"]);
   }
 
   // Сортируем туры по сохраненному порядку
-  state.tempRoundsOrder = sortRoundsByOrder(uniqueRounds);
+  setTempRoundsOrder(sortRoundsByOrder(uniqueRounds));
 
   renderRoundsOrderList();
   document.getElementById("roundsOrderModal").classList.add("active");
@@ -125,7 +126,9 @@ export async function deleteRound(roundName, index) {
 
   try {
     // Удаляем тур из временного массива
-    state.tempRoundsOrder.splice(index, 1);
+    const newTempOrder = [...state.tempRoundsOrder];
+    newTempOrder.splice(index, 1);
+    setTempRoundsOrder(newTempOrder);
 
     // Удаляем матчи этого тура из базы данных
     const response = await fetch(`/api/admin/rounds/${encodeURIComponent(roundName)}`, {
@@ -142,7 +145,7 @@ export async function deleteRound(roundName, index) {
     }
 
     // Обновляем глобальный массив туров
-    state.roundsOrder = [...state.tempRoundsOrder];
+    setRoundsOrder([...state.tempRoundsOrder]);
     await saveRoundsOrderToStorage();
 
     // Перезагружаем матчи
@@ -160,7 +163,7 @@ export async function deleteRound(roundName, index) {
 // ===== Drag-and-drop обработчики =====
 
 function handleDragStart(e) {
-  state.draggedItem = this;
+  setDraggedItem(this);
   this.classList.add("dragging");
   e.dataTransfer.effectAllowed = "move";
 }
@@ -170,7 +173,7 @@ function handleDragEnd(e) {
   document.querySelectorAll(".rounds-order-item").forEach((item) => {
     item.classList.remove("drag-over");
   });
-  state.draggedItem = null;
+  setDraggedItem(null);
 }
 
 function handleDragOver(e) {
@@ -198,8 +201,10 @@ function handleDrop(e) {
     const toIndex = parseInt(this.dataset.index);
 
     // Перемещаем элемент в массиве
-    const item = state.tempRoundsOrder.splice(fromIndex, 1)[0];
-    state.tempRoundsOrder.splice(toIndex, 0, item);
+    const newOrder = [...state.tempRoundsOrder];
+    const item = newOrder.splice(fromIndex, 1)[0];
+    newOrder.splice(toIndex, 0, item);
+    setTempRoundsOrder(newOrder);
 
     // Перерисовываем список
     renderRoundsOrderList();
@@ -208,7 +213,7 @@ function handleDrop(e) {
 
 // Сохранить порядок туров
 export async function saveRoundsOrder() {
-  state.roundsOrder = [...state.tempRoundsOrder];
+  setRoundsOrder([...state.tempRoundsOrder]);
   await saveRoundsOrderToStorage();
   closeRoundsOrderModal();
   const { displayMatches } = await import('./matches.js');
@@ -239,8 +244,8 @@ export async function loadConfig() {
   try {
     const response = await fetch("/api/config");
     const config = await response.json();
-    state.ADMIN_LOGIN = config.ADMIN_LOGIN;
-    state.ADMIN_DB_NAME = config.ADMIN_DB_NAME;
+    setADMIN_LOGIN(config.ADMIN_LOGIN);
+    setADMIN_DB_NAME(config.ADMIN_DB_NAME);
   } catch (error) {
     console.error("❌ Ошибка при загрузке конфигурации:", error);
   }

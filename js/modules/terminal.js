@@ -1,5 +1,6 @@
 import { terminalRefreshInterval, terminalAutoScroll } from './state.js';
 import * as state from './state.js';
+import { setTerminalRefreshInterval, setTerminalAutoScroll } from './state.js';
 
 // ===== ТЕРМИНАЛ =====
 
@@ -23,7 +24,7 @@ export function openTerminalModal() {
     console.log("✅ Терминал открыт");
     refreshTerminalLogs();
     if (state.terminalRefreshInterval) clearInterval(state.terminalRefreshInterval);
-    state.terminalRefreshInterval = setInterval(refreshTerminalLogs, 1000);
+    setTerminalRefreshInterval(setInterval(refreshTerminalLogs, 1000));
   }
 }
 
@@ -34,7 +35,7 @@ export function closeTerminalModal(event) {
     modal.classList.remove("active");
     if (state.terminalRefreshInterval) {
       clearInterval(state.terminalRefreshInterval);
-      state.terminalRefreshInterval = null;
+      setTerminalRefreshInterval(null);
     }
   }
 }
@@ -164,7 +165,7 @@ export async function saveTerminalLogs() {
 
 // Переключить автоскролл
 export function toggleTerminalAutoScroll() {
-  state.terminalAutoScroll = !state.terminalAutoScroll;
+  setTerminalAutoScroll(!state.terminalAutoScroll);
   const btn = document.getElementById("terminalAutoScrollBtn");
   if (btn) {
     if (state.terminalAutoScroll) {

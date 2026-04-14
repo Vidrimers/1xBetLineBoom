@@ -1,5 +1,6 @@
 import { currentUser, currentEventId, selectedReminderHours } from './state.js';
 import * as state from './state.js';
+import { setSelectedReminderHours } from './state.js';
 import { showCustomAlert } from './ui.js';
 
 // ===== НАПОМИНАНИЯ О МАТЧАХ =====
@@ -27,7 +28,7 @@ export async function showMatchRemindersModal(event) {
   const modal = document.getElementById('matchRemindersModal');
   if (modal) {
     modal.style.display = 'flex';
-    state.selectedReminderHours = null;
+    setSelectedReminderHours(null);
 
     // Сбрасываем выбор
     document.querySelectorAll('.reminder-time-btn').forEach(btn => {
@@ -44,13 +45,13 @@ export function closeMatchRemindersModal() {
   const modal = document.getElementById('matchRemindersModal');
   if (modal) {
     modal.style.display = 'none';
-    state.selectedReminderHours = null;
+    setSelectedReminderHours(null);
   }
 }
 
 // Выбрать время напоминания
 export function selectReminderTime(hours) {
-  state.selectedReminderHours = hours;
+  setSelectedReminderHours(hours);
 
   // Обновляем визуальное состояние кнопок
   document.querySelectorAll('.reminder-time-btn').forEach(btn => {
@@ -81,7 +82,7 @@ export async function loadMatchReminders() {
       const data = await response.json();
 
       if (data.hours_before) {
-        state.selectedReminderHours = data.hours_before;
+        setSelectedReminderHours(data.hours_before);
 
         // Выделяем соответствующую кнопку
         document.querySelectorAll('.reminder-time-btn').forEach(btn => {

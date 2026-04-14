@@ -1,4 +1,5 @@
 import * as state from './state.js';
+import { setUserBets, setMatches } from './state.js';
 import { lockBodyScroll, unlockBodyScroll, showCustomAlert, showCustomConfirm } from './ui.js';
 import { loadMatches, displayMatches } from './matches.js';
 import { loadMyBets } from './bets.js';
@@ -197,8 +198,8 @@ export async function deleteMatch(id) {
             }, 300);
           }
         });
-        state.userBets = state.userBets.filter(bet => bet.match_id !== id);
-        state.matches = state.matches.filter(m => m.id !== id);
+        setUserBets(state.userBets.filter(bet => bet.match_id !== id));
+        setMatches(state.matches.filter(m => m.id !== id));
         displayMatches();
       }
     } else {

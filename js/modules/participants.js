@@ -1,5 +1,6 @@
 import { currentUser } from './state.js';
 import * as state from './state.js';
+import { setTournamentParticipantsInterval } from './state.js';
 
 // ===== УЧАСТНИКИ =====
 
@@ -322,7 +323,7 @@ export async function loadTournamentParticipants(eventId, eventName) {
 export function startTournamentParticipantsPolling() {
   stopTournamentParticipantsPolling();
   
-  state.tournamentParticipantsInterval = setInterval(async () => {
+  setTournamentParticipantsInterval(setInterval(async () => {
     if (!window.currentEventId) {
       stopTournamentParticipantsPolling();
       return;
@@ -349,7 +350,7 @@ export function startTournamentParticipantsPolling() {
 export function stopTournamentParticipantsPolling() {
   if (state.tournamentParticipantsInterval) {
     clearInterval(state.tournamentParticipantsInterval);
-    state.tournamentParticipantsInterval = null;
+    setTournamentParticipantsInterval(null);
     console.log('⏹️ Остановлено автообновление рейтинга участников');
   }
 }
