@@ -1,154 +1,108 @@
-import express from 'express';
+import { Router } from 'express';
 import { db } from '../database/db.js';
-import {
-  sendToAI,
-  detectButtons,
-  detectQuestionType,
-  getMatchesFromDB,
-  getEventsFromDB,
-  getTournamentParticipants,
-  getUserTournamentStats,
-  compareUsers,
-  getRemainingMatches,
-  getTournamentBrackets,
-  getUserBets,
-  getUserBracketPredictions,
-  getUserStats,
-  formatMatchButtons,
-  getMatchDetails,
-} from '../../ai-chat-service.js';
+import { getTournamentParticipantsWithPoints, getUserStatsInTournament } from '../utils/tournamentData.js';
+import { 
+  sendToAI, 
+  detectButtons, 
+  detectQuestionType, 
+  getEventsFromDB, 
+  getRemainingMatches, 
+  getTournamentBrackets 
+} from '../services/aiChatService.js';
 
-const router = express.Router();
+const router = Router();
 
 router.post('/api/ai-chat', async (req, res) => {
+  console.log('🤖 AI Chat - получен запрос:', req.body);
+  
   try {
     const { messages, username, context } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
+      console.log('❌ Неверный формат запроса');
       return res.status(400).json({ error: 'Неверный формат запроса' });
     }
 
-    const lastMessage = messages[messages.length - 1]?.content || '';
-    const questionType = detectQuestionType(lastMessage);
-
+    console.log('🤖 AI Chat - обработка запроса от:', username);
+    console.log('🤖 AI Chat - eventId из контекста:', context?.eventId);
+    
     // Собираем контекст из БД
     const dbContext = {};
 
     // Активные турниры
+    let events = [];
     try {
-      const events = getEventsFromDB(db);
+      events = getEventsFromDB(db);
       if (events.length > 0) {
         dbContext.events = events.map(e => `• ${e.name} (${e.status || 'активный'})`).join('\n');
       }
-    } catch (e) { /* игнорируем */ }
+      console.log('🤖 AI Chat - турниры загружены:', events.length);
+    } catch (e) { 
+      console.error('❌ Ошибка получения турниров:', e);
+    }
 
-    // Контекст страницы из клиента
-    if (context) {
-      if (context.eventId) {
-        // Участники турнира
-        try {
-          const participants = getTournamentParticipants(db, context.eventId);
-          if (participants.length > 0) {
-            dbContext.participants = participants
-              .map((p, i) => `${i + 1}. ${p.username}: ${p.total_points || 0} очков`)
+    // Получаем eventId из контекста
+    let eventId = context?.eventId || context?.event?.id;
+    
+    // Если eventId не передан, пытаемся получить из доступных турниров
+    if (!eventId && events.length > 0) {
+      const activeEvent = events.find(e => e.status === 'active');
+      eventId = activeEvent ? activeEvent.id : events[0].id;
+      console.log('🤖 AI Chat - eventId не передан, используем турнир:', eventId);
+    }
+    
+    console.log('🤖 AI Chat - используем eventId:', eventId);
+
+    // Участники турнира
+    if (eventId) {
+      try {
+        console.log('🤖 AI Chat - загружаем участников для турнира:', eventId);
+        
+        const participants = getTournamentParticipantsWithPoints(eventId);
+        console.log('🤖 AI Chat - получено участников:', participants ? participants.length : 0);
+        
+        if (participants && participants.length > 0) {
+          const currentTournament = events.find(e => e.id === eventId);
+          const tournamentName = currentTournament ? currentTournament.name : `турнир ${eventId}`;
+          
+          dbContext.participants = `ТУРНИР: ${tournamentName}\n` + 
+            participants
+              .map((p, index) => `${index + 1}. ${p.username}: ${p.event_won || 0} очков`)
               .join('\n');
-          }
-        } catch (e) { /* игнорируем */ }
-
-        // Оставшиеся матчи
-        try {
-          const remaining = getRemainingMatches(db, context.eventId);
-          if (remaining.length > 0) {
-            dbContext.remainingMatches = `Осталось матчей: ${remaining.length}`;
-          }
-        } catch (e) { /* игнорируем */ }
-
-        // Сетки
-        try {
-          const brackets = getTournamentBrackets(db, context.eventId);
-          if (brackets.length > 0) {
-            dbContext.brackets = brackets.map(b => `• ${b.name}`).join('\n');
-          }
-        } catch (e) { /* игнорируем */ }
-      }
-
-      // Статистика пользователя
-      if (username && context.eventId) {
-        try {
-          const userStats = getUserTournamentStats(db, context.eventId, username);
-          if (userStats) {
-            dbContext.userStats = `${username}: ${userStats.total_points || 0} очков, место ${userStats.rank || '?'}`;
-          }
-        } catch (e) { /* игнорируем */ }
-
-        // Ставки пользователя
-        if (questionType === 'bets') {
-          try {
-            const bets = getUserBets(db, context.eventId, username, username);
-            if (bets && bets.length > 0) {
-              dbContext.bets = bets.slice(0, 10)
-                .map(b => `• ${b.team1} vs ${b.team2}: ${b.prediction}`)
-                .join('\n');
-            }
-          } catch (e) { /* игнорируем */ }
+          console.log('🤖 AI Chat - участники загружены для AI');
+        } else {
+          const currentTournament = events.find(e => e.id === eventId);
+          const tournamentName = currentTournament ? currentTournament.name : `турнир ${eventId}`;
+          dbContext.participants = `В турнире "${tournamentName}" пока нет участников с завершенными ставками.`;
         }
-      }
-
-      // Сравнение пользователей
-      if (context.compareWith && username && context.eventId) {
-        try {
-          const comparison = compareUsers(db, context.eventId, username, context.compareWith);
-          if (comparison) {
-            dbContext.comparison = `${username} vs ${context.compareWith}`;
-          }
-        } catch (e) { /* игнорируем */ }
-      }
-
-      // Матчи
-      if (questionType === 'matches' && context.eventId) {
-        try {
-          const matches = getMatchesFromDB(db, null);
-          if (matches.length > 0) {
-            dbContext.matches = matches.slice(0, 5)
-              .map(m => `• ${m.team1} vs ${m.team2} (${m.round || 'тур ?'})`)
-              .join('\n');
-          }
-        } catch (e) { /* игнорируем */ }
+      } catch (e) { 
+        console.error('❌ Ошибка получения участников турнира:', e);
+        dbContext.participants = `Ошибка загрузки данных турнира ${eventId}.`;
       }
     }
 
+    // Добавляем контекст страницы для AI
+    if (context) {
+      dbContext.pageContext = `Секция: ${context.section || 'неизвестно'}
+Турнир: ${context.event?.name || 'не выбран'}
+Тур: ${context.round || 'не выбран'}
+Модальное окно: ${context.modal || 'закрыто'}`;
+    }
+
+    console.log('🤖 AI Chat - отправляем в AI, контекст:', Object.keys(dbContext));
+
     // Отправляем в AI
     const result = await sendToAI(messages, dbContext);
+    
+    console.log('🤖 AI Chat - ответ от AI получен:', result.success, result.provider);
 
     if (!result.success) {
       return res.json({ error: result.text, text: result.text });
     }
 
-    // Определяем кнопки
-    const buttonInfo = detectButtons(lastMessage);
-    let buttons = null;
-    let buttonType = null;
-
-    if (buttonInfo) {
-      buttonType = buttonInfo.type;
-      if (buttonType === 'tournaments') {
-        try {
-          const events = getEventsFromDB(db);
-          buttons = events.slice(0, 5).map(e => ({ label: e.name, value: e.id }));
-        } catch (e) { /* игнорируем */ }
-      } else if (buttonType === 'matches' && context?.eventId) {
-        try {
-          const matches = getMatchesFromDB(db, null);
-          buttons = formatMatchButtons(matches.slice(0, 5));
-        } catch (e) { /* игнорируем */ }
-      }
-    }
-
     res.json({
       text: result.text,
       provider: result.provider,
-      buttons,
-      buttonType,
     });
 
   } catch (error) {

@@ -212,8 +212,15 @@ class AIChat {
       console.log('  - Пользователь:', currentUsername);
       console.log('  - Контекст страницы:', pageContext);
       console.log('  - Текущий турнир:', pageContext.event ? pageContext.event.name : 'не выбран');
-      console.log('  - currentEventId:', window.currentEventId);
-      console.log('  - events доступны:', window.events ? 'Да' : 'Нет');
+      console.log('  - eventId:', pageContext.eventId);
+      console.log('  - window.state:', window.state ? 'доступен' : 'недоступен');
+      console.log('  - window.currentEventId:', window.currentEventId);
+      console.log('  - window.events:', window.events ? `${window.events.length} турниров` : 'недоступны');
+      
+      if (window.state) {
+        console.log('  - window.state.currentEventId:', window.state.currentEventId);
+        console.log('  - window.state.events:', window.state.events ? window.state.events.length : 'нет');
+      }
 
       // Отправляем на сервер
       const response = await fetch('/api/ai-chat', {
@@ -255,6 +262,7 @@ class AIChat {
     const context = {
       section: 'unknown',
       event: null,
+      eventId: null,
       round: null,
       modal: null,
       bracket: null
@@ -270,21 +278,53 @@ class AIChat {
       else if (tabText.includes('лог')) context.section = 'logs';
     }
 
-    // Получаем текущий турнир из глобальных переменных
-    if (window.currentEventId && window.events) {
-      const currentEvent = window.events.find(e => e.id === window.currentEventId);
-      if (currentEvent) {
-        context.event = {
-          id: currentEvent.id,
-          name: currentEvent.name,
-          description: currentEvent.description
-        };
+    // Получаем состояние из разных источников
+    let currentEventId = null;
+    let events = [];
+    let currentRoundFilter = null;
+
+    // Приоритет 1: window.state (основной способ)
+    if (window.state) {
+      currentEventId = window.state.currentEventId;
+      events = window.state.events || [];
+      currentRoundFilter = window.state.currentRoundFilter;
+    }
+
+    // Приоритет 2: window.currentEventId (для совместимости)
+    if (!currentEventId && window.currentEventId) {
+      currentEventId = window.currentEventId;
+    }
+
+    // Приоритет 3: window.events (для совместимости)
+    if (!events.length && window.events) {
+      events = window.events;
+    }
+
+    // Приоритет 4: window.currentRoundFilter (для совместимости)
+    if (!currentRoundFilter && window.currentRoundFilter) {
+      currentRoundFilter = window.currentRoundFilter;
+    }
+
+    // Устанавливаем eventId в контекст
+    if (currentEventId) {
+      context.eventId = currentEventId;
+      
+      // Получаем информацию о текущем турнире
+      if (events && events.length > 0) {
+        const currentEvent = events.find(e => e.id === currentEventId);
+        if (currentEvent) {
+          context.event = {
+            id: currentEvent.id,
+            name: currentEvent.name,
+            description: currentEvent.description
+          };
+        }
       }
     }
 
     // Получаем текущий тур
-    if (window.currentRoundFilter) {
-      context.round = window.currentRoundFilter;
+    if (currentRoundFilter) {
+      context.round = currentRoundFilter;
     }
 
     // Проверяем открытые модальные окна

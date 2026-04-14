@@ -147,6 +147,7 @@ app.use((req, res, next) => {
 });
 
 // ===== ПОДКЛЮЧЕНИЕ РОУТОВ =====
+
 app.use(authRouter);
 app.use(eventsRouter);
 app.use(matchesRouter);
