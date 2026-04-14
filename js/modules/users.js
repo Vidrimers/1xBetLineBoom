@@ -1,7 +1,7 @@
 // ========== МОДУЛЬ USERS ==========
 // Управление пользователями (уведомления)
 
-import * as state from './state.js';
+import { currentUser } from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 // Открыть модальное окно управления уведомлениями
@@ -117,7 +117,7 @@ export async function toggleUserNotifications(userId, enable) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         script: 'enable-notifications',
-        username: state.currentUser?.username,
+        username: currentUser?.username,
         args: [userId, enable ? '1' : '0']
       })
     });
@@ -154,7 +154,7 @@ export async function enableNotificationsForAll() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         script: 'enable-notifications-for-all',
-        username: state.currentUser?.username,
+        username: currentUser?.username,
         args: []
       })
     });

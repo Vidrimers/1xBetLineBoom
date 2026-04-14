@@ -1,25 +1,25 @@
 // ========== МОДУЛЬ ADMIN ==========
 // Права доступа, управление БД, orphaned данные
 
-import * as state from './state.js';
+import { currentUser } from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 // ===== ПРОВЕРКА ПРАВ =====
 
 export function isAdmin() {
-  return state.currentUser && state.currentUser.isAdmin === true;
+  return currentUser && currentUser.isAdmin === true;
 }
 
 // Загрузить права модератора для текущего пользователя
 export async function loadModeratorPermissions() {
-  if (!state.currentUser) {
-    console.log("❌ state.currentUser не определен");
+  if (!currentUser) {
+    console.log("❌ currentUser не определен");
     return;
   }
 
-  if (state.currentUser.isAdmin) {
-    state.currentUser.isModerator = false;
-    state.currentUser.moderatorPermissions = [];
+  if (currentUser.isAdmin) {
+    currentUser.isModerator = false;
+    currentUser.moderatorPermissions = [];
     console.log("👑 Пользователь - админ, права модератора не нужны");
     return;
   }
@@ -30,42 +30,42 @@ export async function loadModeratorPermissions() {
     const moderators = await response.json();
 
     console.log("📋 Получено модераторов:", moderators);
-    console.log("🔎 Ищем модератора с user_id:", state.currentUser.id);
+    console.log("🔎 Ищем модератора с user_id:", currentUser.id);
 
-    const moderator = moderators.find(mod => mod.user_id === state.currentUser.id);
+    const moderator = moderators.find(mod => mod.user_id === currentUser.id);
 
     if (moderator) {
-      state.currentUser.isModerator = true;
-      state.currentUser.moderatorPermissions = moderator.permissions || [];
-      console.log("✅ Права модератора загружены:", state.currentUser.moderatorPermissions);
-      console.log("👤 state.currentUser после загрузки:", state.currentUser);
+      currentUser.isModerator = true;
+      currentUser.moderatorPermissions = moderator.permissions || [];
+      console.log("✅ Права модератора загружены:", currentUser.moderatorPermissions);
+      console.log("👤 currentUser после загрузки:", currentUser);
     } else {
-      state.currentUser.isModerator = false;
-      state.currentUser.moderatorPermissions = [];
+      currentUser.isModerator = false;
+      currentUser.moderatorPermissions = [];
       console.log("ℹ️ Пользователь не является модератором");
     }
   } catch (error) {
     console.error("❌ Ошибка загрузки прав модератора:", error);
-    state.currentUser.isModerator = false;
-    state.currentUser.moderatorPermissions = [];
+    currentUser.isModerator = false;
+    currentUser.moderatorPermissions = [];
   }
 }
 
 export function isModerator() {
-  return state.currentUser && state.currentUser.isModerator === true;
+  return currentUser && currentUser.isModerator === true;
 }
 
 export function hasModeratorPermission(permission) {
-  if (!state.currentUser) return false;
-  if (state.currentUser.isAdmin) return true;
-  if (!state.currentUser.isModerator) return false;
-  return state.currentUser.moderatorPermissions && state.currentUser.moderatorPermissions.includes(permission);
+  if (!currentUser) return false;
+  if (currentUser.isAdmin) return true;
+  if (!currentUser.isModerator) return false;
+  return currentUser.moderatorPermissions && currentUser.moderatorPermissions.includes(permission);
 }
 
 export function hasPermission(permission) {
   if (isAdmin()) return true;
   if (!isModerator()) return false;
-  return state.currentUser.moderatorPermissions.includes(permission);
+  return currentUser.moderatorPermissions.includes(permission);
 }
 
 export function canManageMatches() {
@@ -160,7 +160,7 @@ export function hasAdminPanelAccess() {
   if (isAdmin()) return true;
   if (!isModerator()) return false;
   const adminPanelPerms = ['view_logs', 'backup_db', 'download_backup', 'restore_db', 'delete_backup', 'manage_orphaned', 'view_users'];
-  return state.currentUser.moderatorPermissions.some(perm => adminPanelPerms.includes(perm));
+  return currentUser.moderatorPermissions.some(perm => adminPanelPerms.includes(perm));
 }
 
 export function isAdminOrModerator() {
@@ -195,7 +195,7 @@ export async function backupDatabase() {
     const response = await fetch("/api/backup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: state.currentUser.username })
+      body: JSON.stringify({ username: currentUser.username })
     });
 
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -269,12 +269,12 @@ export async function openDatabaseModal() {
     return;
   }
 
-  if (state.currentUser && !isAdmin()) {
+  if (currentUser && !isAdmin()) {
     try {
       await fetch('/api/admin/notify-database-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: state.currentUser.username, userId: state.currentUser.id })
+        body: JSON.stringify({ username: currentUser.username, userId: currentUser.id })
       });
     } catch (error) {
       console.error('⚠️ Не удалось отправить уведомление о доступе к БД:', error);
@@ -439,7 +439,7 @@ export async function restoreSelectedBackup() {
     const response = await fetch("/api/admin/restore-backup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: selectedBackupFilename, username: state.currentUser.username })
+      body: JSON.stringify({ filename: selectedBackupFilename, username: currentUser.username })
     });
 
     const data = await response.json();
@@ -467,7 +467,7 @@ export function downloadSelectedBackup() {
     showCustomAlert("Выберите бэкап для скачивания", "Ошибка", "❌");
     return;
   }
-  window.location.href = '/download-backup/' + selectedBackupFilename + '?username=' + encodeURIComponent(state.currentUser.username);
+  window.location.href = '/download-backup/' + selectedBackupFilename + '?username=' + encodeURIComponent(currentUser.username);
 }
 
 // Заблокировать/разблокировать бэкап (только для админа)
@@ -489,7 +489,7 @@ export async function toggleBackupLock(filename, currentLockStatus) {
     const response = await fetch("/api/admin/toggle-backup-lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, username: state.currentUser.username })
+      body: JSON.stringify({ filename, username: currentUser.username })
     });
 
     const data = await response.json();
@@ -528,7 +528,7 @@ export async function deleteSelectedBackup() {
     const response = await fetch("/api/admin/delete-backup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: selectedBackupFilename, username: state.currentUser.username })
+      body: JSON.stringify({ filename: selectedBackupFilename, username: currentUser.username })
     });
 
     const data = await response.json();
@@ -563,7 +563,7 @@ export async function restoreBackup(filename) {
     const response = await fetch("/api/admin/restore-backup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, username: state.currentUser.username })
+      body: JSON.stringify({ filename, username: currentUser.username })
     });
 
     const data = await response.json();
@@ -592,7 +592,7 @@ export async function checkOrphanedData() {
     const btn = document.querySelector('[onclick="checkOrphanedData()"]');
     if (btn) { btn.textContent = "⏳ Проверка..."; btn.disabled = true; }
 
-    const response = await fetch('/api/admin/orphaned-data?username=' + encodeURIComponent(state.currentUser.username));
+    const response = await fetch('/api/admin/orphaned-data?username=' + encodeURIComponent(currentUser.username));
 
     if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
 
@@ -647,7 +647,7 @@ export async function cleanupOrphanedData() {
     const response = await fetch("/api/admin/cleanup-orphaned-data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: state.currentUser.username })
+      body: JSON.stringify({ username: currentUser.username })
     });
 
     if (!response.ok) throw new Error('HTTP error! status: ' + response.status);

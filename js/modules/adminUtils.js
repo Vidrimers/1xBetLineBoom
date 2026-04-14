@@ -1,7 +1,7 @@
 // ========== МОДУЛЬ ADMIN UTILS ==========
 // Утилитные скрипты и управление датами автоподсчета
 
-import * as state from './state.js';
+import { currentUser } from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 // Запустить утилитный скрипт
@@ -24,7 +24,7 @@ export async function runUtilityScript(scriptName) {
     const response = await fetch('/api/admin/run-utility', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ script: scriptName, username: state.currentUser?.username })
+      body: JSON.stringify({ script: scriptName, username: currentUser?.username })
     });
 
     if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
@@ -94,7 +94,7 @@ export async function loadDatesData(type) {
     const response = await fetch('/api/admin/run-utility', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ script: scriptName, username: state.currentUser?.username })
+      body: JSON.stringify({ script: scriptName, username: currentUser?.username })
     });
 
     if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
@@ -195,7 +195,7 @@ export async function clearProcessedDates() {
         const response = await fetch('/api/admin/clear-processed-dates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: state.currentUser?.username, dateKeys: [] })
+          body: JSON.stringify({ username: currentUser?.username, dateKeys: [] })
         });
 
         if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
@@ -234,7 +234,7 @@ export async function clearProcessedDates() {
         const response = await fetch('/api/admin/clear-processed-dates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: state.currentUser?.username, dateKeys: selectedDates })
+          body: JSON.stringify({ username: currentUser?.username, dateKeys: selectedDates })
         });
 
         if (!response.ok) throw new Error('HTTP error! status: ' + response.status);

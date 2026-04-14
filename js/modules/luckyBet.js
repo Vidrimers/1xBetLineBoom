@@ -1,11 +1,19 @@
 // Случайная ставка по всем матчам выбранного тура
 
-import * as state from './state.js';
 import {
+  currentUser,
+  currentRoundFilter,
+  matches,
+  userBets,
+  events,
+  currentEventId,
   iconTitles,
 } from './state.js';
-import { getMatchStatusByDate } from './matches.js';
-import { loadMyBets } from './bets.js';
+
+// TODO (таск 19): добавить импорт после создания matches.js:
+// import { getMatchStatusByDate } from './matches.js';
+// TODO (таск 20): добавить импорт после создания bets.js:
+// import { loadMyBets } from './bets.js';
 
 // Позиционирование кубика относительно кнопки
 export function updateDicePosition() {
@@ -91,21 +99,21 @@ export function getIconTitle(icon) {
 export { iconTitles };
 
 export async function luckyBetForCurrentRound() {
-  if (!state.currentUser) {
+  if (!currentUser) {
     alert("Сначала войдите в аккаунт");
     return;
   }
-  if (!state.currentRoundFilter || state.currentRoundFilter === "all") {
+  if (!currentRoundFilter || currentRoundFilter === "all") {
     alert("Сначала выберите тур");
     return;
   }
   // Находим все матчи выбранного тура, которые еще не завершены/отменены и на которые пользователь не ставил
   const matchesToBet = matches.filter(
     (m) =>
-      m.round === state.currentRoundFilter &&
+      m.round === currentRoundFilter &&
       getMatchStatusByDate(m) !== "finished" &&
       !['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(getMatchStatusByDate(m)) &&
-      !state.userBets.some((b) => b.match_id === m.id)
+      !userBets.some((b) => b.match_id === m.id)
   );
   if (matchesToBet.length === 0) {
     alert("Нет доступных матчей для случайной ставки в этом туре");
@@ -153,7 +161,7 @@ export async function luckyBetForCurrentRound() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: state.currentUser.id,
+          user_id: currentUser.id,
           match_id: match.id,
           prediction: prediction,
           amount: 0,
@@ -166,7 +174,7 @@ export async function luckyBetForCurrentRound() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            user_id: state.currentUser.id,
+            user_id: currentUser.id,
             match_id: match.id,
             score_team1: team1Score,
             score_team2: team2Score,
@@ -181,7 +189,7 @@ export async function luckyBetForCurrentRound() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            user_id: state.currentUser.id,
+            user_id: currentUser.id,
             match_id: match.id,
             yellow_cards: match.yellow_cards_prediction_enabled ? yellowCards : null,
             red_cards: match.red_cards_prediction_enabled ? redCards : null,
@@ -197,14 +205,14 @@ export async function luckyBetForCurrentRound() {
   
   // Отправляем уведомление админу
   try {
-    const currentEvent = state.events.find(e => e.id === state.currentEventId);
+    const currentEvent = events.find(e => e.id === currentEventId);
     await fetch("/api/admin/notify-lucky-bet", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: state.currentUser.id,
+        userId: currentUser.id,
         eventName: currentEvent ? currentEvent.name : "Неизвестный турнир",
-        round: state.currentRoundFilter,
+        round: currentRoundFilter,
         matchesCount: matchesToBet.length,
         scorePredictions: scorePredictionsCount,
         cardsPredictions: cardsPredictionsCount,

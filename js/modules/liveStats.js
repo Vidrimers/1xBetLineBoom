@@ -1,7 +1,7 @@
 // ===== СТАТИСТИКА LIVE МАТЧЕЙ =====
 // Перенесено из js/index.js
 
-import * as state from './state.js';
+import { currentUser, currentLiveEventId } from './state.js';
 import { showCustomAlert } from './ui.js';
 
 // Кэш для словаря имен игроков
@@ -106,7 +106,7 @@ export async function showLiveTeamStats(matchData) {
     }
   }
 
-  if (state.currentUser && state.currentUser.username && currentLiveEventId) {
+  if (currentUser && currentUser.username && currentLiveEventId) {
     fetch('/api/events')
       .then(res => res.json())
       .then(events => {
@@ -119,7 +119,7 @@ export async function showLiveTeamStats(matchData) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: state.currentUser.username,
+            username: currentUser.username,
             action: 'open_match_stats',
             details: {
               match: `${matchData.team1} vs ${matchData.team2}`,

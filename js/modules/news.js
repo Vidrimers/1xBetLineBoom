@@ -1,7 +1,7 @@
 // ===== МОДУЛЬ: RSS НОВОСТИ =====
 // Функции для работы с RSS новостями и управления ключевыми словами
 
-import * as state from './state.js';
+import { currentUser } from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 // ============================================
@@ -18,12 +18,12 @@ export async function openRssNewsModal() {
     modal.style.display = "flex";
 
     // Отправляем уведомление админу о просмотре RSS новостей
-    if (state.currentUser && state.currentUser.username) {
+    if (currentUser && currentUser.username) {
       fetch("/api/notify-news-view", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: state.currentUser.username,
+          username: currentUser.username,
           type: 'rss'
         })
       }).catch(err => {
@@ -322,7 +322,7 @@ export async function addRssKeyword() {
     return;
   }
 
-  if (!state.currentUser || !state.currentUser.username) {
+  if (!currentUser || !currentUser.username) {
     await showCustomAlert("Ошибка: пользователь не авторизован");
     return;
   }
@@ -332,7 +332,7 @@ export async function addRssKeyword() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        username: state.currentUser.username,
+        username: currentUser.username,
         tournament,
         keyword,
         type,
@@ -367,7 +367,7 @@ export async function deleteRssKeyword(id) {
 
   if (!confirmed) return;
 
-  if (!state.currentUser || !state.currentUser.username) {
+  if (!currentUser || !currentUser.username) {
     await showCustomAlert("Ошибка: пользователь не авторизован");
     return;
   }
@@ -377,7 +377,7 @@ export async function deleteRssKeyword(id) {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        username: state.currentUser.username
+        username: currentUser.username
       })
     });
 

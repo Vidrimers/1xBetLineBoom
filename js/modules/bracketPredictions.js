@@ -1,13 +1,13 @@
 // ===== ПРОГНОЗЫ ПОЛЬЗОВАТЕЛЕЙ В СЕТКЕ ПЛЕЙ-ОФФ =====
 
-import * as state from './state.js';
+import { currentUser, currentEventId } from './state.js';
 import { showCustomAlert } from './ui.js';
 
 // Показать прогнозы пользователя в сетке плей-офф
 export async function showUserBracketPredictions(bracketId, userId) {
   try {
     // Загружаем прогнозы пользователя с передачей viewerId
-    const currentUserId = state.currentUser ? state.currentUser.id : null;
+    const currentUserId = currentUser ? currentUser.id : null;
     const url = `/api/brackets/${bracketId}/predictions/${userId}${currentUserId ? `?viewerId=${currentUserId}` : ''}`;
     const response = await fetch(url);
 
@@ -108,8 +108,8 @@ export async function showUserBracketPredictions(bracketId, userId) {
 // Показать прогнозы пользователя в сетке (открыть модалку)
 export async function showUserBracketPredictionsInline(userId, username = 'Пользователь') {
   try {
-    // Находим сетку для текущего турнира (используем window.state.currentEventId или state.currentEventId)
-    const eventId = window.state.currentEventId || state.currentEventId;
+    // Находим сетку для текущего турнира (используем window.currentEventId или currentEventId)
+    const eventId = window.currentEventId || currentEventId;
 
     if (!eventId) {
       if (typeof showCustomAlert === 'function') {
@@ -133,7 +133,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
     const bracket = brackets[0];
 
     // Отправляем уведомление о просмотре сетки (если смотрит не владелец)
-    if (state.currentUser && state.currentUser.id !== userId) {
+    if (currentUser && currentUser.id !== userId) {
       fetch('/api/notify-view-bracket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

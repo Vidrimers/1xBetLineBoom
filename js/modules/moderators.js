@@ -1,7 +1,7 @@
 // ========== МОДУЛЬ MODERATORS ==========
 // Управление модераторами
 
-import * as state from './state.js';
+import { currentUser, ADMIN_LOGIN, ADMIN_DB_NAME } from './state.js';
 import { isAdmin } from './admin.js';
 
 // Глобальная переменная для хранения ID редактируемого модератора

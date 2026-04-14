@@ -1,6 +1,6 @@
 // Модуль управления темами
 
-import * as state from './state.js';
+import { currentUser } from './state.js';
 
 // Вспомогательная функция для показа статуса сохранения
 // (showSaveStatus определена в index.js / main.js)
@@ -33,7 +33,7 @@ export function previewTheme(themeName) {
 
 // Сохранить выбранную тему
 export async function saveTheme() {
-  if (!state.currentUser) {
+  if (!currentUser) {
     alert("Сначала войдите в систему");
     return;
   }
@@ -44,7 +44,7 @@ export async function saveTheme() {
   try {
     _showSaveStatus('themeStatus', 'saving');
 
-    const response = await fetch(`/api/user/${state.currentUser.id}/settings`, {
+    const response = await fetch(`/api/user/${currentUser.id}/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ theme: themeName }),
@@ -113,9 +113,9 @@ export async function loadSavedTheme() {
   }
 
   // Если пользователь залогинен, загружаем тему с сервера
-  if (state.currentUser) {
+  if (currentUser) {
     try {
-      const response = await fetch(`/api/user/${state.currentUser.id}/notifications`);
+      const response = await fetch(`/api/user/${currentUser.id}/notifications`);
       if (response.ok) {
         const data = await response.json();
         if (data.theme && data.theme !== savedTheme) {

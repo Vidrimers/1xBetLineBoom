@@ -1,7 +1,7 @@
 // ===== МОДУЛЬ: НОВОСТИ НА САЙТЕ (ВКЛАДКА) =====
 // Функции для вкладки новостей, публикации и реакций
 
-import * as state from './state.js';
+import { currentUser } from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 // ============================================
@@ -241,8 +241,8 @@ export async function loadNewsList(reset = false) {
       url += `&type=${currentNewsFilter}`;
     }
     // Добавляем username для получения реакций пользователя
-    if (state.currentUser) {
-      url += `&username=${encodeURIComponent(state.currentUser.username)}`;
+    if (currentUser) {
+      url += `&username=${encodeURIComponent(currentUser.username)}`;
     }
 
     const response = await fetch(url);
@@ -315,7 +315,7 @@ export async function loadNewsList(reset = false) {
       const borderColor = typeBorderColors[item.type] || 'rgba(255, 255, 255, 0.1)';
 
       // Проверяем является ли пользователь админом
-      const isAdmin = state.currentUser && state.currentUser.isAdmin === true;
+      const isAdmin = currentUser && currentUser.isAdmin === true;
 
       html += `
         <div class="news-item" style="
@@ -430,7 +430,7 @@ export async function filterNews(type) {
 
 // Реакция на новость (лайк/дизлайк)
 export async function reactToNews(newsId, reaction) {
-  if (!state.currentUser) {
+  if (!currentUser) {
     alert("Сначала войдите в аккаунт");
     return;
   }
@@ -442,7 +442,7 @@ export async function reactToNews(newsId, reaction) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        username: state.currentUser.username,
+        username: currentUser.username,
         reaction: reaction
       })
     });
@@ -587,7 +587,7 @@ export function hideReactionTooltip() {
 
 // Удалить новость (только админ)
 export async function deleteNews(newsId) {
-  if (!state.currentUser) {
+  if (!currentUser) {
     await showCustomAlert("Сначала войдите в аккаунт", "Ошибка", "❌");
     return;
   }
@@ -609,7 +609,7 @@ export async function deleteNews(newsId) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        username: state.currentUser.username
+        username: currentUser.username
       })
     });
 
@@ -685,7 +685,7 @@ export async function publishNews() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        username: state.currentUser.username,
+        username: currentUser.username,
         type: selectedNewsType,
         title: title,
         message: message

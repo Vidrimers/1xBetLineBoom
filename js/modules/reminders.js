@@ -1,3 +1,4 @@
+import { currentUser, currentEventId, selectedReminderHours } from './state.js';
 import * as state from './state.js';
 import { setSelectedReminderHours } from './state.js';
 import { showCustomAlert } from './ui.js';
@@ -9,7 +10,7 @@ export async function showMatchRemindersModal(event) {
   if (event) event.stopPropagation();
 
   // Проверяем авторизацию
-  if (!state.currentUser) {
+  if (!currentUser) {
     if (typeof showCustomAlert === 'function') {
       showCustomAlert('Войдите в систему чтобы настроить напоминания', 'Требуется авторизация', '🔒');
     }
@@ -17,7 +18,7 @@ export async function showMatchRemindersModal(event) {
   }
 
   // Проверяем выбран ли турнир
-  if (!state.currentEventId) {
+  if (!currentEventId) {
     if (typeof showCustomAlert === 'function') {
       showCustomAlert('Выберите турнир чтобы настроить напоминания', 'Турнир не выбран', '⚠️');
     }
@@ -72,10 +73,10 @@ export function updateReminderIndicator(hasReminder) {
 
 // Загрузить текущие настройки напоминаний
 export async function loadMatchReminders() {
-  if (!state.currentUser || !state.currentEventId) return;
+  if (!currentUser || !currentEventId) return;
 
   try {
-    const response = await fetch(`/api/user/${state.currentUser.id}/event/${state.currentEventId}/reminders`);
+    const response = await fetch(`/api/user/${currentUser.id}/event/${currentEventId}/reminders`);
 
     if (response.ok) {
       const data = await response.json();
@@ -116,7 +117,7 @@ export async function loadMatchReminders() {
 
 // Сохранить настройки напоминаний
 export async function saveMatchReminders() {
-  if (!state.currentUser || !state.currentEventId) return;
+  if (!currentUser || !currentEventId) return;
 
   if (!state.selectedReminderHours) {
     if (typeof showCustomAlert === 'function') {
@@ -126,7 +127,7 @@ export async function saveMatchReminders() {
   }
 
   // Проверяем привязку Telegram
-  if (!state.currentUser.telegram_username) {
+  if (!currentUser.telegram_username) {
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert(
         'Для получения напоминаний необходимо привязать Telegram аккаунт.\n\nПерейдите в настройки профиля и свяжите свой аккаунт с ботом.',
@@ -139,7 +140,7 @@ export async function saveMatchReminders() {
   }
 
   // Проверяем включены ли уведомления
-  if (state.currentUser.telegram_notifications_enabled !== 1) {
+  if (currentUser.telegram_notifications_enabled !== 1) {
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert(
         'У вас отключено получение личных сообщений от бота.\n\nВключите уведомления в настройках профиля чтобы получать напоминания.',
@@ -152,7 +153,7 @@ export async function saveMatchReminders() {
   }
 
   try {
-    const response = await fetch(`/api/user/${state.currentUser.id}/event/${state.currentEventId}/reminders`, {
+    const response = await fetch(`/api/user/${currentUser.id}/event/${currentEventId}/reminders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ hours_before: state.selectedReminderHours })
@@ -194,10 +195,10 @@ export async function saveMatchReminders() {
 
 // Удалить настройки напоминаний
 export async function deleteMatchReminders() {
-  if (!state.currentUser || !state.currentEventId) return;
+  if (!currentUser || !currentEventId) return;
 
   try {
-    const response = await fetch(`/api/user/${state.currentUser.id}/event/${state.currentEventId}/reminders`, {
+    const response = await fetch(`/api/user/${currentUser.id}/event/${currentEventId}/reminders`, {
       method: 'DELETE'
     });
 

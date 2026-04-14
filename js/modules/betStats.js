@@ -1,5 +1,4 @@
-import * as state from './state.js';
-import { displayedBetStats } from './state.js';
+import { userBets, displayedBetStats } from './state.js';
 
 // ===== СТАТИСТИКА СТАВОК =====
 
@@ -50,7 +49,7 @@ export async function loadAndDisplayBetStats(matchId, forceAnimate = false) {
     const team2Btn = matchRow.querySelector('.bet-btn.team2');
 
     // Проверяем, есть ли у пользователя ставка на этот матч
-    const userBet = state.userBets.find(bet => bet.match_id === matchId && (!bet.is_final_bet || bet.is_final_bet === 0));
+    const userBet = userBets.find(bet => bet.match_id === matchId && (!bet.is_final_bet || bet.is_final_bet === 0));
 
     // Если у пользователя нет ставки, не показываем проценты
     if (!userBet) {
