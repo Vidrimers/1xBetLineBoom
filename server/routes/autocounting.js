@@ -203,15 +203,14 @@ router.post("/api/admin/run-utility", (req, res) => {
   }
   
   const scriptMap = {
-    'check-processed-dates': { file: 'check-processed-dates.cjs', title: 'Обработанные даты' },
-    'clear-processed-dates': { file: 'clear-processed-dates.cjs', title: 'Очистка дат' },
-    'check-match-dates': { file: 'check-match-dates.cjs', title: 'Даты матчей' },
-    'check-event-id': { file: 'check-event-id.cjs', title: 'ID турниров' },
-    'check-tables': { file: 'check-tables.js', title: 'Структура БД' },
-    'check-user-settings': { file: 'check-user-settings.cjs', title: 'Настройки пользователей' },
-    'deactivate-old-events': { file: 'deactivate-old-events.cjs', title: 'Деактивация турниров' },
-    'enable-notifications': { file: 'enable-notifications.cjs', title: 'Включение уведомлений' },
-    'enable-notifications-for-all': { file: 'enable-notifications-for-all.cjs', title: 'Уведомления для всех' },
+    'check-processed-dates': { file: 'scripts/migrations/check-processed-dates.cjs', title: 'Обработанные даты' },
+    'clear-processed-dates': { file: 'scripts/migrations/clear-processed-dates.cjs', title: 'Очистка дат' },
+    'check-match-dates': { file: 'scripts/migrations/check-match-dates.cjs', title: 'Даты матчей' },
+    'check-event-id': { file: 'scripts/migrations/check-event-id.cjs', title: 'ID турниров' },
+    'check-tables': { file: 'scripts/checks/check-tables.js', title: 'Структура БД' },
+    'check-user-settings': { file: 'scripts/migrations/check-user-settings.cjs', title: 'Настройки пользователей' },
+    'enable-notifications': { file: 'scripts/migrations/enable-notifications.cjs', title: 'Включение уведомлений' },
+    'enable-notifications-for-all': { file: 'scripts/migrations/enable-notifications-for-all.cjs', title: 'Уведомления для всех' },
     'update-sstats-ids': { file: 'update-sstats-ids.cjs', title: 'Обновление SStats ID' }
   };
   
