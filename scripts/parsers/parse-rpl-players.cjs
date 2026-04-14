@@ -1,10 +1,14 @@
 // Скрипт для парсинга игроков РПЛ из SStats API
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const fs = require('fs');
 
 const SSTATS_API_BASE = 'https://api.sstats.net';
 const LEAGUE_ID = 235; // Russian Premier League
-const OUTPUT_FILE = 'names/RussianPremierLeaguePlayers.json';
+
+// Корень проекта
+const ROOT_DIR = path.join(__dirname, '../..');
+const OUTPUT_FILE = path.join(ROOT_DIR, 'names/RussianPremierLeaguePlayers.json');
 
 async function parseRPLPlayers() {
   const apiKey = process.env.SSTATS_API_KEY;

@@ -1,11 +1,16 @@
 const Database = require('better-sqlite3');
 const dotenv = require('dotenv');
 const fs = require('fs');
+const path = require('path');
 
-dotenv.config();
+// Загружаем .env из корня проекта
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const SSTATS_API_KEY = process.env.SSTATS_API_KEY;
 const SSTATS_API_BASE = "https://api.sstats.net";
+
+// Корень проекта
+const ROOT_DIR = path.join(__dirname, '../..');
 
 // Маппинг League ID на название файла
 const LEAGUE_FILES = {
@@ -171,14 +176,16 @@ async function main() {
   const fileName = LEAGUE_FILES[leagueId] || 'Players';
   
   // Создаем директории если не существуют
-  if (!fs.existsSync('temp')) {
-    fs.mkdirSync('temp');
+  const tempDir = path.join(ROOT_DIR, 'temp');
+  const parsedDir = path.join(tempDir, 'parsed');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir);
   }
-  if (!fs.existsSync('temp/parsed')) {
-    fs.mkdirSync('temp/parsed');
+  if (!fs.existsSync(parsedDir)) {
+    fs.mkdirSync(parsedDir);
   }
   
-  const filePath = `temp/parsed/${fileName}_parsed.json`;
+  const filePath = path.join(parsedDir, `${fileName}_parsed.json`);
   
   fs.writeFileSync(filePath, JSON.stringify(playersObj, null, 2), 'utf-8');
   

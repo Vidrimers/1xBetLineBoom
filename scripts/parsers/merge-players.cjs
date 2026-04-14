@@ -1,8 +1,12 @@
 const fs = require('fs');
+const path = require('path');
+
+// Корень проекта
+const ROOT_DIR = path.join(__dirname, '../..');
 
 // Читаем оба файла
-const existingFile = 'names/LeagueOfChampionsPlayers.json';
-const parsedFile = 'temp/LeagueOfChampionsPlayers_parsed.json';
+const existingFile = path.join(ROOT_DIR, 'names/LeagueOfChampionsPlayers.json');
+const parsedFile = path.join(ROOT_DIR, 'temp/LeagueOfChampionsPlayers_parsed.json');
 
 const existing = JSON.parse(fs.readFileSync(existingFile, 'utf-8'));
 const parsed = JSON.parse(fs.readFileSync(parsedFile, 'utf-8'));
@@ -70,7 +74,8 @@ for (const [russian, english] of Object.entries(sorted)) {
 }
 
 if (needTranslation.length > 0) {
-  fs.writeFileSync('temp/need-translation.txt', needTranslation.join('\n'), 'utf-8');
+  const needTranslationFile = path.join(ROOT_DIR, 'temp/need-translation.txt');
+  fs.writeFileSync(needTranslationFile, needTranslation.join('\n'), 'utf-8');
   console.log(`\n📝 Игроков без перевода: ${needTranslation.length}`);
   console.log(`📁 Список сохранен в: temp/need-translation.txt`);
   console.log(`\n💡 Первые 20 игроков без перевода:`);

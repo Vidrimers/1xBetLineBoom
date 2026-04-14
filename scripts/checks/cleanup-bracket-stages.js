@@ -2,7 +2,10 @@
 // Оставляет только начальные стадии (1/16 и 1/8)
 
 const Database = require('better-sqlite3');
-const db = new Database('1xBetLineBoom.db');
+const path = require('path');
+
+const dbPath = path.join(__dirname, '../../1xBetLineBoom.db');
+const db = new Database(dbPath);
 
 console.log('🔄 Начинаем очистку команд из последующих стадий...');
 

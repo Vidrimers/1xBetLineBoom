@@ -1,9 +1,11 @@
 const Database = require('better-sqlite3');
 const dotenv = require('dotenv');
+const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-const db = new Database('1xBetLineBoom.db');
+const dbPath = path.join(__dirname, '../../1xBetLineBoom.db');
+const db = new Database(dbPath);
 
 console.log('\n🤖 Запуск автоподсчета вручную...\n');
 
@@ -65,6 +67,6 @@ completedDates.forEach((d, i) => {
 console.log('\n💡 Для запуска автоподсчета используйте API endpoint:');
 console.log('   POST /api/admin/trigger-auto-counting');
 console.log('   Body: { "eventId": <id>, "date": "<date>", "round": "<round>" }');
-console.log('\nИли включите автоподсчет в админ-панели (кнопка "A")');
+console.log('\nИли включите автоподсчет в настройках (кнопка "A")');
 
 db.close();

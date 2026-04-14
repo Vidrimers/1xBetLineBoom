@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, "1xBetLineBoom.db");
+const dbPath = path.join(__dirname, "../../1xBetLineBoom.db");
 
 const db = new Database(dbPath);
 
@@ -116,7 +116,7 @@ if (totalOrphaned === 0) {
 } else {
   console.log(`⚠️  НАЙДЕНО ${totalOrphaned} ЗАПИСЕЙ УДАЛЁННЫХ ДАННЫХ!`);
   console.log(
-    "\n💡 Чтобы очистить, используйте скрипт cleanup-orphaned-data.js"
+    "\n💡 Чтобы очистить, используйте скрипт scripts/checks/cleanup-orphaned-data.js"
   );
 }
 

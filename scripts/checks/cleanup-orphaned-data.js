@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, "1xBetLineBoom.db");
+const dbPath = path.join(__dirname, "../../1xBetLineBoom.db");
 
 const db = new Database(dbPath);
 
@@ -74,9 +74,9 @@ try {
 }
 
 // 6. Статистика после очистки
-console.log("=" .repeat(60));
+console.log("=".repeat(60));
 console.log("📊 СТАТИСТИКА ПОСЛЕ ОЧИСТКИ");
-console.log("=" .repeat(60));
+console.log("=".repeat(60));
 const stats = db
   .prepare(
     `SELECT 
@@ -97,7 +97,7 @@ const totalDeleted =
   deletedReminders.changes +
   deletedBets.changes +
   deletedMatches.changes;
-console.log("=" .repeat(60));
+console.log("=".repeat(60));
 console.log(`✅ ОЧИСТКА ЗАВЕРШЕНА! Удалено ${totalDeleted} записей.\n`);
 
 db.close();
