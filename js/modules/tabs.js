@@ -8,10 +8,6 @@ import { loadTournamentsList } from './participants.js';
 import { loadProfile } from './profile.js';
 import { loadNewsTab } from './newsTab.js';
 
-// TODO (таск 31): раскомментировать после переноса функций:
-// import { loadSettings } from './settings.js';
-// import { loadCounting } from './autocounting.js';
-
 // ===== МОБИЛЬНОЕ МЕНЮ =====
 export function toggleMobileMenu() {
   const userSection = document.querySelector('.user-section');
@@ -190,7 +186,7 @@ export function switchTab(tabName) {
       content.style.opacity = "1";
     }, 10);
     document.querySelectorAll(".tab-btn")[5].classList.add("active");
-    loadSettings();
+    import('./settings.js').then(m => m.initTimezoneSettings());
   } else if (tabName === "news") {
     const content = document.getElementById("news-content");
     content.style.setProperty("display", "flex", "important");
@@ -207,6 +203,6 @@ export function switchTab(tabName) {
     setTimeout(() => {
       content.style.opacity = "1";
     }, 10);
-    loadCounting();
+    import('./autocounting.js').then(m => m.loadAutoCountingStatus());
   }
 }

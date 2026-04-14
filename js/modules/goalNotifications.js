@@ -4,7 +4,7 @@
 import { currentUser, matchScores, matchFinishTimes, deletedFinishedMatches } from './state.js';
 import { showLiveTeamStats } from './liveStats.js';
 
-export { matchScores, matchFinishTimes, deletedFinishedMatches };
+export { matchScores, matchFinishTimes, deletedFinishedMatches } from './state.js';
 
 export function saveDeletedFinishedMatches() {
   localStorage.setItem('deletedFinishedMatches', JSON.stringify([...deletedFinishedMatches]));

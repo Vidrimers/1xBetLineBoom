@@ -11,9 +11,9 @@ import {
 } from './state.js';
 
 // TODO (таск 19): добавить импорт после создания matches.js:
-// import { getMatchStatusByDate } from './matches.js';
+import { getMatchStatusByDate } from './matches.js';
 // TODO (таск 20): добавить импорт после создания bets.js:
-// import { loadMyBets } from './bets.js';
+import { loadMyBets } from './bets.js';
 
 // Позиционирование кубика относительно кнопки
 export function updateDicePosition() {
