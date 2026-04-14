@@ -81,6 +81,7 @@ import awardsRouter from "./routes/awards.js";
 import adminRouter from "./routes/admin.js";
 import terminalRouter from "./routes/terminal.js";
 import autocountingRouter from "./routes/autocounting.js";
+import aiChatRouter from "./routes/aiChat.js";
 
 // ===== EXPRESS APP =====
 const app = express();
@@ -159,6 +160,7 @@ app.use(awardsRouter);
 app.use(adminRouter);
 app.use(terminalRouter);
 app.use(autocountingRouter);
+app.use(aiChatRouter);
 
 // ===== ЗАПУСК TELEGRAM БОТА =====
 startBot();
