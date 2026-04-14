@@ -8,6 +8,11 @@ import {
 } from './state.js';
 import { showCustomAlert, showCustomConfirm, showCustomPrompt } from './ui.js';
 import { loadSavedTheme } from './themes.js';
+import { loadEventsList } from './events.js';
+import { loadMyBets } from './bets.js';
+import { switchTab } from './tabs.js';
+import { updateLiveIndicator, stopFavoriteMatchesPolling } from './liveFavorites.js';
+import { isModerator, canCreateTournaments, canViewCounting, loadModeratorPermissions } from './admin.js';
 
 
 // ===== КНОПКА АВТОРИЗАЦИИ =====
