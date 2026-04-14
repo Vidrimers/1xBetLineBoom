@@ -1,11 +1,11 @@
-import { currentUser, currentEventId } from './state.js';
+import * as state from './state.js';
 import { showCustomAlert } from './ui.js';
 
 // ===== СРАВНЕНИЕ УЧАСТНИКОВ =====
 
 // Открыть модальное окно сравнения участников
 export async function openComparisonModal() {
-  if (!currentEventId) {
+  if (!state.currentEventId) {
     await showCustomAlert('Ошибка: турнир не выбран', 'Ошибка', '❌');
     return;
   }
@@ -105,7 +105,7 @@ export async function openComparisonModal() {
 
   // Загружаем список участников
   try {
-    const response = await fetch(`/api/events/${currentEventId}/tournament-participants`);
+    const response = await fetch(`/api/events/${state.currentEventId}/tournament-participants`);
     const participants = await response.json();
 
     const select1 = document.getElementById('compareUser1');
@@ -148,8 +148,8 @@ export async function showComparison() {
   // Загружаем данные для сравнения
   try {
     const [bets1Response, bets2Response] = await Promise.all([
-      fetch(`/api/events/${currentEventId}/user-bets/${user1Id}`),
-      fetch(`/api/events/${currentEventId}/user-bets/${user2Id}`)
+      fetch(`/api/events/${state.currentEventId}/user-bets/${user1Id}`),
+      fetch(`/api/events/${state.currentEventId}/user-bets/${user2Id}`)
     ]);
 
     const bets1 = await bets1Response.json();
@@ -161,7 +161,7 @@ export async function showComparison() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          viewerUsername: currentUser?.username || 'Неизвестный',
+          viewerUsername: state.currentUser?.username || 'Неизвестный',
           user1Username: bets1.user.username,
           user2Username: bets2.user.username,
           eventName: window.currentEventName || null
@@ -644,7 +644,7 @@ export async function showGlobalComparison() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          viewerUsername: currentUser?.username || 'Неизвестный',
+          viewerUsername: state.currentUser?.username || 'Неизвестный',
           user1Username: stats1.user.username,
           user2Username: stats2.user.username,
           eventName: null

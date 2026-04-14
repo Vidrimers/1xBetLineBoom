@@ -1,7 +1,7 @@
 // Модуль аутентификации
 
+import * as state from './state.js';
 import {
-  currentUser,
   ADMIN_LOGIN,
   ADMIN_DB_NAME,
   authCheckInterval,
@@ -393,7 +393,7 @@ export async function initUser() {
           // Код верный, продолжаем логин
           // eslint-disable-next-line no-global-assign
           setCurrentUser(confirmResult);
-          currentUser.isAdmin = isAdminUser;
+          state.currentUser.isAdmin = isAdminUser;
 
           // Загружаем права модератора
           await loadModeratorPermissions();
@@ -410,7 +410,7 @@ export async function initUser() {
       // 2FA не требуется
       // eslint-disable-next-line no-global-assign
       setCurrentUser(result);
-      currentUser.isAdmin = isAdminUser;
+      state.currentUser.isAdmin = isAdminUser;
 
       // Загружаем права модератора
       await loadModeratorPermissions();
@@ -422,7 +422,7 @@ export async function initUser() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: currentUser.id,
+          user_id: state.currentUser.id,
           device_info: deviceData.deviceInfo,
           browser: deviceData.browser,
           os: deviceData.os
@@ -440,7 +440,7 @@ export async function initUser() {
     }
 
     // Сохраняем пользователя в localStorage
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    localStorage.setItem("state.currentUser", JSON.stringify(state.currentUser));
 
     // Загружаем тему с сервера после логина
     await loadSavedTheme();
@@ -459,13 +459,13 @@ export async function initUser() {
 
     // Показываем информацию о пользователе
     document.getElementById("userStatus").style.display = "block";
-    document.getElementById("usernameBold").textContent = currentUser.username;
+    document.getElementById("usernameBold").textContent = state.currentUser.username;
     document.getElementById("username").disabled = true;
 
     setAuthButtonToLogoutState();
 
     // Показываем админ-кнопки если это админ
-    if (currentUser.isAdmin) {
+    if (state.currentUser.isAdmin) {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
       document.getElementById("adminSettingsPanel").style.display = "block";
@@ -500,7 +500,7 @@ export async function logoutUser() {
   // НЕ удаляем сессию на сервере, чтобы сохранить статус доверенного устройства
   // Просто удаляем токен из localStorage
   const sessionToken = localStorage.getItem("sessionToken");
-  if (sessionToken && currentUser) {
+  if (sessionToken && state.currentUser) {
     console.log("✅ Разлогин (сессия сохранена на сервере для доверенных устройств)");
   }
 
@@ -508,7 +508,7 @@ export async function logoutUser() {
   stopFavoriteMatchesPolling();
 
   // Удаляем пользователя из localStorage
-  localStorage.removeItem("currentUser");
+  localStorage.removeItem("state.currentUser");
   localStorage.removeItem("sessionToken");
 
   // Очищаем переменную
@@ -630,7 +630,7 @@ export async function checkTelegramAuthStatus(authToken) {
 
         // eslint-disable-next-line no-global-assign
         setCurrentUser(result.user);
-        currentUser.isAdmin = currentUser.username === ADMIN_DB_NAME;
+        state.currentUser.isAdmin = state.currentUser.username === ADMIN_DB_NAME;
 
         // Загружаем права модератора
         await loadModeratorPermissions();
@@ -645,7 +645,7 @@ export async function checkTelegramAuthStatus(authToken) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              user_id: currentUser.id,
+              user_id: state.currentUser.id,
               device_info: deviceData.deviceInfo,
               browser: deviceData.browser,
               os: deviceData.os
@@ -662,7 +662,7 @@ export async function checkTelegramAuthStatus(authToken) {
         }
 
         // Сохраняем пользователя в localStorage
-        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        localStorage.setItem("state.currentUser", JSON.stringify(state.currentUser));
 
         // Загружаем тему с сервера после логина
         await loadSavedTheme();
@@ -681,13 +681,13 @@ export async function checkTelegramAuthStatus(authToken) {
 
         // Показываем информацию о пользователе
         document.getElementById("userStatus").style.display = "block";
-        document.getElementById("usernameBold").textContent = currentUser.username;
+        document.getElementById("usernameBold").textContent = state.currentUser.username;
         document.getElementById("username").disabled = true;
 
         setAuthButtonToLogoutState();
 
         // Показываем админ-кнопки если это админ
-        if (currentUser.isAdmin) {
+        if (state.currentUser.isAdmin) {
           document.getElementById("adminBtn").style.display = "inline-block";
           document.getElementById("countingBtn").style.display = "inline-block";
           document.getElementById("adminSettingsPanel").style.display = "block";
@@ -703,7 +703,7 @@ export async function checkTelegramAuthStatus(authToken) {
         // Если это новый пользователь - показываем приветственное сообщение
         if (result.isNewUser) {
           await showCustomAlert(
-            `Твое имя на сайте: ${currentUser.username}\n\nИмя можно изменить в профиле, наведя или нажав на текущее имя.`,
+            `Твое имя на сайте: ${state.currentUser.username}\n\nИмя можно изменить в профиле, наведя или нажав на текущее имя.`,
             'Добро пожаловать! 🎉',
             '👋'
           );

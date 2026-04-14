@@ -1,7 +1,7 @@
 // ========== МОДУЛЬ ADMIN PANEL ==========
 // Конфигурация и управление аккордеоном админ-панели
 
-import { currentUser } from './state.js';
+import * as state from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 // Глобальная переменная для хранения текущей конфигурации в редакторе
@@ -357,7 +357,7 @@ export async function resetToDefaultConfig() {
     const response = await fetch('/api/admin/panel-config/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUser?.username })
+      body: JSON.stringify({ username: state.currentUser?.username })
     });
 
     if (!response.ok) throw new Error('Ошибка сброса конфигурации');
@@ -373,13 +373,13 @@ export async function resetToDefaultConfig() {
 
 // Сохранить изменения конфигурации
 export async function saveConfigChanges() {
-  if (!currentEditingConfig || !currentUser) return;
+  if (!currentEditingConfig || !state.currentUser) return;
 
   try {
     const response = await fetch('/api/admin/panel-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUser.username, config: currentEditingConfig })
+      body: JSON.stringify({ username: state.currentUser.username, config: currentEditingConfig })
     });
 
     if (!response.ok) throw new Error('Ошибка сохранения конфигурации');

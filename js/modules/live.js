@@ -1,7 +1,8 @@
 // ===== LIVE МАТЧИ =====
 // Перенесено из js/index.js
 
-import { currentUser, currentLiveEventId, completedDaysData, completedDaysLoaded, setCurrentLiveEventId, setCompletedDaysData } from './state.js';
+import * as state from './state.js';
+import { setCurrentLiveEventId, setCompletedDaysData } from './state.js';
 import { updateFavoriteStars, updateFavoriteMatchesData, pollFavoriteMatches, toggleFavoriteMatch } from './liveFavorites.js';
 import { showLiveTeamStats } from './liveStats.js';
 import { selectEvent } from './events.js';
@@ -11,7 +12,7 @@ import { switchTab } from './tabs.js';
 function formatMatchTimeOnly(matchDate) {
   try {
     const date = new Date(matchDate);
-    const userTimezone = currentUser?.timezone || 'Europe/Moscow';
+    const userTimezone = state.currentUser?.timezone || 'Europe/Moscow';
     const formatter = new Intl.DateTimeFormat('ru-RU', {
       timeZone: userTimezone,
       hour: '2-digit',
@@ -209,8 +210,8 @@ async function showLiveEventMatches(eventId) {
         const hasStarted = isLive || isFinished;
 
         let betTeam = null;
-        if (currentUser && currentUser.bets) {
-          const bet = currentUser.bets.find(b => b.match_id === match.id);
+        if (state.currentUser && state.currentUser.bets) {
+          const bet = state.currentUser.bets.find(b => b.match_id === match.id);
           if (bet) betTeam = bet.prediction;
         }
 
@@ -310,7 +311,7 @@ async function showLiveEventMatches(eventId) {
     updateFavoriteStars();
     updateFavoriteMatchesData(todayMatches);
 
-    if (currentUser) {
+    if (state.currentUser) {
       console.log('🔄 Запуск polling после загрузки LIVE матчей');
       pollFavoriteMatches();
     }
@@ -462,8 +463,8 @@ function renderCompletedDayMatches(dayId) {
     const dateStr = matchTime.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 
     let betTeam = null;
-    if (currentUser && currentUser.bets) {
-      const bet = currentUser.bets.find(b => b.match_id === match.id);
+    if (state.currentUser && state.currentUser.bets) {
+      const bet = state.currentUser.bets.find(b => b.match_id === match.id);
       if (bet) betTeam = bet.prediction;
     }
 
@@ -594,8 +595,8 @@ async function toggleYesterdayMatches(eventId) {
             const dateStr = matchTime.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 
             let betTeam = null;
-            if (currentUser && currentUser.bets) {
-              const bet = currentUser.bets.find(b => b.match_id === match.id);
+            if (state.currentUser && state.currentUser.bets) {
+              const bet = state.currentUser.bets.find(b => b.match_id === match.id);
               if (bet) betTeam = bet.prediction;
             }
 
@@ -706,7 +707,7 @@ function startLiveMatchesAutoUpdate() {
       loadLiveMatches();
     }
 
-    if (currentUser) {
+    if (state.currentUser) {
       pollFavoriteMatches();
     }
   }, 30000);

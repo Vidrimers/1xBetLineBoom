@@ -1,15 +1,15 @@
-import { currentUser } from './state.js';
+import * as state from './state.js';
 
 // ===== ПРОФИЛЬ =====
 
 export async function loadProfile() {
-  if (!currentUser) {
+  if (!state.currentUser) {
     alert("Пожалуйста, сначала войдите в аккаунт");
     return;
   }
 
   try {
-    const response = await fetch(`/api/user/${currentUser.id}/profile?viewerUsername=${encodeURIComponent(currentUser.username)}`);
+    const response = await fetch(`/api/user/${state.currentUser.id}/profile?viewerUsername=${encodeURIComponent(state.currentUser.username)}`);
     const profile = await response.json();
     displayProfile(profile);
   } catch (error) {

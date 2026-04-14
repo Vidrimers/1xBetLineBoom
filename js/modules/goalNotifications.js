@@ -1,7 +1,7 @@
 // ===== СИСТЕМА УВЕДОМЛЕНИЙ О ГОЛАХ =====
 // Перенесено из js/index.js
 
-import { currentUser, matchScores, matchFinishTimes, deletedFinishedMatches } from './state.js';
+import * as state from './state.js';
 import { showLiveTeamStats } from './liveStats.js';
 
 export { matchScores, matchFinishTimes, deletedFinishedMatches };
@@ -106,7 +106,7 @@ export function showGoalNotification(match) {
   container.appendChild(notification);
   console.log('✅ Карточка добавлена, всего карточек:', container.children.length);
 
-  if (currentUser && currentUser.live_sound === 1) {
+  if (state.currentUser && state.currentUser.live_sound === 1) {
     playGoalSound();
   }
 
@@ -235,7 +235,7 @@ export function processMatches(matches, favorites, isDesktop) {
 
       if (previousScore && previousScore !== currentScore) {
         console.log('🔊 Счет изменился! Воспроизведение звука...');
-        if (currentUser && currentUser.live_sound === 1) {
+        if (state.currentUser && state.currentUser.live_sound === 1) {
           playGoalSound();
         }
       }

@@ -1,7 +1,7 @@
 // ===== ИЗБРАННЫЕ LIVE МАТЧИ =====
 // Перенесено из js/index.js
 
-import { currentUser, currentLiveEventId, matchScores, matchFinishTimes, deletedFinishedMatches } from './state.js';
+import * as state from './state.js';
 import { showCustomAlert } from './ui.js';
 import { saveDeletedFinishedMatches, showGoalNotification, playGoalSound, addNotificationToQueue, updateDesktopNotification, processMatches, checkMatchEventsForNotifications } from './goalNotifications.js';
 import { showLiveTeamStats } from './liveStats.js';
@@ -16,7 +16,7 @@ function startFavoriteMatchesPolling() {
   pollFavoriteMatches();
 
   favoriteMatchesInterval = setInterval(() => {
-    if (currentUser) {
+    if (state.currentUser) {
       pollFavoriteMatches();
     }
   }, 30000);
@@ -61,8 +61,8 @@ function updateFavoriteMatchesData(liveMatches) {
     const match = liveMatches.find(m => m.id === matchId);
     if (match) {
       let betTeam = null;
-      if (currentUser && currentUser.bets) {
-        const bet = currentUser.bets.find(b => b.match_id === matchId);
+      if (state.currentUser && state.currentUser.bets) {
+        const bet = state.currentUser.bets.find(b => b.match_id === matchId);
         if (bet) betTeam = bet.prediction;
       }
 
@@ -116,12 +116,12 @@ function toggleFavoriteMatch(matchId, event) {
     deletedFinishedMatches.delete(matchId);
     saveDeletedFinishedMatches();
 
-    if (currentUser && currentUser.username) {
+    if (state.currentUser && state.currentUser.username) {
       fetch('/api/notify-live-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: currentUser.username,
+          username: state.currentUser.username,
           action: 'remove_favorite',
           details: matchInfo
         })
@@ -140,8 +140,8 @@ function toggleFavoriteMatch(matchId, event) {
       const statusDiv = matchCard.querySelector('div[style*="color: #ff9800"]');
 
       let betTeam = null;
-      if (currentUser && currentUser.bets) {
-        const bet = currentUser.bets.find(b => b.match_id === matchId);
+      if (state.currentUser && state.currentUser.bets) {
+        const bet = state.currentUser.bets.find(b => b.match_id === matchId);
         if (bet) betTeam = bet.prediction;
       }
 
@@ -166,12 +166,12 @@ function toggleFavoriteMatch(matchId, event) {
       }
     }
 
-    if (currentUser && currentUser.username) {
+    if (state.currentUser && state.currentUser.username) {
       fetch('/api/notify-live-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: currentUser.username,
+          username: state.currentUser.username,
           action: 'add_favorite',
           details: matchInfo
         })
@@ -265,7 +265,7 @@ async function updateLiveIndicator() {
 }
 
 async function pollFavoriteMatches() {
-  if (!currentUser) {
+  if (!state.currentUser) {
     console.log('⏸️ Polling избранных: пользователь не залогинен');
     return;
   }
@@ -308,8 +308,8 @@ async function pollFavoriteMatches() {
 
       apiMatches.forEach(match => {
         let betTeam = null;
-        if (currentUser && currentUser.bets) {
-          const bet = currentUser.bets.find(b => b.match_id === match.id);
+        if (state.currentUser && state.currentUser.bets) {
+          const bet = state.currentUser.bets.find(b => b.match_id === match.id);
           if (bet) betTeam = bet.prediction;
         }
 
@@ -328,8 +328,8 @@ async function pollFavoriteMatches() {
 
       console.log('✅ Данные в localStorage обновлены');
 
-      if (currentUser && currentUser.id && favorites.length > 0) {
-        checkMatchEventsForNotifications(favorites, currentUser.id);
+      if (state.currentUser && state.currentUser.id && favorites.length > 0) {
+        checkMatchEventsForNotifications(favorites, state.currentUser.id);
       }
     }
   } catch (error) {

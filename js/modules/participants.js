@@ -1,4 +1,3 @@
-import { currentUser } from './state.js';
 import * as state from './state.js';
 import { setTournamentParticipantsInterval } from './state.js';
 
@@ -286,7 +285,7 @@ export async function loadTournamentParticipants(eventId, eventName) {
     const participants = await response.json();
 
     // Сохраняем eventId для дальнейшего использования
-    window.currentEventId = eventId;
+    window.state.currentEventId = eventId;
     window.currentEventName = eventName;
     window.currentEventIsLocked = isLocked;
 
@@ -324,18 +323,18 @@ export function startTournamentParticipantsPolling() {
   stopTournamentParticipantsPolling();
   
   setTournamentParticipantsInterval(setInterval(async () => {
-    if (!window.currentEventId) {
+    if (!window.state.currentEventId) {
       stopTournamentParticipantsPolling();
       return;
     }
     
     try {
-      const response = await fetch(`/api/events/${window.currentEventId}/tournament-participants`);
+      const response = await fetch(`/api/events/${window.state.currentEventId}/tournament-participants`);
       const participants = await response.json();
       await displayTournamentParticipants(
         participants, 
         window.currentEventIsLocked, 
-        window.currentEventId, 
+        window.state.currentEventId, 
         window.currentBracketStartDate
       );
     } catch (error) {
@@ -588,7 +587,7 @@ export async function showTournamentParticipantBets(userId, username, eventId) {
     console.log("Загружаем ставки для юзера:", userId, "в турнире:", eventId);
 
     // Отправляем уведомление о просмотре ставок (если смотрит не владелец)
-    if (currentUser && currentUser.id !== userId) {
+    if (state.currentUser && state.currentUser.id !== userId) {
       fetch('/api/notify-view-bets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -669,8 +668,8 @@ export async function showTournamentParticipantBets(userId, username, eventId) {
     };
 
     // Получаем ставки участника в турнире, передаем viewerId и viewerUsername
-    const viewerId = currentUser?.id || null;
-    const viewerUsername = currentUser?.username || null;
+    const viewerId = state.currentUser?.id || null;
+    const viewerUsername = state.currentUser?.username || null;
     const params = new URLSearchParams();
     if (viewerId) params.append('viewerId', viewerId);
     if (viewerUsername) params.append('viewerUsername', viewerUsername);
