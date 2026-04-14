@@ -2,7 +2,6 @@
 
 import { currentUser, currentEventId } from './state.js';
 import { showCustomAlert } from './ui.js';
-import { loadBracketsForEvent, openBracketModal } from '../bracket.js';
 
 // Показать прогнозы пользователя в сетке плей-офф
 export async function showUserBracketPredictions(bracketId, userId) {
@@ -121,7 +120,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
       return;
     }
 
-    const brackets = await loadBracketsForEvent(eventId);
+    const brackets = await window.loadBracketsForEvent(eventId);
     if (!brackets || brackets.length === 0) {
       if (typeof showCustomAlert === 'function') {
         await showCustomAlert('Для этого турнира нет сетки плей-офф', 'Ошибка', '❌');
@@ -149,7 +148,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
     window.viewingUserBracketName = username;
 
     // Напрямую открываем модалку сетки с прогнозами пользователя
-    await openBracketModal(bracket.id, userId);
+    await window.openBracketModal(bracket.id, userId);
   } catch (error) {
     console.error('Ошибка при открытии прогнозов сетки:', error);
     if (typeof showCustomAlert === 'function') {

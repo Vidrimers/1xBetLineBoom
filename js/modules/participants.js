@@ -341,7 +341,7 @@ export function startTournamentParticipantsPolling() {
     } catch (error) {
       console.error('Ошибка автообновления рейтинга:', error);
     }
-  }, 30000); // Обновление каждые 30 секунд
+  }, 30000)); // Обновление каждые 30 секунд
   
   console.log('✅ Запущено автообновление рейтинга участников');
 }

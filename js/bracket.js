@@ -365,7 +365,7 @@ function getStagesForBracket(startStage) {
 }
 
 // Загрузить сетки для турнира
-export async function loadBracketsForEvent(eventId) {
+async function loadBracketsForEvent(eventId) {
   try {
     const response = await fetch(`/api/events/${eventId}/brackets`);
     if (!response.ok) {
@@ -379,7 +379,7 @@ export async function loadBracketsForEvent(eventId) {
 }
 
 // Открыть модальное окно сетки
-export async function openBracketModal(bracketId, viewUserId = null) {
+async function openBracketModal(bracketId, viewUserId = null) {
   console.log('🔍 openBracketModal вызвана:', { bracketId, viewUserId });
   
   // viewUserId - ID пользователя, чьи прогнозы нужно показать (если null - показываем текущего пользователя)
