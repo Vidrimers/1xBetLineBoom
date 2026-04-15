@@ -4,6 +4,34 @@ import { buildFullAIContext } from '../utils/aiContext.js';
 
 const router = Router();
 
+/**
+ * Очищает markdown разметку для веб-интерфейса
+ * @param {string} text - Текст с markdown
+ * @returns {string} Очищенный текст
+ */
+function cleanMarkdownForWeb(text) {
+  if (!text) return text;
+  
+  return text
+    // Убираем жирный текст **text** -> text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    // Убираем курсив *text* -> text
+    .replace(/\*(.*?)\*/g, '$1')
+    // Убираем подчеркивание __text__ -> text
+    .replace(/__(.*?)__/g, '$1')
+    // Убираем зачеркивание ~~text~~ -> text
+    .replace(/~~(.*?)~~/g, '$1')
+    // Убираем код `text` -> text
+    .replace(/`(.*?)`/g, '$1')
+    // Убираем заголовки # -> пустота
+    .replace(/^#+\s*/gm, '')
+    // Убираем списки - и * в начале строк
+    .replace(/^[\s]*[-*]\s+/gm, '• ')
+    // Убираем лишние пробелы
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 router.post('/api/ai-chat', async (req, res) => {
   console.log('🤖 AI Chat - получен запрос:', req.body);
   
@@ -34,7 +62,10 @@ router.post('/api/ai-chat', async (req, res) => {
       return res.json({ error: result.text, text: result.text });
     }
 
-    res.json({ text: result.text, provider: result.provider });
+    // Очищаем markdown разметку для веб-интерфейса
+    const cleanText = cleanMarkdownForWeb(result.text);
+
+    res.json({ text: cleanText, provider: result.provider });
 
   } catch (error) {
     console.error('❌ Ошибка AI-чата:', error);

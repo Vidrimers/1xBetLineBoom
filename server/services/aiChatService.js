@@ -195,32 +195,6 @@ export async function sendToAI(messages, dbContext = {}) {
       }
     }
 
-    // Пробуем Cloudflare Workers AI (третий провайдер - fallback)
-    if (cloudflare) {
-      try {
-        const completion = await cloudflare.chat.completions.create({
-          model: '@cf/meta/llama-3.2-3b-instruct', // Единственная рабочая модель
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages
-          ],
-          max_tokens: 1000,
-          temperature: 0.7,
-        });
-        
-        const responseText = completion.choices?.[0]?.message?.content;
-        if (responseText && responseText.trim()) {
-          return {
-            success: true,
-            text: responseText.trim(),
-            provider: 'Cloudflare AI',
-          };
-        }
-      } catch (e) {
-        console.error('❌ Ошибка Cloudflare AI:', e.message);
-      }
-    }
-
     // Пробуем Cohere (1000 запросов/месяц бесплатно)
     if (cohere) {
       try {
@@ -334,6 +308,32 @@ export async function sendToAI(messages, dbContext = {}) {
           console.error(`❌ Ошибка OpenRouter (${model}):`, e.message);
           continue;
         }
+      }
+    }
+
+    // Пробуем Cloudflare Workers AI (последний fallback - самая слабая модель)
+    if (cloudflare) {
+      try {
+        const completion = await cloudflare.chat.completions.create({
+          model: '@cf/meta/llama-3.2-3b-instruct', // Единственная рабочая модель
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages
+          ],
+          max_tokens: 1000,
+          temperature: 0.7,
+        });
+        
+        const responseText = completion.choices?.[0]?.message?.content;
+        if (responseText && responseText.trim()) {
+          return {
+            success: true,
+            text: responseText.trim(),
+            provider: 'Cloudflare AI',
+          };
+        }
+      } catch (e) {
+        console.error('❌ Ошибка Cloudflare AI:', e.message);
       }
     }
 
