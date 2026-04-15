@@ -2,7 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { handleAIMessage, handleAIModeCommand, handleAIModeCallback } from "./server/services/telegramAI.js";
+import { handleAIMessage, handleAIModeCommand, handleAIModeCallback, handleClearContextCommand } from "./server/services/telegramAI.js";
 
 dotenv.config();
 
@@ -2656,6 +2656,11 @@ export async function startBot() {
   // Команда /ask - спросить AI
   bot.onText(/\/ask(.*)/, async (msg) => {
     await handleAIMessage(msg, bot);
+  });
+  
+  // Команда /clear - очистить контекст диалога с AI
+  bot.onText(/\/clear/, async (msg) => {
+    await handleClearContextCommand(msg, bot);
   });
   
   // Команда /ai_mode - переключение режима AI (только для админа)

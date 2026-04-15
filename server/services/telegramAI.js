@@ -10,6 +10,12 @@ import { buildFullAIContext } from '../utils/aiContext.js';
 import fs from 'fs';
 import path from 'path';
 
+// Хранилище контекста диалогов для каждого пользователя
+const userContexts = new Map();
+
+// Максимальное количество сообщений в контексте (чтобы не превысить лимиты токенов)
+const MAX_CONTEXT_MESSAGES = 10;
+
 // Режимы работы AI
 const AI_MODES = {
   ACTIVE: 'active',
@@ -85,6 +91,9 @@ function shouldRespond(msg, botUsername) {
   // Команда /ask всегда работает
   if (text.startsWith('/ask')) return true;
   
+  // Команда /clear всегда работает
+  if (text.startsWith('/clear')) return true;
+  
   // Упоминание бота
   const isMentioned = text.includes(`@${botUsername.toLowerCase()}`);
   
@@ -111,6 +120,40 @@ function shouldRespond(msg, botUsername) {
   }
   
   return false;
+}
+
+/**
+ * Получает или создает контекст диалога для пользователя
+ */
+function getUserContext(userId) {
+  if (!userContexts.has(userId)) {
+    userContexts.set(userId, []);
+  }
+  return userContexts.get(userId);
+}
+
+/**
+ * Добавляет сообщение в контекст пользователя
+ */
+function addToUserContext(userId, role, content) {
+  const context = getUserContext(userId);
+  
+  // Добавляем новое сообщение
+  context.push({ role, content });
+  
+  // Ограничиваем размер контекста (оставляем последние MAX_CONTEXT_MESSAGES сообщений)
+  if (context.length > MAX_CONTEXT_MESSAGES) {
+    context.splice(0, context.length - MAX_CONTEXT_MESSAGES);
+  }
+  
+  return context;
+}
+
+/**
+ * Очищает контекст пользователя
+ */
+function clearUserContext(userId) {
+  userContexts.delete(userId);
 }
 
 /**
@@ -196,6 +239,11 @@ export async function handleAIMessage(msg, bot) {
       .replace(new RegExp(`@${botUsername}`, 'gi'), '')
       .trim();
     
+    // Если это команда /clear - обрабатываем отдельно
+    if (msg.text?.toLowerCase().startsWith('/clear')) {
+      return await handleClearContextCommand(msg, bot);
+    }
+    
     if (!text) {
       await bot.sendMessage(chatId, '🤖 Задай мне вопрос про турнир или ставки!');
       return true;
@@ -212,17 +260,26 @@ export async function handleAIMessage(msg, bot) {
       dbContext.currentUser = `Пользователь: @${telegramUsername} (не привязан к аккаунту на сайте)`;
     }
     
-    // Формируем сообщения для AI
-    const messages = [
-      { role: 'user', content: text }
-    ];
+    // Получаем историю диалога пользователя
+    const userId = msg.from.id;
+    const userMessages = getUserContext(userId);
+    
+    // Добавляем новое сообщение пользователя в контекст
+    addToUserContext(userId, 'user', text);
+    
+    // Формируем полную историю сообщений для AI (включая предыдущие)
+    const messages = [...userMessages];
     
     // Отправляем в AI
     const result = await sendToAI(messages, dbContext);
     
     if (result.success) {
       const providerEmoji = result.provider.includes('Groq') ? '⚡' : 
-                           result.provider.includes('Gemini') ? '🔮' : '🤖';
+                           result.provider.includes('Gemini') ? '🔮' : 
+                           result.provider.includes('Cloudflare') ? '☁️' : '🤖';
+      
+      // Добавляем ответ AI в контекст пользователя
+      addToUserContext(userId, 'assistant', result.text);
       
       // Hugging Face не рендерит HTML - очищаем теги
       let text = result.text;
@@ -252,6 +309,22 @@ export async function handleAIMessage(msg, bot) {
     console.error('❌ Ошибка обработки AI сообщения:', error);
     return false;
   }
+}
+
+/**
+ * Команда для очистки контекста диалога
+ */
+export async function handleClearContextCommand(msg, bot) {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  
+  // Очищаем контекст пользователя
+  clearUserContext(userId);
+  
+  await bot.sendMessage(chatId, '🧹 <b>Контекст диалога очищен!</b>\n\n<i>AI забыл предыдущие сообщения и начнет диалог заново.</i>', {
+    parse_mode: 'HTML',
+    reply_to_message_id: msg.message_id
+  });
 }
 
 /**
