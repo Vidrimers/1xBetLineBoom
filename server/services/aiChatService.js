@@ -226,35 +226,47 @@ export async function sendToAI(messages, dbContext = {}) {
 
     // Пробуем Hugging Face (новый Router API)
     if (hf) {
-      try {
-        // Используем новый Router API Hugging Face
-        const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'meta-llama/Llama-3.1-8B-Instruct',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              ...messages
-            ],
-            max_tokens: 1000,
-            temperature: 0.7,
-          }),
-        });
+      const hfModels = [
+        'meta-llama/Llama-3.1-8B-Instruct',        // Текущая рабочая модель (8B) - ОСНОВНАЯ
+        'Qwen/Qwen2.5-7B-Instruct',                // Qwen 7B - быстрая и качественная
+        'Qwen/Qwen2.5-Coder-7B-Instruct',         // Qwen Coder - для технических вопросов
+        'meta-llama/Meta-Llama-3-8B-Instruct',    // Llama 3 8B - стабильная модель
+        'Qwen/Qwen2.5-Coder-3B-Instruct',         // Qwen Coder 3B - легкая модель для кода
+        'Qwen/Qwen3-8B',                           // Qwen3 8B - новая модель
+      ];
 
-        if (response.ok) {
-          const data = await response.json();
-          return {
-            success: true,
-            text: data.choices[0].message.content,
-            provider: 'Hugging Face Router',
-          };
+      for (const model of hfModels) {
+        try {
+          // Используем новый Router API Hugging Face
+          const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                ...messages
+              ],
+              max_tokens: 1000,
+              temperature: 0.7,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return {
+              success: true,
+              text: data.choices[0].message.content,
+              provider: `Hugging Face (${model.split('/')[1]})`,
+            };
+          }
+        } catch (hfError) {
+          console.error(`❌ Ошибка Hugging Face (${model}):`, hfError.message);
+          continue; // Пробуем следующую модель
         }
-      } catch (hfError) {
-        console.error('❌ Ошибка Hugging Face Router:', hfError.message);
       }
     }
 
