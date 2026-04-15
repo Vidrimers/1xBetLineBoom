@@ -217,6 +217,51 @@ function getLatestNews(limit = 10) {
 }
 
 /**
+ * Формирует контекст только для конкретного турнира
+ */
+function buildTournamentContext(telegramUsername, tournamentName) {
+  const context = {};
+  
+  try {
+    // Определяем пользователя
+    let currentUser = null;
+    if (telegramUsername) {
+      currentUser = db.prepare('SELECT id, username, show_bets FROM users WHERE LOWER(telegram_username) = LOWER(?)').get(telegramUsername);
+    }
+
+    if (currentUser) {
+      context.currentUser = `Пользователь: ${currentUser.username} (Telegram: @${telegramUsername})`;
+    } else if (telegramUsername) {
+      context.currentUser = `Пользователь: @${telegramUsername} (не привязан к аккаунту на сайте)`;
+    }
+
+    // Ищем турнир по названию
+    const event = db.prepare(`
+      SELECT id, name, status FROM events 
+      WHERE LOWER(name) LIKE LOWER(?) 
+      ORDER BY start_date DESC 
+      LIMIT 1
+    `).get(`%${tournamentName}%`);
+
+    if (event) {
+      const participants = getTournamentParticipantsWithPoints(event.id);
+      if (participants && participants.length > 0) {
+        context.tournament = `📊 ${event.name}:\n` +
+          participants.slice(0, 10).map((p, i) => {
+            const position = i + 1;
+            const isCurrentUser = currentUser && p.username.toLowerCase() === currentUser.username.toLowerCase();
+            const marker = isCurrentUser ? ' ⭐' : '';
+            return `${position}. ${p.username}: ${p.event_won || 0} очков${marker}`;
+          }).join('\n');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Ошибка формирования контекста турнира:', error);
+  }
+
+  return context;
+}
+/**
  * Формирует полный контекст для AI
  * @param {string} telegramUsername - Telegram username пользователя (опционально)
  * @param {string} siteUsername - Username на сайте (опционально, для веб-чата)
@@ -248,9 +293,10 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
     if (events.length > 0) {
       context.events = events.map(e => `• ${e.name} (${e.status || 'активный'})`).join('\n');
 
-      // Таблицы всех турниров (топ-15 участников с подробной информацией)
+      // Таблицы только активных турниров (топ-8 участников с подробной информацией)
       const allParticipants = [];
-      for (const event of events) {
+      const activeEvents = events.filter(e => e.status === 'active' || !e.status); // активные или без статуса
+      for (const event of activeEvents) {
         try {
           const participants = getTournamentParticipantsWithPoints(event.id);
           if (participants && participants.length > 0) {
@@ -265,7 +311,7 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
             
             allParticipants.push(
               `📊 ${event.name}:\n` +
-              participants.slice(0, 15).map((p, i) => {
+              participants.slice(0, 8).map((p, i) => {
                 const position = i + 1;
                 const isCurrentUser = currentUser && p.username.toLowerCase() === currentUser.username.toLowerCase();
                 const marker = isCurrentUser ? ' ⭐' : '';
@@ -273,8 +319,8 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
               }).join('\n')
             );
             
-            // Добавляем информацию о позиции текущего пользователя если он не в топ-15
-            if (currentUser && currentUserPosition && currentUserPosition > 15) {
+            // Добавляем информацию о позиции текущего пользователя если он не в топ-8
+            if (currentUser && currentUserPosition && currentUserPosition > 8) {
               allParticipants[allParticipants.length - 1] += `\n...\n${currentUserPosition}. ${currentUser.username}: ${participants[currentUserPosition - 1].event_won || 0} очков ⭐`;
             }
           }
@@ -285,9 +331,9 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
       }
 
       // Матчи всех активных турниров (6 предстоящих + 6 завершённых)
-      const activeEvents = events.filter(e => e.status === 'active');
+      const activeEventsForMatches = events.filter(e => e.status === 'active');
       const matchesData = [];
-      for (const event of activeEvents) {
+      for (const event of activeEventsForMatches) {
         const matches = getMatches(event.id);
         const upcoming = matches.filter(m => !m.winner && m.status !== 'cancelled').slice(0, 6);
         const finished = matches.filter(m => m.winner).slice(-6);
@@ -316,7 +362,7 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
         }
 
         const userBetsData = [];
-        for (const event of activeEvents) {
+        for (const event of activeEventsForMatches) {
           const bets = getUserBets(currentUser.id, currentUser.id, event.id);
           if (bets && bets.length > 0) {
             const betsText = `${event.name}:\n` +
@@ -365,3 +411,8 @@ export function getAIUserBets(targetUsername, viewerUsername, eventId) {
 
   return { bets, showBets, username: targetUser.username };
 }
+
+/**
+ * Экспорт функции для контекста конкретного турнира
+ */
+export { buildTournamentContext };

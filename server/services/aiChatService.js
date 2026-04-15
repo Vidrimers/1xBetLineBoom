@@ -81,12 +81,119 @@ export async function sendToAI(messages, dbContext = {}) {
     // Формируем системный промпт с контекстом
     const systemPrompt = buildSystemPrompt(dbContext);
     
+    // Пробуем Groq (основной провайдер - мощные модели)
+    if (groq) {
+      // Актуальные рабочие модели Groq 2026
+      const groqModels = [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant',
+      ];
+
+      for (const model of groqModels) {
+        try {
+          const chatMessages = [
+            { role: 'system', content: systemPrompt },
+            ...messages.map(msg => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+          ];
+
+          const completion = await groq.chat.completions.create({
+            messages: chatMessages,
+            model,
+            temperature: 0.7,
+            max_tokens: 1000,
+          });
+
+          const responseText = completion.choices[0]?.message?.content;
+          if (responseText && responseText.trim()) {
+            return {
+              success: true,
+              text: responseText.trim(),
+              provider: `Groq (${model})`,
+            };
+          }
+        } catch (groqError) {
+          // Если лимит - пробуем следующую модель
+          if (groqError.message?.includes('rate_limit') || groqError.status === 429) {
+            console.error(`❌ Groq лимит (${model}), пробуем следующую модель...`);
+            continue;
+          }
+          console.error(`❌ Ошибка Groq (${model}):`, groqError.message);
+          continue; // Пробуем следующую модель
+        }
+      }
+    }
+
+    // Пробуем Gemini (второй провайдер)
+    if (genAI) {
+      // Пробуем новые модели Gemini 2.5 (2026)
+      const geminiModels = [
+        'gemini-2.5-flash',      // Новая быстрая модель
+        'gemini-2.5-pro',        // Новая мощная модель  
+        'gemini-2.5-flash-lite', // Новая легкая модель
+        'gemini-1.5-pro',        // Старые модели как fallback
+        'gemini-pro',
+        'gemini-1.5-flash',
+      ];
+      
+      for (const modelName of geminiModels) {
+        try {
+          const model = genAI.getGenerativeModel({ model: modelName });
+          
+          // Формируем полный промпт с контекстом
+          const fullPrompt = systemPrompt + '\n\nВопрос пользователя: ' + messages[messages.length - 1].content;
+          
+          const result = await model.generateContent(fullPrompt);
+          const response = await result.response;
+          const text = response.text();
+          
+          if (text && text.trim()) {
+            return {
+              success: true,
+              text: text.trim(),
+              provider: `Gemini (${modelName})`,
+            };
+          }
+        } catch (geminiError) {
+          console.error(`❌ Ошибка Gemini (${modelName}):`, geminiError.message);
+          continue; // Пробуем следующую модель
+        }
+      }
+    }
+
+    // Пробуем Cloudflare Workers AI (третий провайдер - fallback)
+    if (cloudflare) {
+      try {
+        const completion = await cloudflare.chat.completions.create({
+          model: '@cf/meta/llama-3.2-3b-instruct', // Единственная рабочая модель
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages
+          ],
+          max_tokens: 1000,
+          temperature: 0.7,
+        });
+        
+        const responseText = completion.choices?.[0]?.message?.content;
+        if (responseText && responseText.trim()) {
+          return {
+            success: true,
+            text: responseText.trim(),
+            provider: 'Cloudflare AI',
+          };
+        }
+      } catch (e) {
+        console.error('❌ Ошибка Cloudflare AI:', e.message);
+      }
+    }
 
     // Пробуем Cohere (1000 запросов/месяц бесплатно)
     if (cohere) {
       try {
         const response = await cohere.chat({
-          model: 'command',  // Базовая актуальная модель
+          model: 'command-r',  // Актуальная модель 2026
           message: messages[messages.length - 1].content,
           preamble: systemPrompt,
           chatHistory: messages.slice(0, -1).map(msg => ({
@@ -104,28 +211,6 @@ export async function sendToAI(messages, dbContext = {}) {
         };
       } catch (cohereError) {
         console.error('❌ Ошибка Cohere:', cohereError.message);
-      }
-    }
-
-    // Пробуем Cloudflare Workers AI (10,000 нейронов/день бесплатно)
-    if (cloudflare) {
-      try {
-        const completion = await cloudflare.chat.completions.create({
-          model: '@cf/meta/llama-3.1-8b-instruct', // Актуальная модель 2026
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages
-          ],
-          max_tokens: 1000,
-          temperature: 0.7,
-        });
-        return {
-          success: true,
-          text: completion.choices[0]?.message?.content || 'Нет ответа',
-          provider: 'Cloudflare AI',
-        };
-      } catch (e) {
-        console.error('❌ Ошибка Cloudflare AI:', e.message);
       }
     }
 
@@ -211,50 +296,6 @@ export async function sendToAI(messages, dbContext = {}) {
       }
     }
 
-    // Пробуем Groq (последний резерв)
-    if (groq) {
-      // Актуальные рабочие модели Groq 2026
-      const groqModels = [
-        'llama-3.3-70b-versatile',
-        'llama-3.1-8b-instant',
-        'openai/gpt-oss-120b',
-        'qwen/qwen3-32b',
-      ];
-
-      for (const model of groqModels) {
-        try {
-          const chatMessages = [
-            { role: 'system', content: systemPrompt },
-            ...messages.map(msg => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-          ];
-
-          const completion = await groq.chat.completions.create({
-            messages: chatMessages,
-            model,
-            temperature: 0.7,
-            max_tokens: 1000,
-          });
-
-          return {
-            success: true,
-            text: completion.choices[0]?.message?.content || 'Нет ответа',
-            provider: `Groq (${model})`,
-          };
-        } catch (groqError) {
-          // Если лимит - пробуем следующую модель
-          if (groqError.message?.includes('rate_limit') || groqError.status === 429) {
-            console.error(`❌ Groq лимит (${model}), пробуем следующую модель...`);
-            continue;
-          }
-          console.error(`❌ Ошибка Groq (${model}):`, groqError.message);
-          continue; // Пробуем следующую модель
-        }
-      }
-    }
-
     // Если все провайдеры недоступны - возвращаем базовый ответ
     return {
       success: true,
@@ -289,18 +330,22 @@ function buildSystemPrompt(dbContext) {
 - Когда пользователь спрашивает про себя ("моё место", "мои ставки", "я"), обращайся к нему на "ты" (твоё место, твои ставки)
 - НЕ используй "@username" в ответах - говори "твоё", "ты", "у тебя"
 - Если пользователь спрашивает про другого игрока по имени, тогда используй его имя
+- ВНИМАТЕЛЬНО читай данные участников - ищи пользователя по имени и показывай его ТОЧНУЮ позицию и очки
 
 ВАЖНО: Никогда не переводи и не изменяй имена пользователей (username). Используй их точно как в данных.
 АББРЕВИАТУРЫ ТУРНИРОВ (используй их для поиска в данных):
-- лч, лига чемпионов, champions league, cl = Лига чемпионов
-- лe, лига европы, europa league, el = Лига Европы
-- лк, лига конференций, conference league = Лига конференций
-- рпл = Российская Премьер-Лига
+- лч, лига чемпионов, champions league, cl = "Лига чемпионов 2025-2026" (ОСНОВНОЙ ТУРНИР)
+- лe, лига европы, europa league, el = "Лига Европы 2025-2026"
+- лк, лига конференций, conference league = "Лига конференций 2025-2026"
+- рпл = "Российская Премьер Лига 2025-2026"
 - апл, премьер-лига = Английская Премьер-Лига
 - лм, ла лига = Ла Лига
 - бл, бундеслига = Бундеслига
 - са, серия а = Серия А
 - л1, лига 1 = Лига 1
+
+ВАЖНО: Когда пользователь спрашивает "лч" или "лига чемпионов" - ищи данные в "📊 Лига чемпионов 2025-2026"!
+ВНИМАНИЕ: Пользователь отмечен звездочкой ⭐ - найди его в нужном турнире и скажи его ТОЧНУЮ позицию!
 
 СИСТЕМА ПОДСЧЕТА ОЧКОВ:
 • За угаданный результат обычного матча: 1 очко
