@@ -52,6 +52,14 @@ const replicate = process.env.REPLICATE_API_TOKEN
   ? new Replicate({ auth: process.env.REPLICATE_API_TOKEN })
   : null;
 
+// Cloudflare Workers AI - 10,000 нейронов/день бесплатно
+const cloudflare = (process.env.CLOUDFLARE_API_KEY && process.env.CLOUDFLARE_ACCOUNT_ID)
+  ? new OpenAI({ 
+      apiKey: process.env.CLOUDFLARE_API_KEY, 
+      baseURL: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1` 
+    })
+  : null;
+
 // Anthropic Claude - УБРАН (платный после $5 кредитов)
 // const anthropic = process.env.ANTHROPIC_API_KEY
 //   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -73,37 +81,12 @@ export async function sendToAI(messages, dbContext = {}) {
     // Формируем системный промпт с контекстом
     const systemPrompt = buildSystemPrompt(dbContext);
     
-    // Пробуем Gemini (основной провайдер)
-    if (genAI) {
-      try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-        
-        const chat = model.startChat({
-          history: messages.slice(0, -1).map(msg => ({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.content }],
-          })),
-        });
-
-        const lastMessage = messages[messages.length - 1];
-        const result = await chat.sendMessage(systemPrompt + '\n\n' + lastMessage.content);
-        const response = result.response;
-        
-        return {
-          success: true,
-          text: response.text(),
-          provider: 'Gemini Pro',
-        };
-      } catch (geminiError) {
-        console.error('❌ Ошибка Gemini:', geminiError.message);
-      }
-    }
 
     // Пробуем Cohere (1000 запросов/месяц бесплатно)
     if (cohere) {
       try {
         const response = await cohere.chat({
-          model: 'command-r-plus',
+          model: 'command',  // Базовая актуальная модель
           message: messages[messages.length - 1].content,
           preamble: systemPrompt,
           chatHistory: messages.slice(0, -1).map(msg => ({
@@ -121,6 +104,28 @@ export async function sendToAI(messages, dbContext = {}) {
         };
       } catch (cohereError) {
         console.error('❌ Ошибка Cohere:', cohereError.message);
+      }
+    }
+
+    // Пробуем Cloudflare Workers AI (10,000 нейронов/день бесплатно)
+    if (cloudflare) {
+      try {
+        const completion = await cloudflare.chat.completions.create({
+          model: '@cf/meta/llama-3.1-8b-instruct', // Актуальная модель 2026
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages
+          ],
+          max_tokens: 1000,
+          temperature: 0.7,
+        });
+        return {
+          success: true,
+          text: completion.choices[0]?.message?.content || 'Нет ответа',
+          provider: 'Cloudflare AI',
+        };
+      } catch (e) {
+        console.error('❌ Ошибка Cloudflare AI:', e.message);
       }
     }
 
@@ -179,9 +184,9 @@ export async function sendToAI(messages, dbContext = {}) {
     // Пробуем OpenRouter (50 запросов/день бесплатно, много моделей)
     if (openrouter) {
       const orModels = [
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'google/gemma-3-12b-it:free',
-        'mistralai/mistral-small-3.1-24b-instruct:free',
+        'meta-llama/llama-3.1-8b-instruct:free',
+        'microsoft/phi-3-mini-128k-instruct:free',
+        'google/gemma-2-9b-it:free',
       ];
       for (const model of orModels) {
         try {
@@ -208,12 +213,12 @@ export async function sendToAI(messages, dbContext = {}) {
 
     // Пробуем Groq (последний резерв)
     if (groq) {
-      // Несколько моделей - у каждой свой лимит токенов
+      // Актуальные рабочие модели Groq 2026
       const groqModels = [
         'llama-3.3-70b-versatile',
         'llama-3.1-8b-instant',
-        'gemma2-9b-it',
-        'mixtral-8x7b-32768',
+        'openai/gpt-oss-120b',
+        'qwen/qwen3-32b',
       ];
 
       for (const model of groqModels) {
@@ -245,16 +250,16 @@ export async function sendToAI(messages, dbContext = {}) {
             continue;
           }
           console.error(`❌ Ошибка Groq (${model}):`, groqError.message);
-          break;
+          continue; // Пробуем следующую модель
         }
       }
     }
 
-    // Если все провайдеры недоступны
+    // Если все провайдеры недоступны - возвращаем базовый ответ
     return {
-      success: false,
-      text: 'AI сервисы временно недоступны. Проверьте API ключи в .env файле.',
-      provider: 'none',
+      success: true,
+      text: '<b>AI временно недоступен</b> 🤖\n\nВсе AI провайдеры исчерпали лимиты или недоступны. Попробуйте позже.\n\n<i>Вы можете продолжить пользоваться сайтом - делать ставки, смотреть турниры и участвовать в соревнованиях!</i> ⚽️',
+      provider: 'fallback',
     };
 
   } catch (error) {
