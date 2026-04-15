@@ -142,19 +142,51 @@ export async function sendToAI(messages, dbContext = {}) {
         try {
           const model = genAI.getGenerativeModel({ model: modelName });
           
-          // Формируем полный промпт с контекстом
-          const fullPrompt = systemPrompt + '\n\nВопрос пользователя: ' + messages[messages.length - 1].content;
-          
-          const result = await model.generateContent(fullPrompt);
-          const response = await result.response;
-          const text = response.text();
-          
-          if (text && text.trim()) {
-            return {
-              success: true,
-              text: text.trim(),
-              provider: `Gemini (${modelName})`,
-            };
+          // Если есть история сообщений, используем chat API
+          if (messages.length > 1) {
+            // Формируем историю с системным промптом в начале
+            const history = [
+              { role: 'user', parts: [{ text: systemPrompt }] },
+              { role: 'model', parts: [{ text: 'Понял! Я буду отвечать согласно этим инструкциям.' }] },
+              ...messages.slice(0, -1).map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
+                parts: [{ text: msg.content }]
+              }))
+            ];
+            
+            const chat = model.startChat({
+              history,
+              generationConfig: {
+                maxOutputTokens: 1000,
+                temperature: 0.7,
+              },
+            });
+            
+            const result = await chat.sendMessage(messages[messages.length - 1].content);
+            const response = await result.response;
+            const text = response.text();
+            
+            if (text && text.trim()) {
+              return {
+                success: true,
+                text: text.trim(),
+                provider: `Gemini (${modelName})`,
+              };
+            }
+          } else {
+            // Для первого сообщения используем обычный generateContent
+            const fullPrompt = systemPrompt + '\n\nВопрос пользователя: ' + messages[0].content;
+            const result = await model.generateContent(fullPrompt);
+            const response = await result.response;
+            const text = response.text();
+            
+            if (text && text.trim()) {
+              return {
+                success: true,
+                text: text.trim(),
+                provider: `Gemini (${modelName})`,
+              };
+            }
           }
         } catch (geminiError) {
           console.error(`❌ Ошибка Gemini (${modelName}):`, geminiError.message);
@@ -372,7 +404,8 @@ function buildSystemPrompt(dbContext) {
   if (dbContext.currentUser) {
     prompt += `ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ: ${dbContext.currentUser}\n`;
     prompt += `ВАЖНО: Когда этот пользователь спрашивает "моё место", "мои очки", "я" - ищи его в таблице участников по имени и отвечай "твоё место", "у тебя", "ты".\n`;
-    prompt += `В таблице участников текущий пользователь отмечен звездочкой ⭐.\n\n`;
+    prompt += `В таблице участников текущий пользователь отмечен звездочкой ⭐.\n`;
+    prompt += `КОНТЕКСТ: Если пользователь упоминает "Milan", "David", "Давид" - это он сам спрашивает про себя, отвечай на "ты".\n\n`;
   }
 
   if (dbContext.userProfile) {
