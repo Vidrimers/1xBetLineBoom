@@ -248,16 +248,35 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
     if (events.length > 0) {
       context.events = events.map(e => `• ${e.name} (${e.status || 'активный'})`).join('\n');
 
-      // Таблицы всех турниров (топ-10 участников)
+      // Таблицы всех турниров (топ-15 участников с подробной информацией)
       const allParticipants = [];
       for (const event of events) {
         try {
           const participants = getTournamentParticipantsWithPoints(event.id);
           if (participants && participants.length > 0) {
+            // Находим позицию текущего пользователя если он есть
+            let currentUserPosition = null;
+            if (currentUser) {
+              const userIndex = participants.findIndex(p => p.username.toLowerCase() === currentUser.username.toLowerCase());
+              if (userIndex !== -1) {
+                currentUserPosition = userIndex + 1;
+              }
+            }
+            
             allParticipants.push(
-              `${event.name}:\n` +
-              participants.slice(0, 10).map((p, i) => `${i + 1}.${p.username}:${p.event_won || 0}оч`).join(', ')
+              `📊 ${event.name}:\n` +
+              participants.slice(0, 15).map((p, i) => {
+                const position = i + 1;
+                const isCurrentUser = currentUser && p.username.toLowerCase() === currentUser.username.toLowerCase();
+                const marker = isCurrentUser ? ' ⭐' : '';
+                return `${position}. ${p.username}: ${p.event_won || 0} очков${marker}`;
+              }).join('\n')
             );
+            
+            // Добавляем информацию о позиции текущего пользователя если он не в топ-15
+            if (currentUser && currentUserPosition && currentUserPosition > 15) {
+              allParticipants[allParticipants.length - 1] += `\n...\n${currentUserPosition}. ${currentUser.username}: ${participants[currentUserPosition - 1].event_won || 0} очков ⭐`;
+            }
           }
         } catch (e) {}
       }
