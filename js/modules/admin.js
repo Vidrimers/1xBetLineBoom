@@ -243,9 +243,9 @@ export async function openRestoreDBModal() {
         <div style="padding:15px;margin-bottom:10px;background:rgba(30,34,44,0.6);border:1px solid rgba(90,159,212,0.3);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
           <div>
             <div style="font-weight:bold;color:#5a9fd4;margin-bottom:5px;">${backup.filename}</div>
-            <div style="font-size:0.9em;color:#999;">��� ${new Date(backup.created).toLocaleString('ru-RU')} | ��� ${backup.sizeFormatted}</div>
+            <div style="font-size:0.9em;color:#999;">🕐 ${new Date(backup.created).toLocaleString('ru-RU')} | 📦 ${backup.sizeFormatted}</div>
           </div>
-          <button onclick="restoreBackup('${backup.filename}')" style="background:rgba(255,152,0,0.7);color:#fff;border:1px solid #ff9800;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.9em;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(255,152,0,1)'" onmouseout="this.style.background='rgba(255,152,0,0.7)'">��� Восстановить</button>
+          <button onclick="restoreBackup('${backup.filename}')" style="background:rgba(255,152,0,0.7);color:#fff;border:1px solid #ff9800;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.9em;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(255,152,0,1)'" onmouseout="this.style.background='rgba(255,152,0,0.7)'">🔄 Восстановить</button>
         </div>
       `).join('');
     }
@@ -295,10 +295,10 @@ export async function openDatabaseModal() {
 
     if (backups.length === 0) {
       backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
-      document.getElementById("backupsListHeader").innerHTML = `<h3 style="color:#5a9fd4;margin:0;">��� Доступные бэкапы (выберите один):</h3>`;
+      document.getElementById("backupsListHeader").innerHTML = `<h3 style="color:#5a9fd4;margin:0;">📦 Доступные бэкапы (выберите один):</h3>`;
     } else {
       document.getElementById("backupsListHeader").innerHTML = `
-        <h3 style="color:#5a9fd4;margin:0;">��� Доступные бэкапы (выберите один):</h3>
+        <h3 style="color:#5a9fd4;margin:0;">📦 Доступные бэкапы (выберите один):</h3>
         <div style="color:#999;font-size:0.9em;">Всего: <strong style="color:#5a9fd4;">${backups.length}</strong> | Общий размер: <strong style="color:#5a9fd4;">${totalSizeFormatted}</strong></div>
       `;
 
@@ -315,12 +315,12 @@ export async function openDatabaseModal() {
             <div style="flex:1;">
               ${isNew ? '<div style="position:absolute;top:10px;right:10px;background:rgba(76,175,80,0.9);color:#fff;padding:4px 12px;border-radius:12px;font-size:0.75em;font-weight:bold;animation:pulse 2s infinite;">NEW</div>' : ''}
               <div style="font-weight:bold;color:${isNew ? '#4caf50' : '#5a9fd4'};margin-bottom:5px;">${backup.filename}</div>
-              <div style="font-size:0.9em;color:#999;">��� ${new Date(backup.created).toLocaleString('ru-RU')} | ��� ${backup.sizeFormatted}</div>
-              ${backup.createdBy !== 'unknown' ? `<div style="font-size:0.85em;color:#888;margin-top:3px;">��� ${backup.createdBy}</div>` : ''}
+              <div style="font-size:0.9em;color:#999;">🕐 ${new Date(backup.created).toLocaleString('ru-RU')} | 📦 ${backup.sizeFormatted}</div>
+              ${backup.createdBy !== 'unknown' ? `<div style="font-size:0.85em;color:#888;margin-top:3px;">👤 ${backup.createdBy}</div>` : ''}
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;position:relative;">
-              ${isLocked ? '<div style="background:rgba(255,193,7,0.2);color:#ffc107;padding:3px 8px;border-radius:6px;font-size:0.75em;white-space:nowrap;">��� Заблокирован</div>' : ''}
-              ${isAdmin() ? `<button class="backup-lock-btn" onclick="event.stopPropagation(); toggleBackupLock('${backup.filename}', ${isLocked})" style="background:${isLocked ? 'rgba(76,175,80,0.7)' : 'transparent'};color:${isLocked ? '#fff' : 'rgb(255,255,255)'};border:${isLocked ? '1px solid #4caf50' : 'medium'};padding:4px 10px;border-radius:6px;cursor:pointer;font-size:${isLocked ? '0.7em' : '0.75em'};transition:${isLocked ? 'all 0.3s ease' : '0.3s'};white-space:nowrap;opacity:0;box-shadow:none;pointer-events:none;position:absolute;right:0;bottom:0;" title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}">${isLocked ? '��� Разблокировать' : '���'}</button>` : ''}
+              ${isLocked ? '<div style="background:rgba(255,193,7,0.2);color:#ffc107;padding:3px 8px;border-radius:6px;font-size:0.75em;white-space:nowrap;">🔒 Заблокирован</div>' : ''}
+              ${isAdmin() ? `<button class="backup-lock-btn" onclick="event.stopPropagation(); toggleBackupLock('${backup.filename}', ${isLocked})" style="background:${isLocked ? 'rgba(76,175,80,0.7)' : 'transparent'};color:${isLocked ? '#fff' : 'rgb(255,255,255)'};border:${isLocked ? '1px solid #4caf50' : 'medium'};padding:4px 10px;border-radius:6px;cursor:pointer;font-size:${isLocked ? '0.7em' : '0.75em'};transition:${isLocked ? 'all 0.3s ease' : '0.3s'};white-space:nowrap;opacity:0;box-shadow:none;pointer-events:none;position:absolute;right:0;bottom:0;" title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}">${isLocked ? '🔓 Разблокировать' : '🔒'}</button>` : ''}
             </div>
           </div>
         </div>`;
@@ -446,7 +446,7 @@ export async function restoreSelectedBackup() {
 
     if (data.success) {
       await showCustomAlert(
-        '<div style="margin-bottom:10px;">БД успешно восстановлена!</div><div style="color:#5a9fd4;">��� Восстановлено из: <strong>' + data.restored_from + '</strong></div><div style="color:#4caf50;margin-top:5px;">��� Создан бэкап текущей БД: <strong>' + data.backup_created + '</strong></div><div style="color:#ff9800;margin-top:10px;">Страница будет перезагружена...</div>',
+        '<div style="margin-bottom:10px;">БД успешно восстановлена!</div><div style="color:#5a9fd4;">📦 Восстановлено из: <strong>' + data.restored_from + '</strong></div><div style="color:#4caf50;margin-top:5px;">📦 Создан бэкап текущей БД: <strong>' + data.backup_created + '</strong></div><div style="color:#ff9800;margin-top:10px;">Страница будет перезагружена...</div>',
         "Успешно", "✅"
       );
       closeDatabaseModal();
@@ -480,7 +480,7 @@ export async function toggleBackupLock(filename, currentLockStatus) {
   const action = currentLockStatus ? 'разблокировать' : 'заблокировать';
   const confirmed = await showCustomConfirm(
     'Вы уверены что хотите ' + action + ' бэкап?\n\n<strong style="color:#5a9fd4;">' + filename + '</strong>\n\n' + (currentLockStatus ? '<div style="color:#4caf50;margin-top:10px;">После разблокировки бэкап можно будет удалить.</div>' : '<div style="color:#ffc107;margin-top:10px;">⚠️ Заблокированный бэкап нельзя будет удалить до разблокировки.</div>'),
-    currentLockStatus ? "Разблокировка бэкапа" : "Блокировка бэкапа", "��"
+    currentLockStatus ? "Разблокировка бэкапа" : "Блокировка бэкапа", "🔒"
   );
 
   if (!confirmed) return;
@@ -519,7 +519,7 @@ export async function deleteSelectedBackup() {
 
   const confirmed = await showCustomConfirm(
     'Вы уверены что хотите удалить бэкап?\n\n<strong style="color:#5a9fd4;">' + selectedBackupFilename + '</strong>\n\n<div style="color:#f44336;margin-top:10px;">⚠️ Это действие нельзя отменить!</div>',
-    "Удаление бэкапа", "���️"
+    "Удаление бэкапа", "🗑️"
   );
 
   if (!confirmed) return;
@@ -611,12 +611,12 @@ export async function checkOrphanedData() {
         '<div style="font-size:1.1em;color:#ff9800;font-weight:600;margin-bottom:15px;text-align:center;">⚠️ Найдено ' + totalCount + ' orphaned записей</div>' +
         '<div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:8px;margin-bottom:15px;">' +
         '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;font-size:0.95em;">' +
-        '<div style="color:#e0e6f0;">��� Матчи без события:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.matches + '</div>' +
-        '<div style="color:#e0e6f0;">��� Ставки на удалённые матчи:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.bets + '</div>' +
-        '<div style="color:#e0e6f0;">��� Финальные ставки:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_bets + '</div>' +
-        '<div style="color:#e0e6f0;">��� Напоминания:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.reminders + '</div>' +
-        '<div style="color:#e0e6f0;">��� Награды:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.awards + '</div>' +
-        '<div style="color:#e0e6f0;">��� Параметры финала:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_parameters + '</div>' +
+        '<div style="color:#e0e6f0;">⚽ Матчи без события:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.matches + '</div>' +
+        '<div style="color:#e0e6f0;">🎯 Ставки на удалённые матчи:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.bets + '</div>' +
+        '<div style="color:#e0e6f0;">🏆 Финальные ставки:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_bets + '</div>' +
+        '<div style="color:#e0e6f0;">🔔 Напоминания:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.reminders + '</div>' +
+        '<div style="color:#e0e6f0;">🏅 Награды:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.awards + '</div>' +
+        '<div style="color:#e0e6f0;">⚙️ Параметры финала:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_parameters + '</div>' +
         '</div></div>' +
         '<div style="color:#b0b8c8;font-size:0.9em;text-align:center;line-height:1.5;">Очистить orphaned данные?<br/><span style="color:#888;">(Это удалит все найденные orphaned данные из БД)</span></div>' +
         '</div>';
@@ -629,7 +629,7 @@ export async function checkOrphanedData() {
     await showCustomAlert('Ошибка при проверке orphaned данных:\n' + error.message, "Ошибка", "❌");
   } finally {
     const btn = document.querySelector('[onclick="checkOrphanedData()"]');
-    if (btn) { btn.textContent = "��� Проверить orphaned"; btn.disabled = false; }
+    if (btn) { btn.textContent = "🔍 Проверить orphaned"; btn.disabled = false; }
   }
 }
 
@@ -655,12 +655,12 @@ export async function cleanupOrphanedData() {
     const data = await response.json();
 
     let message = '✅ ORPHANED ДАННЫЕ УДАЛЕНЫ:\n\n';
-    message += '���️  Матчи: ' + (data.deleted.matches || 0) + '\n';
-    message += '���️  Ставки: ' + (data.deleted.bets || 0) + '\n';
-    message += '��️  Финальные ставки: ' + (data.deleted.final_bets || 0) + '\n';
-    message += '���️  Напоминания: ' + (data.deleted.reminders || 0) + '\n';
-    message += '���️  Награды: ' + (data.deleted.awards || 0) + '\n';
-    message += '���️  Параметры финала: ' + (data.deleted.final_parameters || 0) + '\n\n';
+    message += '⚽️  Матчи: ' + (data.deleted.matches || 0) + '\n';
+    message += '🎯️  Ставки: ' + (data.deleted.bets || 0) + '\n';
+    message += '🏆️  Финальные ставки: ' + (data.deleted.final_bets || 0) + '\n';
+    message += '🔔️  Напоминания: ' + (data.deleted.reminders || 0) + '\n';
+    message += '🏅️  Награды: ' + (data.deleted.awards || 0) + '\n';
+    message += '⚙️️  Параметры финала: ' + (data.deleted.final_parameters || 0) + '\n\n';
     message += 'БД успешно очищена!';
 
     alert(message);
@@ -669,6 +669,6 @@ export async function cleanupOrphanedData() {
     alert('❌ Ошибка при очистке orphaned данных:\n' + error.message);
   } finally {
     const btn = document.querySelector('[onclick="checkOrphanedData()"]');
-    if (btn) { btn.textContent = "��� Проверить orphaned"; btn.disabled = false; }
+    if (btn) { btn.textContent = "🔍 Проверить orphaned"; btn.disabled = false; }
   }
 }

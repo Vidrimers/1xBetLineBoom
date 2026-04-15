@@ -61,7 +61,7 @@ router.post("/api/user/timezone", async (req, res) => {
     }
 
     console.log(
-      `��� Часовой пояс пользователя ${username} изменен на ${timezone}`
+      `🕐 Часовой пояс пользователя ${username} изменен на ${timezone}`
     );
 
     try {
@@ -71,13 +71,13 @@ router.post("/api/user/timezone", async (req, res) => {
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
         const time = new Date().toLocaleString("ru-RU");
 
-        const adminMessage = `�� ИЗМЕНЕНИЕ ЧАСОВОГО ПОЯСА
+        const adminMessage = `🕐 ИЗМЕНЕНИЕ ЧАСОВОГО ПОЯСА
 
-��� Пользователь: ${username}
-${user?.telegram_username ? `��� Telegram: @${user.telegram_username}` : ""}
+👤 Пользователь: ${username}
+${user?.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
 ✏️ Новый часовой пояс: ${timezone}
-��� Старый часовой пояс: ${oldTimezone}
-��� Время: ${time}`;
+🕐 Старый часовой пояс: ${oldTimezone}
+🕐 Время: ${time}`;
 
         await fetch(
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -269,36 +269,36 @@ router.post("/api/user/:userId/notification-settings", async (req, res) => {
     const changes = [];
     
     if (!oldSettings) {
-      changes.push(`��� Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`🔔 Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`⏰ Напоминания за 3 часа: ${three_hour_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
-      changes.push(`��� Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
-      changes.push(`�� Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`🎯 Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`📢 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
-      changes.push(`��� Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`🔔 Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
     } else {
       if (oldSettings.match_reminders !== (match_reminders ? 1 : 0)) {
-        changes.push(`��� Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+        changes.push(`🔔 Напоминания о матчах: ${match_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       if (oldSettings.three_hour_reminders !== (three_hour_reminders ? 1 : 0)) {
         changes.push(`⏰ Напоминания за 3 часа: ${three_hour_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       if (oldSettings.only_active_tournaments !== (only_active_tournaments ? 1 : 0)) {
-        changes.push(`��� Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+        changes.push(`🎯 Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       if (oldSettings.tournament_announcements !== (tournament_announcements ? 1 : 0)) {
-        changes.push(`��� Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+        changes.push(`📢 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       if (oldSettings.match_results !== (match_results ? 1 : 0)) {
         changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       if (oldSettings.system_messages !== (system_messages ? 1 : 0)) {
-        changes.push(`��� Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+        changes.push(`🔔 Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
     }
     
     if (changes.length > 0) {
       const message = `⚙️ <b>Изменение настроек уведомлений</b>\n\n` +
-        `��� Пользователь: <b>${user.username}</b>\n\n` +
+        `👤 Пользователь: <b>${user.username}</b>\n\n` +
         `${changes.join('\n')}`;
       
       try {
@@ -335,24 +335,24 @@ router.post("/api/admin/test-group-notification", async (req, res) => {
       )
       .join(", ");
 
-    const testMessage = `⏰ <b>��� ТЕСТОВОЕ НАПОМИНАНИЕ</b>
+    const testMessage = `⏰ <b>🔔 ТЕСТОВОЕ НАПОМИНАНИЕ</b>
 
 Это тестовое сообщение для проверки уведомлений в группе.
 
 Матч начнётся <b>20.01.2026 в 18:30</b>
 
 ⚽ <b>Реал Мадрид</b> vs <b>Барселона</b>
-��� Турнир: Лига Чемпионов 2024/25
+🏆 Турнир: Лига Чемпионов 2024/25
 
-��� <b>Пользователи с включенными напоминаниями:</b>
+👥 <b>Пользователи с включенными напоминаниями:</b>
 ${mentions || "Нет пользователей"}
 
-��� Не забудьте сделать прогноз!
+🎯 Не забудьте сделать прогноз!
 
-��� <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>
+🌐 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>
 
 <i>Это тестовое сообщение отправлено администратором</i>
-${testMode ? '\n\n��� <b>ТЕСТОВЫЙ РЕЖИМ:</b> Отправлено только админу' : ''}`;
+${testMode ? '\n\n🧪 <b>ТЕСТОВЫЙ РЕЖИМ:</b> Отправлено только админу' : ''}`;
 
     if (testMode) {
       await sendAdminNotification(testMessage);

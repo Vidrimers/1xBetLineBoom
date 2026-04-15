@@ -13,7 +13,7 @@ export async function openNotificationsModal() {
 
   modal.innerHTML = `
     <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-      <h3 style="margin:0 0 20px 0;color:#5a9fd4;">��� Управление уведомлениями</h3>
+      <h3 style="margin:0 0 20px 0;color:#5a9fd4;">✅ Управление уведомлениями</h3>
       <div id="usersListContainer" style="margin-bottom:20px;padding:15px;background:#2a3a4a;border-radius:8px;max-height:400px;overflow-y:auto;">${usersListHTML}</div>
       <div style="display:flex;gap:10px;">
         <button onclick="enableNotificationsForAll()" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">✅ Включить для всех</button>
@@ -73,7 +73,7 @@ export async function showUserDetails(userId, username, telegramUsername, notifi
     const data = await response.json();
 
     const telegramInfo = data.telegramUser
-      ? '<div style="color:#4caf50;margin-top:10px;">��� <strong>Telegram привязка:</strong><br/>Chat ID: ' + data.telegramUser.chat_id + '<br/>Имя: ' + data.telegramUser.first_name + '</div>'
+      ? '<div style="color:#4caf50;margin-top:10px;">✅ <strong>Telegram привязка:</strong><br/>Chat ID: ' + data.telegramUser.chat_id + '<br/>Имя: ' + data.telegramUser.first_name + '</div>'
       : '<div style="color:#ff9800;margin-top:10px;">⚠️ Нет записи в telegram_users</div>';
 
     const notifStatusText = notificationsEnabled ? '✅ Включены' : '❌ Отключены';
@@ -83,7 +83,7 @@ export async function showUserDetails(userId, username, telegramUsername, notifi
 
     detailsModal.innerHTML = `
       <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-        <h3 style="margin:0 0 20px 0;color:#5a9fd4;">��� ${username}</h3>
+        <h3 style="margin:0 0 20px 0;color:#5a9fd4;">✅ ${username}</h3>
         <div style="padding:15px;background:#2a3a4a;border-radius:8px;margin-bottom:20px;color:#e0e6f0;line-height:1.8;">
           <div><strong>ID:</strong> ${userId}</div>
           <div><strong>Username:</strong> ${username}</div>
@@ -143,7 +143,7 @@ export async function toggleUserNotifications(userId, enable) {
 export async function enableNotificationsForAll() {
   const confirmed = await showCustomConfirm(
     'Включить уведомления для всех пользователей с привязанным Telegram?',
-    'Подтверждение', '���'
+    'Подтверждение', '✅'
   );
 
   if (!confirmed) return;

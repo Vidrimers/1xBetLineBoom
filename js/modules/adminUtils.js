@@ -62,16 +62,16 @@ export async function openDatesManagementModal() {
 
   modal.innerHTML = `
     <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-      <h3 style="margin:0 0 20px 0;color:#5a9fd4;">��� Управление датами автоподсчета</h3>
+      <h3 style="margin:0 0 20px 0;color:#5a9fd4;">📅 Управление датами автоподсчета</h3>
       <div id="datesContentContainer" style="margin-bottom:20px;padding:15px;background:#2a3a4a;border-radius:8px;max-height:50vh;overflow-y:auto;font-family:'Courier New',monospace;line-height:1.6;color:#e0e6f0;">
         <div style="color:#999;text-align:center;padding:10px;">Загрузка...</div>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:15px;">
-        <button onclick="loadDatesData('processed')" style="flex:1;background:#2196f3;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">��� Обработанные даты</button>
-        <button onclick="loadDatesData('matches')" style="flex:1;background:#673ab7;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">��� Даты матчей</button>
+        <button onclick="loadDatesData('processed')" style="flex:1;background:#2196f3;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">📊 Обработанные даты</button>
+        <button onclick="loadDatesData('matches')" style="flex:1;background:#673ab7;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">⚽ Даты матчей</button>
       </div>
       <div style="display:flex;gap:10px;">
-        <button onclick="clearProcessedDates()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">���️ Очистить даты</button>
+        <button onclick="clearProcessedDates()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">🗑️ Очистить даты</button>
         <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:#607d8b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">Закрыть</button>
       </div>
     </div>
@@ -134,7 +134,7 @@ export async function clearProcessedDates() {
     content.style.cssText = 'background:#1e1e1e;padding:30px;border-radius:12px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.5);';
 
     content.innerHTML = `
-      <h2 style="margin:0 0 20px 0;color:#fff;">��� Очистка обработанных дат</h2>
+      <h2 style="margin:0 0 20px 0;color:#fff;">🗑️ Очистка обработанных дат</h2>
       <p style="color:#b0b8c8;margin-bottom:20px;">Выберите даты которые нужно очистить. Автоподсчет пересчитает их при следующей проверке (каждые 5 минут).</p>
       <div style="margin-bottom:20px;">
         <label style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(90,159,212,0.1);border-radius:6px;cursor:pointer;margin-bottom:10px;">

@@ -69,8 +69,8 @@ export function renderButton(button) {
   }
 
   let buttonText = button.text;
-  if (button.type === 'toggle' && !buttonText.includes('���')) buttonText = buttonText + ' ���';
-  else if (button.type === 'external' && !buttonText.includes('���')) buttonText = buttonText + ' ���';
+  if (button.type === 'toggle' && !buttonText.includes('🔄')) buttonText = buttonText + ' 🔄';
+  else if (button.type === 'external' && !buttonText.includes('🔗')) buttonText = buttonText + ' 🔗';
 
   if (button.type === 'external') {
     return `<a href="#" onclick='${button.action}; return false;' style="display:flex;align-items:center;justify-content:center;background:${bgColor};color:${textColor};text-decoration:none;padding:12px 20px;border-radius:8px;font-size:0.95em;transition:all 0.3s ease;border:1px solid ${borderColor};white-space:nowrap;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">${buttonText}</a>`;
@@ -119,13 +119,13 @@ export async function openConfigureCategoriesModal() {
     <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:900px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
       <h3 style="margin:0 0 20px 0;color:#5a9fd4;">⚙️ Настройка категорий админ-панели</h3>
       <div style="display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid rgba(255,255,255,0.1);">
-        <button onclick="switchConfigTab('categories')" id="configTab-categories" style="flex:1;padding:5px 15px;background:rgba(90,159,212,0.3);border:none;border-bottom:3px solid #5a9fd4;color:#e0e6f0;cursor:pointer;font-size:0.95em;transition:all 0.3s;">��� Категории</button>
-        <button onclick="switchConfigTab('buttons')" id="configTab-buttons" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;">��� Кнопки</button>
-        <button onclick="switchConfigTab('reset')" id="configTab-reset" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;">��� Сброс</button>
+        <button onclick="switchConfigTab('categories')" id="configTab-categories" style="flex:1;padding:5px 15px;background:rgba(90,159,212,0.3);border:none;border-bottom:3px solid #5a9fd4;color:#e0e6f0;cursor:pointer;font-size:0.95em;transition:all 0.3s;">📁 Категории</button>
+        <button onclick="switchConfigTab('buttons')" id="configTab-buttons" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;">🔘 Кнопки</button>
+        <button onclick="switchConfigTab('reset')" id="configTab-reset" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;">🔄 Сброс</button>
       </div>
       <div id="configTabContent" style="min-height:300px;margin-bottom:20px;"></div>
       <div style="display:flex;gap:10px;">
-        <button onclick="saveConfigChanges()" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">��� Сохранить</button>
+        <button onclick="saveConfigChanges()" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">💾 Сохранить</button>
         <button onclick="closeConfigureCategoriesModal()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">❌ Отмена</button>
       </div>
     </div>
@@ -193,7 +193,7 @@ export function renderCategoriesTab() {
           <div style="display:flex;gap:5px;margin-left:10px;">
             ${index > 0 ? '<button onclick="moveCategoryUp(' + index + ')" style="padding:8px 12px;background:rgba(90,159,212,0.7);color:#e0e6f0;border:1px solid #3a7bd5;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Переместить вверх">⬆️</button>' : ''}
             ${index < currentEditingConfig.categories.length - 1 ? '<button onclick="moveCategoryDown(' + index + ')" style="padding:8px 12px;background:rgba(90,159,212,0.7);color:#e0e6f0;border:1px solid #3a7bd5;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Переместить вниз">⬇️</button>' : ''}
-            <button onclick="deleteCategory(${index})" style="padding:8px 12px;background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Удалить категорию">���️</button>
+            <button onclick="deleteCategory(${index})" style="padding:8px 12px;background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Удалить категорию">🗑️</button>
           </div>
         </div>
         <div style="background:rgba(20,25,35,0.5);padding:10px;border-radius:4px;border:1px solid rgba(90,159,212,0.2);">
@@ -218,7 +218,7 @@ export function renderButtonsTab() {
 
   let html = `
     <div style="background:rgba(255,152,0,0.2);border-left:4px solid #ff9800;padding:15px;border-radius:4px;margin-bottom:15px;color:#ffe0b2;font-size:0.9em;">
-      ��� Выберите категорию для каждой кнопки. Кнопки будут отображаться в выбранной категории.
+      ⚙️ Выберите категорию для каждой кнопки. Кнопки будут отображаться в выбранной категории.
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;">
   `;
@@ -253,9 +253,9 @@ export function renderResetTab() {
         <div style="font-size:3em;margin-bottom:15px;">⚠️</div>
         <h4 style="margin:0 0 15px 0;color:#f44336;font-size:1.2em;">Сброс к дефолтным настройкам</h4>
         <p style="color:#ffb3b3;margin:0 0 20px 0;line-height:1.6;">Это действие вернёт конфигурацию админ-панели к исходному состоянию.<br/>Все ваши изменения (категории, порядок кнопок) будут потеряны.</p>
-        <button onclick="resetToDefaultConfig()" style="padding:15px 30px;background:#f44336;color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;font-weight:600;transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">��� Сбросить к дефолту</button>
+        <button onclick="resetToDefaultConfig()" style="padding:15px 30px;background:#f44336;color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;font-weight:600;transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🔄 Сбросить к дефолту</button>
       </div>
-      <div style="color:#b0b8c8;font-size:0.9em;line-height:1.6;"><p style="margin:0;">Дефолтная конфигурация включает 6 категорий:<br/>��� Система и логи, ��� Пользователи и модерация,<br/>��� Контент и новости, ⚙️ Настройки интерфейса,<br/>��� Уведомления, ���️ Утилиты и инструменты</p></div>
+      <div style="color:#b0b8c8;font-size:0.9em;line-height:1.6;"><p style="margin:0;">Дефолтная конфигурация включает 6 категорий:<br/>📊 Система и логи, 👥 Пользователи и модерация,<br/>📝 Контент и новости, ⚙️ Настройки интерфейса,<br/>🔔 Уведомления, 🛠️ Утилиты и инструменты</p></div>
     </div>
   `;
 }
@@ -320,8 +320,8 @@ export function addNewCategory() {
   const newId = 'custom_' + Date.now();
   const newCategory = {
     id: newId,
-    name: '��� Новая категория',
-    icon: '���',
+    name: '📁 Новая категория',
+    icon: '📁',
     collapsed: false,
     buttons: []
   };

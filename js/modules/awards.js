@@ -5,7 +5,7 @@ import { isAdmin } from './admin.js';
 
 // Открыть панель управления наградами
 export async function openAwardsPanel() {
-  console.log("��� Открытие панели управления наградами");
+  console.log("✅ Открытие панели управления наградами");
 
   if (!isAdmin()) {
     alert("❌ У вас нет прав для управления наградами");
@@ -21,10 +21,10 @@ export async function openAwardsPanel() {
 
   modal.style.display = "flex";
 
-  console.log("��� Загрузка списка наград...");
+  console.log("✅ Загрузка списка наград...");
   loadAwardsList();
 
-  console.log("��� Загрузка списка турниров...");
+  console.log("✅ Загрузка списка турниров...");
   loadEventsForAwards();
 }
 
@@ -48,17 +48,17 @@ export async function loadAwardsList() {
     }
 
     const awardTypeText = {
-      participant: "��� Участник турнира",
-      winner: "��� Победитель",
+      participant: "✅ Участник турнира",
+      winner: "✅ Победитель",
       best_result: "⭐ Лучший результат",
-      special: "���️ Специальная награда",
+      special: "✅️ Специальная награда",
     };
 
     listContainer.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
         ${awards.map(award => {
           const awardColor = award.award_color || "#fbc02d";
-          const awardEmoji = award.award_emoji || "���";
+          const awardEmoji = award.award_emoji || "✅";
           let bgStyle = 'rgba(255,193,7,0.1)';
           let bgHoverStyle = 'rgba(255,193,7,0.2)';
           let borderColor = 'rgba(251,192,45,0.5)';
@@ -88,12 +88,12 @@ export async function loadAwardsList() {
             <div style="margin-bottom:8px;flex-grow:1;">
               <div style="color:${textColor};font-weight:bold;margin-bottom:4px;font-size:0.95em;word-break:break-word;text-shadow:1px 1px 2px rgba(0,0,0,0.5)">${awardEmoji} ${award.username}</div>
               <div style="color:#b0b0b0;font-size:0.8em;margin-bottom:3px;text-shadow:1px 1px 1px rgba(0,0,0,0.5)">${awardTypeText[award.award_type] || award.award_type}</div>
-              <div style="color:#888;font-size:0.75em;margin-bottom:3px;text-shadow:1px 1px 1px rgba(0,0,0,0.5)">${award.event_name ? '��� ' + award.event_name : 'Общая'}</div>
+              <div style="color:#888;font-size:0.75em;margin-bottom:3px;text-shadow:1px 1px 1px rgba(0,0,0,0.5)">${award.event_name ? '✅ ' + award.event_name : 'Общая'}</div>
               ${award.description ? '<div style="color:#ddd;font-size:0.75em;font-style:italic;margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-shadow:1px 1px 1px rgba(0,0,0,0.5)">"' + award.description + '"</div>' : ''}
             </div>
             <div style="display:flex;gap:6px;margin-top:8px;">
               <button onclick="openEditAwardModal(${award.id},'${award.username}','${award.award_type}','${award.description || ''}','${award.event_name || ''}')" style="background:rgba(33,150,243,0.7);color:#87ceeb;border:1px solid #2196f3;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:0.8em;flex:1;transition:all 0.2s;" onmouseover="this.style.background='rgba(33,150,243,0.9)'" onmouseout="this.style.background='rgba(33,150,243,0.7)'">✏️ Редакт.</button>
-              <button onclick="removeAward(${award.id})" style="background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:0.8em;flex:1;transition:all 0.2s;" onmouseover="this.style.background='rgba(244,67,54,0.9)'" onmouseout="this.style.background='rgba(244,67,54,0.7)'">���️ Удал.</button>
+              <button onclick="removeAward(${award.id})" style="background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:0.8em;flex:1;transition:all 0.2s;" onmouseover="this.style.background='rgba(244,67,54,0.9)'" onmouseout="this.style.background='rgba(244,67,54,0.7)'">✅️ Удал.</button>
             </div>
           </div>`;
         }).join('')}
@@ -125,7 +125,7 @@ export async function loadEventsForAwards() {
     });
 
     select.onchange = () => {
-      console.log('��� Выбран турнир: ' + select.value);
+      console.log('✅ Выбран турнир: ' + select.value);
       if (select.value) {
         loadTournamentParticipantsForAward(select.value);
       } else {
@@ -140,7 +140,7 @@ export async function loadEventsForAwards() {
 // Загрузить участников турнира
 export async function loadTournamentParticipantsForAward(eventId) {
   try {
-    console.log('��� Загрузка участников для турнира ' + eventId);
+    console.log('✅ Загрузка участников для турнира ' + eventId);
     const response = await fetch('/api/events/' + eventId + '/tournament-participants');
 
     if (!response.ok) throw new Error('Ошибка сервера: ' + response.status);
@@ -148,7 +148,7 @@ export async function loadTournamentParticipantsForAward(eventId) {
     const participants = await response.json();
 
     console.log("✅ Загруженные участники:", participants);
-    console.log('��� Количество участников: ' + participants.length);
+    console.log('✅ Количество участников: ' + participants.length);
 
     const select = document.getElementById("participantSelectForAward");
 
@@ -217,7 +217,7 @@ export async function assignAward() {
   const awardType = document.getElementById("awardTypeSelect").value;
   const description = document.getElementById("awardDescriptionInput").value;
   const awardColor = document.getElementById("awardColorInput").value || "#fbc02d";
-  const awardEmoji = document.getElementById("awardEmojiInput").value || "���";
+  const awardEmoji = document.getElementById("awardEmojiInput").value || "✅";
   const imageUrl = document.getElementById("awardImageUrlInput").value;
   const opacity = parseFloat(document.getElementById("awardOpacityInput").value);
 
@@ -274,7 +274,7 @@ export async function assignAward() {
       document.getElementById("awardDescriptionInput").value = "";
       document.getElementById("awardColorInput").value = "#fbc02d";
       document.getElementById("awardColorTextInput").value = "#fbc02d";
-      document.getElementById("awardEmojiInput").value = "���";
+      document.getElementById("awardEmojiInput").value = "✅";
       document.getElementById("awardImageUrlInput").value = "";
       if (imageFileInput) imageFileInput.value = "";
       document.getElementById("awardOpacityInput").value = "1";
@@ -316,22 +316,22 @@ export async function openEditAwardModal(awardId, username, awardType, descripti
         <h2 style="color:#5a9fd4;margin:0;">✏️ Редактировать награду</h2>
         <button onclick="closeEditAwardModal()" style="background:none;border:none;color:#888;font-size:28px;cursor:pointer;padding:0;">&times;</button>
       </div>
-      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Участник:</label><div style="background:#2a2e3a;padding:10px;border-radius:4px;color:#fbc02d;border:1px solid rgba(251,192,45,0.5);">${username}</div></div>
-      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Турнир:</label><div style="background:#2a2e3a;padding:10px;border-radius:4px;color:#b0b0b0;border:1px solid #444;">${eventName || 'Общая награда'}</div></div>
-      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Тип награды:</label>
+      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Участник:</label><div style="background:#2a2e3a;padding:10px;border-radius:4px;color:#fbc02d;border:1px solid rgba(251,192,45,0.5);">${username}</div></div>
+      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Турнир:</label><div style="background:#2a2e3a;padding:10px;border-radius:4px;color:#b0b0b0;border:1px solid #444;">${eventName || 'Общая награда'}</div></div>
+      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Тип награды:</label>
         <select id="editAwardTypeSelect" style="width:100%;padding:10px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;">
-          <option value="participant" ${awardType === 'participant' ? 'selected' : ''}>��� Участник турнира</option>
-          <option value="winner" ${awardType === 'winner' ? 'selected' : ''}>��� Победитель</option>
+          <option value="participant" ${awardType === 'participant' ? 'selected' : ''}>✅ Участник турнира</option>
+          <option value="winner" ${awardType === 'winner' ? 'selected' : ''}>✅ Победитель</option>
           <option value="best_result" ${awardType === 'best_result' ? 'selected' : ''}>⭐ Лучший результат</option>
-          <option value="special" ${awardType === 'special' ? 'selected' : ''}>���️ Специальная награда</option>
+          <option value="special" ${awardType === 'special' ? 'selected' : ''}>✅️ Специальная награда</option>
         </select>
       </div>
-      <div style="margin-bottom:20px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Описание (опционально):</label><textarea id="editAwardDescriptionInput" style="width:100%;padding:10px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;min-height:80px;font-family:Arial,sans-serif;resize:vertical;">${description || ''}</textarea></div>
-      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Цвет награды:</label><div style="display:flex;gap:10px;align-items:center;"><input type="color" id="editAwardColorInput" style="width:60px;height:40px;cursor:pointer;border:1px solid #555;border-radius:4px;"/><input type="text" id="editAwardColorTextInput" style="flex:1;padding:8px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;"/></div></div>
-      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Эмодзи награды:</label><input type="text" id="editAwardEmojiInput" maxlength="2" style="width:100%;padding:10px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;font-size:1.2em;"/><small style="color:#999;">Выберите эмодзи для награды (максимум 1 символ)</small></div>
-      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">���️ Фоновое изображение (URL, опционально):</label><input type="text" id="editAwardImageUrl" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;font-family:Arial,sans-serif;"/><small style="color:#999;display:block;margin-top:4px;">Укажите URL картинки для фона награды</small></div>
-      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Загрузить изображение с устройства:</label><input type="file" id="editAwardImageFileInput" accept="image/*" style="width:100%;padding:6px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;"/><small style="color:#999;display:block;margin-top:4px;">Выберите файл, чтобы загрузить новое изображение</small></div>
-      <div style="margin-bottom:20px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">��� Прозрачность фона: <span id="opacityValue" style="color:#fbc02d;">1</span></label><input type="range" id="editAwardOpacity" min="0" max="1" step="0.1" value="1" style="width:100%;cursor:pointer;" onchange="document.getElementById('opacityValue').textContent=this.value"/><small style="color:#999;">0 = полностью прозрачный, 1 = полностью видимый</small></div>
+      <div style="margin-bottom:20px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Описание (опционально):</label><textarea id="editAwardDescriptionInput" style="width:100%;padding:10px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;min-height:80px;font-family:Arial,sans-serif;resize:vertical;">${description || ''}</textarea></div>
+      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Цвет награды:</label><div style="display:flex;gap:10px;align-items:center;"><input type="color" id="editAwardColorInput" style="width:60px;height:40px;cursor:pointer;border:1px solid #555;border-radius:4px;"/><input type="text" id="editAwardColorTextInput" style="flex:1;padding:8px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;"/></div></div>
+      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Эмодзи награды:</label><input type="text" id="editAwardEmojiInput" maxlength="2" style="width:100%;padding:10px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;font-size:1.2em;"/><small style="color:#999;">Выберите эмодзи для награды (максимум 1 символ)</small></div>
+      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅️ Фоновое изображение (URL, опционально):</label><input type="text" id="editAwardImageUrl" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;font-family:Arial,sans-serif;"/><small style="color:#999;display:block;margin-top:4px;">Укажите URL картинки для фона награды</small></div>
+      <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Загрузить изображение с устройства:</label><input type="file" id="editAwardImageFileInput" accept="image/*" style="width:100%;padding:6px;background:#2a2e3a;color:#e0e0e0;border:1px solid #444;border-radius:4px;"/><small style="color:#999;display:block;margin-top:4px;">Выберите файл, чтобы загрузить новое изображение</small></div>
+      <div style="margin-bottom:20px;"><label style="display:block;margin-bottom:8px;color:#e0e0e0;font-weight:bold;">✅ Прозрачность фона: <span id="opacityValue" style="color:#fbc02d;">1</span></label><input type="range" id="editAwardOpacity" min="0" max="1" step="0.1" value="1" style="width:100%;cursor:pointer;" onchange="document.getElementById('opacityValue').textContent=this.value"/><small style="color:#999;">0 = полностью прозрачный, 1 = полностью видимый</small></div>
       <div style="display:flex;gap:10px;">
         <button onclick="saveEditAward()" style="flex:1;background:rgba(76,175,80,0.7);color:#a8d5a8;border:1px solid #4caf50;padding:12px;border-radius:4px;cursor:pointer;font-size:1em;font-weight:bold;transition:all 0.2s;" onmouseover="this.style.background='rgba(76,175,80,0.9)'" onmouseout="this.style.background='rgba(76,175,80,0.7)'">✅ Сохранить</button>
         <button onclick="closeEditAwardModal()" style="flex:1;background:rgba(158,158,158,0.5);color:#d0d0d0;border:1px solid #999;padding:12px;border-radius:4px;cursor:pointer;font-size:1em;transition:all 0.2s;" onmouseover="this.style.background='rgba(158,158,158,0.7)'" onmouseout="this.style.background='rgba(158,158,158,0.5)'">❌ Отмена</button>
@@ -349,7 +349,7 @@ export async function openEditAwardModal(awardId, username, awardType, descripti
       if (opacityInput) { opacityInput.value = opacity; document.getElementById("opacityValue").textContent = opacity; }
 
       const awardColorVal = awardData.award_color || "#fbc02d";
-      const awardEmojiVal = awardData.award_emoji || "���";
+      const awardEmojiVal = awardData.award_emoji || "✅";
 
       if (colorInput) colorInput.value = awardColorVal;
       if (colorText) colorText.value = awardColorVal;
@@ -380,7 +380,7 @@ export async function saveEditAward() {
   const newImageUrl = document.getElementById("editAwardImageUrl").value;
   const newOpacity = parseFloat(document.getElementById("editAwardOpacity").value);
   const newAwardColor = document.getElementById("editAwardColorInput").value || "#fbc02d";
-  const newAwardEmoji = document.getElementById("editAwardEmojiInput").value || "���";
+  const newAwardEmoji = document.getElementById("editAwardEmojiInput").value || "✅";
 
   const editImageFileInput = document.getElementById("editAwardImageFileInput");
   let uploadedEditImageUrl = null;

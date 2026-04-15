@@ -47,7 +47,7 @@ export async function loadModeratorsList() {
         </div>
         <div style="display:flex;gap:8px;">
           <button onclick="openEditModeratorModal(${mod.id}, '${mod.username}', ${JSON.stringify(mod.permissions || []).replace(/"/g, '&quot;')})" style="background:rgba(90,159,212,0.7);color:#e0e6f0;border:1px solid #3a7bd5;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.9em;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">✏️ Изменить</button>
-          <button onclick="removeModerator(${mod.id})" style="background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.9em;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">���️ Удалить</button>
+          <button onclick="removeModerator(${mod.id})" style="background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.9em;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">✅️ Удалить</button>
         </div>
       </div>
     `).join('');
