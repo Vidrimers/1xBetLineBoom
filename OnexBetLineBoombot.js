@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import { handleAIMessage, handleAIModeCommand, handleAIModeCallback } from "./server/services/telegramAI.js";
 
 dotenv.config();
 
@@ -1024,6 +1025,8 @@ export async function startBot() {
       { command: 'stats', description: '📈 Моя статистика' },
       { command: 'profile', description: '👤 Мой профиль' },
       { command: 'my_awards', description: '🏆 Мои награды' },
+      { command: 'ask', description: '🤖 Спросить AI' },
+      { command: 'ai_mode', description: '⚙️ Режим AI (только админ)' },
       { command: 'help', description: '❓ Справка' }
     ]);
     
@@ -1277,12 +1280,20 @@ export async function startBot() {
   // Команда /menu - главное меню с инлайн-кнопками
   bot.onText(/\/menu/, (msg) => {
     const chatId = msg.chat.id;
+    const userId = msg.from.id;
     const isPrivateChat = msg.chat.type === 'private';
 
     // Логируем действие
     logUserAction(msg, "Нажата команда /menu");
 
     const menuButtons = createMenuButtons();
+    
+    // Добавляем кнопку AI режима для админа
+    if (userId === TELEGRAM_ADMIN_ID) {
+      menuButtons.push([
+        { text: '⚙️ AI режим', callback_data: 'menu_ai_mode' }
+      ]);
+    }
 
     const menuOptions = {
       reply_markup: {
@@ -2640,6 +2651,18 @@ export async function startBot() {
 
   bot.onText(/\/my_awards/, (msg) => handleMyAwards(msg.chat.id, msg));
 
+  // ===== AI КОМАНДЫ =====
+  
+  // Команда /ask - спросить AI
+  bot.onText(/\/ask(.*)/, async (msg) => {
+    await handleAIMessage(msg, bot);
+  });
+  
+  // Команда /ai_mode - переключение режима AI (только для админа)
+  bot.onText(/\/ai_mode(.*)/, async (msg) => {
+    await handleAIModeCommand(msg, bot, TELEGRAM_ADMIN_ID);
+  });
+
   // ===== ОБРАБОТКА КНОПОК =====
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -2648,6 +2671,14 @@ export async function startBot() {
 
     // Регистрируем telegram пользователя (сохраняем связку username → chat_id)
     registerTelegramUser(msg);
+    
+    // Пробуем обработать сообщение через AI (если не команда)
+    if (text && !text.startsWith('/')) {
+      const handled = await handleAIMessage(msg, bot);
+      if (handled) {
+        return; // AI обработал сообщение, дальше не идем
+      }
+    }
 
     // Проверяем, ожидает ли пользователь ввода багрепорта
     if (userId && bugReportStates.has(userId)) {
@@ -2772,6 +2803,12 @@ export async function startBot() {
     console.log(`📲 Получен callback: ${data}`);
     
     try {
+      // ===== ОБРАБОТКА AI КНОПОК =====
+      if (data.startsWith("ai_mode_")) {
+        await handleAIModeCallback(callbackQuery, bot, TELEGRAM_ADMIN_ID);
+        return;
+      }
+      
       // ===== ОБРАБОТКА КНОПОК МЕНЮ =====
       if (data.startsWith("menu_")) {
         // Отвечаем на callback чтобы убрать "часики"
@@ -2837,8 +2874,28 @@ export async function startBot() {
           case "menu_bugreport":
             handleBugReport(chatId, fakeMsg);
             break;
+          case "menu_ai_mode":
+            // Показываем меню управления AI (только для админа)
+            if (userId === TELEGRAM_ADMIN_ID) {
+              // Создаем фейковое сообщение для handleAIModeCommand
+              const aiMsg = {
+                chat: { id: chatId },
+                from: callbackQuery.from,
+                text: '/ai_mode'
+              };
+              await handleAIModeCommand(aiMsg, bot, TELEGRAM_ADMIN_ID);
+            }
+            break;
           case "menu_back":
             // Возвращаемся в главное меню
+            const backMenuButtons = createMenuButtons();
+            // Добавляем кнопку AI для админа
+            if (userId === TELEGRAM_ADMIN_ID) {
+              backMenuButtons.push([
+                { text: '⚙️ AI режим', callback_data: 'menu_ai_mode' }
+              ]);
+            }
+            
             bot.editMessageText(
               `<b>📱 Главное меню</b>\n\nВыберите действие:`,
               {
@@ -2846,7 +2903,7 @@ export async function startBot() {
                 message_id: msg.message_id,
                 parse_mode: "HTML",
                 reply_markup: {
-                  inline_keyboard: createMenuButtons()
+                  inline_keyboard: backMenuButtons
                 }
               }
             );

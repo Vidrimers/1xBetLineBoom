@@ -6,6 +6,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { HfInference } from '@huggingface/inference';
 import Groq from 'groq-sdk';
+import OpenAI from 'openai';
+import { CohereClient } from 'cohere-ai';
+import Replicate from 'replicate';
+// import Anthropic from '@anthropic-ai/sdk'; // УБРАН - платный после $5
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -23,6 +27,41 @@ const groq = process.env.GROQ_API_KEY
   ? new Groq({ apiKey: process.env.GROQ_API_KEY })
   : null;
 
+// Cerebras - 1M токенов/день бесплатно
+const cerebras = process.env.CEREBRAS_API_KEY
+  ? new OpenAI({ apiKey: process.env.CEREBRAS_API_KEY, baseURL: 'https://api.cerebras.ai/v1' })
+  : null;
+
+// OpenRouter - 50 запросов/день бесплатно
+const openrouter = process.env.OPENROUTER_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1' })
+  : null;
+
+// Cohere - 1000 запросов/месяц бесплатно
+const cohere = process.env.COHERE_API_KEY
+  ? new CohereClient({ token: process.env.COHERE_API_KEY })
+  : null;
+
+// Together AI - УБРАН (требует минимум $5 покупку кредитов)
+// const together = process.env.TOGETHER_API_KEY
+//   ? new OpenAI({ apiKey: process.env.TOGETHER_API_KEY, baseURL: 'https://api.together.xyz/v1' })
+//   : null;
+
+// Replicate - $5 бесплатных кредитов на 14 дней
+const replicate = process.env.REPLICATE_API_TOKEN
+  ? new Replicate({ auth: process.env.REPLICATE_API_TOKEN })
+  : null;
+
+// Anthropic Claude - УБРАН (платный после $5 кредитов)
+// const anthropic = process.env.ANTHROPIC_API_KEY
+//   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+//   : null;
+
+// Perplexity - УБРАН (требует добавить карту)
+// const perplexity = process.env.PERPLEXITY_API_KEY
+//   ? new OpenAI({ apiKey: process.env.PERPLEXITY_API_KEY, baseURL: 'https://api.perplexity.ai' })
+//   : null;
+
 /**
  * Отправляет сообщения в AI и получает ответ
  * @param {Array} messages - Массив сообщений чата
@@ -34,7 +73,7 @@ export async function sendToAI(messages, dbContext = {}) {
     // Формируем системный промпт с контекстом
     const systemPrompt = buildSystemPrompt(dbContext);
     
-    // Пробуем Gemini (старый SDK, но стабильный)
+    // Пробуем Gemini (основной провайдер)
     if (genAI) {
       try {
         const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
@@ -48,7 +87,7 @@ export async function sendToAI(messages, dbContext = {}) {
 
         const lastMessage = messages[messages.length - 1];
         const result = await chat.sendMessage(systemPrompt + '\n\n' + lastMessage.content);
-        const response = await result.response;
+        const response = result.response;
         
         return {
           success: true,
@@ -60,27 +99,54 @@ export async function sendToAI(messages, dbContext = {}) {
       }
     }
 
-    // Пробуем Hugging Face (бесплатный fallback)
-    if (hf) {
+    // Пробуем Cohere (1000 запросов/месяц бесплатно)
+    if (cohere) {
       try {
-        // Формируем промпт из всех сообщений
-        const fullPrompt = systemPrompt + '\n\n' + messages.map(msg => 
-          `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
-        ).join('\n\n');
-
-        const response = await hf.textGeneration({
-          model: 'mistralai/Mistral-7B-Instruct-v0.2',
-          inputs: fullPrompt,
-          parameters: {
-            max_new_tokens: 1000,
-            temperature: 0.7,
-            return_full_text: false,
-          }
+        const response = await cohere.chat({
+          model: 'command-r-plus',
+          message: messages[messages.length - 1].content,
+          preamble: systemPrompt,
+          chatHistory: messages.slice(0, -1).map(msg => ({
+            role: msg.role === 'user' ? 'USER' : 'CHATBOT',
+            message: msg.content
+          })),
+          maxTokens: 1000,
+          temperature: 0.7,
         });
 
         return {
           success: true,
-          text: response.generated_text,
+          text: response.text,
+          provider: 'Cohere',
+        };
+      } catch (cohereError) {
+        console.error('❌ Ошибка Cohere:', cohereError.message);
+      }
+    }
+
+    // Together AI - УБРАН (требует минимум $5 покупку кредитов)
+    // Anthropic Claude - УБРАН (платный после $5 кредитов)
+    // Perplexity - УБРАН (требует добавить карту)
+
+    // Пробуем Hugging Face (бесплатный fallback)
+    if (hf) {
+      try {
+        // Формируем сообщения для chat completion
+        const chatMessages = [
+          { role: 'system', content: systemPrompt },
+          ...messages
+        ];
+
+        const response = await hf.chatCompletion({
+          model: 'mistralai/Mistral-7B-Instruct-v0.2',
+          messages: chatMessages,
+          max_tokens: 1000,
+          temperature: 0.7,
+        });
+
+        return {
+          success: true,
+          text: response.choices[0].message.content,
           provider: 'Hugging Face',
         };
       } catch (hfError) {
@@ -88,35 +154,103 @@ export async function sendToAI(messages, dbContext = {}) {
       }
     }
 
-    // Пробуем Groq
-    if (groq) {
+    // Пробуем Cerebras (1M токенов/день бесплатно)
+    if (cerebras) {
       try {
-        const chatMessages = [
-          { role: 'system', content: systemPrompt },
-          ...messages.map(msg => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-        ];
-
-        const completion = await groq.chat.completions.create({
-          messages: chatMessages,
-          model: 'llama-3.3-70b-versatile',
-          temperature: 0.7,
+        const completion = await cerebras.chat.completions.create({
+          model: 'llama-3.3-70b',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages
+          ],
           max_tokens: 1000,
+          temperature: 0.7,
         });
-
         return {
           success: true,
           text: completion.choices[0]?.message?.content || 'Нет ответа',
-          provider: 'Groq',
+          provider: 'Cerebras',
         };
-      } catch (groqError) {
-        console.error('❌ Ошибка Groq:', groqError.message);
+      } catch (e) {
+        console.error('❌ Ошибка Cerebras:', e.message);
       }
     }
 
-    // Если оба провайдера недоступны
+    // Пробуем OpenRouter (50 запросов/день бесплатно, много моделей)
+    if (openrouter) {
+      const orModels = [
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'google/gemma-3-12b-it:free',
+        'mistralai/mistral-small-3.1-24b-instruct:free',
+      ];
+      for (const model of orModels) {
+        try {
+          const completion = await openrouter.chat.completions.create({
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages
+            ],
+            max_tokens: 1000,
+            temperature: 0.7,
+          });
+          return {
+            success: true,
+            text: completion.choices[0]?.message?.content || 'Нет ответа',
+            provider: `OpenRouter (${model.split('/')[1]})`,
+          };
+        } catch (e) {
+          console.error(`❌ Ошибка OpenRouter (${model}):`, e.message);
+          continue;
+        }
+      }
+    }
+
+    // Пробуем Groq (последний резерв)
+    if (groq) {
+      // Несколько моделей - у каждой свой лимит токенов
+      const groqModels = [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant',
+        'gemma2-9b-it',
+        'mixtral-8x7b-32768',
+      ];
+
+      for (const model of groqModels) {
+        try {
+          const chatMessages = [
+            { role: 'system', content: systemPrompt },
+            ...messages.map(msg => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+          ];
+
+          const completion = await groq.chat.completions.create({
+            messages: chatMessages,
+            model,
+            temperature: 0.7,
+            max_tokens: 1000,
+          });
+
+          return {
+            success: true,
+            text: completion.choices[0]?.message?.content || 'Нет ответа',
+            provider: `Groq (${model})`,
+          };
+        } catch (groqError) {
+          // Если лимит - пробуем следующую модель
+          if (groqError.message?.includes('rate_limit') || groqError.status === 429) {
+            console.error(`❌ Groq лимит (${model}), пробуем следующую модель...`);
+            continue;
+          }
+          console.error(`❌ Ошибка Groq (${model}):`, groqError.message);
+          break;
+        }
+      }
+    }
+
+    // Если все провайдеры недоступны
     return {
       success: false,
       text: 'AI сервисы временно недоступны. Проверьте API ключи в .env файле.',
@@ -141,6 +275,21 @@ export async function sendToAI(messages, dbContext = {}) {
 function buildSystemPrompt(dbContext) {
   let prompt = `Ты - помощник для сайта ставок на футбол 1xBetLineBoom. 
 Отвечай кратко и по делу. Используй эмодзи для наглядности.
+Форматируй ответы используя HTML теги Telegram:
+- <b>жирный текст</b> для имён и важных данных
+- <i>курсив</i> для пояснений
+- Эмодзи для визуального разделения
+ВАЖНО: Никогда не переводи и не изменяй имена пользователей (username). Используй их точно как в данных.
+АББРЕВИАТУРЫ ТУРНИРОВ (используй их для поиска в данных):
+- лч, лига чемпионов, champions league, cl = Лига чемпионов
+- лe, лига европы, europa league, el = Лига Европы
+- лк, лига конференций, conference league = Лига конференций
+- рпл = Российская Премьер-Лига
+- апл, премьер-лига = Английская Премьер-Лига
+- лм, ла лига = Ла Лига
+- бл, бундеслига = Бундеслига
+- са, серия а = Серия А
+- л1, лига 1 = Лига 1
 
 СИСТЕМА ПОДСЧЕТА ОЧКОВ:
 • За угаданный результат обычного матча: 1 очко
@@ -162,6 +311,26 @@ function buildSystemPrompt(dbContext) {
 
   if (dbContext.participants) {
     prompt += `УЧАСТНИКИ И ОЧКИ:\n${dbContext.participants}\n\n`;
+  }
+
+  if (dbContext.currentUser) {
+    prompt += `ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ: ${dbContext.currentUser}\nЕсли пользователь спрашивает "я", "мне", "моё" - ищи его в списке участников по этому нику.\n\n`;
+  }
+
+  if (dbContext.userProfile) {
+    prompt += `ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:\n${dbContext.userProfile}\n\n`;
+  }
+
+  if (dbContext.userBets) {
+    prompt += `СТАВКИ ПОЛЬЗОВАТЕЛЯ:\n${dbContext.userBets}\n\n`;
+  }
+
+  if (dbContext.matches) {
+    prompt += `МАТЧИ:\n${dbContext.matches}\n\n`;
+  }
+
+  if (dbContext.news) {
+    prompt += `${dbContext.news}\n\n`;
   }
 
   if (dbContext.pageContext) {

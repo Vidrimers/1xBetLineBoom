@@ -1,0 +1,348 @@
+/**
+ * Модуль для формирования полного контекста из БД для AI
+ * Используется как в веб-чате, так и в Telegram боте
+ */
+
+import { db } from '../database/db.js';
+import { getTournamentParticipantsWithPoints } from './tournamentData.js';
+
+/**
+ * Получает ставки пользователя с учетом настройки show_bets
+ * @param {number} userId - ID пользователя чьи ставки смотрим
+ * @param {number} viewerUserId - ID пользователя который смотрит (null = AI)
+ * @param {number} eventId - ID турнира
+ */
+function getUserBets(userId, viewerUserId, eventId) {
+  const userSettings = db.prepare('SELECT show_bets, username FROM users WHERE id = ?').get(userId);
+  if (!userSettings) return null;
+
+  const showBets = userSettings.show_bets || 'always';
+  const isOwner = viewerUserId === userId;
+
+  const bets = db.prepare(`
+    SELECT 
+      b.id,
+      m.team1_name as team1,
+      m.team2_name as team2,
+      m.winner,
+      m.status as match_status,
+      m.match_date,
+      m.round,
+      m.is_final,
+      CASE 
+        WHEN b.prediction = 'team1' THEN m.team1_name
+        WHEN b.prediction = 'team2' THEN m.team2_name
+        WHEN b.prediction = 'draw' THEN 'Ничья'
+        ELSE b.prediction
+      END as prediction_display,
+      CASE 
+        WHEN m.winner IS NULL THEN 'pending'
+        WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+             (b.prediction = 'team2' AND m.winner = 'team2') OR
+             (b.prediction = 'draw' AND m.winner = 'draw') OR
+             (b.prediction = m.team1_name AND m.winner = 'team1') OR
+             (b.prediction = m.team2_name AND m.winner = 'team2') THEN 'won'
+        ELSE 'lost'
+      END as result
+    FROM bets b
+    JOIN matches m ON b.match_id = m.id
+    WHERE m.event_id = ? AND b.user_id = ? AND b.is_final_bet = 0
+    ORDER BY m.match_date ASC
+  `).all(eventId, userId);
+
+  // Применяем фильтр show_bets
+  if (showBets === 'after_start' && !isOwner) {
+    const now = new Date();
+    return bets.map(bet => {
+      if (!bet.match_date) return { ...bet, hidden: true };
+      const matchDate = new Date(bet.match_date);
+      return matchDate > now ? { ...bet, hidden: true } : { ...bet, hidden: false };
+    });
+  }
+
+  return bets.map(bet => ({ ...bet, hidden: false }));
+}
+
+/**
+ * Получает матчи турнира
+ */
+function getMatches(eventId) {
+  return db.prepare(`
+    SELECT 
+      m.id,
+      m.team1_name as team1,
+      m.team2_name as team2,
+      m.winner,
+      m.status,
+      m.match_date,
+      m.round,
+      m.is_final,
+      ms.score_team1,
+      ms.score_team2,
+      m.yellow_cards,
+      m.red_cards
+    FROM matches m
+    LEFT JOIN match_scores ms ON m.id = ms.match_id
+    WHERE m.event_id = ?
+    ORDER BY m.match_date ASC
+  `).all(eventId);
+}
+
+/**
+ * Получает турнирную сетку
+ */
+function getBrackets(eventId) {
+  const brackets = db.prepare(`
+    SELECT id, name, start_date, is_locked
+    FROM brackets
+    WHERE event_id = ?
+  `).all(eventId);
+
+  return brackets.map(bracket => {
+    const results = db.prepare(`
+      SELECT stage, match_index, actual_winner
+      FROM bracket_results
+      WHERE bracket_id = ?
+    `).all(bracket.id);
+
+    return { ...bracket, results };
+  });
+}
+
+/**
+ * Получает прогнозы пользователя в турнирной сетке с учетом show_bets
+ */
+function getUserBracketPredictions(userId, eventId, viewerUserId) {
+  const userSettings = db.prepare('SELECT show_bets, username FROM users WHERE id = ?').get(userId);
+  if (!userSettings) return null;
+
+  const showBets = userSettings.show_bets || 'always';
+  const isOwner = viewerUserId === userId;
+
+  const brackets = db.prepare('SELECT id, start_date, lock_dates FROM brackets WHERE event_id = ?').all(eventId);
+  const result = [];
+
+  for (const bracket of brackets) {
+    const predictions = db.prepare(`
+      SELECT bp.stage, bp.match_index, bp.predicted_winner
+      FROM bracket_predictions bp
+      WHERE bp.bracket_id = ? AND bp.user_id = ?
+    `).all(bracket.id, userId);
+
+    if (showBets === 'after_start' && !isOwner) {
+      const now = new Date();
+      let lockDates = {};
+      try { lockDates = bracket.lock_dates ? JSON.parse(bracket.lock_dates) : {}; } catch (e) {}
+
+      const visible = predictions.filter(pred => {
+        const stageDate = lockDates[pred.stage];
+        if (!stageDate) {
+          return bracket.start_date ? new Date(bracket.start_date) <= now : true;
+        }
+        return new Date(stageDate) <= now;
+      });
+
+      if (visible.length === 0 && predictions.length > 0) {
+        result.push({ bracketId: bracket.id, hidden: true, message: 'Прогнозы скрыты до начала стадий' });
+      } else {
+        result.push({ bracketId: bracket.id, hidden: false, predictions: visible });
+      }
+    } else {
+      result.push({ bracketId: bracket.id, hidden: false, predictions });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Получает статистику профиля пользователя
+ */
+function getUserProfile(userId) {
+  const user = db.prepare('SELECT id, username, avatar, created_at FROM users WHERE id = ?').get(userId);
+  if (!user) return null;
+
+  const stats = db.prepare(`
+    SELECT 
+      COUNT(DISTINCT b.id) as total_bets,
+      SUM(CASE 
+        WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) AND (
+          (b.is_final_bet = 0 AND (
+            (b.prediction = 'team1' AND m.winner = 'team1') OR
+            (b.prediction = 'team2' AND m.winner = 'team2') OR
+            (b.prediction = 'draw' AND m.winner = 'draw') OR
+            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+            (b.prediction = m.team2_name AND m.winner = 'team2')
+          )) OR
+          (b.is_final_bet = 1 AND (
+            (b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards) OR
+            (b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards) OR
+            (b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners) OR
+            (b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score)
+          ))
+        ) THEN 1 ELSE 0 
+      END) as won_bets,
+      COUNT(DISTINCT m.event_id) as tournaments_count
+    FROM bets b
+    LEFT JOIN matches m ON b.match_id = m.id
+    LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+    WHERE b.user_id = ?
+  `).get(userId);
+
+  const awards = db.prepare(`
+    SELECT COUNT(*) as count FROM tournament_awards WHERE user_id = ?
+  `).get(userId);
+
+  return {
+    username: user.username,
+    created_at: user.created_at,
+    total_bets: stats?.total_bets || 0,
+    won_bets: stats?.won_bets || 0,
+    win_rate: stats?.total_bets > 0 ? Math.round((stats.won_bets / stats.total_bets) * 100) : 0,
+    tournaments_count: stats?.tournaments_count || 0,
+    awards_count: awards?.count || 0,
+  };
+}
+
+/**
+ * Получает последние новости
+ */
+function getLatestNews(limit = 10) {
+  return db.prepare(`
+    SELECT id, title, message, type, created_at
+    FROM news
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).all(limit);
+}
+
+/**
+ * Формирует полный контекст для AI
+ * @param {string} telegramUsername - Telegram username пользователя (опционально)
+ * @param {string} siteUsername - Username на сайте (опционально, для веб-чата)
+ */
+export function buildFullAIContext(telegramUsername = null, siteUsername = null) {
+  const context = {};
+
+  try {
+    // Определяем пользователя
+    let currentUser = null;
+    if (siteUsername) {
+      currentUser = db.prepare('SELECT id, username, show_bets FROM users WHERE LOWER(username) = LOWER(?)').get(siteUsername);
+    } else if (telegramUsername) {
+      currentUser = db.prepare('SELECT id, username, show_bets FROM users WHERE LOWER(telegram_username) = LOWER(?)').get(telegramUsername);
+    }
+
+    if (currentUser) {
+      context.currentUser = `Пользователь: ${currentUser.username}`;
+      if (telegramUsername) context.currentUser += ` (Telegram: @${telegramUsername})`;
+    } else if (telegramUsername) {
+      context.currentUser = `Пользователь: @${telegramUsername} (не привязан к аккаунту на сайте)`;
+    }
+
+    // Все турниры
+    const events = db.prepare(`
+      SELECT id, name, status FROM events ORDER BY start_date DESC LIMIT 10
+    `).all();
+
+    if (events.length > 0) {
+      context.events = events.map(e => `• ${e.name} (${e.status || 'активный'})`).join('\n');
+
+      // Таблицы всех турниров (топ-10 участников)
+      const allParticipants = [];
+      for (const event of events) {
+        try {
+          const participants = getTournamentParticipantsWithPoints(event.id);
+          if (participants && participants.length > 0) {
+            allParticipants.push(
+              `${event.name}:\n` +
+              participants.slice(0, 10).map((p, i) => `${i + 1}.${p.username}:${p.event_won || 0}оч`).join(', ')
+            );
+          }
+        } catch (e) {}
+      }
+      if (allParticipants.length > 0) {
+        context.participants = allParticipants.join('\n');
+      }
+
+      // Матчи всех активных турниров (6 предстоящих + 6 завершённых)
+      const activeEvents = events.filter(e => e.status === 'active');
+      const matchesData = [];
+      for (const event of activeEvents) {
+        const matches = getMatches(event.id);
+        const upcoming = matches.filter(m => !m.winner && m.status !== 'cancelled').slice(0, 6);
+        const finished = matches.filter(m => m.winner).slice(-6);
+
+        if (upcoming.length > 0 || finished.length > 0) {
+          let matchText = `${event.name}:`;
+          upcoming.forEach(m => {
+            const date = m.match_date ? new Date(m.match_date).toLocaleDateString('ru-RU') : '?';
+            matchText += `\n⏳${m.team1} vs ${m.team2} (${date},тур${m.round || '?'})`;
+          });
+          finished.forEach(m => {
+            const score = m.score_team1 !== null ? `${m.score_team1}:${m.score_team2}` : '';
+            const winner = m.winner === 'team1' ? m.team1 : m.winner === 'team2' ? m.team2 : 'Ничья';
+            matchText += `\n✅${m.team1} vs ${m.team2}:${winner}${score}`;
+          });
+          matchesData.push(matchText);
+        }
+      }
+      if (matchesData.length > 0) context.matches = matchesData.join('\n');
+
+      // Ставки и профиль текущего пользователя (все активные турниры)
+      if (currentUser) {
+        const profile = getUserProfile(currentUser.id);
+        if (profile) {
+          context.userProfile = `${profile.username}:ставок${profile.total_bets},угадано${profile.won_bets}(${profile.win_rate}%),турниров${profile.tournaments_count},наград${profile.awards_count}`;
+        }
+
+        const userBetsData = [];
+        for (const event of activeEvents) {
+          const bets = getUserBets(currentUser.id, currentUser.id, event.id);
+          if (bets && bets.length > 0) {
+            const betsText = `${event.name}:\n` +
+              bets.map(b => {
+                if (b.hidden) return `${b.team1}vs${b.team2}:[скрыта]`;
+                const r = b.result === 'won' ? '✅' : b.result === 'lost' ? '❌' : '⏳';
+                return `${b.team1}vs${b.team2}:${b.prediction_display}${r}`;
+              }).join(', ');
+            userBetsData.push(betsText);
+          }
+        }
+        if (userBetsData.length > 0) context.userBets = userBetsData.join('\n');
+      }
+    }
+
+    // Последние 10 новостей
+    const news = getLatestNews(10);
+    if (news.length > 0) {
+      context.news = news.map(n => {
+        const date = new Date(n.created_at).toLocaleDateString('ru-RU');
+        return `[${date}]${(n.title || n.message || '').substring(0, 60)}`;
+      }).join('\n');
+    }
+
+  } catch (error) {
+    console.error('❌ Ошибка формирования контекста AI:', error);
+  }
+
+  return context;
+}
+
+/**
+ * Получает ставки конкретного пользователя для AI (с учетом show_bets)
+ * viewerUsername - кто спрашивает (null = AI/анонимный)
+ */
+export function getAIUserBets(targetUsername, viewerUsername, eventId) {
+  const targetUser = db.prepare('SELECT id, username, show_bets FROM users WHERE LOWER(username) = LOWER(?)').get(targetUsername);
+  if (!targetUser) return null;
+
+  const viewerUser = viewerUsername
+    ? db.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)').get(viewerUsername)
+    : null;
+
+  const bets = getUserBets(targetUser.id, viewerUser?.id || null, eventId);
+  const showBets = targetUser.show_bets || 'always';
+
+  return { bets, showBets, username: targetUser.username };
+}
