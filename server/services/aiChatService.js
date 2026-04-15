@@ -225,7 +225,7 @@ export async function sendToAI(messages, dbContext = {}) {
     if (cohere) {
       try {
         const response = await cohere.chat({
-          model: 'command-r',  // Актуальная модель 2026
+          model: 'command-r-08-2024',  // Актуальная модель 2026
           message: messages[messages.length - 1].content,
           preamble: systemPrompt,
           chatHistory: messages.slice(0, -1).map(msg => ({
@@ -250,29 +250,37 @@ export async function sendToAI(messages, dbContext = {}) {
     // Anthropic Claude - УБРАН (платный после $5 кредитов)
     // Perplexity - УБРАН (требует добавить карту)
 
-    // Пробуем Hugging Face (бесплатный fallback)
+    // Пробуем Hugging Face (новый Router API)
     if (hf) {
       try {
-        // Формируем сообщения для chat completion
-        const chatMessages = [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ];
-
-        const response = await hf.chatCompletion({
-          model: 'mistralai/Mistral-7B-Instruct-v0.2',
-          messages: chatMessages,
-          max_tokens: 1000,
-          temperature: 0.7,
+        // Используем новый Router API Hugging Face
+        const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'meta-llama/Llama-3.1-8B-Instruct',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages
+            ],
+            max_tokens: 1000,
+            temperature: 0.7,
+          }),
         });
 
-        return {
-          success: true,
-          text: response.choices[0].message.content,
-          provider: 'Hugging Face',
-        };
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            success: true,
+            text: data.choices[0].message.content,
+            provider: 'Hugging Face Router',
+          };
+        }
       } catch (hfError) {
-        console.error('❌ Ошибка Hugging Face:', hfError.message);
+        console.error('❌ Ошибка Hugging Face Router:', hfError.message);
       }
     }
 
@@ -280,7 +288,7 @@ export async function sendToAI(messages, dbContext = {}) {
     if (cerebras) {
       try {
         const completion = await cerebras.chat.completions.create({
-          model: 'llama-3.3-70b',
+          model: 'llama3.1-8b', // Рабочая модель
           messages: [
             { role: 'system', content: systemPrompt },
             ...messages
@@ -298,12 +306,13 @@ export async function sendToAI(messages, dbContext = {}) {
       }
     }
 
-    // Пробуем OpenRouter (50 запросов/день бесплатно, много моделей)
+    // Пробуем OpenRouter (бесплатные модели)
     if (openrouter) {
       const orModels = [
-        'meta-llama/llama-3.1-8b-instruct:free',
-        'microsoft/phi-3-mini-128k-instruct:free',
-        'google/gemma-2-9b-it:free',
+        'google/gemma-3n-e4b-it:free',      // Рабочая бесплатная модель
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'google/gemma-3-4b-it:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
       ];
       for (const model of orModels) {
         try {
