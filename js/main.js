@@ -585,6 +585,10 @@ Object.assign(window, {
   // luckyBet
   luckyBetForCurrentRound, updateDicePosition, startDicePositionTracking,
   stopDicePositionTracking, getIconTitle,
+  // ui
+  showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
+  lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
+  openModalWithAnimation, closeModalWithAnimation,
 });
 
 
