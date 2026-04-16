@@ -237,3 +237,36 @@ document.addEventListener('DOMContentLoaded', () => {
     observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
   });
 });
+// ===== СТАТУС СОХРАНЕНИЯ =====
+
+// Показать статус сохранения
+export function showSaveStatus(elementId, status) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  element.style.display = 'block';
+  
+  switch (status) {
+    case 'saving':
+      element.innerHTML = '<div style="color: #ff9800; font-size: 12px;">⏳ Сохранение...</div>';
+      break;
+    case 'saved':
+      element.innerHTML = '<div style="color: #4caf50; font-size: 12px;">✅ Сохранено</div>';
+      setTimeout(() => {
+        element.style.display = 'none';
+      }, 2000);
+      break;
+    case 'disabled':
+      element.innerHTML = '<div style="color: #999; font-size: 12px;">❌ Отключено</div>';
+      setTimeout(() => {
+        element.style.display = 'none';
+      }, 2000);
+      break;
+    case 'error':
+      element.innerHTML = '<div style="color: #f44336; font-size: 12px;">❌ Ошибка</div>';
+      setTimeout(() => {
+        element.style.display = 'none';
+      }, 3000);
+      break;
+  }
+}

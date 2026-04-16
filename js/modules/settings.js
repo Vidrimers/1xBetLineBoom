@@ -1,5 +1,151 @@
 import * as state from './state.js';
-import { showCustomAlert, showCustomConfirm } from './ui.js';
+import { showCustomAlert, showCustomConfirm, showSaveStatus } from './ui.js';
+
+// ===== ЗАГРУЗКА НАСТРОЕК =====
+
+// Загрузить настройки
+export async function loadSettings() {
+  if (!state.currentUser) {
+    document.getElementById('settingsContainer').innerHTML =
+      '<div class="empty-message">Войдите в систему для доступа к настройкам</div>';
+    return;
+  }
+
+  try {
+    // Загружаем текущий Telegram username
+    const response = await fetch(`/api/user/${state.currentUser.id}/telegram`);
+    const data = await response.json();
+    const telegramUsername = data.telegram_username || '';
+
+    // Обновляем currentUser с актуальными данными
+    state.currentUser.telegram_username = telegramUsername;
+
+    // Загружаем все настройки уведомлений
+    const notifResponse = await fetch(
+      `/api/user/${state.currentUser.id}/notifications`
+    );
+    const notifData = await notifResponse.json();
+    const telegramNotificationsEnabled =
+      notifData.telegram_notifications_enabled ?? true;
+    const telegramGroupRemindersEnabled =
+      notifData.telegram_group_reminders_enabled ?? true;
+
+    // Вставляем Telegram username настройку ПЕРЕД чекбоксом уведомлений
+    const settingsContainer = document.getElementById('settingsContainer');
+
+    // Удаляем старый элемент Telegram если он существует
+    const oldTelegramElement = settingsContainer.querySelector(
+      '[id="telegramSettingsElement"]'
+    );
+    if (oldTelegramElement) {
+      oldTelegramElement.remove();
+    }
+
+    const telegramHTML = `
+      <!-- Telegram -->
+      <div id="telegramSettingsElement" class="setting-item" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); position: relative;">
+        <button onclick="openTelegramBindInfoModal()" style="
+          position: absolute;
+          top: 0;
+          right: 0;
+          background: transparent;
+          border: none;
+          border-radius: 6px;
+          border-left: 1px solid rgb(58, 123, 213);
+          border-bottom: 1px solid rgb(58, 123, 213);
+          color: #5a9fd4;
+          width: 28px;
+          height: 28px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+        " onmouseover="this.style.background='transparent'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'" title="Информация о Telegram">❔</button>
+        <div class="setting-label">
+          <span>📱 Telegram</span>
+          ${
+            telegramUsername
+              ? `<a href="https://t.me/${telegramUsername}" target="_blank" class="setting-link">@${telegramUsername}</a>`
+              : ""
+          }
+        </div>
+        <p class="setting-hint">ТГ для уведомлений/напоминаний</p>
+        ${telegramUsername ? `
+        <div class="setting-control">
+          <input type="text" id="telegramUsernameInput" value="${telegramUsername}" placeholder="@username" disabled style="opacity: 0.6; cursor: not-allowed;">
+          <div class="setting-buttons">
+            <button onclick="deleteTelegramUsername()" class="btn-delete">🗑️</button>
+          </div>
+        </div>
+        <p class="setting-hint-small">Информацию можно узнать в <a href="https://t.me/OnexBetLineBoomBot" target="_blank">боте</a></p>
+        ` : `
+        <button 
+          onclick="window.open('https://t.me/OnexBetLineBoomBot?start=link_${state.currentUser.id}', '_blank')" 
+          style="
+            margin-top: 10px;
+            background: rgba(90, 159, 212, 0.2);
+            color: #5a9fd4;
+            border: 1px solid #5a9fd4;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            width: 100%;
+          "
+          onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'; this.style.transform='scale(1.02)'"
+          onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'; this.style.transform='scale(1)'"
+        >
+          🔗 Привязать свой ТГ
+        </button>
+        `}
+      </div>
+    `;
+
+    // Вставляем Telegram настройку в начало контейнера
+    settingsContainer.insertAdjacentHTML('afterbegin', telegramHTML);
+
+    // Инициализируем оба checkbox
+    const notifCheckbox = document.getElementById(
+      'telegramNotificationsCheckbox'
+    );
+    if (notifCheckbox) {
+      notifCheckbox.checked = telegramNotificationsEnabled;
+    }
+
+    const remindersCheckbox = document.getElementById('groupRemindersCheckbox');
+    if (remindersCheckbox) {
+      remindersCheckbox.checked = telegramGroupRemindersEnabled;
+    }
+
+    // Загружаем настройку подтверждения логина через бота
+    const login2faCheckbox = document.getElementById('login2faCheckbox');
+    if (login2faCheckbox) {
+      login2faCheckbox.checked = state.currentUser.require_login_2fa !== 0; // По умолчанию включено
+    }
+
+    // Загружаем настройку звука в LIVE матчах
+    const liveSoundCheckbox = document.getElementById('liveSoundCheckbox');
+    if (liveSoundCheckbox) {
+      liveSoundCheckbox.checked = notifData.live_sound === true; // По умолчанию выключено
+    }
+
+    // Инициализируем часовые поясы
+    await initTimezoneSettings();
+
+    // Загружаем конфигурацию админ-панели для админов
+    if (state.currentUser.isAdmin) {
+      const { loadAdminPanelConfig } = await import('./adminPanel.js');
+      await loadAdminPanelConfig();
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке настроек:', error);
+    // Не очищаем контейнер, чтобы статический HTML остался видимым
+    console.warn('Используем статические настройки из HTML');
+  }
+}
 
 // ===== ЧАСОВЫЕ ПОЯСА =====
 
@@ -302,6 +448,436 @@ export async function updateSstatsIds() {
   } catch (error) {
     console.error('Ошибка:', error);
     await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+  }
+}
+
+// Открыть модальное окно с информацией о привязке Telegram (для настроек залогиненных)
+export async function openTelegramBindInfoModal() {
+  // Блокируем body
+  document.body.style.overflow = 'hidden';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  // Закрытие по клику вне модалки
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+      document.body.style.overflow = '';
+    }
+  });
+  
+  modal.innerHTML = `
+    <div style="
+      background: #1e2a3a;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      position: relative;
+      color: #e0e6f0;
+    ">
+      <button onclick="this.closest('div[style*=fixed]').remove(); document.body.style.overflow = '';" style="
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: transparent;
+        border: none;
+        color: #e0e6f0;
+        font-size: 24px;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
+      
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">📱 Зачем привязывать Telegram?</h3>
+      
+      <div style="line-height: 1.6;">
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔔 Уведомления и напоминания</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Получайте важные уведомления прямо в Telegram:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Напоминания о матчах</strong> — не пропустите начало матча и успейте сделать ставку</li>
+            <li><strong>Результаты матчей</strong> — узнавайте о завершении матчей и своих выигрышах</li>
+            <li><strong>Новые турниры</strong> — будьте в курсе новых турниров и событий</li>
+            <li><strong>Важные обновления</strong> — получайте информацию об изменениях в системе</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔐 Безопасность</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Дополнительная защита вашего аккаунта:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Двухфакторная аутентификация</strong> — подтверждение входа через бота для максимальной безопасности</li>
+            <li><strong>Уведомления о входе</strong> — получайте оповещения о каждом входе в аккаунт</li>
+            <li><strong>Контроль доступа</strong> — мгновенно узнавайте о подозрительной активности</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🤖 Функционал бота</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">Управляйте своим аккаунтом через Telegram:</p>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Быстрый доступ</strong> — просматривайте свою статистику и результаты</li>
+            <li><strong>Управление уведомлениями</strong> — настраивайте, какие уведомления получать</li>
+            <li><strong>Информация о турнирах</strong> — получайте актуальную информацию о текущих турнирах</li>
+            <li><strong>Поддержка</strong> — связывайтесь с администрацией напрямую через бота</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔒 Конфиденциальность</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li>Ваш Telegram используется <strong>только для уведомлений</strong> и связи с вами</li>
+            <li>Мы <strong>не передаем</strong> ваши данные третьим лицам</li>
+            <li>Вы можете <strong>отключить уведомления</strong> в любой момент в настройках</li>
+            <li>Вы можете <strong>отвязать Telegram</strong> в любое время</li>
+          </ul>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🚀 Как привязать?</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
+          <ol style="margin: 5px 0; padding-left: 20px;">
+            <li>Нажмите кнопку <strong>"🔗 Привязать свой ТГ"</strong></li>
+            <li>Откроется бот <strong>@OnexBetLineBoomBot</strong> в Telegram</li>
+            <li>Нажмите <strong>/start</strong> или кнопку "Начать"</li>
+            <li>Бот автоматически привяжет ваш аккаунт</li>
+            <li>Готово! Теперь вы будете получать уведомления</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Удалить Telegram username
+export async function deleteTelegramUsername() {
+  if (!state.currentUser) {
+    await showCustomAlert('Сначала войдите в систему', 'Ошибка', '❌');
+    return;
+  }
+
+  if (!state.currentUser.telegram_username) {
+    await showCustomAlert('Telegram логин не привязан', 'Ошибка', '❌');
+    return;
+  }
+
+  const confirmed = await showCustomConfirm(
+    'Для удаления Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?',
+    'Подтверждение удаления',
+    '⚠️'
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    // Запрашиваем код подтверждения
+    const response = await fetch(`/api/user/${state.currentUser.id}/telegram/request-delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Показываем поле для ввода кода
+      const code = await showCustomPrompt(
+        'Введите код подтверждения, отправленный вам в Telegram:',
+        'Подтверждение',
+        '🔐',
+        'Код из Telegram'
+      );
+      if (!code) return;
+
+      // Подтверждаем удаление
+      const confirmResponse = await fetch(`/api/user/${state.currentUser.id}/telegram/confirm-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation_code: code }),
+      });
+
+      const confirmResult = await confirmResponse.json();
+
+      if (confirmResponse.ok) {
+        await showCustomAlert('Telegram логин успешно удален!', 'Успех', '✅');
+        state.currentUser.telegram_username = null;
+        loadSettings();
+      } else {
+        await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
+      }
+    } else {
+      await showCustomAlert(result.error, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка при удалении Telegram логина:', error);
+    await showCustomAlert('Ошибка при удалении Telegram логина', 'Ошибка', '❌');
+  }
+}
+
+// ===== TELEGRAM УВЕДОМЛЕНИЯ =====
+
+// Открыть детальные настройки Telegram уведомлений (личные)
+export async function openDetailedNotificationsModal() {
+  if (!state.currentUser) {
+    await showCustomAlert('Войдите в систему', 'Ошибка', '❌');
+    return;
+  }
+
+  // Проверяем привязку Telegram
+  if (!state.currentUser.telegram_username) {
+    await showCustomAlert(
+      'Для настройки уведомлений необходимо привязать Telegram аккаунт.\n\nПерейдите в настройки профиля и свяжите свой аккаунт с ботом.',
+      'Telegram не привязан',
+      '📱'
+    );
+    return;
+  }
+
+  const modal = document.getElementById('detailedNotificationsModal');
+  if (modal) {
+    // Загружаем текущие настройки
+    await loadDetailedNotificationSettings();
+    
+    // Блокируем скролл body
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+  }
+}
+
+// Закрыть модальное окно детальных настроек уведомлений
+export function closeDetailedNotificationsModal() {
+  const modal = document.getElementById('detailedNotificationsModal');
+  if (modal) {
+    // Разблокируем скролл body
+    document.body.style.overflow = '';
+    modal.style.display = 'none';
+  }
+}
+
+// Загрузить детальные настройки уведомлений
+export async function loadDetailedNotificationSettings() {
+  if (!state.currentUser) return;
+
+  try {
+    const response = await fetch(`/api/user/${state.currentUser.id}/notification-settings`);
+    
+    if (response.ok) {
+      const settings = await response.json();
+      
+      // Устанавливаем значения чекбоксов
+      document.getElementById('notifMatchReminders').checked = settings.match_reminders !== false;
+      document.getElementById('notifThreeHourReminders').checked = settings.three_hour_reminders !== false;
+      document.getElementById('notifOnlyActiveTournaments').checked = settings.only_active_tournaments === true;
+      document.getElementById('notifTournamentAnnouncements').checked = settings.tournament_announcements !== false;
+      document.getElementById('notifMatchResults').checked = settings.match_results !== false;
+      document.getElementById('notifSystemMessages').checked = settings.system_messages !== false;
+      
+      // Обновляем состояние disabled для зависимой настройки
+      updateOnlyActiveTournamentsState();
+    }
+    
+    // Загружаем настройку уведомлений о просмотре
+    const notifyOnViewResponse = await fetch(`/api/user/${state.currentUser.id}/notify-on-view`);
+    if (notifyOnViewResponse.ok) {
+      const notifyOnViewData = await notifyOnViewResponse.json();
+      document.getElementById('notifOnView').checked = notifyOnViewData.notify_on_view !== 0;
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки настроек уведомлений:', error);
+  }
+}
+
+// Обновить состояние настройки "Только по турнирам с моими ставками"
+export function updateOnlyActiveTournamentsState() {
+  const threeHourRemindersCheckbox = document.getElementById('notifThreeHourReminders');
+  const onlyActiveTournamentsCheckbox = document.getElementById('notifOnlyActiveTournaments');
+  
+  if (threeHourRemindersCheckbox && onlyActiveTournamentsCheckbox) {
+    const isThreeHourRemindersEnabled = threeHourRemindersCheckbox.checked;
+    
+    // Если напоминания за 3 часа включаются - автоматически включаем фильтр
+    if (isThreeHourRemindersEnabled && onlyActiveTournamentsCheckbox.disabled) {
+      onlyActiveTournamentsCheckbox.checked = true;
+    }
+    
+    // Если напоминания за 3 часа выключены - делаем настройку disabled
+    onlyActiveTournamentsCheckbox.disabled = !isThreeHourRemindersEnabled;
+    
+    // Визуально затемняем родительский блок если disabled
+    const parentDiv = onlyActiveTournamentsCheckbox.closest('.notification-setting-item');
+    if (parentDiv) {
+      if (!isThreeHourRemindersEnabled) {
+        parentDiv.style.opacity = '0.5';
+        parentDiv.style.pointerEvents = 'none';
+      } else {
+        parentDiv.style.opacity = '1';
+        parentDiv.style.pointerEvents = 'auto';
+      }
+    }
+  }
+}
+
+// Сохранить детальные настройки уведомлений
+export async function saveDetailedNotificationSettings() {
+  if (!state.currentUser) return;
+
+  const settings = {
+    match_reminders: document.getElementById('notifMatchReminders').checked,
+    three_hour_reminders: document.getElementById('notifThreeHourReminders').checked,
+    only_active_tournaments: document.getElementById('notifOnlyActiveTournaments').checked,
+    tournament_announcements: document.getElementById('notifTournamentAnnouncements').checked,
+    match_results: document.getElementById('notifMatchResults').checked,
+    system_messages: document.getElementById('notifSystemMessages').checked,
+  };
+
+  try {
+    const response = await fetch(`/api/user/${state.currentUser.id}/notification-settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Ошибка сохранения настроек:', error);
+    }
+    
+    // Обновляем состояние disabled для зависимой настройки
+    updateOnlyActiveTournamentsState();
+    
+    // Обновляем видимость кнопки колокольчика если изменилась настройка напоминаний
+    if (state.currentEventId) {
+      const event = state.events.find((e) => e.id === state.currentEventId);
+      const isLocked = event && event.locked_reason;
+      const isUpcoming = event && event.start_date && new Date(event.start_date) > new Date();
+      
+      if (!isLocked && !isUpcoming) {
+        checkMatchRemindersSettingAndUpdateButton();
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка сохранения настроек уведомлений:', error);
+  }
+}
+
+// Проверить настройку "Напоминания о матчах" и обновить видимость кнопки
+export async function checkMatchRemindersSettingAndUpdateButton() {
+  const matchRemindersBtn = document.getElementById('matchRemindersBtn');
+  
+  if (!matchRemindersBtn || !state.currentUser) {
+    if (matchRemindersBtn) matchRemindersBtn.style.display = 'none';
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/user/${state.currentUser.id}/notification-settings`);
+    
+    if (response.ok) {
+      const settings = await response.json();
+      
+      // Если настройка "Напоминания о матчах" выключена - скрываем кнопку
+      if (settings.match_reminders === false) {
+        matchRemindersBtn.style.display = 'none';
+        const { updateReminderIndicator } = await import('./reminders.js');
+        updateReminderIndicator(false);
+      } else {
+        matchRemindersBtn.style.display = 'flex';
+        // Загружаем настройки напоминаний для обновления индикатора
+        const { loadMatchReminders } = await import('./reminders.js');
+        loadMatchReminders();
+      }
+    } else {
+      // Если настроек нет - показываем кнопку (по умолчанию включено)
+      matchRemindersBtn.style.display = 'flex';
+      const { loadMatchReminders } = await import('./reminders.js');
+      loadMatchReminders();
+    }
+  } catch (error) {
+    console.error('Ошибка проверки настроек напоминаний:', error);
+    // При ошибке показываем кнопку
+    matchRemindersBtn.style.display = 'flex';
+    const { loadMatchReminders } = await import('./reminders.js');
+    loadMatchReminders();
+  }
+}
+
+// Сохранить настройку "Уведомления о просмотре"
+export async function saveNotifyOnViewSettings() {
+  if (!state.currentUser) return;
+
+  try {
+    const notifyOnView = document.getElementById('notifOnView').checked ? 1 : 0;
+    await fetch(`/api/user/${state.currentUser.id}/notify-on-view`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notify_on_view: notifyOnView }),
+    });
+  } catch (error) {
+    console.error('Ошибка сохранения настройки уведомлений о просмотре:', error);
+  }
+}
+
+// Сохранить настройки Telegram уведомлений
+export async function saveTelegramNotificationSettings() {
+  try {
+    if (!state.currentUser) {
+      await showCustomAlert('Сначала войдите в систему', 'Ошибка', '❌');
+      return;
+    }
+
+    const checkbox = document.getElementById('telegramNotificationsCheckbox');
+    const enabled = checkbox.checked;
+
+    const response = await fetch('/api/user/telegram-notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: state.currentUser.username,
+        enabled: enabled
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      state.currentUser.telegram_notifications_enabled = enabled ? 1 : 0;
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      
+      console.log(`✅ Настройки Telegram уведомлений сохранены: ${enabled ? 'включены' : 'отключены'}`);
+    } else {
+      console.error('Ошибка сохранения настроек Telegram:', result.error);
+      // Возвращаем чекбокс в предыдущее состояние
+      checkbox.checked = !enabled;
+      await showCustomAlert(result.error || 'Ошибка при сохранении настроек', 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настроек Telegram уведомлений:', error);
+    const checkbox = document.getElementById('telegramNotificationsCheckbox');
+    checkbox.checked = !checkbox.checked; // Возвращаем в предыдущее состояние
+    await showCustomAlert('Ошибка при сохранении настроек', 'Ошибка', '❌');
   }
 }
 

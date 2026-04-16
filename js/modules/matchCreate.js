@@ -445,6 +445,49 @@ export async function submitImportMatches(event) {
   }
 }
 
+// ===== ПАРСИНГ МАТЧЕЙ =====
+
+// Открыть модальное окно парсинга матчей
+export function openBulkParseModal() {
+  if (!state.currentEventId) {
+    alert('❌ Сначала выберите турнир');
+    return;
+  }
+  
+  // Получаем текущий турнир
+  const currentEvent = state.events.find(e => e.id === state.currentEventId);
+  if (!currentEvent) {
+    alert('❌ Не удалось определить текущий турнир');
+    return;
+  }
+  
+  // Определяем код турнира по иконке (если есть соответствующий словарь)
+  // В оригинале был ICON_TO_COMPETITION, но его нет в текущем коде
+  // Пока что просто открываем модальное окно
+  
+  document.getElementById('bulkParseModal').style.display = 'flex';
+  lockBodyScroll();
+  
+  // Сбрасываем форму
+  const parseDateFrom = document.getElementById('parseDateFrom');
+  const parseDateTo = document.getElementById('parseDateTo');
+  const parseRound = document.getElementById('parseRound');
+  const parsePreviewContainer = document.getElementById('parsePreviewContainer');
+  const bulkParseSubmitBtn = document.getElementById('bulkParseSubmitBtn');
+  
+  if (parseDateFrom) parseDateFrom.value = '';
+  if (parseDateTo) parseDateTo.value = '';
+  if (parseRound) parseRound.value = '';
+  if (parsePreviewContainer) parsePreviewContainer.style.display = 'none';
+  if (bulkParseSubmitBtn) bulkParseSubmitBtn.disabled = true;
+}
+
+// Закрыть модальное окно парсинга
+export function closeBulkParseModal() {
+  document.getElementById('bulkParseModal').style.display = 'none';
+  unlockBodyScroll();
+}
+
 // ===== МАССОВОЕ РЕДАКТИРОВАНИЕ ДАТ =====
 
 export async function openBulkEditDatesModal() {

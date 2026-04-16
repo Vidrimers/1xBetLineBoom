@@ -14,6 +14,7 @@ import {
   closeModalOnOutsideClick,
   openModalWithAnimation,
   closeModalWithAnimation,
+  showSaveStatus,
 } from './modules/ui.js';
 import {
   initUser,
@@ -102,6 +103,9 @@ import {
 } from './modules/participants.js';
 import { loadProfile, displayProfile, loadUserAwards, getAwardIcon } from './modules/profile.js';
 import {
+  loadSettings,
+  openTelegramBindInfoModal,
+  deleteTelegramUsername,
   initTimezoneSettings,
   loadUserTimezone,
   saveTimezoneSettings,
@@ -109,6 +113,14 @@ import {
   updateSstatsIds,
   openDeactivateEventsModal,
   deactivateSelectedEvents,
+  saveTelegramNotificationSettings,
+  openDetailedNotificationsModal,
+  closeDetailedNotificationsModal,
+  loadDetailedNotificationSettings,
+  updateOnlyActiveTournamentsState,
+  saveDetailedNotificationSettings,
+  checkMatchRemindersSettingAndUpdateButton,
+  saveNotifyOnViewSettings,
 } from './modules/settings.js';
 import {
   openCreateMatchModal,
@@ -118,6 +130,8 @@ import {
   closeImportMatchesModal,
   updateImportSeparatorPreview,
   submitImportMatches,
+  openBulkParseModal,
+  closeBulkParseModal,
   openBulkEditDatesModal,
   closeBulkEditDatesModal,
   loadBulkEditMatches,
@@ -468,13 +482,19 @@ Object.assign(window, {
   // profile
   loadProfile, displayProfile, loadUserAwards, getAwardIcon,
   // settings
+  loadSettings, openTelegramBindInfoModal, deleteTelegramUsername,
   initTimezoneSettings, loadUserTimezone, saveTimezoneSettings,
   openUpdateSstatsModal, updateSstatsIds, openDeactivateEventsModal,
-  deactivateSelectedEvents,
+  deactivateSelectedEvents, saveTelegramNotificationSettings,
+  openDetailedNotificationsModal, closeDetailedNotificationsModal,
+  loadDetailedNotificationSettings, updateOnlyActiveTournamentsState,
+  saveDetailedNotificationSettings, checkMatchRemindersSettingAndUpdateButton,
+  saveNotifyOnViewSettings,
   // matchCreate
   openCreateMatchModal, closeCreateMatchModal, submitCreateMatch,
   openImportMatchesModal, closeImportMatchesModal, updateImportSeparatorPreview,
-  submitImportMatches, openBulkEditDatesModal, closeBulkEditDatesModal,
+  submitImportMatches, openBulkParseModal, closeBulkParseModal,
+  openBulkEditDatesModal, closeBulkEditDatesModal,
   loadBulkEditMatches, saveBulkEditDates, loadMatchTeams,
   openMatchTeamFileSelector, selectMatchTeamFile, closeMatchTeamFileSelector,
   initTeamAutocomplete, updateSelectedItem, selectTeam, hideSuggestions,
@@ -588,7 +608,7 @@ Object.assign(window, {
   // ui
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
-  openModalWithAnimation, closeModalWithAnimation,
+  openModalWithAnimation, closeModalWithAnimation, showSaveStatus,
 });
 
 

@@ -3,6 +3,7 @@ import { setMatches, setCurrentRoundFilter, setRoundsOrder } from './state.js';
 import { loadRoundsOrder, saveRoundsOrderToStorage, sortRoundsByOrder } from './config.js';
 import { canManageMatches, canEditMatches, canDeleteMatches, canManageResults } from './admin.js';
 import { loadAndDisplayBetStats } from './betStats.js';
+import { showCustomAlert } from './ui.js';
 
 // Форматирование даты/времени матча
 function formatMatchTime(dateStr) {
@@ -1162,4 +1163,3 @@ export async function displayMatches() {
     loadAndDisplayBetStats(match.id, false);
   });
 }
-
