@@ -305,9 +305,6 @@ export async function selectEvent(eventId, eventName) {
           <button id="autoCountingBtn" onclick="toggleAutoCounting(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Автоподсчет">
             A
           </button>
-          <button id="testsBtn" onclick="openTestsModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #ff9800; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Тесты">
-            🧪
-          </button>
         `;
       }
 

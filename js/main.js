@@ -443,9 +443,6 @@ import {
 import {
   toggleAutoCounting,
   loadAutoCountingStatus,
-  openTestsModal,
-  closeTestsModal,
-  testAutoCounting,
 } from './modules/autocounting.js';
 import { switchTab, showMobileSection, toggleMobileMenu } from './modules/tabs.js';
 import { initCustomSelect, setCustomSelectValue } from './modules/customSelect.js';
@@ -665,8 +662,7 @@ Object.assign(window, {
   openTerminalModal, closeTerminalModal, refreshTerminalLogs, escapeHtml,
   clearTerminalLogs, saveTerminalLogs, toggleTerminalAutoScroll,
   // autocounting
-  toggleAutoCounting, loadAutoCountingStatus, openTestsModal, closeTestsModal,
-  testAutoCounting,
+  toggleAutoCounting, loadAutoCountingStatus,
   // tabs
   switchTab, showMobileSection, toggleMobileMenu,
   // customSelect
