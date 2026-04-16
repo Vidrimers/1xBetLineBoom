@@ -1,6 +1,13 @@
 // ===== СЕТКА ПЛЕЙ-ОФФ =====
 
-let currentBracket = null;
+// currentBracket берётся из window (устанавливается js/modules/bracket.js)
+// Геттер/сеттер чтобы js/bracket.js и js/modules/bracket.js работали с одной переменной
+Object.defineProperty(window, 'currentBracket', {
+  get() { return window._currentBracket || null; },
+  set(v) { window._currentBracket = v; },
+  configurable: true
+});
+
 let bracketPredictions = {};
 let bracketResults = {}; // Фактические результаты матчей (для админа)
 let bracketResultsInterval = null; // Интервал для обновления результатов

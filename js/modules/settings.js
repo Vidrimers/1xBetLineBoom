@@ -1254,6 +1254,7 @@ export async function saveLuckyButtonSettings() {
     if (response.ok) {
       state.currentUser.show_lucky_button = showLuckyButton;
       localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      updateLuckyButtonVisibility();
       showSaveStatus('luckyButtonStatus', 'saved');
     } else {
       showSaveStatus('luckyButtonStatus', 'error');
@@ -1352,5 +1353,29 @@ export async function clearLogs() {
   } catch (error) {
     console.error('Ошибка при очистке логов:', error);
     await showCustomAlert('Ошибка при очистке логов', 'Ошибка', '❌');
+  }
+}
+
+// Обновить видимость кнопки "Мне повезет"
+export function updateLuckyButtonVisibility() {
+  const luckyBtnContainer = document.getElementById('luckyBtnContainer');
+  if (luckyBtnContainer && state.currentUser) {
+    const showLuckyButton = state.currentUser.show_lucky_button !== undefined ? state.currentUser.show_lucky_button : 1;
+    if (showLuckyButton === 0) {
+      luckyBtnContainer.style.display = 'none';
+      return;
+    }
+    const event = state.events.find(e => e.id === state.currentEventId);
+    if (event) {
+      const isLocked = event.locked_reason;
+      const isUpcoming = event.start_date && new Date(event.start_date) > new Date();
+      if (isLocked || isUpcoming) {
+        luckyBtnContainer.style.display = 'none';
+      } else {
+        luckyBtnContainer.style.display = 'block';
+      }
+    } else {
+      luckyBtnContainer.style.display = 'block';
+    }
   }
 }

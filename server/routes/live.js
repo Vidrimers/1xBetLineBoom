@@ -507,7 +507,7 @@ router.get("/api/match-details/:matchId", async (req, res) => {
       console.error(`❌ SSTATS_API_KEY не задан в переменных окружения`);
       return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
     }
-    
+
     const url = `${SSTATS_API_BASE}/Games/${matchId}`;
     console.log(`📊 SStats API запрос деталей матча: ${url}`);
     

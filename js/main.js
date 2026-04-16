@@ -130,6 +130,7 @@ import {
   saveXgButtonSettings,
   migrateLogs,
   clearLogs,
+  updateLuckyButtonVisibility,
 } from './modules/settings.js';
 import {
   openCreateMatchModal,
@@ -554,6 +555,7 @@ Object.assign(window, {
   toggleGroupRemindersCardVisibility, saveLogin2faSettings, saveLiveSoundSettings,
   saveShowTournamentWinnerSettings, saveShowBetsSettings, saveLuckyButtonSettings,
   saveXgButtonSettings, migrateLogs, clearLogs,
+  updateLuckyButtonVisibility,
   // matchCreate
   openCreateMatchModal, closeCreateMatchModal, submitCreateMatch,
   openImportMatchesModal, closeImportMatchesModal, updateImportSeparatorPreview,
