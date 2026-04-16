@@ -187,7 +187,7 @@ class AIChat {
       this.addUserMessage(text);
       this.chatInput.value = '';
       setTimeout(() => {
-        this.addAIMessage('Извини, я не отвечаю незнакомым персонажам <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>‍<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>️ Войди в систему, чтобы я мог тебе помочь!');
+        this.addAIMessage('Извини, я не отвечаю незнакомым персонажам <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>‍<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg> Войди в систему, чтобы я мог тебе помочь!');
       }, 500);
       return;
     }

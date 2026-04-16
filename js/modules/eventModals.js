@@ -196,7 +196,7 @@ export async function submitCreateEvent(event) {
     }
   } catch (error) {
     console.error("Ошибка:", error);
-    alert("Ошибка при создании турнира");
+    await showCustomAlert("Ошибка при создании турнира", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -216,7 +216,7 @@ export async function submitEditEvent(event) {
 
   // Проверяем обязательные поля
   if (!eventData.name) {
-    alert("Название турнира обязательно");
+    await showCustomAlert("Название турнира обязательно", "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     return;
   }
 
@@ -251,12 +251,12 @@ export async function submitEditEvent(event) {
     }
   } catch (error) {
     console.error("Ошибка:", error);
-    alert("Ошибка при обновлении турнира");
+    await showCustomAlert("Ошибка при обновлении турнира", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 // Предпросмотр объявления о турнире
-export function previewTournamentAnnouncement(event) {
+export async function previewTournamentAnnouncement(event) {
   event.preventDefault();
   
   // Собираем данные турнира
@@ -266,7 +266,7 @@ export function previewTournamentAnnouncement(event) {
   const endDate = document.getElementById("eventEndDate").value;
   
   if (!name) {
-    alert('Введите название турнира');
+    await showCustomAlert('Введите название турнира', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
   
@@ -339,14 +339,14 @@ export function closeTournamentAnnouncementModal() {
 }
 
 // Форматирование текста в textarea
-export function formatText(type) {
+export async function formatText(type) {
   const textarea = document.getElementById('announcementText');
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
   const selectedText = textarea.value.substring(start, end);
   
   if (!selectedText && (type === 'bold' || type === 'italic' || type === 'code')) {
-    alert('Выделите текст для форматирования');
+    await showCustomAlert('Выделите текст для форматирования', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     return;
   }
   
@@ -457,7 +457,7 @@ export function openAnnouncementModal() {
       formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px;">$1</code>');
       
       // Списки с • или -
-      formatted = formatted.replace(/^[•\-]\s+(.+)$/gm, '  ▪️ $1');
+      formatted = formatted.replace(/^[•\-]\s+(.+)$/gm, '  ▪ $1');
       
       // Цифровые списки
       formatted = formatted.replace(/^(\d+)\.\s+(.+)$/gm, '  <b>$1.</b> $2');
@@ -491,7 +491,7 @@ export async function sendAnnouncementToSelf() {
   const text = document.getElementById('announcementText').value.trim();
   
   if (!title || !text) {
-    alert('Заполните все поля');
+    await showCustomAlert('Заполните все поля', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
   
@@ -513,14 +513,14 @@ export async function sendAnnouncementToSelf() {
       if (typeof showCustomAlert === 'function') {
         showCustomAlert('Тестовое сообщение отправлено вам в Telegram', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       } else {
-        alert('Тестовое сообщение отправлено вам в Telegram');
+        await showCustomAlert('Тестовое сообщение отправлено вам в Telegram', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
       }
     } else {
       alert(result.error || 'Ошибка при отправке');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    alert('Ошибка при отправке');
+    await showCustomAlert('Ошибка при отправке', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -562,21 +562,21 @@ export async function sendAnnouncementToAll() {
           '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
         );
       } else {
-        alert(`Объявление отправлено: ${result.successCount} успешно, ${result.errorCount} ошибок`);
+        await showCustomAlert(`Объявление отправлено: ${result.successCount} успешно, ${result.errorCount} ошибок`, "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       }
     } else {
       alert(result.error || 'Ошибка при отправке');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    alert('Ошибка при отправке');
+    await showCustomAlert('Ошибка при отправке', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 // Отправить объявление о турнире админу
 export async function sendTournamentAnnouncementToAdmin() {
   if (!window.tournamentAnnouncementData) {
-    alert('Ошибка: данные турнира не найдены');
+    await showCustomAlert('Ошибка: данные турнира не найдены', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
   
@@ -597,14 +597,14 @@ export async function sendTournamentAnnouncementToAdmin() {
       if (typeof showCustomAlert === 'function') {
         showCustomAlert('Объявление отправлено админу на проверку', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       } else {
-        alert('Объявление отправлено админу на проверку');
+        await showCustomAlert('Объявление отправлено админу на проверку', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
       }
     } else {
       alert(result.error || 'Ошибка при отправке объявления');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    alert('Ошибка при отправке объявления');
+    await showCustomAlert('Ошибка при отправке объявления', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -680,7 +680,7 @@ export async function openTournamentInfoModal() {
         transition: background 0.2s;
       " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
       
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">ℹ️ Информация о турнире</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">ℹ Информация о турнире</h3>
       
       <div style="line-height: 1.6;">
         <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Система начисления очков</h4>
@@ -758,7 +758,7 @@ export async function openEventTeamFileSelector(mode) {
     const files = await response.json();
 
     if (!files || files.length === 0) {
-      alert('Не найдено файлов команд в папке names');
+      await showCustomAlert('Не найдено файлов команд в папке names', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
       return;
     }
 
@@ -814,12 +814,12 @@ export async function openEventTeamFileSelector(mode) {
     lockBodyScroll();
   } catch (error) {
     console.error('Ошибка при открытии выбора файла:', error);
-    alert('Не удалось загрузить список файлов');
+    await showCustomAlert('Не удалось загрузить список файлов', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 // Выбрать файл команд для турнира
-export function selectEventTeamFile(filePath, mode) {
+export async function selectEventTeamFile(filePath, mode) {
   if (mode === 'create') {
     document.getElementById('eventTeamFile').value = filePath;
   } else if (mode === 'edit') {
@@ -827,7 +827,7 @@ export function selectEventTeamFile(filePath, mode) {
   }
 
   closeEventTeamFileSelector();
-  alert(`Словарь команд выбран: ${filePath.split('/').pop()}\n\nОн будет использоваться по умолчанию при создании матчей в этом турнире.`);
+  await showCustomAlert(`Словарь команд выбран: ${filePath.split('/').pop()}\n\nОн будет использоваться по умолчанию при создании матчей в этом турнире.`, "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
 }
 
 // Закрыть модалку выбора файла для турнира

@@ -115,7 +115,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
       if (typeof showCustomAlert === 'function') {
         await showCustomAlert('Сначала выберите турнир', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       } else {
-        alert('Сначала выберите турнир');
+        await showCustomAlert('Сначала выберите турнир', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
       }
       return;
     }
@@ -125,7 +125,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
       if (typeof showCustomAlert === 'function') {
         await showCustomAlert('Для этого турнира нет сетки плей-офф', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       } else {
-        alert('Для этого турнира нет сетки плей-офф');
+        await showCustomAlert('Для этого турнира нет сетки плей-офф', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
       }
       return;
     }
@@ -154,7 +154,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert('Не удалось загрузить прогнозы сетки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
-      alert('Не удалось загрузить прогнозы сетки');
+      await showCustomAlert('Не удалось загрузить прогнозы сетки', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   }
 }

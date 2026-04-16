@@ -1,6 +1,7 @@
 import { terminalRefreshInterval, terminalAutoScroll } from './state.js';
 import * as state from './state.js';
 import { setTerminalRefreshInterval, setTerminalAutoScroll } from './state.js';
+import { showCustomAlert } from './ui.js';
 
 // ===== ТЕРМИНАЛ =====
 
@@ -62,19 +63,19 @@ export async function refreshTerminalLogs() {
             let className = "";
 
             // Определяем цвет в зависимости от типа лога
-            if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>") || line.includes("ERROR")) {
+            if (line.includes('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>') || line.includes("ERROR")) {
               color = "#ff3333"; // красный для ошибок
               className = "error";
-            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️") || line.includes("WARN")) {
+            } else if (line.includes('<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>') || line.includes("WARN")) {
               color = "#ffff00"; // жёлтый для предупреждений
               className = "warn";
-            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>") || line.includes("успешно")) {
+            } else if (line.includes('<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>') || line.includes("успешно")) {
               color = "#00ff00"; // зелёный для успеха
               className = "success";
-            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>") || line.includes("сообщение")) {
+            } else if (line.includes('<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>') || line.includes("сообщение")) {
               color = "#00ffff"; // голубой для сообщений
               className = "info";
-            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>") || line.includes("Telegram")) {
+            } else if (line.includes('<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>') || line.includes("Telegram")) {
               color = "#00bfff"; // синий для телеграма
               className = "telegram";
             } else if (line.includes("[")) {
@@ -119,7 +120,7 @@ export async function clearTerminalLogs() {
 
     const content = document.getElementById("terminalContent");
     if (content) {
-      content.textContent = "[<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Логи очищены]";
+      content.textContent = "[Логи очищены]";
     }
 
     // Обновляем логи через 500мс
@@ -138,7 +139,7 @@ export async function saveTerminalLogs() {
 
     const data = await response.json();
     if (!data.logs) {
-      alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Нет логов для сохранения");
+      await showCustomAlert("Нет логов для сохранения", "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       return;
     }
 
@@ -159,7 +160,7 @@ export async function saveTerminalLogs() {
     console.log("✅ Логи сохранены на ПК");
   } catch (error) {
     console.error("Ошибка при сохранении логов:", error);
-    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при сохранении логов: " + error.message);
+    alert("Ошибка при сохранении логов: " + error.message);
   }
 }
 
@@ -171,14 +172,14 @@ export function toggleTerminalAutoScroll() {
     if (state.terminalAutoScroll) {
       btn.style.background = "rgba(76, 175, 80, 0.7)";
       btn.style.borderColor = "#4caf50";
-      btn.textContent = "⬇️ Auto";
+      btn.textContent = "⬇ Auto";
       // Сразу скроллим вниз
       const content = document.getElementById("terminalContent");
       if (content) content.scrollTop = content.scrollHeight;
     } else {
       btn.style.background = "rgba(255, 87, 34, 0.7)";
       btn.style.borderColor = "#ff5722";
-      btn.textContent = "⏸️ Стоп";
+      btn.textContent = "⏸ Стоп";
     }
   }
 }

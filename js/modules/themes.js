@@ -34,7 +34,7 @@ export function previewTheme(themeName) {
 // Сохранить выбранную тему
 export async function saveTheme() {
   if (!currentUser) {
-    alert("Сначала войдите в систему");
+    await showCustomAlert("Сначала войдите в систему", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 

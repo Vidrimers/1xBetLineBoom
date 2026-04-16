@@ -227,7 +227,7 @@ function openEditBracketModal(bracket) {
   if (stageSelect) stageSelect.value = bracket.start_stage || 'round_of_16';
 
   const modalTitle = modal.querySelector('.modal-header h2');
-  if (modalTitle) modalTitle.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️ Редактировать сетку плей-офф';
+  if (modalTitle) modalTitle.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактировать сетку плей-офф';
 
   if (stageSelect) {
     stageSelect.onchange = () => renderLockDatesFields(bracket.lock_dates || {});
@@ -383,7 +383,7 @@ export async function closeBracketModal() {
     const action = await showCustomSaveConfirm(
       'У вас есть несохраненные изменения!\n\nЧто вы хотите сделать?',
       'Несохраненные изменения',
-      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
     );
 
     if (action === 'cancel') return;
@@ -433,7 +433,7 @@ export async function openCreateBracketModal() {
   }
 
   if (!state.currentEventId) {
-    await showCustomAlert('Сначала выберите турнир', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
+    await showCustomAlert('Сначала выберите турнир', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 

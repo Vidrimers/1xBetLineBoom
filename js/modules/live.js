@@ -718,7 +718,7 @@ function stopLiveMatchesAutoUpdate() {
   if (liveMatchesUpdateInterval) {
     clearInterval(liveMatchesUpdateInterval);
     liveMatchesUpdateInterval = null;
-    console.log('⏹️ Автообновление LIVE матчей остановлено');
+    console.log('⏹ Автообновление LIVE матчей остановлено');
   }
 }
 

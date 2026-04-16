@@ -167,7 +167,7 @@ export async function displayTournaments(events) {
       const iconHtml =
         event.icon && event.icon.startsWith("img/")
           ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
-          : event.icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
+          : event.icon || '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
       return `
     <div class="event-card" onclick="loadTournamentParticipants(${
       event.id
@@ -184,7 +184,7 @@ export async function displayTournaments(events) {
       const iconHtml =
         event.icon && event.icon.startsWith("img/")
           ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
-          : event.icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
+          : event.icon || '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
       
       const startDateText = event.start_date 
         ? `<div class="event-card-start-date"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Начало: ${new Date(event.start_date).toLocaleDateString('ru-RU')}</div>`
@@ -227,7 +227,7 @@ export async function displayTournaments(events) {
       const iconHtml =
         event.icon && event.icon.startsWith("img/")
           ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
-          : event.icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
+          : event.icon || '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
 
       return `
     <div class="event-card locked" onclick="loadTournamentParticipants(${
@@ -351,7 +351,7 @@ export function stopTournamentParticipantsPolling() {
   if (state.tournamentParticipantsInterval) {
     clearInterval(state.tournamentParticipantsInterval);
     setTournamentParticipantsInterval(null);
-    console.log('⏹️ Остановлено автообновление рейтинга участников');
+    console.log('⏹ Остановлено автообновление рейтинга участников');
   }
 }
 
@@ -658,7 +658,7 @@ export async function showTournamentParticipantBets(userId, username, eventId) {
             console.log(`✅ Загружен словарь для ${competition}: ${Object.keys(teamTranslations).length} команд`);
           }
         } catch (err) {
-          console.warn(`⚠️ Не удалось загрузить словарь из ${dictionaryFile}`);
+          console.warn(`⚠ Не удалось загрузить словарь из ${dictionaryFile}`);
         }
       }
     }
@@ -682,7 +682,7 @@ export async function showTournamentParticipantBets(userId, username, eventId) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Ошибка ответа:", errorText);
-      alert("Не удалось загрузить ставки");
+      await showCustomAlert("Не удалось загрузить ставки", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
 
@@ -822,7 +822,7 @@ export async function showTournamentParticipantBets(userId, username, eventId) {
     document.body.style.overflow = 'hidden';
   } catch (error) {
     console.error("Ошибка при загрузке ставок турнира:", error);
-    alert("Ошибка при загрузке ставок");
+    await showCustomAlert("Ошибка при загрузке ставок", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

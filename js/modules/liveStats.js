@@ -59,7 +59,7 @@ export async function loadPlayerNamesDict(tournamentCode) {
       currentPlayersDictTournament = null;
     }
   } catch (error) {
-    console.warn('⚠️ Не удалось загрузить словарь имен игроков:', error);
+    console.warn('⚠ Не удалось загрузить словарь имен игроков:', error);
     playerNamesDict = {};
     currentPlayersDictTournament = null;
   }
@@ -69,7 +69,7 @@ export async function loadPlayerNamesDict(tournamentCode) {
 
 export function translatePlayerName(englishName) {
   if (!playerNamesDict || !englishName) {
-    console.log(`⚠️ Перевод невозможен: dict=${!!playerNamesDict}, name=${englishName}`);
+    console.log(`⚠ Перевод невозможен: dict=${!!playerNamesDict}, name=${englishName}`);
     return englishName;
   }
 
@@ -102,7 +102,7 @@ export async function showLiveTeamStats(matchData) {
         await loadPlayerNamesDict(tournamentCode);
       }
     } catch (err) {
-      console.warn('⚠️ Не удалось загрузить словарь игроков:', err);
+      console.warn('⚠ Не удалось загрузить словарь игроков:', err);
     }
   }
 
@@ -148,14 +148,14 @@ export async function showLiveTeamStats(matchData) {
         await displayDetailedStats(details, matchData);
         return;
       } else {
-        console.warn('⚠️ Не удалось загрузить детали:', {
+        console.warn('⚠ Не удалось загрузить детали:', {
           status: detailsResponse.status,
           statusText: detailsResponse.statusText,
           matchId: matchData.id
         });
       }
     } else {
-      console.log('ℹ️ У матча нет SStats ID (sstats_match_id), показываем базовую статистику');
+      console.log('ℹ У матча нет SStats ID (sstats_match_id), показываем базовую статистику');
     }
 
     displayBasicStats(matchData);

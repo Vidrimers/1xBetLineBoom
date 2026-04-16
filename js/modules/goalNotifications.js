@@ -17,7 +17,7 @@ export function closeGoalNotification(matchId) {
 
   const notification = container.querySelector(`[data-match-id="${matchId}"]`);
   if (notification) {
-    console.log(`🗑️ Ручное закрытие карточки матча ${matchId}`);
+    console.log(`🗑 Ручное закрытие карточки матча ${matchId}`);
     notification.classList.add('removing');
     setTimeout(() => notification.remove(), 300);
 
@@ -45,7 +45,7 @@ export function showGoalNotification(match) {
 
   const existingNotification = container.querySelector(`[data-match-id="${match.id}"]`);
   if (existingNotification) {
-    console.log('⚠️ Карточка уже существует, пропускаем создание');
+    console.log('⚠ Карточка уже существует, пропускаем создание');
     return;
   }
 
@@ -89,7 +89,7 @@ export function showGoalNotification(match) {
   notification.style.cursor = 'pointer';
   notification.addEventListener('click', (e) => {
     if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
-      console.log('🖱️ Клик по карточке избранного, открываем статистику для матча:', match.id);
+      console.log('🖱 Клик по карточке избранного, открываем статистику для матча:', match.id);
       const matchData = {
         id: match.id,
         team1: match.team1,
@@ -168,7 +168,7 @@ export function processMatches(matches, favorites, isDesktop) {
   const foundMatchIds = matches.map(m => m.id);
 
   if (isDesktop) {
-    console.log('🖥️ ДЕСКТОП: Обработка матчей...');
+    console.log('🖥 ДЕСКТОП: Обработка матчей...');
     matches.forEach(match => {
       const previousScore = matchScores[match.id];
       const currentScore = match.score || '0:0';
@@ -187,13 +187,13 @@ export function processMatches(matches, favorites, isDesktop) {
       }
 
       if (deletedFinishedMatches.has(match.id)) {
-        console.log(`⏭️ Пропускаем матч ${match.id} - уже был удален после завершения`);
+        console.log(`⏭ Пропускаем матч ${match.id} - уже был удален после завершения`);
         return;
       }
 
       if (isFinished && !matchFinishTimes[match.id]) {
         matchFinishTimes[match.id] = Date.now();
-        console.log(`⏱️ Матч ${match.id} завершен, запускаем таймер на 1 минуту`);
+        console.log(`⏱ Матч ${match.id} завершен, запускаем таймер на 1 минуту`);
 
         setTimeout(() => {
           const container = document.getElementById('goalNotifications');
@@ -214,7 +214,7 @@ export function processMatches(matches, favorites, isDesktop) {
             favs.splice(idx, 1);
             localStorage.setItem('favoriteMatches', JSON.stringify(favs));
             localStorage.removeItem(`favoriteMatch_${match.id}`);
-            console.log(`🗑️ Матч ${match.id} удален из избранного (завершен)`);
+            console.log(`🗑 Матч ${match.id} удален из избранного (завершен)`);
           }
 
           deletedFinishedMatches.add(match.id);
@@ -249,7 +249,7 @@ export function processMatches(matches, favorites, isDesktop) {
       existingNotifications.forEach(notification => {
         const matchId = parseInt(notification.getAttribute('data-match-id'));
         if (!foundMatchIds.includes(matchId)) {
-          console.log(`🗑️ Удаляем карточку уведомления для матча ${matchId} (убран из избранного)`);
+          console.log(`🗑 Удаляем карточку уведомления для матча ${matchId} (убран из избранного)`);
           notification.classList.add('removing');
           setTimeout(() => notification.remove(), 300);
           delete matchFinishTimes[matchId];
@@ -286,7 +286,7 @@ export function updateDesktopNotification(match) {
   let notification = container.querySelector(`[data-match-id="${match.id}"]`);
 
   if (notification) {
-    console.log('♻️ Обновляем существующую карточку');
+    console.log('♻ Обновляем существующую карточку');
 
     const scoreElement = notification.querySelector('.goal-notification-score');
     const currentScore = scoreElement?.textContent || '';

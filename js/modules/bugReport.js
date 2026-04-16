@@ -17,7 +17,7 @@ let currentBugReportFilter = 'new';
 // Открыть модальное окно багрепорта
 export function openBugReportModal() {
   if (!state.currentUser) {
-    showCustomAlert("Войдите в систему, чтобы отправить сообщение об ошибке", "Требуется вход", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    showCustomAlert("Войдите в систему, чтобы отправить сообщение об ошибке", "Требуется вход", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -58,14 +58,14 @@ export async function addBugReportImages(files) {
   const maxSizeBytes = 1024 * 1024; // 1 МБ
 
   if (bugReportImages.length >= maxImages) {
-    await showCustomAlert(`Максимум ${maxImages} изображений`, "Ограничение", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    await showCustomAlert(`Максимум ${maxImages} изображений`, "Ограничение", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
   const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
   if (imageFiles.length === 0) {
-    await showCustomAlert("Выберите изображения", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Выберите изображения", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -76,7 +76,7 @@ export async function addBugReportImages(files) {
     await showCustomAlert(
       `Можно добавить только ${availableSlots} изображений. Остальные будут пропущены.`,
       "Ограничение",
-      "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️"
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
     );
   }
 
@@ -91,7 +91,7 @@ export async function addBugReportImages(files) {
       });
     } catch (error) {
       console.error('Ошибка обработки изображения:', error);
-      await showCustomAlert(`Ошибка обработки ${file.name}`, "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+      await showCustomAlert(`Ошибка обработки ${file.name}`, "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   }
 
@@ -242,14 +242,14 @@ function blobToBase64(blob) {
 // Отправить багрепорт
 export async function sendBugReport() {
   if (!state.currentUser) {
-    await showCustomAlert("Войдите в систему", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Войдите в систему", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   const bugText = document.getElementById("bugReportText").value.trim();
 
   if (!bugText) {
-    await showCustomAlert("Пожалуйста, опишите проблему", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    await showCustomAlert("Пожалуйста, опишите проблему", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -276,14 +276,14 @@ export async function sendBugReport() {
       await showCustomAlert(
         "Спасибо за сообщение! Администратор получил ваш отчет об ошибке.",
         "Отправлено",
-        "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
+        '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
       );
     } else {
-      await showCustomAlert(result.error || "Ошибка при отправке", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+      await showCustomAlert(result.error || "Ошибка при отправке", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("Ошибка при отправке багрепорта:", error);
-    await showCustomAlert("Ошибка при отправке сообщения", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Ошибка при отправке сообщения", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -531,11 +531,11 @@ export async function changeBugStatus(id, status) {
     if (response.ok) {
       await loadBugReports();
     } else {
-      await showCustomAlert(result.error || "Ошибка при обновлении статуса", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+      await showCustomAlert(result.error || "Ошибка при обновлении статуса", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("Ошибка при изменении статуса:", error);
-    await showCustomAlert("Ошибка при обновлении статуса", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Ошибка при обновлении статуса", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -546,7 +546,7 @@ export async function deleteBugReport(id) {
   const confirmed = await showCustomConfirm(
     "Вы уверены, что хотите удалить этот багрепорт? Все связанные изображения также будут удалены.",
     "Подтверждение удаления",
-    "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️"
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
   );
 
   if (!confirmed) return;
@@ -561,14 +561,14 @@ export async function deleteBugReport(id) {
     const result = await response.json();
 
     if (response.ok) {
-      await showCustomAlert("Багрепорт успешно удален", "Успех", "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>");
+      await showCustomAlert("Багрепорт успешно удален", "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       await loadBugReports();
     } else {
-      await showCustomAlert(result.error || "Ошибка при удалении", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+      await showCustomAlert(result.error || "Ошибка при удалении", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("Ошибка при удалении багрепорта:", error);
-    await showCustomAlert("Ошибка при удалении багрепорта", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Ошибка при удалении багрепорта", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -583,7 +583,7 @@ export async function openBugReportImagesModal(bugReportId, startIndex = 0) {
     const report = bugReports.find(r => r.id === bugReportId);
 
     if (!report || !report.images || report.images.length === 0) {
-      await showCustomAlert("Изображения не найдены", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+      await showCustomAlert("Изображения не найдены", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
 
@@ -601,7 +601,7 @@ export async function openBugReportImagesModal(bugReportId, startIndex = 0) {
     modal.style.display = 'flex';
   } catch (error) {
     console.error("Ошибка при открытии изображений:", error);
-    await showCustomAlert("Ошибка при загрузке изображений", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Ошибка при загрузке изображений", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

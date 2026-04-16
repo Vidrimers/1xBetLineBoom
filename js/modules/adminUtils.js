@@ -10,7 +10,7 @@ export async function runUtilityScript(scriptName) {
     'clear-processed-dates': {
       title: 'Очистка обработанных дат',
       message: 'Вы уверены что хотите очистить все обработанные даты?\n\nЭто позволит автоподсчету запуститься повторно для уже подсчитанных дат.',
-      icon: '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+      icon: '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
     }
   };
 
@@ -33,13 +33,13 @@ export async function runUtilityScript(scriptName) {
 
     if (data.success) {
       const formattedOutput = formatUtilityOutput(data.output);
-      await showCustomAlert(formattedOutput, data.title, "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>");
+      await showCustomAlert(formattedOutput, data.title, '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
-      await showCustomAlert(data.error, "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+      await showCustomAlert(data.error, "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка запуска утилиты:', error);
-    await showCustomAlert(error.message, "Ошибка запуска утилиты", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert(error.message, "Ошибка запуска утилиты", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -71,7 +71,7 @@ export async function openDatesManagementModal() {
         <button onclick="loadDatesData('matches')" style="flex:1;background:#673ab7;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-label="Иконка"><use href="#icon-matches"></use></svg> Даты матчей</button>
       </div>
       <div style="display:flex;gap:10px;">
-        <button onclick="clearProcessedDates()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-label="Удалить"><use href="#icon-delete"></use></svg>️ Очистить даты</button>
+        <button onclick="clearProcessedDates()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-label="Удалить"><use href="#icon-delete"></use></svg> Очистить даты</button>
         <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:#607d8b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">Закрыть</button>
       </div>
     </div>
@@ -123,7 +123,7 @@ export async function clearProcessedDates() {
     const dates = data.dates || [];
 
     if (dates.length === 0) {
-      await showCustomAlert('Нет обработанных дат для очистки', 'Информация', 'ℹ️');
+      await showCustomAlert('Нет обработанных дат для очистки', 'Информация', 'ℹ');
       return;
     }
 
@@ -134,7 +134,7 @@ export async function clearProcessedDates() {
     content.style.cssText = 'background:#1e1e1e;padding:30px;border-radius:12px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.5);';
 
     content.innerHTML = `
-      <h2 style="margin:0 0 20px 0;color:#fff;"><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️ Очистка обработанных дат</h2>
+      <h2 style="margin:0 0 20px 0;color:#fff;"><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Очистка обработанных дат</h2>
       <p style="color:#b0b8c8;margin-bottom:20px;">Выберите даты которые нужно очистить. Автоподсчет пересчитает их при следующей проверке (каждые 5 минут).</p>
       <div style="margin-bottom:20px;">
         <label style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(90,159,212,0.1);border-radius:6px;cursor:pointer;margin-bottom:10px;">
@@ -186,7 +186,7 @@ export async function clearProcessedDates() {
     content.querySelector('#clearAllBtn').addEventListener('click', async () => {
       const confirmed = await showCustomConfirm(
         'Вы уверены что хотите очистить ВСЕ обработанные даты?\n\nЭто позволит автоподсчету запуститься повторно для всех дат.',
-        'Очистка всех дат', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+        'Очистка всех дат', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
       );
 
       if (!confirmed) return;
@@ -219,13 +219,13 @@ export async function clearProcessedDates() {
       const selectedDates = Array.from(dateCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
 
       if (selectedDates.length === 0) {
-        await showCustomAlert('Выберите хотя бы одну дату', 'Внимание', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
+        await showCustomAlert('Выберите хотя бы одну дату', 'Внимание', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
         return;
       }
 
       const confirmed = await showCustomConfirm(
         'Вы уверены что хотите очистить ' + selectedDates.length + ' дат?\n\nАвтоподсчет пересчитает их при следующей проверке.',
-        'Очистка выбранных дат', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+        'Очистка выбранных дат', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
       );
 
       if (!confirmed) return;

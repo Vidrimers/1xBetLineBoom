@@ -33,7 +33,7 @@ export function toggleFinalMatch(modal) {
 // ===== РЕДАКТИРОВАНИЕ МАТЧА =====
 
 export async function openEditMatchModal(id, team1, team2, date, round) {
-  if (!canEditMatches()) { alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Только администратор или модератор может редактировать матчи'); return; }
+  if (!canEditMatches()) { await showCustomAlert('Только администратор или модератор может редактировать матчи', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>'); return; }
   const match = state.matches.find(m => m.id === id);
   document.getElementById('editMatchId').value = id;
   document.getElementById('editMatchTeam1').value = team1;
@@ -109,7 +109,7 @@ export async function submitEditMatch(event) {
   const showPenaltiesInGame = document.getElementById('editShowPenaltiesInGame').checked;
   const showExtraTime = document.getElementById('editShowExtraTime').checked;
   const showPenaltiesAtEnd = document.getElementById('editShowPenaltiesAtEnd').checked;
-  if (!team1 || !team2) { alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Заполните названия обеих команд'); return; }
+  if (!team1 || !team2) { await showCustomAlert('Заполните названия обеих команд', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   try {
     let matchDateUTC = null;
     if (date) {
@@ -162,17 +162,17 @@ export async function submitEditMatch(event) {
       await loadMyBets();
       displayMatches();
     } else {
-      alert(`<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ${result.error}`);
+      await showCustomAlert(`Ошибка: ${result.error}`, "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка при редактировании матча:', error);
-    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при редактировании матча');
+    await showCustomAlert('Ошибка при редактировании матча', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 export async function deleteMatch(id) {
   if (!canManageMatches()) { await showCustomAlert('Только администратор или модератор может удалять матчи', 'Недостаточно прав', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
-  const confirmed = await showCustomConfirm('Вы уверены, что хотите удалить этот матч?\n\nВсе ставки на этот матч также будут удалены.', 'Удаление матча', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
+  const confirmed = await showCustomConfirm('Вы уверены, что хотите удалить этот матч?\n\nВсе ставки на этот матч также будут удалены.', 'Удаление матча', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
   if (!confirmed) return;
   try {
     const response = await fetch(`/api/admin/matches/${id}`, {
@@ -239,7 +239,7 @@ export function openFinalMatchResultModal(matchId) {
     if (match.show_red_cards) parametersHTML += `<div style="padding: 10px; background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 6px;"><label style="color: #f44336; font-size: 0.85em; display: block; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Красные</label><input type="number" id="param_red_cards" min="0" max="10" placeholder="0" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;"></div>`;
     if (match.show_corners) parametersHTML += `<div style="padding: 10px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px;"><label style="color: #4caf50; font-size: 0.85em; display: block; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Угловые</label><input type="number" id="param_corners" min="0" max="30" placeholder="8" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;"></div>`;
     if (match.show_penalties_in_game) parametersHTML += `<div style="padding: 10px; background: rgba(156, 39, 176, 0.1); border: 1px solid rgba(156, 39, 176, 0.3); border-radius: 6px;"><label style="color: #9c27b0; font-size: 0.85em; display: block; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в игре</label><select id="param_penalties_in_game" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;"><option value="">-- Выбрать --</option><option value="ДА">ДА</option><option value="НЕТ">НЕТ</option></select></div>`;
-    if (match.show_extra_time) parametersHTML += `<div style="padding: 10px; background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 6px;"><label style="color: #2196f3; font-size: 0.85em; display: block; margin-bottom: 6px;">⏱️ Доп. время</label><select id="param_extra_time" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;"><option value="">-- Выбрать --</option><option value="ДА">ДА</option><option value="НЕТ">НЕТ</option></select></div>`;
+    if (match.show_extra_time) parametersHTML += `<div style="padding: 10px; background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 6px;"><label style="color: #2196f3; font-size: 0.85em; display: block; margin-bottom: 6px;">⏱ Доп. время</label><select id="param_extra_time" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;"><option value="">-- Выбрать --</option><option value="ДА">ДА</option><option value="НЕТ">НЕТ</option></select></div>`;
     if (match.show_penalties_at_end) parametersHTML += `<div style="padding: 10px; background: rgba(255, 87, 34, 0.1); border: 1px solid rgba(255, 87, 34, 0.3); border-radius: 6px;"><label style="color: #ff5722; font-size: 0.85em; display: block; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Пенальти в конце</label><select id="param_penalties_at_end" style="width: 100%; padding: 6px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px; font-size: 0.9em;"><option value="">-- Выбрать --</option><option value="ДА">ДА</option><option value="НЕТ">НЕТ</option></select></div>`;
     parametersHTML += '</div>';
     container.innerHTML = parametersHTML;
@@ -274,7 +274,7 @@ export function setFinalResult(result) {
 }
 
 export async function saveFinalMatchResult() {
-  if (!currentFinalMatchId || !currentFinalResult) { alert('Выберите результат матча'); return; }
+  if (!currentFinalMatchId || !currentFinalResult) { await showCustomAlert('Выберите результат матча', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   const match = state.matches.find(m => m.id === currentFinalMatchId);
   if (!match) return;
   try {
@@ -308,7 +308,7 @@ export async function saveFinalMatchResult() {
     setTimeout(() => { loadMyBets(); }, 300);
   } catch (error) {
     console.error('Ошибка при сохранении результата:', error);
-    alert('Ошибка при сохранении результата');
+    await showCustomAlert('Ошибка при сохранении результата', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -374,7 +374,7 @@ export function closeScoreMatchResultModal() {
 
 export async function saveScoreMatchResult() {
   if (!currentScoreMatchId) return;
-  if (!currentScoreMatchResult) { await showCustomAlert('Выберите победителя', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'); return; }
+  if (!currentScoreMatchResult) { await showCustomAlert('Выберите победителя', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   const scoreTeam1 = parseInt(document.getElementById('scoreModalTeam1').value) || 0;
   const scoreTeam2 = parseInt(document.getElementById('scoreModalTeam2').value) || 0;
   if (currentScoreMatchResult === 'team1' && scoreTeam1 <= scoreTeam2) {

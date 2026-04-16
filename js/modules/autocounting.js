@@ -9,7 +9,7 @@ import { loadMatches } from './matches.js';
  */
 export async function toggleAutoCounting() {
   if (!state.currentUser || !state.currentUser.isAdmin) {
-    alert('Недостаточно прав');
+    await showCustomAlert('Недостаточно прав', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     return;
   }
 
@@ -39,8 +39,8 @@ export async function toggleAutoCounting() {
 
       await showCustomAlert(
         data.message,
-        newStatus ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Включено' : '⏸️ Выключено',
-        newStatus ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' : '⏸️'
+        newStatus ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Включено' : '⏸ Выключено',
+        newStatus ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' : '⏸'
       );
     } else {
       const error = await response.json();

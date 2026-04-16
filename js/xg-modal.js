@@ -30,7 +30,7 @@ export async function openXgModal() {
     await showCustomAlert(
       'Пожалуйста, выберите конкретный тур для просмотра прогнозов xG.\n\nЭто поможет сэкономить лимит запросов к API.',
       'Выберите тур',
-      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
     );
     return;
   }
@@ -75,14 +75,14 @@ export async function openXgModal() {
       console.error('❌ Ошибка при заполнении sstats_match_id:', await fillResponse.text());
     }
   } catch (err) {
-    console.warn('⚠️ Не удалось заполнить sstats_match_id:', err);
+    console.warn('⚠ Не удалось заполнить sstats_match_id:', err);
   }
   
   // Получаем матчи текущего тура (после возможного обновления)
   const matchesForRound = state.matches.filter(m => m.round === currentRound);
   
   if (matchesForRound.length === 0) {
-    await showCustomAlert('Нет матчей для отображения прогнозов', 'Информация', 'ℹ️');
+    await showCustomAlert('Нет матчей для отображения прогнозов', 'Информация', 'ℹ');
     return;
   }
   
@@ -277,7 +277,7 @@ export function closeXgModal() {
 // Переключить видимость кнопки xG для всех пользователей (только для админа)
 export async function toggleXgButton() {
   if (!state.currentUser || !state.currentUser.isAdmin) {
-    await showCustomAlert("У вас нет прав для этого действия", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("У вас нет прав для этого действия", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');;
     return;
   }
 
@@ -335,7 +335,7 @@ export async function refreshXgData() {
   const confirmed = await showXgConfirm(
     'Частые запросы на сервер парсинга нежелательны, поэтому обновление данных ограничено один раз в 6 часов.\n\nВы уверены что хотите обновить данные?',
     'Обновление данных xG',
-    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
   );
   
   if (!confirmed) {
@@ -349,7 +349,7 @@ export async function refreshXgData() {
   const matchesForRound = state.matches.filter(m => m.round === currentRound);
   
   if (matchesForRound.length === 0) {
-    await showCustomAlert('Нет матчей для обновления', 'Информация', 'ℹ️');
+    await showCustomAlert('Нет матчей для обновления', 'Информация', 'ℹ');
     return;
   }
   
@@ -390,7 +390,7 @@ export async function refreshXgData() {
     await showCustomAlert(
       'Данные были обновлены менее 6 часов назад. Пожалуйста, подождите перед следующим обновлением.',
       'Слишком частое обновление',
-      '⏱️'
+      '⏱'
     );
     return;
   }

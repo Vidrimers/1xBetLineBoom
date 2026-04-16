@@ -9,6 +9,7 @@ import {
   currentEventId,
   iconTitles,
 } from './state.js';
+import { showCustomAlert } from './ui.js';
 
 // TODO (таск 19): добавить импорт после создания matches.js:
 import { getMatchStatusByDate } from './matches.js';
@@ -100,11 +101,11 @@ export { iconTitles };
 
 export async function luckyBetForCurrentRound() {
   if (!currentUser) {
-    alert("Сначала войдите в аккаунт");
+    await showCustomAlert("Сначала войдите в аккаунт", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
   if (!currentRoundFilter || currentRoundFilter === "all") {
-    alert("Сначала выберите тур");
+    await showCustomAlert("Сначала выберите тур", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
   // Находим все матчи выбранного тура, которые еще не завершены/отменены и на которые пользователь не ставил
@@ -116,7 +117,7 @@ export async function luckyBetForCurrentRound() {
       !userBets.some((b) => b.match_id === m.id)
   );
   if (matchesToBet.length === 0) {
-    alert("Нет доступных матчей для случайной ставки в этом туре");
+    await showCustomAlert("Нет доступных матчей для случайной ставки в этом туре", "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     return;
   }
   

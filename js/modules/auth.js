@@ -52,7 +52,7 @@ export function moveAuthButtonToLoginForm() {
       userInput.appendChild(authBtn);
     }
   } catch (e) {
-    console.warn('⚠️ Не удалось переместить кнопку авторизации:', e);
+    console.warn('⚠ Не удалось переместить кнопку авторизации:', e);
   }
 }
 
@@ -169,7 +169,7 @@ export async function loginFromModal() {
   const username = document.getElementById('usernameModal')?.value.trim();
 
   if (!username) {
-    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -284,7 +284,7 @@ export async function initUser() {
   }
 
   if (!username) {
-    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -303,7 +303,7 @@ export async function initUser() {
       body: JSON.stringify({ attemptedUsername: username }),
     }).catch((err) => console.error("Ошибка отправки уведомления:", err));
 
-    await showCustomAlert("Ну, ты давай не охуевай совсем, малютка", "Доступ запрещен", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Ну, ты давай не охуевай совсем, малютка", "Доступ запрещен", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     document.getElementById("username").value = "";
     if (document.getElementById("username-mobile")) {
       document.getElementById("username-mobile").value = "";
@@ -436,7 +436,7 @@ export async function initUser() {
         console.log("✅ Сессия создана:", sessionData.session_token);
       }
     } catch (err) {
-      console.error("⚠️ Ошибка создания сессии:", err);
+      console.error("⚠ Ошибка создания сессии:", err);
     }
 
     // Сохраняем пользователя в localStorage
@@ -614,7 +614,7 @@ export async function checkTelegramAuthStatus(authToken) {
       await showCustomAlert(
         'Время ожидания авторизации истекло. Попробуйте снова.',
         'Таймаут',
-        '⏱️'
+        '⏱'
       );
       localStorage.removeItem('telegram_auth_token');
       localStorage.removeItem('telegram_auth_device');
@@ -658,7 +658,7 @@ export async function checkTelegramAuthStatus(authToken) {
             console.log("✅ Сессия создана:", sessionData.session_token);
           }
         } catch (err) {
-          console.error("⚠️ Ошибка создания сессии:", err);
+          console.error("⚠ Ошибка создания сессии:", err);
         }
 
         // Сохраняем пользователя в localStorage

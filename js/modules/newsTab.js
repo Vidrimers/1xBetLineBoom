@@ -100,7 +100,7 @@ export async function loadNewsForSite() {
     // Эмодзи для типов новостей
     const typeEmojis = {
       'tournament': '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>',
-      'system': '<svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️',
+      'system': '<svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>',
       'achievement': '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg>',
       'announcement': '<svg class="icon" aria-hidden="true"><use href="#icon-announcements"></use></svg>'
     };
@@ -269,7 +269,7 @@ export async function loadNewsList(reset = false) {
     // Эмодзи для типов новостей
     const typeEmojis = {
       'tournament': '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>',
-      'system': '<svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️',
+      'system': '<svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>',
       'achievement': '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg>',
       'announcement': '<svg class="icon" aria-hidden="true"><use href="#icon-announcements"></use></svg>'
     };
@@ -431,7 +431,7 @@ export async function filterNews(type) {
 // Реакция на новость (лайк/дизлайк)
 export async function reactToNews(newsId, reaction) {
   if (!currentUser) {
-    alert("Сначала войдите в аккаунт");
+    await showCustomAlert("Сначала войдите в аккаунт", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -478,7 +478,7 @@ export async function reactToNews(newsId, reaction) {
 
   } catch (error) {
     console.error("❌ Ошибка реакции на новость:", error);
-    alert("Ошибка отправки реакции");
+    await showCustomAlert("Ошибка отправки реакции", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -588,14 +588,14 @@ export function hideReactionTooltip() {
 // Удалить новость (только админ)
 export async function deleteNews(newsId) {
   if (!currentUser) {
-    await showCustomAlert("Сначала войдите в аккаунт", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Сначала войдите в аккаунт", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   const confirmed = await showCustomConfirm(
     "Вы уверены, что хотите удалить эту новость?",
     "Удаление новости",
-    "<svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️"
+    '<svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>'
   );
 
   if (!confirmed) {
@@ -635,11 +635,11 @@ export async function deleteNews(newsId) {
       }, 300);
     }
 
-    await showCustomAlert("Новость успешно удалена", "Успех", "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>");
+    await showCustomAlert("Новость успешно удалена", "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
 
   } catch (error) {
     console.error("❌ Ошибка удаления новости:", error);
-    await showCustomAlert(error.message || "Ошибка удаления новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert(error.message || "Ошибка удаления новости", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -666,17 +666,17 @@ export async function publishNews() {
 
   // Валидация
   if (!selectedNewsType) {
-    await showCustomAlert("Выберите тип новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    await showCustomAlert("Выберите тип новости", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
   if (!title) {
-    await showCustomAlert("Введите заголовок новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    await showCustomAlert("Введите заголовок новости", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
   if (!message) {
-    await showCustomAlert("Введите текст новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+    await showCustomAlert("Введите текст новости", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -700,7 +700,7 @@ export async function publishNews() {
     await showCustomAlert(
       `Новость успешно опубликована!\n\nТип: ${selectedNewsType}\nЗаголовок: ${title}`,
       "Успех",
-      "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
+      '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
     );
 
     closeNewsModal();
@@ -709,7 +709,7 @@ export async function publishNews() {
     await showCustomAlert(
       `Не удалось опубликовать новость:\n${error.message}`,
       "Ошибка",
-      "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>"
+      '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
     );
   }
 }

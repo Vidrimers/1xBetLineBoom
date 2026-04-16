@@ -301,7 +301,7 @@ export async function displayTournamentWinner(eventId) {
 
     // Если победитель отсутствует
     if (!data.winner) {
-      console.log(`⚠️ Победитель не найден для турнира ${eventId}`);
+      console.log(`⚠ Победитель не найден для турнира ${eventId}`);
       const tournamentIcon = data.tournament.icon || "icon-trophy";
       const displayIcon = tournamentIcon.startsWith("img/")
         ? `<img src="${tournamentIcon}" alt="tournament" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
@@ -416,7 +416,7 @@ export async function displayMatches() {
     focusedElement.id?.includes('redCards')
   )) {
     hasFocusOnInput = true;
-    console.log(`⏸️ Пользователь вводит данные в поле ${focusedElement.id}, пропускаем обновление`);
+    console.log(`⏸ Пользователь вводит данные в поле ${focusedElement.id}, пропускаем обновление`);
     return; // Не обновляем если пользователь вводит данные
   }
   
@@ -484,7 +484,7 @@ export async function displayMatches() {
                ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(status);
       });
       if (!allFinalFinished) {
-        return "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал";
+        return '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал';
       }
     }
 
@@ -504,8 +504,8 @@ export async function displayMatches() {
   );
 
   // Если есть финальные матчи и финала нет в roundsOrder, добавляем его
-  if (hasFinalMatches && !roundsOrder.includes("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")) {
-    setRoundsOrder([...roundsOrder, "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал"]);
+  if (hasFinalMatches && !roundsOrder.includes('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал')) {
+    setRoundsOrder([...roundsOrder, '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал']);
     // Сохраняем новый порядок в БД
     saveRoundsOrderToStorage().catch((e) =>
       console.error("Ошибка сохранения финала в порядок:", e)
@@ -517,7 +517,7 @@ export async function displayMatches() {
     if (
       currentRoundFilter === "all" ||
       (!rounds.includes(currentRoundFilter) &&
-        currentRoundFilter !== "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")
+        currentRoundFilter !== '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал')
     ) {
       currentRoundFilter = getFirstUnfinishedRound();
       setCurrentRoundFilter(currentRoundFilter);
@@ -649,7 +649,7 @@ export async function displayMatches() {
   // Фильтруем матчи по выбранному туру
   let filteredMatches = matches;
   if (currentRoundFilter !== "all") {
-    // Обычный фильтр по туру (включая "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")
+    // Обычный фильтр по туру (включая '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал')
     filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
   }
 
@@ -778,7 +778,7 @@ export async function displayMatches() {
           '<span style="display: inline-block; padding: 3px 8px; background: rgba(100, 100, 100, 0.8); color: #e0e0e0; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ЗАВЕРШЕН</span>';
       } else if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(effectiveStatus)) {
         statusBadge =
-          '<span class="match-status-cancelled" style="display: inline-block; padding: 3px 8px; background: #ff5722; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ ОТМЕНА</span>';
+          '<span class="match-status-cancelled" style="display: inline-block; padding: 3px 8px; background: #ff5722; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> ОТМЕНА</span>';
       }
 
       // Определяем, отменён ли матч
@@ -1125,7 +1125,7 @@ export async function displayMatches() {
   disabledButtons.forEach((button) => {
     // Полностью переопределяем onclick для disabled кнопок
     const originalOnclick = button.onclick;
-    button.onclick = function (e) {
+    button.onclick = async function (e) {
       // Пытаемся получить информацию о матче из кнопки
       const matchRow = button.closest(".match-row");
       const teamsDiv = matchRow.querySelector(".match-vs");
@@ -1148,7 +1148,7 @@ export async function displayMatches() {
         console.error("Ошибка при отправке уведомления:", error)
       );
 
-      alert("Ну, куда ты, малютка, матч уже начался");
+      await showCustomAlert("Ну, куда ты, малютка, матч уже начался", "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
       return false;
     };
   });

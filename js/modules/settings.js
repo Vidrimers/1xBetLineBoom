@@ -218,7 +218,7 @@ export async function loadUserTimezone() {
 export async function saveTimezoneSettings() {
   try {
     if (!state.currentUser) {
-      alert("Сначала войдите в систему");
+      await showCustomAlert("Сначала войдите в систему", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
       return;
     }
 
@@ -226,7 +226,7 @@ export async function saveTimezoneSettings() {
     const timezone = select.value;
 
     if (!timezone) {
-      alert("Выберите часовой пояс");
+      await showCustomAlert("Выберите часовой пояс", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
       return;
     }
 
@@ -922,7 +922,7 @@ export async function openDeactivateEventsModal() {
         border-radius: 4px;
         color: #ffe0b2;
       ">
-        <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Выберите турниры для деактивации. Их статус будет изменен на "completed".
+        <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Выберите турниры для деактивации. Их статус будет изменен на "completed".
       </div>
       
       <div id="eventsListContainer" style="
@@ -1038,7 +1038,7 @@ export async function deactivateSelectedEvents() {
   const confirmed = await showCustomConfirm(
     `Вы уверены что хотите деактивировать ${eventIds.length} турнир(ов)?\n\nИх статус будет изменен на "completed".`,
     'Подтверждение деактивации',
-    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
   );
 
   if (!confirmed) {
@@ -1106,7 +1106,7 @@ export async function toggleGroupRemindersCardVisibility() {
     if (response.ok) {
       if (card) card.style.display = newVisibility ? 'none' : 'block';
       if (btn) {
-        btn.textContent = newVisibility ? '<svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg>️ Показать напоминания ТГ' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Скрыть напоминания ТГ';
+        btn.textContent = newVisibility ? '<svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg> Показать напоминания ТГ' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Скрыть напоминания ТГ';
         btn.style.background = newVisibility ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
         btn.style.color = newVisibility ? '#c8e6c9' : '#ffe0d6';
         btn.style.borderColor = newVisibility ? '#4caf50' : '#ff5722';
@@ -1126,12 +1126,12 @@ export async function toggleGroupRemindersCardVisibility() {
 
 // Сохранить настройку подтверждения логина через бота
 export async function saveLogin2faSettings() {
-  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  if (!state.currentUser) { await showCustomAlert('Сначала войдите в систему', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   try {
     const checkbox = document.getElementById('login2faCheckbox');
     const isEnabled = checkbox.checked;
     if (isEnabled && !state.currentUser.telegram_username) {
-      alert('Для включения подтверждения логина необходимо сначала привязать Telegram в настройках выше');
+      await showCustomAlert('Для включения подтверждения логина необходимо сначала привязать Telegram в настройках выше', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
       checkbox.checked = false;
       return;
     }
@@ -1158,7 +1158,7 @@ export async function saveLogin2faSettings() {
 
 // Сохранить настройку звука в LIVE матчах
 export async function saveLiveSoundSettings() {
-  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  if (!state.currentUser) { await showCustomAlert('Сначала войдите в систему', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   try {
     const checkbox = document.getElementById('liveSoundCheckbox');
     const isEnabled = checkbox.checked;
@@ -1213,7 +1213,7 @@ export async function saveShowTournamentWinnerSettings() {
 
 // Сохранить настройку видимости ставок
 export async function saveShowBetsSettings() {
-  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  if (!state.currentUser) { await showCustomAlert('Сначала войдите в систему', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   try {
     const select = document.getElementById('showBetsSelect');
     const showBets = select.value;
@@ -1240,7 +1240,7 @@ export async function saveShowBetsSettings() {
 
 // Сохранить настройку кнопки "Мне повезёт"
 export async function saveLuckyButtonSettings() {
-  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  if (!state.currentUser) { await showCustomAlert('Сначала войдите в систему', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   try {
     const select = document.getElementById('showLuckyButtonSelect');
     const showLuckyButton = parseInt(select.value);
@@ -1268,7 +1268,7 @@ export async function saveLuckyButtonSettings() {
 
 // Сохранить настройку кнопки xG
 export async function saveXgButtonSettings() {
-  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  if (!state.currentUser) { await showCustomAlert('Сначала войдите в систему', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   try {
     const select = document.getElementById('showXgButtonSelect');
     const showXgButton = parseInt(select.value);
@@ -1314,7 +1314,7 @@ export async function migrateLogs() {
     const result = await response.json();
     if (response.ok) {
       if (result.alreadyMigrated) {
-        await showCustomAlert(result.message, 'Информация', 'ℹ️');
+        await showCustomAlert(result.message, 'Информация', 'ℹ');
       } else {
         await showCustomAlert(result.message + '\n\nОбновите страницу логов чтобы увидеть изменения.', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       }
@@ -1335,7 +1335,7 @@ export async function clearLogs() {
   }
   const confirmed = await showCustomConfirm(
     'Вы уверены, что хотите очистить все логи ставок?',
-    'Очистка логов', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+    'Очистка логов', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
   );
   if (!confirmed) return;
   try {

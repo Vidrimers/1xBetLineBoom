@@ -158,7 +158,7 @@ export let currentEditingConfig = null;
 
 // ===== ИКОНКИ КУБИКА =====
 export const iconTitles = {
-  "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>": "Стандартный",
+  '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>': "Стандартный",
   "img/cups/world-cup.png": "Чемпионат мира",
   "img/cups/champions-league.png": "Лига чемпионов",
   "img/cups/european-league.png": "Лига европы",

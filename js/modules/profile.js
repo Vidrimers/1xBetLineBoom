@@ -4,7 +4,7 @@ import { currentUser } from './state.js';
 
 export async function loadProfile() {
   if (!currentUser) {
-    alert("Пожалуйста, сначала войдите в аккаунт");
+    await showCustomAlert("Пожалуйста, сначала войдите в аккаунт", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -111,7 +111,7 @@ export function displayProfile(profile) {
           box-shadow: none;
           position: absolute;
           bottom: 5px;
-        " title="Изменить имя"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️</button>
+        " title="Изменить имя"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg></button>
       </div>
       <div class="profile-member-since">Участник с ${createdDate}</div>
     </div>
@@ -212,7 +212,7 @@ export async function loadUserAwards(userId) {
     // Отображаем автоматические награды за турниры
     tournamentAwards.forEach((award) => {
       const awardDate = new Date(award.awarded_at).toLocaleDateString("ru-RU");
-      const icon = award.event_icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
+      const icon = award.event_icon || '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
       const awardIcon = icon.startsWith("img/")
         ? `<img src="${icon}" alt="trophy" class="tournament-icon">`
         : icon;
@@ -228,10 +228,10 @@ export async function loadUserAwards(userId) {
 
     // Отображаем пользовательские награды
     const awardTypeText = {
-      participant: "<svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> Участник турнира",
-      winner: "<svg class="icon" aria-hidden="true"><use href="#icon-winner"></use></svg> Победитель",
+      participant: '<svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg>' + ' Участник турнира',
+      winner: '<svg class="icon" aria-hidden="true"><use href="#icon-winner"></use></svg>' + ' Победитель',
       best_result: "⭐ Лучший результат",
-      special: "<svg class="icon" aria-hidden="true"><use href="#icon-special-award"></use></svg>️ Специальная награда",
+      special: '<svg class="icon" aria-hidden="true"><use href="#icon-special-award"></use></svg>' + ' Специальная награда',
     };
 
     customAwards.forEach((award) => {
@@ -269,12 +269,12 @@ export async function loadUserAwards(userId) {
 // Функция для получения иконки награды
 export function getAwardIcon(awardType) {
   const icons = {
-    participant: "<svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg>",
-    winner: "<svg class="icon" aria-hidden="true"><use href="#icon-winner"></use></svg>",
+    participant: '<svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg>',
+    winner: '<svg class="icon" aria-hidden="true"><use href="#icon-winner"></use></svg>',
     best_result: "⭐",
-    special: "<svg class="icon" aria-hidden="true"><use href="#icon-special-award"></use></svg>️",
+    special: '<svg class="icon" aria-hidden="true"><use href="#icon-special-award"></use></svg>',
   };
-  return icons[awardType] || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
+  return icons[awardType] || '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
 }
 
 // ===== АВАТАР =====
@@ -363,7 +363,7 @@ export async function saveAvatar() {
   console.log("cropper:", cropper);
 
   if (!cropper) {
-    alert("Пожалуйста, выберите изображение");
+    await showCustomAlert("Пожалуйста, выберите изображение", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -396,7 +396,7 @@ export async function saveAvatar() {
 
     if (!response.ok) {
       console.error(
-        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при сохранении аватара: " +
+        '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>' + ' Ошибка при сохранении аватара: ' +
           (result.error || "Неизвестная ошибка")
       );
       return;
@@ -432,7 +432,7 @@ async function saveGifAvatar() {
     console.log(`📊 Размер GIF: ${(gifSize / 1024 / 1024).toFixed(2)} MB`);
 
     if (gifSize > 2 * 1024 * 1024) {
-      console.warn("⚠️ GIF слишком большой, пытаюсь сжать...");
+      console.warn("⚠ GIF слишком большой, пытаюсь сжать...");
 
       const img = new Image();
       img.onload = async () => {
@@ -448,7 +448,7 @@ async function saveGifAvatar() {
           console.log("✅ GIF в пределах лимита, сохраняю оригинальный");
         } else {
           console.error(
-            "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> GIF слишком большой (более 5MB). Рекомендуется использовать меньший файл."
+            "GIF слишком большой (более 5MB). Рекомендуется использовать меньший файл."
           );
           return;
         }
@@ -478,7 +478,7 @@ async function saveGifAvatar() {
 
     if (!response.ok) {
       console.error(
-        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при сохранении GIF: " +
+        '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>' + ' Ошибка при сохранении GIF: ' +
           (result.error || "Неизвестная ошибка")
       );
       return;
@@ -521,7 +521,7 @@ export async function deleteAvatar() {
 
     if (!response.ok) {
       console.error(
-        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при удалении аватара: " +
+        '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>' + ' Ошибка при удалении аватара: ' +
           (result.error || "Неизвестная ошибка")
       );
       return;

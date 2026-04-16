@@ -49,17 +49,17 @@ function displayAdminUsersModal() {
         ${canViewSettings() ? `
         <button class="admin-btn admin-btn-settings" onclick="sendUserSettingsToAdmin(${
           user.id
-        }, '${user.username}')" title="Получить настройки пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️</button>
+        }, '${user.username}')" title="Получить настройки пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg></button>
         ` : ''}
         ${canEditUsers() && (isAdmin() || user.username !== ADMIN_DB_NAME) ? `
         <button class="admin-btn admin-btn-rename" onclick="renameUser(${
           user.id
-        }, '${user.username}')" title="Переименовать пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️</button>
+        }, '${user.username}')" title="Переименовать пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg></button>
         ` : ''}
         ${canDeleteUsers() && user.username !== ADMIN_DB_NAME ? `
         <button class="admin-btn admin-btn-delete" onclick="deleteUser(${
           user.id
-        }, '${user.username}')" title="Удалить пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️</button>
+        }, '${user.username}')" title="Удалить пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg></button>
         ` : ''}
       </div>
     </div>
@@ -71,7 +71,7 @@ function displayAdminUsersModal() {
 // Загрузить список всех пользователей
 export async function loadAdminUsers() {
   if (!canViewUsers()) {
-    alert("У вас нет прав для просмотра пользователей");
+    await showCustomAlert("У вас нет прав для просмотра пользователей", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -97,7 +97,7 @@ export async function loadAdminUsers() {
     document.getElementById("adminModal").style.display = "flex";
   } catch (error) {
     console.error("Ошибка при загрузке пользователей:", error);
-    alert("Ошибка при загрузке пользователей");
+    await showCustomAlert("Ошибка при загрузке пользователей", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -112,7 +112,7 @@ export function closeAdminModal() {
 // Синхронизировать telegram_id для всех пользователей
 export async function syncAllTelegramIds() {
   if (!isAdmin() && !hasModeratorPermission('sync_telegram_ids')) {
-    await showCustomAlert("У вас нет прав", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("У вас нет прав", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -154,7 +154,7 @@ export async function syncAllTelegramIds() {
         <div style="margin-bottom: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Всего пользователей с Telegram: <strong>${result.total}</strong></div>
         <div style="margin-bottom: 8px; color: #4caf50;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Обновлено telegram_id: <strong>${result.updated}</strong></div>
         <div style="margin-bottom: 8px; color: #2196f3;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Уже были актуальны: <strong>${result.skipped}</strong></div>
-        <div style="margin-bottom: 15px; color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Не найдены в telegram_users: <strong>${result.not_found}</strong></div>
+        <div style="margin-bottom: 15px; color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Не найдены в telegram_users: <strong>${result.not_found}</strong></div>
     `;
 
     if (result.updated > 0) {
@@ -172,7 +172,7 @@ export async function syncAllTelegramIds() {
     if (result.not_found > 0) {
       message += `
         <div style="background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #ff9800;">
-          <div style="font-weight: bold; margin-bottom: 5px; color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Внимание:</div>
+          <div style="font-weight: bold; margin-bottom: 5px; color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Внимание:</div>
           <div style="font-size: 14px;">
             ${result.not_found} пользовател${result.not_found === 1 ? 'ь' : 'ей'} не найден${result.not_found === 1 ? '' : 'ы'} в telegram_users.<br>
             Это значит, что они:<br>
@@ -284,7 +284,7 @@ export async function syncAllTelegramIds() {
 // Тест уведомлений в группу
 export async function testGroupNotification() {
   if (!isAdmin()) {
-    alert("У вас нет прав");
+    await showCustomAlert("У вас нет прав", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -319,6 +319,6 @@ export async function testGroupNotification() {
     console.log(`✅ Тестовое уведомление отправлено ${testRealGroup ? 'в группу' : 'админу'}`);
   } catch (error) {
     console.error("Ошибка при отправке тестового уведомления:", error);
-    alert("Ошибка при отправке уведомления");
+    await showCustomAlert("Ошибка при отправке уведомления", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }

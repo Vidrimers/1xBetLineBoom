@@ -1,12 +1,13 @@
 import * as state from './state.js';
 import { setUserBets } from './state.js';
 import { getMatchStatusByDate, displayMatches, initToggleStates } from './matches.js';
+import { showCustomAlert } from './ui.js';
 
 // ===== СТАВКИ =====
 
 export async function placeBet(matchId, teamName, prediction) {
   if (!state.currentUser) {
-    alert("Сначала введите ваше имя");
+    await showCustomAlert("Сначала введите ваше имя", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -22,7 +23,7 @@ export async function placeBet(matchId, teamName, prediction) {
   if (match) {
     const effectiveStatus = getMatchStatusByDate(match);
     if (effectiveStatus !== "pending") {
-      alert("Ну, куда ты, малютка, матч уже начался");
+      await showCustomAlert("Ну, куда ты, малютка, матч уже начался", "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
 
       // Отправляем уведомление админу о попытке запретной ставки
       try {
@@ -124,11 +125,11 @@ export async function placeBet(matchId, teamName, prediction) {
         }, 100);
       }
     } else {
-      alert("Ошибка при создании ставки");
+      await showCustomAlert("Ошибка при создании ставки", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("Ошибка при размещении ставки:", error);
-    alert("Ошибка при размещении ставки");
+    await showCustomAlert("Ошибка при размещении ставки", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -143,7 +144,7 @@ export function showScoreAlert(message) {
   alert.className = 'score-alert';
   alert.innerHTML = `
     <div class="score-alert-content">
-      <div class="score-alert-icon"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️</div>
+      <div class="score-alert-icon"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg></div>
       <div class="score-alert-message">${message}</div>
       <button class="score-alert-button" onclick="closeScoreAlert()">Понятно</button>
     </div>
@@ -187,7 +188,7 @@ export function syncScoreInputs(matchId, prediction) {
 
 export async function placeScorePrediction(matchId, prediction) {
   if (!state.currentUser) {
-    alert("Сначала введите ваше имя");
+    await showCustomAlert("Сначала введите ваше имя", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -207,7 +208,7 @@ export async function placeScorePrediction(matchId, prediction) {
   // Валидация счета если есть поля
   if (scoreTeam1 !== null && scoreTeam2 !== null) {
     if (isNaN(scoreTeam1) || isNaN(scoreTeam2) || scoreTeam1 < 0 || scoreTeam2 < 0) {
-      alert("Введите корректный счет (0 или больше)");
+      await showCustomAlert("Введите корректный счет (0 или больше)", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
       return;
     }
 
@@ -230,12 +231,12 @@ export async function placeScorePrediction(matchId, prediction) {
 
   // Валидация карточек если есть поля
   if (yellowCards !== null && (isNaN(yellowCards) || yellowCards < 0 || yellowCards > 20)) {
-    alert("Введите корректное количество желтых карточек (0-20)");
+    await showCustomAlert("Введите корректное количество желтых карточек (0-20)", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
   
   if (redCards !== null && (isNaN(redCards) || redCards < 0 || redCards > 10)) {
-    alert("Введите корректное количество красных карточек (0-10)");
+    await showCustomAlert("Введите корректное количество красных карточек (0-10)", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -244,7 +245,7 @@ export async function placeScorePrediction(matchId, prediction) {
   if (match) {
     const effectiveStatus = getMatchStatusByDate(match);
     if (effectiveStatus !== "pending") {
-      alert("Матч уже начался, прогноз недоступен");
+      await showCustomAlert("Матч уже начался, прогноз недоступен", "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
       return;
     }
   }
@@ -322,13 +323,13 @@ export async function placeScorePrediction(matchId, prediction) {
     loadMyBets();
   } catch (error) {
     console.error("Ошибка при сохранении прогноза на счет:", error);
-    alert("Ошибка при сохранении прогноза на счет");
+    await showCustomAlert("Ошибка при сохранении прогноза на счет", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 export async function cancelScorePrediction(matchId) {
   if (!state.currentUser) {
-    alert("Сначала введите ваше имя");
+    await showCustomAlert("Сначала введите ваше имя", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -366,7 +367,7 @@ export async function cancelScorePrediction(matchId) {
         buttonsDiv.style.display = 'flex';
       }
       
-      alert("Прогноз на счет удален");
+      await showCustomAlert("Прогноз на счет удален", "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       loadMyBets();
     } else {
       const error = await response.json();
@@ -374,7 +375,7 @@ export async function cancelScorePrediction(matchId) {
     }
   } catch (error) {
     console.error("Ошибка при удалении прогноза на счет:", error);
-    alert("Ошибка при удалении прогноза на счет");
+    await showCustomAlert("Ошибка при удалении прогноза на счет", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -438,7 +439,7 @@ export function unlockFinalParameter(matchId, parameterType) {
     checkbox.disabled = false;
   });
 
-  // Показываем кнопку "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
+  // Показываем кнопку '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
   const button = paramMainContainer.querySelector("button");
   if (button) {
     button.style.display = "inline-block";
@@ -505,7 +506,7 @@ export function lockFinalParameter(matchId, parameterType) {
     checkbox.disabled = true;
   });
 
-  // Скрываем кнопку "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
+  // Скрываем кнопку '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
   const button = paramMainContainer.querySelector("button");
   if (button) {
     button.style.display = "none";
@@ -514,7 +515,7 @@ export function lockFinalParameter(matchId, parameterType) {
 
 export async function placeFinalBet(matchId, parameterType) {
   if (!state.currentUser) {
-    alert("Сначала введите ваше имя");
+    await showCustomAlert("Сначала введите ваше имя", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -539,7 +540,7 @@ export async function placeFinalBet(matchId, parameterType) {
     const inputField = document.getElementById(fieldId);
     if (!inputField) {
       console.error(`❌ Input field not found: ${fieldId}`);
-      alert("Ошибка: поле ввода не найдено");
+      await showCustomAlert("Ошибка: поле ввода не найдено", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
     const value = inputField.value;
@@ -560,14 +561,14 @@ export async function placeFinalBet(matchId, parameterType) {
     const checkbox = document.getElementById(fieldId);
     if (!checkbox) {
       console.error(`❌ Checkbox field not found: ${fieldId}`);
-      alert("Ошибка: поле переключателя не найдено");
+      await showCustomAlert("Ошибка: поле переключателя не найдено", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
 
     // Проверяем, что toggle не в нейтральном состоянии
     const toggleState = checkbox.getAttribute("data-toggle-state");
     if (toggleState === "neutral") {
-      alert("<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Пожалуйста, выберите значение: ДА или НЕТ");
+      await showCustomAlert('Пожалуйста, выберите значение: ДА или НЕТ', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
       return;
     }
 
@@ -579,11 +580,11 @@ export async function placeFinalBet(matchId, parameterType) {
   if (match) {
     const effectiveStatus = getMatchStatusByDate(match);
     if (effectiveStatus !== "pending") {
-      alert("Ну, куда ты, малютка, матч уже начался");
+      await showCustomAlert("Ну, куда ты, малютка, матч уже начался", "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
       return;
     }
   } else {
-    alert("Матч не найден");
+    await showCustomAlert("Матч не найден", "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     return;
   }
 
@@ -669,11 +670,11 @@ export async function placeFinalBet(matchId, parameterType) {
       // Блокируем параметр после успешного сохранения ставки
       lockFinalParameter(matchId, parameterType);
     } else {
-      alert("Ошибка при создании ставки");
+      await showCustomAlert("Ошибка при создании ставки", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("Ошибка при размещении ставки на финальный параметр:", error);
-    alert("Ошибка при размещении ставки");
+    await showCustomAlert("Ошибка при размещении ставки", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -772,7 +773,7 @@ export function displayMyBets(bets) {
     // Проверяем, отменён ли матч
     if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(bet.match_status)) {
       statusClass = "cancelled";
-      statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Отмена";
+      statusText = '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>' + ' Отмена';
       isCancelled = true;
     } else {
         // Если это финальная ставка на параметр матча (желтые карты, красные карты и т.д.)
@@ -842,10 +843,10 @@ export function displayMyBets(bets) {
 
             if (isWon) {
               statusClass = "won";
-              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграла";
+              statusText = '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' + ' Выиграла';
             } else {
               statusClass = "lost";
-              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграла";
+              statusText = '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>' + ' Проиграла';
             }
           }
         } else if (!bet.is_final_bet) {
@@ -892,10 +893,10 @@ export function displayMyBets(bets) {
 
             if (winnerPrediction === normalizedPrediction) {
               statusClass = "won";
-              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграла";
+              statusText = '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' + ' Выиграла';
             } else {
               statusClass = "lost";
-              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграла";
+              statusText = '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>' + ' Проиграла';
             }
           }
         }
@@ -1255,7 +1256,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
             : ""
         }
         <div class="bet-round" style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
-            ${bet.is_final ? "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> ФИНАЛ" : bet.round ? `${bet.round}` : ""}
+            ${bet.is_final ? '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' ФИНАЛ' : bet.round ? `${bet.round}` : ""}
         </div>
         ${deleteBtn}
     </div>
@@ -1313,7 +1314,7 @@ export function toggleTournamentBets(toggleId) {
 // Удалить ставку
 export async function deleteBet(betId) {
   if (!state.currentUser) {
-    alert("Сначала войдите в систему");
+    await showCustomAlert("Сначала войдите в систему", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -1341,10 +1342,10 @@ export async function deleteBet(betId) {
         if (deleteScoreResponse.ok) {
           console.log("✅ Прогноз на счет удален");
         } else {
-          console.log("⚠️ Прогноз на счет не найден или уже удален");
+          console.log("⚠ Прогноз на счет не найден или уже удален");
         }
       } catch (error) {
-        console.log("⚠️ Ошибка при удалении прогноза на счет:", error);
+        console.log("⚠ Ошибка при удалении прогноза на счет:", error);
       }
 
       // Удаляем прогноз на карточки
@@ -1362,10 +1363,10 @@ export async function deleteBet(betId) {
         if (deleteCardsResponse.ok) {
           console.log("✅ Прогноз на карточки удален");
         } else {
-          console.log("⚠️ Прогноз на карточки не найден или уже удален");
+          console.log("⚠ Прогноз на карточки не найден или уже удален");
         }
       } catch (error) {
-        console.log("⚠️ Ошибка при удалении прогноза на карточки:", error);
+        console.log("⚠ Ошибка при удалении прогноза на карточки:", error);
       }
 
       // Очищаем прогнозы в объекте матча
@@ -1408,6 +1409,6 @@ export async function deleteBet(betId) {
     await loadMyBets();
   } catch (error) {
     console.error("Ошибка при удалении ставки:", error);
-    alert("Ошибка при удалении ставки");
+    await showCustomAlert("Ошибка при удалении ставки", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }

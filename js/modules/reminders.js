@@ -20,7 +20,7 @@ export async function showMatchRemindersModal(event) {
   // Проверяем выбран ли турнир
   if (!currentEventId) {
     if (typeof showCustomAlert === 'function') {
-      showCustomAlert('Выберите турнир чтобы настроить напоминания', 'Турнир не выбран', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
+      showCustomAlert('Выберите турнир чтобы настроить напоминания', 'Турнир не выбран', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     }
     return;
   }
@@ -121,7 +121,7 @@ export async function saveMatchReminders() {
 
   if (!state.selectedReminderHours) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Выберите время напоминания', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
+      await showCustomAlert('Выберите время напоминания', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     }
     return;
   }

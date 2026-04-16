@@ -26,14 +26,14 @@ let teamMappings = {};
 async function loadTeamMapping(competition) {
   const filePath = COMPETITION_DICTIONARY_MAPPING[competition];
   if (!filePath) {
-    console.warn(`⚠️ Нет файла маппинга для турнира ${competition}`);
+    console.warn(`⚠ Нет файла маппинга для турнира ${competition}`);
     return {};
   }
 
   try {
     const response = await fetch(filePath);
     if (!response.ok) {
-      console.warn(`⚠️ Не удалось загрузить ${filePath}`);
+      console.warn(`⚠ Не удалось загрузить ${filePath}`);
       return {};
     }
 
@@ -42,7 +42,7 @@ async function loadTeamMapping(competition) {
     // Поддержка старого формата (массив) и нового (объект)
     if (Array.isArray(data.teams)) {
       // Старый формат - возвращаем пустой маппинг
-      console.log(`ℹ️ Файл ${filePath} использует старый формат (массив)`);
+      console.log(`ℹ Файл ${filePath} использует старый формат (массив)`);
       return {};
     } else if (typeof data.teams === 'object') {
       // Новый формат - возвращаем маппинг
@@ -671,7 +671,7 @@ function checkBetsResults(bets, fdMatches) {
       });
     } else {
       // Логируем ненайденный матч
-      console.warn(`⚠️ Матч не найден: ${bet.team1_name} vs ${bet.team2_name}`);
+      console.warn(`⚠ Матч не найден: ${bet.team1_name} vs ${bet.team2_name}`);
       
       results.push({
         ...bet,
@@ -757,20 +757,20 @@ function displayCalculationResults(results, originalBets) {
     group.bets.forEach((bet) => {
       let backgroundColor = "rgba(58, 123, 213, 0.2)";
       let borderColor = "#4db8a8";
-      let resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>";
+      let resultText = '<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>';
 
       if (bet.result === "not_found") {
         backgroundColor = "rgba(255, 152, 0, 0.2)";
         borderColor = "#ff9800";
-        resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Матч не найден";
+        resultText = '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>' + ' Матч не найден';
       } else if (bet.isWon) {
         backgroundColor = "rgba(76, 175, 80, 0.2)";
         borderColor = "#4caf50";
-        resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выигрыш";
+        resultText = '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' + ' Выигрыш';
       } else {
         backgroundColor = "rgba(244, 67, 54, 0.2)";
         borderColor = "#f44336";
-        resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проигрыш";
+        resultText = '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>' + ' Проигрыш';
       }
 
       const matchInfo = `${bet.team1_name} vs ${bet.team2_name}`;

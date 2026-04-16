@@ -42,7 +42,7 @@ export async function saveRoundsOrderToStorage() {
     }
   } catch (e) {
     console.error("Ошибка сохранения порядка туров:", e);
-    alert("Ошибка сохранения порядка туров");
+    await showCustomAlert("Ошибка сохранения порядка туров", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -53,17 +53,17 @@ export function openRoundsOrderModal() {
     ...new Set(state.matches.map((m) => m.round).filter((r) => r && r.trim())),
   ];
 
-  // Добавляем "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал" если есть финальные матчи
+  // Добавляем '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал' если есть финальные матчи
   const hasFinalMatches = state.matches.some(
     (m) => m.is_final === 1 || m.is_final === true
   );
-  if (hasFinalMatches && !uniqueRounds.includes("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")) {
-    uniqueRounds.push("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал");
+  if (hasFinalMatches && !uniqueRounds.includes('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал')) {
+    uniqueRounds.push('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал');
   }
 
   // Убедимся, что финал есть в roundsOrder если он есть в uniqueRounds
-  if (hasFinalMatches && !state.roundsOrder.includes("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")) {
-    setRoundsOrder([...state.roundsOrder, "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал"]);
+  if (hasFinalMatches && !state.roundsOrder.includes('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал')) {
+    setRoundsOrder([...state.roundsOrder, '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>'+ ' Финал']);
   }
 
   // Сортируем туры по сохраненному порядку
@@ -117,7 +117,7 @@ export async function deleteRound(roundName, index) {
   const confirmed = await showCustomConfirm(
     `Вы уверены, что хотите удалить тур "${roundName}" и все его матчи?`,
     "Подтверждение удаления",
-    "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️"
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
   );
 
   if (!confirmed) {
@@ -156,7 +156,7 @@ export async function deleteRound(roundName, index) {
     renderRoundsOrderList();
   } catch (error) {
     console.error('Ошибка при удалении тура:', error);
-    await showCustomAlert('Не удалось удалить тур', "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert('Не удалось удалить тур', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

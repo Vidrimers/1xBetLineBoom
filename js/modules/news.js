@@ -27,7 +27,7 @@ export async function openRssNewsModal() {
           type: 'rss'
         })
       }).catch(err => {
-        console.error("⚠️ Ошибка отправки уведомления:", err);
+        console.error("⚠ Ошибка отправки уведомления:", err);
       });
     }
 
@@ -295,7 +295,7 @@ export function filterKeywordsByTournament() {
             font-size: 0.9em;
             transition: all 0.3s ease;
           ">
-            <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️ Удалить
+            <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удалить
           </button>
         </div>
       `;
@@ -353,7 +353,7 @@ export async function addRssKeyword() {
     // Перезагружаем список
     await loadRssKeywords();
 
-    await showCustomAlert("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Ключевое слово добавлено");
+    await showCustomAlert("Ключевое слово добавлено");
 
   } catch (error) {
     console.error("❌ Ошибка добавления ключевого слова:", error);
@@ -390,7 +390,7 @@ export async function deleteRssKeyword(id) {
     // Перезагружаем список
     await loadRssKeywords();
 
-    await showCustomAlert("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Ключевое слово удалено");
+    await showCustomAlert("Ключевое слово удалено");
 
   } catch (error) {
     console.error("❌ Ошибка удаления ключевого слова:", error);

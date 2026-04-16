@@ -44,7 +44,7 @@ export async function openComparisonModal() {
       width: 90%;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ Сравнение участников</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg> Сравнение участников</h3>
       
       <div style="margin-bottom: 20px;">
         <label style="display: block; color: #e0e6f0; margin-bottom: 8px;">Первый участник:</label>
@@ -235,7 +235,7 @@ export function displayComparisonModal(data1, data2) {
         transition: background 0.2s;
       " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
       
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ ${data1.user.username} vs ${data2.user.username}</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg> ${data1.user.username} vs ${data2.user.username}</h3>
       
       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <button onclick="switchComparisonTab('bets')" id="comparisonTabBets" style="
@@ -348,7 +348,7 @@ export function generateBetsComparison(data1, data2, selectedRound = 'all') {
   return `
     <div style="color: #e0e6f0;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-        <h4 style="color: #ff9800; margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Различия в ставках (${filteredDifferences.length})</h4>
+        <h4 style="color: #ff9800; margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Различия в ставках (${filteredDifferences.length})</h4>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
           <button onclick="filterComparisonByRound('all')" style="
             background: ${selectedRound === 'all' ? '#2196f3' : '#607d8b'};
@@ -527,7 +527,7 @@ export async function openGlobalComparisonModal() {
       width: 90%;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ Сравнение участников</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg> Сравнение участников</h3>
       
       <div style="margin-bottom: 20px;">
         <label style="display: block; color: #e0e6f0; margin-bottom: 8px;">Первый участник:</label>
@@ -731,7 +731,7 @@ export function displayGlobalComparisonModal(data1, data2) {
         transition: background 0.2s;
       " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
       
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ ${data1.user.username} vs ${data2.user.username}</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg> ${data1.user.username} vs ${data2.user.username}</h3>
       
       <div style="color: #e0e6f0;">
         <h4 style="color: #5a9fd4; margin-bottom: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика профиля</h4>

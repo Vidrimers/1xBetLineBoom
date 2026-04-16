@@ -6,7 +6,7 @@ import { canViewCounting } from './admin.js';
 // Отправить результаты подсчёта
 export async function sendCountingResults() {
   if (!canViewCounting()) {
-    alert("У вас нет прав");
+    await showCustomAlert("У вас нет прав", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -14,7 +14,7 @@ export async function sendCountingResults() {
   const dateTo = document.getElementById("countingDateTo")?.value;
 
   if (!dateFrom || !dateTo) {
-    alert("Выберите период дат");
+    await showCustomAlert("Выберите период дат", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -26,21 +26,21 @@ export async function sendCountingResults() {
     });
 
     if (response.ok) {
-      await showCustomAlert("Результаты отправлены в группу!", "Успешно", "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>");
+      await showCustomAlert("Результаты отправлены в группу!", "Успешно", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
       const error = await response.json();
-      await showCustomAlert(error.error || "Не удалось отправить результаты", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+      await showCustomAlert(error.error || "Не удалось отправить результаты", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("Ошибка отправки результатов:", error);
-    await showCustomAlert("Ошибка при отправке результатов", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Ошибка при отправке результатов", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 // Открыть модалку пересчёта
 export async function openRecountModal() {
   if (!canViewCounting()) {
-    alert("У вас нет прав");
+    await showCustomAlert("У вас нет прав", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -59,7 +59,7 @@ export async function openRecountModal() {
       console.log('✅ Очистка прогнозов:', result);
     }
   } catch (error) {
-    console.error("⚠️ Ошибка очистки прогнозов:", error);
+    console.error("⚠ Ошибка очистки прогнозов:", error);
   }
 
   // Устанавливаем текущую дату по умолчанию
@@ -148,12 +148,12 @@ export async function confirmRecount() {
   const sendToUsers = document.getElementById('recountSendToUsers').checked;
 
   if (!date) {
-    await showCustomAlert("Выберите дату", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Выберите дату", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   if (!round) {
-    await showCustomAlert("Выберите тур", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Выберите тур", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -187,7 +187,7 @@ export async function confirmRecount() {
     </ul>
   </div>`;
 
-  const confirmed = await showCustomConfirm(confirmMessage, "Подтверждение пересчёта", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
+  const confirmed = await showCustomConfirm(confirmMessage, "Подтверждение пересчёта", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
 
   if (!confirmed) {
     return;
@@ -217,7 +217,7 @@ export async function confirmRecount() {
       await showCustomAlert(
         result.message || "Результаты успешно пересчитаны!",
         "Успешно",
-        "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
+        '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
       );
 
       // Обновляем данные подсчёта если они отображаются
@@ -230,12 +230,12 @@ export async function confirmRecount() {
       await showCustomAlert(
         error.error || "Не удалось пересчитать результаты",
         "Ошибка",
-        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>"
+        '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
       );
     }
   } catch (error) {
     console.error("Ошибка пересчёта результатов:", error);
-    await showCustomAlert("Ошибка при пересчёте результатов", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
+    await showCustomAlert("Ошибка при пересчёте результатов", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

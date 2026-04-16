@@ -733,7 +733,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
       }
     } catch (err) {
-      console.error("⚠️ Ошибка загрузки настройки show_lucky_button:", err);
+      console.error("⚠ Ошибка загрузки настройки show_lucky_button:", err);
       state.currentUser.show_lucky_button = 1;
     }
 
@@ -746,7 +746,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem("currentUser", JSON.stringify(state.currentUser));
       }
     } catch (err) {
-      console.error("⚠️ Ошибка загрузки настройки show_bets:", err);
+      console.error("⚠ Ошибка загрузки настройки show_bets:", err);
       state.currentUser.show_bets = "always";
     }
 
@@ -759,14 +759,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const validateResponse = await fetch(`/api/sessions/${sessionToken}/validate`);
         if (!validateResponse.ok) {
-          console.log("⚠️ Сессия недействительна при загрузке, выполняется выход");
+          console.log("⚠ Сессия недействительна при загрузке, выполняется выход");
           localStorage.removeItem("currentUser");
           localStorage.removeItem("sessionToken");
           location.reload();
           return;
         }
       } catch (err) {
-        console.warn("⚠️ Не удалось проверить сессию при загрузке (возможно временная проблема с БД):", err.message);
+        console.warn("⚠ Не удалось проверить сессию при загрузке (возможно временная проблема с БД):", err.message);
       }
     } else {
       // Если нет токена сессии, создаем новую
@@ -789,7 +789,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           console.log("✅ Сессия создана при загрузке:", sessionData.session_token);
         }
       } catch (err) {
-        console.error("⚠️ Ошибка создания сессии при загрузке:", err);
+        console.error("⚠ Ошибка создания сессии при загрузке:", err);
       }
     }
 
@@ -883,7 +883,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setSessionCheckInterval(setInterval(async () => {
     // Пропускаем проверку если идет переименование пользователя
     if (state.isRenamingUser) {
-      console.log("⏸️ Проверка сессии пропущена (идет переименование)");
+      console.log("⏸ Проверка сессии пропущена (идет переименование)");
       return;
     }
 
@@ -894,7 +894,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const validateResponse = await fetch(`/api/sessions/${token}/validate`);
         if (!validateResponse.ok) {
           sessionCheckFailures++;
-          console.log(`⚠️ Проверка сессии не прошла (попытка ${sessionCheckFailures}/3)`);
+          console.log(`⚠ Проверка сессии не прошла (попытка ${sessionCheckFailures}/3)`);
 
           if (sessionCheckFailures >= 3) {
             console.log("❌ Сессия недействительна после 3 попыток, выполняется выход");
@@ -907,7 +907,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       } catch (err) {
         sessionCheckFailures++;
-        console.error(`⚠️ Ошибка проверки сессии (попытка ${sessionCheckFailures}/3):`, err.message);
+        console.error(`⚠ Ошибка проверки сессии (попытка ${sessionCheckFailures}/3):`, err.message);
 
         if (sessionCheckFailures >= 3) {
           console.log("❌ Множественные ошибки проверки сессии, выполняется выход");
@@ -931,7 +931,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!document.hidden && state.currentUser) {
       const settingsContainer = document.getElementById("settingsContainer");
       if (settingsContainer && settingsContainer.offsetParent !== null) {
-        console.log("👁️ Вкладка стала видимой, обновляем настройки");
+        console.log("👁 Вкладка стала видимой, обновляем настройки");
         loadSettings();
       }
     }

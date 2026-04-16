@@ -68,7 +68,7 @@ export async function openMatchTeamFileSelector(mode) {
     const response = await fetch('/api/team-files');
     if (!response.ok) throw new Error('Не удалось загрузить список файлов');
     const files = await response.json();
-    if (!files || files.length === 0) { alert('Не найдено файлов команд в папке names'); return; }
+    if (!files || files.length === 0) { await showCustomAlert('Не найдено файлов команд в папке names', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>'); return; }
     const currentFile = selectedMatchTeamFile;
     const fileListHtml = files.map(file => {
       const isSelected = file.path === currentFile;
@@ -82,7 +82,7 @@ export async function openMatchTeamFileSelector(mode) {
     lockBodyScroll();
   } catch (error) {
     console.error('Ошибка при открытии выбора файла:', error);
-    alert('Не удалось загрузить список файлов');
+    await showCustomAlert('Не удалось загрузить список файлов', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -102,13 +102,13 @@ export async function selectMatchTeamFile(filePath, mode) {
       initTeamAutocomplete('editMatchTeam2');
     }
     if (matchTeamsList.length > 0) {
-      alert(`Файл команд изменен на: ${filePath.split('/').pop()}\nЗагружено команд: ${matchTeamsList.length}`);
+      await showCustomAlert(`Файл команд изменен на: ${filePath.split('/').pop()}\nЗагружено команд: ${matchTeamsList.length}`, "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     } else {
-      alert(`Файл команд изменен на: ${filePath.split('/').pop()}\n<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Не удалось загрузить команды из этого файла`);
+      await showCustomAlert(`Файл команд изменен на: ${filePath.split('/').pop()}\nНе удалось загрузить команды из этого файла`, "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка при выборе файла команд:', error);
-    alert('Не удалось загрузить файл команд');
+    await showCustomAlert('Не удалось загрузить файл команд', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -179,13 +179,13 @@ export function hideSuggestions(inputId) {
   if (suggestionsDiv) { suggestionsDiv.style.display = 'none'; suggestionsDiv.innerHTML = ''; }
 }
 
-export function toggleTeamDropdown(inputId, event) {
+export async function toggleTeamDropdown(inputId, event) {
   if (event) { event.preventDefault(); event.stopPropagation(); }
   const suggestionsDiv = document.getElementById(`${inputId}Suggestions`);
   const input = document.getElementById(inputId);
   if (!suggestionsDiv || !input) return;
   if (suggestionsDiv.style.display === 'block') { hideSuggestions(inputId); return; }
-  if (matchTeamsList.length === 0) { alert('Сначала загрузите файл команд через кнопку <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'); return; }
+  if (matchTeamsList.length === 0) { await showCustomAlert('Сначала загрузите файл команд', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   suggestionsDiv.innerHTML = matchTeamsList.map((team, index) =>
     `<div class="team-suggestion-item" data-index="${index}" onclick="selectTeam('${inputId}', '${team.replace(/'/g, "\\'")}')">${team}</div>`
   ).join('');
@@ -224,9 +224,9 @@ export function selectExistingRound(modalType) {
 // ===== СОЗДАНИЕ МАТЧА =====
 
 export async function openCreateMatchModal() {
-  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
-  if (!canCreateMatches()) { alert('У вас нет прав для создания матчей'); return; }
-  if (!state.currentEventId) { alert('Пожалуйста, сначала выберите турнир'); return; }
+  if (!state.currentUser) { await showCustomAlert('Сначала войдите в систему', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
+  if (!canCreateMatches()) { await showCustomAlert('У вас нет прав для создания матчей', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+  if (!state.currentEventId) { await showCustomAlert('Пожалуйста, сначала выберите турнир', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
 
   document.getElementById('createMatchForm').reset();
   document.getElementById('matchIsFinal').checked = false;
@@ -288,8 +288,8 @@ export async function submitCreateMatch(event) {
   const showPenaltiesInGame = document.getElementById('showPenaltiesInGame').checked;
   const showExtraTime = document.getElementById('showExtraTime').checked;
   const showPenaltiesAtEnd = document.getElementById('showPenaltiesAtEnd').checked;
-  if (!team1 || !team2) { alert('Пожалуйста, введите обе команды'); return; }
-  if (!state.currentEventId) { alert('Турнир не выбран'); return; }
+  if (!team1 || !team2) { await showCustomAlert('Пожалуйста, введите обе команды', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
+  if (!state.currentEventId) { await showCustomAlert('Турнир не выбран', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>'); return; }
   const copiesCount = Math.min(Math.max(copies, 1), 20);
   try {
     let created = 0;
@@ -393,8 +393,8 @@ export async function submitImportMatches(event) {
   const eventId = document.getElementById('importEventId').value;
   const includeDates = document.getElementById('importIncludeDate').checked;
   const separator = document.getElementById('importSeparator').value;
-  if (!eventId) { alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Выберите турнир'); return; }
-  if (!importData) { alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Введите данные матчей'); return; }
+  if (!eventId) { await showCustomAlert('Выберите турнир', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
+  if (!importData) { await showCustomAlert('Введите данные матчей', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   const lines = importData.split('\n').filter(line => line.trim());
   const matches = [];
   const errors = [];
@@ -427,8 +427,8 @@ export async function submitImportMatches(event) {
     }
     matches.push({ team1_name: team1, team2_name: team2, match_date: matchDate, round: roundPart || null, event_id: parseInt(eventId) });
   });
-  if (errors.length > 0) { alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибки при импорте:\n\n' + errors.join('\n')); return; }
-  if (matches.length === 0) { alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Не найдено ни одного матча для импорта'); return; }
+  if (errors.length > 0) { alert('Ошибки при импорте:\n\n' + errors.join('\n')); return; }
+  if (matches.length === 0) { await showCustomAlert('Не найдено ни одного матча для импорта', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>'); return; }
   try {
     const response = await fetch('/api/matches/bulk-create', {
       method: 'POST',
@@ -436,35 +436,35 @@ export async function submitImportMatches(event) {
       body: JSON.stringify({ matches }),
     });
     if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'Ошибка при импорте'); }
-    alert(`<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Успешно импортировано ${matches.length} матчей`);
+    await showCustomAlert(`Успешно импортировано ${matches.length} матчей`, "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     closeImportMatchesModal();
     if (state.currentEventId) loadMatches(state.currentEventId);
   } catch (error) {
     console.error('Ошибка при импорте матчей:', error);
-    alert(`<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при импорте: ${error.message}`);
+    await showCustomAlert(`Ошибка при импорте: ${error.message}`, "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 // ===== ПАРСИНГ МАТЧЕЙ =====
 
 // Открыть модальное окно парсинга матчей
-export function openBulkParseModal() {
+export async function openBulkParseModal() {
   if (!state.currentEventId) {
-    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Сначала выберите турнир');
+    await showCustomAlert('Сначала выберите турнир', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
   // Получаем текущий турнир
   const currentEvent = state.events.find(e => e.id === state.currentEventId);
   if (!currentEvent) {
-    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Не удалось определить текущий турнир');
+    await showCustomAlert('Не удалось определить текущий турнир', "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   // Определяем код турнира по иконке
   const tournamentCode = ICON_TO_COMPETITION[currentEvent.icon];
   if (!tournamentCode) {
-    alert(`<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Парсинг не поддерживается для турнира "${currentEvent.name}". Поддерживаются только турниры с иконками: Champions League, Europa League, Conference League, Premier League, Bundesliga, La Liga, Serie A, Ligue 1, RPL`);
+    await showCustomAlert(`Парсинг не поддерживается для турнира "${currentEvent.name}". Поддерживаются только турниры с иконками: Champions League, Europa League, Conference League, Premier League, Bundesliga, La Liga, Serie A, Ligue 1, RPL`, "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     return;
   }
 
@@ -658,7 +658,7 @@ export async function loadParsePreview() {
           console.log(`✅ Загружен словарь для ${competition}: ${Object.keys(teamTranslations).length} команд`);
         }
       } catch (err) {
-        console.warn(`⚠️ Не удалось загрузить словарь из ${dictionaryFile}`);
+        console.warn(`⚠ Не удалось загрузить словарь из ${dictionaryFile}`);
       }
     }
 
@@ -680,7 +680,7 @@ export async function loadParsePreview() {
 
     if (parsedMatches.length === 0) {
       const statusText = includeFuture ? 'матчей' : 'завершенных матчей';
-      previewList.innerHTML = `<div style="text-align: center; color: #ffc107; padding: 20px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Не найдено ${statusText} в указанном диапазоне</div>`;
+      previewList.innerHTML = `<div style="text-align: center; color: #ffc107; padding: 20px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Не найдено ${statusText} в указанном диапазоне</div>`;
       document.getElementById('bulkParseSubmitBtn').disabled = true;
       return;
     }
@@ -816,7 +816,7 @@ export async function submitBulkParse(event) {
     const confirmed = await showCustomConfirm(
       'Вы не указали тур. Матчи будут созданы без указания тура. Продолжить?',
       'Подтверждение',
-      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
     );
     if (!confirmed) return;
   }
@@ -888,7 +888,7 @@ export async function submitBulkParse(event) {
 
     const competition = document.getElementById('parseCompetition').value;
     if (competition === 'RPL') {
-      message += `\n\n<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ ВНИМАНИЕ: Даты матчей RPL могут быть неточными из-за ограничений API. Проверьте и скорректируйте даты вручную через редактирование матчей.`;
+      message += `\n\n<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> ВНИМАНИЕ: Даты матчей RPL могут быть неточными из-за ограничений API. Проверьте и скорректируйте даты вручную через редактирование матчей.`;
     }
 
     await showCustomAlert(message, 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');

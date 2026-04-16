@@ -109,7 +109,7 @@ function getDeviceIcon(deviceInfo, os) {
   if (osLower.includes('mac')) return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>';
   if (osLower.includes('linux')) return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>';
 
-  return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>️';
+  return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>';
 }
 
 // ===== УПРАВЛЕНИЕ СЕССИЯМИ =====
@@ -120,7 +120,7 @@ export async function logoutDevice(sessionToken) {
 
   // Проверяем, привязан ли Telegram
   if (!state.currentUser.telegram_username) {
-    await showCustomAlert('Для выхода с устройства необходимо привязать Telegram в настройках', 'Требуется Telegram', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
+    await showCustomAlert('Для выхода с устройства необходимо привязать Telegram в настройках', 'Требуется Telegram', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
@@ -183,7 +183,7 @@ export async function toggleTrustedDevice(sessionToken, isTrusted) {
 
   // Проверяем, привязан ли Telegram
   if (!state.currentUser.telegram_username) {
-    await showCustomAlert('Для управления доверенными устройствами необходимо привязать Telegram в настройках', 'Требуется Telegram', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
+    await showCustomAlert('Для управления доверенными устройствами необходимо привязать Telegram в настройках', 'Требуется Telegram', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
   }
 
