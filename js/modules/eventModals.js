@@ -78,7 +78,7 @@ export function openEditEventModal(eventId) {
           customIconGroup.style.display = "block";
         }
       } else {
-        setCustomSelectValue("editEventIconSelect", "🏆");
+        setCustomSelectValue("editEventIconSelect", "icon-trophy");
         customIconCheckbox.checked = false;
         customIconGroup.style.display = "none";
       }

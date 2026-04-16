@@ -84,7 +84,7 @@
                 <img src="img/tg.png" alt="Telegram" style="width: 20px; height: 20px;"> Войти через Telegram
               </button>
               <button class="telegram-info-btn" onclick="openTelegramInfoModal()" style="background: rgba(90, 159, 212, 0.3); color: #5a9fd4; border: 1px solid #5a9fd4; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 1.2em; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; position: relative; z-index: 1;" onmouseover="this.style.background='rgba(90, 159, 212, 0.5)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.3)'" title="Информация о входе через Telegram">
-                ❓
+                <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>
               </button>
             </div>
             
@@ -107,9 +107,9 @@
                 justify-content: center;
                 gap: 10px;
               ">
-                <span style="font-size: 1.5em;">⚽</span>
+                <span style="font-size: 1.5em;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg></span>
                 Добро пожаловать!
-                <span style="font-size: 1.5em;">🎯</span>
+                <span style="font-size: 1.5em;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg></span>
               </h3>
               
               <div style="
@@ -119,27 +119,27 @@
                 text-align: left;
               ">
                 <p style="margin: 0 0 12px 0; display: flex; align-items: start; gap: 10px;">
-                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;">🎲</span>
+                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-lucky"></use></svg></span>
                   <span><strong style="color: #5a9fd4;">Бесплатные ставки</strong> — играем на очки, а не на деньги!</span>
                 </p>
                 
                 <p style="margin: 0 0 12px 0; display: flex; align-items: start; gap: 10px;">
-                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;">🏆</span>
+                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg></span>
                   <span><strong style="color: #5a9fd4;">Соревнуйся</strong> с друзьями и занимай первые места в рейтинге</span>
                 </p>
                 
                 <p style="margin: 0 0 12px 0; display: flex; align-items: start; gap: 10px;">
-                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;">⚡</span>
+                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-fast"></use></svg></span>
                   <span><strong style="color: #5a9fd4;">LIVE матчи</strong> — статистика в лайв матчах</span>
                 </p>
                 
                 <p style="margin: 0 0 12px 0; display: flex; align-items: start; gap: 10px;">
-                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;">🔔</span>
+                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg></span>
                   <span><strong style="color: #5a9fd4;">Уведомления</strong> в Telegram о новых матчах и результатах</span>
                 </p>
                 
                 <p style="margin: 0; display: flex; align-items: start; gap: 10px;">
-                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;">🎁</span>
+                  <span style="color: #5a9fd4; font-size: 1.2em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg></span>
                   <span><strong style="color: #5a9fd4;">Награды</strong> за правильные прогнозы в виде карточек в профиле</span>
                 </p>
               </div>
@@ -152,7 +152,7 @@
                 color: #b0b8c8;
                 font-size: 0.9em;
               ">
-                💡 Просто введи логин и начни делать прогнозы!
+                <svg class="icon" aria-hidden="true"><use href="#icon-hint"></use></svg> Просто введи логин и начни делать прогнозы!
               </div>
             </div>
           </div>
@@ -199,22 +199,22 @@
             <span class="live-indicator static" id="liveTabIndicator"></span>
           </button>
           <button class="tab-btn active" onclick="switchTab('allbets')">
-            💰 Ставки
+            <svg class="icon" aria-hidden="true"><use href="#icon-bets"></use></svg> Ставки
           </button>
           <button class="tab-btn" onclick="switchTab('participants')">
-            👥 Таблица
+            <svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Таблица
           </button>
           <button class="tab-btn" onclick="switchTab('profile')">
-            👤 Профиль
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> Профиль
           </button>
           <button class="tab-btn" onclick="switchTab('news')">
-            📢 Новости
+            <svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Новости
           </button>
           <button class="tab-btn" id="settingsTabBtn" onclick="switchTab('settings')">
-            ⚙️ Настройки
+            <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Настройки
           </button>
           <button class="tab-btn login-tab-btn" id="loginTabBtn" onclick="openLoginModal()" style="display: none; background: linear-gradient(135deg, #54a9eb 0%, #3876eb 100%); font-weight: bold; color: white;">
-            🔐 ВХОД
+            <svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg> ВХОД
           </button>
         </div>
         <p
@@ -246,7 +246,7 @@
             <img src="img/tg.png" alt="Telegram" style="width: 20px; height: 20px;"> Войти через Telegram
           </button>
           <button class="telegram-info-btn" onclick="openTelegramInfoModal()" style="background: rgba(90, 159, 212, 0.3); color: #5a9fd4; border: 1px solid #5a9fd4; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 1.2em; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px;" onmouseover="this.style.background='rgba(90, 159, 212, 0.5)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.3)'" title="Информация о входе через Telegram">
-            ❓
+            <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>
           </button>
         </div>
         
@@ -269,9 +269,9 @@
             justify-content: center;
             gap: 8px;
           ">
-            <span style="font-size: 1.3em;">⚽</span>
+            <span style="font-size: 1.3em;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg></span>
             Добро пожаловать!
-            <span style="font-size: 1.3em;">🎯</span>
+            <span style="font-size: 1.3em;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg></span>
           </h3>
           
           <div style="
@@ -281,27 +281,27 @@
             text-align: left;
           ">
             <p style="margin: 0 0 10px 0; display: flex; align-items: start; gap: 8px;">
-              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;">🎲</span>
+              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-lucky"></use></svg></span>
               <span><strong style="color: #5a9fd4;">Бесплатные ставки</strong> — играем на очки, а не на деньги!</span>
             </p>
             
             <p style="margin: 0 0 10px 0; display: flex; align-items: start; gap: 8px;">
-              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;">🏆</span>
+              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg></span>
               <span><strong style="color: #5a9fd4;">Соревнуйся</strong> с друзьями и занимай первые места в рейтинге</span>
             </p>
             
             <p style="margin: 0 0 10px 0; display: flex; align-items: start; gap: 8px;">
-              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;">⚡</span>
+              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-fast"></use></svg></span>
               <span><strong style="color: #5a9fd4;">LIVE матчи</strong> — статистика в лайв матчах</span>
             </p>
             
             <p style="margin: 0 0 10px 0; display: flex; align-items: start; gap: 8px;">
-              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;">🔔</span>
+              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg></span>
               <span><strong style="color: #5a9fd4;">Уведомления</strong> в Telegram о новых матчах и результатах</span>
             </p>
             
             <p style="margin: 0; display: flex; align-items: start; gap: 8px;">
-              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;">🎁</span>
+              <span style="color: #5a9fd4; font-size: 1.1em; flex-shrink: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg></span>
               <span><strong style="color: #5a9fd4;">Награды</strong> за правильные прогнозы в виде карточек в профиле</span>
             </p>
           </div>
@@ -314,7 +314,7 @@
             color: #b0b8c8;
             font-size: 0.8em;
           ">
-            💡 Просто введи логин и начни делать прогнозы!
+            <svg class="icon" aria-hidden="true"><use href="#icon-hint"></use></svg> Просто введи логин и начни делать прогнозы!
           </div>
         </div>
       </div>
@@ -327,13 +327,13 @@
       <!-- Боковые кнопки навигации (мобильные) -->
       <div class="mobile-nav-buttons">
         <button class="mobile-nav-btn active" onclick="showMobileSection('tournaments')" title="Турниры">
-          📅 Турниры
+          <svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Турниры
         </button>
         <button class="mobile-nav-btn" onclick="showMobileSection('matches')" title="Матчи" style="display: none;">
-          ⚽ Матчи
+          <svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Матчи
         </button>
         <button class="mobile-nav-btn" onclick="showMobileSection('bets')" title="Мои ставки">
-          💰 Мои ставки
+          <svg class="icon" aria-hidden="true"><use href="#icon-bets"></use></svg> Мои ставки
         </button>
       </div>
 
@@ -370,7 +370,7 @@
                 user-select: none;
               "
             >
-              <h2 style="margin: 0; padding-bottom: 10px">📅 Турниры</h2>
+              <h2 style="margin: 0; padding-bottom: 10px"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Турниры</h2>
               <button
                 id="adminBtn"
                 onclick="openCreateEventModal()"
@@ -382,7 +382,7 @@
                   border: none;
                 "
               >
-                ➕
+                <svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg>
               </button>
             </div>
             <div class="events-list" id="eventsList">
@@ -422,9 +422,9 @@
             >
               <div class="matches-container">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                  <h2 style="margin: 0;">⚽ Матчи</h2>
+                  <h2 style="margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Матчи</h2>
                   <button id="matchRemindersBtn" onclick="showMatchRemindersModal(event)" style="background: transparent; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 1em; cursor: pointer; color: #b0b8c8; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: none; position: relative;" title="Напоминания о матчах турнира">
-                    🔔
+                    <svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg>
                     <span id="reminderIndicator" style="display: none; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #f44336; border-radius: 50%; border: 1px solid rgba(40, 44, 54, 1);"></span>
                   </button>
                 </div>
@@ -495,7 +495,7 @@
                       "
                       title="Настройки администратора"
                     >
-                      ⚙️
+                      <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>
                     </button>
                   </div>
                 </div>
@@ -553,7 +553,7 @@
         <!-- Мои ставки -->
         <div class="allbets-column bets-column" style="min-width: 0">
           <div class="section bet-section bet-section-bets">
-            <h2 class="my-bets-title">💰 Мои ставки</h2>
+            <h2 class="my-bets-title"><svg class="icon" aria-hidden="true"><use href="#icon-bets"></use></svg> Мои ставки</h2>
             <div class="my-bets-list" id="myBetsList">
               <div class="empty-message">У вас пока нет ставок</div>
             </div>
@@ -569,7 +569,7 @@
       >
         <div class="section">
           <h2 style="display: flex; align-items: center; gap: 10px;">
-            <span>🔴 LIVE Матчи</span>
+            <span><svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> LIVE Матчи</span>
           </h2>
           <div class="live-matches-container" id="liveMatchesContainer">
             <div class="empty-message">Загружаем live матчи...</div>
@@ -593,7 +593,7 @@
               gap: 10px;
             "
           >
-            <h2 style="margin: 0">🏆 Турниры</h2>
+            <h2 style="margin: 0"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Турниры</h2>
             <button
               id="countingBtn"
               onclick="switchTab('counting')"
@@ -606,7 +606,7 @@
                 font-size: 0.9em;
               "
             >
-              📊 Подсчет
+              <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Подсчет
             </button>
           </div>
           <div class="events-grid" id="eventsGrid">
@@ -616,7 +616,7 @@
 
         <div class="section" id="tournamentSection" style="display: none">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 id="tournamentTitle" style="margin: 0;">📋 Участники турнира</h2>
+            <h2 id="tournamentTitle" style="margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Участники турнира</h2>
             <button
               id="backToTournaments"
               class="btn-back"
@@ -645,7 +645,7 @@
                 onmouseout="this.style.transform='scale(1)'"
                 title="Сравнить участников"
               >
-                ⚖️ Сравнение
+                <svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg> Сравнение
               </button>
               <button 
                 onclick="openTournamentInfoModal()"
@@ -663,7 +663,7 @@
                 onmouseout="this.style.transform='scale(1)'"
                 title="Информация о турнире"
               >
-                ❔
+                <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>
               </button>
             </div>
           </div>
@@ -674,7 +674,7 @@
 
         <div class="section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 id="participantsHeader" style="margin: 0;">👥 Всего участников: </h2>
+            <h2 id="participantsHeader" style="margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Всего участников: </h2>
             <button 
               onclick="openGlobalComparisonModal()"
               style="
@@ -691,7 +691,7 @@
               onmouseout="this.style.transform='scale(1)'"
               title="Сравнить участников"
             >
-              ⚖️ Сравнение
+              <svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg> Сравнение
             </button>
           </div>
           <div class="participants-list" id="participantsList">
@@ -708,7 +708,7 @@
       >
         <div class="section profile-section">
           <div class="profile-heading-row">
-            <h2>👤 Мой профиль</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> Мой профиль</h2>
             <div
               id="profileAuthPlaceholder"
               class="profile-auth-placeholder"
@@ -728,7 +728,7 @@
       >
         <div class="section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0;">⚙️ Настройки</h2>
+            <h2 style="margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Настройки</h2>
             <button 
               onclick="openBugReportModal()"
               title="Нашел баг? Напиши"
@@ -747,7 +747,7 @@
               onmouseover="this.style.background='transparent !important'"
               onmouseout="this.style.background='transparent !important'"
             >
-              🐛 Нашел баг? Напиши
+              <svg class="icon" aria-hidden="true"><use href="#icon-bug"></use></svg> Нашел баг? Напиши
             </button>
           </div>
           <div class="settings-container" id="settingsContainer">
@@ -774,7 +774,7 @@
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
-                    📱 Получение личных сообщений в ТГ
+                    <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Получение личных сообщений в ТГ
                   </h3>
                   <div style="min-height: 85px;">
                     <div id="telegramNotificationsDescription">
@@ -782,7 +782,7 @@
                         Получайте уведомления о ставках и результатах прямо в ТГ
                       </p>
                       <p style="margin: 0; color: #4caf50; font-size: 12px">
-                        ℹ️ Коды подтверждения (2FA, изменение Telegram и т.д.) будут приходить всегда
+                        <svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg> Коды подтверждения (2FA, изменение Telegram и т.д.) будут приходить всегда
                       </p>
                     </div>
                     <div id="telegramNotificationsStatus" style="display: none;"></div>
@@ -796,7 +796,7 @@
                     onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'"
                     onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'"
                   >
-                    ⚙️ Еще
+                    <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Еще
                   </button>
                   <label class="switch">
                     <input type="checkbox" id="telegramNotificationsCheckbox" onchange="saveTelegramNotificationSettings()" />
@@ -831,7 +831,7 @@
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
-                    👥 Напоминания в группе ТГ
+                    <svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Напоминания в группе ТГ
                   </h3>
                   <div style="min-height: 70px;">
                     <div id="groupRemindersDescription">
@@ -875,7 +875,7 @@
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
-                    🔐 Подтверждение логина через бота
+                    <svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg> Подтверждение логина через бота
                   </h3>
                   <div style="min-height: 95px;">
                     <div id="login2faDescription">
@@ -883,7 +883,7 @@
                         Требовать код подтверждения из Telegram при каждом входе для дополнительной безопасности
                       </p>
                       <p style="margin: 0; color: #888; font-size: 12px">
-                        ⚠️ Для работы необходимо: 1) Привязать Telegram в настройках выше 2) Написать боту 
+                        <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Для работы необходимо: 1) Привязать Telegram в настройках выше 2) Написать боту 
                         <a href="https://t.me/OnexBetLineBoomBot" target="_blank" style="color: #5a9fd4; text-decoration: none;">@OnexBetLineBoomBot</a> 
                         команду /start
                       </p>
@@ -923,7 +923,7 @@
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
-                    🔊 Звук в LIVE матчах
+                    <svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> Звук в LIVE матчах
                   </h3>
                   <div style="min-height: 70px;">
                     <div id="liveSoundDescription">
@@ -966,7 +966,7 @@
               >
                 <div class="settings-item-content-wrapper" style="flex: 1; min-width: 250px">
                   <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 16px">
-                    🏆 Показ победителя на завершённых турнирах
+                    <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Показ победителя на завершённых турнирах
                   </h3>
                   <div style="min-height: 70px;">
                     <div id="tournamentWinnerDescription">
@@ -1005,7 +1005,7 @@
             >
               <div>
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
-                  🎨 Темы
+                  <svg class="icon" aria-hidden="true"><use href="#icon-themes"></use></svg> Темы
                 </h3>
                 <div style="min-height: 50px; margin-bottom: 15px;">
                   <div id="themeDescription">
@@ -1033,12 +1033,12 @@
                   onblur="this.style.borderColor='rgba(90, 159, 212, 0.5)'"
                 >
                   <option value="theme-default">Дефолтная</option>
-                  <option value="theme-hacker-green">💻 Hacker Green</option>
-                  <option value="theme-solarized">🌅 Solarized</option>
-                  <option value="theme-matrix">🟢 Matrix</option>
-                  <option value="theme-cyberpunk">🌃 Cyberpunk</option>
-                  <option value="theme-leagueChampions">🏆 League Champions</option>
-                  <option value="theme-leagueEurope">⭐ League Europe</option>
+                  <option value="theme-hacker-green">Hacker Green</option>
+                  <option value="theme-solarized">Solarized</option>
+                  <option value="theme-matrix">Matrix</option>
+                  <option value="theme-cyberpunk">Cyberpunk</option>
+                  <option value="theme-leagueChampions"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> League Champions</option>
+                  <option value="theme-leagueEurope"><svg class="icon" aria-hidden="true"><use href="#icon-best-result"></use></svg> League Europe</option>
                 </select>
               </div>
             </div>
@@ -1056,7 +1056,7 @@
             >
               <div>
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
-                  🕐 Часовой пояс
+                  <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Часовой пояс
                 </h3>
                 <div style="min-height: 50px; margin-bottom: 15px;">
                   <div id="timezoneDescription">
@@ -1081,7 +1081,7 @@
                     cursor: pointer;
                   "
                 >
-                  <option value="">⏳ Загрузка...</option>
+                  <option value=""><svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> Загрузка...</option>
                 </select>
               </div>
             </div>
@@ -1099,7 +1099,7 @@
             >
               <div>
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
-                  👁️ Показывать ставки другим
+                  <svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg> Показывать ставки другим
                 </h3>
                 <div style="min-height: 50px; margin-bottom: 15px;">
                   <div id="showBetsDescription">
@@ -1142,7 +1142,7 @@
             >
               <div>
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
-                  🎲 "Мне повезет"
+                  <svg class="icon" aria-hidden="true"><use href="#icon-lucky"></use></svg> "Мне повезет"
                 </h3>
                 <div style="min-height: 50px; margin-bottom: 15px;">
                   <div id="luckyButtonDescription">
@@ -1185,7 +1185,7 @@
             >
               <div>
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
-                  🎯 Кнопка xG
+                  <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Кнопка xG
                 </h3>
                 <div style="min-height: 50px; margin-bottom: 15px;">
                   <div id="xgButtonDescription">
@@ -1228,7 +1228,7 @@
             >
               <div>
                 <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 16px">
-                  📱 Управление устройствами
+                  <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Управление устройствами
                 </h3>
                 <p style="margin: 0 0 15px 0; color: #aaa; font-size: 14px">
                   Просмотр и управление устройствами, на которых вы вошли в систему
@@ -1246,7 +1246,7 @@
                     width: 100%;
                   "
                 >
-                  📱 Устройства
+                  <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Устройства
                 </button>
               </div>
             </div>
@@ -1255,7 +1255,7 @@
           <!-- Админ-панель в настройках -->
           <div id="adminSettingsPanel" style="display: none; margin-top: 20px">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-              <h3 style="margin: 0; color: #5a9fd4">🔧 Админ-панель</h3>
+              <h3 style="margin: 0; color: #5a9fd4"><svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg> Админ-панель</h3>
               <button onclick="openConfigureCategoriesModal()" style="
                 padding: 8px 16px;
                 background: transparent;
@@ -1267,7 +1267,7 @@
                 transition: all 0.3s ease;
                 white-space: nowrap;
               " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Настроить категории админ-панели">
-                ⚙️
+                <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>
               </button>
             </div>
             
@@ -1283,7 +1283,7 @@
 
           <!-- Панель модератора в настройках -->
           <div id="moderatorSettingsPanel" style="display: none; margin-top: 20px">
-            <h3 style="margin-bottom: 15px; color: #9c27b0">🛡️ Панель модератора</h3>
+            <h3 style="margin-bottom: 15px; color: #9c27b0"><svg class="icon" aria-hidden="true"><use href="#icon-moderator"></use></svg> Панель модератора</h3>
             <div
               style="
                 display: flex;
@@ -1312,7 +1312,7 @@
                 onmouseover="this.style.transform='scale(1.05)'"
                 onmouseout="this.style.transform='scale(1)'"
               >
-                📋 Открыть логи
+                <svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Открыть логи
               </button>
               <button
                 id="modBackupDBBtn"
@@ -1334,7 +1334,7 @@
                 onmouseover="this.style.transform='scale(1.05)'"
                 onmouseout="this.style.transform='scale(1)'"
               >
-                💾 База данных
+                <svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> База данных
               </button>
               <button
                 id="modOrphanedBtn"
@@ -1356,7 +1356,7 @@
                 onmouseover="this.style.transform='scale(1.05)'"
                 onmouseout="this.style.transform='scale(1)'"
               >
-                🔍 Проверить orphaned
+                <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg> Проверить orphaned
               </button>
               <button
                 id="modUsersBtn"
@@ -1376,7 +1376,7 @@
                 onmouseover="this.style.transform='scale(1.05)'"
                 onmouseout="this.style.transform='scale(1)'"
               >
-                👥 Пользователи
+                <svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Пользователи
               </button>
             </div>
           </div>
@@ -1391,7 +1391,7 @@
       >
         <div class="section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin: 0;">📢 Новости</h2>
+            <h2 style="margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Новости</h2>
             <button 
               onclick="openRssNewsModal()"
               style="
@@ -1407,7 +1407,7 @@
               onmouseover="this.style.transform='scale(1.05)'"
               onmouseout="this.style.transform='scale(1)'"
             >
-              🌐 Другие новости
+              <svg class="icon" aria-hidden="true"><use href="#icon-globe"></use></svg> Другие новости
             </button>
           </div>
           
@@ -1422,16 +1422,16 @@
               Все
             </button>
             <button class="news-filter-btn" data-type="tournament" onclick="filterNews('tournament')">
-              🏆 Турниры
+              <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Турниры
             </button>
             <button class="news-filter-btn" data-type="system" onclick="filterNews('system')">
-              ⚙️ Система
+              <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Система
             </button>
             <button class="news-filter-btn" data-type="achievement" onclick="filterNews('achievement')">
-              🏅 Достижения
+              <svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Достижения
             </button>
             <button class="news-filter-btn" data-type="announcement" onclick="filterNews('announcement')">
-              📣 Анонсы
+              <svg class="icon" aria-hidden="true"><use href="#icon-announcements"></use></svg> Анонсы
             </button>
           </div>
           
@@ -1461,7 +1461,7 @@
               onmouseover="this.style.transform='scale(1.05)'"
               onmouseout="this.style.transform='scale(1)'"
             >
-              📜 Еще ранее
+              <svg class="icon" aria-hidden="true"><use href="#icon-earlier"></use></svg> Еще ранее
             </button>
           </div>
         </div>
@@ -1475,7 +1475,7 @@
       >
         <div class="section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h2 style="margin: 0;">📊 Подсчет результатов</h2>
+            <h2 style="margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Подсчет результатов</h2>
             <div style="display: flex; gap: 10px;">
               <button 
                 onclick="openRecountModal()"
@@ -1493,7 +1493,7 @@
                 onmouseover="this.style.background='rgba(255, 152, 0, 0.1)'"
                 onmouseout="this.style.background='transparent'"
               >
-                🔄 ПЕРЕСЧИТАТЬ
+                <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> ПЕРЕСЧИТАТЬ
               </button>
               <button 
                 onclick="sendCountingResults()"
@@ -1509,7 +1509,7 @@
                   transition: all 0.3s ease;
                 "
               >
-                📤 Отправить результаты
+                <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить результаты
               </button>
             </div>
           </div>
@@ -1523,7 +1523,7 @@
       <div id="adminModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'adminModal', closeAdminModal)">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>👥 Управление пользователями</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Управление пользователями</h2>
             <div class="modal-header-actions">
               <button 
                 class="modal-action-btn" 
@@ -1531,7 +1531,7 @@
                 onclick="syncAllTelegramIds()"
                 title="Синхронизировать telegram_id для всех пользователей"
               >
-                🤖 Синхронизация
+                <svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg> Синхронизация
               </button>
               <button class="modal-close" onclick="closeAdminModal()">
                 &times;
@@ -1550,7 +1550,7 @@
       <div id="bugReportsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'bugReportsModal', closeBugReportsModal)">
         <div class="modal-content" style="max-width: 900px">
           <div class="modal-header">
-            <h2>🐛 Багрепорты от пользователей</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-bug"></use></svg> Багрепорты от пользователей</h2>
             <button class="modal-close" onclick="closeBugReportsModal()">
               &times;
             </button>
@@ -1580,7 +1580,7 @@
                   transition: all 0.3s ease;
                 "
               >
-                🆕 Новый (0)
+                <svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Новый (0)
               </button>
               <button 
                 class="bug-filter-btn" 
@@ -1597,7 +1597,7 @@
                   transition: all 0.3s ease;
                 "
               >
-                🔄 В работе (0)
+                <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> В работе (0)
               </button>
               <button 
                 class="bug-filter-btn" 
@@ -1614,7 +1614,7 @@
                   transition: all 0.3s ease;
                 "
               >
-                ✅ Решено (0)
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Решено (0)
               </button>
               <button 
                 class="bug-filter-btn" 
@@ -1631,7 +1631,7 @@
                   transition: all 0.3s ease;
                 "
               >
-                ❌ Отклонено (0)
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отклонено (0)
               </button>
             </div>
             
@@ -1646,7 +1646,7 @@
       <div id="bugReportImagesModal" class="modal" style="display: none" onclick="if(event.target.id === 'bugReportImagesModal') closeBugReportImagesModal()">
         <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
           <div class="modal-header">
-            <h2 id="bugReportImagesTitle">📷 Изображения багрепорта</h2>
+            <h2 id="bugReportImagesTitle"><svg class="icon" aria-hidden="true"><use href="#icon-photo"></use></svg> Изображения багрепорта</h2>
             <button class="modal-close" onclick="closeBugReportImagesModal()">&times;</button>
           </div>
           <div class="modal-body" style="padding: 20px; overflow: auto; max-height: calc(90vh - 120px);">
@@ -1711,7 +1711,7 @@
       <div id="recountModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'recountModal', closeRecountModal)">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
-            <h2>🔄 Пересчет результатов</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Пересчет результатов</h2>
             <button class="modal-close" onclick="closeRecountModal()">
               &times;
             </button>
@@ -1719,12 +1719,12 @@
           <div class="modal-body">
             <div style="margin-bottom: 20px;">
               <p style="color: rgb(224, 230, 240); margin-bottom: 15px;">
-                ⚠️ Это действие сбросит результаты выбранной даты и пересчитает их заново.
+                <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Это действие сбросит результаты выбранной даты и пересчитает их заново.
               </p>
               
               <div style="margin-bottom: 15px;">
                 <label style="display: block; margin-bottom: 5px; color: rgb(224, 230, 240);">
-                  📅 Дата:
+                  <svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Дата:
                 </label>
                 <input 
                   type="date" 
@@ -1743,7 +1743,7 @@
 
               <div style="margin-bottom: 15px;">
                 <label style="display: block; margin-bottom: 5px; color: rgb(224, 230, 240);">
-                  🏆 Турнир:
+                  <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Турнир:
                 </label>
                 <select 
                   id="recountEvent" 
@@ -1764,7 +1764,7 @@
 
               <div style="margin-bottom: 15px;">
                 <label style="display: block; margin-bottom: 5px; color: rgb(224, 230, 240);">
-                  🎯 Тур:
+                  <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Тур:
                 </label>
                 <select 
                   id="recountRound" 
@@ -1786,7 +1786,7 @@
 
               <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 5px;">
                 <p style="color: rgb(224, 230, 240); margin-bottom: 10px; font-weight: bold;">
-                  📤 Отправить результаты пересчета:
+                  <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить результаты пересчета:
                 </p>
                 <label style="display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;">
                   <input 
@@ -1823,7 +1823,7 @@
                 onmouseover="this.style.background='rgb(255, 167, 38)'"
                 onmouseout="this.style.background='rgb(255, 152, 0)'"
               >
-                🔄 ПЕРЕСЧИТАТЬ
+                <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> ПЕРЕСЧИТАТЬ
               </button>
             </div>
           </div>
@@ -1834,10 +1834,10 @@
       <div id="createEventModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'createEventModal', closeCreateEventModal)">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
-            <h2>➕ Создать новый турнир</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создать новый турнир</h2>
             <button type="button" onclick="openEventTeamFileSelector('create')" 
                     style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;">
-              📥
+              <svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg>
             </button>
             <button class="modal-close" onclick="closeCreateEventModal()">
               &times;
@@ -1871,10 +1871,10 @@
               <div class="form-group create-event-icon event-icon">
                 <label for="eventIcon">Иконка турнира</label>
                 <div class="custom-select" id="eventIconSelect">
-                  <input type="hidden" id="eventIcon" value="🏆">
-                  <div class="select-selected">🏆 Стандартный</div>
+                  <input type="hidden" id="eventIcon" value="icon-trophy">
+                  <div class="select-selected"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Стандартный</div>
                   <div class="select-items select-hide">
-                    <div data-value="🏆">🏆 Стандартный</div>
+                    <div data-value="icon-trophy"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Стандартный</div>
                     <div data-value="img/cups/world-cup.png"><img class="mini-preview" src="img/cups/world-cup.png" alt="mini-preview"/> Чемпионат мира</div>
                     <div data-value="img/cups/uefa-euro.png" title="Чемпионат Европы (Евро)"><img class="mini-preview" src="img/cups/uefa-euro.png" alt="mini-preview"/> Чемпионат Европы (Евро)</div>
                     <div data-value="img/cups/champions-league.png"><img class="mini-preview" src="img/cups/champions-league.png" alt="mini-preview"/> Лига чемпионов</div>
@@ -1893,7 +1893,7 @@
               <div class="form-group create-event-icon custom-event-icon">
                 <label style="display: flex; align-items: center; gap: 8px;">
                   <input type="checkbox" id="customIconCheckbox" style="margin: 0;">
-                  🎯 Свой турнир
+                  <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Свой турнир
                 </label>
                 <div
                   class="event-custom-icon"
@@ -1956,22 +1956,22 @@
               
               <!-- Чекбоксы для отправки объявлений -->
               <div class="form-group" style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.03); border-radius: 5px;">
-                <label style="display: block; margin-bottom: 8px; color: #b0b8c8; font-size: 0.9em;">📢 Отправить объявление:</label>
+                <label style="display: block; margin-bottom: 8px; color: #b0b8c8; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Отправить объявление:</label>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                   <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                     <input type="checkbox" id="sendToUsersCheckbox" checked style="cursor: pointer;">
-                    <span style="color: #e0e6f0; font-size: 0.9em;">👥 Пользователям (в личку)</span>
+                    <span style="color: #e0e6f0; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Пользователям (в личку)</span>
                   </label>
                   <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                     <input type="checkbox" id="sendToGroupCheckbox" style="cursor: pointer;">
-                    <span style="color: #e0e6f0; font-size: 0.9em;">💬 В группу</span>
+                    <span style="color: #e0e6f0; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-group"></use></svg> В группу</span>
                   </label>
                 </div>
               </div>
               
               <div class="form-actions">
                 <button type="submit" class="form-btn-submit">
-                  ✅ Создать
+                  <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Создать
                 </button>
                 <button
                   type="button"
@@ -1979,14 +1979,14 @@
                   onclick="previewTournamentAnnouncement(event)"
                   style="background: rgba(56, 118, 235, 0.7); border-color: #3876eb;"
                 >
-                  📤 Отправить админу
+                  <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить админу
                 </button>
                 <button
                   type="button"
                   class="form-btn-cancel"
                   onclick="closeCreateEventModal()"
                 >
-                  ❌ Отмена
+                  <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
                 </button>
               </div>
             </form>
@@ -1998,10 +1998,10 @@
       <div id="editEventModal" class="modal edit-event-modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'editEventModal', closeEditEventModal)">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
-            <h2>✏️ Редактировать турнир</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактировать турнир</h2>
             <button type="button" onclick="openEventTeamFileSelector('edit')" 
                     style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;">
-              📥
+              <svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg>
             </button>
             <button class="modal-close" onclick="closeEditEventModal()">
               &times;
@@ -2036,10 +2036,10 @@
               <div class="form-group edit-event-icon event-icon">
                 <label for="editEventIcon">Иконка турнира</label>
                 <div class="custom-select" id="editEventIconSelect">
-                  <input type="hidden" id="editEventIcon" value="🏆">
-                  <div class="select-selected">🏆 Стандартный</div>
+                  <input type="hidden" id="editEventIcon" value="icon-trophy">
+                  <div class="select-selected"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Стандартный</div>
                   <div class="select-items select-hide">
-                    <div data-value="🏆">🏆 Стандартный</div>
+                    <div data-value="icon-trophy"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Стандартный</div>
                     <div data-value="img/cups/world-cup.png"><img class="mini-preview" src="img/cups/world-cup.png" alt="mini-preview"/> Чемпионат мира</div>
                     <div data-value="img/cups/uefa-euro.png" title="Чемпионат Европы (Евро)"><img class="mini-preview" src="img/cups/uefa-euro.png" alt="mini-preview"/> Чемпионат Европы (Евро)</div>
                     <div data-value="img/cups/champions-league.png"><img class="mini-preview" src="img/cups/champions-league.png" alt="mini-preview"/> Лига чемпионов</div>
@@ -2058,7 +2058,7 @@
               <div class="form-group edit-event-icon custom-event-icon">
                 <label style="display: flex; align-items: center; gap: 8px;">
                   <input type="checkbox" id="editCustomIconCheckbox" style="margin: 0;">
-                  🎯 Свой турнир
+                  <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Свой турнир
                 </label>
                 <div
                   class="event-custom-icon"
@@ -2120,14 +2120,14 @@
               </div>
               <div class="form-actions">
                 <button type="submit" class="form-btn-submit">
-                  ✅ Сохранить
+                  <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить
                 </button>
                 <button
                   type="button"
                   class="form-btn-cancel"
                   onclick="closeEditEventModal()"
                 >
-                  ❌ Отмена
+                  <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
                 </button>
               </div>
             </form>
@@ -2139,7 +2139,7 @@
       <div id="editEventModal" class="modal" style="display: none">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
-            <h2>✏️ Редактировать турнир</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактировать турнир</h2>
             <button class="modal-close" onclick="closeEditEventModal()">
               &times;
             </button>
@@ -2172,18 +2172,18 @@
                   id="editEventIcon"
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 >
-                  <option value="🏆">🏆 Стандартный</option>
+                  <option value="icon-trophy">Стандартный</option>
                   <option value="img/cups/world-cup.png">
-                    🌍 Чемпионат мира
+                    <svg class="icon" aria-hidden="true"><use href="#icon-world-cup"></use></svg> Чемпионат мира
                   </option>
                   <option value="img/cups/champions-league.png">
-                    🏆 Лига чемпионов
+                    <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Лига чемпионов
                   </option>
                   <option value="img/cups/european-league.png">
-                    ⚽ Лига европы
+                    <svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Лига европы
                   </option>
                   <option value="img/cups/conference-league.png">
-                    🏅 Лига конференций
+                    <svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Лига конференций
                   </option>
                   <option value="img/cups/serie-a.png">🇮🇹 Serie A</option>
                   <option value="img/cups/england-premier-league.png">
@@ -2194,7 +2194,7 @@
                     🇫🇷 Лига 1
                   </option>
                   <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
-                  <option value="custom">🎯 Свой турнир</option>
+                  <option value="custom">Свой турнир</option>
                 </select>
               </div>
               <div
@@ -2256,14 +2256,14 @@
               </div>
               <div class="form-actions">
                 <button type="submit" class="form-btn-submit">
-                  ✅ Сохранить
+                  <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить
                 </button>
                 <button
                   type="button"
                   class="form-btn-cancel"
                   onclick="closeEditEventModal()"
                 >
-                  ❌ Отмена
+                  <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
                 </button>
               </div>
             </form>
@@ -2279,7 +2279,7 @@
       <div id="editEventModal" class="modal" style="display: none">
         <div class="modal-content" style="max-width: 500px">
           <div class="modal-header">
-            <h2>✏️ Редактировать турнир</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактировать турнир</h2>
             <button class="modal-close" onclick="closeEditEventModal()">
               &times;
             </button>
@@ -2311,18 +2311,18 @@
                   id="editEventIcon"
                   style="width: 100%; padding: 8px; font-size: 0.95em"
                 >
-                  <option value="🏆">🏆 Стандартный</option>
+                  <option value="icon-trophy"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Стандартный</option>
                   <option value="img/cups/world-cup.png">
-                    🌍 Чемпионат мира
+                    <svg class="icon" aria-hidden="true"><use href="#icon-world-cup"></use></svg> Чемпионат мира
                   </option>
                   <option value="img/cups/champions-league.png">
-                    🏆 Лига чемпионов
+                    <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Лига чемпионов
                   </option>
                   <option value="img/cups/european-league.png">
-                    ⚽ Лига европы
+                    <svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Лига европы
                   </option>
                   <option value="img/cups/conference-league.png">
-                    🏅 Лига конференций
+                    <svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Лига конференций
                   </option>
                   <option value="img/cups/serie-a.png">🇮🇹 Serie A</option>
                   <option value="img/cups/england-premier-league.png">
@@ -2333,7 +2333,7 @@
                     🇫🇷 Лига 1
                   </option>
                   <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
-                  <option value="custom">🎯 Свой турнир</option>
+                  <option value="custom"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Свой турнир</option>
                 </select>
               </div>
               <div
@@ -2395,14 +2395,14 @@
               </div>
               <div class="form-actions">
                 <button type="submit" class="form-btn-submit">
-                  ✅ Сохранить
+                  <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить
                 </button>
                 <button
                   type="button"
                   class="form-btn-cancel"
                   onclick="closeEditEventModal()"
                 >
-                  ❌ Отмена
+                  <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
                 </button>
               </div>
             </form>
@@ -2424,7 +2424,7 @@
         "
       >
         <p style="margin: 8px 0; color: #ffb74d">
-          ⚠️ <strong>ВНИМАНИЕ: ФАНАТСКИЙ САЙТ БЕЗ ПРИЁМА ДЕНЕГ</strong>
+          <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> <strong>ВНИМАНИЕ: ФАНАТСКИЙ САЙТ БЕЗ ПРИЁМА ДЕНЕГ</strong>
         </p>
         <p style="margin: 8px 0">
           Это некоммерческий фанатский сайт. Приём денежных средств НЕ
@@ -2449,7 +2449,7 @@
     >
       <div class="modal-content" style="max-width: 900px">
         <div class="modal-header">
-          <h2 id="tournamentParticipantBetsTitle">📊 Ставки участника</h2>
+          <h2 id="tournamentParticipantBetsTitle"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Ставки участника</h2>
           <div style="display: flex; gap: 15px; margin-top: 5px; font-size: 0.9em;">
             <div id="tournamentParticipantAccuracy" style="color: #4caf50;"></div>
             <div id="tournamentParticipantStreak" style="color: #ff9800; cursor: help;"></div>
@@ -2509,7 +2509,7 @@
     >
       <div class="modal-content" style="max-width: 700px">
         <div class="modal-header">
-          <h2>🛡️ Управление модераторами</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-moderator"></use></svg> Управление модераторами</h2>
           <button class="modal-close" onclick="closeModeratorsPanel()">
             &times;
           </button>
@@ -2566,7 +2566,7 @@
                     style="margin-right: 8px; cursor: pointer"
                     onchange="toggleMatchesSubPermissions()"
                   />
-                  <span>⚽ Управление матчами</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Управление матчами</span>
                 </label>
                 <div id="matchesSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
                 <label
@@ -2577,7 +2577,7 @@
                     id="permCreateMatches"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>➕ Создание матчей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создание матчей</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2587,7 +2587,7 @@
                     id="permEditMatches"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>✏️ Редактирование матчей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактирование матчей</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2597,7 +2597,7 @@
                     id="permDeleteMatches"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🗑️ Удаление матчей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление матчей</span>
                 </label>
                 </div>
                 <label
@@ -2608,7 +2608,7 @@
                     id="permManageResults"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>📊 Установка результатов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Установка результатов</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
@@ -2619,7 +2619,7 @@
                     style="margin-right: 8px; cursor: pointer"
                     onchange="toggleTournamentsSubPermissions()"
                   />
-                  <span>🎯 Управление турнирами</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Управление турнирами</span>
                 </label>
                 <div id="tournamentsSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
                 <label
@@ -2630,7 +2630,7 @@
                     id="permEditTournaments"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>✏️ Редактирование турниров</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактирование турниров</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2640,7 +2640,7 @@
                     id="permDeleteTournaments"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🗑️ Удаление турниров</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление турниров</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2650,7 +2650,7 @@
                     id="permCreateTournaments"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>➕ Создание турниров</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создание турниров</span>
                 </label>
                 </div>
                 <label
@@ -2661,7 +2661,7 @@
                     id="permViewLogs"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>📋 Просмотр логов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Просмотр логов</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
@@ -2671,7 +2671,7 @@
                     id="permViewCounting"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>📊 Подсчет результатов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Подсчет результатов</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
@@ -2682,7 +2682,7 @@
                     style="margin-right: 8px; cursor: pointer"
                     onchange="toggleDBSubPermissions()"
                   />
-                  <span>💾 Управление базой данных</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Управление базой данных</span>
                 </label>
                 <div id="dbSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
@@ -2691,7 +2691,7 @@
                     id="permBackupDB"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>➕ Создание бэкапов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создание бэкапов</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2699,7 +2699,7 @@
                     id="permDownloadBackup"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>💾 Скачивание бэкапов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Скачивание бэкапов</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2707,7 +2707,7 @@
                     id="permRestoreDB"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>📥 Восстановление БД</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Восстановление БД</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2715,7 +2715,7 @@
                     id="permDeleteBackup"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🗑️ Удаление бэкапов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление бэкапов</span>
                 </label>
                 </div>
                 <label
@@ -2726,7 +2726,7 @@
                     id="permManageOrphaned"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🔍 Проверка и очистка orphaned данных</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg> Проверка и очистка orphaned данных</span>
                 </label>
                 <label
                   style="display: flex; align-items: center; cursor: pointer"
@@ -2737,7 +2737,7 @@
                     style="margin-right: 8px; cursor: pointer"
                     onchange="toggleUserSubPermissions()"
                   />
-                  <span>👥 Просмотр пользователей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Просмотр пользователей</span>
                 </label>
                 <div id="userSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(90, 159, 212, 0.3);">
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
@@ -2746,7 +2746,7 @@
                     id="permCheckBot"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🤖 Проверка контакта с ботом</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg> Проверка контакта с ботом</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2754,7 +2754,7 @@
                     id="permViewSettings"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>⚙️ Просмотр настроек пользователя</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Просмотр настроек пользователя</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2762,7 +2762,7 @@
                     id="permSyncTelegramIds"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🔄 Синхронизация Telegram ID</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Синхронизация Telegram ID</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2770,7 +2770,7 @@
                     id="permEditUsers"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>✏️ Переименование пользователей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Переименование пользователей</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer;">
                   <input
@@ -2778,7 +2778,7 @@
                     id="permDeleteUsers"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🗑️ Удаление пользователей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление пользователей</span>
                 </label>
                 </div>
               </div>
@@ -2800,7 +2800,7 @@
               onmouseover="this.style.transform='scale(1.02)'"
               onmouseout="this.style.transform='scale(1)'"
             >
-              ✅ Назначить модератора
+              <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Назначить модератора
             </button>
           </div>
         </div>
@@ -2816,7 +2816,7 @@
     >
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>✏️ Редактирование прав модератора</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактирование прав модератора</h2>
           <button class="modal-close" onclick="closeEditModeratorModal()">
             &times;
           </button>
@@ -2840,7 +2840,7 @@
                   style="margin-right: 8px; cursor: pointer"
                   onchange="toggleEditMatchesSubPermissions()"
                 />
-                <span>⚽ Управление матчами</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Управление матчами</span>
               </label>
               <div id="editMatchesSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
               <label
@@ -2851,7 +2851,7 @@
                   id="editPermCreateMatches"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>➕ Создание матчей</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создание матчей</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2861,7 +2861,7 @@
                   id="editPermEditMatches"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>✏️ Редактирование матчей</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактирование матчей</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2871,7 +2871,7 @@
                   id="editPermDeleteMatches"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>🗑️ Удаление матчей</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление матчей</span>
               </label>
               </div>
               <label
@@ -2882,7 +2882,7 @@
                   id="editPermManageResults"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>📊 Установка результатов</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Установка результатов</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
@@ -2893,7 +2893,7 @@
                   style="margin-right: 8px; cursor: pointer"
                   onchange="toggleEditTournamentsSubPermissions()"
                 />
-                <span>🎯 Управление турнирами</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Управление турнирами</span>
               </label>
               <div id="editTournamentsSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
               <label
@@ -2904,7 +2904,7 @@
                   id="editPermEditTournaments"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>✏️ Редактирование турниров</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактирование турниров</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2914,7 +2914,7 @@
                   id="editPermDeleteTournaments"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>🗑️ Удаление турниров</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление турниров</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;"
@@ -2924,7 +2924,7 @@
                   id="editPermCreateTournaments"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>➕ Создание турниров</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создание турниров</span>
               </label>
               </div>
               <label
@@ -2935,7 +2935,7 @@
                   id="editPermViewLogs"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>📋 Просмотр логов</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Просмотр логов</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
@@ -2945,7 +2945,7 @@
                   id="editPermViewCounting"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>📊 Подсчет результатов</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Подсчет результатов</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
@@ -2956,7 +2956,7 @@
                   style="margin-right: 8px; cursor: pointer"
                   onchange="toggleEditDBSubPermissions()"
                 />
-                <span>💾 Управление базой данных</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Управление базой данных</span>
               </label>
               <div id="editDBSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(76, 175, 80, 0.3);">
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
@@ -2965,7 +2965,7 @@
                     id="editPermBackupDB"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>➕ Создание бэкапов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создание бэкапов</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2973,7 +2973,7 @@
                     id="editPermDownloadBackup"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>💾 Скачивание бэкапов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Скачивание бэкапов</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2981,7 +2981,7 @@
                     id="editPermRestoreDB"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>📥 Восстановление БД</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Восстановление БД</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -2989,7 +2989,7 @@
                     id="editPermDeleteBackup"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🗑️ Удаление бэкапов</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление бэкапов</span>
                 </label>
               </div>
               <label
@@ -3000,7 +3000,7 @@
                   id="editPermManageOrphaned"
                   style="margin-right: 8px; cursor: pointer"
                 />
-                <span>🔍 Проверка и очистка orphaned данных</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg> Проверка и очистка orphaned данных</span>
               </label>
               <label
                 style="display: flex; align-items: center; cursor: pointer"
@@ -3011,7 +3011,7 @@
                   style="margin-right: 8px; cursor: pointer"
                   onchange="toggleEditUserSubPermissions()"
                 />
-                <span>👥 Просмотр пользователей</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Просмотр пользователей</span>
               </label>
               <div id="editUserSubPermissions" style="display: none; margin-left: 30px; margin-top: 8px; padding-left: 15px; border-left: 2px solid rgba(90, 159, 212, 0.3);">
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
@@ -3020,7 +3020,7 @@
                     id="editPermCheckBot"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🤖 Проверка контакта с ботом</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg> Проверка контакта с ботом</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -3028,7 +3028,7 @@
                     id="editPermViewSettings"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>⚙️ Просмотр настроек пользователя</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Просмотр настроек пользователя</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -3036,7 +3036,7 @@
                     id="editPermSyncTelegramIds"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🔄 Синхронизация Telegram ID</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Синхронизация Telegram ID</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
                   <input
@@ -3044,7 +3044,7 @@
                     id="editPermEditUsers"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>✏️ Переименование пользователей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Переименование пользователей</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer;">
                   <input
@@ -3052,7 +3052,7 @@
                     id="editPermDeleteUsers"
                     style="margin-right: 8px; cursor: pointer"
                   />
-                  <span>🗑️ Удаление пользователей</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удаление пользователей</span>
                 </label>
               </div>
             </div>
@@ -3074,7 +3074,7 @@
             onmouseover="this.style.transform='scale(1.02)'"
             onmouseout="this.style.transform='scale(1)'"
           >
-            ✅ Сохранить изменения
+            <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить изменения
           </button>
         </div>
       </div>
@@ -3089,7 +3089,7 @@
     >
       <div class="modal-content" style="max-width: 700px; overflow: hidden;">
         <div class="modal-header">
-          <h2>💾 Управление базой данных</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Управление базой данных</h2>
           <button class="modal-close" onclick="closeDatabaseModal()">
             &times;
           </button>
@@ -3113,7 +3113,7 @@
               onmouseover="this.style.transform='scale(1.05)'"
               onmouseout="this.style.transform='scale(1)'"
             >
-              ➕ Создать бэкап
+              <svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создать бэкап
             </button>
             <button
               id="restoreBackupBtn"
@@ -3130,7 +3130,7 @@
                 transition: all 0.3s ease;
               "
             >
-              📥 Восстановить
+              <svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Восстановить
             </button>
             <button
               id="downloadBackupBtn"
@@ -3147,7 +3147,7 @@
                 transition: all 0.3s ease;
               "
             >
-              💾 Скачать
+              <svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Скачать
             </button>
             <button
               id="deleteBackupBtn"
@@ -3164,13 +3164,13 @@
                 transition: all 0.3s ease;
               "
             >
-              🗑️ Удалить
+              <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удалить
             </button>
           </div>
 
           <!-- Предупреждение -->
           <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #ff9800; border-radius: 4px;">
-            <strong style="color: #ff9800;">⚠️ ВНИМАНИЕ!</strong>
+            <strong style="color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> ВНИМАНИЕ!</strong>
             <p style="margin: 10px 0 0 0; color: #e0e0e0;">
               Восстановление БД заменит текущую базу данных на выбранный бэкап. Все текущие данные будут потеряны!
             </p>
@@ -3179,7 +3179,7 @@
           <!-- Список бэкапов -->
           <div style="margin-bottom: 5px">
             <div id="backupsListHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-              <h3 style="color: #5a9fd4; margin: 0;">📦 Доступные бэкапы (выберите один):</h3>
+              <h3 style="color: #5a9fd4; margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> Доступные бэкапы (выберите один):</h3>
             </div>
             <div id="databaseBackupsList" style="max-height: 300px; overflow-y: auto;">
               <div class="empty-message">Загружаем список бэкапов...</div>
@@ -3198,14 +3198,14 @@
     >
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>📥 Восстановление БД из бэкапа</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Восстановление БД из бэкапа</h2>
           <button class="modal-close" onclick="closeRestoreDBModal()">
             &times;
           </button>
         </div>
         <div class="modal-body">
           <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #ff9800; border-radius: 4px;">
-            <strong style="color: #ff9800;">⚠️ ВНИМАНИЕ!</strong>
+            <strong style="color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> ВНИМАНИЕ!</strong>
             <p style="margin: 10px 0 0 0; color: #e0e0e0;">
               Восстановление БД заменит текущую базу данных на выбранный бэкап. Все текущие данные будут потеряны!
             </p>
@@ -3230,7 +3230,7 @@
     >
       <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto">
         <div class="modal-header">
-          <h2>🏆 Управление наградами</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Управление наградами</h2>
           <button class="modal-close" onclick="closeAwardsPanel()">
             &times;
           </button>
@@ -3305,10 +3305,10 @@
                     "
                   >
                     <option value="">-- Выбрать тип --</option>
-                    <option value="participant">👤 Участник турнира</option>
-                    <option value="winner">🥇 Победитель</option>
-                    <option value="best_result">⭐ Лучший результат</option>
-                    <option value="special">🎖️ Специальная награда</option>
+                    <option value="participant"><svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> Участник турнира</option>
+                    <option value="winner"><svg class="icon" aria-hidden="true"><use href="#icon-winner"></use></svg> Победитель</option>
+                    <option value="best_result"><svg class="icon" aria-hidden="true"><use href="#icon-best-result"></use></svg> Лучший результат</option>
+                    <option value="special"><svg class="icon" aria-hidden="true"><use href="#icon-special-award"></use></svg> Специальная награда</option>
                   </select>
                 </div>
                 <div
@@ -3343,7 +3343,7 @@
                     gap: 6px;
                   "
                 >
-                  <label style="color: #e0e0e0">🎨 Цвет награды:</label>
+                  <label style="color: #e0e0e0"><svg class="icon" aria-hidden="true"><use href="#icon-themes"></use></svg> Цвет награды:</label>
                   <div
                     style="
                       display: flex;
@@ -3420,7 +3420,7 @@
                   "
                 >
                   <label style="color: #e0e0e0"
-                    >🖼️ Фоновое изображение (URL, опционально):</label
+                    ><svg class="icon" aria-hidden="true"><use href="#icon-image"></use></svg> Фоновое изображение (URL, опционально):</label
                   >
                   <input
                     type="text"
@@ -3449,7 +3449,7 @@
                   "
                 >
                   <label style="color: #e0e0e0"
-                    >📁 Загрузить изображение с устройства:</label
+                    ><svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Загрузить изображение с устройства:</label
                   >
                   <input
                     type="file"
@@ -3479,7 +3479,7 @@
                   "
                 >
                   <label style="color: #e0e0e0">
-                    🌓 Прозрачность фона:
+                    <svg class="icon" aria-hidden="true"><use href="#icon-transparency"></use></svg> Прозрачность фона:
                     <span id="awardOpacityValue" style="color: #fbc02d">1</span>
                   </label>
                   <input
@@ -3520,7 +3520,7 @@
                     onmouseover="this.style.transform='scale(1.02)'"
                     onmouseout="this.style.transform='scale(1)'"
                   >
-                    ✅ Выдать награду
+                    <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выдать награду
                   </button>
                 </div>
               </div>
@@ -3539,7 +3539,7 @@
     >
       <div class="modal-content" style="max-width: 700px">
         <div class="modal-header">
-          <h2>📱 Управление устройствами</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Управление устройствами</h2>
           <button class="modal-close" onclick="closeDevicesModal()">
             &times;
           </button>
@@ -3559,7 +3559,7 @@
     <div id="devicesModal" class="modal" style="display: none" onclick="if(event.target.id === 'devicesModal') closeDevicesModal()">
       <div class="modal-content" style="max-width: 700px">
         <div class="modal-header">
-          <h2>📱 Управление устройствами</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Управление устройствами</h2>
           <button class="modal-close" onclick="closeDevicesModal()">&times;</button>
         </div>
         <div class="modal-body">
@@ -3579,7 +3579,7 @@
     <div id="bugReportModal" class="modal" style="display: none" onclick="if(event.target.id === 'bugReportModal') closeBugReportModal()">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>🐛 Сообщить об ошибке</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-bug"></use></svg> Сообщить об ошибке</h2>
           <button class="modal-close" onclick="closeBugReportModal()">&times;</button>
         </div>
         <div class="modal-body">
@@ -3629,7 +3629,7 @@
                 gap: 8px;
               "
             >
-              📎 Прикрепить изображения (макс. 6)
+              <svg class="icon" aria-hidden="true"><use href="#icon-attach"></use></svg> Прикрепить изображения (макс. 6)
             </button>
             <p style="color: #888; font-size: 12px; margin-top: 8px;">
               Можно также вставить изображения через Ctrl+V. Макс. размер: 1 МБ
@@ -3675,7 +3675,7 @@
                 font-weight: 500;
               "
             >
-              📤 Отправить
+              <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить
             </button>
           </div>
         </div>
@@ -3686,7 +3686,7 @@
     <div id="telegramInfoModal" class="modal" style="display: none; z-index: 200000 !important;" onclick="if(event.target.id === 'telegramInfoModal') closeTelegramInfoModal()">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>📱 Вход через Telegram</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Вход через Telegram</h2>
           <button class="modal-close" onclick="closeTelegramInfoModal()">&times;</button>
         </div>
         <div class="modal-body">
@@ -3699,29 +3699,29 @@
               border-radius: 6px;
             ">
               <p style="margin: 0; font-size: 0.95em;">
-                ⚠️ <strong>Важно:</strong> Если у вас уже есть аккаунт с обычным логином, то нужно привязать Telegram только в настройках профиля иначе создастся второй логин и телеграм будет привязан к нему.
+                <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> <strong>Важно:</strong> Если у вас уже есть аккаунт с обычным логином, то нужно привязать Telegram только в настройках профиля иначе создастся второй логин и телеграм будет привязан к нему.
               </p>
             </div>
             
             <h3 style="color: #5a9fd4; margin-top: 0; margin-bottom: 15px; font-size: 1.1em;">
-              🔐 Как это работает?
+              <svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg> Как это работает?
             </h3>
             <p style="margin-bottom: 15px;">
               Вход через Telegram — это быстрый и безопасный способ авторизации без необходимости запоминать пароли.
             </p>
             
             <h3 style="color: #5a9fd4; margin-top: 20px; margin-bottom: 15px; font-size: 1.1em;">
-              ✨ Преимущества
+              <svg class="icon" aria-hidden="true"><use href="#icon-sparkle"></use></svg> Преимущества
             </h3>
             <ul style="margin: 0 0 15px 20px; padding: 0;">
-              <li style="margin-bottom: 8px;">🚀 <strong>Быстрый вход</strong> — один клик и вы в системе</li>
-              <li style="margin-bottom: 8px;">🔒 <strong>Безопасность</strong> — авторизация через официальный Telegram API</li>
-              <li style="margin-bottom: 8px;">🔔 <strong>Уведомления</strong> — получайте сообщения о матчах и результатах</li>
-              <li style="margin-bottom: 8px;">📊 <strong>Статистика</strong> — ваш профиль автоматически привязывается к Telegram</li>
+              <li style="margin-bottom: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-fast"></use></svg> <strong>Быстрый вход</strong> — один клик и вы в системе</li>
+              <li style="margin-bottom: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> <strong>Безопасность</strong> — авторизация через официальный Telegram API</li>
+              <li style="margin-bottom: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> <strong>Уведомления</strong> — получайте сообщения о матчах и результатах</li>
+              <li style="margin-bottom: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> <strong>Статистика</strong> — ваш профиль автоматически привязывается к Telegram</li>
             </ul>
             
             <h3 style="color: #5a9fd4; margin-top: 20px; margin-bottom: 15px; font-size: 1.1em;">
-              📝 Инструкция
+              <svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg> Инструкция
             </h3>
             <ol style="margin: 0 0 15px 20px; padding: 0;">
               <li style="margin-bottom: 8px;">Нажмите кнопку <strong>"Войти через Telegram"</strong></li>
@@ -3745,7 +3745,7 @@
     <div id="detailedNotificationsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'detailedNotificationsModal', closeDetailedNotificationsModal)">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>⚙️ Детальные настройки уведомлений</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Детальные настройки уведомлений</h2>
           <button class="modal-close" onclick="closeDetailedNotificationsModal()">
             &times;
           </button>
@@ -3753,7 +3753,7 @@
         <div class="modal-body" style="padding: 20px;">
           <div style="margin-bottom: 20px; padding: 15px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50; border-radius: 5px;">
             <p style="margin: 0; color: #4caf50; font-size: 14px;">
-              ℹ️ <strong>Коды подтверждения</strong> (2FA, изменение Telegram и т.д.) будут приходить всегда, независимо от настроек
+              <svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg> <strong>Коды подтверждения</strong> (2FA, изменение Telegram и т.д.) будут приходить всегда, независимо от настроек
             </p>
           </div>
 
@@ -3769,8 +3769,8 @@
             <!-- Напоминания о матчах -->
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
-                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">🔔 Напоминания о матчах</h4>
-                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления за N часов до начала матчей турниров (настраивается через кнопку 🔔)</p>
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> Напоминания о матчах</h4>
+                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления за N часов до начала матчей турниров (настраивается через кнопку <svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg>)</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="notifMatchReminders" checked onchange="saveDetailedNotificationSettings()" />
@@ -3781,7 +3781,7 @@
             <!-- Напоминания за 3 часа -->
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
-                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">⏰ Напоминания за 3 часа до матча</h4>
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Напоминания за 3 часа до матча</h4>
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Автоматические уведомления за 3 часа до начала всех матчей</p>
               </div>
               <label class="switch">
@@ -3793,7 +3793,7 @@
             <!-- Напоминания только по активным турнирам -->
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
-                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">🎯 Только по турнирам с моими ставками</h4>
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Только по турнирам с моими ставками</h4>
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Напоминания за 3 часа придут только если вы уже сделали хотя бы одну ставку в турнире</p>
               </div>
               <label class="switch">
@@ -3805,7 +3805,7 @@
             <!-- Объявления о турнирах -->
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
-                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">🏆 Объявления о турнирах</h4>
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Объявления о турнирах</h4>
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления о создании новых турниров</p>
               </div>
               <label class="switch">
@@ -3817,7 +3817,7 @@
             <!-- Результаты матчей -->
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
-                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">⚽ Результаты матчей</h4>
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Результаты матчей</h4>
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления о результатах матчей, на которые вы ставили</p>
               </div>
               <label class="switch">
@@ -3829,7 +3829,7 @@
             <!-- Системные уведомления -->
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
-                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">📢 Системные уведомления</h4>
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Системные уведомления</h4>
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Важные обновления и объявления от админов и модераторов</p>
               </div>
               <label class="switch">
@@ -3841,7 +3841,7 @@
             <!-- Уведомления о просмотре -->
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
-                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;">👀 Уведомления о просмотре</h4>
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-views"></use></svg> Уведомления о просмотре</h4>
                 <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления когда кто-то просматривает твои ставки или сетку плей-офф</p>
               </div>
               <label class="switch">
@@ -3859,11 +3859,11 @@
     <div id="createMatchModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'createMatchModal', closeCreateMatchModal)">
       <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
-          <h2>➕ Создать новый матч</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создать новый матч</h2>
           <button type="button" onclick="openMatchTeamFileSelector('create')" 
                   style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;"
                   title="Выбрать файл команд">
-            📥
+            <svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg>
           </button>
           <button class="modal-close" onclick="closeCreateMatchModal()">
             &times;
@@ -3989,7 +3989,7 @@
                   onchange="toggleFinalMatch('create')"
                   style="cursor: pointer; width: auto"
                 />
-                <span>🏆 Финальный матч</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финальный матч</span>
               </label>
               <span
                 style="
@@ -4011,7 +4011,7 @@
                   id="matchScorePrediction"
                   style="cursor: pointer; width: auto"
                 />
-                <span>📊 Прогноз на счет</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Прогноз на счет</span>
               </label>
               <span
                 style="
@@ -4033,7 +4033,7 @@
                   id="matchYellowCardsPrediction"
                   style="cursor: pointer; width: auto"
                 />
-                <span>🟨 Прогноз на желтые карточки</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Прогноз на желтые карточки</span>
               </label>
               <span
                 style="
@@ -4055,7 +4055,7 @@
                   id="matchRedCardsPrediction"
                   style="cursor: pointer; width: auto"
                 />
-                <span>🟥 Прогноз на красные карточки</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Прогноз на красные карточки</span>
               </label>
               <span
                 style="
@@ -4103,7 +4103,7 @@
                     id="showExactScore"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">📊 Точный счет</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Точный счет</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4111,7 +4111,7 @@
                     id="showYellowCards"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">🟨 Желтые</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Желтые</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4119,7 +4119,7 @@
                     id="showRedCards"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">🟥 Красные</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4127,7 +4127,7 @@
                     id="showCorners"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">⚽ Угловые</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Угловые</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4135,7 +4135,7 @@
                     id="showPenaltiesInGame"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">⚽ Пенальти в игре</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в игре</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4151,21 +4151,21 @@
                     id="showPenaltiesAtEnd"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">⚽ Пенальти в конце</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в конце</span>
                 </label>
               </div>
             </div>
 
             <div class="form-actions">
               <button type="submit" class="form-btn-submit">
-                ✅ Создать
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Создать
               </button>
               <button
                 type="button"
                 class="form-btn-cancel"
                 onclick="closeCreateMatchModal()"
               >
-                ❌ Отмена
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
               </button>
             </div>
           </form>
@@ -4177,7 +4177,7 @@
     <div id="importMatchesModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'importMatchesModal', closeImportMatchesModal)">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>📥 Импорт матчей</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Импорт матчей</h2>
           <button class="modal-close" onclick="closeImportMatchesModal()">
             &times;
           </button>
@@ -4272,7 +4272,7 @@
             </div>
             <div class="form-group" style="color: #b0b8c8; font-size: 0.85em">
               <p>
-                <strong>📋 Инструкция:</strong>
+                <strong><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Инструкция:</strong>
               </p>
               <ul style="margin: 5px 0; padding-left: 20px">
                 <li>Скопируйте матчи из Google Docs</li>
@@ -4297,14 +4297,14 @@
             </div>
             <div class="form-actions">
               <button type="submit" class="form-btn-submit">
-                ✅ Импортировать
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Импортировать
               </button>
               <button
                 type="button"
                 class="form-btn-cancel"
                 onclick="closeImportMatchesModal()"
               >
-                ❌ Отмена
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
               </button>
             </div>
           </form>
@@ -4316,7 +4316,7 @@
     <div id="bulkParseModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'bulkParseModal', closeBulkParseModal)">
       <div class="modal-content" style="max-width: 800px">
         <div class="modal-header">
-          <h2>⚽ Парсинг матчей</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Парсинг матчей</h2>
           <button class="modal-close" onclick="closeBulkParseModal()">
             &times;
           </button>
@@ -4396,7 +4396,7 @@
                     id="parseIncludeFuture"
                     style="cursor: pointer; width: auto"
                   />
-                  <span>📅 Будущие матчи</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Будущие матчи</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                   <input
@@ -4404,7 +4404,7 @@
                     id="parseScorePrediction"
                     style="cursor: pointer; width: auto"
                   />
-                  <span>📊 Прогноз на счет</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Прогноз на счет</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                   <input
@@ -4412,7 +4412,7 @@
                     id="parseYellowCardsPrediction"
                     style="cursor: pointer; width: auto"
                   />
-                  <span>🟨 Прогноз на желтые</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Прогноз на желтые</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                   <input
@@ -4420,7 +4420,7 @@
                     id="parseRedCardsPrediction"
                     style="cursor: pointer; width: auto"
                   />
-                  <span>🟥 Прогноз на красные</span>
+                  <span><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Прогноз на красные</span>
                 </label>
               </div>
             </div>
@@ -4428,7 +4428,7 @@
             <!-- Превью спарсенных матчей -->
             <div id="parsePreviewContainer" style="display: none; margin-top: 20px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="margin: 0; color: #7ab0e0;">📋 Превью матчей</h3>
+                <h3 style="margin: 0; color: #7ab0e0;"><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Превью матчей</h3>
                 <button 
                   type="button" 
                   onclick="loadParsePreview()" 
@@ -4442,7 +4442,7 @@
                     font-size: 0.9em;
                   "
                 >
-                  🔄 Обновить
+                  <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить
                 </button>
               </div>
               <div 
@@ -4464,14 +4464,14 @@
 
             <div class="form-actions" style="margin-top: 20px;">
               <button type="submit" class="form-btn-submit" id="bulkParseSubmitBtn" disabled>
-                ✅ Создать матчи
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Создать матчи
               </button>
               <button
                 type="button"
                 class="form-btn-cancel"
                 onclick="closeBulkParseModal()"
               >
-                ❌ Отмена
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
               </button>
             </div>
           </form>
@@ -4483,7 +4483,7 @@
     <div id="bulkEditDatesModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'bulkEditDatesModal', closeBulkEditDatesModal)">
       <div class="modal-content" style="max-width: 900px">
         <div class="modal-header">
-          <h2>📅 Массовое редактирование дат матчей</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Массовое редактирование дат матчей</h2>
           <button class="modal-close" onclick="closeBulkEditDatesModal()">
             &times;
           </button>
@@ -4509,14 +4509,14 @@
               onclick="saveBulkEditDates()"
               id="bulkEditSaveBtn"
             >
-              ✅ Сохранить все
+              <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить все
             </button>
             <button
               type="button"
               class="form-btn-cancel"
               onclick="closeBulkEditDatesModal()"
             >
-              ❌ Отмена
+              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
             </button>
           </div>
         </div>
@@ -4527,7 +4527,7 @@
     <div id="lockEventModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'lockEventModal', closeLockEventModal)">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>🔒 Заблокировать турнир</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Заблокировать турнир</h2>
           <button class="modal-close" onclick="closeLockEventModal()">
             &times;
           </button>
@@ -4545,14 +4545,14 @@
             </div>
             <div class="form-actions">
               <button type="submit" class="form-btn-submit">
-                ✅ Заблокировать
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Заблокировать
               </button>
               <button
                 type="button"
                 class="form-btn-cancel"
                 onclick="closeLockEventModal()"
               >
-                ❌ Отмена
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
               </button>
             </div>
           </form>
@@ -4564,7 +4564,7 @@
     <div id="tournamentAnnouncementModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'tournamentAnnouncementModal', closeTournamentAnnouncementModal)">
       <div class="modal-content" style="max-width: 550px">
         <div class="modal-header">
-          <h2>📢 Предпросмотр объявления</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Предпросмотр объявления</h2>
           <button class="modal-close" onclick="closeTournamentAnnouncementModal()">
             &times;
           </button>
@@ -4581,14 +4581,14 @@
               class="form-btn-submit"
               onclick="sendTournamentAnnouncementToAdmin()"
             >
-              📤 Отправить админу
+              <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить админу
             </button>
             <button
               type="button"
               class="form-btn-cancel"
               onclick="closeTournamentAnnouncementModal()"
             >
-              ❌ Отмена
+              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
             </button>
           </div>
         </div>
@@ -4599,7 +4599,7 @@
     <div id="featureAnnouncementModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'featureAnnouncementModal', closeAnnouncementModal)">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>📢 Объявление о новых функциях</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Объявление о новых функциях</h2>
           <button class="modal-close" onclick="closeAnnouncementModal()">
             &times;
           </button>
@@ -4637,19 +4637,19 @@
                 </button>
                 <span style="width: 1px; background: rgba(90, 159, 212, 0.3); margin: 0 3px;"></span>
                 <button type="button" onclick="insertEmoji('🎉')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  🎉
+                  <svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg>
                 </button>
                 <button type="button" onclick="insertEmoji('✨')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  ✨
+                  <svg class="icon" aria-hidden="true"><use href="#icon-sparkle"></use></svg>
                 </button>
                 <button type="button" onclick="insertEmoji('🚀')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  🚀
+                  <svg class="icon" aria-hidden="true"><use href="#icon-fast"></use></svg>
                 </button>
                 <button type="button" onclick="insertEmoji('⚡')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
                   ⚡
                 </button>
                 <button type="button" onclick="insertEmoji('🎯')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  🎯
+                  <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg>
                 </button>
               </div>
               <textarea
@@ -4662,7 +4662,7 @@
             </div>
             <div style="background: rgba(56, 118, 235, 0.1); border: 1px solid rgba(56, 118, 235, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 15px;">
               <div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 8px;">
-                💡 Предпросмотр:
+                <svg class="icon" aria-hidden="true"><use href="#icon-hint"></use></svg> Предпросмотр:
               </div>
               <div id="announcementPreviewText" style="white-space: pre-wrap; line-height: 1.6; color: #e0e6f0; font-size: 0.95em;">
                 Введите текст чтобы увидеть предпросмотр...
@@ -4675,7 +4675,7 @@
                 onclick="sendAnnouncementToSelf()"
                 style="background: rgba(56, 118, 235, 0.7); border-color: #3876eb; flex: 1;"
               >
-                📤 Отправить себе
+                <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить себе
               </button>
               <button
                 type="button"
@@ -4683,7 +4683,7 @@
                 onclick="sendAnnouncementToAll()"
                 style="flex: 1;"
               >
-                ✅ Отправить всем
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Отправить всем
               </button>
               <button
                 type="button"
@@ -4691,7 +4691,7 @@
                 onclick="closeAnnouncementModal()"
                 style="flex: 1;"
               >
-                ❌ Отмена
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
               </button>
             </div>
           </form>
@@ -4706,7 +4706,7 @@
       onclick="closeRoundsOrderModal(event)"
     >
       <div class="rounds-order-content" onclick="event.stopPropagation()">
-        <h3>📋 Порядок туров</h3>
+        <h3><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Порядок туров</h3>
         <ul id="roundsOrderList" class="rounds-order-list">
           <!-- Туры будут добавлены динамически -->
         </ul>
@@ -4725,10 +4725,10 @@
     <div id="editMatchModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'editMatchModal', closeEditMatchModal)">
       <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
-          <h2>✏️ Редактировать матч</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редактировать матч</h2>
           <button type="button" onclick="openMatchTeamFileSelector('edit')" 
                   style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px 12px; font-size: 1.1em; border-radius: 4px; cursor: pointer; margin-left: 15px;">
-            📥
+            <svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg>
           </button>
           <button class="modal-close" onclick="closeEditMatchModal()">
             &times;
@@ -4828,7 +4828,7 @@
                   onchange="toggleFinalMatch('edit')"
                   style="cursor: pointer; width: auto"
                 />
-                <span>🏆 Финальный матч</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финальный матч</span>
               </label>
               <span
                 style="
@@ -4850,7 +4850,7 @@
                   id="editMatchScorePrediction"
                   style="cursor: pointer; width: auto"
                 />
-                <span>📊 Прогноз на счет</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Прогноз на счет</span>
               </label>
               <span
                 style="
@@ -4872,7 +4872,7 @@
                   id="editMatchYellowCardsPrediction"
                   style="cursor: pointer; width: auto"
                 />
-                <span>🟨 Прогноз на желтые карточки</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Прогноз на желтые карточки</span>
               </label>
               <span
                 style="
@@ -4894,7 +4894,7 @@
                   id="editMatchRedCardsPrediction"
                   style="cursor: pointer; width: auto"
                 />
-                <span>🟥 Прогноз на красные карточки</span>
+                <span><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Прогноз на красные карточки</span>
               </label>
               <span
                 style="
@@ -4942,7 +4942,7 @@
                     id="editShowExactScore"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">📊 Точный счет</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Точный счет</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4950,7 +4950,7 @@
                     id="editShowYellowCards"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">🟨 Желтые</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Желтые</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4958,7 +4958,7 @@
                     id="editShowRedCards"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">🟥 Красные</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4966,7 +4966,7 @@
                     id="editShowCorners"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">⚽ Угловые</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Угловые</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4974,7 +4974,7 @@
                     id="editShowPenaltiesInGame"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">⚽ Пенальти в игре</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в игре</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px">
                   <input
@@ -4990,21 +4990,21 @@
                     id="editShowPenaltiesAtEnd"
                     style="cursor: pointer; width: auto"
                   />
-                  <span style="font-size: 0.9em">⚽ Пенальти в конце</span>
+                  <span style="font-size: 0.9em"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в конце</span>
                 </label>
               </div>
             </div>
 
             <div class="form-actions">
               <button type="submit" class="form-btn-submit">
-                ✅ Сохранить
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить
               </button>
               <button
                 type="button"
                 class="form-btn-cancel"
                 onclick="closeEditMatchModal()"
               >
-                ❌ Отмена
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
               </button>
             </div>
           </form>
@@ -5031,7 +5031,7 @@
         onclick="event.stopPropagation()"
       >
         <div class="modal-header">
-          <h3>📸 Редактировать аватар</h3>
+          <h3><svg class="icon" aria-hidden="true"><use href="#icon-avatar"></use></svg> Редактировать аватар</h3>
           <button class="modal-close" onclick="closeAvatarModal()">×</button>
         </div>
         <div
@@ -5084,7 +5084,7 @@
                   font-size: 14px;
                 "
               >
-                📐 Кадрирование:
+                <svg class="icon" aria-hidden="true"><use href="#icon-crop"></use></svg> Кадрирование:
               </label>
               <div
                 style="
@@ -5161,7 +5161,7 @@
                 font-size: 14px;
               "
             >
-              ✨ Результат:
+              <svg class="icon" aria-hidden="true"><use href="#icon-sparkle"></use></svg> Результат:
             </label>
             <div
               id="gifResultPreview"
@@ -5197,7 +5197,7 @@
                   font-size: 14px;
                 "
               >
-                ✨ Результат:
+                <svg class="icon" aria-hidden="true"><use href="#icon-sparkle"></use></svg> Результат:
               </label>
               <div
                 style="
@@ -5249,7 +5249,7 @@
             onclick="deleteAvatar()"
             style="flex: 1; background: #d32f2f"
           >
-            🗑️ Удалить
+            <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удалить
           </button>
         </div>
       </div>
@@ -5259,7 +5259,7 @@
     <div id="finalMatchResultModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'finalMatchResultModal', closeFinalMatchResultModal)">
       <div class="modal-content" style="max-width: 600px" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <h2>🏆 Результат финального матча</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Результат финального матча</h2>
           <button class="modal-close" onclick="closeFinalMatchResultModal()">
             &times;
           </button>
@@ -5287,14 +5287,14 @@
               class="form-btn-submit"
               style="flex: 1"
             >
-              ✅ Сохранить результат
+              <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить результат
             </button>
             <button
               onclick="closeFinalMatchResultModal()"
               class="form-btn-cancel"
               style="flex: 1"
             >
-              ❌ Отмена
+              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
             </button>
           </div>
         </div>
@@ -5305,7 +5305,7 @@
     <div id="scoreMatchResultModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'scoreMatchResultModal', closeScoreMatchResultModal)">
       <div class="modal-content" style="max-width: 500px" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <h2>📊 Результат матча</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Результат матча</h2>
           <button class="modal-close" onclick="closeScoreMatchResultModal()">
             &times;
           </button>
@@ -5346,14 +5346,14 @@
               class="form-btn-submit"
               style="flex: 1"
             >
-              ✅ Сохранить результат
+              <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранить результат
             </button>
             <button
               onclick="closeScoreMatchResultModal()"
               class="form-btn-cancel"
               style="flex: 1"
             >
-              ❌ Отмена
+              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
             </button>
           </div>
         </div>
@@ -5369,7 +5369,7 @@
     <div id="matchRemindersModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'matchRemindersModal', closeMatchRemindersModal)">
       <div class="modal-content" style="max-width: 450px" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <h2>🔔 Напоминания о матчах</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> Напоминания о матчах</h2>
           <button class="modal-close" onclick="closeMatchRemindersModal()">
             &times;
           </button>
@@ -5405,7 +5405,7 @@
               class="form-btn-submit"
               style="flex: 1"
             >
-              💾 Сохранить
+              <svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Сохранить
             </button>
             <button
               id="deleteReminderBtn"
@@ -5413,7 +5413,7 @@
               class="form-btn-cancel"
               style="flex: 1; display: none; background: rgba(244, 67, 54, 0.7); border-color: #f44336;"
             >
-              🗑️ Удалить
+              <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Удалить
             </button>
             <button
               onclick="closeMatchRemindersModal()"
@@ -5431,7 +5431,7 @@
     <div id="createBracketModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'createBracketModal', closeCreateBracketModal)">
       <div class="modal-content" style="max-width: 500px" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <h2>➕ Создать сетку плей-офф</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создать сетку плей-офф</h2>
           <button class="modal-close" onclick="closeCreateBracketModal()">
             &times;
           </button>
@@ -5467,7 +5467,7 @@
 
           <div style="margin-bottom: 20px">
             <label style="display: block; margin-bottom: 10px; font-weight: 600;">
-              📅 Даты блокировки колонок:
+              <svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Даты блокировки колонок:
             </label>
             <small style="color: #b0b8c8; display: block; margin-bottom: 15px;">
               Установите дату и время блокировки для каждой колонки. Если дата не указана, используется дата предыдущей колонки.
@@ -5484,14 +5484,14 @@
               class="form-btn-submit"
               style="flex: 1"
             >
-              ✅ Создать
+              <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Создать
             </button>
             <button
               onclick="closeCreateBracketModal()"
               class="form-btn-cancel"
               style="flex: 1"
             >
-              ❌ Отмена
+              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
             </button>
           </div>
         </div>
@@ -5502,7 +5502,7 @@
     <div id="liveTeamStatsModal" class="modal" style="display: none" onclick="if(event.target.id === 'liveTeamStatsModal') closeLiveTeamStatsModal()">
       <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <h2 id="liveTeamStatsTitle">📊 Статистика матча</h2>
+          <h2 id="liveTeamStatsTitle"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика матча</h2>
           <button class="modal-close" onclick="closeLiveTeamStatsModal()">
             &times;
           </button>
@@ -5519,7 +5519,7 @@
     <div id="newsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'newsModal', closeNewsModal)">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2>📢 Добавить новость</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Добавить новость</h2>
           <button class="close-btn" onclick="closeNewsModal()">×</button>
         </div>
         
@@ -5547,7 +5547,7 @@
                   font-size: 1em;
                 "
               >
-                🏆 Турниры
+                <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Турниры
               </button>
               <button 
                 class="news-type-btn" 
@@ -5566,7 +5566,7 @@
                   font-size: 1em;
                 "
               >
-                ⚙️ Система
+                <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg> Система
               </button>
               <button 
                 class="news-type-btn" 
@@ -5585,7 +5585,7 @@
                   font-size: 1em;
                 "
               >
-                🏅 Достижения
+                <svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Достижения
               </button>
               <button 
                 class="news-type-btn" 
@@ -5604,7 +5604,7 @@
                   font-size: 1em;
                 "
               >
-                📣 Анонсы
+                <svg class="icon" aria-hidden="true"><use href="#icon-announcements"></use></svg> Анонсы
               </button>
             </div>
           </div>
@@ -5683,7 +5683,7 @@
                 transition: all 0.3s;
               "
             >
-              📢 Опубликовать
+              <svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Опубликовать
             </button>
           </div>
         </div>
@@ -5694,7 +5694,7 @@
     <div id="rssNewsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'rssNewsModal', closeRssNewsModal)">
       <div class="modal-content" style="max-width: 900px; max-height: 85vh; overflow-y: auto">
         <div class="modal-header">
-          <h2>🌐 Другие новости</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-globe"></use></svg> Другие новости</h2>
           <button class="close-btn" onclick="closeRssNewsModal()">×</button>
         </div>
         
@@ -5759,7 +5759,7 @@
     <div id="rssKeywordsModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'rssKeywordsModal', closeRssKeywordsModal)">
       <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto">
         <div class="modal-header">
-          <h2>🔑 Ключевые слова RSS</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-keywords"></use></svg> Ключевые слова RSS</h2>
           <button class="close-btn" onclick="closeRssKeywordsModal()">×</button>
         </div>
         
@@ -5772,7 +5772,7 @@
             padding: 15px;
             margin-bottom: 20px;
           ">
-            <h3 style="margin: 0 0 15px 0; color: #5a9fd4;">➕ Добавить ключевое слово</h3>
+            <h3 style="margin: 0 0 15px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Добавить ключевое слово</h3>
             <div id="addKeywordForm" style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
               <div>
                 <label style="display: block; margin-bottom: 5px; color: #b0b8c8; font-size: 0.9em;">Турнир</label>
@@ -5822,8 +5822,8 @@
                   color: #e0e6f0;
                   font-size: 0.95em;
                 ">
-                  <option value="include">✅ Включить</option>
-                  <option value="exclude">❌ Исключить</option>
+                  <option value="include"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Включить</option>
+                  <option value="exclude"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Исключить</option>
                 </select>
               </div>
               <div>
@@ -5849,7 +5849,7 @@
                 transition: all 0.3s ease;
                 white-space: nowrap;
               ">
-                ➕ Добавить
+                <svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Добавить
               </button>
             </div>
           </div>
