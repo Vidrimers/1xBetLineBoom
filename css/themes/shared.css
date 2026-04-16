@@ -183,3 +183,179 @@ button,
   background: #ff9900;
   color: #000;
 }
+
+/* === custom-modal для всех тем === */
+body.theme-hacker-green .custom-modal,
+body.theme-solarized .custom-modal,
+body.theme-matrix .custom-modal,
+body.theme-cyberpunk .custom-modal,
+body.theme-leagueChampions .custom-modal,
+body.theme-leagueEurope .custom-modal {
+  border: 1px solid;
+}
+
+body.theme-hacker-green .custom-modal { background: linear-gradient(135deg, #001100 0%, #002200 100%) !important; border-color: #00ff00 !important; }
+body.theme-hacker-green .custom-modal-title { color: #00ff00 !important; }
+body.theme-hacker-green .custom-modal-message { color: #00cc00 !important; }
+body.theme-hacker-green .custom-modal-input { background: #001100 !important; border-color: #00ff00 !important; color: #00ff00 !important; }
+body.theme-hacker-green .custom-modal-btn-secondary { background: rgba(0,255,0,0.1) !important; color: #00ff00 !important; border-color: #00ff00 !important; }
+
+body.theme-solarized .custom-modal { background: linear-gradient(135deg, #073642 0%, #002b36 100%) !important; border-color: #268bd2 !important; }
+body.theme-solarized .custom-modal-title { color: #93a1a1 !important; }
+body.theme-solarized .custom-modal-message { color: #657b83 !important; }
+body.theme-solarized .custom-modal-input { background: #002b36 !important; border-color: #268bd2 !important; color: #93a1a1 !important; }
+body.theme-solarized .custom-modal-btn-secondary { background: rgba(38,139,210,0.1) !important; color: #93a1a1 !important; border-color: #268bd2 !important; }
+
+body.theme-matrix .custom-modal { background: linear-gradient(135deg, #000a00 0%, #001a00 100%) !important; border-color: #00ff41 !important; box-shadow: 0 0 30px rgba(0,255,65,0.4) !important; }
+body.theme-matrix .custom-modal-title { color: #00ff41 !important; }
+body.theme-matrix .custom-modal-message { color: #00cc33 !important; }
+body.theme-matrix .custom-modal-input { background: #000a00 !important; border-color: #00ff41 !important; color: #00ff41 !important; }
+body.theme-matrix .custom-modal-btn-secondary { background: rgba(0,255,65,0.1) !important; color: #00ff41 !important; border-color: #00ff41 !important; }
+
+body.theme-cyberpunk .custom-modal { background: linear-gradient(135deg, #0a0014 0%, #1a0a2e 100%) !important; border-color: #ff00ff !important; box-shadow: 0 0 30px rgba(255,0,255,0.5) !important; }
+body.theme-cyberpunk .custom-modal-title { color: #00ffff !important; }
+body.theme-cyberpunk .custom-modal-message { color: #00cccc !important; }
+body.theme-cyberpunk .custom-modal-input { background: #0a0014 !important; border-color: #ff00ff !important; color: #00ffff !important; }
+body.theme-cyberpunk .custom-modal-btn-secondary { background: rgba(255,0,255,0.1) !important; color: #00ffff !important; border-color: #ff00ff !important; }
+
+body.theme-leagueChampions .custom-modal { background: linear-gradient(135deg, #162447 0%, #0a1428 100%) !important; border-color: #1b9ce5 !important; }
+body.theme-leagueChampions .custom-modal-title { color: #e8e8e8 !important; }
+body.theme-leagueChampions .custom-modal-message { color: #a0b8d0 !important; }
+body.theme-leagueChampions .custom-modal-input { background: #0a1428 !important; border-color: #1b9ce5 !important; color: #e8e8e8 !important; }
+body.theme-leagueChampions .custom-modal-btn-secondary { background: rgba(27,156,229,0.1) !important; color: #e8e8e8 !important; border-color: #1b9ce5 !important; }
+
+body.theme-leagueEurope .custom-modal { background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%) !important; border-color: #ffd700 !important; }
+body.theme-leagueEurope .custom-modal-title { color: #ffffff !important; }
+body.theme-leagueEurope .custom-modal-message { color: #cccccc !important; }
+body.theme-leagueEurope .custom-modal-input { background: #0f1419 !important; border-color: #ffd700 !important; color: #ffffff !important; }
+body.theme-leagueEurope .custom-modal-btn-secondary { background: rgba(255,215,0,0.1) !important; color: #ffffff !important; border-color: #ffd700 !important; }
+
+/* === aiChatBtn — сброс для всех тем (button перекрывает базовые стили) === */
+body.theme-hacker-green #aiChatBtn,
+body.theme-solarized #aiChatBtn,
+body.theme-matrix #aiChatBtn,
+body.theme-cyberpunk #aiChatBtn,
+body.theme-leagueChampions #aiChatBtn,
+body.theme-leagueEurope #aiChatBtn,
+body.theme-cream-material #aiChatBtn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green #aiChatBtn:hover,
+body.theme-solarized #aiChatBtn:hover,
+body.theme-matrix #aiChatBtn:hover,
+body.theme-cyberpunk #aiChatBtn:hover,
+body.theme-leagueChampions #aiChatBtn:hover,
+body.theme-leagueEurope #aiChatBtn:hover,
+body.theme-cream-material #aiChatBtn:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: scale(1.1) !important;
+}
+
+/* === countingBtn — цвет текста по теме === */
+body.theme-hacker-green #countingBtn { color: #00ff00 !important; border-color: #00ff00 !important; }
+body.theme-solarized #countingBtn { color: #268bd2 !important; border-color: #268bd2 !important; }
+body.theme-matrix #countingBtn { color: #00ff41 !important; border-color: #00ff41 !important; }
+body.theme-cyberpunk #countingBtn { color: #00ffff !important; border-color: #ff00ff !important; }
+body.theme-leagueChampions #countingBtn { color: #1b9ce5 !important; border-color: #1b9ce5 !important; }
+body.theme-leagueEurope #countingBtn { color: #ffd700 !important; border-color: #ffd700 !important; }
+
+/* === profile-section по темам === */
+body.theme-hacker-green .profile-section { background: rgba(0,50,0,0.5) !important; border-left-color: #00ff00 !important; }
+body.theme-hacker-green .profile-section-title { color: #00ff00 !important; }
+body.theme-hacker-green .profile-section-content { color: #00cc00 !important; }
+
+body.theme-solarized .profile-section { background: rgba(7,54,66,0.7) !important; border-left-color: #268bd2 !important; }
+body.theme-solarized .profile-section-title { color: #268bd2 !important; }
+body.theme-solarized .profile-section-content { color: #657b83 !important; }
+
+body.theme-matrix .profile-section { background: rgba(0,26,0,0.7) !important; border-left-color: #00ff41 !important; }
+body.theme-matrix .profile-section-title { color: #00ff41 !important; }
+body.theme-matrix .profile-section-content { color: #00cc33 !important; }
+
+body.theme-cyberpunk .profile-section { background: rgba(22,33,62,0.7) !important; border-left-color: #ff00ff !important; }
+body.theme-cyberpunk .profile-section-title { color: #00ffff !important; }
+body.theme-cyberpunk .profile-section-content { color: #00cccc !important; }
+
+body.theme-leagueChampions .profile-section { background: rgba(31,64,104,0.5) !important; border-left-color: #1b9ce5 !important; }
+body.theme-leagueChampions .profile-section-title { color: #1b9ce5 !important; }
+body.theme-leagueChampions .profile-section-content { color: #a0b8d0 !important; }
+
+body.theme-leagueEurope .profile-section { background: rgba(37,45,61,0.7) !important; border-left-color: #ffd700 !important; }
+body.theme-leagueEurope .profile-section-title { color: #ffd700 !important; }
+body.theme-leagueEurope .profile-section-content { color: #cccccc !important; }
+
+/* === adminBtn и adminSettingsBtn — сброс для всех тем === */
+body.theme-hacker-green #adminBtn,
+body.theme-solarized #adminBtn,
+body.theme-matrix #adminBtn,
+body.theme-cyberpunk #adminBtn,
+body.theme-leagueChampions #adminBtn,
+body.theme-leagueEurope #adminBtn,
+body.theme-hacker-green #adminSettingsBtn,
+body.theme-solarized #adminSettingsBtn,
+body.theme-matrix #adminSettingsBtn,
+body.theme-cyberpunk #adminSettingsBtn,
+body.theme-leagueChampions #adminSettingsBtn,
+body.theme-leagueEurope #adminSettingsBtn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* === bracket-filter-btn по темам === */
+body.theme-hacker-green .bracket-filter-btn {
+  background: linear-gradient(135deg, rgba(0,255,0,0.15), rgba(0,200,0,0.1)) !important;
+  border: 2px solid rgba(0,255,0,0.5) !important;
+  color: #00ff00 !important;
+  box-shadow: 0 2px 8px rgba(0,255,0,0.2) !important;
+}
+body.theme-hacker-green .bracket-filter-btn:hover {
+  background: linear-gradient(135deg, rgba(0,255,0,0.25), rgba(0,200,0,0.2)) !important;
+  border-color: rgba(0,255,0,0.7) !important;
+}
+
+body.theme-solarized .bracket-filter-btn {
+  background: linear-gradient(135deg, rgba(38,139,210,0.2), rgba(42,161,152,0.15)) !important;
+  border: 2px solid rgba(38,139,210,0.5) !important;
+  color: #268bd2 !important;
+  box-shadow: 0 2px 8px rgba(38,139,210,0.2) !important;
+}
+body.theme-solarized .bracket-filter-btn:hover {
+  border-color: rgba(38,139,210,0.7) !important;
+}
+
+body.theme-matrix .bracket-filter-btn {
+  background: linear-gradient(135deg, rgba(0,255,65,0.15), rgba(0,200,50,0.1)) !important;
+  border: 2px solid rgba(0,255,65,0.5) !important;
+  color: #00ff41 !important;
+  box-shadow: 0 2px 8px rgba(0,255,65,0.2) !important;
+}
+body.theme-matrix .bracket-filter-btn:hover {
+  border-color: rgba(0,255,65,0.7) !important;
+}
+
+body.theme-cyberpunk .bracket-filter-btn {
+  background: linear-gradient(135deg, rgba(255,0,255,0.2), rgba(0,255,255,0.15)) !important;
+  border: 2px solid rgba(255,0,255,0.5) !important;
+  color: #ff00ff !important;
+  box-shadow: 0 2px 8px rgba(255,0,255,0.2) !important;
+}
+body.theme-cyberpunk .bracket-filter-btn:hover {
+  border-color: rgba(255,0,255,0.7) !important;
+}
+
+body.theme-leagueChampions .bracket-filter-btn {
+  background: linear-gradient(135deg, rgba(27,156,229,0.2), rgba(0,217,255,0.15)) !important;
+  border: 2px solid rgba(27,156,229,0.5) !important;
+  color: #1b9ce5 !important;
+  box-shadow: 0 2px 8px rgba(27,156,229,0.2) !important;
+}
+body.theme-leagueChampions .bracket-filter-btn:hover {
+  border-color: rgba(27,156,229,0.7) !important;
+}
+
+/* leagueEurope оставляем золотой — он там уместен */

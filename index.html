@@ -361,7 +361,7 @@
 
                 position: sticky;
                 /* background: rgba(40, 44, 54, 0.85); */
-                background: rgba(40, 44, 54, 1);
+                background: var(--sticky-header-bg, rgba(40, 44, 54, 1));
                 z-index: 2;
                 top: 0;
                 left: 0;
@@ -410,7 +410,7 @@
                 /* margin-bottom: 10px; */
                 position: sticky;
                 /* background: rgba(40, 44, 54, 0.85); */
-                background: rgba(40, 44, 54, 1);
+                background: var(--sticky-header-bg, rgba(40, 44, 54, 1));
                 z-index: 2;
                 top: 0;
                 left: 0;
@@ -426,7 +426,7 @@
                   <h2 style="margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Матчи</h2>
                   <button id="matchRemindersBtn" onclick="showMatchRemindersModal(event)" style="background: transparent; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 1em; cursor: pointer; color: #b0b8c8; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: none; position: relative;" title="Напоминания о матчах турнира">
                     <svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg>
-                    <span id="reminderIndicator" style="display: none; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #f44336; border-radius: 50%; border: 1px solid rgba(40, 44, 54, 1);"></span>
+                    <span id="reminderIndicator" style="display: none; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #f44336; border-radius: 50%; border: 1px solid var(--sticky-header-bg, rgba(40, 44, 54, 1));"></span>
                   </button>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center">
@@ -480,7 +480,7 @@
                     </span>
                   </div>
                   <div style="position: relative; z-index: 1001;">
-                    <div id="adminButtonsContainer" style="display: none; position: fixed; top: auto; left: auto; background: rgba(26, 32, 44, 0.95); border: 1px solid #3a7bd5; border-radius: 5px; padding: 8px; gap: 8px; flex-direction: column; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-10px); transition: opacity 0.2s ease, transform 0.2s ease;"></div>
+                    <div id="adminButtonsContainer" style="display: none; position: fixed; top: auto; left: auto; background: var(--dropdown-bg, rgba(26, 32, 44, 0.95)); border: 1px solid #3a7bd5; border-radius: 5px; padding: 8px; gap: 8px; flex-direction: column; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-10px); transition: opacity 0.2s ease, transform 0.2s ease;"></div>
                     <button
                       id="adminSettingsBtn"
                       onclick="toggleAdminButtons(event)"
@@ -1033,13 +1033,13 @@
                   onfocus="this.style.borderColor='#5a9fd4'"
                   onblur="this.style.borderColor='rgba(90, 159, 212, 0.5)'"
                 >
-                  <option value="theme-default">Дефолтная</option>
-                  <option value="theme-hacker-green">Hacker Green</option>
-                  <option value="theme-solarized">Solarized</option>
-                  <option value="theme-matrix">Matrix</option>
-                  <option value="theme-cyberpunk">Cyberpunk</option>
-                  <option value="theme-leagueChampions"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> League Champions</option>
-                  <option value="theme-leagueEurope"><svg class="icon" aria-hidden="true"><use href="#icon-best-result"></use></svg> League Europe</option>
+                  <option value="theme-default">🌑 Дефолтная</option>
+                  <option value="theme-hacker-green">💻 Hacker Green</option>
+                  <option value="theme-solarized">🌅 Solarized</option>
+                  <option value="theme-matrix">🟢 Matrix</option>
+                  <option value="theme-cyberpunk">🌃 Cyberpunk</option>
+                  <option value="theme-leagueChampions">🏆 League Champions</option>
+                  <option value="theme-leagueEurope">⭐ League Europe</option>
                   <option value="theme-cream-material">☀️ Cream Material</option>
                 </select>
               </div>

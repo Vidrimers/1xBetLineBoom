@@ -696,6 +696,18 @@ Object.assign(window, {
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
   openModalWithAnimation, closeModalWithAnimation, showSaveStatus,
+  // showUserProfile — открыть профиль пользователя по клику из списка участников
+  showUserProfile: async (userId, username) => {
+    switchTab('profile');
+    try {
+      const response = await fetch(`/api/user/${userId}/profile`);
+      if (!response.ok) throw new Error('Ошибка загрузки');
+      const profile = await response.json();
+      displayProfile(profile);
+    } catch (e) {
+      console.error('Ошибка загрузки профиля пользователя:', e);
+    }
+  },
 });
 
 

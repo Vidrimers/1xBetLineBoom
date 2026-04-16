@@ -1,5 +1,21 @@
 /* === THEME CREAM MATERIAL (Светлая кремовая, Google Material Design 3) === */
 
+/* CSS-переменные темы */
+body.theme-cream-material {
+  --sticky-header-bg: #fffdf9;
+  --dropdown-bg: rgba(255, 253, 249, 0.98);
+  --section-bg: #fffdf9;
+  --card-bg: #f5f0e8;
+  --input-bg: #f5f0e8;
+  --border-color: #e8e0d4;
+  --text-primary: #1c1b1f;
+  --text-secondary: #49454f;
+  --text-muted: #79747e;
+  --accent: #6750a4;
+  --accent-hover: #7965af;
+  --accent-light: #ede7f6;
+}
+
 body.theme-cream-material {
   background: linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%) !important;
   color: #1c1b1f !important;
@@ -533,4 +549,328 @@ body.theme-cream-material .goal-notification-header button {
 
 body.theme-cream-material .goal-notification-header button:hover {
   color: #1c1b1f !important;
+}
+
+/* === Перекрытие инлайн стилей через специфичность === */
+
+/* Sticky заголовки (tournaments-header, matches-header) — перекрываем через var() в HTML */
+/* Переменная --sticky-header-bg уже задана выше и используется в index.html */
+
+/* Dropdown admin buttons */
+body.theme-cream-material #adminButtonsContainer {
+  background: var(--dropdown-bg) !important;
+  border-color: #cac4d0 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+/* Footer */
+body.theme-cream-material footer {
+  background: rgba(245,240,232,0.9) !important;
+  border-top-color: rgba(103,80,164,0.2) !important;
+  color: #49454f !important;
+}
+
+/* event-card (используется в JS-генерируемом HTML) */
+body.theme-cream-material .event-card {
+  background: #f5f0e8 !important;
+  border: 1px solid #e8e0d4 !important;
+  color: #1c1b1f !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+body.theme-cream-material .event-card:hover {
+  background: #ede7f6 !important;
+  box-shadow: 0 2px 8px rgba(103,80,164,0.2) !important;
+}
+
+/* Модальные окна (генерируются JS с инлайн стилями) */
+body.theme-cream-material [style*="background:#1e2a3a"],
+body.theme-cream-material [style*="background: #1e2a3a"] {
+  background: #fffdf9 !important;
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material [style*="background:#2a3a4a"],
+body.theme-cream-material [style*="background: #2a3a4a"],
+body.theme-cream-material [style*="background:#1a1a2e"],
+body.theme-cream-material [style*="background: #1a1a2e"] {
+  background: #f5f0e8 !important;
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material [style*="background:rgba(0,0,0,0.7)"],
+body.theme-cream-material [style*="background: rgba(0, 0, 0, 0.7)"],
+body.theme-cream-material [style*="background:rgba(0,0,0,0.8)"],
+body.theme-cream-material [style*="background: rgba(0, 0, 0, 0.8)"] {
+  background: rgba(0,0,0,0.4) !important;
+}
+
+/* parsePreviewList и подобные контейнеры */
+body.theme-cream-material [style*="background: rgba(40, 44, 54"] {
+  background: #f5f0e8 !important;
+  border-color: #cac4d0 !important;
+  color: #1c1b1f !important;
+}
+
+/* Textarea и input в модалках */
+body.theme-cream-material textarea[style*="background"],
+body.theme-cream-material input[style*="background"] {
+  background: #f5f0e8 !important;
+  color: #1c1b1f !important;
+  border-color: #cac4d0 !important;
+}
+
+/* Тексты с хардкодными светлыми цветами (#e0e6f0, #b0b8c8) */
+body.theme-cream-material [style*="color: #e0e6f0"],
+body.theme-cream-material [style*="color:#e0e6f0"] {
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material [style*="color: #b0b8c8"],
+body.theme-cream-material [style*="color:#b0b8c8"] {
+  color: #49454f !important;
+}
+
+body.theme-cream-material [style*="color: #999"],
+body.theme-cream-material [style*="color:#999"] {
+  color: #79747e !important;
+}
+
+/* Заголовки в модалках (#5a9fd4) */
+body.theme-cream-material [style*="color: #5a9fd4"],
+body.theme-cream-material [style*="color:#5a9fd4"] {
+  color: #6750a4 !important;
+}
+
+/* Тулбар редактора объявлений */
+body.theme-cream-material [style*="background: rgba(40, 44, 54, 0.8)"] {
+  background: #ede7f6 !important;
+  border-color: #cac4d0 !important;
+}
+
+/* Кнопки тулбара */
+body.theme-cream-material [style*="background: rgba(90, 159, 212, 0.5)"] {
+  background: rgba(103,80,164,0.2) !important;
+  border-color: #6750a4 !important;
+  color: #1c1b1f !important;
+}
+
+/* stat-card в профиле */
+body.theme-cream-material .stat-card {
+  background: #f5f0e8 !important;
+  color: #1c1b1f !important;
+}
+
+/* xg-modal */
+body.theme-cream-material [style*="background: rgba(40, 44, 54, 0.5)"] {
+  background: #f5f0e8 !important;
+  border-color: #cac4d0 !important;
+}
+
+body.theme-cream-material [style*="background: rgba(60, 64, 74"] {
+  background: #ede7f6 !important;
+  color: #1c1b1f !important;
+}
+
+/* themeSelect инлайн стиль */
+body.theme-cream-material #themeSelect {
+  background: #f5f0e8 !important;
+  color: #1c1b1f !important;
+  border-color: #cac4d0 !important;
+}
+
+/* === event-card (участники/турниры) === */
+body.theme-cream-material .event-card {
+  background: linear-gradient(135deg, rgba(103,80,164,0.12) 0%, rgba(245,240,232,0.9) 100%) !important;
+  border: 1px solid #cac4d0 !important;
+  color: #1c1b1f !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+body.theme-cream-material .event-card:hover {
+  background: linear-gradient(135deg, rgba(103,80,164,0.2) 0%, rgba(237,231,246,0.9) 100%) !important;
+  box-shadow: 0 4px 12px rgba(103,80,164,0.2) !important;
+  border-color: #6750a4 !important;
+}
+
+body.theme-cream-material .event-card.locked {
+  background: linear-gradient(135deg, rgba(179,38,30,0.08) 0%, rgba(245,240,232,0.7) 100%) !important;
+  border-color: rgba(179,38,30,0.4) !important;
+}
+
+body.theme-cream-material .event-card.locked:hover {
+  background: linear-gradient(135deg, rgba(179,38,30,0.12) 0%, rgba(245,240,232,0.8) 100%) !important;
+}
+
+body.theme-cream-material .event-card.upcoming {
+  background: linear-gradient(135deg, rgba(103,80,164,0.08) 0%, rgba(245,240,232,0.8) 100%) !important;
+  border-color: rgba(103,80,164,0.3) !important;
+}
+
+body.theme-cream-material .event-card-count {
+  color: #49454f !important;
+}
+
+body.theme-cream-material .event-card-locked {
+  color: #b3261e !important;
+  background: rgba(179,38,30,0.1) !important;
+}
+
+body.theme-cream-material .event-card-winner {
+  color: #e65100 !important;
+  background: rgba(230,81,0,0.1) !important;
+  border-left-color: #e65100 !important;
+}
+
+/* live-event-card */
+body.theme-cream-material .live-event-card {
+  background: #f5f0e8 !important;
+  border-color: #cac4d0 !important;
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .live-event-card:hover {
+  background: #ede7f6 !important;
+  border-color: #6750a4 !important;
+}
+
+/* === custom-modal === */
+body.theme-cream-material .custom-modal-overlay {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+body.theme-cream-material .custom-modal {
+  background: linear-gradient(135deg, #fffdf9 0%, #f5f0e8 100%) !important;
+  border: 1px solid #e8e0d4 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.theme-cream-material .custom-modal-title {
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .custom-modal-message {
+  color: #49454f !important;
+}
+
+body.theme-cream-material .custom-modal-input {
+  background: #f5f0e8 !important;
+  border: 1px solid #cac4d0 !important;
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .custom-modal-input:focus {
+  border-color: #6750a4 !important;
+  background: #fffdf9 !important;
+}
+
+body.theme-cream-material .custom-modal-btn-secondary {
+  background: #ede7f6 !important;
+  color: #1c1b1f !important;
+  border: 1px solid #cac4d0 !important;
+}
+
+body.theme-cream-material .custom-modal-btn-secondary:hover {
+  background: #d4c8f0 !important;
+}
+
+body.theme-cream-material .custom-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.theme-cream-material .custom-modal::-webkit-scrollbar-thumb {
+  background: rgba(103, 80, 164, 0.3) !important;
+}
+
+body.theme-cream-material .custom-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(103, 80, 164, 0.5) !important;
+}
+
+/* === countingBtn (инлайн color: #e0e6f0) === */
+body.theme-cream-material #countingBtn {
+  color: #1c1b1f !important;
+  border-color: #6750a4 !important;
+  background: transparent !important;
+}
+
+/* === profile-section === */
+body.theme-cream-material .profile-section {
+  background: #f5f0e8 !important;
+  border-left-color: #6750a4 !important;
+}
+
+body.theme-cream-material .profile-section-title {
+  color: #6750a4 !important;
+}
+
+body.theme-cream-material .profile-section-content {
+  color: #49454f !important;
+}
+
+/* === awardsSection / award-card === */
+body.theme-cream-material .award-card {
+  border-color: rgba(103,80,164,0.5) !important;
+}
+
+body.theme-cream-material .award-title {
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .award-description {
+  color: #49454f !important;
+}
+
+/* === Настройки — текст и элементы === */
+body.theme-cream-material .setting-label {
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .setting-hint,
+body.theme-cream-material .setting-hint-small {
+  color: #49454f !important;
+}
+
+body.theme-cream-material .setting-hint-small a,
+body.theme-cream-material .setting-link {
+  color: #6750a4 !important;
+}
+
+body.theme-cream-material .setting-control input {
+  background: #f5f0e8 !important;
+  border-color: #cac4d0 !important;
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .setting-control input:focus {
+  border-color: #6750a4 !important;
+}
+
+/* === adminBtn и adminSettingsBtn — transparent, перекрытый button-правилом темы === */
+body.theme-cream-material #adminBtn,
+body.theme-cream-material #adminSettingsBtn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #6750a4 !important;
+}
+
+body.theme-cream-material #adminBtn:hover,
+body.theme-cream-material #adminSettingsBtn:hover {
+  background: rgba(103,80,164,0.1) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* === bracket-filter-btn в cream теме === */
+body.theme-cream-material .bracket-filter-btn {
+  background: linear-gradient(135deg, rgba(103,80,164,0.15), rgba(103,80,164,0.1)) !important;
+  border: 2px solid rgba(103,80,164,0.4) !important;
+  color: #6750a4 !important;
+  box-shadow: 0 2px 8px rgba(103,80,164,0.15) !important;
+}
+
+body.theme-cream-material .bracket-filter-btn:hover {
+  background: linear-gradient(135deg, rgba(103,80,164,0.25), rgba(103,80,164,0.2)) !important;
+  border-color: rgba(103,80,164,0.6) !important;
+  box-shadow: 0 4px 12px rgba(103,80,164,0.25) !important;
 }
