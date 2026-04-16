@@ -698,14 +698,88 @@ Object.assign(window, {
   openModalWithAnimation, closeModalWithAnimation, showSaveStatus,
   // showUserProfile — открыть профиль пользователя по клику из списка участников
   showUserProfile: async (userId, username) => {
-    switchTab('profile');
     try {
-      const response = await fetch(`/api/user/${userId}/profile`);
-      if (!response.ok) throw new Error('Ошибка загрузки');
-      const profile = await response.json();
-      displayProfile(profile);
+      const response = await fetch(`/api/user/${userId}/profile?viewerUsername=${encodeURIComponent(state.currentUser ? state.currentUser.username : '')}`);
+      if (!response.ok) { await showCustomAlert('Не удалось загрузить профиль', 'Ошибка'); return; }
+      const userData = await response.json();
+
+      const awardsRes = await fetch(`/api/user/${userId}/awards`);
+      const tournamentAwards = await awardsRes.json();
+      const customAwardsRes = await fetch(`/api/user/${userId}/custom-awards`);
+      const customAwards = await customAwardsRes.json();
+      const allAwards = [...(tournamentAwards || []), ...(customAwards || [])];
+
+      const awardIconMap = { participant: '👤', winner: '🥇', best_result: '⭐', special: '🎖️' };
+      const awardTextMap = { participant: 'Участник турнира', winner: 'Победитель', best_result: 'Лучший результат', special: 'Специальная награда' };
+
+      const avatarSrc = userData.avatar || 'img/default-avatar.jpg';
+
+      const statsGrid = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
+          <div class="stat-card"><div class="stat-label">Ставок за всё время</div><div class="stat-value" style="color:#7ab0e0">${userData.total_bets||0}</div></div>
+          <div class="stat-card won"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угаданных ставок</div><div class="stat-value" style="color:#4caf50">${userData.won_bets||0}</div></div>
+          <div class="stat-card won" style="cursor:help" title="${userData.max_win_streak_event ? `Турнир: ${userData.max_win_streak_event}` : 'Нет серии'}"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-streak"></use></svg> Угаданных подряд</div><div class="stat-value" style="color:#4caf50">${userData.max_win_streak||0}</div></div>
+          <div class="stat-card lost"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Неугаданных ставок</div><div class="stat-value" style="color:#f44336">${userData.lost_bets||0}</div></div>
+          <div class="stat-card"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> В ожидании</div><div class="stat-value" style="color:#ff9800">${userData.pending_bets||0}</div></div>
+          <div class="stat-card won"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угаданных в сетке</div><div class="stat-value" style="color:#4caf50">${userData.bracket_correct||0}</div></div>
+          <div class="stat-card lost"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Неугаданных в сетке</div><div class="stat-value" style="color:#f44336">${userData.bracket_incorrect||0}</div></div>
+          <div class="stat-card"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Побед в турнирах</div><div class="stat-value" style="color:#ffc107">${userData.tournament_wins||0}</div></div>
+        </div>
+        ${userData.total_bets > 0 ? `<div class="stat-card won" style="margin-bottom:15px;"><div class="stat-label">Точность угадывания</div><div class="stat-value" style="color:#4caf50">${((userData.won_bets/userData.total_bets)*100).toFixed(1)}%</div></div>` : ''}
+      `;
+
+      const awardsHTML = allAwards.length > 0 ? `
+        <div style="margin-top:15px;padding-top:15px;border-top:1px solid rgba(100,100,100,0.3);">
+          <h3 style="color:#d4af37;margin-bottom:12px;font-size:1em;text-align:center;">🏆 НАГРАДЫ</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            ${allAwards.map(award => {
+              const isTournament = award.awarded_at;
+              const date = new Date(isTournament ? award.awarded_at : award.created_at).toLocaleDateString('ru-RU');
+              if (isTournament) {
+                const icon = award.event_icon || '🏆';
+                const iconHtml = icon.startsWith('img/') ? `<img src="${icon}" alt="trophy" class="tournament-icon">` : icon;
+                return `<div class="award-card" style="height:180px;display:flex;flex-direction:column;justify-content:space-between;padding:10px;text-align:center;">
+                  <div class="award-icon">${iconHtml}</div>
+                  <div style="font-weight:600;font-size:0.85em;text-shadow:0 2px 4px rgba(0,0,0,0.7);">Победитель "${award.event_name}"</div>
+                  <div style="font-size:0.75em;opacity:0.8;">${date}</div>
+                </div>`;
+              } else {
+                const icon = awardIconMap[award.award_type] || '🏆';
+                const text = awardTextMap[award.award_type] || award.award_type;
+                return `<div style="background:linear-gradient(135deg,rgba(255,193,7,0.3),rgba(255,152,0,0.2));border:2px solid rgba(255,193,7,0.5);border-radius:8px;padding:12px;text-align:center;">
+                  <div style="font-size:1.5em;margin-bottom:4px;">${icon}</div>
+                  <div style="font-weight:600;font-size:0.9em;">${text}${award.event_name ? ` в "${award.event_name}"` : ''}</div>
+                  ${award.description ? `<div style="font-size:0.8em;font-style:italic;margin-top:4px;">"${award.description}"</div>` : ''}
+                  <div style="font-size:0.75em;opacity:0.8;margin-top:4px;">${date}</div>
+                </div>`;
+              }
+            }).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      const overlay = document.createElement('div');
+      overlay.className = 'user-profile-overlay modal';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;';
+      overlay.innerHTML = `
+        <div class="user-profile-modal" style="position:relative;padding:20px;border-radius:12px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;scrollbar-width:none;">
+          <button class="close-profile-btn" onclick="this.closest('.user-profile-overlay').remove();document.body.style.overflow='';" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1;">×</button>
+          <h2 style="text-align:center;margin-bottom:15px;">${username}</h2>
+          <div style="text-align:center;margin-bottom:20px;">
+            <img src="${avatarSrc}" alt="${username}" style="width:100px;height:100px;border-radius:50%;border:3px solid #3a7bd5;object-fit:cover;">
+          </div>
+          ${statsGrid}
+          ${awardsHTML}
+        </div>
+      `;
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) { overlay.remove(); document.body.style.overflow = ''; }
+      });
+      document.body.style.overflow = 'hidden';
+      document.body.appendChild(overlay);
     } catch (e) {
-      console.error('Ошибка загрузки профиля пользователя:', e);
+      console.error('Ошибка загрузки профиля:', e);
+      await showCustomAlert('Ошибка при загрузке профиля', 'Ошибка');
     }
   },
 });

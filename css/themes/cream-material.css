@@ -874,3 +874,19 @@ body.theme-cream-material .bracket-filter-btn:hover {
   border-color: rgba(103,80,164,0.6) !important;
   box-shadow: 0 4px 12px rgba(103,80,164,0.25) !important;
 }
+
+/* === user-profile-overlay / user-profile-modal === */
+body.theme-cream-material .user-profile-overlay {
+  background: rgba(0,0,0,0.4) !important;
+}
+
+body.theme-cream-material .user-profile-modal {
+  background: #fffdf9 !important;
+  border: 1px solid #e8e0d4 !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .user-profile-modal h2 {
+  color: #1c1b1f !important;
+}
