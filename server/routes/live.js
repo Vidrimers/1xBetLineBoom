@@ -1678,4 +1678,27 @@ router.post("/api/notify-live-action", async (req, res) => {
 });
 
 
+// GET /api/matches/:matchId/events/players - Получить сохраненные имена игроков для событий матча
+router.get("/api/matches/:matchId/events/players", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const events = db.prepare(`
+      SELECT
+        sstats_event_id,
+        event_type,
+        minute,
+        extra_minute,
+        team_id,
+        player_name,
+        assist_player_name
+      FROM match_events
+      WHERE match_id = ?
+    `).all(matchId);
+    res.json({ success: true, events });
+  } catch (error) {
+    console.error("❌ Ошибка при получении имен игроков:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

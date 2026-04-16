@@ -291,6 +291,9 @@ export async function selectEvent(eventId, eventName) {
           <button id="addMatchBtn" onclick="openCreateMatchModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Добавить матч">
             ➕
           </button>
+          <button id="bulkParseBtn" onclick="openBulkParseModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Массовый парсинг матчей">
+            🔍
+          </button>
         `;
       }
 
