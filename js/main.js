@@ -460,6 +460,7 @@ import {
   deleteBugReport,
   initBugReportListeners,
 } from './modules/bugReport.js';
+import { openDevicesModal, closeDevicesModal, logoutDevice, toggleTrustedDevice } from './modules/devices.js';
 
 // ===== ЭКСПОРТ В ГЛОБАЛЬНЫЙ SCOPE (для onclick в HTML) =====
 // Все функции которые вызываются из HTML через onclick="..."
@@ -630,6 +631,8 @@ Object.assign(window, {
   navigateBugReportImage, addBugReportImages, handleBugReportImages,
   removeBugReportImage, openBugReportImagesModal, changeBugStatus,
   deleteBugReport,
+  // devices
+  openDevicesModal, closeDevicesModal, logoutDevice, toggleTrustedDevice,
   // ui
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
