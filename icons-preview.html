@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Icon Library</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0e0f13; --surface: #16181f; --border: #242630;
+      --text: #e8eaf0; --muted: #6b7280; --accent: #6c8fff;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 48px 32px; }
+    header { margin-bottom: 40px; }
+    header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+    header p { margin-top: 8px; color: var(--muted); font-size: 14px; }
+    .controls { display: flex; align-items: center; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+    .size-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: border-color 0.15s, color 0.15s; }
+    .size-btn:hover, .size-btn.active { border-color: var(--accent); color: var(--accent); }
+    .color-wrap { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+    input[type="color"] { width: 28px; height: 28px; border: none; background: none; cursor: pointer; padding: 0; border-radius: 4px; }
+    .search-wrap { margin-left: auto; }
+    .search-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; font-size: 13px; outline: none; width: 200px; transition: border-color 0.15s; }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus { border-color: var(--accent); }
+    section { margin-bottom: 48px; }
+    section h2 { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+    .icon-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 12px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative; user-select: none; }
+    .icon-card:hover { border-color: var(--accent); background: #1c1f2b; }
+    .icon-card svg { transition: color 0.2s; flex-shrink: 0; }
+    .icon-card .name { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.4; word-break: break-all; }
+    .icon-card.hidden { display: none; }
+    section.empty { display: none; }
+    .copy-hint { position: absolute; top: 6px; right: 8px; font-size: 9px; color: var(--accent); opacity: 0; transition: opacity 0.15s; }
+    .icon-card:hover .copy-hint { opacity: 1; }
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--accent); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); pointer-events: none; z-index: 999; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Icon Library</h1>
+  <p id="subtitle">Загрузка иконок...</p>
+  <div class="controls">
+    <span style="font-size:13px;color:var(--muted)">Размер:</span>
+    <button class="size-btn" data-size="16">16px</button>
+    <button class="size-btn active" data-size="24">24px</button>
+    <button class="size-btn" data-size="32">32px</button>
+    <button class="size-btn" data-size="48">48px</button>
+    <div class="color-wrap">
+      <span>Цвет:</span>
+      <input type="color" id="colorPicker" value="#e8eaf0" />
+    </div>
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="searchInput" placeholder="Поиск иконки..." />
+    </div>
+  </div>
+</header>
+<div id="gallery"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var INLINE_SPRITE = `<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+
+  <!-- ==================== НАВИГАЦИЯ / UI ==================== -->
+
+  <!-- Ставки / Деньги -->
+  <symbol id="icon-bets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Ставки</title>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 7v1m0 8v1"/>
+    <path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-1 2-2.5 2.5S9.5 13 9.5 14.5a2.5 2.5 0 0 0 5 0"/>
+  </symbol>
+
+  <!-- Участники (группа) -->
+  <symbol id="icon-participants" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Участники</title>
+    <circle cx="9" cy="7" r="3"/>
+    <path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6"/>
+    <circle cx="18" cy="8" r="2.5"/>
+    <path d="M14.5 20c0-2.485 1.567-4.612 3.5-4.612"/>
+  </symbol>
+
+  <!-- Профиль пользователя -->
+  <symbol id="icon-profile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Профиль</title>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </symbol>
+
+  <!-- Новости / Объявления -->
+  <symbol id="icon-news" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Новости</title>
+    <path d="M19 9.5v5"/>
+    <path d="M19 7c1.5.8 2.5 2.2 2.5 3.5s-1 2.7-2.5 3.5"/>
+    <path d="M19 4.5c2.5 1.5 4 3.5 4 5.5s-1.5 4-4 5.5"/>
+    <rect x="2" y="8" width="8" height="8" rx="1"/>
+    <path d="M10 9l9-4v10l-9-4"/>
+    <path d="M6 16v4"/>
+  </symbol>
+
+  <!-- Настройки -->
+  <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Настройки</title>
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </symbol>
+
+  <!-- Вход / Авторизация -->
+  <symbol id="icon-login" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Вход</title>
+    <rect x="3" y="11" width="11" height="11" rx="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    <circle cx="9" cy="16" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- ==================== РАЗДЕЛЫ ==================== -->
+
+  <!-- Турниры / Календарь -->
+  <symbol id="icon-tournaments" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Турниры</title>
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
+    <line x1="16" y1="2" x2="16" y2="6"/>
+    <line x1="8" y1="2" x2="8" y2="6"/>
+    <line x1="3" y1="10" x2="21" y2="10"/>
+    <rect x="7" y="14" width="3" height="3" rx="0.5" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Матчи / Футбол -->
+  <symbol id="icon-matches" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Матчи</title>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 3c0 0-2 3-2 9s2 9 2 9"/>
+    <path d="M3 12h18"/>
+    <path d="M4.5 7.5c2 1 4.5 1.5 7.5 1.5s5.5-.5 7.5-1.5"/>
+    <path d="M4.5 16.5c2-1 4.5-1.5 7.5-1.5s5.5.5 7.5 1.5"/>
+  </symbol>
+
+  <!-- Статистика -->
+  <symbol id="icon-stats" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Статистика</title>
+    <line x1="18" y1="20" x2="18" y2="10"/>
+    <line x1="12" y1="20" x2="12" y2="4"/>
+    <line x1="6" y1="20" x2="6" y2="14"/>
+    <line x1="3" y1="20" x2="21" y2="20"/>
+  </symbol>
+
+  <!-- Участники / Список -->
+  <symbol id="icon-members" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Список участников</title>
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <line x1="9" y1="8" x2="17" y2="8"/>
+    <line x1="9" y1="12" x2="17" y2="12"/>
+    <line x1="9" y1="16" x2="17" y2="16"/>
+    <circle cx="6" cy="8" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="6" cy="12" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="6" cy="16" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Сравнение -->
+  <symbol id="icon-compare" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Сравнение</title>
+    <path d="M12 3l3 4H9l3-4z"/>
+    <path d="M12 21l-3-4h6l-3 4z"/>
+    <line x1="12" y1="7" x2="12" y2="17"/>
+    <path d="M3 12l4-3v6l-4-3z"/>
+    <path d="M21 12l-4 3V9l4 3z"/>
+  </symbol>
+
+  <!-- ==================== СТАТУСЫ СТАВОК ==================== -->
+
+  <!-- Правильная ставка -->
+  <symbol id="icon-correct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <title>Правильная ставка</title>
+    <circle cx="12" cy="12" r="9"/>
+    <polyline points="7.5 12 10.5 15 16.5 9"/>
+  </symbol>
+
+  <!-- Неправильная ставка -->
+  <symbol id="icon-wrong" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <title>Неправильная ставка</title>
+    <circle cx="12" cy="12" r="9"/>
+    <line x1="15" y1="9" x2="9" y2="15"/>
+    <line x1="9" y1="9" x2="15" y2="15"/>
+  </symbol>
+
+  <!-- Ожидание -->
+  <symbol id="icon-pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Ожидание результата</title>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 7v5l3 3"/>
+  </symbol>
+
+  <!-- Скрыто / Заблокировано -->
+  <symbol id="icon-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Ставка скрыта</title>
+    <rect x="5" y="11" width="14" height="10" rx="2"/>
+    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+    <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- ==================== КАРТОЧКИ (ФИКСИРОВАННЫЕ ЦВЕТА) ==================== -->
+
+  <!-- Жёлтая карточка -->
+  <symbol id="icon-yellow-card" viewBox="0 0 24 24">
+    <title>Жёлтая карточка</title>
+    <rect x="6" y="3" width="12" height="18" rx="2" fill="#f5c518"/>
+  </symbol>
+
+  <!-- Красная карточка -->
+  <symbol id="icon-red-card" viewBox="0 0 24 24">
+    <title>Красная карточка</title>
+    <rect x="6" y="3" width="12" height="18" rx="2" fill="#e53935"/>
+  </symbol>
+
+  <!-- ==================== ДЕЙСТВИЯ ==================== -->
+
+  <!-- Создать / Добавить -->
+  <symbol id="icon-create" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Создать</title>
+    <circle cx="12" cy="12" r="9"/>
+    <line x1="12" y1="8" x2="12" y2="16"/>
+    <line x1="8" y1="12" x2="16" y2="12"/>
+  </symbol>
+
+  <!-- Редактировать -->
+  <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Редактировать</title>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </symbol>
+
+  <!-- Удалить -->
+  <symbol id="icon-delete" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Удалить</title>
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+    <path d="M10 11v6"/>
+    <path d="M14 11v6"/>
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+  </symbol>
+
+  <!-- Обновить -->
+  <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Обновить</title>
+    <polyline points="23 4 23 10 17 10"/>
+    <polyline points="1 20 1 14 7 14"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </symbol>
+
+  <!-- Отправить -->
+  <symbol id="icon-submit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Отправить</title>
+    <polyline points="16 16 12 12 8 16"/>
+    <line x1="12" y1="12" x2="12" y2="21"/>
+    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+  </symbol>
+
+  <!-- Импортировать -->
+  <symbol id="icon-import" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Импортировать</title>
+    <polyline points="8 17 12 21 16 17"/>
+    <line x1="12" y1="12" x2="12" y2="21"/>
+    <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>
+  </symbol>
+
+  <!-- Сохранить -->
+  <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Сохранить</title>
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+    <polyline points="17 21 17 13 7 13 7 21"/>
+    <polyline points="7 3 7 8 15 8"/>
+  </symbol>
+
+  <!-- Поиск -->
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Поиск</title>
+    <circle cx="11" cy="11" r="8"/>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </symbol>
+
+  <!-- ==================== ТУРНИРЫ ==================== -->
+
+  <!-- Трофей / Победитель -->
+  <symbol id="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Трофей</title>
+    <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/>
+    <path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
+    <path d="M6 2h12v7a6 6 0 0 1-12 0V2z"/>
+    <line x1="12" y1="15" x2="12" y2="19"/>
+    <line x1="8" y1="22" x2="16" y2="22"/>
+  </symbol>
+
+  <!-- Чемпионат мира -->
+  <symbol id="icon-world-cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Чемпионат мира</title>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 3c0 0-2 3-2 9s2 9 2 9"/>
+    <path d="M3 12h18"/>
+    <path d="M4.5 7.5c2 1 4.5 1.5 7.5 1.5s5.5-.5 7.5-1.5"/>
+    <path d="M4.5 16.5c2-1 4.5-1.5 7.5-1.5s5.5.5 7.5 1.5"/>
+  </symbol>
+
+  <!-- Лига конференций / Медаль -->
+  <symbol id="icon-conference" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Лига конференций</title>
+    <circle cx="12" cy="14" r="6"/>
+    <path d="M9 2h6l1 5H8L9 2z"/>
+    <line x1="12" y1="8" x2="12" y2="10"/>
+  </symbol>
+
+  <!-- Кастомный турнир / Мишень -->
+  <symbol id="icon-custom-tournament" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Кастомный турнир</title>
+    <circle cx="12" cy="12" r="9"/>
+    <circle cx="12" cy="12" r="5"/>
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- ==================== УВЕДОМЛЕНИЯ ==================== -->
+
+  <!-- Колокол -->
+  <symbol id="icon-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Уведомления</title>
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </symbol>
+
+  <!-- Telegram -->
+  <symbol id="icon-telegram" viewBox="0 0 24 24" fill="currentColor">
+    <title>Telegram</title>
+    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.016 9.503c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.393c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.332-.373-.12L7.09 14.697l-2.95-.924c-.642-.2-.655-.642.134-.952l11.52-4.44c.535-.194 1.003.13.768.867z"/>
+  </symbol>
+
+  <!-- Уведомления отключены -->
+  <symbol id="icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Уведомления отключены</title>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    <path d="M18.63 13A17.89 17.89 0 0 1 18 8"/>
+    <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/>
+    <path d="M18 8a6 6 0 0 0-9.33-5"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </symbol>
+
+  <!-- Предупреждение -->
+  <symbol id="icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Предупреждение</title>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </symbol>
+
+  <!-- ==================== ПРОФИЛЬ / НАГРАДЫ ==================== -->
+
+  <!-- Первое место / Победитель -->
+  <symbol id="icon-winner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Победитель</title>
+    <circle cx="12" cy="8" r="5"/>
+    <path d="M7 13l-3 8h16l-3-8"/>
+    <line x1="12" y1="3" x2="12" y2="5"/>
+    <path d="M10 8l2-2 2 2"/>
+  </symbol>
+
+  <!-- Лучший результат / Звезда -->
+  <symbol id="icon-best-result" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Лучший результат</title>
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </symbol>
+
+  <!-- Особая награда -->
+  <symbol id="icon-special-award" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Особая награда</title>
+    <circle cx="12" cy="9" r="5"/>
+    <path d="M9 14l-3 7h12l-3-7"/>
+    <path d="M9 9l1.5 1.5L12 9l1.5 1.5L15 9"/>
+  </symbol>
+
+  <!-- Фото / Камера -->
+  <symbol id="icon-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Фото</title>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </symbol>
+
+  <!-- ==================== ПРОЧИЕ ИКОНКИ ==================== -->
+
+  <!-- Баг / Ошибка -->
+  <symbol id="icon-bug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Баг</title>
+    <path d="M8 2L6 6"/>
+    <path d="M16 2L18 6"/>
+    <circle cx="12" cy="7" r="2"/>
+    <ellipse cx="12" cy="14.5" rx="5" ry="6.5"/>
+    <path d="M7.5 11h9"/>
+    <path d="M7.5 14.5h9"/>
+    <path d="M7.5 18h9"/>
+    <path d="M7 11L4 9"/>
+    <path d="M7 14.5L3 14.5"/>
+    <path d="M7 18L4 20"/>
+    <path d="M17 11L20 9"/>
+    <path d="M17 14.5L21 14.5"/>
+    <path d="M17 18L20 20"/>
+  </symbol>
+
+  <!-- Ключевые слова / Ключ -->
+  <symbol id="icon-keywords" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Ключевые слова</title>
+    <circle cx="8" cy="15" r="5"/>
+    <path d="M21 2l-9.3 9.3"/>
+    <path d="M15 8l3 3"/>
+  </symbol>
+
+  <!-- Резервная копия -->
+  <symbol id="icon-backup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Резервная копия</title>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </symbol>
+
+  <!-- Модератор / Щит -->
+  <symbol id="icon-moderator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Модератор</title>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <polyline points="9 12 11 14 15 10"/>
+  </symbol>
+
+  <!-- Бот / Автоматизация -->
+  <symbol id="icon-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Бот</title>
+    <rect x="3" y="8" width="18" height="13" rx="2"/>
+    <path d="M12 8V5"/>
+    <circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="9" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="15" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+    <path d="M9 17h6"/>
+  </symbol>
+
+  <!-- Live / В эфире -->
+  <symbol id="icon-live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Live</title>
+    <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+    <path d="M6.3 6.3a8 8 0 0 0 0 11.4"/>
+    <path d="M17.7 6.3a8 8 0 0 1 0 11.4"/>
+    <path d="M3.5 3.5a13 13 0 0 0 0 17"/>
+    <path d="M20.5 3.5a13 13 0 0 1 0 17"/>
+  </symbol>
+
+  <!-- Темы / Оформление -->
+  <symbol id="icon-themes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Темы оформления</title>
+    <circle cx="13.5" cy="6.5" r="2.5"/>
+    <circle cx="17.5" cy="10.5" r="2.5"/>
+    <circle cx="8.5" cy="7.5" r="2.5"/>
+    <circle cx="6.5" cy="12.5" r="2.5"/>
+    <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z" stroke-dasharray="2 2"/>
+  </symbol>
+
+  <!-- Удача / Случайность -->
+  <symbol id="icon-lucky" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Удача</title>
+    <rect x="3" y="3" width="18" height="18" rx="3"/>
+    <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="16" cy="8" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="8" cy="16" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="16" cy="16" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="8" cy="12" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Серия / Огонь -->
+  <symbol id="icon-streak" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Серия побед</title>
+    <path d="M12 2c0 0-4 4-4 9a4 4 0 0 0 8 0c0-2-1-4-2-5 0 2-1 3-2 3s-2-1-2-3c0-1 1-3 2-4z"/>
+    <path d="M9 17c0 2 1.5 3 3 3s3-1 3-3"/>
+  </symbol>
+
+  <!-- 1-е место -->
+  <symbol id="icon-place-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Первое место</title>
+    <circle cx="12" cy="8" r="5"/>
+    <path d="M10 8h2V5"/>
+    <path d="M9 21H5l2-5h10l2 5h-4"/>
+    <path d="M9 16h6"/>
+  </symbol>
+
+  <!-- 2-е место -->
+  <symbol id="icon-place-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Второе место</title>
+    <circle cx="12" cy="8" r="5"/>
+    <path d="M10 7c0-1 .5-2 2-2s2 1 2 2-1 1.5-2 2.5L10 11h4"/>
+    <path d="M9 21H5l2-5h10l2 5h-4"/>
+    <path d="M9 16h6"/>
+  </symbol>
+
+  <!-- 3-е место -->
+  <symbol id="icon-place-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Третье место</title>
+    <circle cx="12" cy="8" r="5"/>
+    <path d="M10 6h3l-1.5 2.5c1 0 2 .5 2 1.5s-1 2-2 2-2-.5-2-1.5"/>
+    <path d="M9 21H5l2-5h10l2 5h-4"/>
+    <path d="M9 16h6"/>
+  </symbol>
+
+  <!-- Корона / Лидер -->
+  <symbol id="icon-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Корона</title>
+    <path d="M2 17l2-8 4 4 4-8 4 8 4-4 2 8H2z"/>
+    <line x1="2" y1="20" x2="22" y2="20"/>
+  </symbol>
+
+  <!-- Глобус / Интернет -->
+  <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Глобус</title>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 3c0 0-2 3-2 9s2 9 2 9"/>
+    <path d="M3 12h18"/>
+    <path d="M4.5 7.5c2 1 4.5 1.5 7.5 1.5s5.5-.5 7.5-1.5"/>
+    <path d="M4.5 16.5c2-1 4.5-1.5 7.5-1.5s5.5.5 7.5 1.5"/>
+  </symbol>
+
+  <!-- Подсказка / Идея -->
+  <symbol id="icon-hint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Подсказка</title>
+    <path d="M9 18h6"/>
+    <path d="M10 22h4"/>
+    <path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.5 4.5-3 6H8c-1.5-1.5-3-3.5-3-6a7 7 0 0 1 7-7z"/>
+  </symbol>
+
+  <!-- Быстро / Запуск -->
+  <symbol id="icon-fast" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Быстро</title>
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+  </symbol>
+
+  <!-- Вопрос -->
+  <symbol id="icon-question" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Вопрос</title>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </symbol>
+
+  <!-- Информация -->
+  <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Информация</title>
+    <circle cx="12" cy="12" r="9"/>
+    <line x1="12" y1="8" x2="12" y2="8"/>
+    <line x1="12" y1="12" x2="12" y2="16"/>
+  </symbol>
+
+  <!-- Прикрепить / Вложение -->
+  <symbol id="icon-attach" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Прикрепить</title>
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+  </symbol>
+
+  <!-- Праздник / Успех -->
+  <symbol id="icon-celebrate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Праздник</title>
+    <path d="M20 7l-8 8-4-4-5 5"/>
+    <path d="M4 20l3-3"/>
+    <path d="M15 3l2 2-10 10-3-3 10-10z"/>
+    <path d="M18 3l3 3"/>
+    <path d="M3 18l3 3"/>
+  </symbol>
+
+  <!-- Блеск / Новое -->
+  <symbol id="icon-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Блеск</title>
+    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+    <path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75L5 3z"/>
+    <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z"/>
+  </symbol>
+
+  <!-- Часы / Время -->
+  <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Время</title>
+    <circle cx="12" cy="12" r="9"/>
+    <polyline points="12 7 12 12 15 15"/>
+  </symbol>
+
+  <!-- Видимость / Просмотр -->
+  <symbol id="icon-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Видимость</title>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </symbol>
+
+  <!-- Изображение -->
+  <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Изображение</title>
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <circle cx="8.5" cy="8.5" r="1.5"/>
+    <polyline points="21 15 16 10 5 21"/>
+  </symbol>
+
+  <!-- Обрезка / Размер -->
+  <symbol id="icon-crop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Обрезка</title>
+    <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/>
+    <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
+  </symbol>
+
+  <!-- Прозрачность / Полутень -->
+  <symbol id="icon-transparency" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Прозрачность</title>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 3v18"/>
+    <path d="M3 12h9" stroke-width="0"/>
+    <path d="M3 12a9 9 0 0 0 9 9V3A9 9 0 0 0 3 12z" fill="currentColor" stroke="none" opacity="0.3"/>
+  </symbol>
+
+  <!-- Аватар / Снимок -->
+  <symbol id="icon-avatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Аватар</title>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+    <circle cx="18" cy="10" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Инструменты / Настройка -->
+  <symbol id="icon-tools" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Инструменты</title>
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+  </symbol>
+
+  <!-- Руководство / Инструкция -->
+  <symbol id="icon-manual" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Руководство</title>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
+  </symbol>
+
+  <!-- Флаг Англии (фиксированные цвета) -->
+  <symbol id="icon-england" viewBox="0 0 24 24">
+    <title>Флаг Англии</title>
+    <rect width="24" height="24" rx="2" fill="#fff"/>
+    <rect x="10" y="0" width="4" height="24" fill="#cf1124"/>
+    <rect x="0" y="10" width="24" height="4" fill="#cf1124"/>
+  </symbol>
+
+  <!-- Авто / Скачать -->
+  <symbol id="icon-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Авто</title>
+    <polyline points="8 17 12 21 16 17"/>
+    <line x1="12" y1="12" x2="12" y2="21"/>
+    <circle cx="12" cy="6" r="3"/>
+    <path d="M9 6H5a2 2 0 0 0-2 2v1"/>
+    <path d="M15 6h4a2 2 0 0 1 2 2v1"/>
+  </symbol>
+
+  <!-- Пауза / Стоп -->
+  <symbol id="icon-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Пауза</title>
+    <rect x="6" y="4" width="4" height="16" rx="1"/>
+    <rect x="14" y="4" width="4" height="16" rx="1"/>
+  </symbol>
+
+  <!-- Чат / Группа -->
+  <symbol id="icon-group" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Групповой чат</title>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <line x1="8" y1="10" x2="16" y2="10"/>
+    <line x1="8" y1="14" x2="12" y2="14"/>
+  </symbol>
+
+  <!-- Просмотры -->
+  <symbol id="icon-views" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Просмотры</title>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+    <circle cx="8" cy="9" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="16" cy="9" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- История / Свиток -->
+  <symbol id="icon-earlier" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>История</title>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <line x1="10" y1="9" x2="8" y2="9"/>
+    <path d="M6 18c0 1-1 2-2 2s-2-1-2-2V6a2 2 0 0 1 2-2"/>
+  </symbol>
+
+  <!-- Объявления / Мегафон -->
+  <symbol id="icon-announcements" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Объявления</title>
+    <path d="M3 11l19-9-9 19-2-8-8-2z"/>
+  </symbol>
+
+</svg>`;
+
+  var SECTIONS = [
+    { title: 'Навигация / UI', ids: ['icon-bets','icon-participants','icon-profile','icon-news','icon-settings','icon-login'] },
+    { title: 'Статусы ставок', ids: ['icon-correct','icon-wrong','icon-pending','icon-hidden','icon-yellow-card','icon-red-card'] },
+    { title: 'Действия', ids: ['icon-create','icon-edit','icon-delete','icon-refresh','icon-submit','icon-import','icon-save','icon-search','icon-stop','icon-auto'] },
+    { title: 'Турниры', ids: ['icon-tournaments','icon-matches','icon-stats','icon-members','icon-compare','icon-trophy','icon-world-cup','icon-conference','icon-custom-tournament'] },
+    { title: 'Уведомления', ids: ['icon-bell','icon-telegram','icon-muted','icon-warning','icon-announcements'] },
+    { title: 'Профиль / Награды', ids: ['icon-winner','icon-best-result','icon-special-award','icon-photo','icon-crown','icon-place-1','icon-place-2','icon-place-3','icon-avatar','icon-streak','icon-lucky'] },
+    { title: 'Прочее', ids: ['icon-bug','icon-keywords','icon-backup','icon-moderator','icon-bot','icon-live','icon-themes','icon-globe','icon-hint','icon-fast','icon-question','icon-info','icon-attach','icon-celebrate','icon-sparkle','icon-clock','icon-visible','icon-image','icon-crop','icon-transparency','icon-tools','icon-manual','icon-england','icon-group','icon-views','icon-earlier'] }
+  ];
+
+  var currentSize = 24;
+  var currentColor = '#e8eaf0';
+  var toastTimer = null;
+
+  function insertSprite(svgText) {
+    var div = document.createElement('div');
+    div.style.display = 'none';
+    div.setAttribute('aria-hidden', 'true');
+    div.innerHTML = svgText;
+    document.body.insertBefore(div, document.body.firstChild);
+  }
+
+  function makeCard(id) {
+    var card = document.createElement('div');
+    card.className = 'icon-card';
+    card.setAttribute('data-id', id);
+
+    var hint = document.createElement('span');
+    hint.className = 'copy-hint';
+    hint.textContent = 'copy';
+
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', currentSize);
+    svg.setAttribute('height', currentSize);
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.color = currentColor;
+
+    var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', '#' + id);
+    svg.appendChild(use);
+
+    var name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = id;
+
+    card.appendChild(hint);
+    card.appendChild(svg);
+    card.appendChild(name);
+
+    card.addEventListener('click', function () {
+      var snippet = '<svg width="' + currentSize + '" height="' + currentSize + '">\n  <use href="#' + id + '" />\n</svg>';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(snippet).then(function () { showToast(id); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = snippet;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(id);
+      }
+    });
+
+    return card;
+  }
+
+  function showToast(id) {
+    var toast = document.getElementById('toast');
+    toast.textContent = 'Скопировано: #' + id;
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2000);
+  }
+
+  function buildGallery(allIds) {
+    var gallery = document.getElementById('gallery');
+    gallery.innerHTML = '';
+
+    var knownIds = [];
+    SECTIONS.forEach(function (sec) { knownIds = knownIds.concat(sec.ids); });
+
+    // Добавляем в "Прочее" иконки из спрайта, которых нет в других секциях
+    var otherSection = SECTIONS[SECTIONS.length - 1];
+    allIds.forEach(function (id) {
+      if (knownIds.indexOf(id) === -1 && otherSection.ids.indexOf(id) === -1) {
+        otherSection.ids.push(id);
+      }
+    });
+
+    SECTIONS.forEach(function (sec) {
+      var section = document.createElement('section');
+      var h2 = document.createElement('h2');
+      h2.textContent = sec.title;
+      var grid = document.createElement('div');
+      grid.className = 'grid';
+
+      sec.ids.forEach(function (id) {
+        if (allIds.indexOf(id) !== -1) {
+          grid.appendChild(makeCard(id));
+        }
+      });
+
+      section.appendChild(h2);
+      section.appendChild(grid);
+      gallery.appendChild(section);
+    });
+
+    document.getElementById('subtitle').textContent = allIds.length + ' иконок в библиотеке';
+  }
+
+  function getIdsFromSprite(svgText) {
+    var div = document.createElement('div');
+    div.innerHTML = svgText;
+    var symbols = div.querySelectorAll('symbol[id]');
+    var ids = [];
+    symbols.forEach(function (s) { ids.push(s.getAttribute('id')); });
+    return ids;
+  }
+
+  function init(svgText) {
+    insertSprite(svgText);
+    var ids = getIdsFromSprite(svgText);
+    buildGallery(ids);
+    bindControls();
+  }
+
+  function bindControls() {
+    // Кнопки размера
+    document.querySelectorAll('.size-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.size-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        currentSize = parseInt(btn.getAttribute('data-size'), 10);
+        document.querySelectorAll('.icon-card svg').forEach(function (svg) {
+          svg.setAttribute('width', currentSize);
+          svg.setAttribute('height', currentSize);
+        });
+      });
+    });
+
+    // Color picker
+    document.getElementById('colorPicker').addEventListener('input', function (e) {
+      currentColor = e.target.value;
+      document.querySelectorAll('.icon-card svg').forEach(function (svg) {
+        svg.style.color = currentColor;
+      });
+    });
+
+    // Поиск
+    document.getElementById('searchInput').addEventListener('input', function (e) {
+      var q = e.target.value.toLowerCase().trim();
+      document.querySelectorAll('.icon-card').forEach(function (card) {
+        var id = card.getAttribute('data-id').toLowerCase();
+        if (!q || id.indexOf(q) !== -1) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+      // Скрываем пустые секции
+      document.querySelectorAll('section').forEach(function (sec) {
+        var visible = sec.querySelectorAll('.icon-card:not(.hidden)').length;
+        if (visible === 0) {
+          sec.classList.add('empty');
+        } else {
+          sec.classList.remove('empty');
+        }
+      });
+    });
+  }
+
+  // Загрузка спрайта: сначала fetch, при ошибке — inline
+  fetch('icons/icons-sprite.svg')
+    .then(function (res) {
+      if (!res.ok) throw new Error('fetch failed');
+      return res.text();
+    })
+    .then(function (text) { init(text); })
+    .catch(function () { init(INLINE_SPRITE); });
+
+})();
+</script>
+</body>
+</html>

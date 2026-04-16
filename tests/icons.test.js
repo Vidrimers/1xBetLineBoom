@@ -403,7 +403,128 @@ assert('property-based: случайный symbol имеет непустой <t
   );
 });
 
-// ─── Итог ─────────────────────────────────────────────────────────────────
+// ─── Property 8: use-элементы используют href, не xlink:href ─────────────
+
+console.log('\n=== Property 8: <use> использует href, не xlink:href ===');
+// Feature: emoji-to-svg-icons, Property 8: все <use> в HTML-файлах используют href
+
+function readHTMLFile(filename) {
+  const filePath = path.join(__dirname, '..', filename);
+  if (!fs.existsSync(filePath)) return null;
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
+assert('index.html не содержит xlink:href в <use>', () => {
+  const content = readHTMLFile('index.html');
+  if (content === null) {
+    console.log('    index.html не найден, пропускаем');
+    return;
+  }
+  // Ищем <use с xlink:href
+  const matches = content.match(/<use[^>]*xlink:href[^>]*>/g);
+  if (matches && matches.length > 0) {
+    throw new Error(`Найдены <use xlink:href> в index.html:\n    ${matches.slice(0, 5).join('\n    ')}`);
+  }
+});
+
+assert('icons-preview.html не содержит xlink:href в <use>', () => {
+  const content = readHTMLFile('icons-preview.html');
+  if (content === null) {
+    console.log('    icons-preview.html не найден, пропускаем');
+    return;
+  }
+  const matches = content.match(/<use[^>]*xlink:href[^>]*>/g);
+  if (matches && matches.length > 0) {
+    throw new Error(`Найдены <use xlink:href> в icons-preview.html:\n    ${matches.slice(0, 5).join('\n    ')}`);
+  }
+});
+
+assert('property-based: случайные <use> в HTML-файлах используют href', () => {
+  const htmlFiles = ['index.html', 'icons-preview.html']
+    .map(f => ({ name: f, content: readHTMLFile(f) }))
+    .filter(f => f.content !== null);
+
+  if (htmlFiles.length === 0) return;
+
+  fc.assert(
+    fc.property(
+      fc.integer({ min: 0, max: htmlFiles.length - 1 }),
+      (i) => {
+        const content = htmlFiles[i].content;
+        // Все <use> должны использовать href, не xlink:href
+        const useElements = content.match(/<use[^>]*>/g) || [];
+        return useElements.every(el => !el.includes('xlink:href'));
+      }
+    ),
+    { numRuns: htmlFiles.length }
+  );
+});
+
+// ─── Property 6: декоративные иконки имеют aria-hidden ───────────────────
+
+console.log('\n=== Property 6: <svg class="icon"> рядом с текстом имеют aria-hidden ===');
+// Feature: emoji-to-svg-icons, Property 6: декоративные иконки имеют aria-hidden="true"
+
+assert('все <svg class="icon"> в index.html имеют aria-hidden="true"', () => {
+  const content = readHTMLFile('index.html');
+  if (content === null) {
+    console.log('    index.html не найден, пропускаем');
+    return;
+  }
+  // Ищем <svg class="icon" без aria-hidden="true"
+  // Паттерн: <svg ... class="icon" ... > без aria-hidden="true"
+  const svgIconTags = content.match(/<svg[^>]*class="icon"[^>]*>/g) || [];
+  const violations = svgIconTags.filter(tag => !tag.includes('aria-hidden="true"') && !tag.includes("aria-hidden='true'"));
+  if (violations.length > 0) {
+    throw new Error(
+      `Найдены <svg class="icon"> без aria-hidden="true" (${violations.length} шт.):\n    ` +
+      violations.slice(0, 5).join('\n    ')
+    );
+  }
+});
+
+assert('все <svg class="icon"> в icons-preview.html имеют aria-hidden="true"', () => {
+  const content = readHTMLFile('icons-preview.html');
+  if (content === null) {
+    console.log('    icons-preview.html не найден, пропускаем');
+    return;
+  }
+  // В icons-preview.html иконки создаются динамически через JS,
+  // поэтому проверяем только статические теги в HTML (если есть)
+  const svgIconTags = content.match(/<svg[^>]*class="icon"[^>]*>/g) || [];
+  const violations = svgIconTags.filter(tag => !tag.includes('aria-hidden="true"') && !tag.includes("aria-hidden='true'"));
+  if (violations.length > 0) {
+    throw new Error(
+      `Найдены <svg class="icon"> без aria-hidden="true" (${violations.length} шт.):\n    ` +
+      violations.slice(0, 5).join('\n    ')
+    );
+  }
+});
+
+assert('property-based: случайные <svg class="icon"> в HTML-файлах имеют aria-hidden', () => {
+  const htmlFiles = ['index.html', 'icons-preview.html']
+    .map(f => ({ name: f, content: readHTMLFile(f) }))
+    .filter(f => f.content !== null);
+
+  if (htmlFiles.length === 0) return;
+
+  fc.assert(
+    fc.property(
+      fc.integer({ min: 0, max: htmlFiles.length - 1 }),
+      (i) => {
+        const content = htmlFiles[i].content;
+        const svgIconTags = content.match(/<svg[^>]*class="icon"[^>]*>/g) || [];
+        // Все статические <svg class="icon"> должны иметь aria-hidden="true"
+        return svgIconTags.every(tag =>
+          tag.includes('aria-hidden="true"') || tag.includes("aria-hidden='true'")
+        );
+      }
+    ),
+    { numRuns: htmlFiles.length }
+  );
+});
+
+// ─── Обновлённый итог ─────────────────────────────────────────────────────
 
 console.log(`\n=== Итог: ${passed} прошло, ${failed} упало ===\n`);
 if (failed > 0) process.exit(1);
