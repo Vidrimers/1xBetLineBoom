@@ -461,6 +461,15 @@ import {
   initBugReportListeners,
 } from './modules/bugReport.js';
 import { openDevicesModal, closeDevicesModal, logoutDevice, toggleTrustedDevice } from './modules/devices.js';
+import {
+  sendCountingResults,
+  openRecountModal,
+  closeRecountModal,
+  confirmRecount,
+  loadEventsForRecount,
+  loadRoundsForRecount,
+  initRecountListeners,
+} from './modules/recount.js';
 
 // ===== ЭКСПОРТ В ГЛОБАЛЬНЫЙ SCOPE (для onclick в HTML) =====
 // Все функции которые вызываются из HTML через onclick="..."
@@ -633,6 +642,9 @@ Object.assign(window, {
   deleteBugReport,
   // devices
   openDevicesModal, closeDevicesModal, logoutDevice, toggleTrustedDevice,
+  // recount
+  sendCountingResults, openRecountModal, closeRecountModal, confirmRecount,
+  loadEventsForRecount, loadRoundsForRecount,
   // ui
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
@@ -882,6 +894,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ===== DOMContentLoaded — bugReport listeners =====
 document.addEventListener('DOMContentLoaded', () => {
   initBugReportListeners();
+});
+
+// ===== DOMContentLoaded — recount listeners =====
+document.addEventListener('DOMContentLoaded', () => {
+  initRecountListeners();
 });
 
 // ===== DOMContentLoaded — recountDate/recountEvent handlers =====
