@@ -72,10 +72,10 @@ export async function openMatchTeamFileSelector(mode) {
     const currentFile = selectedMatchTeamFile;
     const fileListHtml = files.map(file => {
       const isSelected = file.path === currentFile;
-      const icon = file.name.endsWith('.json') ? '✅' : file.name.endsWith('.txt') ? '✅' : '✅';
+      const icon = file.name.endsWith('.json') ? '📄' : file.name.endsWith('.txt') ? '📝' : '📜';
       return `<div class="team-file-item ${isSelected ? 'selected' : ''}" onclick="selectMatchTeamFile('${file.path}', '${mode}')" style="padding: 12px; margin: 8px 0; background: ${isSelected ? 'rgba(90, 159, 212, 0.2)' : 'rgba(40, 44, 54, 0.5)'}; border: 1px solid ${isSelected ? 'rgba(90, 159, 212, 0.5)' : 'rgba(90, 159, 212, 0.2)'}; border-radius: 8px; cursor: pointer; transition: all 0.2s;"><div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5em;">${icon}</span><div style="flex: 1;"><div style="font-weight: 500; color: #e0e6f0;">${file.name}</div><div style="font-size: 0.85em; color: #b0b8c8; margin-top: 2px;">${file.path}</div></div>${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;">✓</span>' : ''}</div></div>`;
     }).join('');
-    const modalHtml = `<div id="matchTeamFileSelectorModal" class="modal" style="display: flex;" onclick="closeMatchTeamFileSelector()"><div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 80vh; overflow-y: auto;"><div class="modal-header"><h2>✅ Выбор файла команд</h2><button class="modal-close" onclick="closeMatchTeamFileSelector()">&times;</button></div><div style="padding: 20px;"><p style="color: #b0b8c8; margin-bottom: 15px;">Выберите файл с командами для автодополнения:</p>${fileListHtml}</div></div></div>`;
+    const modalHtml = `<div id="matchTeamFileSelectorModal" class="modal" style="display: flex;" onclick="closeMatchTeamFileSelector()"><div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 80vh; overflow-y: auto;"><div class="modal-header"><h2>📥 Выбор файла команд</h2><button class="modal-close" onclick="closeMatchTeamFileSelector()">&times;</button></div><div style="padding: 20px;"><p style="color: #b0b8c8; margin-bottom: 15px;">Выберите файл с командами для автодополнения:</p>${fileListHtml}</div></div></div>`;
     const existingModal = document.getElementById('matchTeamFileSelectorModal');
     if (existingModal) existingModal.remove();
     document.body.insertAdjacentHTML('beforeend', modalHtml);
@@ -902,5 +902,18 @@ export async function submitBulkParse(event) {
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = originalText;
+  }
+}
+
+// Обновить превью парсинга при изменении полей
+export function updateParsePreview() {
+  const competition = document.getElementById('parseCompetition').value;
+  const dateFrom = document.getElementById('parseDateFrom').value;
+  const dateTo = document.getElementById('parseDateTo').value;
+  if (competition && dateFrom && dateTo) {
+    document.getElementById('parsePreviewContainer').style.display = 'block';
+    loadParsePreview();
+  } else {
+    document.getElementById('parsePreviewContainer').style.display = 'none';
   }
 }

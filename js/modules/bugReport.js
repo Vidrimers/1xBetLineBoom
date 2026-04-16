@@ -716,3 +716,19 @@ export function initBugReportListeners() {
     }
   });
 }
+
+// Открыть модальное окно списка багрепортов (для администратора)
+export async function openBugReportsModal() {
+  if (!state.currentUser || state.currentUser.username !== state.ADMIN_DB_NAME) {
+    await showCustomAlert('Недостаточно прав', 'Ошибка', '❌');
+    return;
+  }
+  const modal = document.getElementById('bugReportsModal');
+  if (modal) {
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+    await loadBugReports();
+  } else {
+    console.error('❌ Модальное окно bugReportsModal не найдено!');
+  }
+}

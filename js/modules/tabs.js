@@ -207,6 +207,7 @@ export function switchTab(tabName) {
     setTimeout(() => {
       content.style.opacity = "1";
     }, 10);
+    import('../counting.js').then(m => m.loadCounting());
     import('./autocounting.js').then(m => m.loadAutoCountingStatus());
   }
 }

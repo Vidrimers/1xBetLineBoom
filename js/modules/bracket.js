@@ -262,6 +262,9 @@ export async function openBracketModal(bracketId, viewUserId = null) {
     currentBracket = await response.json();
     isEditingBracket = false;
 
+    // Синхронизируем с глобальным скоупом для js/bracket.js
+    window.currentBracket = currentBracket;
+
     // Получаем иконку турнира
     let eventIcon = '🏆';
     if (currentBracket.event_id && state.events && state.events.length > 0) {
@@ -398,6 +401,7 @@ export async function closeBracketModal() {
   window.removeEventListener('resize', handleBracketResize);
 
   currentBracket = null;
+  window.currentBracket = null;
   bracketPredictions = {};
   bracketResults = {};
   isEditingBracket = false;

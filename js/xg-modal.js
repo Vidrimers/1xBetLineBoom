@@ -1,25 +1,28 @@
 // ===== МОДАЛКА XG ПРОГНОЗОВ =====
+import * as state from './modules/state.js';
+import { lockBodyScroll, unlockBodyScroll, showCustomAlert } from './modules/ui.js';
+import { loadMatches } from './modules/matches.js';
 
 // Открыть модалку с прогнозами xG и Glicko-2
 export async function openXgModal() {
   console.log('📊 Открытие модалки xG прогнозов');
   
-  if (!currentUser) {
+  if (!state.currentUser) {
     await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
     return;
   }
   
-  if (!currentEventId) {
+  if (!state.currentEventId) {
     await showCustomAlert('Сначала выберите турнир', 'Ошибка', '❌');
     return;
   }
   
   // Получаем название текущего турнира
-  const currentEvent = events.find(e => e.id === currentEventId);
+  const currentEvent = state.events.find(e => e.id === state.currentEventId);
   const eventName = currentEvent ? currentEvent.name : 'Неизвестный турнир';
   
   // Получаем текущий тур
-  const currentRound = currentRoundFilter || 'all';
+  const currentRound = state.currentRoundFilter || 'all';
   const roundName = currentRound === 'all' ? 'Все туры' : currentRound;
   
   // Если выбрано "Все туры" - предупреждаем пользователя
@@ -38,7 +41,7 @@ export async function openXgModal() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: currentUser.username,
+        username: state.currentUser.username,
         eventName: eventName,
         round: roundName
       })
@@ -54,7 +57,7 @@ export async function openXgModal() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        eventId: currentEventId,
+        eventId: state.currentEventId,
         round: currentRound // Передаем текущий тур
       })
     });
@@ -76,7 +79,7 @@ export async function openXgModal() {
   }
   
   // Получаем матчи текущего тура (после возможного обновления)
-  const matchesForRound = matches.filter(m => m.round === currentRound);
+  const matchesForRound = state.matches.filter(m => m.round === currentRound);
   
   if (matchesForRound.length === 0) {
     await showCustomAlert('Нет матчей для отображения прогнозов', 'Информация', 'ℹ️');
@@ -273,7 +276,7 @@ export function closeXgModal() {
 
 // Переключить видимость кнопки xG для всех пользователей (только для админа)
 export async function toggleXgButton() {
-  if (!currentUser || !currentUser.isAdmin) {
+  if (!state.currentUser || !state.currentUser.isAdmin) {
     await showCustomAlert("У вас нет прав для этого действия", "Ошибка", "❌");
     return;
   }
@@ -293,7 +296,7 @@ export async function toggleXgButton() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        admin_username: currentUser.username,
+        admin_username: state.currentUser.username,
         hidden: newHidden
       })
     });
@@ -312,7 +315,7 @@ export async function toggleXgButton() {
 
     // Перезагружаем матчи чтобы обновить кнопки
     if (typeof loadMatches === 'function') {
-      await loadMatches();
+      await loadMatches(state.currentEventId);
     }
 
   } catch (error) {
@@ -340,10 +343,10 @@ export async function refreshXgData() {
   }
   
   // Получаем текущий тур
-  const currentRound = currentRoundFilter || 'all';
+  const currentRound = state.currentRoundFilter || 'all';
   
   // Получаем матчи текущего тура
-  const matchesForRound = matches.filter(m => m.round === currentRound);
+  const matchesForRound = state.matches.filter(m => m.round === currentRound);
   
   if (matchesForRound.length === 0) {
     await showCustomAlert('Нет матчей для обновления', 'Информация', 'ℹ️');

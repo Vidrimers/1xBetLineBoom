@@ -1,5 +1,7 @@
 import * as state from './state.js';
 import { showCustomAlert, showCustomConfirm, showSaveStatus } from './ui.js';
+import { isAdmin, canViewLogs } from './admin.js';
+import { loadMatches } from './matches.js';
 
 // ===== ЗАГРУЗКА НАСТРОЕК =====
 
@@ -849,34 +851,31 @@ export async function saveTelegramNotificationSettings() {
     }
 
     const checkbox = document.getElementById('telegramNotificationsCheckbox');
-    const enabled = checkbox.checked;
+    const isEnabled = checkbox.checked;
 
-    const response = await fetch('/api/user/telegram-notifications', {
-      method: 'POST',
+    showSaveStatus('telegramNotificationsStatus', 'saving');
+
+    const response = await fetch(`/api/user/${state.currentUser.id}/settings`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: state.currentUser.username,
-        enabled: enabled
-      })
+      body: JSON.stringify({ telegram_notifications_enabled: isEnabled ? 1 : 0 })
     });
 
     const result = await response.json();
 
     if (response.ok) {
-      state.currentUser.telegram_notifications_enabled = enabled ? 1 : 0;
+      state.currentUser.telegram_notifications_enabled = isEnabled ? 1 : 0;
       localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
-      
-      console.log(`✅ Настройки Telegram уведомлений сохранены: ${enabled ? 'включены' : 'отключены'}`);
+      showSaveStatus('telegramNotificationsStatus', 'saved');
     } else {
       console.error('Ошибка сохранения настроек Telegram:', result.error);
-      // Возвращаем чекбокс в предыдущее состояние
-      checkbox.checked = !enabled;
+      checkbox.checked = !isEnabled;
+      showSaveStatus('telegramNotificationsStatus', 'error');
       await showCustomAlert(result.error || 'Ошибка при сохранении настроек', 'Ошибка', '❌');
     }
   } catch (error) {
     console.error('Ошибка при сохранении настроек Telegram уведомлений:', error);
-    const checkbox = document.getElementById('telegramNotificationsCheckbox');
-    checkbox.checked = !checkbox.checked; // Возвращаем в предыдущее состояние
+    showSaveStatus('telegramNotificationsStatus', 'error');
     await showCustomAlert('Ошибка при сохранении настроек', 'Ошибка', '❌');
   }
 }
@@ -1082,5 +1081,276 @@ export async function deactivateSelectedEvents() {
   } catch (error) {
     console.error('Ошибка:', error);
     await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+  }
+}
+
+// ===== НАСТРОЙКИ ПЕРЕКЛЮЧАТЕЛЕЙ =====
+
+// Переключить видимость карточки напоминаний группы
+export async function toggleGroupRemindersCardVisibility() {
+  if (!state.currentUser || !state.currentUser.isAdmin) {
+    await showCustomAlert('У вас нет прав для этого действия', 'Ошибка', '❌');
+    return;
+  }
+  try {
+    const card = document.getElementById('groupRemindersCard');
+    const btn = document.getElementById('toggleGroupRemindersCardBtn');
+    const isCurrentlyHidden = card ? card.style.display === 'none' : false;
+    const newVisibility = !isCurrentlyHidden;
+    const response = await fetch('/api/admin/group-reminders-card-visibility', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hidden: newVisibility, admin_username: state.currentUser.username })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      if (card) card.style.display = newVisibility ? 'none' : 'block';
+      if (btn) {
+        btn.textContent = newVisibility ? '👁️ Показать напоминания ТГ' : '🚫 Скрыть напоминания ТГ';
+        btn.style.background = newVisibility ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
+        btn.style.color = newVisibility ? '#c8e6c9' : '#ffe0d6';
+        btn.style.borderColor = newVisibility ? '#4caf50' : '#ff5722';
+      }
+      await showCustomAlert(
+        newVisibility ? 'Карточка скрыта для всех пользователей' : 'Карточка показана для всех пользователей',
+        'Успешно', '✅'
+      );
+    } else {
+      await showCustomAlert(result.error || 'Не удалось изменить видимость карточки', 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка при переключении видимости карточки:', error);
+    await showCustomAlert('Не удалось изменить видимость карточки.\n\nПроверьте подключение к серверу.', 'Ошибка', '❌');
+  }
+}
+
+// Сохранить настройку подтверждения логина через бота
+export async function saveLogin2faSettings() {
+  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  try {
+    const checkbox = document.getElementById('login2faCheckbox');
+    const isEnabled = checkbox.checked;
+    if (isEnabled && !state.currentUser.telegram_username) {
+      alert('Для включения подтверждения логина необходимо сначала привязать Telegram в настройках выше');
+      checkbox.checked = false;
+      return;
+    }
+    showSaveStatus('login2faStatus', 'saving');
+    const response = await fetch(`/api/user/${state.currentUser.id}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ require_login_2fa: isEnabled ? 1 : 0 })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      state.currentUser.require_login_2fa = isEnabled ? 1 : 0;
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      showSaveStatus('login2faStatus', 'saved');
+    } else {
+      showSaveStatus('login2faStatus', 'error');
+      console.error('Ошибка:', result.error);
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настройки 2FA:', error);
+    showSaveStatus('login2faStatus', 'error');
+  }
+}
+
+// Сохранить настройку звука в LIVE матчах
+export async function saveLiveSoundSettings() {
+  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  try {
+    const checkbox = document.getElementById('liveSoundCheckbox');
+    const isEnabled = checkbox.checked;
+    showSaveStatus('liveSoundStatus', 'saving');
+    const response = await fetch(`/api/user/${state.currentUser.id}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ live_sound: isEnabled ? 1 : 0 })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      state.currentUser.live_sound = isEnabled ? 1 : 0;
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      showSaveStatus('liveSoundStatus', 'saved');
+    } else {
+      showSaveStatus('liveSoundStatus', 'error');
+      console.error('Ошибка:', result.error);
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настройки звука LIVE:', error);
+    showSaveStatus('liveSoundStatus', 'error');
+  }
+}
+
+// Сохранить настройку показа победителя на завершённых турнирах
+export async function saveShowTournamentWinnerSettings() {
+  try {
+    const checkbox = document.getElementById('showTournamentWinnerCheckbox');
+    const showWinner = checkbox.checked;
+    showSaveStatus('tournamentWinnerStatus', 'saving');
+    const response = await fetch('/api/settings/show-tournament-winner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        show_tournament_winner: showWinner,
+        username: state.currentUser?.username || 'Unknown',
+        telegram_username: state.currentUser?.telegram_username || 'Not set'
+      })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      showSaveStatus('tournamentWinnerStatus', 'saved');
+    } else {
+      showSaveStatus('tournamentWinnerStatus', 'error');
+      console.error('Ошибка:', result.error);
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настройки показа победителя:', error);
+    showSaveStatus('tournamentWinnerStatus', 'error');
+  }
+}
+
+// Сохранить настройку видимости ставок
+export async function saveShowBetsSettings() {
+  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  try {
+    const select = document.getElementById('showBetsSelect');
+    const showBets = select.value;
+    showSaveStatus('showBetsStatus', 'saving');
+    const response = await fetch(`/api/user/${state.currentUser.id}/show-bets`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ show_bets: showBets })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      state.currentUser.show_bets = showBets;
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      showSaveStatus('showBetsStatus', 'saved');
+    } else {
+      showSaveStatus('showBetsStatus', 'error');
+      console.error('Ошибка:', result.error);
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настройки:', error);
+    showSaveStatus('showBetsStatus', 'error');
+  }
+}
+
+// Сохранить настройку кнопки "Мне повезёт"
+export async function saveLuckyButtonSettings() {
+  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  try {
+    const select = document.getElementById('showLuckyButtonSelect');
+    const showLuckyButton = parseInt(select.value);
+    showSaveStatus('luckyButtonStatus', 'saving');
+    const response = await fetch(`/api/user/${state.currentUser.id}/show-lucky-button`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ show_lucky_button: showLuckyButton })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      state.currentUser.show_lucky_button = showLuckyButton;
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      showSaveStatus('luckyButtonStatus', 'saved');
+    } else {
+      showSaveStatus('luckyButtonStatus', 'error');
+      console.error('Ошибка:', result.error);
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настройки:', error);
+    showSaveStatus('luckyButtonStatus', 'error');
+  }
+}
+
+// Сохранить настройку кнопки xG
+export async function saveXgButtonSettings() {
+  if (!state.currentUser) { alert('Сначала войдите в систему'); return; }
+  try {
+    const select = document.getElementById('showXgButtonSelect');
+    const showXgButton = parseInt(select.value);
+    showSaveStatus('xgButtonStatus', 'saving');
+    const response = await fetch(`/api/user/${state.currentUser.id}/show-xg-button`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ show_xg_button: showXgButton })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      state.currentUser.show_xg_button = showXgButton;
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      await loadMatches(state.currentEventId);
+      showSaveStatus('xgButtonStatus', 'saved');
+    } else {
+      showSaveStatus('xgButtonStatus', 'error');
+      console.error('Ошибка:', result.error);
+    }
+  } catch (error) {
+    console.error('Ошибка при сохранении настройки кнопки xG:', error);
+    showSaveStatus('xgButtonStatus', 'error');
+  }
+}
+
+// Обновить логи (миграция)
+export async function migrateLogs() {
+  if (!isAdmin()) {
+    await showCustomAlert('Недостаточно прав', 'Доступ запрещён', '❌');
+    return;
+  }
+  const confirmed = await showCustomConfirm(
+    'Обновить файл логов, добавив код отображения размера файла?\n\nСодержимое логов НЕ будет удалено.',
+    'Обновление логов', '🔄'
+  );
+  if (!confirmed) return;
+  try {
+    const response = await fetch('/api/admin/migrate-logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: state.currentUser.username })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      if (result.alreadyMigrated) {
+        await showCustomAlert(result.message, 'Информация', 'ℹ️');
+      } else {
+        await showCustomAlert(result.message + '\n\nОбновите страницу логов чтобы увидеть изменения.', 'Успешно', '✅');
+      }
+    } else {
+      await showCustomAlert(result.error, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка при обновлении логов:', error);
+    await showCustomAlert('Ошибка при обновлении логов', 'Ошибка', '❌');
+  }
+}
+
+// Очистить логи
+export async function clearLogs() {
+  if (!canViewLogs()) {
+    await showCustomAlert('Недостаточно прав', 'Доступ запрещён', '❌');
+    return;
+  }
+  const confirmed = await showCustomConfirm(
+    'Вы уверены, что хотите очистить все логи ставок?',
+    'Очистка логов', '⚠️'
+  );
+  if (!confirmed) return;
+  try {
+    const response = await fetch('/api/admin/clear-logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: state.currentUser.username })
+    });
+    const result = await response.json();
+    if (response.ok) {
+      await showCustomAlert('Логи успешно очищены!', 'Успешно', '✅');
+    } else {
+      await showCustomAlert(result.error, 'Ошибка', '❌');
+    }
+  } catch (error) {
+    console.error('Ошибка при очистке логов:', error);
+    await showCustomAlert('Ошибка при очистке логов', 'Ошибка', '❌');
   }
 }

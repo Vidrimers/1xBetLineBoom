@@ -163,6 +163,98 @@ app.use(terminalRouter);
 app.use(autocountingRouter);
 app.use(aiChatRouter);
 
+// ===== СТРАНИЦА ОЧЕРЕДИ УВЕДОМЛЕНИЙ =====
+app.get("/admin/notifications", (req, res) => {
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Notification Queue - Admin</title>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;margin:20px;background:#1a1a2e;color:#e0e6f0}
+      .controls{margin-bottom:10px}
+      table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #3a7bd5;padding:8px;text-align:left}
+      th{background:#2a3a4a}
+      pre{white-space:pre-wrap;word-break:break-word}
+      .small{font-size:0.9em;color:#b0b8c8}
+      button{margin-right:8px;padding:6px 14px;background:#3a7bd5;color:#fff;border:none;border-radius:4px;cursor:pointer}
+      input{padding:6px;background:#2a3a4a;color:#e0e6f0;border:1px solid #3a7bd5;border-radius:4px}
+    </style>
+  </head>
+  <body>
+    <h2>📬 Очередь уведомлений</h2>
+    <div class="controls">
+      <label>Admin token: <input id="adminToken" style="width:300px" placeholder="Enter admin token"></label>
+      <button id="saveToken">Save</button>
+      <button id="refresh">Refresh</button>
+      <button id="resendAll">Resend all</button>
+      <button id="clearAll">Clear all</button>
+      <span id="status" class="small"></span>
+    </div>
+    <div id="queueContainer"></div>
+    <script>
+      const tokenInput = document.getElementById('adminToken');
+      const saved = localStorage.getItem('admin_token');
+      if (saved) tokenInput.value = saved;
+      document.getElementById('saveToken').addEventListener('click', () => {
+        localStorage.setItem('admin_token', tokenInput.value.trim());
+        setStatus('Saved token');
+      });
+      document.getElementById('refresh').addEventListener('click', () => fetchQueue());
+      document.getElementById('resendAll').addEventListener('click', () => flushQueue());
+      document.getElementById('clearAll').addEventListener('click', () => clearQueue());
+      function setStatus(txt) { document.getElementById('status').textContent = txt; }
+      async function fetchQueue() {
+        const t = (tokenInput.value || localStorage.getItem('admin_token') || '').trim();
+        if (!t) return setStatus('Provide admin token then Save');
+        setStatus('Loading...');
+        try {
+          const r = await fetch('/admin/notifications/queue?admin=' + encodeURIComponent(t));
+          const json = await r.json();
+          if (!json.ok) { setStatus('Error: ' + (json.error || 'unknown')); return; }
+          renderQueue(json.queue || []);
+          setStatus('Loaded ' + (json.queue ? json.queue.length : 0) + ' items');
+        } catch(e) { setStatus('Fetch error: ' + e.message); }
+      }
+      function renderQueue(queue) {
+        const c = document.getElementById('queueContainer');
+        if (!queue.length) { c.innerHTML = '<p class="small">Queue is empty</p>'; return; }
+        const rows = queue.map(q => '<tr><td>' + q.id + '</td><td>' + q.timestamp + '</td><td>' + (q.attempts||0) + '</td><td>' + new Date(q.nextAttemptAt).toLocaleString() + '</td><td><pre>' + ((q.payload && (q.payload.message || JSON.stringify(q.payload))) || '') + '</pre></td></tr>').join('');
+        c.innerHTML = '<table><thead><tr><th>id</th><th>timestamp</th><th>attempts</th><th>nextAttemptAt</th><th>payload</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      }
+      async function flushQueue() {
+        const t = (tokenInput.value || localStorage.getItem('admin_token') || '').trim();
+        if (!t) return setStatus('Provide admin token');
+        setStatus('Flushing...');
+        try {
+          const r = await fetch('/admin/notifications/queue/flush?admin=' + encodeURIComponent(t), { method: 'POST' });
+          const j = await r.json();
+          if (!j.ok) return setStatus('Error: ' + (j.error || 'unknown'));
+          setStatus('Flush result: sent=' + j.result.sent + ' / total=' + j.result.total);
+          fetchQueue();
+        } catch(e) { setStatus('Flush error: ' + e.message); }
+      }
+      async function clearQueue() {
+        const t = (tokenInput.value || localStorage.getItem('admin_token') || '').trim();
+        if (!t) return setStatus('Provide admin token');
+        if (!confirm('Clear all queued notifications?')) return;
+        setStatus('Clearing...');
+        try {
+          const r = await fetch('/admin/notifications/queue/clear?admin=' + encodeURIComponent(t), { method: 'POST' });
+          const j = await r.json();
+          if (!j.ok) return setStatus('Error: ' + (j.error || 'unknown'));
+          setStatus('Queue cleared');
+          fetchQueue();
+        } catch(e) { setStatus('Clear error: ' + e.message); }
+      }
+      fetchQueue();
+    </script>
+  </body>
+</html>`;
+  res.type("html").send(html);
+});
+
 // ===== ЗАПУСК TELEGRAM БОТА =====
 startBot();
 

@@ -121,6 +121,15 @@ import {
   saveDetailedNotificationSettings,
   checkMatchRemindersSettingAndUpdateButton,
   saveNotifyOnViewSettings,
+  toggleGroupRemindersCardVisibility,
+  saveLogin2faSettings,
+  saveLiveSoundSettings,
+  saveShowTournamentWinnerSettings,
+  saveShowBetsSettings,
+  saveLuckyButtonSettings,
+  saveXgButtonSettings,
+  migrateLogs,
+  clearLogs,
 } from './modules/settings.js';
 import {
   openCreateMatchModal,
@@ -150,6 +159,7 @@ import {
   loadParsePreview,
   toggleRoundSelection,
   submitBulkParse,
+  updateParsePreview,
 } from './modules/matchCreate.js';
 import {
   toggleFinalMatch,
@@ -466,6 +476,7 @@ import {
   changeBugStatus,
   deleteBugReport,
   initBugReportListeners,
+  openBugReportsModal,
 } from './modules/bugReport.js';
 import { openDevicesModal, closeDevicesModal, logoutDevice, toggleTrustedDevice } from './modules/devices.js';
 import {
@@ -540,6 +551,9 @@ Object.assign(window, {
   loadDetailedNotificationSettings, updateOnlyActiveTournamentsState,
   saveDetailedNotificationSettings, checkMatchRemindersSettingAndUpdateButton,
   saveNotifyOnViewSettings,
+  toggleGroupRemindersCardVisibility, saveLogin2faSettings, saveLiveSoundSettings,
+  saveShowTournamentWinnerSettings, saveShowBetsSettings, saveLuckyButtonSettings,
+  saveXgButtonSettings, migrateLogs, clearLogs,
   // matchCreate
   openCreateMatchModal, closeCreateMatchModal, submitCreateMatch,
   openImportMatchesModal, closeImportMatchesModal, updateImportSeparatorPreview,
@@ -549,7 +563,7 @@ Object.assign(window, {
   openMatchTeamFileSelector, selectMatchTeamFile, closeMatchTeamFileSelector,
   initTeamAutocomplete, updateSelectedItem, selectTeam, hideSuggestions,
   toggleTeamDropdown, loadRoundsForModal, selectExistingRound,
-  loadParsePreview, toggleRoundSelection, submitBulkParse,
+  loadParsePreview, toggleRoundSelection, submitBulkParse, updateParsePreview,
   // matchEdit
   toggleFinalMatch, openEditMatchModal, closeEditMatchModal, submitEditMatch,
   deleteMatch, openFinalMatchResultModal, closeFinalMatchResultModal,
@@ -665,7 +679,7 @@ Object.assign(window, {
   closeBugReportsModal, filterBugReports, closeBugReportImagesModal,
   navigateBugReportImage, addBugReportImages, handleBugReportImages,
   removeBugReportImage, openBugReportImagesModal, changeBugStatus,
-  deleteBugReport,
+  deleteBugReport, openBugReportsModal,
   // devices
   openDevicesModal, closeDevicesModal, logoutDevice, toggleTrustedDevice,
   // recount
