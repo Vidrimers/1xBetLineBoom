@@ -64,9 +64,9 @@ export async function loadSettings() {
           align-items: center;
           justify-content: center;
           transition: all 0.3s ease;
-        " onmouseover="this.style.background='transparent'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'" title="Информация о Telegram">❔</button>
+        " onmouseover="this.style.background='transparent'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'" title="Информация о Telegram"><svg class="icon" aria-label="Вопрос"><use href="#icon-question"></use></svg></button>
         <div class="setting-label">
-          <span>📱 Telegram</span>
+          <span><svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Telegram</span>
           ${
             telegramUsername
               ? `<a href="https://t.me/${telegramUsername}" target="_blank" class="setting-link">@${telegramUsername}</a>`
@@ -78,7 +78,7 @@ export async function loadSettings() {
         <div class="setting-control">
           <input type="text" id="telegramUsernameInput" value="${telegramUsername}" placeholder="@username" disabled style="opacity: 0.6; cursor: not-allowed;">
           <div class="setting-buttons">
-            <button onclick="deleteTelegramUsername()" class="btn-delete">🗑️</button>
+            <button onclick="deleteTelegramUsername()" class="btn-delete"><svg class="icon" aria-label="Удалить"><use href="#icon-delete"></use></svg></button>
           </div>
         </div>
         <p class="setting-hint-small">Информацию можно узнать в <a href="https://t.me/OnexBetLineBoomBot" target="_blank">боте</a></p>
@@ -100,7 +100,7 @@ export async function loadSettings() {
           onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'; this.style.transform='scale(1.02)'"
           onmouseout="this.style.background='rgba(90, 159, 212, 0.2)'; this.style.transform='scale(1)'"
         >
-          🔗 Привязать свой ТГ
+          <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Привязать свой ТГ
         </button>
         `}
       </div>
@@ -295,7 +295,7 @@ export async function openUpdateSstatsModal() {
       overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔄 Обновить SStats ID</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить SStats ID</h3>
       
       <div id="eventsListForSstats" style="
         margin-bottom: 20px;
@@ -418,7 +418,7 @@ export async function updateSstatsIds() {
   const eventId = document.getElementById('eventIdInput').value;
 
   if (!eventId) {
-    await showCustomAlert('Введите ID турнира', 'Ошибка', '❌');
+    await showCustomAlert('Введите ID турнира', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -442,14 +442,14 @@ export async function updateSstatsIds() {
     const data = await response.json();
 
     if (data.success) {
-      await showCustomAlert(`${data.output}`, data.title, '✅');
+      await showCustomAlert(`${data.output}`, data.title, '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       document.querySelector('div[style*=fixed]').remove();
     } else {
-      await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
+      await showCustomAlert(`${data.error}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+    await showCustomAlert(`${error.message}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -511,10 +511,10 @@ export async function openTelegramBindInfoModal() {
         transition: background 0.2s;
       " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
       
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">📱 Зачем привязывать Telegram?</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Зачем привязывать Telegram?</h3>
       
       <div style="line-height: 1.6;">
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔔 Уведомления и напоминания</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> Уведомления и напоминания</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">Получайте важные уведомления прямо в Telegram:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
@@ -525,7 +525,7 @@ export async function openTelegramBindInfoModal() {
           </ul>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔐 Безопасность</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg> Безопасность</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">Дополнительная защита вашего аккаунта:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
@@ -535,7 +535,7 @@ export async function openTelegramBindInfoModal() {
           </ul>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🤖 Функционал бота</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg> Функционал бота</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">Управляйте своим аккаунтом через Telegram:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
@@ -546,7 +546,7 @@ export async function openTelegramBindInfoModal() {
           </ul>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🔒 Конфиденциальность</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Конфиденциальность</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <ul style="margin: 5px 0; padding-left: 20px;">
             <li>Ваш Telegram используется <strong>только для уведомлений</strong> и связи с вами</li>
@@ -556,10 +556,10 @@ export async function openTelegramBindInfoModal() {
           </ul>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🚀 Как привязать?</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-fast"></use></svg> Как привязать?</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
           <ol style="margin: 5px 0; padding-left: 20px;">
-            <li>Нажмите кнопку <strong>"🔗 Привязать свой ТГ"</strong></li>
+            <li>Нажмите кнопку <strong>"<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#icon-telegram\"></use></svg> Привязать свой ТГ"</strong></li>
             <li>Откроется бот <strong>@OnexBetLineBoomBot</strong> в Telegram</li>
             <li>Нажмите <strong>/start</strong> или кнопку "Начать"</li>
             <li>Бот автоматически привяжет ваш аккаунт</li>
@@ -576,19 +576,19 @@ export async function openTelegramBindInfoModal() {
 // Удалить Telegram username
 export async function deleteTelegramUsername() {
   if (!state.currentUser) {
-    await showCustomAlert('Сначала войдите в систему', 'Ошибка', '❌');
+    await showCustomAlert('Сначала войдите в систему', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   if (!state.currentUser.telegram_username) {
-    await showCustomAlert('Telegram логин не привязан', 'Ошибка', '❌');
+    await showCustomAlert('Telegram логин не привязан', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   const confirmed = await showCustomConfirm(
     'Для удаления Telegram логина требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения. Продолжить?',
     'Подтверждение удаления',
-    '⚠️'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
   );
   
   if (!confirmed) {
@@ -609,7 +609,7 @@ export async function deleteTelegramUsername() {
       const code = await showCustomPrompt(
         'Введите код подтверждения, отправленный вам в Telegram:',
         'Подтверждение',
-        '🔐',
+        '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>',
         'Код из Telegram'
       );
       if (!code) return;
@@ -624,18 +624,18 @@ export async function deleteTelegramUsername() {
       const confirmResult = await confirmResponse.json();
 
       if (confirmResponse.ok) {
-        await showCustomAlert('Telegram логин успешно удален!', 'Успех', '✅');
+        await showCustomAlert('Telegram логин успешно удален!', 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
         state.currentUser.telegram_username = null;
         loadSettings();
       } else {
-        await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
+        await showCustomAlert(confirmResult.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       }
     } else {
-      await showCustomAlert(result.error, 'Ошибка', '❌');
+      await showCustomAlert(result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка при удалении Telegram логина:', error);
-    await showCustomAlert('Ошибка при удалении Telegram логина', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при удалении Telegram логина', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -644,7 +644,7 @@ export async function deleteTelegramUsername() {
 // Открыть детальные настройки Telegram уведомлений (личные)
 export async function openDetailedNotificationsModal() {
   if (!state.currentUser) {
-    await showCustomAlert('Войдите в систему', 'Ошибка', '❌');
+    await showCustomAlert('Войдите в систему', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -653,7 +653,7 @@ export async function openDetailedNotificationsModal() {
     await showCustomAlert(
       'Для настройки уведомлений необходимо привязать Telegram аккаунт.\n\nПерейдите в настройки профиля и свяжите свой аккаунт с ботом.',
       'Telegram не привязан',
-      '📱'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>'
     );
     return;
   }
@@ -846,7 +846,7 @@ export async function saveNotifyOnViewSettings() {
 export async function saveTelegramNotificationSettings() {
   try {
     if (!state.currentUser) {
-      await showCustomAlert('Сначала войдите в систему', 'Ошибка', '❌');
+      await showCustomAlert('Сначала войдите в систему', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
 
@@ -871,12 +871,12 @@ export async function saveTelegramNotificationSettings() {
       console.error('Ошибка сохранения настроек Telegram:', result.error);
       checkbox.checked = !isEnabled;
       showSaveStatus('telegramNotificationsStatus', 'error');
-      await showCustomAlert(result.error || 'Ошибка при сохранении настроек', 'Ошибка', '❌');
+      await showCustomAlert(result.error || 'Ошибка при сохранении настроек', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка при сохранении настроек Telegram уведомлений:', error);
     showSaveStatus('telegramNotificationsStatus', 'error');
-    await showCustomAlert('Ошибка при сохранении настроек', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при сохранении настроек', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -912,7 +912,7 @@ export async function openDeactivateEventsModal() {
       overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">🔒 Деактивировать турниры</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Деактивировать турниры</h3>
       
       <div style="
         margin-bottom: 20px;
@@ -922,7 +922,7 @@ export async function openDeactivateEventsModal() {
         border-radius: 4px;
         color: #ffe0b2;
       ">
-        ⚠️ Выберите турниры для деактивации. Их статус будет изменен на "completed".
+        <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Выберите турниры для деактивации. Их статус будет изменен на "completed".
       </div>
       
       <div id="eventsListContainer" style="
@@ -1029,7 +1029,7 @@ export async function deactivateSelectedEvents() {
   const checkboxes = document.querySelectorAll('.event-checkbox:checked');
 
   if (checkboxes.length === 0) {
-    await showCustomAlert('Выберите хотя бы один турнир', 'Ошибка', '❌');
+    await showCustomAlert('Выберите хотя бы один турнир', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -1038,7 +1038,7 @@ export async function deactivateSelectedEvents() {
   const confirmed = await showCustomConfirm(
     `Вы уверены что хотите деактивировать ${eventIds.length} турнир(ов)?\n\nИх статус будет изменен на "completed".`,
     'Подтверждение деактивации',
-    '⚠️'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
   );
 
   if (!confirmed) {
@@ -1065,9 +1065,9 @@ export async function deactivateSelectedEvents() {
 
     if (data.success) {
       await showCustomAlert(
-        `Деактивировано турниров: ${data.deactivated}\n\n${data.events.map(e => `✓ ${e.name}`).join('\n')}`,
+        `Деактивировано турниров: ${data.deactivated}\n\n${data.events.map(e => `<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ${e.name}`).join('\n')}`,
         'Турниры деактивированы',
-        '✅'
+        '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
       );
       document.querySelector('div[style*=fixed]').remove();
 
@@ -1076,11 +1076,11 @@ export async function deactivateSelectedEvents() {
         loadEvents();
       }
     } else {
-      await showCustomAlert(`${data.error}`, 'Ошибка', '❌');
+      await showCustomAlert(`${data.error}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    await showCustomAlert(`${error.message}`, 'Ошибка', '❌');
+    await showCustomAlert(`${error.message}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -1089,7 +1089,7 @@ export async function deactivateSelectedEvents() {
 // Переключить видимость карточки напоминаний группы
 export async function toggleGroupRemindersCardVisibility() {
   if (!state.currentUser || !state.currentUser.isAdmin) {
-    await showCustomAlert('У вас нет прав для этого действия', 'Ошибка', '❌');
+    await showCustomAlert('У вас нет прав для этого действия', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
   try {
@@ -1106,21 +1106,21 @@ export async function toggleGroupRemindersCardVisibility() {
     if (response.ok) {
       if (card) card.style.display = newVisibility ? 'none' : 'block';
       if (btn) {
-        btn.textContent = newVisibility ? '👁️ Показать напоминания ТГ' : '🚫 Скрыть напоминания ТГ';
+        btn.textContent = newVisibility ? '<svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg>️ Показать напоминания ТГ' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Скрыть напоминания ТГ';
         btn.style.background = newVisibility ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
         btn.style.color = newVisibility ? '#c8e6c9' : '#ffe0d6';
         btn.style.borderColor = newVisibility ? '#4caf50' : '#ff5722';
       }
       await showCustomAlert(
         newVisibility ? 'Карточка скрыта для всех пользователей' : 'Карточка показана для всех пользователей',
-        'Успешно', '✅'
+        'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
       );
     } else {
-      await showCustomAlert(result.error || 'Не удалось изменить видимость карточки', 'Ошибка', '❌');
+      await showCustomAlert(result.error || 'Не удалось изменить видимость карточки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка при переключении видимости карточки:', error);
-    await showCustomAlert('Не удалось изменить видимость карточки.\n\nПроверьте подключение к серверу.', 'Ошибка', '❌');
+    await showCustomAlert('Не удалось изменить видимость карточки.\n\nПроверьте подключение к серверу.', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -1297,12 +1297,12 @@ export async function saveXgButtonSettings() {
 // Обновить логи (миграция)
 export async function migrateLogs() {
   if (!isAdmin()) {
-    await showCustomAlert('Недостаточно прав', 'Доступ запрещён', '❌');
+    await showCustomAlert('Недостаточно прав', 'Доступ запрещён', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
   const confirmed = await showCustomConfirm(
     'Обновить файл логов, добавив код отображения размера файла?\n\nСодержимое логов НЕ будет удалено.',
-    'Обновление логов', '🔄'
+    'Обновление логов', '<svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg>'
   );
   if (!confirmed) return;
   try {
@@ -1316,26 +1316,26 @@ export async function migrateLogs() {
       if (result.alreadyMigrated) {
         await showCustomAlert(result.message, 'Информация', 'ℹ️');
       } else {
-        await showCustomAlert(result.message + '\n\nОбновите страницу логов чтобы увидеть изменения.', 'Успешно', '✅');
+        await showCustomAlert(result.message + '\n\nОбновите страницу логов чтобы увидеть изменения.', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       }
     } else {
-      await showCustomAlert(result.error, 'Ошибка', '❌');
+      await showCustomAlert(result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка при обновлении логов:', error);
-    await showCustomAlert('Ошибка при обновлении логов', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при обновлении логов', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
 // Очистить логи
 export async function clearLogs() {
   if (!canViewLogs()) {
-    await showCustomAlert('Недостаточно прав', 'Доступ запрещён', '❌');
+    await showCustomAlert('Недостаточно прав', 'Доступ запрещён', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
   const confirmed = await showCustomConfirm(
     'Вы уверены, что хотите очистить все логи ставок?',
-    'Очистка логов', '⚠️'
+    'Очистка логов', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
   );
   if (!confirmed) return;
   try {
@@ -1346,13 +1346,13 @@ export async function clearLogs() {
     });
     const result = await response.json();
     if (response.ok) {
-      await showCustomAlert('Логи успешно очищены!', 'Успешно', '✅');
+      await showCustomAlert('Логи успешно очищены!', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
-      await showCustomAlert(result.error, 'Ошибка', '❌');
+      await showCustomAlert(result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка при очистке логов:', error);
-    await showCustomAlert('Ошибка при очистке логов', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при очистке логов', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

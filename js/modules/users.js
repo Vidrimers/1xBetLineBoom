@@ -13,10 +13,10 @@ export async function openNotificationsModal() {
 
   modal.innerHTML = `
     <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-      <h3 style="margin:0 0 20px 0;color:#5a9fd4;">✅ Управление уведомлениями</h3>
+      <h3 style="margin:0 0 20px 0;color:#5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Управление уведомлениями</h3>
       <div id="usersListContainer" style="margin-bottom:20px;padding:15px;background:#2a3a4a;border-radius:8px;max-height:400px;overflow-y:auto;">${usersListHTML}</div>
       <div style="display:flex;gap:10px;">
-        <button onclick="enableNotificationsForAll()" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">✅ Включить для всех</button>
+        <button onclick="enableNotificationsForAll()" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Включить для всех</button>
         <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">Закрыть</button>
       </div>
     </div>
@@ -30,8 +30,8 @@ export async function openNotificationsModal() {
       const users = await response.json();
 
       usersListHTML = users.map(user => {
-        const notifStatus = user.telegram_notifications_enabled ? '✅ Вкл' : '❌ Выкл';
-        const telegramStatus = user.telegram_username ? '@' + user.telegram_username : '❌ Нет TG';
+        const notifStatus = user.telegram_notifications_enabled ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Вкл' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Выкл';
+        const telegramStatus = user.telegram_username ? '@' + user.telegram_username : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Нет TG';
 
         return `
           <div style="padding:12px;margin-bottom:8px;background:#1e2a3a;border-radius:6px;cursor:pointer;transition:background 0.2s;"
@@ -73,17 +73,17 @@ export async function showUserDetails(userId, username, telegramUsername, notifi
     const data = await response.json();
 
     const telegramInfo = data.telegramUser
-      ? '<div style="color:#4caf50;margin-top:10px;">✅ <strong>Telegram привязка:</strong><br/>Chat ID: ' + data.telegramUser.chat_id + '<br/>Имя: ' + data.telegramUser.first_name + '</div>'
-      : '<div style="color:#ff9800;margin-top:10px;">⚠️ Нет записи в telegram_users</div>';
+      ? '<div style="color:#4caf50;margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> <strong>Telegram привязка:</strong><br/>Chat ID: ' + data.telegramUser.chat_id + '<br/>Имя: ' + data.telegramUser.first_name + '</div>'
+      : '<div style="color:#ff9800;margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Нет записи в telegram_users</div>';
 
-    const notifStatusText = notificationsEnabled ? '✅ Включены' : '❌ Отключены';
+    const notifStatusText = notificationsEnabled ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Включены' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отключены';
 
     const detailsModal = document.createElement('div');
     detailsModal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10001;';
 
     detailsModal.innerHTML = `
       <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-        <h3 style="margin:0 0 20px 0;color:#5a9fd4;">✅ ${username}</h3>
+        <h3 style="margin:0 0 20px 0;color:#5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ${username}</h3>
         <div style="padding:15px;background:#2a3a4a;border-radius:8px;margin-bottom:20px;color:#e0e6f0;line-height:1.8;">
           <div><strong>ID:</strong> ${userId}</div>
           <div><strong>Username:</strong> ${username}</div>
@@ -93,9 +93,9 @@ export async function showUserDetails(userId, username, telegramUsername, notifi
         </div>
         <div style="display:flex;gap:10px;">
           ${!notificationsEnabled ? `
-            <button onclick="toggleUserNotifications(${userId}, true)" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">✅ Включить уведомления</button>
+            <button onclick="toggleUserNotifications(${userId}, true)" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Включить уведомления</button>
           ` : `
-            <button onclick="toggleUserNotifications(${userId}, false)" style="flex:1;background:#ff9800;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">❌ Отключить уведомления</button>
+            <button onclick="toggleUserNotifications(${userId}, false)" style="flex:1;background:#ff9800;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отключить уведомления</button>
           `}
           <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">Закрыть</button>
         </div>
@@ -105,7 +105,7 @@ export async function showUserDetails(userId, username, telegramUsername, notifi
     document.body.appendChild(detailsModal);
   } catch (error) {
     console.error('Ошибка загрузки деталей пользователя:', error);
-    await showCustomAlert('Ошибка загрузки деталей пользователя', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка загрузки деталей пользователя', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -131,11 +131,11 @@ export async function toggleUserNotifications(userId, enable) {
       modals.forEach(m => m.remove());
       openNotificationsModal();
     } else {
-      await showCustomAlert(data.error, 'Ошибка', '❌');
+      await showCustomAlert(data.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    await showCustomAlert('Ошибка при изменении настроек', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при изменении настроек', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -143,7 +143,7 @@ export async function toggleUserNotifications(userId, enable) {
 export async function enableNotificationsForAll() {
   const confirmed = await showCustomConfirm(
     'Включить уведомления для всех пользователей с привязанным Telegram?',
-    'Подтверждение', '✅'
+    'Подтверждение', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
   );
 
   if (!confirmed) return;
@@ -164,14 +164,14 @@ export async function enableNotificationsForAll() {
     const data = await response.json();
 
     if (data.success) {
-      await showCustomAlert(data.output, data.title, '✅');
+      await showCustomAlert(data.output, data.title, '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       document.querySelector('div[style*="z-index: 10000"]').remove();
       openNotificationsModal();
     } else {
-      await showCustomAlert(data.error, 'Ошибка', '❌');
+      await showCustomAlert(data.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    await showCustomAlert('Ошибка при включении уведомлений', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при включении уведомлений', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }

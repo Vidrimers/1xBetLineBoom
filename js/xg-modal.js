@@ -8,12 +8,12 @@ export async function openXgModal() {
   console.log('📊 Открытие модалки xG прогнозов');
   
   if (!state.currentUser) {
-    await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
+    await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>');
     return;
   }
   
   if (!state.currentEventId) {
-    await showCustomAlert('Сначала выберите турнир', 'Ошибка', '❌');
+    await showCustomAlert('Сначала выберите турнир', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
   
@@ -30,7 +30,7 @@ export async function openXgModal() {
     await showCustomAlert(
       'Пожалуйста, выберите конкретный тур для просмотра прогнозов xG.\n\nЭто поможет сэкономить лимит запросов к API.',
       'Выберите тур',
-      '⚠️'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
     );
     return;
   }
@@ -95,7 +95,7 @@ export async function openXgModal() {
   modal.innerHTML = `
     <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
-        <h2>🎯 Прогнозы xG и Glicko-2</h2>
+        <h2><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Прогнозы xG и Glicko-2</h2>
         <div style="display: flex; gap: 10px; align-items: center;">
           <button 
             class="btn-secondary" 
@@ -103,7 +103,7 @@ export async function openXgModal() {
             style="padding: 8px 16px; font-size: 0.9em;"
             title="Обновить данные из API"
           >
-            🔄 Обновить
+            <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить
           </button>
           <button class="modal-close" onclick="closeXgModal()">&times;</button>
         </div>
@@ -210,7 +210,7 @@ async function loadXgDataForMatches(matchesList, refresh = false) {
       
       // Индикатор кэша
       const cacheIndicator = data.cached 
-        ? `<div style="font-size: 0.8em; color: #888; margin-top: 8px;">💾 Из кэша (${new Date(data.cachedAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})</div>`
+        ? `<div style="font-size: 0.8em; color: #888; margin-top: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Из кэша (${new Date(data.cachedAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})</div>`
         : '';
       
       dataContainer.innerHTML = `
@@ -277,7 +277,7 @@ export function closeXgModal() {
 // Переключить видимость кнопки xG для всех пользователей (только для админа)
 export async function toggleXgButton() {
   if (!state.currentUser || !state.currentUser.isAdmin) {
-    await showCustomAlert("У вас нет прав для этого действия", "Ошибка", "❌");
+    await showCustomAlert("У вас нет прав для этого действия", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
@@ -310,7 +310,7 @@ export async function toggleXgButton() {
     await showCustomAlert(
       result.message,
       'Успех',
-      '✅'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
     );
 
     // Перезагружаем матчи чтобы обновить кнопки
@@ -323,7 +323,7 @@ export async function toggleXgButton() {
     await showCustomAlert(
       'Не удалось изменить видимость кнопки xG',
       'Ошибка',
-      '❌'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
     );
   }
 }
@@ -335,7 +335,7 @@ export async function refreshXgData() {
   const confirmed = await showXgConfirm(
     'Частые запросы на сервер парсинга нежелательны, поэтому обновление данных ограничено один раз в 6 часов.\n\nВы уверены что хотите обновить данные?',
     'Обновление данных xG',
-    '⚠️'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
   );
   
   if (!confirmed) {
@@ -398,7 +398,7 @@ export async function refreshXgData() {
   // Показываем индикатор загрузки
   const container = document.getElementById('xgMatchesList');
   if (container) {
-    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #b0b8c8;">🔄 Обновление данных из API...</div>';
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #b0b8c8;"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновление данных из API...</div>';
   }
   
   // Перезагружаем данные с параметром refresh=true
@@ -406,7 +406,7 @@ export async function refreshXgData() {
 }
 
 // Функция для показа кастомного confirm диалога для xG модалки
-async function showXgConfirm(message, title = 'Подтверждение', icon = '❓') {
+async function showXgConfirm(message, title = 'Подтверждение', icon = '<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>') {
   return new Promise((resolve) => {
     const modal = document.createElement('div');
     modal.className = 'modal';

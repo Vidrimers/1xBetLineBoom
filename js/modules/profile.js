@@ -93,7 +93,7 @@ export function displayProfile(profile) {
               justify-content: center;
               transition: all 0.3s ease;
               
-            " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.transform='scale(1)'">📷</button>
+            " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.transform='scale(1)'"><svg class="icon" aria-hidden="true"><use href="#icon-photo"></use></svg></button>
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@ export function displayProfile(profile) {
           box-shadow: none;
           position: absolute;
           bottom: 5px;
-        " title="Изменить имя">✏️</button>
+        " title="Изменить имя"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️</button>
       </div>
       <div class="profile-member-since">Участник с ${createdDate}</div>
     </div>
@@ -122,17 +122,17 @@ export function displayProfile(profile) {
         <div class="stat-value">${profile.total_bets}</div>
       </div>
       <div class="stat-card won">
-        <div class="stat-label">✅ Угаданных ставок</div>
+        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угаданных ставок</div>
         <div class="stat-value">${profile.won_bets}</div>
       </div>
       <div class="stat-card" style="background: rgba(76, 175, 80, 0.15); border-left: 4px solid #4caf50; cursor: help;" title="${profile.max_win_streak_event ? `Турнир: ${profile.max_win_streak_event}` : 'Нет серии'}">
-        <div class="stat-label">🔥 Угаданных подряд</div>
+        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-streak"></use></svg> Угаданных подряд</div>
         <div class="stat-value" style="color: #4caf50;">${
           profile.max_win_streak || 0
         }</div>
       </div>
       <div class="stat-card lost">
-        <div class="stat-label">❌ Неугаданных ставок</div>
+        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Неугаданных ставок</div>
         <div class="stat-value">${profile.lost_bets}</div>
       </div>
       <div class="stat-card pending">
@@ -140,15 +140,15 @@ export function displayProfile(profile) {
         <div class="stat-value">${profile.pending_bets}</div>
       </div>
       <div class="stat-card won" style="background: rgba(76, 175, 80, 0.15); border-left: 4px solid #4caf50;">
-        <div class="stat-label">✅ Угаданных в сетке</div>
+        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угаданных в сетке</div>
         <div class="stat-value">${profile.bracket_correct || 0}</div>
       </div>
       <div class="stat-card lost" style="background: rgba(244, 67, 54, 0.15); border-left: 4px solid #f44336;">
-        <div class="stat-label">❌ Неугаданных в сетке</div>
+        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Неугаданных в сетке</div>
         <div class="stat-value">${profile.bracket_incorrect || 0}</div>
       </div>
       <div class="stat-card" style="background: rgba(255, 152, 0, 0.15); border-left: 4px solid #ffc107;">
-        <div class="stat-label">🏆 Побед в турнирах</div>
+        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Побед в турнирах</div>
         <div class="stat-value" style="color: #ffc107;">${
           profile.tournament_wins || 0
         }</div>
@@ -156,7 +156,7 @@ export function displayProfile(profile) {
     </div>
 
     <div class="profile-section">
-      <div class="profile-section-title">📊 Статистика</div>
+      <div class="profile-section-title"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика</div>
       <div class="profile-section-content">
         <p><strong>Процент побед:</strong> ${
           profile.total_bets > 0
@@ -167,7 +167,7 @@ export function displayProfile(profile) {
     </div>
 
     <div class="profile-section" id="awardsSection" style="display: none;">
-      <div class="profile-section-title">🏆 НАГРАДЫ</div>
+      <div class="profile-section-title"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> НАГРАДЫ</div>
       <div class="profile-section-content" id="awardsContainer">
         Загружаем награды...
       </div>
@@ -212,7 +212,7 @@ export async function loadUserAwards(userId) {
     // Отображаем автоматические награды за турниры
     tournamentAwards.forEach((award) => {
       const awardDate = new Date(award.awarded_at).toLocaleDateString("ru-RU");
-      const icon = award.event_icon || "🏆";
+      const icon = award.event_icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
       const awardIcon = icon.startsWith("img/")
         ? `<img src="${icon}" alt="trophy" class="tournament-icon">`
         : icon;
@@ -228,10 +228,10 @@ export async function loadUserAwards(userId) {
 
     // Отображаем пользовательские награды
     const awardTypeText = {
-      participant: "👤 Участник турнира",
-      winner: "🥇 Победитель",
+      participant: "<svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> Участник турнира",
+      winner: "<svg class="icon" aria-hidden="true"><use href="#icon-winner"></use></svg> Победитель",
       best_result: "⭐ Лучший результат",
-      special: "🎖️ Специальная награда",
+      special: "<svg class="icon" aria-hidden="true"><use href="#icon-special-award"></use></svg>️ Специальная награда",
     };
 
     customAwards.forEach((award) => {
@@ -269,12 +269,12 @@ export async function loadUserAwards(userId) {
 // Функция для получения иконки награды
 export function getAwardIcon(awardType) {
   const icons = {
-    participant: "👤",
-    winner: "🥇",
+    participant: "<svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg>",
+    winner: "<svg class="icon" aria-hidden="true"><use href="#icon-winner"></use></svg>",
     best_result: "⭐",
-    special: "🎖️",
+    special: "<svg class="icon" aria-hidden="true"><use href="#icon-special-award"></use></svg>️",
   };
-  return icons[awardType] || "🏆";
+  return icons[awardType] || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
 }
 
 // ===== АВАТАР =====
@@ -396,7 +396,7 @@ export async function saveAvatar() {
 
     if (!response.ok) {
       console.error(
-        "❌ Ошибка при сохранении аватара: " +
+        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при сохранении аватара: " +
           (result.error || "Неизвестная ошибка")
       );
       return;
@@ -448,7 +448,7 @@ async function saveGifAvatar() {
           console.log("✅ GIF в пределах лимита, сохраняю оригинальный");
         } else {
           console.error(
-            "❌ GIF слишком большой (более 5MB). Рекомендуется использовать меньший файл."
+            "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> GIF слишком большой (более 5MB). Рекомендуется использовать меньший файл."
           );
           return;
         }
@@ -478,7 +478,7 @@ async function saveGifAvatar() {
 
     if (!response.ok) {
       console.error(
-        "❌ Ошибка при сохранении GIF: " +
+        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при сохранении GIF: " +
           (result.error || "Неизвестная ошибка")
       );
       return;
@@ -521,7 +521,7 @@ export async function deleteAvatar() {
 
     if (!response.ok) {
       console.error(
-        "❌ Ошибка при удалении аватара: " +
+        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при удалении аватара: " +
           (result.error || "Неизвестная ошибка")
       );
       return;

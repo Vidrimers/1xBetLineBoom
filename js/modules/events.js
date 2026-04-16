@@ -59,7 +59,7 @@ export function generateEventHTML(
   // Если турнир завершен, показываем индикатор
   const lockedBadge = isCompleted
     ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; padding: 5px 8px; background: rgba(244, 67, 54, 0.2); border-radius: 3px; font-size: 0.85em;">
-          <span style="color: #f44336; font-weight: bold; font-size: 0.8em;">🔒</span>
+          <span style="color: #f44336; font-weight: bold; font-size: 0.8em;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg></span>
           <span style="color: #b0b8c8; font-size: 0.85em;">${event.locked_reason}</span>
         </div>`
     : "";
@@ -107,7 +107,7 @@ export function generateEventHTML(
                 ? `<p style="font-size: 0.85em; opacity: 0.6; margin-top: 3px;">
                 ${
                   event.start_date
-                    ? `📅 с ${new Date(event.start_date).toLocaleDateString(
+                    ? `<svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> с ${new Date(event.start_date).toLocaleDateString(
                         "ru-RU"
                       )}`
                     : ""
@@ -136,15 +136,15 @@ export function generateEventHTML(
           <div class="event-admin-controls" data-event-id="${event.id}">
             ${canEditTournaments() ? `<button onclick="openEditEventModal(${
               event.id
-            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'">✏️</button>` : ''}
+            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #3a7bd5; color: #7ab0e0; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(33, 150, 243, 0.5)'" onmouseout="this.style.background='transparent'" aria-label="Редактировать турнир"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg></button>` : ''}
             ${
               isCompleted
-                ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'">🔓</button>`
-                : `<button onclick="openLockEventModal(${event.id}, '${event.name.replace(/'/g, "\\'")}')  style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'">🔒</button>`
+                ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'" aria-label="Разблокировать турнир"><svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg></button>`
+                : `<button onclick="openLockEventModal(${event.id}, '${event.name.replace(/'/g, "\\'")}')  style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'" aria-label="Заблокировать турнир"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg></button>`
             }
             ${canDeleteTournaments() ? `<button class="event-delete-btn" onclick="deleteEvent(${
               event.id
-            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'">✕</button>` : ''}
+            })" style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f44336; color: #ffb3b3; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 67, 54, 0.5)'" onmouseout="this.style.background='transparent'" aria-label="Удалить турнир"><svg class="icon" aria-label="Неправильно"><use href="#icon-wrong"></use></svg></button>` : ''}
           </div>
           <button class="event-admin-toggle" data-event-id="${
             event.id
@@ -288,19 +288,19 @@ export async function selectEvent(eventId, eventName) {
 
       if (canCreateMatches()) {
         buttonsHTML += `
-          <button id="addMatchBtn" onclick="openCreateMatchModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Добавить матч">
-            ➕
+          <button id="addMatchBtn" onclick="openCreateMatchModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Добавить матч" aria-label="Добавить матч">
+            <svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg>
           </button>
-          <button id="bulkParseBtn" onclick="openBulkParseModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Массовый парсинг матчей">
-            🔍
+          <button id="bulkParseBtn" onclick="openBulkParseModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Массовый парсинг матчей" aria-label="Массовый парсинг матчей">
+            <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
           </button>
         `;
       }
 
       if (state.currentUser && state.currentUser.isAdmin) {
         buttonsHTML += `
-          <button id="addBracketBtn" onclick="openCreateBracketModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Создать сетку плей-офф">
-            🏆
+          <button id="addBracketBtn" onclick="openCreateBracketModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Создать сетку плей-офф" aria-label="Создать сетку плей-офф">
+            <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>
           </button>
           <button id="autoCountingBtn" onclick="toggleAutoCounting(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Автоподсчет">
             A
@@ -310,19 +310,19 @@ export async function selectEvent(eventId, eventName) {
 
       if (canManageTournaments()) {
         buttonsHTML += `
-          <button id="editRoundsBtn" onclick="openRoundsOrderModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Изменить порядок туров">
-            ✎
+          <button id="editRoundsBtn" onclick="openRoundsOrderModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #3a7bd5; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Изменить порядок туров" aria-label="Изменить порядок туров">
+            <svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>
           </button>
         `;
       }
 
       if (canCreateMatches()) {
         buttonsHTML += `
-          <button id="importMatchesBtn" onclick="openImportMatchesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Импортировать матчи">
-            📥
+          <button id="importMatchesBtn" onclick="openImportMatchesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Импортировать матчи" aria-label="Импортировать матчи">
+            <svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg>
           </button>
-          <button id="bulkEditDatesBtn" onclick="openBulkEditDatesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Массовое редактирование дат">
-            📅
+          <button id="bulkEditDatesBtn" onclick="openBulkEditDatesModal(); closeAdminButtons();" style="padding: 5px; font-size: .9em; background: transparent; border: 1px solid #4caf50; border-radius: 3px; cursor: pointer; color: #b0b8c8;" title="Массовое редактирование дат" aria-label="Массовое редактирование дат">
+            <svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg>
           </button>
         `;
       }

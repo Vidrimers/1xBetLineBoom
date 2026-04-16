@@ -53,17 +53,17 @@ export function openRoundsOrderModal() {
     ...new Set(state.matches.map((m) => m.round).filter((r) => r && r.trim())),
   ];
 
-  // Добавляем "🏆 Финал" если есть финальные матчи
+  // Добавляем "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал" если есть финальные матчи
   const hasFinalMatches = state.matches.some(
     (m) => m.is_final === 1 || m.is_final === true
   );
-  if (hasFinalMatches && !uniqueRounds.includes("🏆 Финал")) {
-    uniqueRounds.push("🏆 Финал");
+  if (hasFinalMatches && !uniqueRounds.includes("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")) {
+    uniqueRounds.push("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал");
   }
 
   // Убедимся, что финал есть в roundsOrder если он есть в uniqueRounds
-  if (hasFinalMatches && !state.roundsOrder.includes("🏆 Финал")) {
-    setRoundsOrder([...state.roundsOrder, "🏆 Финал"]);
+  if (hasFinalMatches && !state.roundsOrder.includes("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")) {
+    setRoundsOrder([...state.roundsOrder, "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал"]);
   }
 
   // Сортируем туры по сохраненному порядку
@@ -92,7 +92,7 @@ export function renderRoundsOrderList() {
     .map(
       (round, index) => `
       <li class="rounds-order-item" draggable="true" data-index="${index}">
-        <span class="drag-handle">☰</span>
+        <span class="drag-handle"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg></span>
         <span class="round-name">${round}</span>
         <button class="delete-round-btn" onclick="deleteRound('${round.replace(/'/g, "\\'")}', ${index})" title="Удалить тур и все его матчи">×</button>
       </li>
@@ -117,7 +117,7 @@ export async function deleteRound(roundName, index) {
   const confirmed = await showCustomConfirm(
     `Вы уверены, что хотите удалить тур "${roundName}" и все его матчи?`,
     "Подтверждение удаления",
-    "⚠️"
+    "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️"
   );
 
   if (!confirmed) {
@@ -156,7 +156,7 @@ export async function deleteRound(roundName, index) {
     renderRoundsOrderList();
   } catch (error) {
     console.error('Ошибка при удалении тура:', error);
-    await showCustomAlert('Не удалось удалить тур', "Ошибка", "❌");
+    await showCustomAlert('Не удалось удалить тур', "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   }
 }
 

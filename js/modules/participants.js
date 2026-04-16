@@ -24,7 +24,7 @@ export function displayParticipants(participants) {
   // Обновляем заголовок с количеством участников
   const participantsHeader = document.getElementById('participantsHeader');
   if (participantsHeader) {
-    participantsHeader.textContent = `👥 Всего участников: ${participants.length}`;
+    participantsHeader.textContent = `<svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Всего участников: ${participants.length}`;
   }
 
   if (participants.length === 0) {
@@ -167,7 +167,7 @@ export async function displayTournaments(events) {
       const iconHtml =
         event.icon && event.icon.startsWith("img/")
           ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
-          : event.icon || "🏆";
+          : event.icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
       return `
     <div class="event-card" onclick="loadTournamentParticipants(${
       event.id
@@ -184,10 +184,10 @@ export async function displayTournaments(events) {
       const iconHtml =
         event.icon && event.icon.startsWith("img/")
           ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
-          : event.icon || "🏆";
+          : event.icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
       
       const startDateText = event.start_date 
-        ? `<div class="event-card-start-date">📅 Начало: ${new Date(event.start_date).toLocaleDateString('ru-RU')}</div>`
+        ? `<div class="event-card-start-date"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Начало: ${new Date(event.start_date).toLocaleDateString('ru-RU')}</div>`
         : '';
       
       return `
@@ -218,7 +218,7 @@ export async function displayTournaments(events) {
           const winner = participants.sort(
             (a, b) => (b.event_won || 0) - (a.event_won || 0)
           )[0];
-          winnerInfo = `<div class="event-card-winner">👑 Победитель: <strong>${winner.username}</strong></div>`;
+          winnerInfo = `<div class="event-card-winner"><svg class="icon" aria-hidden="true"><use href="#icon-crown"></use></svg> Победитель: <strong>${winner.username}</strong></div>`;
         }
       } catch (error) {
         console.error("Ошибка при загрузке участников турнира:", error);
@@ -227,7 +227,7 @@ export async function displayTournaments(events) {
       const iconHtml =
         event.icon && event.icon.startsWith("img/")
           ? `<img class="event-icon" src="${event.icon}" alt="icon"/>`
-          : event.icon || "🏆";
+          : event.icon || "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>";
 
       return `
     <div class="event-card locked" onclick="loadTournamentParticipants(${
@@ -235,7 +235,7 @@ export async function displayTournaments(events) {
     }, '${event.name.replace(/'/g, "\\'")}')">
       <div class="event-card-title">${iconHtml} ${event.name}</div>
       <div class="event-card-count">Матчей: ${event.match_count || 0}</div>
-      <div class="event-card-locked">🔒 ${
+      <div class="event-card-locked"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> ${
         event.locked_reason
       }</div>${winnerInfo}
     </div>
@@ -306,7 +306,7 @@ export async function loadTournamentParticipants(eventId, eventName) {
     // Скрываем section с сеткой турниров и показываем участников турнира
     document.getElementById("tournamentsSection").style.display = "none";
     document.getElementById("tournamentSection").style.display = "block";
-    document.getElementById("tournamentTitle").innerText = `📋 ${eventName}`;
+    document.getElementById("tournamentTitle").innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> ${eventName}`;
 
     await displayTournamentParticipants(participants, isLocked, eventId, bracketStartDate);
     
@@ -519,12 +519,12 @@ export async function displayTournamentParticipants(
     .map((participant, index) => {
       const place = placesMap.get(index);
       const totalParticipants = sortedParticipants.length;
-      let emoji = "😐"; // нейтральное для середины
+      let emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-2"></use></svg>'; // нейтральное для середины
 
       if (place === 1) {
-        emoji = "😎"; // первое место
+        emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-1"></use></svg>'; // первое место
       } else if (index === totalParticipants - 1 && totalParticipants > 1) {
-        emoji = "💩"; // последнее место
+        emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-3"></use></svg>'; // последнее место
       }
 
       // Добавляем класс 'winner' если это заблокированный турнир и первое место
@@ -544,7 +544,7 @@ export async function displayTournamentParticipants(
               color: #b0b8c8 !important;
               box-shadow: none !important;
               border: 1px solid #3a7bd5 !important;">
-        ${isPrivate ? '🔒 ' : ''}Сетка плей-офф
+        ${isPrivate ? '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> ' : ''}Сетка плей-офф
       </button>` : '';
 
       return `
@@ -706,7 +706,7 @@ export async function showTournamentParticipantBets(userId, username, eventId) {
     // Устанавливаем заголовок
     document.getElementById(
       "tournamentParticipantBetsTitle"
-    ).textContent = `📊 Ставки ${username}`;
+    ).innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Ставки ${username}`;
 
     // Рассчитываем точность угадывания для этого турнира
     const totalBets = bets.length;
@@ -748,7 +748,7 @@ export async function showTournamentParticipantBets(userId, username, eventId) {
     });
 
     document.getElementById("tournamentParticipantStreak").innerHTML = 
-      `<span title="Турнир: ${event_name}" style="cursor: help;">🔥 Макс. серия: <strong>${maxStreak}</strong></span>`;
+      `<span title="Турнир: ${event_name}" style="cursor: help;"><svg class="icon" aria-hidden="true"><use href="#icon-streak"></use></svg> Макс. серия: <strong>${maxStreak}</strong></span>`;
 
     // Используем завершенные туры из сервера (на основе матчей, а не ставок)
     const completedRoundsSet = new Set(completed_rounds || []);
@@ -874,11 +874,11 @@ export function displayTournamentParticipantBets(bets) {
         <strong style="color: #7ab0e0; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">${team1} vs ${team2}</strong>
         ${shouldHideBet ? 
           `<span style="background: #9e9e9e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
-            🔒 Скрыто
+            <svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Скрыто
           </span>` :
           isCancelled ?
           `<span style="background: #ff5722; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
-            ⚠️ Отмена
+            <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Отмена
           </span>` :
           `<span style="background: ${
             bet.result === "won"
@@ -889,17 +889,17 @@ export function displayTournamentParticipantBets(bets) {
           }; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">
             ${
               bet.result === "won"
-                ? "✅ Угадано"
+                ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угадано'
                 : bet.result === "lost"
-                ? "❌ Неугадано"
-                : "⏳ В ожидании"
+                ? '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Неугадано'
+                : '<svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> В ожидании'
             }
           </span>`
         }
       </div>
       ${shouldHideBet ?
         `<div style="color: #ffa726; font-size: 0.9em; font-style: italic;">
-          🔒 Ставка скрыта до начала матча
+          <svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Ставка скрыта до начала матча
         </div>` :
         `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
           Ставка: <strong>${bet.prediction_display || bet.prediction}</strong>
@@ -912,7 +912,7 @@ export function displayTournamentParticipantBets(bets) {
         ${
           bet.score_team1 !== null && bet.score_team1 !== undefined && bet.score_team2 !== null && bet.score_team2 !== undefined
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
-                📊 Счет: <span style="${
+                <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Счет: <span style="${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.result !== 'pending'
                     ? Number(bet.score_team1) === Number(bet.actual_score_team1) && Number(bet.score_team2) === Number(bet.actual_score_team2)
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
@@ -936,7 +936,7 @@ export function displayTournamentParticipantBets(bets) {
         ${
           bet.yellow_cards !== null && bet.yellow_cards !== undefined
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
-                🟨 Желтые: <span style="${
+                <svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Желтые: <span style="${
                   bet.actual_yellow_cards != null && bet.result !== 'pending'
                     ? Number(bet.yellow_cards) === Number(bet.actual_yellow_cards)
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
@@ -960,7 +960,7 @@ export function displayTournamentParticipantBets(bets) {
         ${
           bet.red_cards !== null && bet.red_cards !== undefined
             ? `<div style="color: #999; font-size: 0.9em; margin-bottom: 5px; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">
-                🟥 Красные: <span style="${
+                <svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные: <span style="${
                   bet.actual_red_cards != null && bet.result !== 'pending'
                     ? Number(bet.red_cards) === Number(bet.actual_red_cards)
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'

@@ -111,7 +111,7 @@ async function loadLiveMatches() {
 
             ${event.start_date || event.end_date ? `
               <p style="color: #b0b8c8; font-size: 0.85em; margin: 0 0 15px 0; text-align: center; opacity: 0.6;">
-                ${event.start_date ? `📅 с ${new Date(event.start_date).toLocaleDateString('ru-RU')}` : ''}
+                ${event.start_date ? `<svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> с ${new Date(event.start_date).toLocaleDateString('ru-RU')}` : ''}
                 ${event.end_date ? ` по ${new Date(event.end_date).toLocaleDateString('ru-RU')}` : ''}
               </p>
             ` : ''}
@@ -119,7 +119,7 @@ async function loadLiveMatches() {
 
           <button onclick="event.stopPropagation(); selectEvent(${event.id}); switchTab('allbets');" style="width: 100%; text-align: center; padding: 10px; background: rgba(90, 159, 212, 0.1); border-radius: 5px; border: 1px solid rgba(90, 159, 212, 0.3); cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(90, 159, 212, 0.3)'" onmouseout="this.style.background='rgba(90, 159, 212, 0.1)'">
             <span style="color: #7ab0e0; font-weight: 600; font-size: 0.95em;">
-              ⚽ К ставкам
+              <svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> К ставкам
             </span>
           </button>
         </div>
@@ -174,7 +174,7 @@ async function showLiveEventMatches(eventId) {
       </h2>
 
       <p style="color: #b0b8c8; font-size: 0.9em; margin-bottom: 20px;">
-        📅 Матчи на сегодня: ${today.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}
+        <svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Матчи на сегодня: ${today.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}
       </p>
     `;
 
@@ -236,7 +236,7 @@ async function showLiveEventMatches(eventId) {
           " onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 20px ${isLive ? 'rgba(244, 67, 54, 0.3)' : 'rgba(90, 159, 212, 0.3)'}';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 
             ${isLive ? `
-              <span class="favorite-star" data-match-id="${match.id}" onclick="toggleFavoriteMatch(${match.id}, event)">☆</span>
+              <span class="favorite-star" data-match-id="${match.id}" onclick="toggleFavoriteMatch(${match.id}, event)"><svg class="icon" aria-label="Иконка"><use href="#icon-best-result"></use></svg></span>
               <div style="position: absolute; top: 10px; right: 10px;">
                 <span class="live-indicator" style="position: static; transform: none;"></span>
               </div>
@@ -244,7 +244,7 @@ async function showLiveEventMatches(eventId) {
 
             <div style="text-align: center; margin-bottom: 10px;">
               <div style="color: ${isCancelled ? '#ff5722' : isLive ? '#f44336' : '#b0b8c8'}; font-size: 0.85em; font-weight: 600;">
-                ${isCancelled ? '⚠️ ОТМЕНА' : isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '🕐 ' + timeStr}
+                ${isCancelled ? '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> ОТМЕНА' : isLive ? '<svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> LIVE' : isFinished ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен' : '<svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> ' + timeStr}
               </div>
             </div>
 
@@ -417,7 +417,7 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
           user-select: none;
         " onmouseover="this.style.color='#e0e6f0'" onmouseout="this.style.color='#b0b8c8'">
           <span id="${dayId}Icon" style="display: inline-block; transition: transform 0.3s; ${wasOpen ? 'transform: rotate(180deg);' : ''}">${iconText}</span>
-          📅 Завершенные матчи: ${dateStr}
+          <svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Завершенные матчи: ${dateStr}
           <span style="color: #7ab0e0; font-size: 0.85em;">(${matchCount})</span>
         </p>
         <div id="${dayId}Container" style="display: ${displayStyle};" data-date="${day.date}"></div>
@@ -516,7 +516,7 @@ function renderCompletedDayMatches(dayId) {
 
         <div style="text-align: center; margin-bottom: 10px;">
           <div style="color: #4caf50; font-size: 0.85em; font-weight: 600;">
-            ✅ Завершен • ${dateStr} ${timeStr}
+            <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен • ${dateStr} ${timeStr}
           </div>
         </div>
 
@@ -648,7 +648,7 @@ async function toggleYesterdayMatches(eventId) {
 
                 <div style="text-align: center; margin-bottom: 10px;">
                   <div style="color: #4caf50; font-size: 0.85em; font-weight: 600;">
-                    ✅ Завершен • ${dateStr} ${timeStr}
+                    <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен • ${dateStr} ${timeStr}
                   </div>
                 </div>
 

@@ -53,7 +53,7 @@ const BRACKET_STAGES = [
   { id: 'round_of_8', name: '1/8', matches: 8 },
   { id: 'quarter_finals', name: '1/4', matches: 4 },
   { id: 'semi_finals', name: '1/2', matches: 2 },
-  { id: 'final', name: '🏆 Финал', matches: 1 }
+  { id: 'final', name: '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал', matches: 1 }
 ];
 
 // Получить первую заполненную стадию сетки
@@ -283,7 +283,7 @@ async function openTeamFileSelector() {
   
   if (files.length === 0) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Не найдено файлов команд в папке names', 'Ошибка', '❌');
+      await showCustomAlert('Не найдено файлов команд в папке names', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert('Не найдено файлов команд в папке names');
     }
@@ -295,7 +295,7 @@ async function openTeamFileSelector() {
   // Создаем HTML для списка файлов
   const fileListHtml = files.map(file => {
     const isSelected = file.path === currentFile;
-    const icon = file.name.endsWith('.json') ? '📄' : file.name.endsWith('.txt') ? '📝' : '📜';
+    const icon = file.name.endsWith('.json') ? '<svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg>' : file.name.endsWith('.txt') ? '<svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg>' : '<svg class="icon" aria-hidden="true"><use href="#icon-earlier"></use></svg>';
     return `
       <div class="team-file-item ${isSelected ? 'selected' : ''}" 
            onclick="selectTeamFile('${file.path}')" 
@@ -308,7 +308,7 @@ async function openTeamFileSelector() {
             <div style="font-weight: 500; color: #e0e6f0;">${file.name}</div>
             <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 2px;">${file.path}</div>
           </div>
-          ${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;">✓</span>' : ''}
+          ${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg></span>' : ''}
         </div>
       </div>
     `;
@@ -319,7 +319,7 @@ async function openTeamFileSelector() {
     <div id="teamFileSelectorModal" class="modal" style="display: flex;" onclick="closeTeamFileSelector()">
       <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
         <div class="modal-header">
-          <h2>📥 Выбор файла команд</h2>
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Выбор файла команд</h2>
           <button class="modal-close" onclick="closeTeamFileSelector()">&times;</button>
         </div>
         <div style="padding: 20px;">
@@ -366,14 +366,14 @@ async function selectTeamFile(filePath) {
     }
     
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(`Файл команд изменен на:\n${filePath.split('/').pop()}`, 'Успех', '✅');
+      await showCustomAlert(`Файл команд изменен на:\n${filePath.split('/').pop()}`, 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
       alert(`Файл команд изменен на: ${filePath.split('/').pop()}`);
     }
   } catch (error) {
     console.error('Ошибка при выборе файла команд:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Не удалось загрузить файл команд', 'Ошибка', '❌');
+      await showCustomAlert('Не удалось загрузить файл команд', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert('Не удалось загрузить файл команд');
     }
@@ -423,7 +423,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
   if (!getCurrentUser() && !viewUserId) {
     console.error('❌ Нет авторизации');
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
+      await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>');
     } else {
       alert('Сначала войдите в аккаунт');
     }
@@ -448,7 +448,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
     isEditingBracket = false;
     
     // Получаем иконку турнира
-    let eventIcon = '🏆';
+    let eventIcon = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
     if (currentBracket.event_id && getEvents() && getEvents().length > 0) {
       const event = getEvents().find(e => e.id === currentBracket.event_id);
       if (event && event.icon) {
@@ -478,7 +478,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
             await showCustomAlert(
               data.message || 'Пользователь скрыл свои прогнозы',
               'Прогнозы скрыты',
-              '🔒'
+              '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>'
             );
           } else {
             alert(data.message || 'Пользователь скрыл свои прогнозы');
@@ -545,7 +545,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
           const username = window.viewingUserBracketName || 'Пользователь';
           
           // Формируем иконку турнира для заголовка
-          let eventIconHtml = '🏆';
+          let eventIconHtml = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
           if (currentBracket.eventIcon) {
             if (currentBracket.eventIcon.startsWith('img/') || currentBracket.eventIcon.startsWith('http')) {
               eventIconHtml = `<img src="${currentBracket.eventIcon}" alt="icon" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;" />`;
@@ -575,7 +575,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
   } catch (error) {
     console.error('Ошибка при открытии сетки:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Не удалось загрузить сетку', 'Ошибка', '❌');
+      await showCustomAlert('Не удалось загрузить сетку', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert('Не удалось загрузить сетку');
     }
@@ -744,13 +744,13 @@ function renderBracketModal(isClosed) {
   // Не показываем статус ставок при просмотре чужих прогнозов
   if (!isViewingOtherUserBracket) {
     if (isManuallyLocked) {
-      statusBadge = '<div style="color: #ff9800; font-size: 0.9em;">🔒 Ставки закрыты</div>';
+      statusBadge = '<div style="color: #ff9800; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Ставки закрыты</div>';
       lockReasonText = '<div style="color: #ff9800; font-size: 0.75em; margin-top: 2px;">Причина: Заблокировано администратором</div>';
     } else if (isAutoLocked) {
-      statusBadge = '<div style="color: #f44336; font-size: 0.9em;">🔒 Ставки закрыты</div>';
+      statusBadge = '<div style="color: #f44336; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Ставки закрыты</div>';
       lockReasonText = '<div style="color: #f44336; font-size: 0.75em; margin-top: 2px;">Причина: Все стадии плей-офф закрыты</div>';
     } else if (hasOpenStages) {
-      statusBadge = '<div style="color: #4caf50; font-size: 0.9em;">✅ Ставки открыты</div>';
+      statusBadge = '<div style="color: #4caf50; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Ставки открыты</div>';
       
       // Показываем информацию о следующей блокировке
       if (openStages.length > 0) {
@@ -782,12 +782,12 @@ function renderBracketModal(isClosed) {
       
       // Если есть закрытые стадии, показываем предупреждение
       if (closedStages.length > 0) {
-        lockReasonText = '<div style="color: #ff9800; font-size: 0.75em; margin-top: 2px;">⚠️ Некоторые стадии уже закрыты для ставок</div>';
+        lockReasonText = '<div style="color: #ff9800; font-size: 0.75em; margin-top: 2px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Некоторые стадии уже закрыты для ставок</div>';
       }
     }
   } else {
     // В режиме просмотра чужих прогнозов показываем соответствующий статус
-    statusBadge = '<div style="color: #5a9fd4; font-size: 0.9em;">👁️ Режим просмотра</div>';
+    statusBadge = '<div style="color: #5a9fd4; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg>️ Режим просмотра</div>';
   }
   
   // Подсчитываем статистику прогнозов (только если сетка заблокирована)
@@ -800,10 +800,10 @@ function renderBracketModal(isClosed) {
       statsHtml = `
         <div style="color: #b0b8c8; font-size: 0.85em; margin-top: 8px; padding: 8px; background: rgba(40, 44, 54, 0.5); border-radius: 4px;">
           <div style="display: flex; gap: 15px; justify-content: center;">
-            <span>✅ Угадано: <strong style="color: #4caf50;">${stats.correct}</strong></span>
-            <span>❌ Не угадано: <strong style="color: #f44336;">${stats.incorrect}</strong></span>
+            <span><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угадано: <strong style="color: #4caf50;">${stats.correct}</strong></span>
+            <span><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Не угадано: <strong style="color: #f44336;">${stats.incorrect}</strong></span>
             <span>⏳ В ожидании: <strong style="color: #ff9800;">${stats.pending}</strong></span>
-            <span>🏆 Очки: <strong style="color: #ffd700;">${stats.points}</strong></span>
+            <span><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Очки: <strong style="color: #ffd700;">${stats.points}</strong></span>
           </div>
         </div>
       `;
@@ -816,7 +816,7 @@ function renderBracketModal(isClosed) {
   const showAdminButtons = isAdmin && !isViewingOtherUserBracket;
   
   // Формируем иконку турнира для заголовка
-  let eventIconHtml = '🏆';
+  let eventIconHtml = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
   if (currentBracket.eventIcon) {
     if (currentBracket.eventIcon.startsWith('img/') || currentBracket.eventIcon.startsWith('http')) {
       eventIconHtml = `<img src="${currentBracket.eventIcon}" alt="icon" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;" />`;
@@ -832,10 +832,10 @@ function renderBracketModal(isClosed) {
           <div id="bracket-title" class="bracket-title">
             <h2 style="margin: 0;">${eventIconHtml}Окончательная сетка плей-офф</h2>
             <button onclick="showBracketHelp(event)" style="background: transparent; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 1em; cursor: pointer; color: #b0b8c8; display: flex; align-items: center; justify-content: center; padding: 0;" title="Справка о сетке плей-офф">
-              ❓
+              <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>
             </button>
           </div>
-          ${isEditingBracket ? '<div style="color: #f44336; font-size: 0.9em; font-weight: 600;">✏️ РЕЖИМ РЕДАКТИРОВАНИЯ</div>' : ''}
+          ${isEditingBracket ? '<div style="color: #f44336; font-size: 0.9em; font-weight: 600;"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️ РЕЖИМ РЕДАКТИРОВАНИЯ</div>' : ''}
           ${statusBadge}
           ${lockReasonText}
           ${lockDateText}
@@ -846,7 +846,7 @@ function renderBracketModal(isClosed) {
             <div style="position: relative;">
               <div id="bracketAdminButtonsContainer" style="display: none; position: fixed; top: auto; left: auto; background: rgba(26, 32, 44, 0.95); border: 1px solid #3a7bd5; border-radius: 5px; padding: 8px; gap: 8px; flex-direction: column; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-10px); transition: opacity 0.2s ease, transform 0.2s ease;"></div>
               <button id="bracketAdminSettingsBtn" class="btn-secondary" onclick="toggleBracketAdminButtons(event)" style="padding: 5px; font-size: 1.1em;background: transparent;border: none;" title="Настройки администратора">
-                ⚙️
+                <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️
               </button>
             </div>
           ` : ''}
@@ -855,7 +855,7 @@ function renderBracketModal(isClosed) {
           ` : ''}
           ${isEditingBracket ? `
             <button class="btn-primary" onclick="saveBracketTeams()" style="padding: 8px 16px; font-size: 0.9em;">
-              💾
+              <svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg>
             </button>
           ` : ''}
           
@@ -926,8 +926,8 @@ function renderBracketStages(isClosed, showAdminButtons = false) {
     const lockIndicator = !isViewingOtherUserBracket ? `
       <div style="text-align: center; margin-top: 5px; font-size: 0.75em;">
         ${isStageClosed 
-          ? `<span style="color: #f44336;">🔒 Закрыто</span>` 
-          : `<span style="color: #4caf50;">✅ ${lockDateFormatted}</span>`
+          ? `<span style="color: #f44336;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Закрыто</span>` 
+          : `<span style="color: #4caf50;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ${lockDateFormatted}</span>`
         }
       </div>
     ` : '';
@@ -1225,7 +1225,7 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
            title="${hasMultipleTeams ? 'Две команды - слот заблокирован для ставок. Кликните чтобы выбрать окончательную команду' : 'Кликните для выбора команды. Ctrl+клик для добавления второй команды'}">
         <div class="bracket-team-name" style="font-size: 0.9em;">
           ${displayText}
-          ${hasMultipleTeams ? '<span style="color: #ff9800; margin-left: 5px;">⚠️</span>' : ''}
+          ${hasMultipleTeams ? '<span style="color: #ff9800; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️</span>' : ''}
         </div>
       </div>
     `;
@@ -1287,7 +1287,7 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
       day: 'numeric', 
       month: 'long' 
     });
-    hiddenText = `<span style="color: #ff9800; font-size: 0.85em;">🔒 Откроется ${dateStr}</span>`;
+    hiddenText = `<span style="color: #ff9800; font-size: 0.85em;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Откроется ${dateStr}</span>`;
   }
   
   // Проверяем блокировку конкретной колонки
@@ -1303,7 +1303,7 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
   
   if (hasMultipleTeams) {
     displayText = tempTeams.join(' / ');
-    warningIcon = '<span style="color: #ff9800; margin-left: 5px;">⚠️</span>';
+    warningIcon = '<span style="color: #ff9800; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️</span>';
     disabledStyle = 'opacity: 0.6; border: 2px dashed #ff9800;';
   }
   
@@ -1327,7 +1327,7 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
   // Запрещаем изменять чужие прогнозы
   if (isViewingOtherUserBracket) {
     if (typeof showCustomAlert === 'function') {
-      showCustomAlert('Вы не можете изменять чужие прогнозы', 'Доступ запрещен', '🚫');
+      showCustomAlert('Вы не можете изменять чужие прогнозы', 'Доступ запрещен', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
     return;
   }
@@ -1336,7 +1336,7 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
   const isStageClosed = isBracketClosed(currentBracket, stageId);
   if (isStageClosed) {
     if (typeof showCustomAlert === 'function') {
-      showCustomAlert('Ставки в этой колонке закрыты', 'Внимание', '🔒');
+      showCustomAlert('Ставки в этой колонке закрыты', 'Внимание', '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>');
     }
     return;
   }
@@ -1681,7 +1681,7 @@ async function saveSingleBracketPrediction(stageId, matchIndex, teamName) {
   } catch (error) {
     console.error('Ошибка при автосохранении прогноза:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(`Не удалось сохранить прогноз: ${error.message}`, 'Ошибка', '❌');
+      await showCustomAlert(`Не удалось сохранить прогноз: ${error.message}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   }
 }
@@ -1730,7 +1730,7 @@ function updateNextStageDisplay(nextStageId, nextMatchIndex) {
       if (hasMultipleTeams) {
         // Две команды - показываем через "/"
         const displayText = tempTeams.join(' / ');
-        teamNameElement.innerHTML = `${displayText}<span style="color: #ff9800; margin-left: 5px;">⚠️</span>`;
+        teamNameElement.innerHTML = `${displayText}<span style="color: #ff9800; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️</span>`;
         slot.dataset.team = teamName || '';
         slot.onclick = null;
         slot.style.cursor = 'default';
@@ -1787,7 +1787,7 @@ async function saveBracketPredictions() {
   
   if (predictions.length === 0) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Выберите хотя бы одного победителя', 'Внимание', '⚠️');
+      await showCustomAlert('Выберите хотя бы одного победителя', 'Внимание', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
     } else {
       alert('Выберите хотя бы одного победителя');
     }
@@ -1809,7 +1809,7 @@ async function saveBracketPredictions() {
     }
     
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Прогнозы успешно сохранены!', 'Успех', '✅');
+      await showCustomAlert('Прогнозы успешно сохранены!', 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
       alert('Прогнозы успешно сохранены!');
     }
@@ -1822,7 +1822,7 @@ async function saveBracketPredictions() {
   } catch (error) {
     console.error('Ошибка при сохранении прогнозов:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Не удалось сохранить прогнозы', 'Ошибка', '❌');
+      await showCustomAlert('Не удалось сохранить прогнозы', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert('Не удалось сохранить прогнозы');
     }
@@ -1836,7 +1836,7 @@ async function closeBracketModal() {
     const action = await showCustomSaveConfirm(
       'У вас есть несохраненные изменения!\n\nЧто вы хотите сделать?',
       'Несохраненные изменения',
-      '⚠️'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
     );
     
     if (action === 'cancel') {
@@ -1889,7 +1889,7 @@ async function toggleBracketEditMode() {
     const action = await showCustomSaveConfirm(
       'У вас есть несохраненные изменения!\n\nЧто вы хотите сделать?',
       'Несохраненные изменения',
-      '⚠️'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
     );
     
     if (action === 'cancel') {
@@ -1937,7 +1937,7 @@ async function toggleBracketLock() {
       await showCustomAlert(
         'Невозможно изменить блокировку: плей-офф уже начался. Ставки автоматически закрыты.',
         'Блокировка недоступна',
-        '🔒'
+        '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>'
       );
     } else {
       alert('Невозможно изменить блокировку: плей-офф уже начался.');
@@ -1969,7 +1969,7 @@ async function toggleBracketLock() {
       : 'Сетка разблокирована. Пользователи могут делать прогнозы.';
     
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(message, 'Успех', '✅');
+      await showCustomAlert(message, 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
       alert(message);
     }
@@ -1980,7 +1980,7 @@ async function toggleBracketLock() {
   } catch (error) {
     console.error('Ошибка при изменении блокировки:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(error.message, 'Ошибка', '❌');
+      await showCustomAlert(error.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert(error.message);
     }
@@ -2013,7 +2013,7 @@ async function saveBracketTeams() {
     }
     
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Команды успешно сохранены!', 'Успех', '✅');
+      await showCustomAlert('Команды успешно сохранены!', 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
       alert('Команды успешно сохранены!');
     }
@@ -2028,7 +2028,7 @@ async function saveBracketTeams() {
   } catch (error) {
     console.error('Ошибка при сохранении команд:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(error.message, 'Ошибка', '❌');
+      await showCustomAlert(error.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert(error.message);
     }
@@ -2069,7 +2069,7 @@ function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
            onmouseover="this.style.background='rgba(90, 159, 212, 0.2)'"
            onmouseout="this.style.background='${isSelected ? 'rgba(90, 159, 212, 0.3)' : 'rgba(40, 44, 54, 0.9)'}'"
            onclick="selectTeamForSlot('${stageId}', ${matchIndex}, ${teamIndex}, '${team.replace(/'/g, "\\'")}', event)">
-        ${team} ${isSelected ? '✓' : ''}
+        ${team} ${isSelected ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' : ''}
       </div>
     `;
   }).join('');
@@ -2088,7 +2088,7 @@ function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
         
         <input type="text" 
                id="teamSearchInput" 
-               placeholder="🔍 Поиск команды..." 
+               placeholder="<svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg> Поиск команды..." 
                style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; color: #e0e6ed; font-size: 14px;"
                oninput="filterTeamsList(this.value)">
         
@@ -2098,7 +2098,7 @@ function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
         <div style="margin-top: 15px; display: flex; gap: 10px;">
           <button onclick="clearSlotTeams('${stageId}', ${matchIndex}, ${teamIndex})" 
                   style="flex: 1; padding: 10px; background: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; border-radius: 6px; color: #f44336; cursor: pointer;">
-            🗑️ Очистить
+            <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️ Очистить
           </button>
           <button onclick="this.closest('.modal').remove(); document.body.style.overflow = '';" 
                   style="flex: 1; padding: 10px; background: rgba(90, 159, 212, 0.2); border: 1px solid #5a9fd4; border-radius: 6px; color: #5a9fd4; cursor: pointer;">
@@ -2166,7 +2166,7 @@ function selectTeamForSlot(stageId, matchIndex, teamIndex, teamName, event) {
       if (tempTeams.length < 2) {
         tempTeams.push(teamName);
       } else {
-        showCustomAlert('Можно добавить максимум 2 команды', 'Внимание', '⚠️');
+        showCustomAlert('Можно добавить максимум 2 команды', 'Внимание', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
         return;
       }
     }
@@ -2288,7 +2288,7 @@ async function openCreateBracketModal() {
   
   // Меняем заголовок на "Создать"
   const modalTitle = modal.querySelector('.modal-header h2');
-  if (modalTitle) modalTitle.textContent = '➕ Создать сетку плей-офф';
+  if (modalTitle) modalTitle.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создать сетку плей-офф';
   
   // Добавляем обработчик изменения стадии для обновления полей дат
   if (stageSelect) {
@@ -2321,7 +2321,7 @@ function renderLockDatesFields(existingLockDates = {}) {
     { id: 'round_of_8', name: '1/8' },
     { id: 'quarter_finals', name: '1/4' },
     { id: 'semi_finals', name: '1/2' },
-    { id: 'final', name: '🏆 Финал' }
+    { id: 'final', name: '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал' }
   ];
   
   // Находим индекс начальной стадии
@@ -2375,7 +2375,7 @@ function openEditBracketModal(bracket) {
   
   // Меняем заголовок на "Редактировать"
   const modalTitle = modal.querySelector('.modal-header h2');
-  if (modalTitle) modalTitle.textContent = '✏️ Редактировать сетку плей-офф';
+  if (modalTitle) modalTitle.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️ Редактировать сетку плей-офф';
   
   // Отрисовываем поля дат с существующими значениями
   if (stageSelect) {
@@ -2437,7 +2437,7 @@ async function createBracket() {
   const firstStageInput = document.querySelector(`#lockDate_${startStage}`);
   if (!firstStageInput || !firstStageInput.value) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Укажите дату блокировки для первой колонки', 'Ошибка', '❌');
+      await showCustomAlert('Укажите дату блокировки для первой колонки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert('Укажите дату блокировки для первой колонки');
     }
@@ -2449,7 +2449,7 @@ async function createBracket() {
   
   if (!name) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Введите название сетки', 'Ошибка', '❌');
+      await showCustomAlert('Введите название сетки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert('Введите название сетки');
     }
@@ -2503,7 +2503,7 @@ async function createBracket() {
     console.log(`Сетка успешно ${isEdit ? 'обновлена' : 'создана'}:`, result);
     
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(`Сетка успешно ${isEdit ? 'обновлена' : 'создана'}!`, 'Успех', '✅');
+      await showCustomAlert(`Сетка успешно ${isEdit ? 'обновлена' : 'создана'}!`, 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
       alert(`Сетка успешно ${isEdit ? 'обновлена' : 'создана'}!`);
     }
@@ -2520,7 +2520,7 @@ async function createBracket() {
   } catch (error) {
     console.error(`Ошибка при ${isEdit ? 'обновлении' : 'создании'} сетки:`, error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(error.message, 'Ошибка', '❌');
+      await showCustomAlert(error.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert(error.message);
     }
@@ -2551,7 +2551,7 @@ async function deleteBracket() {
     }
     
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Сетка успешно удалена!', 'Успех', '✅');
+      await showCustomAlert('Сетка успешно удалена!', 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
       alert('Сетка успешно удалена!');
     }
@@ -2566,7 +2566,7 @@ async function deleteBracket() {
   } catch (error) {
     console.error('Ошибка при удалении сетки:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert(error.message, 'Ошибка', '❌');
+      await showCustomAlert(error.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert(error.message);
     }
@@ -2609,9 +2609,9 @@ async function cleanupBracketStages() {
   };
   
   const confirmCleanup = await showCustomConfirm(
-    `Эта операция удалит команды из всех последующих стадий после "${stageNames[firstStage]}".\n\nОстанется только первая стадия: ${stageNames[firstStage]}.\n\n⚠️ ВНИМАНИЕ: Также будут удалены ВСЕ прогнозы пользователей (включая первую стадию)!\n\nПродолжить?`,
+    `Эта операция удалит команды из всех последующих стадий после "${stageNames[firstStage]}".\n\nОстанется только первая стадия: ${stageNames[firstStage]}.\n\n<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ ВНИМАНИЕ: Также будут удалены ВСЕ прогнозы пользователей (включая первую стадию)!\n\nПродолжить?`,
     'Очистка последующих стадий',
-    '🧹'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>'
   );
   
   if (!confirmCleanup) return;
@@ -2671,7 +2671,7 @@ async function cleanupBracketStages() {
     await showCustomAlert(
       `Последующие стадии успешно очищены!\n\nОсталась только первая стадия: ${stageNames[firstStage]}.\n\nОстальные стадии будут заполняться индивидуально для каждого пользователя на основе их прогнозов.`,
       'Очистка завершена',
-      '✅'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
     );
     
   } catch (error) {
@@ -2679,7 +2679,7 @@ async function cleanupBracketStages() {
     await showCustomAlert(
       'Не удалось очистить последующие стадии: ' + error.message,
       'Ошибка',
-      '❌'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
     );
   }
 }
@@ -2732,7 +2732,7 @@ async function setBracketMatchResult(stageId, matchIndex, actualWinner) {
   } catch (error) {
     console.error('Ошибка при установке результата:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Не удалось установить результат', 'Ошибка', '❌');
+      await showCustomAlert('Не удалось установить результат', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   }
 }
@@ -2842,27 +2842,27 @@ function toggleBracketAdminButtons(event) {
       
       let buttonsHTML = `
         <button class="btn-secondary" onclick="toggleBracketEditMode(); closeBracketAdminButtons();" style="padding: 8px; font-size: .9em;" title="Редактировать команды">
-          ✏️
+          <svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️
         </button>
       `;
       
       if (isEditingBracket) {
         buttonsHTML += `
           <button class="btn-secondary" onclick="openTeamFileSelector(); closeBracketAdminButtons();" style="padding: 8px; font-size: 1.2em;" title="Выбрать файл команд">
-            📥
+            <svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg>
           </button>
           <button class="btn-secondary" onclick="cleanupBracketStages(); closeBracketAdminButtons();" style="padding: 8px; font-size: 1.2em;" title="Очистить последующие стадии">
-            🧹
+            <svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>
           </button>
         `;
       }
       
       buttonsHTML += `
         <button class="btn-secondary ${isAutoLocked ? 'disabled-look' : ''}" onclick="toggleBracketLock(); closeBracketAdminButtons();" style="padding: 8px; font-size: 1.2em; ${isAutoLocked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" title="${isAutoLocked ? 'Нельзя разблокировать: плей-офф начался' : (isManuallyLocked ? 'Разблокировать сетку' : 'Заблокировать сетку')}">
-          ${isManuallyLocked ? '🔓' : '🔒'}
+          ${isManuallyLocked ? '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>' : '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>'}
         </button>
         <button class="btn-danger" onclick="deleteBracket(); closeBracketAdminButtons();" style="padding: 8px; font-size: 1.2em;" title="Удалить сетку">
-          🗑️
+          <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️
         </button>
       `;
       
@@ -2977,7 +2977,7 @@ function showBracketHelp(event) {
   `;
   
   if (typeof showCustomAlert === 'function') {
-    showCustomAlert(helpText, 'Сетка плей-офф', '❓');
+    showCustomAlert(helpText, 'Сетка плей-офф', '<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>');
   } else {
     alert('Сетка плей-офф — это турнирная таблица на выбывание. Прогнозируйте победителей матчей и зарабатывайте очки!');
   }

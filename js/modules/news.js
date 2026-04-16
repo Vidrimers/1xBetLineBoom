@@ -66,7 +66,7 @@ export async function loadRssNews(tournament) {
     const news = data.news;
 
     if (!news || news.length === 0) {
-      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📰 Новостей не найдено</div>';
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Новостей не найдено</div>';
       return;
     }
 
@@ -99,7 +99,7 @@ export async function loadRssNews(tournament) {
             <span class="rss-news-source">${item.source}</span>
           </div>
           ${description ? `<div class="rss-news-description">${description}</div>` : ''}
-          <div class="rss-news-date">📅 ${formattedDate}</div>
+          <div class="rss-news-date"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> ${formattedDate}</div>
         </div>
       `;
     });
@@ -115,7 +115,7 @@ export async function loadRssNews(tournament) {
 
   } catch (error) {
     console.error("❌ Ошибка загрузки RSS новостей:", error);
-    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки новостей</div>';
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка загрузки новостей</div>';
   }
 }
 
@@ -186,7 +186,7 @@ export async function loadRssKeywords() {
 
   } catch (error) {
     console.error("❌ Ошибка загрузки ключевых слов:", error);
-    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки ключевых слов</div>';
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка загрузки ключевых слов</div>';
   }
 }
 
@@ -206,7 +206,7 @@ export function filterKeywordsByTournament() {
   }
 
   if (filteredKeywords.length === 0) {
-    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📝 Ключевых слов не найдено</div>';
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg> Ключевых слов не найдено</div>';
     return;
   }
 
@@ -221,14 +221,14 @@ export function filterKeywordsByTournament() {
 
   // Названия турниров
   const tournamentNames = {
-    'all': '🌐 Глобальные (все турниры)',
-    'ucl': '🏆 Лига чемпионов',
-    'uel': '🥈 Лига Европы',
-    'uecl': '🥉 Лига конференций',
-    'supercup': '🏅 Суперкубок УЕФА',
-    'worldcup': '🌍 Чемпионат мира',
+    'all': '<svg class="icon" aria-hidden="true"><use href="#icon-globe"></use></svg> Глобальные (все турниры)',
+    'ucl': '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Лига чемпионов',
+    'uel': '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Лига Европы',
+    'uecl': '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Лига конференций',
+    'supercup': '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Суперкубок УЕФА',
+    'worldcup': '<svg class="icon" aria-hidden="true"><use href="#icon-world-cup"></use></svg> Чемпионат мира',
     'euro': '🇪🇺 Евро',
-    'epl': '🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ',
+    'epl': '<svg class="icon" aria-hidden="true"><use href="#icon-england"></use></svg>󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ',
     'rpl': '🇷🇺 РПЛ',
     'seriea': '🇮🇹 Серия А',
     'bundesliga': '🇩🇪 Бундеслига',
@@ -254,7 +254,7 @@ export function filterKeywordsByTournament() {
     `;
 
     keywords.forEach(kw => {
-      const typeEmoji = kw.type === 'include' ? '✅' : '❌';
+      const typeEmoji = kw.type === 'include' ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>';
       const typeColor = kw.type === 'include' ? '#4caf50' : '#f44336';
 
       html += `
@@ -295,7 +295,7 @@ export function filterKeywordsByTournament() {
             font-size: 0.9em;
             transition: all 0.3s ease;
           ">
-            🗑️ Удалить
+            <svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️ Удалить
           </button>
         </div>
       `;
@@ -353,11 +353,11 @@ export async function addRssKeyword() {
     // Перезагружаем список
     await loadRssKeywords();
 
-    await showCustomAlert("✅ Ключевое слово добавлено");
+    await showCustomAlert("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Ключевое слово добавлено");
 
   } catch (error) {
     console.error("❌ Ошибка добавления ключевого слова:", error);
-    await showCustomAlert(`❌ Ошибка: ${error.message}`);
+    await showCustomAlert(`<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ${error.message}`);
   }
 }
 
@@ -390,10 +390,10 @@ export async function deleteRssKeyword(id) {
     // Перезагружаем список
     await loadRssKeywords();
 
-    await showCustomAlert("✅ Ключевое слово удалено");
+    await showCustomAlert("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Ключевое слово удалено");
 
   } catch (error) {
     console.error("❌ Ошибка удаления ключевого слова:", error);
-    await showCustomAlert(`❌ Ошибка: ${error.message}`);
+    await showCustomAlert(`<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ${error.message}`);
   }
 }

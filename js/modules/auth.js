@@ -169,7 +169,7 @@ export async function loginFromModal() {
   const username = document.getElementById('usernameModal')?.value.trim();
 
   if (!username) {
-    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "⚠️");
+    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
     return;
   }
 
@@ -284,7 +284,7 @@ export async function initUser() {
   }
 
   if (!username) {
-    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "⚠️");
+    await showCustomAlert("Пожалуйста, введите имя", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
     return;
   }
 
@@ -303,7 +303,7 @@ export async function initUser() {
       body: JSON.stringify({ attemptedUsername: username }),
     }).catch((err) => console.error("Ошибка отправки уведомления:", err));
 
-    await showCustomAlert("Ну, ты давай не охуевай совсем, малютка", "Доступ запрещен", "🚫");
+    await showCustomAlert("Ну, ты давай не охуевай совсем, малютка", "Доступ запрещен", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     document.getElementById("username").value = "";
     if (document.getElementById("username-mobile")) {
       document.getElementById("username-mobile").value = "";
@@ -346,7 +346,7 @@ export async function initUser() {
       const shouldContinue = await showCustomConfirm(
         'Для входа требуется подтверждение через Telegram. Вам будет отправлен код подтверждения.',
         'Подтверждение входа',
-        '🔐'
+        '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>'
       );
 
       if (!shouldContinue) {
@@ -367,7 +367,7 @@ export async function initUser() {
           const code = await showCustomPrompt(
             'Код подтверждения отправлен вам в Telegram. Введите его ниже:',
             'Введите код',
-            '🔐',
+            '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>',
             '123456'
           );
 
@@ -386,7 +386,7 @@ export async function initUser() {
           const confirmResult = await confirmResponse.json();
 
           if (!confirmResponse.ok) {
-            await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
+            await showCustomAlert(confirmResult.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
             return;
           }
 
@@ -398,12 +398,12 @@ export async function initUser() {
           // Загружаем права модератора
           await loadModeratorPermissions();
         } else {
-          await showCustomAlert(requestResult.error, 'Ошибка', '❌');
+          await showCustomAlert(requestResult.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
           return;
         }
       } catch (error) {
         console.error("Ошибка при подтверждении входа:", error);
-        await showCustomAlert("Ошибка при подтверждении входа", 'Ошибка', '❌');
+        await showCustomAlert("Ошибка при подтверждении входа", 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
         return;
       }
     } else {
@@ -583,7 +583,7 @@ export async function loginWithTelegram() {
     const result = await response.json();
 
     if (!response.ok) {
-      await showCustomAlert(result.error || 'Ошибка создания токена', 'Ошибка', '❌');
+      await showCustomAlert(result.error || 'Ошибка создания токена', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
 
@@ -596,7 +596,7 @@ export async function loginWithTelegram() {
     checkTelegramAuthStatus(authToken);
   } catch (error) {
     console.error("Ошибка при авторизации через Telegram:", error);
-    await showCustomAlert("Ошибка при авторизации через Telegram", 'Ошибка', '❌');
+    await showCustomAlert("Ошибка при авторизации через Telegram", 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -704,8 +704,8 @@ export async function checkTelegramAuthStatus(authToken) {
         if (result.isNewUser) {
           await showCustomAlert(
             `Твое имя на сайте: ${currentUser.username}\n\nИмя можно изменить в профиле, наведя или нажав на текущее имя.`,
-            'Добро пожаловать! 🎉',
-            '👋'
+            'Добро пожаловать! <svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg>',
+            '<svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg>'
           );
         }
 

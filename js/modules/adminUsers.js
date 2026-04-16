@@ -44,22 +44,22 @@ function displayAdminUsersModal() {
         ${canCheckBot() ? `
         <button class="admin-btn admin-btn-bot-check" onclick="checkUserBotContact(${
           user.id
-        }, '${user.username}')" title="Проверка писал ли пользователь боту">🤖</button>
+        }, '${user.username}')" title="Проверка писал ли пользователь боту"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg></button>
         ` : ''}
         ${canViewSettings() ? `
         <button class="admin-btn admin-btn-settings" onclick="sendUserSettingsToAdmin(${
           user.id
-        }, '${user.username}')" title="Получить настройки пользователя">⚙️</button>
+        }, '${user.username}')" title="Получить настройки пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️</button>
         ` : ''}
         ${canEditUsers() && (isAdmin() || user.username !== ADMIN_DB_NAME) ? `
         <button class="admin-btn admin-btn-rename" onclick="renameUser(${
           user.id
-        }, '${user.username}')" title="Переименовать пользователя">✏️</button>
+        }, '${user.username}')" title="Переименовать пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️</button>
         ` : ''}
         ${canDeleteUsers() && user.username !== ADMIN_DB_NAME ? `
         <button class="admin-btn admin-btn-delete" onclick="deleteUser(${
           user.id
-        }, '${user.username}')" title="Удалить пользователя">🗑️</button>
+        }, '${user.username}')" title="Удалить пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️</button>
         ` : ''}
       </div>
     </div>
@@ -112,14 +112,14 @@ export function closeAdminModal() {
 // Синхронизировать telegram_id для всех пользователей
 export async function syncAllTelegramIds() {
   if (!isAdmin() && !hasModeratorPermission('sync_telegram_ids')) {
-    await showCustomAlert("У вас нет прав", "Ошибка", "❌");
+    await showCustomAlert("У вас нет прав", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
   const shouldContinue = await showCustomConfirm(
     'Эта операция обновит telegram_id (chat_id) для всех пользователей с привязанным Telegram. Продолжить?',
     'Синхронизация Telegram ID',
-    '🤖'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg>'
   );
 
   if (!shouldContinue) {
@@ -136,31 +136,31 @@ export async function syncAllTelegramIds() {
     const result = await response.json();
 
     if (!response.ok) {
-      await showCustomAlert(result.error, 'Ошибка', '❌');
+      await showCustomAlert(result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
 
     let message = `
       <div style="text-align: left; line-height: 1.8;">
         <div style="margin-bottom: 15px; font-size: 16px; font-weight: bold; color: #4caf50;">
-          ✅ Синхронизация завершена успешно!
+          <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Синхронизация завершена успешно!
         </div>
         
         <div style="margin-bottom: 10px; font-size: 15px; font-weight: bold; color: #fff;">
-          📊 Общая статистика:
+          <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Общая статистика:
         </div>
         <div style="border-top: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px;"></div>
         
-        <div style="margin-bottom: 8px;">👥 Всего пользователей с Telegram: <strong>${result.total}</strong></div>
-        <div style="margin-bottom: 8px; color: #4caf50;">✅ Обновлено telegram_id: <strong>${result.updated}</strong></div>
-        <div style="margin-bottom: 8px; color: #2196f3;">✓ Уже были актуальны: <strong>${result.skipped}</strong></div>
-        <div style="margin-bottom: 15px; color: #ff9800;">⚠️ Не найдены в telegram_users: <strong>${result.not_found}</strong></div>
+        <div style="margin-bottom: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Всего пользователей с Telegram: <strong>${result.total}</strong></div>
+        <div style="margin-bottom: 8px; color: #4caf50;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Обновлено telegram_id: <strong>${result.updated}</strong></div>
+        <div style="margin-bottom: 8px; color: #2196f3;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Уже были актуальны: <strong>${result.skipped}</strong></div>
+        <div style="margin-bottom: 15px; color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Не найдены в telegram_users: <strong>${result.not_found}</strong></div>
     `;
 
     if (result.updated > 0) {
       message += `
         <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #4caf50;">
-          <div style="font-weight: bold; margin-bottom: 5px; color: #4caf50;">💡 Что это значит:</div>
+          <div style="font-weight: bold; margin-bottom: 5px; color: #4caf50;"><svg class="icon" aria-hidden="true"><use href="#icon-hint"></use></svg> Что это значит:</div>
           <div style="font-size: 14px;">
             Для ${result.updated} пользовател${result.updated === 1 ? 'я' : 'ей'} был найден и сохранен chat_id из таблицы telegram_users.<br>
             Теперь они смогут получать коды подтверждения через бота.
@@ -172,7 +172,7 @@ export async function syncAllTelegramIds() {
     if (result.not_found > 0) {
       message += `
         <div style="background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #ff9800;">
-          <div style="font-weight: bold; margin-bottom: 5px; color: #ff9800;">⚠️ Внимание:</div>
+          <div style="font-weight: bold; margin-bottom: 5px; color: #ff9800;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Внимание:</div>
           <div style="font-size: 14px;">
             ${result.not_found} пользовател${result.not_found === 1 ? 'ь' : 'ей'} не найден${result.not_found === 1 ? '' : 'ы'} в telegram_users.<br>
             Это значит, что они:<br>
@@ -192,9 +192,9 @@ export async function syncAllTelegramIds() {
         result.not_found_users.forEach(user => {
           message += `
             <div style="background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 4px; margin-bottom: 6px;">
-              <div style="font-weight: bold;">👤 ${user.username}</div>
+              <div style="font-weight: bold;"><svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> ${user.username}</div>
               <div style="font-size: 13px; color: #aaa; margin-left: 20px;">
-                📱 @${user.telegram_username}
+                <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> @${user.telegram_username}
               </div>
             </div>
           `;
@@ -212,16 +212,16 @@ export async function syncAllTelegramIds() {
     if (result.details && result.details.length > 0) {
       message += `
         <div style="border-top: 1px solid rgba(255,255,255,0.2); margin: 15px 0 10px 0;"></div>
-        <div style="font-weight: bold; margin-bottom: 10px; color: #fff;">📝 Обновленные пользователи:</div>
+        <div style="font-weight: bold; margin-bottom: 10px; color: #fff;"><svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg> Обновленные пользователи:</div>
       `;
 
       result.details.forEach(detail => {
         message += `
           <div style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #2196f3;">
-            <div style="font-weight: bold; margin-bottom: 3px;">👤 ${detail.username}</div>
+            <div style="font-weight: bold; margin-bottom: 3px;"><svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> ${detail.username}</div>
             <div style="font-size: 13px; color: #aaa; margin-left: 20px;">
-              📱 @${detail.telegram_username}<br>
-              💬 Chat ID: ${detail.telegram_id}
+              <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> @${detail.telegram_username}<br>
+              <svg class="icon" aria-hidden="true"><use href="#icon-group"></use></svg> Chat ID: ${detail.telegram_id}
             </div>
           </div>
         `;
@@ -232,7 +232,7 @@ export async function syncAllTelegramIds() {
       message += `
         <div style="border-top: 1px solid rgba(255,255,255,0.2); margin: 15px 0 10px 0;"></div>
         <div style="background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #f44336;">
-          <div style="font-weight: bold; margin-bottom: 5px; color: #f44336;">❌ Без Telegram:</div>
+          <div style="font-weight: bold; margin-bottom: 5px; color: #f44336;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Без Telegram:</div>
           <div style="font-size: 14px; margin-bottom: 10px;">
             ${result.without_telegram} пользовател${result.without_telegram === 1 ? 'ь' : 'ей'} не привязал${result.without_telegram === 1 ? '' : 'и'} Telegram.<br>
             Они не смогут использовать функции с подтверждением через бота.
@@ -244,9 +244,9 @@ export async function syncAllTelegramIds() {
       result.without_telegram_users.forEach(user => {
         message += `
           <div style="background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 4px; margin-bottom: 6px;">
-            <div style="font-weight: bold;">👤 ${user.username}</div>
+            <div style="font-weight: bold;"><svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> ${user.username}</div>
             <div style="font-size: 13px; color: #aaa; margin-left: 20px;">
-              📱 Telegram не привязан
+              <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Telegram не привязан
             </div>
           </div>
         `;
@@ -262,7 +262,7 @@ export async function syncAllTelegramIds() {
       message += `
         <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #4caf50;">
           <div style="font-size: 14px; color: #4caf50;">
-            ✓ Все пользователи уже имеют актуальный telegram_id.<br>
+            <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Все пользователи уже имеют актуальный telegram_id.<br>
             Дополнительных действий не требуется.
           </div>
         </div>
@@ -271,13 +271,13 @@ export async function syncAllTelegramIds() {
 
     message += `</div>`;
 
-    await showCustomAlert(message, 'Синхронизация завершена', '✅');
+    await showCustomAlert(message, 'Синхронизация завершена', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
 
     // Перезагружаем список пользователей
     await loadAdminUsers();
   } catch (error) {
     console.error("Ошибка при синхронизации:", error);
-    await showCustomAlert('Ошибка при синхронизации telegram_id', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при синхронизации telegram_id', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -314,7 +314,7 @@ export async function testGroupNotification() {
         ? 'Тестовое уведомление отправлено в группу'
         : 'Тестовое уведомление отправлено только админу',
       'Успешно',
-      '✅'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
     );
     console.log(`✅ Тестовое уведомление отправлено ${testRealGroup ? 'в группу' : 'админу'}`);
   } catch (error) {

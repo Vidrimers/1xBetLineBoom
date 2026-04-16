@@ -302,9 +302,11 @@ export async function displayTournamentWinner(eventId) {
     // Если победитель отсутствует
     if (!data.winner) {
       console.log(`⚠️ Победитель не найден для турнира ${eventId}`);
-      const tournamentIcon = data.tournament.icon || "🏆";
+      const tournamentIcon = data.tournament.icon || "icon-trophy";
       const displayIcon = tournamentIcon.startsWith("img/")
         ? `<img src="${tournamentIcon}" alt="tournament" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
+        : tournamentIcon.startsWith("icon-")
+        ? `<svg class="icon" aria-hidden="true"><use href="#${tournamentIcon}"></use></svg>`
         : tournamentIcon;
 
       const noWinnerHTML = `
@@ -316,7 +318,7 @@ export async function displayTournamentWinner(eventId) {
             
             <div class="winner-content">
               <div class="no-winner-message">
-                ⚠️ Победитель отсутствует
+                <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Победитель отсутствует
               </div>
             </div>
           </div>
@@ -338,9 +340,11 @@ export async function displayTournamentWinner(eventId) {
 
     console.log(`✅ Отображение победителя:`, winner.username);
 
-    const tournamentIcon = tournament.icon || "🏆";
+    const tournamentIcon = tournament.icon || "icon-trophy";
     const displayIcon = tournamentIcon.startsWith("img/")
       ? `<img src="${tournamentIcon}" alt="tournament" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
+      : tournamentIcon.startsWith("icon-")
+      ? `<svg class="icon" aria-hidden="true"><use href="#${tournamentIcon}"></use></svg>`
       : tournamentIcon;
 
     const winnerHTML = `
@@ -480,7 +484,7 @@ export async function displayMatches() {
                ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(status);
       });
       if (!allFinalFinished) {
-        return "🏆 Финал";
+        return "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал";
       }
     }
 
@@ -500,8 +504,8 @@ export async function displayMatches() {
   );
 
   // Если есть финальные матчи и финала нет в roundsOrder, добавляем его
-  if (hasFinalMatches && !roundsOrder.includes("🏆 Финал")) {
-    setRoundsOrder([...roundsOrder, "🏆 Финал"]);
+  if (hasFinalMatches && !roundsOrder.includes("<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")) {
+    setRoundsOrder([...roundsOrder, "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал"]);
     // Сохраняем новый порядок в БД
     saveRoundsOrderToStorage().catch((e) =>
       console.error("Ошибка сохранения финала в порядок:", e)
@@ -513,7 +517,7 @@ export async function displayMatches() {
     if (
       currentRoundFilter === "all" ||
       (!rounds.includes(currentRoundFilter) &&
-        currentRoundFilter !== "🏆 Финал")
+        currentRoundFilter !== "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")
     ) {
       currentRoundFilter = getFirstUnfinishedRound();
       setCurrentRoundFilter(currentRoundFilter);
@@ -526,7 +530,7 @@ export async function displayMatches() {
     const isAdmin = currentUser && currentUser.isAdmin;
 
     // Получаем иконку текущего турнира
-    let currentEventIcon = '🏆';
+    let currentEventIcon = 'icon-trophy';
     if (currentEventId && events && events.length > 0) {
       const currentEvent = events.find(e => e.id === currentEventId);
       if (currentEvent && currentEvent.icon) {
@@ -548,9 +552,11 @@ export async function displayMatches() {
             // Формируем иконку
             let iconHtml = '';
             if (isClosed) {
-              iconHtml = '🔒';
+              iconHtml = '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>';
             } else if (currentEventIcon.startsWith('img/') || currentEventIcon.startsWith('http')) {
               iconHtml = `<img src="${currentEventIcon}" alt="icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;" />`;
+            } else if (currentEventIcon.startsWith('icon-')) {
+              iconHtml = `<svg class="icon" aria-hidden="true"><use href="#${currentEventIcon}"></use></svg>`;
             } else {
               iconHtml = currentEventIcon;
             }
@@ -589,7 +595,7 @@ export async function displayMatches() {
                         onclick="openXgModal()" 
                         title="Прогнозы Glicko-2 и xG"
                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                  🎯 xG
+                  <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> xG
                 </button>
               `;
             }
@@ -643,7 +649,7 @@ export async function displayMatches() {
   // Фильтруем матчи по выбранному туру
   let filteredMatches = matches;
   if (currentRoundFilter !== "all") {
-    // Обычный фильтр по туру (включая "🏆 Финал")
+    // Обычный фильтр по туру (включая "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал")
     filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
   }
 
@@ -766,13 +772,13 @@ export async function displayMatches() {
       let statusBadge = "";
       if (effectiveStatus === "ongoing") {
         statusBadge =
-          '<span style="display: inline-block; padding: 3px 8px; background: #ff9800; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">🔴 ИДЕТ</span>';
+          '<span style="display: inline-block; padding: 3px 8px; background: #ff9800; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> ИДЕТ</span>';
       } else if (effectiveStatus === "finished") {
         statusBadge =
-          '<span style="display: inline-block; padding: 3px 8px; background: rgba(100, 100, 100, 0.8); color: #e0e0e0; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">✓ ЗАВЕРШЕН</span>';
+          '<span style="display: inline-block; padding: 3px 8px; background: rgba(100, 100, 100, 0.8); color: #e0e0e0; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ЗАВЕРШЕН</span>';
       } else if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(effectiveStatus)) {
         statusBadge =
-          '<span class="match-status-cancelled" style="display: inline-block; padding: 3px 8px; background: #ff5722; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;">⚠️ ОТМЕНА</span>';
+          '<span class="match-status-cancelled" style="display: inline-block; padding: 3px 8px; background: #ff5722; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ ОТМЕНА</span>';
       }
 
       // Определяем, отменён ли матч
@@ -787,12 +793,13 @@ export async function displayMatches() {
                 ${
                   match.is_final
                     ? `
-                <button onclick="openFinalMatchResultModal(${match.id})"
+                  <button onclick="openFinalMatchResultModal(${match.id})"
                   style="background: transparent; color: #4db8a8; border: 1px solid #4db8a8; padding: 5px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.85em; font-weight: bold;"
                   onmouseover="this.style.background='rgba(77, 184, 168, 0.2)'"
                   onmouseout="this.style.background='transparent'"
-                  title="Установить результат финала и параметры">
-                  📝
+                  title="Установить результат финала и параметры"
+                  aria-label="Установить результат финала">
+                  <svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg>
                 </button>
                 `
                     : match.score_prediction_enabled
@@ -802,8 +809,9 @@ export async function displayMatches() {
                   style="background: transparent; border: 1px solid rgb(58, 123, 213); color: rgb(224, 230, 240); padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.8em;"
                   onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
                   onmouseout="this.style.background='transparent'; this.style.color='rgb(224, 230, 240)'"
-                  title="Установить результат матча">
-                  📝
+                  title="Установить результат матча"
+                  aria-label="Установить результат матча">
+                  <svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg>
                 </button>
                 `
                     : `
@@ -849,8 +857,9 @@ export async function displayMatches() {
                     style="background: transparent; border: 1px solid #f57c00; color: #ffe0b2; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                     onmouseover="this.style.background='rgba(255, 152, 0, 0.6)'; this.style.color='#fff'"
                     onmouseout="this.style.background='transparent'; this.style.color='#ffe0b2'"
-                    title="Разблокировать матч">
-                    🔓
+                    title="Разблокировать матч"
+                    aria-label="Разблокировать матч">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg>
                   </button>
                   `
                       : ""
@@ -862,14 +871,16 @@ export async function displayMatches() {
                   }')"
                     style="background: transparent; border: 1px solid #3a7bd5; color: #7ab0e0; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                     onmouseover="this.style.background='rgba(58, 123, 213, 0.6)'; this.style.color='white'"
-                    onmouseout="this.style.background='transparent'; this.style.color='#7ab0e0'">
-                    ✏️
+                    onmouseout="this.style.background='transparent'; this.style.color='#7ab0e0'"
+                    aria-label="Редактировать матч">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>
                   </button>` : ''}
                   ${canDeleteMatches() ? `<button onclick="deleteMatch(${match.id})"
                     style="background: transparent; border: 1px solid #f44336; color: #f44336; padding: 5px; border-radius: 3px; cursor: pointer; transition: all 0.2s; font-size: 0.6em;"
                     onmouseover="this.style.background='#f44336'; this.style.color='white'"
-                    onmouseout="this.style.background='transparent'; this.style.color='#f44336'">
-                    ✕
+                    onmouseout="this.style.background='transparent'; this.style.color='#f44336'"
+                    aria-label="Удалить матч">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>
                   </button>` : ''}
                 </div>
                 <button
@@ -898,7 +909,7 @@ export async function displayMatches() {
                       ${match.round ? `<div class="match-round">${match.round}</div>` : ""}
                       ${match.score_prediction_enabled ? `<input type="number" id="scoreTeam2_${match.id}" class="score-input score-input-right" min="0" value="${match.predicted_score_team2 != null ? match.predicted_score_team2 : ''}" placeholder="0" ${effectiveStatus !== "pending" || !userBetOnMatch?.prediction || (match.predicted_score_team1 != null && match.predicted_score_team2 != null) ? "disabled" : ""} oninput="syncScoreInputs(${match.id}, '${userBetOnMatch?.prediction || ''}')">` : ""}
                       ${(match.score_prediction_enabled || match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) && userBetOnMatch?.prediction && effectiveStatus === "pending" && !((match.score_prediction_enabled ? (match.predicted_score_team1 != null && match.predicted_score_team2 != null) : true) && (match.yellow_cards_prediction_enabled ? match.predicted_yellow_cards != null : true) && (match.red_cards_prediction_enabled ? match.predicted_red_cards != null : true)) ? `<div class="score-action-btns" id="scoreButtons_${match.id}">
-                        <button class="score-confirm-btn" onclick="placeScorePrediction(${match.id}, '${userBetOnMatch?.prediction || ''}')">✅</button>
+                        <button class="score-confirm-btn" onclick="placeScorePrediction(${match.id}, '${userBetOnMatch?.prediction || ''}')" aria-label="Подтвердить прогноз"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg></button>
                       </div>` : ""}
                     </div>`
                     : ""
@@ -907,11 +918,11 @@ export async function displayMatches() {
                   (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) && userBetOnMatch?.prediction
                     ? `<div class="match-cards-row" style="display: flex; justify-content: center; gap: 10px; margin-top: 5px;">
                       ${match.yellow_cards_prediction_enabled ? `<div style="display: flex; align-items: center; gap: 5px;">
-                        <span style="font-size: 0.9em;">🟨</span>
+                        <span style="font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg></span>
                         <input type="number" id="yellowCards_${match.id}" class="score-input" min="0" max="20" value="${match.predicted_yellow_cards != null ? match.predicted_yellow_cards : ''}" placeholder="0" ${effectiveStatus !== "pending" || (match.predicted_yellow_cards != null) ? "disabled" : ""} style="width: 50px; text-align: center;">
                       </div>` : ""}
                       ${match.red_cards_prediction_enabled ? `<div style="display: flex; align-items: center; gap: 5px;">
-                        <span style="font-size: 0.9em;">🟥</span>
+                        <span style="font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg></span>
                         <input type="number" id="redCards_${match.id}" class="score-input" min="0" max="10" value="${match.predicted_red_cards != null ? match.predicted_red_cards : ''}" placeholder="0" ${effectiveStatus !== "pending" || (match.predicted_red_cards != null) ? "disabled" : ""} style="width: 50px; text-align: center;">
                       </div>` : ""}
                     </div>`
@@ -967,18 +978,18 @@ export async function displayMatches() {
                   match.is_final
                     ? `
                 <div style="background: rgba(58, 123, 213, 0.1); padding: 12px; border-radius: 4px; margin: 10px 0;">
-                  <div style="color: #7ab0e0; font-size: 0.85em; font-weight: 500; margin-bottom: 12px;">🏆 ФИНАЛЬНЫЕ ПАРАМЕТРЫ:</div>
+                  <div style="color: #7ab0e0; font-size: 0.85em; font-weight: 500; margin-bottom: 12px;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> ФИНАЛЬНЫЕ ПАРАМЕТРЫ:</div>
                   
                   ${
                     match.show_exact_score
                       ? `
                   <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">📊 Точный счет</div>
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Точный счет</div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                       <input type="number" id="exactScore1_${match.id}" min="0" value="0" style="width: 50px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
                       <span style="color: #7ab0e0;">vs</span>
                       <input type="number" id="exactScore2_${match.id}" min="0" value="0" style="width: 50px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'exact_score')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                      <button onclick="placeFinalBet(${match.id}, 'exact_score')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -989,10 +1000,10 @@ export async function displayMatches() {
                     match.show_yellow_cards
                       ? `
                   <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">🟨 Желтые карточки</div>
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Желтые карточки</div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                       <input type="number" id="yellowCards_${match.id}" min="0" value="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'yellow_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                      <button onclick="placeFinalBet(${match.id}, 'yellow_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1003,10 +1014,10 @@ export async function displayMatches() {
                     match.show_red_cards
                       ? `
                   <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">🟥 Красные карточки</div>
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные карточки</div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                       <input type="number" id="redCards_${match.id}" min="0" value="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'red_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                      <button onclick="placeFinalBet(${match.id}, 'red_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1017,10 +1028,10 @@ export async function displayMatches() {
                     match.show_corners
                       ? `
                   <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⚽ Угловые</div>
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Угловые</div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                       <input type="number" id="corners_${match.id}" min="0" value="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'corners')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                      <button onclick="placeFinalBet(${match.id}, 'corners')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1031,7 +1042,7 @@ export async function displayMatches() {
                     match.show_penalties_in_game
                       ? `
                   <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⚽ Пенальти в игре</div>
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в игре</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span id="penaltiesInGame_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
@@ -1043,7 +1054,7 @@ export async function displayMatches() {
                         </label>
                         <span id="penaltiesInGame_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
                       </div>
-                      <button onclick="placeFinalBet(${match.id}, 'penalties_in_game')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                      <button onclick="placeFinalBet(${match.id}, 'penalties_in_game')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1054,7 +1065,7 @@ export async function displayMatches() {
                     match.show_extra_time
                       ? `
                   <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⏱️ Дополнительное время</div>
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Дополнительное время</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span id="extraTime_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
@@ -1066,7 +1077,7 @@ export async function displayMatches() {
                         </label>
                         <span id="extraTime_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
                       </div>
-                      <button onclick="placeFinalBet(${match.id}, 'extra_time')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                      <button onclick="placeFinalBet(${match.id}, 'extra_time')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1077,7 +1088,7 @@ export async function displayMatches() {
                     match.show_penalties_at_end
                       ? `
                   <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;">⚽ Пенальти в конце</div>
+                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в конце</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span id="penaltiesAtEnd_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
@@ -1089,7 +1100,7 @@ export async function displayMatches() {
                         </label>
                         <span id="penaltiesAtEnd_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
                       </div>
-                      <button onclick="placeFinalBet(${match.id}, 'penalties_at_end')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">✓</button>
+                      <button onclick="placeFinalBet(${match.id}, 'penalties_at_end')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `

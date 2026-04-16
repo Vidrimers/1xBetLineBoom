@@ -283,30 +283,30 @@ export function previewTournamentAnnouncement(event) {
       month: "2-digit",
       year: "numeric",
     });
-    dateText = `📅 Даты: ${start} - ${end}`;
+    dateText = `<svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Даты: ${start} - ${end}`;
   } else if (startDate) {
     const start = new Date(startDate).toLocaleDateString("ru-RU", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
-    dateText = `📅 Начало: ${start}`;
+    dateText = `<svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Начало: ${start}`;
   }
   
   // Формируем сообщение
-  let message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
+  let message = `<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> <b>НОВЫЙ ТУРНИР!</b>\n\n`;
   message += `<b>${name}</b>\n\n`;
   
   if (description) {
-    message += `📝 ${description}\n\n`;
+    message += `<svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg> ${description}\n\n`;
   }
   
   if (dateText) {
     message += `${dateText}\n\n`;
   }
   
-  message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
-  message += `🔗 <a href="http://${window.location.hostname}:${window.location.port}">Открыть сайт</a>`;
+  message += `Приготовьтесь делать прогнозы! <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg>\n\n`;
+  message += `<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> <a href="http://${window.location.hostname}:${window.location.port}">Открыть сайт</a>`;
   
   // Показываем предпросмотр (конвертируем HTML в читаемый текст)
   const previewText = message
@@ -511,7 +511,7 @@ export async function sendAnnouncementToSelf() {
     
     if (response.ok) {
       if (typeof showCustomAlert === 'function') {
-        showCustomAlert('Тестовое сообщение отправлено вам в Telegram', 'Успешно', '✅');
+        showCustomAlert('Тестовое сообщение отправлено вам в Telegram', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       } else {
         alert('Тестовое сообщение отправлено вам в Telegram');
       }
@@ -559,7 +559,7 @@ export async function sendAnnouncementToAll() {
         showCustomAlert(
           `Объявление отправлено: ${result.successCount} успешно, ${result.errorCount} ошибок`,
           'Успешно',
-          '✅'
+          '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
         );
       } else {
         alert(`Объявление отправлено: ${result.successCount} успешно, ${result.errorCount} ошибок`);
@@ -595,7 +595,7 @@ export async function sendTournamentAnnouncementToAdmin() {
     if (response.ok) {
       closeTournamentAnnouncementModal();
       if (typeof showCustomAlert === 'function') {
-        showCustomAlert('Объявление отправлено админу на проверку', 'Успешно', '✅');
+        showCustomAlert('Объявление отправлено админу на проверку', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
       } else {
         alert('Объявление отправлено админу на проверку');
       }
@@ -683,7 +683,7 @@ export async function openTournamentInfoModal() {
       <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">ℹ️ Информация о турнире</h3>
       
       <div style="line-height: 1.6;">
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🎯 Система начисления очков</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Система начисления очков</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <div style="margin-bottom: 10px;">
             <strong style="color: #4caf50;">Обычные матчи:</strong>
@@ -707,7 +707,7 @@ export async function openTournamentInfoModal() {
           </div>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">📊 Сортировка участников</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Сортировка участников</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">Участники сортируются по следующим критериям (в порядке приоритета):</p>
           <ol style="margin: 5px 0; padding-left: 20px;">
@@ -718,7 +718,7 @@ export async function openTournamentInfoModal() {
           </ol>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">🏆 Одинаковые показатели</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Одинаковые показатели</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">Если у нескольких участников <strong>полностью одинаковые</strong> показатели по всем критериям:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
@@ -728,7 +728,7 @@ export async function openTournamentInfoModal() {
           </ul>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;">📈 Отображение статистики</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Отображение статистики</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
           <p style="margin: 0;">В карточке каждого участника отображается:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
@@ -769,7 +769,7 @@ export async function openEventTeamFileSelector(mode) {
 
     const fileListHtml = files.map(file => {
       const isSelected = file.path === currentFile;
-      const icon = file.name.endsWith('.json') ? '📄' : file.name.endsWith('.txt') ? '📝' : '📜';
+      const icon = file.name.endsWith('.json') ? '<svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg>' : file.name.endsWith('.txt') ? '<svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg>' : '<svg class="icon" aria-hidden="true"><use href="#icon-earlier"></use></svg>';
       return `
         <div class="team-file-item ${isSelected ? 'selected' : ''}"
              onclick="selectEventTeamFile('${file.path}', '${mode}')"
@@ -782,7 +782,7 @@ export async function openEventTeamFileSelector(mode) {
               <div style="font-weight: 500; color: #e0e6f0;">${file.name}</div>
               <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 2px;">${file.path}</div>
             </div>
-            ${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;">✓</span>' : ''}
+            ${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg></span>' : ''}
           </div>
         </div>
       `;
@@ -792,7 +792,7 @@ export async function openEventTeamFileSelector(mode) {
       <div id="eventTeamFileSelectorModal" class="modal" style="display: flex;" onclick="closeEventTeamFileSelector()">
         <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
           <div class="modal-header">
-            <h2>📥 Выбор словаря команд для турнира</h2>
+            <h2><svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Выбор словаря команд для турнира</h2>
             <button class="modal-close" onclick="closeEventTeamFileSelector()">&times;</button>
           </div>
           <div style="padding: 20px;">

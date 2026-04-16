@@ -288,10 +288,6 @@
   opacity: 1;
 }
 
-/* .bet-btn.selected::after {
-  content: " ✓";
-} */
-
 .my-bets-list {
   display: flex;
   flex-direction: column;

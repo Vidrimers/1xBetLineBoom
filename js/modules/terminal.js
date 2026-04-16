@@ -62,19 +62,19 @@ export async function refreshTerminalLogs() {
             let className = "";
 
             // Определяем цвет в зависимости от типа лога
-            if (line.includes("❌") || line.includes("ERROR")) {
+            if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>") || line.includes("ERROR")) {
               color = "#ff3333"; // красный для ошибок
               className = "error";
-            } else if (line.includes("⚠️") || line.includes("WARN")) {
+            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️") || line.includes("WARN")) {
               color = "#ffff00"; // жёлтый для предупреждений
               className = "warn";
-            } else if (line.includes("✅") || line.includes("успешно")) {
+            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>") || line.includes("успешно")) {
               color = "#00ff00"; // зелёный для успеха
               className = "success";
-            } else if (line.includes("📧") || line.includes("сообщение")) {
+            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>") || line.includes("сообщение")) {
               color = "#00ffff"; // голубой для сообщений
               className = "info";
-            } else if (line.includes("🔗") || line.includes("Telegram")) {
+            } else if (line.includes("<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>") || line.includes("Telegram")) {
               color = "#00bfff"; // синий для телеграма
               className = "telegram";
             } else if (line.includes("[")) {
@@ -99,7 +99,7 @@ export async function refreshTerminalLogs() {
   } catch (error) {
     const content = document.getElementById("terminalContent");
     if (content) {
-      content.innerHTML = `<div style="color: #ff3333">❌ Ошибка загрузки логов: ${escapeHtml(
+      content.innerHTML = `<div style="color: #ff3333"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка загрузки логов: ${escapeHtml(
         error.message
       )}</div>`;
     }
@@ -119,7 +119,7 @@ export async function clearTerminalLogs() {
 
     const content = document.getElementById("terminalContent");
     if (content) {
-      content.textContent = "[✅ Логи очищены]";
+      content.textContent = "[<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Логи очищены]";
     }
 
     // Обновляем логи через 500мс
@@ -138,7 +138,7 @@ export async function saveTerminalLogs() {
 
     const data = await response.json();
     if (!data.logs) {
-      alert("❌ Нет логов для сохранения");
+      alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Нет логов для сохранения");
       return;
     }
 
@@ -159,7 +159,7 @@ export async function saveTerminalLogs() {
     console.log("✅ Логи сохранены на ПК");
   } catch (error) {
     console.error("Ошибка при сохранении логов:", error);
-    alert("❌ Ошибка при сохранении логов: " + error.message);
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при сохранении логов: " + error.message);
   }
 }
 

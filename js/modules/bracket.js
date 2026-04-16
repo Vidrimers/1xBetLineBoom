@@ -28,7 +28,7 @@ const BRACKET_STAGES = [
   { id: 'round_of_8', name: '1/8', matches: 8 },
   { id: 'quarter_finals', name: '1/4', matches: 4 },
   { id: 'semi_finals', name: '1/2', matches: 2 },
-  { id: 'final', name: '🏆 Финал', matches: 1 },
+  { id: 'final', name: '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал', matches: 1 },
 ];
 
 // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
@@ -184,7 +184,7 @@ function renderLockDatesFields(existingLockDates = {}) {
     { id: 'round_of_8', name: '1/8' },
     { id: 'quarter_finals', name: '1/4' },
     { id: 'semi_finals', name: '1/2' },
-    { id: 'final', name: '🏆 Финал' },
+    { id: 'final', name: '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал' },
   ];
 
   const startIndex = allStages.findIndex(s => s.id === startStage);
@@ -227,7 +227,7 @@ function openEditBracketModal(bracket) {
   if (stageSelect) stageSelect.value = bracket.start_stage || 'round_of_16';
 
   const modalTitle = modal.querySelector('.modal-header h2');
-  if (modalTitle) modalTitle.textContent = '✏️ Редактировать сетку плей-офф';
+  if (modalTitle) modalTitle.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>️ Редактировать сетку плей-офф';
 
   if (stageSelect) {
     stageSelect.onchange = () => renderLockDatesFields(bracket.lock_dates || {});
@@ -249,7 +249,7 @@ export async function openBracketModal(bracketId, viewUserId = null) {
 
   if (!state.currentUser && !viewUserId) {
     console.error('❌ Нет авторизации');
-    await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
+    await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>');
     return;
   }
 
@@ -266,7 +266,7 @@ export async function openBracketModal(bracketId, viewUserId = null) {
     window.currentBracket = currentBracket;
 
     // Получаем иконку турнира
-    let eventIcon = '🏆';
+    let eventIcon = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
     if (currentBracket.event_id && state.events && state.events.length > 0) {
       const event = state.events.find(e => e.id === currentBracket.event_id);
       if (event && event.icon) eventIcon = event.icon;
@@ -290,7 +290,7 @@ export async function openBracketModal(bracketId, viewUserId = null) {
           await showCustomAlert(
             data.message || 'Пользователь скрыл свои прогнозы',
             'Прогнозы скрыты',
-            '🔒'
+            '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>'
           );
           return;
         }
@@ -354,7 +354,7 @@ export async function openBracketModal(bracketId, viewUserId = null) {
         const modalTitle = modal.querySelector('.modal-header h2');
         if (modalTitle) {
           const username = window.viewingUserBracketName || 'Пользователь';
-          let eventIconHtml = '🏆';
+          let eventIconHtml = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
           if (currentBracket.eventIcon) {
             if (currentBracket.eventIcon.startsWith('img/') || currentBracket.eventIcon.startsWith('http')) {
               eventIconHtml = `<img src="${currentBracket.eventIcon}" alt="icon" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;" />`;
@@ -374,7 +374,7 @@ export async function openBracketModal(bracketId, viewUserId = null) {
     lockBodyScroll();
   } catch (error) {
     console.error('Ошибка при открытии сетки:', error);
-    await showCustomAlert('Не удалось загрузить сетку', 'Ошибка', '❌');
+    await showCustomAlert('Не удалось загрузить сетку', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -383,7 +383,7 @@ export async function closeBracketModal() {
     const action = await showCustomSaveConfirm(
       'У вас есть несохраненные изменения!\n\nЧто вы хотите сделать?',
       'Несохраненные изменения',
-      '⚠️'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
     );
 
     if (action === 'cancel') return;
@@ -423,17 +423,17 @@ export async function openCreateBracketModal() {
   console.log('openCreateBracketModal вызвана');
 
   if (!state.currentUser) {
-    await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
+    await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>');
     return;
   }
 
   if (!state.currentUser.isAdmin) {
-    await showCustomAlert('Доступ запрещен', 'Ошибка', '🚫');
+    await showCustomAlert('Доступ запрещен', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   if (!state.currentEventId) {
-    await showCustomAlert('Сначала выберите турнир', 'Ошибка', '⚠️');
+    await showCustomAlert('Сначала выберите турнир', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
     return;
   }
 
@@ -461,7 +461,7 @@ export async function openCreateBracketModal() {
   if (stageSelect) stageSelect.value = 'round_of_16';
 
   const modalTitle = modal.querySelector('.modal-header h2');
-  if (modalTitle) modalTitle.textContent = '➕ Создать сетку плей-офф';
+  if (modalTitle) modalTitle.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создать сетку плей-офф';
 
   if (stageSelect) {
     stageSelect.onchange = renderLockDatesFields;
@@ -504,14 +504,14 @@ export async function createBracket() {
   // Проверяем первую дату
   const firstStageInput = document.querySelector(`#lockDate_${startStage}`);
   if (!firstStageInput || !firstStageInput.value) {
-    await showCustomAlert('Укажите дату блокировки для первой колонки', 'Ошибка', '❌');
+    await showCustomAlert('Укажите дату блокировки для первой колонки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   const startDate = firstStageInput.value;
 
   if (!name) {
-    await showCustomAlert('Введите название сетки', 'Ошибка', '❌');
+    await showCustomAlert('Введите название сетки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -547,7 +547,7 @@ export async function createBracket() {
     await showCustomAlert(
       `Сетка успешно ${isEdit ? 'обновлена' : 'создана'}!`,
       'Успех',
-      '✅'
+      '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
     );
 
     if (modal) delete modal.dataset.bracketId;
@@ -556,6 +556,6 @@ export async function createBracket() {
     if (typeof displayMatches === 'function') displayMatches();
   } catch (error) {
     console.error(`Ошибка при ${isEdit ? 'обновлении' : 'создании'} сетки:`, error);
-    await showCustomAlert(error.message, 'Ошибка', '❌');
+    await showCustomAlert(error.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }

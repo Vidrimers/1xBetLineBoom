@@ -60,14 +60,14 @@ async function loadDevicesList() {
             <div class="device-name">
               ${deviceIcon} ${session.device_info || 'Неизвестное устройство'}
               ${isCurrentDevice ? '<span class="device-current-badge">Текущее устройство</span>' : ''}
-              ${isTrusted ? '<span class="device-trusted-badge">✓ Доверенное</span>' : ''}
+              ${isTrusted ? '<span class="device-trusted-badge"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Доверенное</span>' : ''}
             </div>
             <div class="device-details">
-              <div>🌐 Браузер: ${session.browser || 'Неизвестно'}</div>
-              <div>💻 ОС: ${session.os || 'Неизвестно'}</div>
-              <div>🌍 IP: ${session.ip_address || 'Неизвестно'}</div>
-              <div>🕐 Последняя активность: ${lastActivity}</div>
-              <div>📅 Вход: ${createdAt}</div>
+              <div><svg class="icon" aria-hidden="true"><use href="#icon-globe"></use></svg> Браузер: ${session.browser || 'Неизвестно'}</div>
+              <div><svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg> ОС: ${session.os || 'Неизвестно'}</div>
+              <div><svg class="icon" aria-hidden="true"><use href="#icon-world-cup"></use></svg> IP: ${session.ip_address || 'Неизвестно'}</div>
+              <div><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Последняя активность: ${lastActivity}</div>
+              <div><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Вход: ${createdAt}</div>
             </div>
           </div>
           <div class="device-actions">
@@ -76,14 +76,14 @@ async function loadDevicesList() {
               onclick="toggleTrustedDevice('${session.session_token}', ${isTrusted})"
               title="${isTrusted ? 'Убрать из доверенных' : 'Добавить в доверенные'}"
             >
-              ${isTrusted ? '✓ Доверенное' : '🔒 Доверенное'}
+              ${isTrusted ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Доверенное' : '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Доверенное'}
             </button>
             <button 
               class="device-logout-btn" 
               onclick="logoutDevice('${session.session_token}')"
               ${isCurrentDevice ? 'disabled' : ''}
             >
-              ${isCurrentDevice ? '🔒 Текущее' : '❌ Выйти'}
+              ${isCurrentDevice ? '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Текущее' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Выйти'}
             </button>
           </div>
         </div>
@@ -101,15 +101,15 @@ function getDeviceIcon(deviceInfo, os) {
   const device = (deviceInfo || '').toLowerCase();
   const osLower = (os || '').toLowerCase();
 
-  if (device.includes('mobile') || device.includes('phone')) return '📱';
-  if (device.includes('tablet') || device.includes('ipad')) return '📱';
-  if (osLower.includes('android')) return '📱';
-  if (osLower.includes('ios')) return '📱';
-  if (osLower.includes('windows')) return '💻';
-  if (osLower.includes('mac')) return '💻';
-  if (osLower.includes('linux')) return '🐧';
+  if (device.includes('mobile') || device.includes('phone')) return '<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>';
+  if (device.includes('tablet') || device.includes('ipad')) return '<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>';
+  if (osLower.includes('android')) return '<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>';
+  if (osLower.includes('ios')) return '<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>';
+  if (osLower.includes('windows')) return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>';
+  if (osLower.includes('mac')) return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>';
+  if (osLower.includes('linux')) return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>';
 
-  return '🖥️';
+  return '<svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>️';
 }
 
 // ===== УПРАВЛЕНИЕ СЕССИЯМИ =====
@@ -120,14 +120,14 @@ export async function logoutDevice(sessionToken) {
 
   // Проверяем, привязан ли Telegram
   if (!state.currentUser.telegram_username) {
-    await showCustomAlert('Для выхода с устройства необходимо привязать Telegram в настройках', 'Требуется Telegram', '⚠️');
+    await showCustomAlert('Для выхода с устройства необходимо привязать Telegram в настройках', 'Требуется Telegram', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
     return;
   }
 
   const shouldContinue = await showCustomConfirm(
     'Для завершения сеанса на этом устройстве требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения.',
     'Подтверждение выхода',
-    '🔐'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>'
   );
 
   if (!shouldContinue) {
@@ -148,7 +148,7 @@ export async function logoutDevice(sessionToken) {
       const code = await showCustomPrompt(
         'Код подтверждения отправлен вам в Telegram. Введите его ниже:',
         'Введите код',
-        '🔐',
+        '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>',
         '123456'
       );
 
@@ -166,14 +166,14 @@ export async function logoutDevice(sessionToken) {
       if (confirmResponse.ok) {
         await loadDevicesList();
       } else {
-        await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
+        await showCustomAlert(confirmResult.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       }
     } else {
-      await showCustomAlert(result.error, 'Ошибка', '❌');
+      await showCustomAlert(result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("❌ Ошибка при выходе с устройства:", error);
-    await showCustomAlert('Ошибка при выходе с устройства', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при выходе с устройства', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -183,7 +183,7 @@ export async function toggleTrustedDevice(sessionToken, isTrusted) {
 
   // Проверяем, привязан ли Telegram
   if (!state.currentUser.telegram_username) {
-    await showCustomAlert('Для управления доверенными устройствами необходимо привязать Telegram в настройках', 'Требуется Telegram', '⚠️');
+    await showCustomAlert('Для управления доверенными устройствами необходимо привязать Telegram в настройках', 'Требуется Telegram', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
     return;
   }
 
@@ -192,7 +192,7 @@ export async function toggleTrustedDevice(sessionToken, isTrusted) {
   const shouldContinue = await showCustomConfirm(
     `Для того чтобы ${action} это устройство, требуется подтверждение. Вам будет отправлено сообщение в Telegram с кодом подтверждения.`,
     isTrusted ? 'Убрать из доверенных' : 'Добавить в доверенные',
-    isTrusted ? '🔓' : '🔒'
+    isTrusted ? '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>' : '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>'
   );
 
   if (!shouldContinue) {
@@ -214,7 +214,7 @@ export async function toggleTrustedDevice(sessionToken, isTrusted) {
       const code = await showCustomPrompt(
         'Код подтверждения отправлен вам в Telegram. Введите его ниже:',
         'Введите код',
-        '🔐',
+        '<svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg>',
         '123456'
       );
 
@@ -237,16 +237,16 @@ export async function toggleTrustedDevice(sessionToken, isTrusted) {
         await showCustomAlert(
           `Устройство успешно ${isTrusted ? 'убрано из доверенных' : 'добавлено в доверенные'}`,
           'Успешно',
-          '✅'
+          '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
         );
       } else {
-        await showCustomAlert(confirmResult.error, 'Ошибка', '❌');
+        await showCustomAlert(confirmResult.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       }
     } else {
-      await showCustomAlert(result.error, 'Ошибка', '❌');
+      await showCustomAlert(result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error("❌ Ошибка при изменении статуса доверенного устройства:", error);
-    await showCustomAlert('Ошибка при изменении статуса доверенного устройства', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка при изменении статуса доверенного устройства', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }

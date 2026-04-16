@@ -144,7 +144,7 @@ export function loadCounting() {
           font-weight: 500;
           transition: all 0.3s ease;
         " onmouseover="this.style.background='rgba(255, 193, 7, 0.95)'" onmouseout="this.style.background='rgba(255, 193, 7, 0.7)'">
-          🔄 Обновить
+          <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить
         </button>
 
         <button id="countingCalculateBtn" onclick="calculateCountingResults()" style="
@@ -159,7 +159,7 @@ export function loadCounting() {
           transition: all 0.3s ease;
           margin-left: 8px;
         " onmouseover="this.style.background='rgba(76, 175, 80, 0.95)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.7)'">
-          📊 Считать
+          <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Считать
         </button>
       </div>
 
@@ -285,7 +285,7 @@ function displayCountingBets(bets, dateFrom, dateTo) {
     html += `
       <div style="background: rgba(90, 159, 212, .1);; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 3px solid #5a9fd4;">
         <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 12px; font-size: 1em;">
-          👤 ${group.username} — 🏆 ${group.event_name}
+          <svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> ${group.username} — <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> ${group.event_name}
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 5px;">
     `;
@@ -316,7 +316,7 @@ function displayCountingBets(bets, dateFrom, dateTo) {
       if (bet.score_team1 !== null && bet.score_team2 !== null) {
         scorePredictionHtml = `
           <div style="color: #ffa726; font-size: 0.85em; margin-top: 4px; padding: 4px 6px; background: rgba(255, 167, 38, 0.2); border-radius: 4px; border-left: 2px solid #ffa726;">
-            🎯 Прогноз счета: <strong>${bet.score_team1}:${bet.score_team2}</strong>
+            <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Прогноз счета: <strong>${bet.score_team1}:${bet.score_team2}</strong>
           </div>
         `;
       }
@@ -324,7 +324,7 @@ function displayCountingBets(bets, dateFrom, dateTo) {
       html += `
         <div style="background: rgba(58, 123, 213, 0.2); padding: 12px; border-radius: 6px; border-left: 2px solid #4db8a8;">
           <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 8px;">${matchInfo}</div>
-          <div style="color: #fff; font-weight: 500; margin-bottom: 6px;">📌 ${betDisplay}</div>
+          <div style="color: #fff; font-weight: 500; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-attach"></use></svg> ${betDisplay}</div>
           ${scorePredictionHtml}
           <div style="color: #999; font-size: 0.8em; margin-top: 4px;">
             ${formattedMatchDate}
@@ -507,7 +507,7 @@ export async function calculateCountingResults() {
     }
   } catch (error) {
     console.error("Ошибка при подсчете:", error);
-    resultsDiv.innerHTML = `<div class="empty-message">❌ Ошибка: ${error.message}</div>`;
+    resultsDiv.innerHTML = `<div class="empty-message"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ${error.message}</div>`;
   }
 }
 
@@ -745,11 +745,11 @@ function displayCalculationResults(results, originalBets) {
     html += `
       <div style="background: rgba(90, 159, 212, .1); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #5a9fd4;">
         <div style="color: #5a9fd4; font-weight: 600; margin-bottom: 8px; font-size: 1.05em;">
-          👤 ${group.username}
+          <svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> ${group.username}
         </div>
         <div style="display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap;">
-          <span style="color: #4db8a8;">📊 Результаты: ${group.won}/${group.total - group.notFound} (${winRate}%)</span>
-          ${scoreTotal > 0 ? `<span style="color: #ffa726;">🎯 Счет: ${group.scoreWon}/${scoreTotal} (${scoreRate}%)</span>` : ''}
+          <span style="color: #4db8a8;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Результаты: ${group.won}/${group.total - group.notFound} (${winRate}%)</span>
+          ${scoreTotal > 0 ? `<span style="color: #ffa726;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Счет: ${group.scoreWon}/${scoreTotal} (${scoreRate}%)</span>` : ''}
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
     `;
@@ -757,20 +757,20 @@ function displayCalculationResults(results, originalBets) {
     group.bets.forEach((bet) => {
       let backgroundColor = "rgba(58, 123, 213, 0.2)";
       let borderColor = "#4db8a8";
-      let resultText = "❓";
+      let resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>";
 
       if (bet.result === "not_found") {
         backgroundColor = "rgba(255, 152, 0, 0.2)";
         borderColor = "#ff9800";
-        resultText = "⚠️ Матч не найден";
+        resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Матч не найден";
       } else if (bet.isWon) {
         backgroundColor = "rgba(76, 175, 80, 0.2)";
         borderColor = "#4caf50";
-        resultText = "✅ Выигрыш";
+        resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выигрыш";
       } else {
         backgroundColor = "rgba(244, 67, 54, 0.2)";
         borderColor = "#f44336";
-        resultText = "❌ Проигрыш";
+        resultText = "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проигрыш";
       }
 
       const matchInfo = `${bet.team1_name} vs ${bet.team2_name}`;
@@ -794,7 +794,7 @@ function displayCalculationResults(results, originalBets) {
       let scorePredictionHtml = '';
       if (bet.hasScorePrediction) {
         if (bet.result !== "not_found" && bet.actualScore && bet.actualScore.home !== null && bet.actualScore.away !== null) {
-          const scoreIcon = bet.scoreIsWon ? '🎯' : '❌';
+          const scoreIcon = bet.scoreIsWon ? '<svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg>' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>';
           const scoreColor = bet.scoreIsWon ? '#4caf50' : '#f44336';
           const scoreBg = bet.scoreIsWon ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
           scorePredictionHtml = `
@@ -806,7 +806,7 @@ function displayCalculationResults(results, originalBets) {
           // Матч не найден или счет не установлен, но прогноз был
           scorePredictionHtml = `
             <div style="font-size: 0.85em; margin-bottom: 4px; padding: 4px 6px; background: rgba(255, 152, 0, 0.2); border-radius: 4px; border-left: 2px solid #ff9800;">
-              🎯 Прогноз счета: <strong>${bet.score_team1}:${bet.score_team2}</strong>
+              <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Прогноз счета: <strong>${bet.score_team1}:${bet.score_team2}</strong>
             </div>
           `;
         }

@@ -79,7 +79,7 @@ class AIChat {
     chatBtn.id = 'aiChatBtn';
     chatBtn.innerHTML = `
       <span class="ai-chat-ball" style="font-size: 36px; position: relative; display: inline-block;">
-        ⚽
+        <svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>
         <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: bold; color: #667eea; text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;">AI</span>
       </span>
     `;
@@ -91,7 +91,7 @@ class AIChat {
     chatWindow.id = 'aiChatWindow';
     chatWindow.innerHTML = `
       <div class="ai-chat-header">
-        <h3>🤖 AI Помощник <span style="font-size: 10px; background: rgba(255, 255, 255, 0.2); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal;">BETA</span></h3>
+        <h3><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg> AI Помощник <span style="font-size: 10px; background: rgba(255, 255, 255, 0.2); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal;">BETA</span></h3>
         <button class="ai-chat-close" id="aiChatClose">×</button>
       </div>
       <div class="ai-chat-messages" id="aiChatMessages"></div>
@@ -158,7 +158,7 @@ class AIChat {
   }
 
   addWelcomeMessage() {
-    this.addAIMessage('Привет! 👋 Я AI-помощник по ставкам на футбол. Могу помочь с анализом матчей, статистикой команд и поиском выгодных ставок. Что тебя интересует?');
+    this.addAIMessage('Привет! <svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg> Я AI-помощник по ставкам на футбол. Могу помочь с анализом матчей, статистикой команд и поиском выгодных ставок. Что тебя интересует?');
   }
 
   async sendMessage() {
@@ -187,7 +187,7 @@ class AIChat {
       this.addUserMessage(text);
       this.chatInput.value = '';
       setTimeout(() => {
-        this.addAIMessage('Извини, я не отвечаю незнакомым персонажам 🤷‍♂️ Войди в систему, чтобы я мог тебе помочь!');
+        this.addAIMessage('Извини, я не отвечаю незнакомым персонажам <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>‍<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>️ Войди в систему, чтобы я мог тебе помочь!');
       }, 500);
       return;
     }

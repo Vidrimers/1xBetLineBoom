@@ -143,7 +143,7 @@ export function showScoreAlert(message) {
   alert.className = 'score-alert';
   alert.innerHTML = `
     <div class="score-alert-content">
-      <div class="score-alert-icon">⚠️</div>
+      <div class="score-alert-icon"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️</div>
       <div class="score-alert-message">${message}</div>
       <button class="score-alert-button" onclick="closeScoreAlert()">Понятно</button>
     </div>
@@ -426,7 +426,7 @@ export function unlockFinalParameter(matchId, parameterType) {
     if (span && span.style.borderRadius === "24px") {
       span.style.opacity = "1";
       span.style.cursor = "pointer";
-      span.style.pointerEvents = "auto"; // 🔓 Восстанавливаем возможность клика
+      span.style.pointerEvents = "auto"; // <svg class="icon" aria-hidden="true"><use href="#icon-login"></use></svg> Восстанавливаем возможность клика
     }
   });
 
@@ -438,7 +438,7 @@ export function unlockFinalParameter(matchId, parameterType) {
     checkbox.disabled = false;
   });
 
-  // Показываем кнопку "✓"
+  // Показываем кнопку "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
   const button = paramMainContainer.querySelector("button");
   if (button) {
     button.style.display = "inline-block";
@@ -493,7 +493,7 @@ export function lockFinalParameter(matchId, parameterType) {
     if (span && span.style.borderRadius === "24px") {
       span.style.opacity = "0.6";
       span.style.cursor = "not-allowed";
-      span.style.pointerEvents = "none"; // 🔒 Делаем элемент неклабиваемым
+      span.style.pointerEvents = "none"; // <svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Делаем элемент неклабиваемым
     }
   });
 
@@ -505,7 +505,7 @@ export function lockFinalParameter(matchId, parameterType) {
     checkbox.disabled = true;
   });
 
-  // Скрываем кнопку "✓"
+  // Скрываем кнопку "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
   const button = paramMainContainer.querySelector("button");
   if (button) {
     button.style.display = "none";
@@ -567,7 +567,7 @@ export async function placeFinalBet(matchId, parameterType) {
     // Проверяем, что toggle не в нейтральном состоянии
     const toggleState = checkbox.getAttribute("data-toggle-state");
     if (toggleState === "neutral") {
-      alert("⚠️ Пожалуйста, выберите значение: ДА или НЕТ");
+      alert("<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Пожалуйста, выберите значение: ДА или НЕТ");
       return;
     }
 
@@ -613,7 +613,7 @@ export async function placeFinalBet(matchId, parameterType) {
 
     // Создаём новую ставку на финальный параметр
     console.log(
-      `💾 Отправляю ставку: matchId=${matchId}, parameter=${parameterType}, value=${betValue}`
+      `<svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Отправляю ставку: matchId=${matchId}, parameter=${parameterType}, value=${betValue}`
     );
     const response = await fetch("/api/bets", {
       method: "POST",
@@ -695,7 +695,7 @@ export async function loadMyBets() {
     const response = await fetch(`/api/user/${state.currentUser.id}/bets`);
     const bets = await response.json();
     console.log(
-      `📥 Загружено ${bets.length} ставок для пользователя ${state.currentUser.id}`
+      `<svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Загружено ${bets.length} ставок для пользователя ${state.currentUser.id}`
     );
     setUserBets(bets); // Сохраняем в глобальную переменную
 
@@ -772,7 +772,7 @@ export function displayMyBets(bets) {
     // Проверяем, отменён ли матч
     if (['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(bet.match_status)) {
       statusClass = "cancelled";
-      statusText = "⚠️ Отмена";
+      statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Отмена";
       isCancelled = true;
     } else {
         // Если это финальная ставка на параметр матча (желтые карты, красные карты и т.д.)
@@ -842,10 +842,10 @@ export function displayMyBets(bets) {
 
             if (isWon) {
               statusClass = "won";
-              statusText = "✅ Выиграла";
+              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграла";
             } else {
               statusClass = "lost";
-              statusText = "❌ Проиграла";
+              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграла";
             }
           }
         } else if (!bet.is_final_bet) {
@@ -892,10 +892,10 @@ export function displayMyBets(bets) {
 
             if (winnerPrediction === normalizedPrediction) {
               statusClass = "won";
-              statusText = "✅ Выиграла";
+              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграла";
             } else {
               statusClass = "lost";
-              statusText = "❌ Проиграла";
+              statusText = "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграла";
             }
           }
         }
@@ -904,7 +904,7 @@ export function displayMyBets(bets) {
         // Показываем кнопку удаления: админу/модератору всегда, остальным только для матчей со статусом "pending"
         const canDelete = (typeof canManageMatches === 'function' && canManageMatches()) || bet.match_status === "pending";
         const deleteBtn = canDelete
-          ? `<button class="bet-delete-btn" onclick="deleteBet(${bet.id})">✕</button>`
+          ? `<button class="bet-delete-btn" onclick="deleteBet(${bet.id})"><svg class="icon" aria-label="Неправильно"><use href="#icon-wrong"></use></svg></button>`
           : "";
 
         return {
@@ -1185,7 +1185,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
         ${
           bet.score_team1 != null && bet.score_team2 != null
             ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
-                📊 Счет: <span style="${
+                <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Счет: <span style="${
                   bet.actual_score_team1 != null && bet.actual_score_team2 != null && bet.match_status === 'finished'
                     ? bet.score_team1 === bet.actual_score_team1 && bet.score_team2 === bet.actual_score_team2
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
@@ -1209,7 +1209,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
         ${
           bet.yellow_cards != null
             ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
-                🟨 Желтые: <span style="${
+                <svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Желтые: <span style="${
                   bet.actual_yellow_cards != null && bet.match_status === 'finished'
                     ? bet.yellow_cards === bet.actual_yellow_cards
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
@@ -1233,7 +1233,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
         ${
           bet.red_cards != null
             ? `<div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 5px;">
-                🟥 Красные: <span style="${
+                <svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные: <span style="${
                   bet.actual_red_cards != null && bet.match_status === 'finished'
                     ? bet.red_cards === bet.actual_red_cards
                       ? 'border: 1px solid #4caf50; padding: 2px 5px; border-radius: 3px;'
@@ -1255,7 +1255,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
             : ""
         }
         <div class="bet-round" style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
-            ${bet.is_final ? "🏆 ФИНАЛ" : bet.round ? `${bet.round}` : ""}
+            ${bet.is_final ? "<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> ФИНАЛ" : bet.round ? `${bet.round}` : ""}
         </div>
         ${deleteBtn}
     </div>
@@ -1403,7 +1403,7 @@ export async function deleteBet(betId) {
       unlockFinalParameter(matchId, parameterType);
     }
 
-    // 🔄 Полностью перезагружаем список ставок с БД
+    // <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Полностью перезагружаем список ставок с БД
     // loadMyBets уже вызывает displayMatches внутри, поэтому не нужно вызывать его отдельно
     await loadMyBets();
   } catch (error) {

@@ -93,16 +93,16 @@ export async function loadNewsForSite() {
     const news = data.news;
 
     if (!news || news.length === 0) {
-      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📢 Новостей пока нет</div>';
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Новостей пока нет</div>';
       return;
     }
 
     // Эмодзи для типов новостей
     const typeEmojis = {
-      'tournament': '🏆',
-      'system': '⚙️',
-      'achievement': '🏅',
-      'announcement': '📣'
+      'tournament': '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>',
+      'system': '<svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️',
+      'achievement': '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg>',
+      'announcement': '<svg class="icon" aria-hidden="true"><use href="#icon-announcements"></use></svg>'
     };
 
     const typeNames = {
@@ -140,7 +140,7 @@ export async function loadNewsForSite() {
         minute: "2-digit"
       });
 
-      const emoji = typeEmojis[item.type] || '📰';
+      const emoji = typeEmojis[item.type] || '<svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg>';
       const typeName = typeNames[item.type] || item.type;
       const bgColor = typeColors[item.type] || 'rgba(255, 255, 255, 0.05)';
       const borderColor = typeBorderColors[item.type] || 'rgba(255, 255, 255, 0.1)';
@@ -165,7 +165,7 @@ export async function loadNewsForSite() {
                 color: #b0b8c8;
               ">${typeName}</span>
             </div>
-            <span style="color: #7a8394; font-size: 0.9em;">📅 ${formattedDate}</span>
+            <span style="color: #7a8394; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> ${formattedDate}</span>
           </div>
 
           <h3 style="
@@ -188,7 +188,7 @@ export async function loadNewsForSite() {
     container.innerHTML = html;
   } catch (error) {
     console.error("Ошибка загрузки новостей:", error);
-    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки новостей</div>';
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка загрузки новостей</div>';
   }
 }
 
@@ -261,17 +261,17 @@ export async function loadNewsList(reset = false) {
     newsOffset += news.length;
 
     if (reset && (!news || news.length === 0)) {
-      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📢 Новостей пока нет</div>';
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Новостей пока нет</div>';
       document.getElementById("loadMoreNewsContainer").style.display = "none";
       return;
     }
 
     // Эмодзи для типов новостей
     const typeEmojis = {
-      'tournament': '🏆',
-      'system': '⚙️',
-      'achievement': '🏅',
-      'announcement': '📣'
+      'tournament': '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>',
+      'system': '<svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️',
+      'achievement': '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg>',
+      'announcement': '<svg class="icon" aria-hidden="true"><use href="#icon-announcements"></use></svg>'
     };
 
     const typeNames = {
@@ -309,7 +309,7 @@ export async function loadNewsList(reset = false) {
         minute: "2-digit"
       });
 
-      const emoji = typeEmojis[item.type] || '📰';
+      const emoji = typeEmojis[item.type] || '<svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg>';
       const typeName = typeNames[item.type] || item.type;
       const bgColor = typeColors[item.type] || 'rgba(255, 255, 255, 0.05)';
       const borderColor = typeBorderColors[item.type] || 'rgba(255, 255, 255, 0.1)';
@@ -335,7 +335,7 @@ export async function loadNewsList(reset = false) {
                 color: #b0b8c8;
               ">${typeName}</span>
             </div>
-            <span style="color: #7a8394; font-size: 0.9em;">📅 ${formattedDate}</span>
+            <span style="color: #7a8394; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> ${formattedDate}</span>
           </div>
 
           <h3 style="
@@ -361,7 +361,7 @@ export async function loadNewsList(reset = false) {
               data-news-id="${item.id}"
               data-reaction="like"
             >
-              👍 <span class="like-count">${item.likes || 0}</span>
+              <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> <span class="like-count">${item.likes || 0}</span>
             </button>
             <button
               class="news-reaction-btn dislike ${item.user_reaction === 'dislike' ? 'active' : ''}"
@@ -371,7 +371,7 @@ export async function loadNewsList(reset = false) {
               data-news-id="${item.id}"
               data-reaction="dislike"
             >
-              👎 <span class="dislike-count">${item.dislikes || 0}</span>
+              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> <span class="dislike-count">${item.dislikes || 0}</span>
             </button>
           </div>
         </div>
@@ -386,7 +386,7 @@ export async function loadNewsList(reset = false) {
       loadMoreContainer.style.display = "block";
       const loadMoreBtn = document.getElementById("loadMoreNewsBtn");
       if (loadMoreBtn) {
-        loadMoreBtn.innerHTML = '📜 Еще ранее';
+        loadMoreBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#icon-earlier"></use></svg> Еще ранее';
         loadMoreBtn.disabled = false;
       }
     } else {
@@ -396,11 +396,11 @@ export async function loadNewsList(reset = false) {
   } catch (error) {
     console.error("❌ Ошибка загрузки новостей:", error);
     if (reset) {
-      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Ошибка загрузки новостей</div>';
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка загрузки новостей</div>';
     } else {
       const loadMoreBtn = document.getElementById("loadMoreNewsBtn");
       if (loadMoreBtn) {
-        loadMoreBtn.innerHTML = '❌ Ошибка';
+        loadMoreBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка';
         loadMoreBtn.disabled = false;
       }
     }
@@ -588,14 +588,14 @@ export function hideReactionTooltip() {
 // Удалить новость (только админ)
 export async function deleteNews(newsId) {
   if (!currentUser) {
-    await showCustomAlert("Сначала войдите в аккаунт", "Ошибка", "❌");
+    await showCustomAlert("Сначала войдите в аккаунт", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
   const confirmed = await showCustomConfirm(
     "Вы уверены, что хотите удалить эту новость?",
     "Удаление новости",
-    "🗑️"
+    "<svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️"
   );
 
   if (!confirmed) {
@@ -629,17 +629,17 @@ export async function deleteNews(newsId) {
         // Проверяем остались ли новости
         const container = document.getElementById("newsListContainer");
         if (container && container.children.length === 0) {
-          container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;">📢 Новостей пока нет</div>';
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b8c8;"><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Новостей пока нет</div>';
           document.getElementById("loadMoreNewsContainer").style.display = "none";
         }
       }, 300);
     }
 
-    await showCustomAlert("Новость успешно удалена", "Успех", "✅");
+    await showCustomAlert("Новость успешно удалена", "Успех", "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>");
 
   } catch (error) {
     console.error("❌ Ошибка удаления новости:", error);
-    await showCustomAlert(error.message || "Ошибка удаления новости", "Ошибка", "❌");
+    await showCustomAlert(error.message || "Ошибка удаления новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   }
 }
 
@@ -666,17 +666,17 @@ export async function publishNews() {
 
   // Валидация
   if (!selectedNewsType) {
-    await showCustomAlert("Выберите тип новости", "Ошибка", "⚠️");
+    await showCustomAlert("Выберите тип новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
     return;
   }
 
   if (!title) {
-    await showCustomAlert("Введите заголовок новости", "Ошибка", "⚠️");
+    await showCustomAlert("Введите заголовок новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
     return;
   }
 
   if (!message) {
-    await showCustomAlert("Введите текст новости", "Ошибка", "⚠️");
+    await showCustomAlert("Введите текст новости", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
     return;
   }
 
@@ -700,7 +700,7 @@ export async function publishNews() {
     await showCustomAlert(
       `Новость успешно опубликована!\n\nТип: ${selectedNewsType}\nЗаголовок: ${title}`,
       "Успех",
-      "✅"
+      "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
     );
 
     closeNewsModal();
@@ -709,7 +709,7 @@ export async function publishNews() {
     await showCustomAlert(
       `Не удалось опубликовать новость:\n${error.message}`,
       "Ошибка",
-      "❌"
+      "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>"
     );
   }
 }

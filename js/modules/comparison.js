@@ -6,7 +6,7 @@ import { showCustomAlert } from './ui.js';
 // Открыть модальное окно сравнения участников
 export async function openComparisonModal() {
   if (!state.currentEventId) {
-    await showCustomAlert('Ошибка: турнир не выбран', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка: турнир не выбран', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -44,7 +44,7 @@ export async function openComparisonModal() {
       width: 90%;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">⚖️ Сравнение участников</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ Сравнение участников</h3>
       
       <div style="margin-bottom: 20px;">
         <label style="display: block; color: #e0e6f0; margin-bottom: 8px;">Первый участник:</label>
@@ -133,12 +133,12 @@ export async function showComparison() {
   const user2Id = document.getElementById('compareUser2').value;
 
   if (!user1Id || !user2Id) {
-    await showCustomAlert('Выберите обоих участников', 'Ошибка', '❌');
+    await showCustomAlert('Выберите обоих участников', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   if (user1Id === user2Id) {
-    await showCustomAlert('Выберите разных участников', 'Ошибка', '❌');
+    await showCustomAlert('Выберите разных участников', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -174,7 +174,7 @@ export async function showComparison() {
     displayComparisonModal(bets1, bets2);
   } catch (error) {
     console.error('Ошибка загрузки данных:', error);
-    await showCustomAlert('Ошибка загрузки данных для сравнения', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка загрузки данных для сравнения', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -235,7 +235,7 @@ export function displayComparisonModal(data1, data2) {
         transition: background 0.2s;
       " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
       
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;">⚖️ ${data1.user.username} vs ${data2.user.username}</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ ${data1.user.username} vs ${data2.user.username}</h3>
       
       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <button onclick="switchComparisonTab('bets')" id="comparisonTabBets" style="
@@ -308,7 +308,7 @@ export function generateBetsComparison(data1, data2, selectedRound = 'all') {
 
   // Функция для форматирования прогноза
   const formatPrediction = (prediction, match) => {
-    if (!prediction) return '❌ Нет ставки';
+    if (!prediction) return '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Нет ставки';
     if (prediction === 'team1') return match?.team1_name || 'Команда 1';
     if (prediction === 'team2') return match?.team2_name || 'Команда 2';
     if (prediction === 'draw') return 'Ничья';
@@ -342,13 +342,13 @@ export function generateBetsComparison(data1, data2, selectedRound = 'all') {
     : differences.filter(d => d.round === selectedRound);
 
   if (differences.length === 0) {
-    return '<div style="color: #4caf50; text-align: center; padding: 20px;">✅ Все ставки одинаковые</div>';
+    return '<div style="color: #4caf50; text-align: center; padding: 20px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Все ставки одинаковые</div>';
   }
 
   return `
     <div style="color: #e0e6f0;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-        <h4 style="color: #ff9800; margin: 0;">⚠️ Различия в ставках (${filteredDifferences.length})</h4>
+        <h4 style="color: #ff9800; margin: 0;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Различия в ставках (${filteredDifferences.length})</h4>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
           <button onclick="filterComparisonByRound('all')" style="
             background: ${selectedRound === 'all' ? '#2196f3' : '#607d8b'};
@@ -391,14 +391,14 @@ export function generateBetsComparison(data1, data2, selectedRound = 'all') {
               <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data1.user.username}</div>
               <div>${formatPrediction(diff.bet1?.prediction, diff.match)}</div>
               ${diff.bet1 ? `<div style="color: ${diff.bet1.is_won ? '#4caf50' : diff.bet1.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
-                ${diff.bet1.is_won ? '✅ Выиграл' : diff.bet1.is_lost ? '❌ Проиграл' : '⏳ Ожидание'}
+                ${diff.bet1.is_won ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграл' : diff.bet1.is_lost ? '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграл' : '⏳ Ожидание'}
               </div>` : ''}
             </div>
             <div style="background: #1e2a3a; padding: 10px; border-radius: 6px;">
               <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data2.user.username}</div>
               <div>${formatPrediction(diff.bet2?.prediction, diff.match)}</div>
               ${diff.bet2 ? `<div style="color: ${diff.bet2.is_won ? '#4caf50' : diff.bet2.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
-                ${diff.bet2.is_won ? '✅ Выиграл' : diff.bet2.is_lost ? '❌ Проиграл' : '⏳ Ожидание'}
+                ${diff.bet2.is_won ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграл' : diff.bet2.is_lost ? '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграл' : '⏳ Ожидание'}
               </div>` : ''}
             </div>
           </div>
@@ -428,7 +428,7 @@ export function generateStatsComparison(data1, data2) {
 
   return `
     <div style="color: #e0e6f0;">
-      <h4 style="color: #5a9fd4; margin-bottom: 15px;">📊 Статистика турнира</h4>
+      <h4 style="color: #5a9fd4; margin-bottom: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика турнира</h4>
       <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
         ${stats.map(stat => {
           const val1 = data1.stats[stat.key] || 0;
@@ -527,7 +527,7 @@ export async function openGlobalComparisonModal() {
       width: 90%;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;">⚖️ Сравнение участников</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ Сравнение участников</h3>
       
       <div style="margin-bottom: 20px;">
         <label style="display: block; color: #e0e6f0; margin-bottom: 8px;">Первый участник:</label>
@@ -616,12 +616,12 @@ export async function showGlobalComparison() {
   const user2Id = document.getElementById('globalCompareUser2').value;
 
   if (!user1Id || !user2Id) {
-    await showCustomAlert('Выберите обоих участников', 'Ошибка', '❌');
+    await showCustomAlert('Выберите обоих участников', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
   if (user1Id === user2Id) {
-    await showCustomAlert('Выберите разных участников', 'Ошибка', '❌');
+    await showCustomAlert('Выберите разных участников', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -657,7 +657,7 @@ export async function showGlobalComparison() {
     displayGlobalComparisonModal(stats1, stats2);
   } catch (error) {
     console.error('Ошибка загрузки данных:', error);
-    await showCustomAlert('Ошибка загрузки данных для сравнения', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка загрузки данных для сравнения', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -731,10 +731,10 @@ export function displayGlobalComparisonModal(data1, data2) {
         transition: background 0.2s;
       " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">×</button>
       
-      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;">⚖️ ${data1.user.username} vs ${data2.user.username}</h3>
+      <h3 style="margin: 0 0 20px 0; color: #5a9fd4; padding-right: 30px;"><svg class="icon" aria-hidden="true"><use href="#icon-compare"></use></svg>️ ${data1.user.username} vs ${data2.user.username}</h3>
       
       <div style="color: #e0e6f0;">
-        <h4 style="color: #5a9fd4; margin-bottom: 15px;">📊 Статистика профиля</h4>
+        <h4 style="color: #5a9fd4; margin-bottom: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика профиля</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
           ${stats.map(stat => {
             const val1 = data1.stats[stat.key] || 0;
@@ -795,7 +795,7 @@ export function displayGlobalComparisonModal(data1, data2) {
         </div>
         
         ${data1.awards.length > 0 || data2.awards.length > 0 ? `
-          <h4 style="color: #5a9fd4; margin: 20px 0 15px 0;">🏆 Награды</h4>
+          <h4 style="color: #5a9fd4; margin: 20px 0 15px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Награды</h4>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
               <div style="color: #5a9fd4; font-weight: bold; margin-bottom: 10px;">${data1.user.username}</div>
@@ -810,8 +810,8 @@ export function displayGlobalComparisonModal(data1, data2) {
                   gap: 10px;
                 ">
                   ${award.event_icon ? (award.event_icon.startsWith('img/') || award.event_icon.startsWith('/img/') ?
-                    `<img src="${award.event_icon.startsWith('/') ? award.event_icon : '/' + award.event_icon}" style="width: 30px; height: 30px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none; font-size: 1.5em;">🏆</span>` :
-                    `<span style="font-size: 1.5em;">${award.event_icon}</span>`) : '🏆'}
+                    `<img src="${award.event_icon.startsWith('/') ? award.event_icon : '/' + award.event_icon}" style="width: 30px; height: 30px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none; font-size: 1.5em;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg></span>` :
+                    `<span style="font-size: 1.5em;">${award.event_icon}</span>`) : '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>'}
                   <div style="flex: 1;">
                     <div style="font-weight: bold; font-size: 0.9em;">${award.event_name}</div>
                     <div style="color: #999; font-size: 0.85em;">${award.won_bets} очков</div>
@@ -832,8 +832,8 @@ export function displayGlobalComparisonModal(data1, data2) {
                   gap: 10px;
                 ">
                   ${award.event_icon ? (award.event_icon.startsWith('img/') || award.event_icon.startsWith('/img/') ?
-                    `<img src="${award.event_icon.startsWith('/') ? award.event_icon : '/' + award.event_icon}" style="width: 30px; height: 30px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none; font-size: 1.5em;">🏆</span>` :
-                    `<span style="font-size: 1.5em;">${award.event_icon}</span>`) : '🏆'}
+                    `<img src="${award.event_icon.startsWith('/') ? award.event_icon : '/' + award.event_icon}" style="width: 30px; height: 30px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none; font-size: 1.5em;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg></span>` :
+                    `<span style="font-size: 1.5em;">${award.event_icon}</span>`) : '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>'}
                   <div style="flex: 1;">
                     <div style="font-weight: bold; font-size: 0.9em;">${award.event_name}</div>
                     <div style="color: #999; font-size: 0.85em;">${award.won_bets} очков</div>

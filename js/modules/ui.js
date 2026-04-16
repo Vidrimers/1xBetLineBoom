@@ -1,6 +1,6 @@
 // Кастомные модальные окна
 
-export function showCustomAlert(message, title = "Уведомление", icon = "ℹ️") {
+export function showCustomAlert(message, title = "Уведомление", icon = '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>') {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
@@ -38,7 +38,7 @@ export function showCustomAlert(message, title = "Уведомление", icon 
   });
 }
 
-export function showCustomConfirm(message, title = "Подтверждение", icon = "❓") {
+export function showCustomConfirm(message, title = "Подтверждение", icon = '<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>') {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
@@ -73,7 +73,7 @@ export function showCustomConfirm(message, title = "Подтверждение",
   });
 }
 
-export function showCustomSaveConfirm(message, title = "Несохраненные изменения", icon = "⚠️") {
+export function showCustomSaveConfirm(message, title = "Несохраненные изменения", icon = '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>') {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
@@ -109,7 +109,7 @@ export function showCustomSaveConfirm(message, title = "Несохраненны
   });
 }
 
-export function showCustomPrompt(message, title = "Ввод данных", icon = "✏️", placeholder = "") {
+export function showCustomPrompt(message, title = "Ввод данных", icon = "<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#icon-edit\"></use></svg>", placeholder = "") {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
@@ -248,22 +248,22 @@ export function showSaveStatus(elementId, status) {
   
   switch (status) {
     case 'saving':
-      element.innerHTML = '<div style="color: #ff9800; font-size: 12px;">⏳ Сохранение...</div>';
+      element.innerHTML = '<div style="color: #ff9800; font-size: 12px;"><svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> Сохранение...</div>';
       break;
     case 'saved':
-      element.innerHTML = '<div style="color: #4caf50; font-size: 12px;">✅ Сохранено</div>';
+      element.innerHTML = '<div style="color: #4caf50; font-size: 12px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Сохранено</div>';
       setTimeout(() => {
         element.style.display = 'none';
       }, 2000);
       break;
     case 'disabled':
-      element.innerHTML = '<div style="color: #999; font-size: 12px;">❌ Отключено</div>';
+      element.innerHTML = '<div style="color: #999; font-size: 12px;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отключено</div>';
       setTimeout(() => {
         element.style.display = 'none';
       }, 2000);
       break;
     case 'error':
-      element.innerHTML = '<div style="color: #f44336; font-size: 12px;">❌ Ошибка</div>';
+      element.innerHTML = '<div style="color: #f44336; font-size: 12px;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка</div>';
       setTimeout(() => {
         element.style.display = 'none';
       }, 3000);

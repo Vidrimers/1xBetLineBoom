@@ -39,16 +39,16 @@ export async function toggleAutoCounting() {
 
       await showCustomAlert(
         data.message,
-        newStatus ? '✅ Включено' : '⏸️ Выключено',
-        newStatus ? '✅' : '⏸️'
+        newStatus ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Включено' : '⏸️ Выключено',
+        newStatus ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>' : '⏸️'
       );
     } else {
       const error = await response.json();
-      await showCustomAlert(error.error || 'Ошибка переключения', 'Ошибка', '❌');
+      await showCustomAlert(error.error || 'Ошибка переключения', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('Ошибка переключения автоподсчета:', error);
-    await showCustomAlert('Ошибка переключения автоподсчета', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка переключения автоподсчета', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

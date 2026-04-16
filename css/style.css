@@ -1174,10 +1174,6 @@ button:active {
   opacity: 1;
 }
 
-/* .bet-btn.selected::after {
-  content: " ✓";
-} */
-
 .my-bets-list {
   display: flex;
   flex-direction: column;
@@ -1876,7 +1872,7 @@ button.tab-btn:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext x=%2250%22 y=%2250%22 font-size=%2280%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 opacity=%220.03%22%3E🏆%3C/text%3E%3C/svg%3E");
+  background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 opacity=%220.03%22%3E%3Cpath d=%22M6 9H4a2 2 0 0 1-2-2V5h4%22/%3E%3Cpath d=%22M18 9h2a2 2 0 0 0 2-2V5h-4%22/%3E%3Cpath d=%22M6 2h12v7a6 6 0 0 1-12 0V2z%22/%3E%3Cline x1=%2212%22 y1=%2215%22 x2=%2212%22 y2=%2219%22/%3E%3Cline x1=%228%22 y1=%2222%22 x2=%2216%22 y2=%2222%22/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 150%;
@@ -4881,13 +4877,17 @@ body.login-modal-open {
 
 /* Оверлей для гостевого режима на карточках матчей */
 .guest-mode .match-card .bet-buttons::before {
-  content: '🔒 Войдите для ставок';
+  content: 'Войдите для ставок';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: rgba(26, 32, 44, 0.9);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%225%22 y=%2211%22 width=%2214%22 height=%2210%22 rx=%222%22/%3E%3Cpath d=%22M8 11V7a4 4 0 0 1 8 0v4%22/%3E%3Ccircle cx=%2212%22 cy=%2216%22 r=%221%22 fill=%22currentColor%22 stroke=%22none%22/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center left 10px;
+  background-size: 16px 16px;
   display: flex;
   align-items: center;
   justify-content: center;

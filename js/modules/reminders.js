@@ -12,7 +12,7 @@ export async function showMatchRemindersModal(event) {
   // Проверяем авторизацию
   if (!currentUser) {
     if (typeof showCustomAlert === 'function') {
-      showCustomAlert('Войдите в систему чтобы настроить напоминания', 'Требуется авторизация', '🔒');
+      showCustomAlert('Войдите в систему чтобы настроить напоминания', 'Требуется авторизация', '<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>');
     }
     return;
   }
@@ -20,7 +20,7 @@ export async function showMatchRemindersModal(event) {
   // Проверяем выбран ли турнир
   if (!currentEventId) {
     if (typeof showCustomAlert === 'function') {
-      showCustomAlert('Выберите турнир чтобы настроить напоминания', 'Турнир не выбран', '⚠️');
+      showCustomAlert('Выберите турнир чтобы настроить напоминания', 'Турнир не выбран', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
     }
     return;
   }
@@ -121,7 +121,7 @@ export async function saveMatchReminders() {
 
   if (!state.selectedReminderHours) {
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Выберите время напоминания', 'Ошибка', '⚠️');
+      await showCustomAlert('Выберите время напоминания', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
     }
     return;
   }
@@ -132,7 +132,7 @@ export async function saveMatchReminders() {
       await showCustomAlert(
         'Для получения напоминаний необходимо привязать Telegram аккаунт.\n\nПерейдите в настройки профиля и свяжите свой аккаунт с ботом.',
         'Telegram не привязан',
-        '📱'
+        '<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>'
       );
     }
     closeMatchRemindersModal();
@@ -145,7 +145,7 @@ export async function saveMatchReminders() {
       await showCustomAlert(
         'У вас отключено получение личных сообщений от бота.\n\nВключите уведомления в настройках профиля чтобы получать напоминания.',
         'Уведомления отключены',
-        '🔕'
+        '<svg class="icon" aria-hidden="true"><use href="#icon-muted"></use></svg>'
       );
     }
     closeMatchRemindersModal();
@@ -167,7 +167,7 @@ export async function saveMatchReminders() {
         await showCustomAlert(
           `Напоминания настроены! Вы будете получать уведомления за ${state.selectedReminderHours} ${state.selectedReminderHours === 1 ? 'час' : state.selectedReminderHours < 5 ? 'часа' : 'часов'} до начала матчей турнира.`,
           'Успешно',
-          '✅'
+          '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
         );
       }
       closeMatchRemindersModal();
@@ -177,7 +177,7 @@ export async function saveMatchReminders() {
         await showCustomAlert(
           error.error || 'Не удалось сохранить настройки напоминаний',
           'Ошибка',
-          '❌'
+          '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
         );
       }
     }
@@ -187,7 +187,7 @@ export async function saveMatchReminders() {
       await showCustomAlert(
         'Произошла ошибка при сохранении настроек',
         'Ошибка',
-        '❌'
+        '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
       );
     }
   }
@@ -210,7 +210,7 @@ export async function deleteMatchReminders() {
         await showCustomAlert(
           'Напоминания для этого турнира отключены',
           'Успешно',
-          '✅'
+          '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
         );
       }
       closeMatchRemindersModal();
@@ -219,7 +219,7 @@ export async function deleteMatchReminders() {
         await showCustomAlert(
           'Не удалось удалить настройки напоминаний',
           'Ошибка',
-          '❌'
+          '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
         );
       }
     }
@@ -229,7 +229,7 @@ export async function deleteMatchReminders() {
       await showCustomAlert(
         'Произошла ошибка при удалении настроек',
         'Ошибка',
-        '❌'
+        '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
       );
     }
   }

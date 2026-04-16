@@ -76,9 +76,9 @@ export function showGoalNotification(match) {
 
   notification.innerHTML = `
     <div class="goal-notification-header">
-      <span class="goal-notification-icon">⚽</span>
+      <span class="goal-notification-icon"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg></span>
       <span class="goal-notification-title" style="color: ${statusColor};">${statusText}</span>
-      <button onclick="closeGoalNotification(${match.id})" style="margin-left: auto; background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;" title="Закрыть">✕</button>
+      <button onclick="closeGoalNotification(${match.id})" style="margin-left: auto; background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;" title="Закрыть"><svg class="icon" aria-label="Неправильно"><use href="#icon-wrong"></use></svg></button>
     </div>
     <div class="goal-notification-teams">
       ${team1Html} - ${team2Html}

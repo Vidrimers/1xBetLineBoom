@@ -129,7 +129,7 @@ function toggleFavoriteMatch(matchId, event) {
     }
   } else {
     if (favorites.length >= 20) {
-      showCustomAlert('Максимум 20 избранных матчей одновременно', 'Ограничение', '⚠️');
+      showCustomAlert('Максимум 20 избранных матчей одновременно', 'Ограничение', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️');
       return;
     }
     favorites.push(matchId);
@@ -196,7 +196,7 @@ function updateFavoriteStars() {
       star.textContent = '⭐';
       star.classList.add('active');
     } else {
-      star.textContent = '☆';
+      star.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-best-result"></use></svg>';
       star.classList.remove('active');
     }
   });

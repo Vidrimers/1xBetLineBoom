@@ -20,7 +20,7 @@ export async function loadAdminPanelConfig() {
     renderAdminPanelAccordion(data.config);
   } catch (error) {
     console.error('❌ Ошибка загрузки конфигурации админ-панели:', error);
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:#f44336;">❌ Ошибка загрузки админ-панели</div>';
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#f44336;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка загрузки админ-панели</div>';
   }
 }
 
@@ -69,8 +69,8 @@ export function renderButton(button) {
   }
 
   let buttonText = button.text;
-  if (button.type === 'toggle' && !buttonText.includes('🔄')) buttonText = buttonText + ' 🔄';
-  else if (button.type === 'external' && !buttonText.includes('🔗')) buttonText = buttonText + ' 🔗';
+  if (button.type === 'toggle' && !buttonText.includes('<svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg>')) buttonText = buttonText + ' <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg>';
+  else if (button.type === 'external' && !buttonText.includes('<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>')) buttonText = buttonText + ' <svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>';
 
   if (button.type === 'external') {
     return `<a href="#" onclick='${button.action}; return false;' style="display:flex;align-items:center;justify-content:center;background:${bgColor};color:${textColor};text-decoration:none;padding:12px 20px;border-radius:8px;font-size:0.95em;transition:all 0.3s ease;border:1px solid ${borderColor};white-space:nowrap;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">${buttonText}</a>`;
@@ -107,7 +107,7 @@ export async function openConfigureCategoriesModal() {
     currentEditingConfig = JSON.parse(JSON.stringify(data.config));
   } catch (error) {
     console.error('❌ Ошибка загрузки конфигурации:', error);
-    await showCustomAlert('Ошибка загрузки конфигурации', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка загрузки конфигурации', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     return;
   }
 
@@ -117,16 +117,16 @@ export async function openConfigureCategoriesModal() {
 
   modal.innerHTML = `
     <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:900px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-      <h3 style="margin:0 0 20px 0;color:#5a9fd4;">⚙️ Настройка категорий админ-панели</h3>
+      <h3 style="margin:0 0 20px 0;color:#5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️ Настройка категорий админ-панели</h3>
       <div style="display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid rgba(255,255,255,0.1);">
-        <button onclick="switchConfigTab('categories')" id="configTab-categories" style="flex:1;padding:5px 15px;background:rgba(90,159,212,0.3);border:none;border-bottom:3px solid #5a9fd4;color:#e0e6f0;cursor:pointer;font-size:0.95em;transition:all 0.3s;">📁 Категории</button>
-        <button onclick="switchConfigTab('buttons')" id="configTab-buttons" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;">🔘 Кнопки</button>
-        <button onclick="switchConfigTab('reset')" id="configTab-reset" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;">🔄 Сброс</button>
+        <button onclick="switchConfigTab('categories')" id="configTab-categories" style="flex:1;padding:5px 15px;background:rgba(90,159,212,0.3);border:none;border-bottom:3px solid #5a9fd4;color:#e0e6f0;cursor:pointer;font-size:0.95em;transition:all 0.3s;"><svg class="icon" aria-label="Иконка"><use href="#icon-backup"></use></svg> Категории</button>
+        <button onclick="switchConfigTab('buttons')" id="configTab-buttons" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;"><svg class="icon" aria-label="Настройки"><use href="#icon-settings"></use></svg> Кнопки</button>
+        <button onclick="switchConfigTab('reset')" id="configTab-reset" style="flex:1;padding:5px 15px;background:transparent;border:none;border-bottom:3px solid transparent;color:#b0b8c8;cursor:pointer;font-size:0.95em;transition:all 0.3s;"><svg class="icon" aria-label="Обновить"><use href="#icon-refresh"></use></svg> Сброс</button>
       </div>
       <div id="configTabContent" style="min-height:300px;margin-bottom:20px;"></div>
       <div style="display:flex;gap:10px;">
-        <button onclick="saveConfigChanges()" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">💾 Сохранить</button>
-        <button onclick="closeConfigureCategoriesModal()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;">❌ Отмена</button>
+        <button onclick="saveConfigChanges()" style="flex:1;background:#4caf50;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-label="Сохранить"><use href="#icon-save"></use></svg> Сохранить</button>
+        <button onclick="closeConfigureCategoriesModal()" style="flex:1;background:#f44336;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:16px;"><svg class="icon" aria-label="Неправильно"><use href="#icon-wrong"></use></svg> Отмена</button>
       </div>
     </div>
   `;
@@ -175,7 +175,7 @@ export function renderCategoriesTab() {
 
   let html = `
     <div style="margin-bottom:15px;">
-      <button onclick="addNewCategory()" style="width:100%;padding:12px;background:rgba(76,175,80,0.7);color:#c8e6c9;border:1px solid #4caf50;border-radius:8px;cursor:pointer;font-size:0.95em;transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">➕ Добавить категорию</button>
+      <button onclick="addNewCategory()" style="width:100%;padding:12px;background:rgba(76,175,80,0.7);color:#c8e6c9;border:1px solid #4caf50;border-radius:8px;cursor:pointer;font-size:0.95em;transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"><svg class="icon" aria-label="Создать"><use href="#icon-create"></use></svg> Добавить категорию</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;">
   `;
@@ -193,7 +193,7 @@ export function renderCategoriesTab() {
           <div style="display:flex;gap:5px;margin-left:10px;">
             ${index > 0 ? '<button onclick="moveCategoryUp(' + index + ')" style="padding:8px 12px;background:rgba(90,159,212,0.7);color:#e0e6f0;border:1px solid #3a7bd5;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Переместить вверх">⬆️</button>' : ''}
             ${index < currentEditingConfig.categories.length - 1 ? '<button onclick="moveCategoryDown(' + index + ')" style="padding:8px 12px;background:rgba(90,159,212,0.7);color:#e0e6f0;border:1px solid #3a7bd5;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Переместить вниз">⬇️</button>' : ''}
-            <button onclick="deleteCategory(${index})" style="padding:8px 12px;background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Удалить категорию">🗑️</button>
+            <button onclick="deleteCategory(${index})" style="padding:8px 12px;background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;border-radius:4px;cursor:pointer;font-size:0.9em;" title="Удалить категорию"><svg class="icon" aria-label="Удалить"><use href="#icon-delete"></use></svg>️</button>
           </div>
         </div>
         <div style="background:rgba(20,25,35,0.5);padding:10px;border-radius:4px;border:1px solid rgba(90,159,212,0.2);">
@@ -218,7 +218,7 @@ export function renderButtonsTab() {
 
   let html = `
     <div style="background:rgba(255,152,0,0.2);border-left:4px solid #ff9800;padding:15px;border-radius:4px;margin-bottom:15px;color:#ffe0b2;font-size:0.9em;">
-      ⚙️ Выберите категорию для каждой кнопки. Кнопки будут отображаться в выбранной категории.
+      <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️ Выберите категорию для каждой кнопки. Кнопки будут отображаться в выбранной категории.
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;">
   `;
@@ -250,12 +250,12 @@ export function renderResetTab() {
   return `
     <div style="text-align:center;padding:40px;">
       <div style="background:rgba(244,67,54,0.2);border:2px solid #f44336;border-radius:12px;padding:30px;margin-bottom:20px;">
-        <div style="font-size:3em;margin-bottom:15px;">⚠️</div>
+        <div style="font-size:3em;margin-bottom:15px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️</div>
         <h4 style="margin:0 0 15px 0;color:#f44336;font-size:1.2em;">Сброс к дефолтным настройкам</h4>
         <p style="color:#ffb3b3;margin:0 0 20px 0;line-height:1.6;">Это действие вернёт конфигурацию админ-панели к исходному состоянию.<br/>Все ваши изменения (категории, порядок кнопок) будут потеряны.</p>
-        <button onclick="resetToDefaultConfig()" style="padding:15px 30px;background:#f44336;color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;font-weight:600;transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🔄 Сбросить к дефолту</button>
+        <button onclick="resetToDefaultConfig()" style="padding:15px 30px;background:#f44336;color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;font-weight:600;transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><svg class="icon" aria-label="Обновить"><use href="#icon-refresh"></use></svg> Сбросить к дефолту</button>
       </div>
-      <div style="color:#b0b8c8;font-size:0.9em;line-height:1.6;"><p style="margin:0;">Дефолтная конфигурация включает 6 категорий:<br/>📊 Система и логи, 👥 Пользователи и модерация,<br/>📝 Контент и новости, ⚙️ Настройки интерфейса,<br/>🔔 Уведомления, 🛠️ Утилиты и инструменты</p></div>
+      <div style="color:#b0b8c8;font-size:0.9em;line-height:1.6;"><p style="margin:0;">Дефолтная конфигурация включает 6 категорий:<br/><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Система и логи, <svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Пользователи и модерация,<br/><svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg> Контент и новости, <svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️ Настройки интерфейса,<br/><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> Уведомления, <svg class="icon" aria-hidden="true"><use href="#icon-tools"></use></svg>️ Утилиты и инструменты</p></div>
     </div>
   `;
 }
@@ -298,7 +298,7 @@ export async function deleteCategory(index) {
   if (buttonCount > 0) {
     const confirmed = await showCustomConfirm(
       'В категории "' + category.name + '" есть ' + buttonCount + ' кнопок.\n\nКуда переместить кнопки?',
-      'Удаление категории', '⚠️'
+      'Удаление категории', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
     );
 
     if (!confirmed) return;
@@ -320,8 +320,8 @@ export function addNewCategory() {
   const newId = 'custom_' + Date.now();
   const newCategory = {
     id: newId,
-    name: '📁 Новая категория',
-    icon: '📁',
+    name: '<svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> Новая категория',
+    icon: '<svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg>',
     collapsed: false,
     buttons: []
   };
@@ -348,7 +348,7 @@ export function moveButtonToCategory(fromCatIndex, btnIndex, toCatIndex) {
 export async function resetToDefaultConfig() {
   const confirmed = await showCustomConfirm(
     'Вы уверены что хотите сбросить конфигурацию к дефолтным настройкам?\n\nВсе ваши изменения будут потеряны.',
-    'Подтверждение сброса', '⚠️'
+    'Подтверждение сброса', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️'
   );
 
   if (!confirmed) return;
@@ -362,12 +362,12 @@ export async function resetToDefaultConfig() {
 
     if (!response.ok) throw new Error('Ошибка сброса конфигурации');
 
-    await showCustomAlert('Конфигурация сброшена к дефолтным настройкам', 'Успешно', '✅');
+    await showCustomAlert('Конфигурация сброшена к дефолтным настройкам', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     closeConfigureCategoriesModal();
     await loadAdminPanelConfig();
   } catch (error) {
     console.error('❌ Ошибка сброса конфигурации:', error);
-    await showCustomAlert('Ошибка сброса конфигурации', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка сброса конфигурации', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 
@@ -384,11 +384,11 @@ export async function saveConfigChanges() {
 
     if (!response.ok) throw new Error('Ошибка сохранения конфигурации');
 
-    await showCustomAlert('Конфигурация успешно сохранена', 'Успешно', '✅');
+    await showCustomAlert('Конфигурация успешно сохранена', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     closeConfigureCategoriesModal();
     await loadAdminPanelConfig();
   } catch (error) {
     console.error('❌ Ошибка сохранения конфигурации:', error);
-    await showCustomAlert('Ошибка сохранения конфигурации', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка сохранения конфигурации', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }

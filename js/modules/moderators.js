@@ -10,7 +10,7 @@ let editingModeratorId = null;
 // Открыть панель управления модераторами
 export async function openModeratorsPanel() {
   if (!isAdmin()) {
-    alert("❌ У вас нет прав для управления модераторами");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> У вас нет прав для управления модераторами");
     return;
   }
 
@@ -46,8 +46,8 @@ export async function loadModeratorsList() {
           <div style="color:#e0e0e0;font-weight:bold;">${mod.username}</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="openEditModeratorModal(${mod.id}, '${mod.username}', ${JSON.stringify(mod.permissions || []).replace(/"/g, '&quot;')})" style="background:rgba(90,159,212,0.7);color:#e0e6f0;border:1px solid #3a7bd5;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.9em;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">✏️ Изменить</button>
-          <button onclick="removeModerator(${mod.id})" style="background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.9em;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">✅️ Удалить</button>
+          <button onclick="openEditModeratorModal(${mod.id}, '${mod.username}', ${JSON.stringify(mod.permissions || []).replace(/"/g, '&quot;')})" style="background:rgba(90,159,212,0.7);color:#e0e6f0;border:1px solid #3a7bd5;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.9em;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><svg class="icon" aria-label="Редактировать"><use href="#icon-edit"></use></svg>️ Изменить</button>
+          <button onclick="removeModerator(${mod.id})" style="background:rgba(244,67,54,0.7);color:#ffb3b3;border:1px solid #f44336;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.9em;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg>️ Удалить</button>
         </div>
       </div>
     `).join('');
@@ -126,7 +126,7 @@ export async function assignModerator() {
   const userId = document.getElementById("userSelectForModerator").value;
 
   if (!userId) {
-    alert("❌ Выберите пользователя");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Выберите пользователя");
     return;
   }
 
@@ -154,7 +154,7 @@ export async function assignModerator() {
   });
 
   if (permissions.length === 0) {
-    alert("❌ Выберите хотя бы одно разрешение");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Выберите хотя бы одно разрешение");
     return;
   }
 
@@ -168,7 +168,7 @@ export async function assignModerator() {
     const data = await response.json();
 
     if (data.success) {
-      alert("✅ Модератор успешно назначен");
+      alert("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Модератор успешно назначен");
 
       document.getElementById("userSelectForModerator").value = "";
       permIds.forEach(id => {
@@ -184,32 +184,32 @@ export async function assignModerator() {
       loadModeratorsList();
       loadUsersList();
     } else {
-      alert('❌ Ошибка: ' + (data.error || "Неизвестная ошибка"));
+      alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ' + (data.error || "Неизвестная ошибка"));
     }
   } catch (error) {
     console.error("Ошибка при назначении модератора:", error);
-    alert('❌ Ошибка при назначении модератора: ' + error.message);
+    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при назначении модератора: ' + error.message);
   }
 }
 
 // Удалить модератора
 export async function removeModerator(moderatorId) {
-  if (!confirm("⚠️ Вы уверены? Модератор будет удален из системы")) return;
+  if (!confirm("<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Вы уверены? Модератор будет удален из системы")) return;
 
   try {
     const response = await fetch('/api/moderators/' + moderatorId, { method: "DELETE" });
     const data = await response.json();
 
     if (data.success) {
-      alert("✅ Модератор удален");
+      alert("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Модератор удален");
       loadModeratorsList();
       loadUsersList();
     } else {
-      alert('❌ Ошибка: ' + (data.error || "Неизвестная ошибка"));
+      alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ' + (data.error || "Неизвестная ошибка"));
     }
   } catch (error) {
     console.error("Ошибка при удалении модератора:", error);
-    alert('❌ Ошибка при удалении модератора: ' + error.message);
+    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при удалении модератора: ' + error.message);
   }
 }
 
@@ -445,7 +445,7 @@ export function toggleEditTournamentsSubPermissions() {
 // Сохранить изменения прав модератора
 export async function saveModeratorPermissions() {
   if (!editingModeratorId) {
-    alert("❌ Ошибка: ID модератора не определен");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ID модератора не определен");
     return;
   }
 
@@ -473,7 +473,7 @@ export async function saveModeratorPermissions() {
   });
 
   if (permissions.length === 0) {
-    alert("❌ Выберите хотя бы одно разрешение");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Выберите хотя бы одно разрешение");
     return;
   }
 
@@ -487,14 +487,14 @@ export async function saveModeratorPermissions() {
     const data = await response.json();
 
     if (data.success) {
-      alert("✅ Права модератора успешно обновлены");
+      alert("<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Права модератора успешно обновлены");
       closeEditModeratorModal();
       loadModeratorsList();
     } else {
-      alert('❌ Ошибка: ' + (data.error || "Неизвестная ошибка"));
+      alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ' + (data.error || "Неизвестная ошибка"));
     }
   } catch (error) {
     console.error("Ошибка при обновлении прав модератора:", error);
-    alert('❌ Ошибка при обновлении прав: ' + error.message);
+    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при обновлении прав: ' + error.message);
   }
 }

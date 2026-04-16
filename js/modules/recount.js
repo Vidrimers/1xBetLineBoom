@@ -26,14 +26,14 @@ export async function sendCountingResults() {
     });
 
     if (response.ok) {
-      await showCustomAlert("Результаты отправлены в группу!", "Успешно", "✅");
+      await showCustomAlert("Результаты отправлены в группу!", "Успешно", "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>");
     } else {
       const error = await response.json();
-      await showCustomAlert(error.error || "Не удалось отправить результаты", "Ошибка", "❌");
+      await showCustomAlert(error.error || "Не удалось отправить результаты", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     }
   } catch (error) {
     console.error("Ошибка отправки результатов:", error);
-    await showCustomAlert("Ошибка при отправке результатов", "Ошибка", "❌");
+    await showCustomAlert("Ошибка при отправке результатов", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   }
 }
 
@@ -148,12 +148,12 @@ export async function confirmRecount() {
   const sendToUsers = document.getElementById('recountSendToUsers').checked;
 
   if (!date) {
-    await showCustomAlert("Выберите дату", "Ошибка", "❌");
+    await showCustomAlert("Выберите дату", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
   if (!round) {
-    await showCustomAlert("Выберите тур", "Ошибка", "❌");
+    await showCustomAlert("Выберите тур", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
@@ -166,8 +166,8 @@ export async function confirmRecount() {
     <p style="margin-bottom: 15px;"><strong>Вы уверены что хотите пересчитать результаты?</strong></p>
     
     <div style="background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 5px; margin-bottom: 15px;">
-      <div style="margin-bottom: 8px;">📅 <strong>Дата:</strong> ${formattedDate}</div>
-      <div>🏆 <strong>Тур:</strong> ${round}</div>
+      <div style="margin-bottom: 8px;"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> <strong>Дата:</strong> ${formattedDate}</div>
+      <div><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> <strong>Тур:</strong> ${round}</div>
     </div>
     
     <p style="margin-bottom: 10px;"><strong>Это действие:</strong></p>
@@ -176,18 +176,18 @@ export async function confirmRecount() {
       <li>Пересчитает их заново</li>`;
 
   if (sendToGroup) {
-    confirmMessage += `\n      <li style="color: rgb(76, 175, 80);">✅ Отправит результаты в группу</li>`;
+    confirmMessage += `\n      <li style="color: rgb(76, 175, 80);"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Отправит результаты в группу</li>`;
   }
 
   if (sendToUsers) {
-    confirmMessage += `\n      <li style="color: rgb(76, 175, 80);">✅ Отправит результаты пользователям в ЛС</li>`;
+    confirmMessage += `\n      <li style="color: rgb(76, 175, 80);"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Отправит результаты пользователям в ЛС</li>`;
   }
 
   confirmMessage += `
     </ul>
   </div>`;
 
-  const confirmed = await showCustomConfirm(confirmMessage, "Подтверждение пересчёта", "⚠️");
+  const confirmed = await showCustomConfirm(confirmMessage, "Подтверждение пересчёта", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
 
   if (!confirmed) {
     return;
@@ -217,7 +217,7 @@ export async function confirmRecount() {
       await showCustomAlert(
         result.message || "Результаты успешно пересчитаны!",
         "Успешно",
-        "✅"
+        "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
       );
 
       // Обновляем данные подсчёта если они отображаются
@@ -230,12 +230,12 @@ export async function confirmRecount() {
       await showCustomAlert(
         error.error || "Не удалось пересчитать результаты",
         "Ошибка",
-        "❌"
+        "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>"
       );
     }
   } catch (error) {
     console.error("Ошибка пересчёта результатов:", error);
-    await showCustomAlert("Ошибка при пересчёте результатов", "Ошибка", "❌");
+    await showCustomAlert("Ошибка при пересчёте результатов", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   }
 }
 

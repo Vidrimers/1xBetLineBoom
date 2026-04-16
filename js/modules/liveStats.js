@@ -90,7 +90,7 @@ export async function showLiveTeamStats(matchData) {
   const content = document.getElementById('liveTeamStatsContent');
 
   modal.style.display = 'flex';
-  title.textContent = `📊 ${matchData.team1} vs ${matchData.team2}`;
+  title.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> ${matchData.team1} vs ${matchData.team2}`;
   content.innerHTML = '<div class="empty-message">⏳ Загрузка статистики...</div>';
 
   if (currentLiveEventId) {
@@ -113,7 +113,7 @@ export async function showLiveTeamStats(matchData) {
         const event = events.find(e => e.id === currentLiveEventId);
         const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
         const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
-        const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : 'Предстоящий';
+        const statusText = isLive ? '<svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> LIVE' : isFinished ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен' : 'Предстоящий';
 
         return fetch('/api/notify-live-action', {
           method: 'POST',
@@ -171,7 +171,7 @@ export function displayBasicStats(matchData) {
 
   const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
   const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
-  const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : 'Предстоящий';
+  const statusText = isLive ? '<svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> LIVE' : isFinished ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен' : 'Предстоящий';
 
   let html = `
     <div style="background: rgba(90, 159, 212, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #5a9fd4;">
@@ -190,7 +190,7 @@ export function displayBasicStats(matchData) {
       </div>
       ${matchData.match_time ? `
         <div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin-top: 10px;">
-          🕐 ${new Date(matchData.match_time).toLocaleString('ru-RU', {
+          <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> ${new Date(matchData.match_time).toLocaleString('ru-RU', {
             day: '2-digit',
             month: 'long',
             hour: '2-digit',
@@ -204,14 +204,14 @@ export function displayBasicStats(matchData) {
   if (!isLive && !isFinished) {
     html += `
       <div class="empty-message">
-        <p>📅 Матч еще не начался</p>
+        <p><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Матч еще не начался</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Статистика появится после начала матча</p>
       </div>
     `;
   } else if (!matchData.id) {
     html += `
       <div class="empty-message">
-        <p>📊 Детальная статистика недоступна</p>
+        <p><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Детальная статистика недоступна</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
           Для этого матча отсутствует связь с SStats API
         </p>
@@ -223,7 +223,7 @@ export function displayBasicStats(matchData) {
   } else {
     html += `
       <div class="empty-message">
-        <p>📊 Детальная статистика</p>
+        <p><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Детальная статистика</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">
           ${isLive ? 'Матч идет в данный момент' : 'Матч завершен'}
         </p>
@@ -263,7 +263,7 @@ export async function displayDetailedStats(details, matchData) {
 
   console.log('📊 Определение статуса:', { isLive, isFinished, hasStarted });
 
-  const statusText = isLive ? '🔴 LIVE' : isFinished ? '✅ Завершен' : '📅 Предстоящий';
+  const statusText = isLive ? '<svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> LIVE' : isFinished ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен' : '<svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Предстоящий';
 
   let html = `
     <div style="background: rgba(90, 159, 212, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #5a9fd4;">
@@ -282,7 +282,7 @@ export async function displayDetailedStats(details, matchData) {
       </div>
       ${game.date ? `
         <div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin-top: 10px;">
-          🕐 ${new Date(game.date).toLocaleString('ru-RU', {
+          <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> ${new Date(game.date).toLocaleString('ru-RU', {
             day: '2-digit',
             month: 'long',
             hour: '2-digit',
@@ -296,7 +296,7 @@ export async function displayDetailedStats(details, matchData) {
   if (!hasStarted) {
     html += `
       <div class="empty-message">
-        <p>📅 Матч еще не начался</p>
+        <p><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Матч еще не начался</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Статистика появится после начала матча</p>
       </div>
     `;
@@ -307,13 +307,13 @@ export async function displayDetailedStats(details, matchData) {
   html += `
     <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid rgba(255, 255, 255, 0.1);">
       <button onclick="switchLiveStatsTab('statistics')" id="liveStatsTab-statistics" style="flex: 1; padding: 10px; background: rgba(90, 159, 212, 0.3); border: none; border-bottom: 3px solid #5a9fd4; color: #e0e6f0; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">
-        📈 Статистика
+        <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика
       </button>
       <button onclick="switchLiveStatsTab('lineups')" id="liveStatsTab-lineups" style="flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 3px solid transparent; color: #b0b8c8; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">
-        👥 Составы
+        <svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Составы
       </button>
       <button onclick="switchLiveStatsTab('events')" id="liveStatsTab-events" style="flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 3px solid transparent; color: #b0b8c8; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">
-        ⚽ События
+        <svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> События
       </button>
     </div>
     <div id="liveStatsTabContent"></div>
@@ -362,7 +362,7 @@ export function renderStatistics(stats) {
   if (!stats) {
     return `
       <div class="empty-message">
-        <p>📊 Статистика пока недоступна</p>
+        <p><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика пока недоступна</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Данные появятся в ходе матча</p>
       </div>
     `;
@@ -417,7 +417,7 @@ export function renderLineups(lineupPlayers, game) {
   if (!lineupPlayers || lineupPlayers.length === 0) {
     return `
       <div class="empty-message">
-        <p>👥 Составы пока недоступны</p>
+        <p><svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Составы пока недоступны</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">Данные появятся перед началом матча</p>
       </div>
     `;
@@ -471,13 +471,19 @@ export function renderEvents(events, game) {
   if (!events || events.length === 0) {
     return `
       <div class="empty-message">
-        <p>⚽ События пока отсутствуют</p>
+        <p><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> События пока отсутствуют</p>
         <p style="font-size: 0.9em; color: #b0b8c8; margin-top: 10px;">События появятся в ходе матча</p>
       </div>
     `;
   }
 
-  const eventIcons = { 1: '⚽', 2: '🟨', 3: '🔄', 4: '🟥' };
+  // Иконки событий матча (гол, карточки, замена)
+  const eventIcons = {
+    1: '<svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>',
+    2: '<svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg>',
+    3: '<svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg>',
+    4: '<svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg>'
+  };
   const eventNames = { 1: 'Гол', 2: 'Желтая карточка', 3: 'Замена', 4: 'Красная карточка' };
 
   const homeEvents = events.filter(e => e.teamId === game.homeTeam.id).sort((a, b) => (a.elapsed || 0) - (b.elapsed || 0));
@@ -490,7 +496,7 @@ export function renderEvents(events, game) {
 
     let html = '';
     teamEvents.forEach(event => {
-      const icon = eventIcons[event.type] || '📌';
+      const icon = eventIcons[event.type] || '<svg class="icon" aria-hidden="true"><use href="#icon-attach"></use></svg>';
       const eventName = eventNames[event.type] || event.name;
       const isGoal = event.type === 1;
       const isYellowCard = event.type === 2;
@@ -728,7 +734,7 @@ export async function savePlayerName(playerName, eventId, eventType, minute, ext
 
     if (!matchId) {
       console.error('❌ ID матча не найден', window.currentLiveStatsData);
-      await showCustomAlert('ID матча не найден. Попробуйте перезагрузить статистику.', 'Ошибка', '❌');
+      await showCustomAlert('ID матча не найден. Попробуйте перезагрузить статистику.', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
 
@@ -755,11 +761,11 @@ export async function savePlayerName(playerName, eventId, eventType, minute, ext
       switchLiveStatsTab('events');
     } else {
       console.error('❌ Ошибка сохранения:', data.error);
-      await showCustomAlert('Ошибка сохранения имени игрока', 'Ошибка', '❌');
+      await showCustomAlert('Ошибка сохранения имени игрока', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
     console.error('❌ Ошибка сохранения имени игрока:', error);
-    await showCustomAlert('Ошибка сохранения имени игрока', 'Ошибка', '❌');
+    await showCustomAlert('Ошибка сохранения имени игрока', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

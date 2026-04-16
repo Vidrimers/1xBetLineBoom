@@ -181,7 +181,7 @@ export function setSelectedBackupIsProtected(val) { selectedBackupIsProtected = 
 // Функция для создания бэкапа базы данных
 export async function backupDatabase() {
   if (!canBackupDB()) {
-    await showCustomAlert("У вас нет прав для создания бэкапа БД", "Ошибка", "❌");
+    await showCustomAlert("У вас нет прав для создания бэкапа БД", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
@@ -209,15 +209,15 @@ export async function backupDatabase() {
         await openDatabaseModal();
       }
     } else {
-      await showCustomAlert(data.error || "Неизвестная ошибка", "Ошибка при создании бэкапа", "❌");
+      await showCustomAlert(data.error || "Неизвестная ошибка", "Ошибка при создании бэкапа", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     }
   } catch (error) {
     console.error("Ошибка при создании бэкапа:", error);
-    await showCustomAlert(error.message, "Ошибка при создании бэкапа БД", "❌");
+    await showCustomAlert(error.message, "Ошибка при создании бэкапа БД", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   } finally {
     const backupBtn = document.querySelector('[onclick="backupDatabase()"]');
     if (backupBtn) {
-      backupBtn.textContent = "➕ Создать бэкап";
+      backupBtn.textContent = "<svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg> Создать бэкап";
       backupBtn.disabled = false;
     }
   }
@@ -226,7 +226,7 @@ export async function backupDatabase() {
 // Открыть модальное окно восстановления БД
 export async function openRestoreDBModal() {
   if (!isAdmin() && !hasModeratorPermission('restore_db')) {
-    alert("❌ У вас нет прав для восстановления БД");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> У вас нет прав для восстановления БД");
     return;
   }
 
@@ -243,9 +243,9 @@ export async function openRestoreDBModal() {
         <div style="padding:15px;margin-bottom:10px;background:rgba(30,34,44,0.6);border:1px solid rgba(90,159,212,0.3);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
           <div>
             <div style="font-weight:bold;color:#5a9fd4;margin-bottom:5px;">${backup.filename}</div>
-            <div style="font-size:0.9em;color:#999;">🕐 ${new Date(backup.created).toLocaleString('ru-RU')} | 📦 ${backup.sizeFormatted}</div>
+            <div style="font-size:0.9em;color:#999;"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> ${new Date(backup.created).toLocaleString('ru-RU')} | <svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> ${backup.sizeFormatted}</div>
           </div>
-          <button onclick="restoreBackup('${backup.filename}')" style="background:rgba(255,152,0,0.7);color:#fff;border:1px solid #ff9800;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.9em;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(255,152,0,1)'" onmouseout="this.style.background='rgba(255,152,0,0.7)'">🔄 Восстановить</button>
+          <button onclick="restoreBackup('${backup.filename}')" style="background:rgba(255,152,0,0.7);color:#fff;border:1px solid #ff9800;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.9em;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(255,152,0,1)'" onmouseout="this.style.background='rgba(255,152,0,0.7)'"><svg class="icon" aria-label="Обновить"><use href="#icon-refresh"></use></svg> Восстановить</button>
         </div>
       `).join('');
     }
@@ -253,7 +253,7 @@ export async function openRestoreDBModal() {
     document.getElementById("restoreDBModal").style.display = "flex";
   } catch (error) {
     console.error("Ошибка при загрузке списка бэкапов:", error);
-    alert("❌ Ошибка при загрузке списка бэкапов");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при загрузке списка бэкапов");
   }
 }
 
@@ -265,7 +265,7 @@ export function closeRestoreDBModal() {
 // Открыть модальное окно управления БД
 export async function openDatabaseModal() {
   if (!canAccessDatabasePanel() && !isAdmin()) {
-    await showCustomAlert("У вас нет прав для управления БД", "Ошибка", "❌");
+    await showCustomAlert("У вас нет прав для управления БД", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
@@ -295,10 +295,10 @@ export async function openDatabaseModal() {
 
     if (backups.length === 0) {
       backupsList.innerHTML = '<div class="empty-message">Нет доступных бэкапов</div>';
-      document.getElementById("backupsListHeader").innerHTML = `<h3 style="color:#5a9fd4;margin:0;">📦 Доступные бэкапы (выберите один):</h3>`;
+      document.getElementById("backupsListHeader").innerHTML = `<h3 style="color:#5a9fd4;margin:0;"><svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> Доступные бэкапы (выберите один):</h3>`;
     } else {
       document.getElementById("backupsListHeader").innerHTML = `
-        <h3 style="color:#5a9fd4;margin:0;">📦 Доступные бэкапы (выберите один):</h3>
+        <h3 style="color:#5a9fd4;margin:0;"><svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> Доступные бэкапы (выберите один):</h3>
         <div style="color:#999;font-size:0.9em;">Всего: <strong style="color:#5a9fd4;">${backups.length}</strong> | Общий размер: <strong style="color:#5a9fd4;">${totalSizeFormatted}</strong></div>
       `;
 
@@ -315,12 +315,12 @@ export async function openDatabaseModal() {
             <div style="flex:1;">
               ${isNew ? '<div style="position:absolute;top:10px;right:10px;background:rgba(76,175,80,0.9);color:#fff;padding:4px 12px;border-radius:12px;font-size:0.75em;font-weight:bold;animation:pulse 2s infinite;">NEW</div>' : ''}
               <div style="font-weight:bold;color:${isNew ? '#4caf50' : '#5a9fd4'};margin-bottom:5px;">${backup.filename}</div>
-              <div style="font-size:0.9em;color:#999;">🕐 ${new Date(backup.created).toLocaleString('ru-RU')} | 📦 ${backup.sizeFormatted}</div>
-              ${backup.createdBy !== 'unknown' ? `<div style="font-size:0.85em;color:#888;margin-top:3px;">👤 ${backup.createdBy}</div>` : ''}
+              <div style="font-size:0.9em;color:#999;"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> ${new Date(backup.created).toLocaleString('ru-RU')} | <svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> ${backup.sizeFormatted}</div>
+              ${backup.createdBy !== 'unknown' ? `<div style="font-size:0.85em;color:#888;margin-top:3px;"><svg class="icon" aria-hidden="true"><use href="#icon-profile"></use></svg> ${backup.createdBy}</div>` : ''}
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;position:relative;">
-              ${isLocked ? '<div style="background:rgba(255,193,7,0.2);color:#ffc107;padding:3px 8px;border-radius:6px;font-size:0.75em;white-space:nowrap;">🔒 Заблокирован</div>' : ''}
-              ${isAdmin() ? `<button class="backup-lock-btn" onclick="event.stopPropagation(); toggleBackupLock('${backup.filename}', ${isLocked})" style="background:${isLocked ? 'rgba(76,175,80,0.7)' : 'transparent'};color:${isLocked ? '#fff' : 'rgb(255,255,255)'};border:${isLocked ? '1px solid #4caf50' : 'medium'};padding:4px 10px;border-radius:6px;cursor:pointer;font-size:${isLocked ? '0.7em' : '0.75em'};transition:${isLocked ? 'all 0.3s ease' : '0.3s'};white-space:nowrap;opacity:0;box-shadow:none;pointer-events:none;position:absolute;right:0;bottom:0;" title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}">${isLocked ? '🔓 Разблокировать' : '🔒'}</button>` : ''}
+              ${isLocked ? '<div style="background:rgba(255,193,7,0.2);color:#ffc107;padding:3px 8px;border-radius:6px;font-size:0.75em;white-space:nowrap;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg> Заблокирован</div>' : ''}
+              ${isAdmin() ? `<button class="backup-lock-btn" onclick="event.stopPropagation(); toggleBackupLock('${backup.filename}', ${isLocked})" style="background:${isLocked ? 'rgba(76,175,80,0.7)' : 'transparent'};color:${isLocked ? '#fff' : 'rgb(255,255,255)'};border:${isLocked ? '1px solid #4caf50' : 'medium'};padding:4px 10px;border-radius:6px;cursor:pointer;font-size:${isLocked ? '0.7em' : '0.75em'};transition:${isLocked ? 'all 0.3s ease' : '0.3s'};white-space:nowrap;opacity:0;box-shadow:none;pointer-events:none;position:absolute;right:0;bottom:0;" title="${isLocked ? 'Разблокировать бэкап' : 'Заблокировать бэкап'}">${isLocked ? '<svg class="icon" aria-label="Вход"><use href="#icon-login"></use></svg> Разблокировать' : '<svg class="icon" aria-label="Иконка"><use href="#icon-hidden"></use></svg>'}</button>` : ''}
             </div>
           </div>
         </div>`;
@@ -335,7 +335,7 @@ export async function openDatabaseModal() {
     }
   } catch (error) {
     console.error("Ошибка при загрузке списка бэкапов:", error);
-    await showCustomAlert("Ошибка при загрузке списка бэкапов", "Ошибка", "❌");
+    await showCustomAlert("Ошибка при загрузке списка бэкапов", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     document.body.style.overflow = '';
   }
 }
@@ -424,13 +424,13 @@ export function updateBackupButtons() {
 // Восстановить выбранный бэкап
 export async function restoreSelectedBackup() {
   if (!selectedBackupFilename) {
-    await showCustomAlert("Выберите бэкап для восстановления", "Ошибка", "❌");
+    await showCustomAlert("Выберите бэкап для восстановления", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
   const confirmed = await showCustomConfirm(
-    'Вы уверены что хотите восстановить БД из бэкапа?\n\n<strong style="color:#5a9fd4;">' + selectedBackupFilename + '</strong>\n\n<div style="color:#ff9800;margin-top:10px;">⚠️ Текущая БД будет заменена. Все текущие данные будут потеряны!</div>\n\n<div style="color:#4caf50;margin-top:10px;">✓ Перед восстановлением будет создан бэкап текущей БД.</div>',
-    "Восстановление БД", "⚠️"
+    'Вы уверены что хотите восстановить БД из бэкапа?\n\n<strong style="color:#5a9fd4;">' + selectedBackupFilename + '</strong>\n\n<div style="color:#ff9800;margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Текущая БД будет заменена. Все текущие данные будут потеряны!</div>\n\n<div style="color:#4caf50;margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Перед восстановлением будет создан бэкап текущей БД.</div>',
+    "Восстановление БД", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️"
   );
 
   if (!confirmed) return;
@@ -446,25 +446,25 @@ export async function restoreSelectedBackup() {
 
     if (data.success) {
       await showCustomAlert(
-        '<div style="margin-bottom:10px;">БД успешно восстановлена!</div><div style="color:#5a9fd4;">📦 Восстановлено из: <strong>' + data.restored_from + '</strong></div><div style="color:#4caf50;margin-top:5px;">📦 Создан бэкап текущей БД: <strong>' + data.backup_created + '</strong></div><div style="color:#ff9800;margin-top:10px;">Страница будет перезагружена...</div>',
-        "Успешно", "✅"
+        '<div style="margin-bottom:10px;">БД успешно восстановлена!</div><div style="color:#5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> Восстановлено из: <strong>' + data.restored_from + '</strong></div><div style="color:#4caf50;margin-top:5px;"><svg class="icon" aria-hidden="true"><use href="#icon-backup"></use></svg> Создан бэкап текущей БД: <strong>' + data.backup_created + '</strong></div><div style="color:#ff9800;margin-top:10px;">Страница будет перезагружена...</div>',
+        "Успешно", "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
       );
       closeDatabaseModal();
       localStorage.clear();
       setTimeout(() => window.location.reload(), 500);
     } else {
-      await showCustomAlert(data.error, "Ошибка при восстановлении БД", "❌");
+      await showCustomAlert(data.error, "Ошибка при восстановлении БД", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     }
   } catch (error) {
     console.error("Ошибка при восстановлении БД:", error);
-    await showCustomAlert(error.message, "Ошибка при восстановлении БД", "❌");
+    await showCustomAlert(error.message, "Ошибка при восстановлении БД", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   }
 }
 
 // Скачать выбранный бэкап
 export function downloadSelectedBackup() {
   if (!selectedBackupFilename) {
-    showCustomAlert("Выберите бэкап для скачивания", "Ошибка", "❌");
+    showCustomAlert("Выберите бэкап для скачивания", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
   window.location.href = '/download-backup/' + selectedBackupFilename + '?username=' + encodeURIComponent(currentUser.username);
@@ -473,14 +473,14 @@ export function downloadSelectedBackup() {
 // Заблокировать/разблокировать бэкап (только для админа)
 export async function toggleBackupLock(filename, currentLockStatus) {
   if (!isAdmin()) {
-    await showCustomAlert("Только админ может блокировать/разблокировать бэкапы", "Ошибка", "❌");
+    await showCustomAlert("Только админ может блокировать/разблокировать бэкапы", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
   const action = currentLockStatus ? 'разблокировать' : 'заблокировать';
   const confirmed = await showCustomConfirm(
-    'Вы уверены что хотите ' + action + ' бэкап?\n\n<strong style="color:#5a9fd4;">' + filename + '</strong>\n\n' + (currentLockStatus ? '<div style="color:#4caf50;margin-top:10px;">После разблокировки бэкап можно будет удалить.</div>' : '<div style="color:#ffc107;margin-top:10px;">⚠️ Заблокированный бэкап нельзя будет удалить до разблокировки.</div>'),
-    currentLockStatus ? "Разблокировка бэкапа" : "Блокировка бэкапа", "🔒"
+    'Вы уверены что хотите ' + action + ' бэкап?\n\n<strong style="color:#5a9fd4;">' + filename + '</strong>\n\n' + (currentLockStatus ? '<div style="color:#4caf50;margin-top:10px;">После разблокировки бэкап можно будет удалить.</div>' : '<div style="color:#ffc107;margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Заблокированный бэкап нельзя будет удалить до разблокировки.</div>'),
+    currentLockStatus ? "Разблокировка бэкапа" : "Блокировка бэкапа", "<svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg>"
   );
 
   if (!confirmed) return;
@@ -497,29 +497,29 @@ export async function toggleBackupLock(filename, currentLockStatus) {
     if (data.success) {
       await openDatabaseModal();
     } else {
-      await showCustomAlert(data.error, "Ошибка при изменении блокировки", "❌");
+      await showCustomAlert(data.error, "Ошибка при изменении блокировки", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     }
   } catch (error) {
     console.error("Ошибка при изменении блокировки бэкапа:", error);
-    await showCustomAlert(error.message, "Ошибка при изменении блокировки бэкапа", "❌");
+    await showCustomAlert(error.message, "Ошибка при изменении блокировки бэкапа", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   }
 }
 
 // Удалить выбранный бэкап
 export async function deleteSelectedBackup() {
   if (!selectedBackupFilename) {
-    await showCustomAlert("Выберите бэкап для удаления", "Ошибка", "❌");
+    await showCustomAlert("Выберите бэкап для удаления", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
   if (!isAdmin() && !hasPermission('delete_backup')) {
-    await showCustomAlert("У вас нет прав для удаления бэкапов", "Ошибка", "❌");
+    await showCustomAlert("У вас нет прав для удаления бэкапов", "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
   const confirmed = await showCustomConfirm(
-    'Вы уверены что хотите удалить бэкап?\n\n<strong style="color:#5a9fd4;">' + selectedBackupFilename + '</strong>\n\n<div style="color:#f44336;margin-top:10px;">⚠️ Это действие нельзя отменить!</div>',
-    "Удаление бэкапа", "🗑️"
+    'Вы уверены что хотите удалить бэкап?\n\n<strong style="color:#5a9fd4;">' + selectedBackupFilename + '</strong>\n\n<div style="color:#f44336;margin-top:10px;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Это действие нельзя отменить!</div>',
+    "Удаление бэкапа", "<svg class="icon" aria-hidden="true"><use href="#icon-delete"></use></svg>️"
   );
 
   if (!confirmed) return;
@@ -537,11 +537,11 @@ export async function deleteSelectedBackup() {
       selectedBackupFilename = null;
       openDatabaseModal();
     } else {
-      await showCustomAlert(data.error, "Ошибка при удалении бэкапа", "❌");
+      await showCustomAlert(data.error, "Ошибка при удалении бэкапа", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     }
   } catch (error) {
     console.error("Ошибка при удалении бэкапа:", error);
-    await showCustomAlert(error.message, "Ошибка при удалении бэкапа", "❌");
+    await showCustomAlert(error.message, "Ошибка при удалении бэкапа", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   }
 }
 
@@ -554,7 +554,7 @@ export async function restoreBackupFromModal(filename) {
 // Восстановить БД из бэкапа (старая функция)
 export async function restoreBackup(filename) {
   const confirmed = confirm(
-    '⚠️ ВНИМАНИЕ!\n\nВы уверены что хотите восстановить БД из бэкапа?\n\n' + filename + '\n\nТекущая БД будет заменена. Все текущие данные будут потеряны!\n\nПеред восстановлением будет создан бэкап текущей БД.'
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ ВНИМАНИЕ!\n\nВы уверены что хотите восстановить БД из бэкапа?\n\n' + filename + '\n\nТекущая БД будет заменена. Все текущие данные будут потеряны!\n\nПеред восстановлением будет создан бэкап текущей БД.'
   );
 
   if (!confirmed) return;
@@ -569,22 +569,22 @@ export async function restoreBackup(filename) {
     const data = await response.json();
 
     if (data.success) {
-      alert('✅ БД успешно восстановлена!\n\nВосстановлено из: ' + data.restored_from + '\nСоздан бэкап текущей БД: ' + data.backup_created + '\n\nСтраница будет перезагружена.');
+      alert('<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> БД успешно восстановлена!\n\nВосстановлено из: ' + data.restored_from + '\nСоздан бэкап текущей БД: ' + data.backup_created + '\n\nСтраница будет перезагружена.');
       closeRestoreDBModal();
       setTimeout(() => window.location.reload(), 1000);
     } else {
-      alert('❌ Ошибка при восстановлении БД: ' + data.error);
+      alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при восстановлении БД: ' + data.error);
     }
   } catch (error) {
     console.error("Ошибка при восстановлении БД:", error);
-    alert('❌ Ошибка при восстановлении БД:\n' + error.message);
+    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при восстановлении БД:\n' + error.message);
   }
 }
 
 // Проверить orphaned данные в БД
 export async function checkOrphanedData() {
   if (!canManageOrphaned()) {
-    await showCustomAlert("У вас нет прав для проверки orphaned данных", "Доступ запрещён", "❌");
+    await showCustomAlert("У вас нет прав для проверки orphaned данных", "Доступ запрещён", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
     return;
   }
 
@@ -602,41 +602,41 @@ export async function checkOrphanedData() {
 
     if (totalCount === 0) {
       await showCustomAlert(
-        '<div style="text-align:center;padding:20px;"><div style="font-size:3em;margin-bottom:15px;">✅</div><div style="font-size:1.2em;color:#4caf50;font-weight:600;margin-bottom:10px;">БД ЧИСТАЯ!</div><div style="color:#b0b8c8;">Orphaned данных не найдено</div></div>',
-        "Проверка завершена", "✅"
+        '<div style="text-align:center;padding:20px;"><div style="font-size:3em;margin-bottom:15px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg></div><div style="font-size:1.2em;color:#4caf50;font-weight:600;margin-bottom:10px;">БД ЧИСТАЯ!</div><div style="color:#b0b8c8;">Orphaned данных не найдено</div></div>',
+        "Проверка завершена", "<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>"
       );
     } else {
       const message =
         '<div style="padding:10px;">' +
-        '<div style="font-size:1.1em;color:#ff9800;font-weight:600;margin-bottom:15px;text-align:center;">⚠️ Найдено ' + totalCount + ' orphaned записей</div>' +
+        '<div style="font-size:1.1em;color:#ff9800;font-weight:600;margin-bottom:15px;text-align:center;"><svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️ Найдено ' + totalCount + ' orphaned записей</div>' +
         '<div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:8px;margin-bottom:15px;">' +
         '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;font-size:0.95em;">' +
-        '<div style="color:#e0e6f0;">⚽ Матчи без события:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.matches + '</div>' +
-        '<div style="color:#e0e6f0;">🎯 Ставки на удалённые матчи:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.bets + '</div>' +
-        '<div style="color:#e0e6f0;">🏆 Финальные ставки:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_bets + '</div>' +
-        '<div style="color:#e0e6f0;">🔔 Напоминания:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.reminders + '</div>' +
-        '<div style="color:#e0e6f0;">🏅 Награды:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.awards + '</div>' +
-        '<div style="color:#e0e6f0;">⚙️ Параметры финала:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_parameters + '</div>' +
+        '<div style="color:#e0e6f0;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Матчи без события:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.matches + '</div>' +
+        '<div style="color:#e0e6f0;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Ставки на удалённые матчи:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.bets + '</div>' +
+        '<div style="color:#e0e6f0;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финальные ставки:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_bets + '</div>' +
+        '<div style="color:#e0e6f0;"><svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> Напоминания:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.reminders + '</div>' +
+        '<div style="color:#e0e6f0;"><svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg> Награды:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.awards + '</div>' +
+        '<div style="color:#e0e6f0;"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️ Параметры финала:</div><div style="color:#f44336;font-weight:600;text-align:right;">' + totalOrphaned.final_parameters + '</div>' +
         '</div></div>' +
         '<div style="color:#b0b8c8;font-size:0.9em;text-align:center;line-height:1.5;">Очистить orphaned данные?<br/><span style="color:#888;">(Это удалит все найденные orphaned данные из БД)</span></div>' +
         '</div>';
 
-      const confirmed = await showCustomConfirm(message, "Очистка orphaned данных", "⚠️");
+      const confirmed = await showCustomConfirm(message, "Очистка orphaned данных", "<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>️");
       if (confirmed) cleanupOrphanedData();
     }
   } catch (error) {
     console.error("Ошибка при проверке orphaned данных:", error);
-    await showCustomAlert('Ошибка при проверке orphaned данных:\n' + error.message, "Ошибка", "❌");
+    await showCustomAlert('Ошибка при проверке orphaned данных:\n' + error.message, "Ошибка", "<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>");
   } finally {
     const btn = document.querySelector('[onclick="checkOrphanedData()"]');
-    if (btn) { btn.textContent = "🔍 Проверить orphaned"; btn.disabled = false; }
+    if (btn) { btn.textContent = "<svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg> Проверить orphaned"; btn.disabled = false; }
   }
 }
 
 // Очистить orphaned данные в БД
 export async function cleanupOrphanedData() {
   if (!canManageOrphaned()) {
-    alert("❌ У вас нет прав для очистки orphaned данных");
+    alert("<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> У вас нет прав для очистки orphaned данных");
     return;
   }
 
@@ -654,21 +654,21 @@ export async function cleanupOrphanedData() {
 
     const data = await response.json();
 
-    let message = '✅ ORPHANED ДАННЫЕ УДАЛЕНЫ:\n\n';
-    message += '⚽️  Матчи: ' + (data.deleted.matches || 0) + '\n';
-    message += '🎯️  Ставки: ' + (data.deleted.bets || 0) + '\n';
-    message += '🏆️  Финальные ставки: ' + (data.deleted.final_bets || 0) + '\n';
-    message += '🔔️  Напоминания: ' + (data.deleted.reminders || 0) + '\n';
-    message += '🏅️  Награды: ' + (data.deleted.awards || 0) + '\n';
-    message += '⚙️️  Параметры финала: ' + (data.deleted.final_parameters || 0) + '\n\n';
+    let message = '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ORPHANED ДАННЫЕ УДАЛЕНЫ:\n\n';
+    message += '<svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>️  Матчи: ' + (data.deleted.matches || 0) + '\n';
+    message += '<svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg>️  Ставки: ' + (data.deleted.bets || 0) + '\n';
+    message += '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>️  Финальные ставки: ' + (data.deleted.final_bets || 0) + '\n';
+    message += '<svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg>️  Напоминания: ' + (data.deleted.reminders || 0) + '\n';
+    message += '<svg class="icon" aria-hidden="true"><use href="#icon-conference"></use></svg>️  Награды: ' + (data.deleted.awards || 0) + '\n';
+    message += '<svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg>️️  Параметры финала: ' + (data.deleted.final_parameters || 0) + '\n\n';
     message += 'БД успешно очищена!';
 
     alert(message);
   } catch (error) {
     console.error("Ошибка при очистке orphaned данных:", error);
-    alert('❌ Ошибка при очистке orphaned данных:\n' + error.message);
+    alert('<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка при очистке orphaned данных:\n' + error.message);
   } finally {
     const btn = document.querySelector('[onclick="checkOrphanedData()"]');
-    if (btn) { btn.textContent = "🔍 Проверить orphaned"; btn.disabled = false; }
+    if (btn) { btn.textContent = "<svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg> Проверить orphaned"; btn.disabled = false; }
   }
 }

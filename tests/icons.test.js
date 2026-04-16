@@ -215,6 +215,163 @@ assert('property-based: stroke-width каждого symbol в допустимо
   );
 });
 
+// ─── Property 5: Нет эмоджи в JS-файлах ───────────────────────────────────
+
+console.log('\n=== Property 5: Нет эмоджи в JS-файлах ===');
+// Feature: emoji-to-svg-icons, Property 5: ни один файл js/**/*.js не содержит Unicode эмоджи
+
+const EMOJI_REGEX = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
+
+function findJSFiles(dir) {
+  const files = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...findJSFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.js')) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+assert('ни один JS-файл не содержит эмоджи-символов', () => {
+  const jsDir = path.join(__dirname, '../js');
+  if (!fs.existsSync(jsDir)) {
+    console.log('    Папка js/ не найдена, пропускаем тест');
+    return;
+  }
+  
+  const jsFiles = findJSFiles(jsDir);
+  const violations = [];
+  
+  for (const filePath of jsFiles) {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      // Пропускаем строки с console.log - они не отображаются в UI
+      if (line.includes('console.log') || line.includes('console.error') || line.includes('console.warn')) {
+        continue;
+      }
+      
+      const match = line.match(EMOJI_REGEX);
+      if (match) {
+        const relativePath = path.relative(__dirname, filePath);
+        violations.push(`${relativePath}:${i + 1}: "${match[0]}" в строке: ${line.trim()}`);
+      }
+    }
+  }
+  
+  if (violations.length > 0) {
+    throw new Error(`Найдены эмоджи в JS-файлах:\n    ${violations.join('\n    ')}`);
+  }
+});
+
+assert('property-based: случайные строки JS-файлов не содержат эмоджи', () => {
+  const jsDir = path.join(__dirname, '../js');
+  if (!fs.existsSync(jsDir)) return;
+  
+  const jsFiles = findJSFiles(jsDir);
+  if (jsFiles.length === 0) return;
+  
+  fc.assert(
+    fc.property(
+      fc.integer({ min: 0, max: jsFiles.length - 1 }),
+      (fileIndex) => {
+        const content = fs.readFileSync(jsFiles[fileIndex], 'utf-8');
+        const lines = content.split('\n').filter(line => 
+          !line.includes('console.log') && 
+          !line.includes('console.error') && 
+          !line.includes('console.warn')
+        );
+        
+        if (lines.length === 0) return true;
+        
+        // Проверяем случайную строку
+        const randomLine = lines[Math.floor(Math.random() * lines.length)];
+        return !EMOJI_REGEX.test(randomLine);
+      }
+    ),
+    { numRuns: 50 }
+  );
+});
+
+// ─── Property 5 (CSS): Нет эмоджи в CSS-файлах ───────────────────────────
+
+console.log('\n=== Property 5 (CSS): Нет эмоджи в CSS-файлах ===');
+// Feature: emoji-to-svg-icons, Property 5 (CSS): ни один файл css/**/*.css не содержит Unicode эмоджи
+
+function findCSSFiles(dir) {
+  const files = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...findCSSFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.css')) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+assert('ни один CSS-файл не содержит эмоджи-символов', () => {
+  const cssDir = path.join(__dirname, '../css');
+  if (!fs.existsSync(cssDir)) {
+    console.log('    Папка css/ не найдена, пропускаем тест');
+    return;
+  }
+  
+  const cssFiles = findCSSFiles(cssDir);
+  const violations = [];
+  
+  for (const filePath of cssFiles) {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(EMOJI_REGEX);
+      if (match) {
+        const relativePath = path.relative(__dirname, filePath);
+        violations.push(`${relativePath}:${i + 1}: "${match[0]}" в строке: ${line.trim()}`);
+      }
+    }
+  }
+  
+  if (violations.length > 0) {
+    throw new Error(`Найдены эмоджи в CSS-файлах:\n    ${violations.join('\n    ')}`);
+  }
+});
+
+assert('property-based: случайные строки CSS-файлов не содержат эмоджи', () => {
+  const cssDir = path.join(__dirname, '../css');
+  if (!fs.existsSync(cssDir)) return;
+  
+  const cssFiles = findCSSFiles(cssDir);
+  if (cssFiles.length === 0) return;
+  
+  fc.assert(
+    fc.property(
+      fc.integer({ min: 0, max: cssFiles.length - 1 }),
+      (fileIndex) => {
+        const content = fs.readFileSync(cssFiles[fileIndex], 'utf-8');
+        const lines = content.split('\n');
+        
+        if (lines.length === 0) return true;
+        
+        // Проверяем случайную строку
+        const randomLine = lines[Math.floor(Math.random() * lines.length)];
+        return !EMOJI_REGEX.test(randomLine);
+      }
+    ),
+    { numRuns: 50 }
+  );
+});
+
 // ─── Property 7: каждый symbol содержит <title> ───────────────────────────
 
 console.log('\n=== Property 7: каждый symbol содержит <title> ===');

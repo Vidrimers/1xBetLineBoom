@@ -23,7 +23,7 @@ export async function showUserBracketPredictions(bracketId, userId) {
       if (betsContainer) {
         betsContainer.innerHTML = `
           <div style="padding: 40px; text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+            <div style="font-size: 48px; margin-bottom: 20px;"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg></div>
             <div style="font-size: 18px; color: #b0b8c8; margin-bottom: 10px;">Прогнозы скрыты</div>
             <div style="font-size: 14px; color: #888;">${data.message || 'Пользователь скрыл свои прогнозы до начала плей-офф'}</div>
           </div>
@@ -113,7 +113,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
 
     if (!eventId) {
       if (typeof showCustomAlert === 'function') {
-        await showCustomAlert('Сначала выберите турнир', 'Ошибка', '❌');
+        await showCustomAlert('Сначала выберите турнир', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       } else {
         alert('Сначала выберите турнир');
       }
@@ -123,7 +123,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
     const brackets = await window.loadBracketsForEvent(eventId);
     if (!brackets || brackets.length === 0) {
       if (typeof showCustomAlert === 'function') {
-        await showCustomAlert('Для этого турнира нет сетки плей-офф', 'Ошибка', '❌');
+        await showCustomAlert('Для этого турнира нет сетки плей-офф', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       } else {
         alert('Для этого турнира нет сетки плей-офф');
       }
@@ -152,7 +152,7 @@ export async function showUserBracketPredictionsInline(userId, username = 'По�
   } catch (error) {
     console.error('Ошибка при открытии прогнозов сетки:', error);
     if (typeof showCustomAlert === 'function') {
-      await showCustomAlert('Не удалось загрузить прогнозы сетки', 'Ошибка', '❌');
+      await showCustomAlert('Не удалось загрузить прогнозы сетки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     } else {
       alert('Не удалось загрузить прогнозы сетки');
     }
