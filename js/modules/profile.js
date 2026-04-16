@@ -276,3 +276,265 @@ export function getAwardIcon(awardType) {
   };
   return icons[awardType] || "🏆";
 }
+
+// ===== АВАТАР =====
+
+// Переменная для хранения экземпляра Cropper
+let cropper = null;
+
+export function closeAvatarModal(event) {
+  if (event && event.target.id !== "avatarModal") {
+    return;
+  }
+  document.getElementById("avatarModal").style.display = "none";
+  if (cropper) {
+    cropper.destroy();
+    cropper = null;
+  }
+
+  // Удаляем обработчики GIF drag-and-drop
+  if (window.gifMouseMoveHandler) {
+    document.removeEventListener("mousemove", window.gifMouseMoveHandler);
+  }
+  if (window.gifMouseUpHandler) {
+    document.removeEventListener("mouseup", window.gifMouseUpHandler);
+  }
+  if (window.gifWheelHandler) {
+    const gifPreviewColumn = document.getElementById("gifPreviewColumn");
+    if (gifPreviewColumn) {
+      gifPreviewColumn.removeEventListener("wheel", window.gifWheelHandler);
+    }
+  }
+
+  // Очищаем сохраненные GIF данные
+  window.gifAvatarData = null;
+  window.gifBase64 = null;
+  window.gifPositionX = 0;
+  window.gifPositionY = 0;
+  window.gifZoom = 1;
+  window.gifMouseMoveHandler = null;
+  window.gifMouseUpHandler = null;
+  window.gifWheelHandler = null;
+
+  // Сбрасываем трансформацию GIF изображения
+  const gifPreview = document.getElementById("gifFullPreview");
+  if (gifPreview) {
+    gifPreview.style.transform = "scale(1)";
+    gifPreview.src = "";
+  }
+
+  // Очищаем результаты превью
+  const gifCropResult = document.getElementById("gifCropResult");
+  if (gifCropResult) {
+    gifCropResult.src = "";
+  }
+
+  // Скрываем контейнеры редактирования
+  document.getElementById("gifPreviewColumn").style.display = "none";
+  document.getElementById("gifResultPreview").style.display = "none";
+  document.getElementById("pngPreviewContainer").style.display = "none";
+  document.getElementById("cropperContainer").style.display = "none";
+  document.querySelector(".avatar-result-container").style.display = "none";
+  document.getElementById("avatarImage").src = "";
+
+  // Разблокируем скролл страницы при закрытии модального окна
+  document.body.style.overflow = "";
+}
+
+// Обновляем аватар в профиле без перезагрузки страницы
+function updateAvatarInProfile(avatarPath) {
+  const profileAvatar = document.querySelector(".profile-avatar img");
+  if (profileAvatar) {
+    const timestamp = new Date().getTime();
+    profileAvatar.src = avatarPath + `?v=${timestamp}`;
+    console.log(`✅ Аватар обновлен в профиле: ${avatarPath}`);
+  }
+}
+
+export async function saveAvatar() {
+  console.log("saveAvatar вызвана");
+
+  // Проверяем если это GIF
+  if (window.gifAvatarData) {
+    console.log("Обнаружен GIF, вызываю saveGifAvatar");
+    return saveGifAvatar();
+  }
+
+  console.log("cropper:", cropper);
+
+  if (!cropper) {
+    alert("Пожалуйста, выберите изображение");
+    return;
+  }
+
+  try {
+    console.log("Получаю обрезанный canvas...");
+    const canvas = cropper.getCroppedCanvas({
+      maxWidth: 200,
+      maxHeight: 200,
+      fillColor: "rgba(0, 0, 0, 0)",
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: "high",
+    });
+    console.log("✅ Canvas получен", canvas);
+
+    const avatarData = canvas.toDataURL("image/png", 0.8);
+    const fileType = "image/png";
+    console.log("✅ Avatar data получен, размер:", avatarData.length);
+
+    console.log("Отправляю на сервер...");
+    const response = await fetch(`/api/user/${currentUser.id}/avatar`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ avatarData, fileType }),
+    });
+
+    const result = await response.json();
+    console.log("Ответ сервера:", result);
+
+    if (!response.ok) {
+      console.error(
+        "❌ Ошибка при сохранении аватара: " +
+          (result.error || "Неизвестная ошибка")
+      );
+      return;
+    }
+
+    console.log("✅ Аватар сохранен на сервер");
+
+    if (result.avatarPath) {
+      localStorage.setItem(`avatar_${currentUser.id}`, result.avatarPath);
+      console.log("✅ Аватар сохранен в localStorage");
+    }
+
+    closeAvatarModal();
+    if (result.avatarPath) {
+      updateAvatarInProfile(result.avatarPath);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при сохранении аватара:", error);
+  }
+}
+
+async function saveGifAvatar() {
+  try {
+    let avatarData = window.gifAvatarData;
+    const fileType = "image/gif";
+
+    if (!avatarData) {
+      console.error("❌ GIF не выбран");
+      return;
+    }
+
+    const gifSize = avatarData.length;
+    console.log(`📊 Размер GIF: ${(gifSize / 1024 / 1024).toFixed(2)} MB`);
+
+    if (gifSize > 2 * 1024 * 1024) {
+      console.warn("⚠️ GIF слишком большой, пытаюсь сжать...");
+
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "rgba(0, 0, 0, 0)";
+        ctx.fillRect(0, 0, 200, 200);
+        ctx.drawImage(img, 0, 0, 200, 200);
+
+        if (gifSize < 5 * 1024 * 1024) {
+          console.log("✅ GIF в пределах лимита, сохраняю оригинальный");
+        } else {
+          console.error(
+            "❌ GIF слишком большой (более 5MB). Рекомендуется использовать меньший файл."
+          );
+          return;
+        }
+      };
+      img.src = avatarData;
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    console.log("Отправляю GIF на сервер...");
+    const response = await fetch(`/api/user/${currentUser.id}/avatar`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        avatarData,
+        fileType,
+        gifPositionX: window.gifPositionX || 0,
+        gifPositionY: window.gifPositionY || 0,
+        gifZoom: window.gifZoom || 1,
+      }),
+    });
+
+    const result = await response.json();
+    console.log("Ответ сервера:", result);
+
+    if (!response.ok) {
+      console.error(
+        "❌ Ошибка при сохранении GIF: " +
+          (result.error || "Неизвестная ошибка")
+      );
+      return;
+    }
+
+    console.log("✅ GIF аватар сохранен на сервер");
+
+    if (result.fileSize) {
+      const sizeMB = (result.fileSize / 1024 / 1024).toFixed(2);
+      console.log(`📊 Финальный размер: ${sizeMB} MB`);
+    }
+
+    if (result.avatarPath) {
+      localStorage.setItem(`avatar_${currentUser.id}`, result.avatarPath);
+      console.log("✅ GIF аватар сохранен в localStorage");
+    }
+
+    closeAvatarModal();
+    if (result.avatarPath) {
+      updateAvatarInProfile(result.avatarPath);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при сохранении GIF аватара:", error);
+  }
+}
+
+export async function deleteAvatar() {
+  if (!confirm("Вы уверены, что хотите удалить аватар?")) {
+    return;
+  }
+
+  try {
+    console.log("Удаляю аватар...");
+    const response = await fetch(`/api/user/${currentUser.id}/avatar`, {
+      method: "DELETE",
+    });
+
+    const result = await response.json();
+    console.log("Ответ сервера:", result);
+
+    if (!response.ok) {
+      console.error(
+        "❌ Ошибка при удалении аватара: " +
+          (result.error || "Неизвестная ошибка")
+      );
+      return;
+    }
+
+    console.log("✅ Аватар удален");
+
+    localStorage.removeItem(`avatar_${currentUser.id}`);
+    console.log("✅ Аватар удален из localStorage");
+
+    closeAvatarModal();
+    updateAvatarInProfile("img/default-avatar.jpg");
+  } catch (error) {
+    console.error("❌ Ошибка при удалении аватара:", error);
+  }
+}

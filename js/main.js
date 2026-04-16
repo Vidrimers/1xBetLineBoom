@@ -101,7 +101,7 @@ import {
   filterTournamentParticipantBets,
   closeTournamentParticipantBetsModal,
 } from './modules/participants.js';
-import { loadProfile, displayProfile, loadUserAwards, getAwardIcon } from './modules/profile.js';
+import { loadProfile, displayProfile, loadUserAwards, getAwardIcon, closeAvatarModal, saveAvatar, deleteAvatar } from './modules/profile.js';
 import {
   loadSettings,
   openTelegramBindInfoModal,
@@ -147,6 +147,9 @@ import {
   toggleTeamDropdown,
   loadRoundsForModal,
   selectExistingRound,
+  loadParsePreview,
+  toggleRoundSelection,
+  submitBulkParse,
 } from './modules/matchCreate.js';
 import {
   toggleFinalMatch,
@@ -184,6 +187,10 @@ import {
   sendAnnouncementToAll,
   sendTournamentAnnouncementToAdmin,
   openTournamentInfoModal,
+  openEventTeamFileSelector,
+  selectEventTeamFile,
+  closeEventTeamFileSelector,
+  closeLockEventModal,
 } from './modules/eventModals.js';
 import {
   loadLiveMatches,
@@ -470,6 +477,21 @@ import {
   loadRoundsForRecount,
   initRecountListeners,
 } from './modules/recount.js';
+import {
+  loadAdminUsers,
+  closeAdminModal,
+  syncAllTelegramIds,
+  testGroupNotification,
+} from './modules/adminUsers.js';
+import {
+  openBracketModal,
+  closeBracketModal,
+  openCreateBracketModal,
+  closeCreateBracketModal,
+  createBracket,
+} from './modules/bracket.js';
+import { openXgModal, closeXgModal, refreshXgData, toggleXgButton } from './xg-modal.js';
+import { loadCounting, selectCompetition, calculateCountingResults } from './counting.js';
 
 // ===== ЭКСПОРТ В ГЛОБАЛЬНЫЙ SCOPE (для onclick в HTML) =====
 // Все функции которые вызываются из HTML через onclick="..."
@@ -508,6 +530,7 @@ Object.assign(window, {
   closeTournamentParticipantBetsModal,
   // profile
   loadProfile, displayProfile, loadUserAwards, getAwardIcon,
+  closeAvatarModal, saveAvatar, deleteAvatar,
   // settings
   loadSettings, openTelegramBindInfoModal, deleteTelegramUsername,
   initTimezoneSettings, loadUserTimezone, saveTimezoneSettings,
@@ -526,6 +549,7 @@ Object.assign(window, {
   openMatchTeamFileSelector, selectMatchTeamFile, closeMatchTeamFileSelector,
   initTeamAutocomplete, updateSelectedItem, selectTeam, hideSuggestions,
   toggleTeamDropdown, loadRoundsForModal, selectExistingRound,
+  loadParsePreview, toggleRoundSelection, submitBulkParse,
   // matchEdit
   toggleFinalMatch, openEditMatchModal, closeEditMatchModal, submitEditMatch,
   deleteMatch, openFinalMatchResultModal, closeFinalMatchResultModal,
@@ -540,6 +564,8 @@ Object.assign(window, {
   formatText, insertEmoji, openAnnouncementModal, closeAnnouncementModal,
   sendAnnouncementToSelf, sendAnnouncementToAll, sendTournamentAnnouncementToAdmin,
   openTournamentInfoModal,
+  openEventTeamFileSelector, selectEventTeamFile, closeEventTeamFileSelector,
+  closeLockEventModal,
   // live
   loadLiveMatches, showLiveEventMatches, backToLiveEvents, loadCompletedDays,
   renderCompletedDays, renderCompletedDayMatches, toggleCompletedDay,
@@ -645,6 +671,15 @@ Object.assign(window, {
   // recount
   sendCountingResults, openRecountModal, closeRecountModal, confirmRecount,
   loadEventsForRecount, loadRoundsForRecount,
+  // adminUsers
+  loadAdminUsers, closeAdminModal, syncAllTelegramIds, testGroupNotification,
+  // bracket
+  openBracketModal, closeBracketModal, openCreateBracketModal,
+  closeCreateBracketModal, createBracket,
+  // xg-modal
+  openXgModal, closeXgModal, refreshXgData, toggleXgButton,
+  // counting
+  loadCounting, selectCompetition, calculateCountingResults,
   // ui
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,

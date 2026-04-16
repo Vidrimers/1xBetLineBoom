@@ -1,7 +1,7 @@
 // ===== МОДАЛКА XG ПРОГНОЗОВ =====
 
 // Открыть модалку с прогнозами xG и Glicko-2
-async function openXgModal() {
+export async function openXgModal() {
   console.log('📊 Открытие модалки xG прогнозов');
   
   if (!currentUser) {
@@ -262,7 +262,7 @@ async function loadXgDataForMatches(matchesList, refresh = false) {
 }
 
 // Закрыть модалку xG
-function closeXgModal() {
+export function closeXgModal() {
   const modal = document.getElementById('xgModal');
   if (modal) {
     modal.remove();
@@ -272,7 +272,7 @@ function closeXgModal() {
 
 
 // Переключить видимость кнопки xG для всех пользователей (только для админа)
-async function toggleXgButton() {
+export async function toggleXgButton() {
   if (!currentUser || !currentUser.isAdmin) {
     await showCustomAlert("У вас нет прав для этого действия", "Ошибка", "❌");
     return;
@@ -327,7 +327,7 @@ async function toggleXgButton() {
 
 
 // Обновить данные xG из API
-async function refreshXgData() {
+export async function refreshXgData() {
   // Показываем предупреждение с подтверждением
   const confirmed = await showXgConfirm(
     'Частые запросы на сервер парсинга нежелательны, поэтому обновление данных ограничено один раз в 6 часов.\n\nВы уверены что хотите обновить данные?',

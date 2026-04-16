@@ -57,11 +57,7 @@ async function loadTeamMapping(competition) {
   }
 }
 
-function loadCounting() {
-  if (!canViewCounting()) {
-    alert("У вас нет прав");
-    return;
-  }
+export function loadCounting() {
 
   const countingContainer = document.getElementById("countingContainer");
 
@@ -389,7 +385,7 @@ function setCountingToday() {
 }
 
 // Выбрать соревнование
-function selectCompetition(code) {
+export function selectCompetition(code) {
   selectedCompetition = code;
   
   console.log(`🏆 Выбран турнир: ${code}`);
@@ -432,7 +428,7 @@ function selectCompetition(code) {
 }
 
 // Подсчитать результаты ставок
-async function calculateCountingResults() {
+export async function calculateCountingResults() {
   const dateFrom = document.getElementById("countingDateFrom")?.value;
   const dateTo = document.getElementById("countingDateTo")?.value;
   const resultsDiv = document.getElementById("countingResults");

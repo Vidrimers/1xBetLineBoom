@@ -746,3 +746,108 @@ export async function openTournamentInfoModal() {
   
   document.body.appendChild(modal);
 }
+
+// ===== ВЫБОР ФАЙЛА КОМАНД ДЛЯ ТУРНИРА =====
+
+// Открыть модалку выбора файла команд для турнира
+export async function openEventTeamFileSelector(mode) {
+  try {
+    const response = await fetch('/api/team-files');
+    if (!response.ok) throw new Error('Не удалось загрузить список файлов');
+
+    const files = await response.json();
+
+    if (!files || files.length === 0) {
+      alert('Не найдено файлов команд в папке names');
+      return;
+    }
+
+    // Получаем текущий выбранный файл из формы
+    const currentFile = mode === 'create'
+      ? document.getElementById('eventTeamFile').value
+      : document.getElementById('editEventTeamFile').value;
+
+    const fileListHtml = files.map(file => {
+      const isSelected = file.path === currentFile;
+      const icon = file.name.endsWith('.json') ? '📄' : file.name.endsWith('.txt') ? '📝' : '📜';
+      return `
+        <div class="team-file-item ${isSelected ? 'selected' : ''}"
+             onclick="selectEventTeamFile('${file.path}', '${mode}')"
+             style="padding: 12px; margin: 8px 0; background: ${isSelected ? 'rgba(90, 159, 212, 0.2)' : 'rgba(40, 44, 54, 0.5)'};
+                    border: 1px solid ${isSelected ? 'rgba(90, 159, 212, 0.5)' : 'rgba(90, 159, 212, 0.2)'};
+                    border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5em;">${icon}</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 500; color: #e0e6f0;">${file.name}</div>
+              <div style="font-size: 0.85em; color: #b0b8c8; margin-top: 2px;">${file.path}</div>
+            </div>
+            ${isSelected ? '<span style="color: #4caf50; font-size: 1.2em;">✓</span>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const modalHtml = `
+      <div id="eventTeamFileSelectorModal" class="modal" style="display: flex;" onclick="closeEventTeamFileSelector()">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+          <div class="modal-header">
+            <h2>📥 Выбор словаря команд для турнира</h2>
+            <button class="modal-close" onclick="closeEventTeamFileSelector()">&times;</button>
+          </div>
+          <div style="padding: 20px;">
+            <p style="color: #b0b8c8; margin-bottom: 15px;">
+              Этот словарь будет использоваться по умолчанию при создании матчей в этом турнире:
+            </p>
+            ${fileListHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+    const existingModal = document.getElementById('eventTeamFileSelectorModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    lockBodyScroll();
+  } catch (error) {
+    console.error('Ошибка при открытии выбора файла:', error);
+    alert('Не удалось загрузить список файлов');
+  }
+}
+
+// Выбрать файл команд для турнира
+export function selectEventTeamFile(filePath, mode) {
+  if (mode === 'create') {
+    document.getElementById('eventTeamFile').value = filePath;
+  } else if (mode === 'edit') {
+    document.getElementById('editEventTeamFile').value = filePath;
+  }
+
+  closeEventTeamFileSelector();
+  alert(`Словарь команд выбран: ${filePath.split('/').pop()}\n\nОн будет использоваться по умолчанию при создании матчей в этом турнире.`);
+}
+
+// Закрыть модалку выбора файла для турнира
+export function closeEventTeamFileSelector() {
+  const modal = document.getElementById('eventTeamFileSelectorModal');
+  if (modal) {
+    modal.remove();
+  }
+  unlockBodyScroll();
+}
+
+// ===== БЛОКИРОВКА ТУРНИРА =====
+
+// Закрыть модальное окно для блокировки турнира
+export function closeLockEventModal() {
+  const modal = document.getElementById('lockEventModal');
+  if (modal) {
+    modal.style.display = 'none';
+    unlockBodyScroll();
+  }
+  // Очищаем форму
+  document.getElementById('lockEventForm').reset();
+}

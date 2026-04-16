@@ -453,39 +453,41 @@ export function openBulkParseModal() {
     alert('❌ Сначала выберите турнир');
     return;
   }
-  
+
   // Получаем текущий турнир
   const currentEvent = state.events.find(e => e.id === state.currentEventId);
   if (!currentEvent) {
     alert('❌ Не удалось определить текущий турнир');
     return;
   }
-  
-  // Определяем код турнира по иконке (если есть соответствующий словарь)
-  // В оригинале был ICON_TO_COMPETITION, но его нет в текущем коде
-  // Пока что просто открываем модальное окно
-  
+
+  // Определяем код турнира по иконке
+  const tournamentCode = ICON_TO_COMPETITION[currentEvent.icon];
+  if (!tournamentCode) {
+    alert(`❌ Парсинг не поддерживается для турнира "${currentEvent.name}". Поддерживаются только турниры с иконками: Champions League, Europa League, Conference League, Premier League, Bundesliga, La Liga, Serie A, Ligue 1, RPL`);
+    return;
+  }
+
   document.getElementById('bulkParseModal').style.display = 'flex';
   lockBodyScroll();
-  
+
+  // Устанавливаем код турнира по иконке
+  document.getElementById('parseCompetition').value = tournamentCode;
+
   // Сбрасываем форму
-  const parseDateFrom = document.getElementById('parseDateFrom');
-  const parseDateTo = document.getElementById('parseDateTo');
-  const parseRound = document.getElementById('parseRound');
-  const parsePreviewContainer = document.getElementById('parsePreviewContainer');
-  const bulkParseSubmitBtn = document.getElementById('bulkParseSubmitBtn');
-  
-  if (parseDateFrom) parseDateFrom.value = '';
-  if (parseDateTo) parseDateTo.value = '';
-  if (parseRound) parseRound.value = '';
-  if (parsePreviewContainer) parsePreviewContainer.style.display = 'none';
-  if (bulkParseSubmitBtn) bulkParseSubmitBtn.disabled = true;
+  document.getElementById('parseDateFrom').value = '';
+  document.getElementById('parseDateTo').value = '';
+  document.getElementById('parseRound').value = '';
+  document.getElementById('parsePreviewContainer').style.display = 'none';
+  document.getElementById('bulkParseSubmitBtn').disabled = true;
+  parsedMatches = [];
 }
 
 // Закрыть модальное окно парсинга
 export function closeBulkParseModal() {
   document.getElementById('bulkParseModal').style.display = 'none';
   unlockBodyScroll();
+  parsedMatches = [];
 }
 
 // ===== МАССОВОЕ РЕДАКТИРОВАНИЕ ДАТ =====
@@ -574,5 +576,331 @@ export async function saveBulkEditDates() {
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = originalText;
+  }
+}
+
+// ===== ПАРСИНГ МАТЧЕЙ =====
+
+export let parsedMatches = [];
+
+// Маппинг иконок турниров на коды для API
+export const ICON_TO_COMPETITION = {
+  'img/cups/champions-league.png': 'CL',
+  'img/cups/european-league.png': 'EL',
+  'img/cups/conference-league.png': 'ECL',
+  'img/cups/england-premier-league.png': 'PL',
+  'img/cups/bundesliga.png': 'BL1',
+  'img/cups/spain-la-liga.png': 'PD',
+  'img/cups/serie-a.png': 'SA',
+  'img/cups/france-league-ligue-1.png': 'FL1',
+  'img/cups/rpl.png': 'RPL',
+  'img/cups/world-cup.png': 'WC',
+  'img/cups/uefa-euro.png': 'EC',
+  '🇳🇱': 'DED'
+};
+
+// Загрузить превью спарсенных матчей
+export async function loadParsePreview() {
+  const competition = document.getElementById('parseCompetition').value;
+  const dateFrom = document.getElementById('parseDateFrom').value;
+  const dateTo = document.getElementById('parseDateTo').value;
+  const includeFuture = document.getElementById('parseIncludeFuture').checked;
+
+  if (!competition || !dateFrom || !dateTo) {
+    await showCustomAlert('Заполните все обязательные поля', 'Ошибка', '❌');
+    return;
+  }
+
+  if (new Date(dateFrom) > new Date(dateTo)) {
+    await showCustomAlert('Дата начала не может быть позже даты окончания', 'Ошибка', '❌');
+    return;
+  }
+
+  const previewList = document.getElementById('parsePreviewList');
+  const updateBtn = previewList.previousElementSibling.querySelector('button');
+
+  updateBtn.disabled = true;
+  updateBtn.textContent = '⏳ Загрузка...';
+
+  previewList.innerHTML = '<div style="text-align: center; color: #b0b8c8; padding: 20px;">⏳ Загрузка матчей...</div>';
+
+  try {
+    const dictionaryMapping = {
+      'CL': '/names/LeagueOfChampionsTeams.json',
+      'EL': '/names/EuropaLeague.json',
+      'ECL': '/names/ConferenceLeague.json',
+      'PL': '/names/PremierLeague.json',
+      'BL1': '/names/Bundesliga.json',
+      'PD': '/names/LaLiga.json',
+      'SA': '/names/SerieA.json',
+      'FL1': '/names/Ligue1.json',
+      'DED': '/names/Eredivisie.json',
+      'RPL': '/names/RussianPremierLeague.json',
+      'WC': '/names/Countries.json',
+      'EC': '/names/Countries.json'
+    };
+
+    let teamTranslations = {};
+    const dictionaryFile = dictionaryMapping[competition];
+
+    if (dictionaryFile) {
+      try {
+        const dictResponse = await fetch(dictionaryFile);
+        if (dictResponse.ok) {
+          const dictData = await dictResponse.json();
+          const teams = dictData.teams || {};
+          for (const [russian, english] of Object.entries(teams)) {
+            const englishLower = english.toLowerCase();
+            if (!teamTranslations[englishLower] || russian.length < teamTranslations[englishLower].length) {
+              teamTranslations[englishLower] = russian;
+            }
+          }
+          console.log(`✅ Загружен словарь для ${competition}: ${Object.keys(teamTranslations).length} команд`);
+        }
+      } catch (err) {
+        console.warn(`⚠️ Не удалось загрузить словарь из ${dictionaryFile}`);
+      }
+    }
+
+    const translateTeamName = (englishName) => {
+      return teamTranslations[englishName.toLowerCase()] || englishName;
+    };
+
+    const response = await fetch(
+      `/api/fd-matches?competition=${encodeURIComponent(competition)}&dateFrom=${dateFrom}&dateTo=${dateTo}&includeFuture=${includeFuture}`
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Ошибка при загрузке матчей');
+    }
+
+    const data = await response.json();
+    parsedMatches = data.matches || [];
+
+    if (parsedMatches.length === 0) {
+      const statusText = includeFuture ? 'матчей' : 'завершенных матчей';
+      previewList.innerHTML = `<div style="text-align: center; color: #ffc107; padding: 20px;">⚠️ Не найдено ${statusText} в указанном диапазоне</div>`;
+      document.getElementById('bulkParseSubmitBtn').disabled = true;
+      return;
+    }
+
+    const matchesByRound = {};
+    parsedMatches.forEach(match => {
+      const roundName = match.round || 'Без тура';
+      if (!matchesByRound[roundName]) matchesByRound[roundName] = [];
+      matchesByRound[roundName].push(match);
+    });
+
+    let matchesHtml = '';
+
+    Object.keys(matchesByRound).sort().forEach(roundName => {
+      const roundMatches = matchesByRound[roundName];
+      const roundId = roundName.replace(/[^a-zA-Z0-9]/g, '_');
+
+      matchesHtml += `
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(58, 123, 213, 0.2); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; margin-bottom: 10px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
+              <input type="checkbox" id="round_${roundId}" onchange="toggleRoundSelection('${roundName}')" style="cursor: pointer; width: 18px; height: 18px;" />
+              <span style="font-weight: 500; color: #e0e6f0; font-size: 1.05em;">${roundName} (${roundMatches.length} ${roundMatches.length === 1 ? 'матч' : 'матчей'})</span>
+            </label>
+          </div>
+          <div id="matches_${roundId}">
+      `;
+
+      roundMatches.forEach(match => {
+        const date = new Date(match.utcDate);
+        const formattedDate = date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const homeTeamRu = translateTeamName(match.homeTeam.name);
+        const awayTeamRu = translateTeamName(match.awayTeam.name);
+        const isFinished = match.status === 'FINISHED';
+        const scoreHtml = isFinished
+          ? `<div style="background: rgba(76, 175, 80, 0.2); border: 1px solid rgba(76, 175, 80, 0.5); border-radius: 4px; padding: 6px 12px; font-weight: 500; color: #4caf50;">${match.score.fullTime.home ?? 0} : ${match.score.fullTime.away ?? 0}</div>`
+          : `<div style="background: rgba(255, 152, 0, 0.2); border: 1px solid rgba(255, 152, 0, 0.5); border-radius: 4px; padding: 6px 12px; font-weight: 500; color: #ff9800;">Предстоящий</div>`;
+
+        matchesHtml += `
+          <div style="background: rgba(58, 123, 213, 0.1); border: 1px solid rgba(90, 159, 212, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 10px; margin-left: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="flex: 1;">
+                <div style="font-weight: 500; color: #e0e6f0; margin-bottom: 4px;">${homeTeamRu} vs ${awayTeamRu}</div>
+                <div style="font-size: 0.85em; color: #b0b8c8;">📅 ${formattedDate}</div>
+              </div>
+              ${scoreHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      matchesHtml += `</div></div>`;
+    });
+
+    const finishedCount = parsedMatches.filter(m => m.status === 'FINISHED').length;
+    const futureCount = parsedMatches.length - finishedCount;
+
+    previewList.innerHTML = `
+      <div style="margin-bottom: 15px; padding: 10px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px;">
+        <div style="color: #4caf50; font-weight: 500;">✅ Найдено матчей: ${parsedMatches.length}</div>
+        ${finishedCount > 0 ? `<div style="color: #4caf50; font-size: 0.9em; margin-top: 4px;">🏁 Завершенных: ${finishedCount}</div>` : ''}
+        ${futureCount > 0 ? `<div style="color: #ff9800; font-size: 0.9em; margin-top: 4px;">📅 Предстоящих: ${futureCount}</div>` : ''}
+      </div>
+      ${matchesHtml}
+    `;
+
+    document.getElementById('bulkParseSubmitBtn').disabled = false;
+
+  } catch (error) {
+    console.error('Ошибка при загрузке превью:', error);
+    previewList.innerHTML = `<div style="text-align: center; color: #f44336; padding: 20px;">❌ Ошибка: ${error.message}</div>`;
+    document.getElementById('bulkParseSubmitBtn').disabled = true;
+  } finally {
+    updateBtn.disabled = false;
+    updateBtn.textContent = '🔄 Обновить';
+  }
+}
+
+// Переключить выбор тура
+export function toggleRoundSelection(roundName) {
+  const roundInput = document.getElementById('parseRound');
+  const selectedCheckboxes = Array.from(document.querySelectorAll('[id^="round_"]:checked'));
+
+  if (selectedCheckboxes.length === 0) {
+    roundInput.value = '';
+    roundInput.disabled = false;
+    loadParsePreview();
+  } else if (selectedCheckboxes.length === 1) {
+    const originalRound = parsedMatches.find(m => m.round && m.round.replace(/[^a-zA-Z0-9]/g, '_') === selectedCheckboxes[0].id.replace('round_', ''))?.round || roundName;
+    roundInput.value = originalRound === 'Без тура' ? '' : originalRound;
+    roundInput.disabled = false;
+  } else {
+    roundInput.value = '';
+    roundInput.disabled = true;
+  }
+}
+
+// Отправить форму парсинга
+export async function submitBulkParse(event) {
+  event.preventDefault();
+
+  if (parsedMatches.length === 0) {
+    await showCustomAlert('Сначала загрузите превью матчей', 'Ошибка', '❌');
+    return;
+  }
+
+  const selectedCheckboxes = Array.from(document.querySelectorAll('[id^="round_"]:checked'));
+  const roundInput = document.getElementById('parseRound');
+  const scorePredictionEnabled = document.getElementById('parseScorePrediction').checked;
+  const yellowCardsPredictionEnabled = document.getElementById('parseYellowCardsPrediction').checked;
+  const redCardsPredictionEnabled = document.getElementById('parseRedCardsPrediction').checked;
+
+  let matchesToProcess = [];
+
+  if (selectedCheckboxes.length === 0) {
+    matchesToProcess = parsedMatches;
+  } else {
+    const selectedRounds = selectedCheckboxes.map(cb => {
+      const roundId = cb.id.replace('round_', '');
+      return parsedMatches.find(m => m.round && m.round.replace(/[^a-zA-Z0-9]/g, '_') === roundId)?.round;
+    }).filter(Boolean);
+    matchesToProcess = parsedMatches.filter(m => selectedRounds.includes(m.round));
+  }
+
+  if (matchesToProcess.length === 0) {
+    await showCustomAlert('Нет матчей для создания', 'Ошибка', '❌');
+    return;
+  }
+
+  const customRoundName = selectedCheckboxes.length === 1 && roundInput.value.trim() ? roundInput.value.trim() : null;
+
+  if (selectedCheckboxes.length === 0 && !roundInput.value.trim()) {
+    const confirmed = await showCustomConfirm(
+      'Вы не указали тур. Матчи будут созданы без указания тура. Продолжить?',
+      'Подтверждение',
+      '⚠️'
+    );
+    if (!confirmed) return;
+  }
+
+  const submitBtn = document.getElementById('bulkParseSubmitBtn');
+  const originalText = submitBtn.textContent;
+
+  try {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Создание матчей...';
+
+    const matchesToCreate = matchesToProcess.map(match => {
+      const isFinished = match.status === 'FINISHED';
+
+      let roundName;
+      if (customRoundName) {
+        roundName = customRoundName;
+      } else if (selectedCheckboxes.length > 1) {
+        roundName = match.round || null;
+      } else {
+        roundName = roundInput.value.trim() || null;
+      }
+
+      const baseMatch = {
+        team1_name: match.homeTeam.name,
+        team2_name: match.awayTeam.name,
+        match_date: match.utcDate,
+        round: roundName,
+        event_id: state.currentEventId,
+        score_prediction_enabled: scorePredictionEnabled ? 1 : 0,
+        yellow_cards_prediction_enabled: yellowCardsPredictionEnabled ? 1 : 0,
+        red_cards_prediction_enabled: redCardsPredictionEnabled ? 1 : 0
+      };
+
+      if (isFinished && match.score.fullTime.home !== null && match.score.fullTime.away !== null) {
+        baseMatch.team1_score = match.score.fullTime.home;
+        baseMatch.team2_score = match.score.fullTime.away;
+        baseMatch.winner = match.score.fullTime.home > match.score.fullTime.away ? 'team1' :
+                           match.score.fullTime.home < match.score.fullTime.away ? 'team2' : 'draw';
+      }
+
+      return baseMatch;
+    });
+
+    const response = await fetch('/api/matches/bulk-create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matches: matchesToCreate }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Ошибка при создании матчей');
+    }
+
+    const finishedCount = matchesToProcess.filter(m => m.status === 'FINISHED').length;
+    const futureCount = matchesToProcess.length - finishedCount;
+
+    let message = `Успешно создано ${matchesToCreate.length} матчей`;
+    if (finishedCount > 0 && futureCount > 0) {
+      message += `\n\n🏁 С результатами: ${finishedCount}\n📅 Без результатов: ${futureCount}`;
+    } else if (finishedCount > 0) {
+      message += ` с результатами`;
+    }
+
+    if (scorePredictionEnabled) {
+      message += `\n\n📊 Прогноз на счет включен`;
+    }
+
+    const competition = document.getElementById('parseCompetition').value;
+    if (competition === 'RPL') {
+      message += `\n\n⚠️ ВНИМАНИЕ: Даты матчей RPL могут быть неточными из-за ограничений API. Проверьте и скорректируйте даты вручную через редактирование матчей.`;
+    }
+
+    await showCustomAlert(message, 'Успех', '✅');
+
+    closeBulkParseModal();
+    await loadMatches(state.currentEventId);
+
+  } catch (error) {
+    console.error('Ошибка при создании матчей:', error);
+    await showCustomAlert(`Ошибка при создании матчей: ${error.message}`, 'Ошибка', '❌');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
   }
 }
