@@ -444,6 +444,22 @@ import {
   getIconTitle,
 } from './modules/luckyBet.js';
 import { openTelegramInfoModal, closeTelegramInfoModal } from './modules/telegramInfo.js';
+import {
+  openBugReportModal,
+  closeBugReportModal,
+  sendBugReport,
+  closeBugReportsModal,
+  filterBugReports,
+  closeBugReportImagesModal,
+  navigateBugReportImage,
+  addBugReportImages,
+  handleBugReportImages,
+  removeBugReportImage,
+  openBugReportImagesModal,
+  changeBugStatus,
+  deleteBugReport,
+  initBugReportListeners,
+} from './modules/bugReport.js';
 
 // ===== ЭКСПОРТ В ГЛОБАЛЬНЫЙ SCOPE (для onclick в HTML) =====
 // Все функции которые вызываются из HTML через onclick="..."
@@ -608,6 +624,12 @@ Object.assign(window, {
   stopDicePositionTracking, getIconTitle,
   // telegramInfo
   openTelegramInfoModal, closeTelegramInfoModal,
+  // bugReport
+  openBugReportModal, closeBugReportModal, sendBugReport,
+  closeBugReportsModal, filterBugReports, closeBugReportImagesModal,
+  navigateBugReportImage, addBugReportImages, handleBugReportImages,
+  removeBugReportImage, openBugReportImagesModal, changeBugStatus,
+  deleteBugReport,
   // ui
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
@@ -854,31 +876,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// ===== DOMContentLoaded — bugReportModal paste handler =====
+// ===== DOMContentLoaded — bugReport listeners =====
 document.addEventListener('DOMContentLoaded', () => {
-  const bugReportModal = document.getElementById('bugReportModal');
-
-  if (bugReportModal) {
-    bugReportModal.addEventListener('paste', async (e) => {
-      if (bugReportModal.style.display !== 'flex') return;
-
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      const imageFiles = [];
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.startsWith('image/')) {
-          const file = items[i].getAsFile();
-          if (file) imageFiles.push(file);
-        }
-      }
-
-      if (imageFiles.length > 0) {
-        e.preventDefault();
-        if (typeof addBugReportImages === 'function') await addBugReportImages(imageFiles);
-      }
-    });
-  }
+  initBugReportListeners();
 });
 
 // ===== DOMContentLoaded — recountDate/recountEvent handlers =====
