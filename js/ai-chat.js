@@ -78,10 +78,7 @@ class AIChat {
     chatBtn.className = 'ai-chat-btn';
     chatBtn.id = 'aiChatBtn';
     chatBtn.innerHTML = `
-      <span class="ai-chat-ball" style="font-size: 36px; position: relative; display: inline-block;">
-        <svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>
-        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: bold; color: #667eea; text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;">AI</span>
-      </span>
+      <svg class="icon" aria-hidden="true" style="font-size: 36px; width: 36px; height: 36px;"><use href="#icon-bot"></use></svg>
     `;
     document.body.appendChild(chatBtn);
 

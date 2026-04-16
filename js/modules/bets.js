@@ -766,7 +766,7 @@ export function displayMyBets(bets) {
   // Сначала определяем статус для ВСЕХ ставок
   const betsWithStatus = bets.map((bet) => {
     let statusClass = "pending";
-    let statusText = "⏳ В ожидании";
+    let statusText = '<svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> В ожидании';
     let normalizedPrediction = bet.prediction;
     let isCancelled = false; // Флаг для отменённых матчей
 
@@ -820,7 +820,7 @@ export function displayMyBets(bets) {
           // Если параметр для этого типа ставки еще не установлен админом
           if (!parameterIsSet) {
             statusClass = "pending";
-            statusText = "⏳ В ожидании";
+            statusText = '<svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> В ожидании';
           } else {
             // Параметр установлен - проверяем результат
             let isWon = false;

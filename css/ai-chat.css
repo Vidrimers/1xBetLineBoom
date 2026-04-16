@@ -43,6 +43,11 @@
     width: 30px;
     height: 30px;
     fill: white;
+    transition: transform 0.6s ease;
+}
+
+.ai-chat-btn:hover svg {
+    transform: rotate(360deg);
 }
 
 /* Окно чата - дефолтная тема */

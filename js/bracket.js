@@ -802,7 +802,7 @@ function renderBracketModal(isClosed) {
           <div style="display: flex; gap: 15px; justify-content: center;">
             <span><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угадано: <strong style="color: #4caf50;">${stats.correct}</strong></span>
             <span><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Не угадано: <strong style="color: #f44336;">${stats.incorrect}</strong></span>
-            <span>⏳ В ожидании: <strong style="color: #ff9800;">${stats.pending}</strong></span>
+            <span><svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> В ожидании: <strong style="color: #ff9800;">${stats.pending}</strong></span>
             <span><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Очки: <strong style="color: #ffd700;">${stats.points}</strong></span>
           </div>
         </div>

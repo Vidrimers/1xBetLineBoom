@@ -64,7 +64,7 @@ export async function loadSettings() {
           align-items: center;
           justify-content: center;
           transition: all 0.3s ease;
-        " onmouseover="this.style.background='transparent'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'" title="Информация о Telegram"><svg class="icon" aria-label="Вопрос"><use href="#icon-question"></use></svg></button>
+        " onmouseover="this.style.background='transparent'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='transparent'; this.style.transform='scale(1)'" title="Информация о Telegram">?</button>
         <div class="setting-label">
           <span><svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> Telegram</span>
           ${
@@ -481,6 +481,9 @@ export async function openTelegramBindInfoModal() {
   });
   
   modal.innerHTML = `
+    <style>
+      .icon { width: 1em; height: 1em; display: inline-block; vertical-align: -0.125em; }
+    </style>
     <div style="
       background: #1e2a3a;
       padding: 30px;

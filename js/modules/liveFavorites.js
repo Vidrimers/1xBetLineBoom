@@ -193,10 +193,10 @@ function updateFavoriteStars() {
   document.querySelectorAll('.favorite-star').forEach(star => {
     const matchId = parseInt(star.getAttribute('data-match-id'));
     if (favorites.includes(matchId)) {
-      star.textContent = '⭐';
+      star.innerHTML = '<svg class="icon" aria-hidden="true" style="color: #ffc107;"><use href="#icon-best-result"></use></svg>';
       star.classList.add('active');
     } else {
-      star.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-best-result"></use></svg>';
+      star.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#icon-best-result"></use></svg>';
       star.classList.remove('active');
     }
   });

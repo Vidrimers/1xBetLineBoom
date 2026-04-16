@@ -24,7 +24,7 @@ export function displayParticipants(participants) {
   // Обновляем заголовок с количеством участников
   const participantsHeader = document.getElementById('participantsHeader');
   if (participantsHeader) {
-    participantsHeader.textContent = `<svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Всего участников: ${participants.length}`;
+    participantsHeader.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-participants"></use></svg> Всего участников: ${participants.length}`;
   }
 
   if (participants.length === 0) {

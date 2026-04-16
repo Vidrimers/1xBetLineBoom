@@ -391,14 +391,14 @@ export function generateBetsComparison(data1, data2, selectedRound = 'all') {
               <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data1.user.username}</div>
               <div>${formatPrediction(diff.bet1?.prediction, diff.match)}</div>
               ${diff.bet1 ? `<div style="color: ${diff.bet1.is_won ? '#4caf50' : diff.bet1.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
-                ${diff.bet1.is_won ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграл' : diff.bet1.is_lost ? '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграл' : '⏳ Ожидание'}
+                ${diff.bet1.is_won ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграл' : diff.bet1.is_lost ? '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграл' : '<svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> Ожидание'}
               </div>` : ''}
             </div>
             <div style="background: #1e2a3a; padding: 10px; border-radius: 6px;">
               <div style="color: #5a9fd4; font-size: 0.9em; margin-bottom: 5px;">${data2.user.username}</div>
               <div>${formatPrediction(diff.bet2?.prediction, diff.match)}</div>
               ${diff.bet2 ? `<div style="color: ${diff.bet2.is_won ? '#4caf50' : diff.bet2.is_lost ? '#f44336' : '#999'}; font-size: 0.85em; margin-top: 5px;">
-                ${diff.bet2.is_won ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграл' : diff.bet2.is_lost ? '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграл' : '⏳ Ожидание'}
+                ${diff.bet2.is_won ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Выиграл' : diff.bet2.is_lost ? '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Проиграл' : '<svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> Ожидание'}
               </div>` : ''}
             </div>
           </div>

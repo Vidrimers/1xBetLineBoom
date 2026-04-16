@@ -136,7 +136,7 @@ export function displayProfile(profile) {
         <div class="stat-value">${profile.lost_bets}</div>
       </div>
       <div class="stat-card pending">
-        <div class="stat-label">⏳ В ожидании</div>
+        <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> В ожидании</div>
         <div class="stat-value">${profile.pending_bets}</div>
       </div>
       <div class="stat-card won" style="background: rgba(76, 175, 80, 0.15); border-left: 4px solid #4caf50;">

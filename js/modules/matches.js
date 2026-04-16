@@ -918,11 +918,11 @@ export async function displayMatches() {
                   (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) && userBetOnMatch?.prediction
                     ? `<div class="match-cards-row" style="display: flex; justify-content: center; gap: 10px; margin-top: 5px;">
                       ${match.yellow_cards_prediction_enabled ? `<div style="display: flex; align-items: center; gap: 5px;">
-                        <span style="font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg></span>
+                        <span style="font-size: 1.3em;"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg></span>
                         <input type="number" id="yellowCards_${match.id}" class="score-input" min="0" max="20" value="${match.predicted_yellow_cards != null ? match.predicted_yellow_cards : ''}" placeholder="0" ${effectiveStatus !== "pending" || (match.predicted_yellow_cards != null) ? "disabled" : ""} style="width: 50px; text-align: center;">
                       </div>` : ""}
                       ${match.red_cards_prediction_enabled ? `<div style="display: flex; align-items: center; gap: 5px;">
-                        <span style="font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg></span>
+                        <span style="font-size: 1.3em;"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg></span>
                         <input type="number" id="redCards_${match.id}" class="score-input" min="0" max="10" value="${match.predicted_red_cards != null ? match.predicted_red_cards : ''}" placeholder="0" ${effectiveStatus !== "pending" || (match.predicted_red_cards != null) ? "disabled" : ""} style="width: 50px; text-align: center;">
                       </div>` : ""}
                     </div>`
