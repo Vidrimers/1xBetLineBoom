@@ -1,1 +1,46 @@
-/* Стили иконок — будут добавлены в задаче 4 */
+/* ============================================================
+   icons.css — стили SVG-иконок и CSS-переменные для тем
+   Подключать ПОСЛЕ themes.css в index.html
+   ============================================================ */
+
+/* Дефолтная тема — наследуем цвет от родителя */
+:root {
+  --icon-color: currentColor;
+}
+
+/* Базовый класс иконки */
+.icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  color: var(--icon-color, currentColor);
+}
+
+/* ============================================================
+   Переменные --icon-color для каждой темы проекта
+   ============================================================ */
+
+body.theme-hacker-green {
+  --icon-color: #00ff00;
+}
+
+body.theme-solarized {
+  --icon-color: #268bd2;
+}
+
+body.theme-matrix {
+  --icon-color: #00ff41;
+}
+
+body.theme-cyberpunk {
+  --icon-color: #ff00ff;
+}
+
+body.theme-leagueChampions {
+  --icon-color: #1b9ce5;
+}
+
+body.theme-leagueEurope {
+  --icon-color: #ffd700;
+}
