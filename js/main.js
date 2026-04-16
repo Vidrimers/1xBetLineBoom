@@ -443,6 +443,7 @@ import {
   stopDicePositionTracking,
   getIconTitle,
 } from './modules/luckyBet.js';
+import { openTelegramInfoModal, closeTelegramInfoModal } from './modules/telegramInfo.js';
 
 // ===== ЭКСПОРТ В ГЛОБАЛЬНЫЙ SCOPE (для onclick в HTML) =====
 // Все функции которые вызываются из HTML через onclick="..."
@@ -605,6 +606,8 @@ Object.assign(window, {
   // luckyBet
   luckyBetForCurrentRound, updateDicePosition, startDicePositionTracking,
   stopDicePositionTracking, getIconTitle,
+  // telegramInfo
+  openTelegramInfoModal, closeTelegramInfoModal,
   // ui
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
