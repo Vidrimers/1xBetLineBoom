@@ -845,7 +845,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const settingsContainer = document.getElementById("settingsContainer");
       if (settingsContainer && settingsContainer.offsetParent !== null) {
         console.log("👁️ Вкладка стала видимой, обновляем настройки");
-        if (typeof loadSettings === 'function') loadSettings();
+        loadSettings();
       }
     }
   });

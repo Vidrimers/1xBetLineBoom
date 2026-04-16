@@ -186,7 +186,10 @@ export function switchTab(tabName) {
       content.style.opacity = "1";
     }, 10);
     document.querySelectorAll(".tab-btn")[5].classList.add("active");
-    import('./settings.js').then(m => m.initTimezoneSettings());
+    import('./settings.js').then(m => {
+      m.loadSettings();
+      m.initTimezoneSettings();
+    });
     import('./adminPanel.js').then(m => m.loadAdminPanelConfig());
   } else if (tabName === "news") {
     const content = document.getElementById("news-content");
