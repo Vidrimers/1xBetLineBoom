@@ -332,7 +332,14 @@ export async function openBracketModal(bracketId, viewUserId = null) {
     const isClosed = isBracketClosed(currentBracket);
     const isViewMode = viewUserId && viewUserId !== (state.currentUser ? state.currentUser.id : null);
     isViewingOtherUserBracket = isViewMode;
+    window.isViewingOtherUserBracket = isViewMode;
     viewingUserId = viewUserId;
+    window.viewingUserId = viewUserId;
+
+    // Синхронизируем данные с js/bracket.js
+    window.bracketPredictions = bracketPredictions;
+    window.bracketResults = bracketResults;
+    window.shouldHideFutureStages = shouldHideFutureStages;
 
     if (typeof renderBracketModal === 'function') {
       renderBracketModal(isClosed);

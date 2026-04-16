@@ -1,23 +1,51 @@
 // ===== СЕТКА ПЛЕЙ-ОФФ =====
 
-// currentBracket берётся из window (устанавливается js/modules/bracket.js)
-// Геттер/сеттер чтобы js/bracket.js и js/modules/bracket.js работали с одной переменной
+// Геттеры для переменных из state (устанавливаются через main.js)
+// js/bracket.js — обычный скрипт, не модуль, поэтому читает из window
 Object.defineProperty(window, 'currentBracket', {
   get() { return window._currentBracket || null; },
   set(v) { window._currentBracket = v; },
   configurable: true
 });
 
-let bracketPredictions = {};
-let bracketResults = {}; // Фактические результаты матчей (для админа)
+// Прокси-геттеры для state переменных
+function getCurrentUser() { return window.state ? window.state.currentUser : null; }
+function getCurrentEventId() { return window.state ? window.state.currentEventId : null; }
+function getEvents() { return window.state ? window.state.events : []; }
+function getMatches() { return window.state ? window.state.matches : []; }
+
 let bracketResultsInterval = null; // Интервал для обновления результатов
 let isEditingBracket = false;
 let hasUnsavedChanges = false; // Флаг несохраненных изменений
 let originalBracketMatches = null; // Сохраненное состояние для отката
-let isViewingOtherUserBracket = false; // Флаг просмотра чужих прогнозов
-let viewingUserId = null; // ID пользователя, чьи прогнозы просматриваем
-let shouldHideFutureStages = false; // Флаг скрытия незапущенных стадий (зависит от настройки show_bets)
 let allTeams = [];
+
+// Переменные синхронизируются с js/modules/bracket.js через window
+Object.defineProperty(window, 'isViewingOtherUserBracket', {
+  get() { return window._isViewingOtherUserBracket || false; },
+  set(v) { window._isViewingOtherUserBracket = v; },
+  configurable: true
+});
+Object.defineProperty(window, 'viewingUserId', {
+  get() { return window._viewingUserId || null; },
+  set(v) { window._viewingUserId = v; },
+  configurable: true
+});
+Object.defineProperty(window, 'bracketPredictions', {
+  get() { return window._bracketPredictions || {}; },
+  set(v) { window._bracketPredictions = v; },
+  configurable: true
+});
+Object.defineProperty(window, 'bracketResults', {
+  get() { return window._bracketResults || {}; },
+  set(v) { window._bracketResults = v; },
+  configurable: true
+});
+Object.defineProperty(window, 'shouldHideFutureStages', {
+  get() { return window._shouldHideFutureStages || false; },
+  set(v) { window._shouldHideFutureStages = v; },
+  configurable: true
+});
 
 // Структура сетки плей-офф
 const BRACKET_STAGES = [
@@ -390,9 +418,9 @@ async function openBracketModal(bracketId, viewUserId = null) {
   console.log('🔍 openBracketModal вызвана:', { bracketId, viewUserId });
   
   // viewUserId - ID пользователя, чьи прогнозы нужно показать (если null - показываем текущего пользователя)
-  const targetUserId = viewUserId || (currentUser ? currentUser.id : null);
+  const targetUserId = viewUserId || (getCurrentUser() ? getCurrentUser().id : null);
   
-  if (!currentUser && !viewUserId) {
+  if (!getCurrentUser() && !viewUserId) {
     console.error('❌ Нет авторизации');
     if (typeof showCustomAlert === 'function') {
       await showCustomAlert('Сначала войдите в аккаунт', 'Требуется авторизация', '🔒');
@@ -421,8 +449,8 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     // Получаем иконку турнира
     let eventIcon = '🏆';
-    if (currentBracket.event_id && events && events.length > 0) {
-      const event = events.find(e => e.id === currentBracket.event_id);
+    if (currentBracket.event_id && getEvents() && getEvents().length > 0) {
+      const event = getEvents().find(e => e.id === currentBracket.event_id);
       if (event && event.icon) {
         eventIcon = event.icon;
       }
@@ -432,8 +460,8 @@ async function openBracketModal(bracketId, viewUserId = null) {
     // Загружаем прогнозы пользователя (целевого или текущего)
     if (targetUserId) {
       // Передаем viewerId и viewerUsername для проверки настроек приватности и уведомлений
-      const currentUserId = currentUser ? currentUser.id : null;
-      const currentUsername = currentUser ? currentUser.username : null;
+      const currentUserId = getCurrentUser() ? getCurrentUser().id : null;
+      const currentUsername = getCurrentUser() ? getCurrentUser().username : null;
       const params = new URLSearchParams();
       if (currentUserId) params.append('viewerId', currentUserId);
       if (currentUsername) params.append('viewerUsername', currentUsername);
@@ -498,7 +526,7 @@ async function openBracketModal(bracketId, viewUserId = null) {
     const isClosed = isBracketClosed(currentBracket);
     
     // Если смотрим прогнозы другого пользователя - всегда режим просмотра
-    const isViewMode = viewUserId && viewUserId !== (currentUser ? currentUser.id : null);
+    const isViewMode = viewUserId && viewUserId !== (getCurrentUser() ? getCurrentUser().id : null);
     isViewingOtherUserBracket = isViewMode; // Устанавливаем глобальный флаг
     viewingUserId = viewUserId; // Сохраняем ID просматриваемого пользователя
     
@@ -764,8 +792,8 @@ function renderBracketModal(isClosed) {
   
   // Подсчитываем статистику прогнозов (только если сетка заблокирована)
   let statsHtml = '';
-  if (currentUser && isLocked) {
-    const userId = isViewingOtherUserBracket ? viewingUserId : currentUser.id;
+  if (getCurrentUser() && isLocked) {
+    const userId = isViewingOtherUserBracket ? viewingUserId : getCurrentUser().id;
     const stats = calculateBracketStats(userId);
     
     if (stats.total > 0) {
@@ -782,7 +810,7 @@ function renderBracketModal(isClosed) {
     }
   }
   
-  const isAdmin = currentUser && currentUser.isAdmin;
+  const isAdmin = getCurrentUser() && getCurrentUser().isAdmin;
   
   // Скрываем кнопки админа если просматриваем чужие прогнозы
   const showAdminButtons = isAdmin && !isViewingOtherUserBracket;
@@ -1294,7 +1322,7 @@ function renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, is
 
 // Выбрать победителя матча (клик по команде)
 async function selectBracketWinner(stageId, matchIndex, teamName) {
-  if (!currentUser || !currentBracket) return;
+  if (!getCurrentUser() || !currentBracket) return;
   
   // Запрещаем изменять чужие прогнозы
   if (isViewingOtherUserBracket) {
@@ -1378,10 +1406,10 @@ async function selectBracketWinner(stageId, matchIndex, teamName) {
 
 // Удалить прогноз из БД
 async function deleteBracketPrediction(stageId, matchIndex) {
-  if (!currentUser || !currentBracket) return;
+  if (!getCurrentUser() || !currentBracket) return;
   
   try {
-    const response = await fetch(`/api/brackets/${currentBracket.id}/predictions/${currentUser.id}/${stageId}/${matchIndex}`, {
+    const response = await fetch(`/api/brackets/${currentBracket.id}/predictions/${getCurrentUser().id}/${stageId}/${matchIndex}`, {
       method: 'DELETE'
     });
     
@@ -1584,7 +1612,7 @@ async function clearPredictionsFromStage(stageId, matchIndex, deleteFromDB = fal
 
 // Сохранить структуру сетки (команды в матчах) на сервер
 async function saveBracketStructure() {
-  if (!currentUser || !currentBracket) return;
+  if (!getCurrentUser() || !currentBracket) return;
   
   try {
     // Фильтруем только начальную стадию из БД для сохранения
@@ -1603,7 +1631,7 @@ async function saveBracketStructure() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: currentUser.id,
+        user_id: getCurrentUser().id,
         matches: filteredMatches, // Сохраняем только начальные стадии
         temporary_teams: currentBracket.temporary_teams || {} // Сохраняем временные команды
       })
@@ -1621,7 +1649,7 @@ async function saveBracketStructure() {
 
 // Сохранить один прогноз на сервер
 async function saveSingleBracketPrediction(stageId, matchIndex, teamName) {
-  if (!currentUser || !currentBracket) return;
+  if (!getCurrentUser() || !currentBracket) return;
   
   try {
     const predictions = [{
@@ -1636,7 +1664,7 @@ async function saveSingleBracketPrediction(stageId, matchIndex, teamName) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: currentUser.id,
+        user_id: getCurrentUser().id,
         predictions
       })
     });
@@ -1739,7 +1767,7 @@ function updateNextStageDisplay(nextStageId, nextMatchIndex) {
 
 // Сохранить прогнозы
 async function saveBracketPredictions() {
-  if (!currentUser || !currentBracket) return;
+  if (!getCurrentUser() || !currentBracket) return;
   
   // Собираем все прогнозы из объекта bracketPredictions
   const predictions = [];
@@ -1771,7 +1799,7 @@ async function saveBracketPredictions() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: currentUser.id,
+        user_id: getCurrentUser().id,
         predictions
       })
     });
@@ -1896,7 +1924,7 @@ async function toggleBracketEditMode() {
 
 // Переключить блокировку сетки (для админа)
 async function toggleBracketLock() {
-  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  if (!getCurrentUser() || !getCurrentUser().isAdmin || !currentBracket) return;
   
   // Проверяем, не началась ли сетка автоматически
   const isClosed = isBracketClosed(currentBracket);
@@ -1926,7 +1954,7 @@ async function toggleBracketLock() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: currentUser.username,
+        username: getCurrentUser().username,
         is_locked: newLockState
       })
     });
@@ -1961,7 +1989,7 @@ async function toggleBracketLock() {
 
 // Сохранить команды в сетке (для админа)
 async function saveBracketTeams() {
-  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  if (!getCurrentUser() || !getCurrentUser().isAdmin || !currentBracket) return;
   
   try {
     // Берем данные из currentBracket (они уже обновлены через selectTeamForSlot)
@@ -1973,7 +2001,7 @@ async function saveBracketTeams() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: currentUser.username,
+        username: getCurrentUser().username,
         matches: matches,
         temporary_teams: temporary_teams
       })
@@ -2210,27 +2238,27 @@ function clearSlotTeams(stageId, matchIndex, teamIndex) {
 // Открыть модальное окно создания/редактирования сетки (для админа)
 async function openCreateBracketModal() {
   console.log('openCreateBracketModal вызвана');
-  console.log('currentUser:', currentUser);
-  console.log('currentEventId:', currentEventId);
+  console.log('getCurrentUser():', getCurrentUser());
+  console.log('getCurrentEventId():', getCurrentEventId());
   
-  if (!currentUser) {
+  if (!getCurrentUser()) {
     alert('Сначала войдите в аккаунт');
     return;
   }
   
-  if (!currentUser.isAdmin) {
+  if (!getCurrentUser().isAdmin) {
     alert('Доступ запрещен');
     return;
   }
   
-  if (!currentEventId) {
+  if (!getCurrentEventId()) {
     alert('Сначала выберите турнир');
     return;
   }
   
   // Проверяем, есть ли уже сетка для этого турнира
   try {
-    const brackets = await loadBracketsForEvent(currentEventId);
+    const brackets = await loadBracketsForEvent(getCurrentEventId());
     
     if (brackets && brackets.length > 0) {
       // Сетка уже существует - открываем редактирование
@@ -2384,7 +2412,7 @@ function closeCreateBracketModal() {
 
 // Создать или обновить сетку
 async function createBracket() {
-  if (!currentUser || !currentUser.isAdmin) return;
+  if (!getCurrentUser() || !getCurrentUser().isAdmin) return;
   
   const modal = document.getElementById('createBracketModal');
   const bracketId = modal?.dataset.bracketId;
@@ -2433,24 +2461,24 @@ async function createBracket() {
     const method = isEdit ? 'PUT' : 'POST';
     
     console.log(`${isEdit ? 'Обновление' : 'Создание'} сетки:`, {
-      event_id: currentEventId,
+      event_id: getCurrentEventId(),
       name,
       start_date: startDate,
       start_stage: startStage,
       lock_dates: lockDates,
-      username: currentUser.username
+      username: getCurrentUser().username
     });
     
     const response = await fetch(url, {
       method: method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        event_id: currentEventId,
+        event_id: getCurrentEventId(),
         name,
         start_date: startDate,
         start_stage: startStage,
         lock_dates: lockDates,
-        username: currentUser.username
+        username: getCurrentUser().username
       })
     });
     
@@ -2502,7 +2530,7 @@ async function createBracket() {
 
 // Удалить сетку (для админа)
 async function deleteBracket() {
-  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  if (!getCurrentUser() || !getCurrentUser().isAdmin || !currentBracket) return;
   
   const confirmDelete = confirm(`Вы уверены, что хотите удалить сетку "${currentBracket.name}"?\n\nЭто действие удалит:\n- Саму сетку\n- Все прогнозы пользователей\n\nЭто действие необратимо!`);
   
@@ -2513,7 +2541,7 @@ async function deleteBracket() {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: currentUser.username
+        username: getCurrentUser().username
       })
     });
     
@@ -2547,7 +2575,7 @@ async function deleteBracket() {
 
 // Очистить последующие стадии сетки (для админа)
 async function cleanupBracketStages() {
-  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  if (!getCurrentUser() || !getCurrentUser().isAdmin || !currentBracket) return;
   
   // Определяем первую заполненную стадию
   const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
@@ -2613,7 +2641,7 @@ async function cleanupBracketStages() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: currentUser.username,
+          username: getCurrentUser().username,
           stages: stagesToDelete
         })
       });
@@ -2658,14 +2686,14 @@ async function cleanupBracketStages() {
 
 // Установить результат матча (для админа)
 async function setBracketMatchResult(stageId, matchIndex, actualWinner) {
-  if (!currentUser || !currentUser.isAdmin || !currentBracket) return;
+  if (!getCurrentUser() || !getCurrentUser().isAdmin || !currentBracket) return;
   
   try {
     const response = await fetch(`/api/admin/brackets/${currentBracket.id}/results`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: currentUser.username,
+        username: getCurrentUser().username,
         stage: stageId,
         match_index: matchIndex,
         actual_winner: actualWinner
