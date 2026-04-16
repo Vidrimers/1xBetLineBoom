@@ -6,7 +6,8 @@ body.theme-solarized .bet-delete-btn,
 body.theme-matrix .bet-delete-btn,
 body.theme-cyberpunk .bet-delete-btn,
 body.theme-leagueChampions .bet-delete-btn,
-body.theme-leagueEurope .bet-delete-btn {
+body.theme-leagueEurope .bet-delete-btn,
+body.theme-cream-material .bet-delete-btn {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -17,7 +18,8 @@ body.theme-solarized .bet-delete-btn:hover,
 body.theme-matrix .bet-delete-btn:hover,
 body.theme-cyberpunk .bet-delete-btn:hover,
 body.theme-leagueChampions .bet-delete-btn:hover,
-body.theme-leagueEurope .bet-delete-btn:hover {
+body.theme-leagueEurope .bet-delete-btn:hover,
+body.theme-cream-material .bet-delete-btn:hover {
   background: rgba(244, 67, 54, 0.2) !important;
   border: none !important;
   box-shadow: none !important;
@@ -29,7 +31,8 @@ body.theme-solarized .auth-btn.logout-mode,
 body.theme-matrix .auth-btn.logout-mode,
 body.theme-cyberpunk .auth-btn.logout-mode,
 body.theme-leagueChampions .auth-btn.logout-mode,
-body.theme-leagueEurope .auth-btn.logout-mode {
+body.theme-leagueEurope .auth-btn.logout-mode,
+body.theme-cream-material .auth-btn.logout-mode {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -40,7 +43,8 @@ body.theme-solarized .auth-btn.logout-mode:hover,
 body.theme-matrix .auth-btn.logout-mode:hover,
 body.theme-cyberpunk .auth-btn.logout-mode:hover,
 body.theme-leagueChampions .auth-btn.logout-mode:hover,
-body.theme-leagueEurope .auth-btn.logout-mode:hover {
+body.theme-leagueEurope .auth-btn.logout-mode:hover,
+body.theme-cream-material .auth-btn.logout-mode:hover {
   box-shadow: none !important;
 }
 
@@ -50,7 +54,8 @@ body.theme-solarized #avatarEditBtn,
 body.theme-matrix #avatarEditBtn,
 body.theme-cyberpunk #avatarEditBtn,
 body.theme-leagueChampions #avatarEditBtn,
-body.theme-leagueEurope #avatarEditBtn {
+body.theme-leagueEurope #avatarEditBtn,
+body.theme-cream-material #avatarEditBtn {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -62,7 +67,8 @@ body.theme-solarized .close-profile-btn,
 body.theme-matrix .close-profile-btn,
 body.theme-cyberpunk .close-profile-btn,
 body.theme-leagueChampions .close-profile-btn,
-body.theme-leagueEurope .close-profile-btn {
+body.theme-leagueEurope .close-profile-btn,
+body.theme-cream-material .close-profile-btn {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -74,7 +80,8 @@ body.theme-solarized .round-filter-btn.finished,
 body.theme-matrix .round-filter-btn.finished,
 body.theme-cyberpunk .round-filter-btn.finished,
 body.theme-leagueChampions .round-filter-btn.finished,
-body.theme-leagueEurope .round-filter-btn.finished {
+body.theme-leagueEurope .round-filter-btn.finished,
+body.theme-cream-material .round-filter-btn.finished {
   background: rgba(255, 152, 0, 0.6) !important;
   border-color: #f57c00 !important;
   box-shadow: none !important;
@@ -85,7 +92,8 @@ body.theme-solarized .round-filter-btn.finished:hover,
 body.theme-matrix .round-filter-btn.finished:hover,
 body.theme-cyberpunk .round-filter-btn.finished:hover,
 body.theme-leagueChampions .round-filter-btn.finished:hover,
-body.theme-leagueEurope .round-filter-btn.finished:hover {
+body.theme-leagueEurope .round-filter-btn.finished:hover,
+body.theme-cream-material .round-filter-btn.finished:hover {
   background: rgba(255, 152, 0, 0.8) !important;
   border-color: #c9721c !important;
 }

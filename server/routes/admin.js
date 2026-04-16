@@ -1106,7 +1106,8 @@ router.post("/api/admin/user-settings/:userId", async (req, res) => {
       'theme-leagueChampions': '🏆 League Champions',
       'theme-leagueEurope': '⭐ League Europe',
       'theme-dark': '🌙 Темная',
-      'theme-light': '☀️ Светлая'
+      'theme-light': '☀️ Светлая',
+      'theme-cream-material': '☀️ Cream Material'
     };
 
     // Форматируем настройки для отправки

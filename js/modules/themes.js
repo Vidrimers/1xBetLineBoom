@@ -22,7 +22,8 @@ export function previewTheme(themeName) {
     "theme-matrix",
     "theme-cyberpunk",
     "theme-leagueChampions",
-    "theme-leagueEurope"
+    "theme-leagueEurope",
+    "theme-cream-material"
   );
 
   // Добавляем новый класс темы
@@ -61,7 +62,8 @@ export async function saveTheme() {
         "theme-matrix",
         "theme-cyberpunk",
         "theme-leagueChampions",
-        "theme-leagueEurope"
+        "theme-leagueEurope",
+        "theme-cream-material"
       );
       document.body.classList.add(themeName);
 
@@ -87,7 +89,8 @@ export async function changeTheme(themeName) {
     "theme-matrix",
     "theme-cyberpunk",
     "theme-leagueChampions",
-    "theme-leagueEurope"
+    "theme-leagueEurope",
+    "theme-cream-material"
   );
 
   // Добавляем новый класс темы
@@ -131,7 +134,8 @@ export async function loadSavedTheme() {
             "theme-matrix",
             "theme-cyberpunk",
             "theme-leagueChampions",
-            "theme-leagueEurope"
+            "theme-leagueEurope",
+            "theme-cream-material"
           );
           document.body.classList.add(savedTheme);
 

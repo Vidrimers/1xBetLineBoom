@@ -1016,7 +1016,8 @@ ${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
             'theme-matrix': '🟢 Matrix',
             'theme-cyberpunk': '🌃 Cyberpunk',
             'theme-leagueChampions': '🏆 League Champions',
-            'theme-leagueEurope': '⭐ League Europe'
+            'theme-leagueEurope': '⭐ League Europe',
+            'theme-cream-material': '☀️ Cream Material'
           };
 
           const adminMessage = `🎨 ИЗМЕНЕНИЕ ТЕМЫ
