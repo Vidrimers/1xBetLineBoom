@@ -10,21 +10,24 @@ function _showSaveStatus(id, status) {
   }
 }
 
+// Список всех доступных тем (единый источник правды)
+const ALL_THEMES = [
+  "theme-default",
+  "theme-hacker-green",
+  "theme-solarized",
+  "theme-matrix",
+  "theme-cyberpunk",
+  "theme-leagueChampions",
+  "theme-leagueEurope",
+  "theme-cream-material",
+];
+
 // Предварительный просмотр темы (без сохранения на сервере)
 export function previewTheme(themeName) {
   console.log(`🎨 Предпросмотр темы: ${themeName}`);
 
   // Удаляем все классы тем
-  document.body.classList.remove(
-    "theme-default",
-    "theme-hacker-green",
-    "theme-solarized",
-    "theme-matrix",
-    "theme-cyberpunk",
-    "theme-leagueChampions",
-    "theme-leagueEurope",
-    "theme-cream-material"
-  );
+  document.body.classList.remove(...ALL_THEMES);
 
   // Добавляем новый класс темы
   document.body.classList.add(themeName);
@@ -55,16 +58,7 @@ export async function saveTheme() {
       localStorage.setItem("selectedTheme", themeName);
 
       // Применяем тему
-      document.body.classList.remove(
-        "theme-default",
-        "theme-hacker-green",
-        "theme-solarized",
-        "theme-matrix",
-        "theme-cyberpunk",
-        "theme-leagueChampions",
-        "theme-leagueEurope",
-        "theme-cream-material"
-      );
+      document.body.classList.remove(...ALL_THEMES);
       document.body.classList.add(themeName);
 
       _showSaveStatus('themeStatus', 'saved');
@@ -82,16 +76,7 @@ export async function changeTheme(themeName) {
   console.log(`🎨 Смена темы на: ${themeName}`);
 
   // Удаляем все классы тем
-  document.body.classList.remove(
-    "theme-default",
-    "theme-hacker-green",
-    "theme-solarized",
-    "theme-matrix",
-    "theme-cyberpunk",
-    "theme-leagueChampions",
-    "theme-leagueEurope",
-    "theme-cream-material"
-  );
+  document.body.classList.remove(...ALL_THEMES);
 
   // Добавляем новый класс темы
   document.body.classList.add(themeName);
@@ -127,16 +112,7 @@ export async function loadSavedTheme() {
           localStorage.setItem("selectedTheme", savedTheme);
 
           // Удаляем старую тему и применяем новую
-          document.body.classList.remove(
-            "theme-default",
-            "theme-hacker-green",
-            "theme-solarized",
-            "theme-matrix",
-            "theme-cyberpunk",
-            "theme-leagueChampions",
-            "theme-leagueEurope",
-            "theme-cream-material"
-          );
+          document.body.classList.remove(...ALL_THEMES);
           document.body.classList.add(savedTheme);
 
           if (themeSelect) {
