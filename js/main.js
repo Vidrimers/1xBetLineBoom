@@ -101,7 +101,7 @@ import {
   filterTournamentParticipantBets,
   closeTournamentParticipantBetsModal,
 } from './modules/participants.js';
-import { loadProfile, displayProfile, loadUserAwards, getAwardIcon, closeAvatarModal, saveAvatar, deleteAvatar } from './modules/profile.js';
+import { loadProfile, displayProfile, loadUserAwards, getAwardIcon, closeAvatarModal, saveAvatar, deleteAvatar, editUsername, saveUsername } from './modules/profile.js';
 import {
   loadSettings,
   openTelegramBindInfoModal,
@@ -177,6 +177,8 @@ import {
   setScoreResult,
   closeScoreMatchResultModal,
   saveScoreMatchResult,
+  setMatchResult,
+  unlockMatch,
 } from './modules/matchEdit.js';
 import {
   openCreateEventModal,
@@ -202,6 +204,9 @@ import {
   selectEventTeamFile,
   closeEventTeamFileSelector,
   closeLockEventModal,
+  openLockEventModal,
+  unlockEvent,
+  deleteEvent,
 } from './modules/eventModals.js';
 import {
   loadLiveMatches,
@@ -491,6 +496,10 @@ import {
   closeAdminModal,
   syncAllTelegramIds,
   testGroupNotification,
+  renameUser,
+  deleteUser,
+  checkUserBotContact,
+  sendUserSettingsToAdmin,
 } from './modules/adminUsers.js';
 import {
   openBracketModal,
@@ -539,7 +548,7 @@ Object.assign(window, {
   closeTournamentParticipantBetsModal,
   // profile
   loadProfile, displayProfile, loadUserAwards, getAwardIcon,
-  closeAvatarModal, saveAvatar, deleteAvatar,
+  closeAvatarModal, saveAvatar, deleteAvatar, editUsername, saveUsername,
   // settings
   loadSettings, openTelegramBindInfoModal, deleteTelegramUsername,
   initTimezoneSettings, loadUserTimezone, saveTimezoneSettings,
@@ -569,6 +578,7 @@ Object.assign(window, {
   setFinalResult, saveFinalMatchResult, openScoreMatchResultModal,
   syncScoreModalInputs, setScoreResult, closeScoreMatchResultModal,
   saveScoreMatchResult,
+  setMatchResult, unlockMatch,
   // eventModals
   openCreateEventModal, closeCreateEventModal, openEditEventModal,
   closeEditEventModal, handleEventIconChange, handleEditEventIconChange,
@@ -579,6 +589,7 @@ Object.assign(window, {
   openTournamentInfoModal,
   openEventTeamFileSelector, selectEventTeamFile, closeEventTeamFileSelector,
   closeLockEventModal,
+  openLockEventModal, unlockEvent, deleteEvent,
   // live
   loadLiveMatches, showLiveEventMatches, backToLiveEvents, loadCompletedDays,
   renderCompletedDays, renderCompletedDayMatches, toggleCompletedDay,
@@ -685,6 +696,7 @@ Object.assign(window, {
   loadEventsForRecount, loadRoundsForRecount,
   // adminUsers
   loadAdminUsers, closeAdminModal, syncAllTelegramIds, testGroupNotification,
+  renameUser, deleteUser, checkUserBotContact, sendUserSettingsToAdmin,
   // bracket
   openBracketModal, closeBracketModal, openCreateBracketModal,
   closeCreateBracketModal, createBracket,

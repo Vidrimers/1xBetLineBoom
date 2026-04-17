@@ -417,3 +417,79 @@ export async function saveScoreMatchResult() {
     await showCustomAlert('Ошибка при сохранении результата матча: ' + error.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
+
+// ===== БЫСТРАЯ УСТАНОВКА РЕЗУЛЬТАТА МАТЧА (из кнопок в списке матчей) =====
+
+export async function setMatchResult(matchId, result) {
+  const match = state.matches.find((m) => m.id === matchId);
+  if (!match) { console.error('Матч не найден:', matchId); return; }
+
+  const resultMap = { team1: 'team1_win', draw: 'draw', team2: 'team2_win' };
+
+  try {
+    const response = await fetch(`/api/admin/matches/${matchId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: state.currentUser?.username,
+        status: 'finished',
+        result: resultMap[result],
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      match.status = 'finished';
+      match.result = resultMap[result];
+      match.winner = result;
+      displayMatches();
+      setTimeout(() => loadMyBets(), 300);
+    } else {
+      await showCustomAlert('Ошибка: ' + data.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
+  } catch (e) {
+    console.error('Ошибка при установке результата:', e);
+    await showCustomAlert('Ошибка при установке результата матча', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
+export async function unlockMatch(matchId) {
+  const match = state.matches.find((m) => m.id === matchId);
+  if (!match) { console.error('Матч не найден:', matchId); return; }
+
+  const confirmed = await showCustomConfirm(
+    `Разблокировать матч "${match.team1_name} vs ${match.team2_name}"?\n\nРезультат будет сброшен и ставки снова станут активными.`,
+    'Разблокировка матча',
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
+  );
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/matches/${matchId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: state.currentUser?.username,
+        status: 'pending',
+        result: null,
+        winner: null,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      match.status = 'pending';
+      match.result = null;
+      match.winner = null;
+      displayMatches();
+      setTimeout(() => loadMyBets(), 300);
+    } else {
+      await showCustomAlert('Ошибка: ' + data.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
+  } catch (e) {
+    console.error('Ошибка при разблокировке матча:', e);
+    await showCustomAlert('Ошибка при разблокировке матча', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}

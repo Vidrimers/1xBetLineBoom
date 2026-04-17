@@ -2,6 +2,8 @@ import * as state from './state.js';
 import { lockBodyScroll, unlockBodyScroll, showCustomAlert, showCustomConfirm } from './ui.js';
 import { initCustomSelect, setCustomSelectValue } from './customSelect.js';
 import { loadEventsList } from './events.js';
+import { canDeleteTournaments } from './admin.js';
+import { displayMatches } from './matches.js';
 
 // Открыть модальное окно создания турнира
 export function openCreateEventModal() {
@@ -850,4 +852,77 @@ export function closeLockEventModal() {
   }
   // Очищаем форму
   document.getElementById('lockEventForm').reset();
+}
+
+// ===== БЛОКИРОВКА / РАЗБЛОКИРОВКА / УДАЛЕНИЕ ТУРНИРА =====
+
+export function openLockEventModal(eventId, eventName) {
+  const modal = document.getElementById('lockEventModal');
+  if (modal) {
+    lockBodyScroll();
+    modal.style.display = 'flex';
+    document.getElementById('lockEventForm').dataset.eventId = eventId;
+  }
+}
+
+export async function unlockEvent(eventId) {
+  const confirmed = await showCustomConfirm(
+    'Вы уверены, что хотите разблокировать этот турнир?',
+    'Разблокировка турнира',
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
+  );
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/unlock`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: window.state?.currentUser?.username }),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      loadEventsList();
+    } else {
+      await showCustomAlert(`Ошибка при разблокировке турнира: ${result.error || response.status}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
+  } catch (e) {
+    console.error('Ошибка:', e);
+    await showCustomAlert(`Ошибка при разблокировке турнира: ${e.message}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
+export async function deleteEvent(eventId) {
+  if (!canDeleteTournaments()) {
+    await showCustomAlert('Только администратор или модератор с правами может удалять турниры', 'Недостаточно прав', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+
+  const confirmed = await showCustomConfirm(
+    'Вы уверены, что хотите удалить этот турнир?\n\nВсе матчи и ставки этого турнира также будут удалены.',
+    'Удаление турнира',
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
+  );
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: window.state?.currentUser?.username }),
+    });
+    const result = await response.json();
+
+    if (response.ok) {
+      await loadEventsList();
+      if (window.state?.currentEventId === eventId) {
+        window.state.currentEventId = null;
+        displayMatches();
+      }
+    } else {
+      await showCustomAlert(`Ошибка: ${result.error}`, 'Ошибка удаления', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
+  } catch (e) {
+    console.error('Ошибка при удалении турнира:', e);
+    await showCustomAlert('Ошибка при удалении турнира', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
 }

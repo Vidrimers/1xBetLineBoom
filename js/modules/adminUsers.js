@@ -322,3 +322,103 @@ export async function testGroupNotification() {
     await showCustomAlert("Ошибка при отправке уведомления", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
+
+// ===== ФУНКЦИИ УПРАВЛЕНИЯ ПОЛЬЗОВАТЕЛЯМИ =====
+
+export async function renameUser(userId, currentUsername) {
+  if (!canEditUsers()) { await showCustomAlert('У вас нет прав', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+  if (currentUsername === ADMIN_DB_NAME && !isAdmin()) {
+    await showCustomAlert('Модератор не может переименовать администратора!', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+
+  const newUsername = await showCustomPrompt(`Новое имя для ${currentUsername}:`, 'Переименование', '<svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>');
+  if (!newUsername || newUsername.trim() === '') return;
+
+  try {
+    const response = await fetch(`/api/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUser.username, newUsername: newUsername.trim() }),
+    });
+    const result = await response.json();
+    if (!response.ok) { await showCustomAlert('Ошибка: ' + result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+    await showCustomAlert(result.message, 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
+    loadAdminUsers();
+  } catch (e) {
+    console.error('Ошибка при переименовании:', e);
+    await showCustomAlert('Ошибка при переименовании пользователя', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
+export async function deleteUser(userId, username) {
+  if (!canDeleteUsers()) { await showCustomAlert('У вас нет прав', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+  if (username === ADMIN_DB_NAME) { await showCustomAlert('Нельзя удалить администратора!', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+
+  const confirmed = await showCustomConfirm(
+    `Вы уверены, что хотите удалить пользователя "${username}"?\nВсе его ставки будут удалены!`,
+    'Удаление пользователя',
+    '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'
+  );
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUser.username }),
+    });
+    const result = await response.json();
+    if (!response.ok) { await showCustomAlert('Ошибка: ' + result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+    loadAdminUsers();
+  } catch (e) {
+    console.error('Ошибка при удалении:', e);
+    await showCustomAlert('Ошибка при удалении пользователя', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
+export async function checkUserBotContact(userId, username) {
+  if (!canCheckBot()) { await showCustomAlert('У вас нет прав', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/bot-contact-check?username=${currentUser.username}`);
+    const result = await response.json();
+    if (!response.ok) { await showCustomAlert(result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+
+    let message = `<div style="text-align:left;line-height:1.8;"><div style="margin-bottom:15px;font-size:16px;font-weight:bold;">👤 Пользователь: ${username}</div>`;
+
+    if (result.telegram_username) {
+      message += `<div style="margin-bottom:15px;padding:10px;background:rgba(255,255,255,0.05);border-radius:6px;"><div>📱 Telegram: <strong>@${result.telegram_username}</strong></div></div>`;
+      if (result.has_bot_contact) {
+        message += `<div style="background:rgba(76,175,80,0.1);padding:12px;border-radius:6px;border-left:3px solid #4caf50;"><div style="font-weight:bold;color:#4caf50;">✅ Писал боту в личку</div><div style="font-size:14px;">💬 Chat ID: <strong>${result.telegram_id}</strong><br>🔐 2FA: <strong>${result.require_login_2fa ? 'Включено' : 'Отключено'}</strong></div></div>`;
+      } else {
+        message += `<div style="background:rgba(244,67,54,0.1);padding:12px;border-radius:6px;border-left:3px solid #f44336;"><div style="font-weight:bold;color:#f44336;">❌ НЕ писал боту в личку</div><div style="font-size:14px;margin-top:8px;">💡 Нужно написать боту <strong>@OnexBetLineBoomBot</strong> команду <code>/start</code></div></div>`;
+      }
+    } else {
+      message += `<div style="background:rgba(244,67,54,0.1);padding:12px;border-radius:6px;border-left:3px solid #f44336;"><div style="font-weight:bold;color:#f44336;">❌ Telegram не привязан</div></div>`;
+    }
+
+    message += '</div>';
+    await showCustomAlert(message, 'Проверка контакта с ботом', '🤖');
+  } catch (e) {
+    console.error('Ошибка:', e);
+    await showCustomAlert('Ошибка при проверке контакта с ботом', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
+export async function sendUserSettingsToAdmin(userId, username) {
+  if (!canViewSettings()) { await showCustomAlert('У вас нет прав', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+
+  try {
+    const response = await fetch(`/api/admin/user-settings/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUser.username }),
+    });
+    const result = await response.json();
+    if (!response.ok) { await showCustomAlert('Ошибка: ' + result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); }
+  } catch (e) {
+    console.error('Ошибка при отправке настроек:', e);
+    await showCustomAlert('Ошибка при отправке настроек', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}

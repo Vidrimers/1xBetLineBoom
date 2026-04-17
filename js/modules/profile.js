@@ -1,4 +1,5 @@
 import { currentUser } from './state.js';
+import { showCustomAlert, showCustomPrompt } from './ui.js';
 
 // ===== ПРОФИЛЬ =====
 
@@ -537,4 +538,66 @@ export async function deleteAvatar() {
   } catch (error) {
     console.error("❌ Ошибка при удалении аватара:", error);
   }
+}
+
+// ===== РЕДАКТИРОВАНИЕ ИМЕНИ ПОЛЬЗОВАТЕЛЯ =====
+
+export async function saveUsername(newUsername) {
+  try {
+    const forbiddenBase = newUsername.toLowerCase().replace(/[\s\d.\-]/g, '');
+    if (forbiddenBase === 'мемослав' || forbiddenBase === 'memoslav' || forbiddenBase === 'memoslave') {
+      await showCustomAlert('Are you ohuel tam?', 'Ошибка', '🚫');
+      return;
+    }
+
+    const response = await fetch(`/api/user/${currentUser.id}/username`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: newUsername }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      await showCustomAlert(result.error || 'Не удалось изменить имя', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+      return;
+    }
+
+    await showCustomAlert(
+      `Имя успешно изменено на "${newUsername}".\n\nВы будете разлогинены со всех устройств.\nВойдите заново с новым именем.`,
+      'Имя изменено',
+      '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
+    );
+
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('sessionToken');
+    window.location.reload();
+  } catch (e) {
+    console.error('Ошибка при изменении имени:', e);
+    await showCustomAlert('Ошибка при изменении имени', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
+export async function editUsername() {
+  const currentUsername = document.getElementById('usernameDisplay').textContent;
+  const newUsername = await showCustomPrompt(
+    'Введите новое имя пользователя:',
+    'Изменение имени',
+    '<svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>',
+    currentUsername
+  );
+
+  if (!newUsername) return;
+  if (newUsername === currentUsername) return;
+  if (newUsername.trim().length === 0) {
+    await showCustomAlert('Имя не может быть пустым', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+  if (newUsername.length > 30) {
+    await showCustomAlert('Имя не может быть длиннее 30 символов', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+
+  const capitalized = newUsername.charAt(0).toUpperCase() + newUsername.slice(1);
+  await saveUsername(capitalized);
 }

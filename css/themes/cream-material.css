@@ -55,8 +55,8 @@ body.theme-cream-material .user-section {
 /* Кнопки */
 body.theme-cream-material button,
 body.theme-cream-material .btn {
-  background: #6750a4 !important;
-  color: #ffffff !important;
+  background: transparent !important;
+  color: #000 !important;
   border: none !important;
   box-shadow: 0 1px 3px rgba(103,80,164,0.3) !important;
 }
