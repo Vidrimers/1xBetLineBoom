@@ -293,8 +293,9 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
     if (events.length > 0) {
       context.events = events.map(e => `• ${e.name} (${e.status || 'активный'})`).join('\n');
 
-      // Таблицы только активных турниров (топ-8 участников с подробной информацией)
+      // Таблицы только активных турниров (топ-10 участников с подробной информацией)
       const allParticipants = [];
+      const userPositions = []; // Явные позиции пользователя по турнирам
       const activeEvents = events.filter(e => e.status === 'active' || !e.status); // активные или без статуса
       for (const event of activeEvents) {
         try {
@@ -302,16 +303,19 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
           if (participants && participants.length > 0) {
             // Находим позицию текущего пользователя если он есть
             let currentUserPosition = null;
+            let currentUserPoints = null;
             if (currentUser) {
               const userIndex = participants.findIndex(p => p.username.toLowerCase() === currentUser.username.toLowerCase());
               if (userIndex !== -1) {
                 currentUserPosition = userIndex + 1;
+                currentUserPoints = participants[userIndex].event_won || 0;
+                userPositions.push(`${event.name}: место ${currentUserPosition} из ${participants.length}, очков ${currentUserPoints}`);
               }
             }
             
             allParticipants.push(
               `📊 ${event.name}:\n` +
-              participants.slice(0, 8).map((p, i) => {
+              participants.slice(0, 10).map((p, i) => {
                 const position = i + 1;
                 const isCurrentUser = currentUser && p.username.toLowerCase() === currentUser.username.toLowerCase();
                 const marker = isCurrentUser ? ' ⭐' : '';
@@ -319,12 +323,17 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
               }).join('\n')
             );
             
-            // Добавляем информацию о позиции текущего пользователя если он не в топ-8
-            if (currentUser && currentUserPosition && currentUserPosition > 8) {
-              allParticipants[allParticipants.length - 1] += `\n...\n${currentUserPosition}. ${currentUser.username}: ${participants[currentUserPosition - 1].event_won || 0} очков ⭐`;
+            // Добавляем информацию о позиции текущего пользователя если он не в топ-10
+            if (currentUser && currentUserPosition && currentUserPosition > 10) {
+              allParticipants[allParticipants.length - 1] += `\n...\n${currentUserPosition}. ${currentUser.username}: ${currentUserPoints} очков ⭐`;
             }
           }
         } catch (e) {}
+      }
+      
+      // Сохраняем явные позиции пользователя в контекст
+      if (userPositions.length > 0) {
+        context.userPositions = userPositions.join('\n');
       }
       if (allParticipants.length > 0) {
         context.participants = allParticipants.join('\n');

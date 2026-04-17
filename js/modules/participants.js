@@ -519,12 +519,12 @@ export async function displayTournamentParticipants(
     .map((participant, index) => {
       const place = placesMap.get(index);
       const totalParticipants = sortedParticipants.length;
-      let emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-2"></use></svg>'; // нейтральное для середины
+      let emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-mid"></use></svg>'; // нейтральное для середины
 
       if (place === 1) {
         emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-1"></use></svg>'; // первое место
-      } else if (index === totalParticipants - 1 && totalParticipants > 1) {
-        emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-3"></use></svg>'; // последнее место
+      } else if (index === totalParticipants - 1 && totalParticipants > 1 && place !== 1) {
+        emoji = '<svg class="icon" aria-hidden="true"><use href="#icon-place-last"></use></svg>'; // последнее место
       }
 
       // Добавляем класс 'winner' если это заблокированный турнир и первое место
