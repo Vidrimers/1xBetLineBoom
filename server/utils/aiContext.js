@@ -265,8 +265,9 @@ function buildTournamentContext(telegramUsername, tournamentName) {
  * Формирует полный контекст для AI
  * @param {string} telegramUsername - Telegram username пользователя (опционально)
  * @param {string} siteUsername - Username на сайте (опционально, для веб-чата)
+ * @param {number} telegramId - Telegram ID пользователя (приоритетный способ поиска)
  */
-export function buildFullAIContext(telegramUsername = null, siteUsername = null) {
+export function buildFullAIContext(telegramUsername = null, siteUsername = null, telegramId = null) {
   const context = {};
 
   try {
@@ -274,7 +275,11 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null)
     let currentUser = null;
     if (siteUsername) {
       currentUser = db.prepare('SELECT id, username, show_bets FROM users WHERE LOWER(username) = LOWER(?)').get(siteUsername);
+    } else if (telegramId) {
+      // Приоритет: поиск по telegram_id (надёжнее, не зависит от смены ника)
+      currentUser = db.prepare('SELECT id, username, show_bets FROM users WHERE telegram_id = ?').get(telegramId);
     } else if (telegramUsername) {
+      // Fallback: поиск по telegram_username
       currentUser = db.prepare('SELECT id, username, show_bets FROM users WHERE LOWER(telegram_username) = LOWER(?)').get(telegramUsername);
     }
 
