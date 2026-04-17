@@ -224,7 +224,7 @@ router.get("/api/users/:userId/global-stats", (req, res) => {
       pending_bets: bets.pending_bets || 0,
       tournaments_count: bets.tournaments_count || 0,
       tournament_wins: tournamentWins?.count || 0,
-      win_accuracy: bets.total_bets > 0 ? Math.round((bets.won_count / bets.total_bets) * 100) : 0,
+      win_accuracy: (bets.won_count + bets.lost_bets) > 0 ? Math.round((bets.won_count / (bets.won_count + bets.lost_bets)) * 100) : 0,
       bracket_correct: bracketStats?.correct_bracket_predictions || 0,
       bracket_incorrect: bracketStats?.incorrect_bracket_predictions || 0
     };

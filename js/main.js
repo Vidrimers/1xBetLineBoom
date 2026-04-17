@@ -737,7 +737,7 @@ Object.assign(window, {
           <div class="stat-card lost"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Неугаданных в сетке</div><div class="stat-value" style="color:#f44336">${userData.bracket_incorrect||0}</div></div>
           <div class="stat-card"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Побед в турнирах</div><div class="stat-value" style="color:#ffc107">${userData.tournament_wins||0}</div></div>
         </div>
-        ${userData.total_bets > 0 ? `<div class="stat-card won" style="margin-bottom:15px;"><div class="stat-label">Точность угадывания</div><div class="stat-value" style="color:#4caf50">${((userData.won_bets/userData.total_bets)*100).toFixed(1)}%</div></div>` : ''}
+        ${(userData.won_bets + userData.lost_bets) > 0 ? `<div class="stat-card won" style="margin-bottom:15px;"><div class="stat-label">Точность угадывания</div><div class="stat-value" style="color:#4caf50">${((userData.won_bets/(userData.won_bets+userData.lost_bets))*100).toFixed(1)}%</div></div>` : ''}
       `;
 
       const awardsHTML = allAwards.length > 0 ? `

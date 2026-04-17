@@ -2008,11 +2008,11 @@ export async function startBot() {
       // Используем имя с сайта (display_name = username)
       const displayName = user.username || firstName;
 
-      // Рассчитываем процент побед
-      // Используем ту же логику, что и на сайте: won_count / total_bets (только завершенные ставки)
+      // Рассчитываем процент побед только по завершённым ставкам (без pending)
+      const completedBets = (user.won_count || 0) + (user.lost_bets || 0);
       const winPercentage =
-        (user.total_bets || 0) > 0
-          ? Math.round(((user.won_count || 0) / (user.total_bets || 0)) * 100)
+        completedBets > 0
+          ? Math.round(((user.won_count || 0) / completedBets) * 100)
           : 0;
 
       await sendMessageWithThread(
