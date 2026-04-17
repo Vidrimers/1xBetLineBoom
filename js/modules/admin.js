@@ -217,7 +217,7 @@ export async function backupDatabase() {
   } finally {
     const backupBtn = document.querySelector('[onclick="backupDatabase()"]');
     if (backupBtn) {
-      backupBtn.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg>' + ' Создать бэкап';
+      backupBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#icon-create"></use></svg>' + ' Создать бэкап';
       backupBtn.disabled = false;
     }
   }
