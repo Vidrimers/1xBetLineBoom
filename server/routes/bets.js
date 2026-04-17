@@ -5,6 +5,7 @@ import { writeBetLog } from '../utils/logger.js';
 import { notifyNewBet, notifyBetDeleted, notifyNewScorePrediction, notifyIllegalBet, sendUserMessage, sendAdminNotification } from '../../OnexBetLineBoombot.js';
 import { LOG_FILE_PATH, MAX_LOG_SIZE } from '../config.js';
 import fs from 'fs';
+import { handleUserBetInTournament } from '../services/inactivityService.js';
 
 const router = Router();
 
@@ -118,6 +119,15 @@ router.post("/api/bets", async (req, res) => {
         is_final_bet ? 1 : 0,
         parameter_type || null
       );
+
+    // Проверяем возврат пользователя в турнир (если был исключён за инактивность)
+    if (!is_final_bet) {
+      try {
+        handleUserBetInTournament(user_id, match.event_id);
+      } catch (inactivityError) {
+        console.error('❌ Ошибка обработки возврата пользователя в турнир:', inactivityError);
+      }
+    }
 
     // Получаем прогноз на счет если есть
     let scorePrediction = null;

@@ -450,9 +450,14 @@ router.get("/api/participants", (req, res) => {
       FROM users u
       LEFT JOIN bets b ON u.id = b.user_id
       LEFT JOIN matches m ON b.match_id = m.id
+      -- Исключаем ставки пользователей, которые исключены из данного турнира за инактивность
+      LEFT JOIN user_tournament_inactivity uti 
+        ON uti.user_id = b.user_id AND uti.event_id = m.event_id AND uti.is_excluded = 1
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+      -- Учитываем ставку только если пользователь НЕ исключён из этого турнира
+      WHERE uti.id IS NULL OR b.id IS NULL
       GROUP BY u.id, u.username, u.avatar
       ORDER BY COUNT(b.id) DESC
     `

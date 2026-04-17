@@ -319,4 +319,27 @@ export function runMigrations() {
   } catch (error) {
     console.error("❌ Ошибка миграции user_notification_settings:", error);
   }
+
+  // Миграция: таблица отслеживания инактивности пользователей по турам
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS user_tournament_inactivity (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        event_id INTEGER NOT NULL,
+        inactive_rounds_count INTEGER DEFAULT 0,
+        last_active_round TEXT,
+        is_excluded INTEGER DEFAULT 0,
+        excluded_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (event_id) REFERENCES events(id),
+        UNIQUE(user_id, event_id)
+      )
+    `);
+    console.log("✅ Таблица user_tournament_inactivity готова");
+  } catch (error) {
+    console.error("❌ Ошибка создания таблицы user_tournament_inactivity:", error);
+  }
 }

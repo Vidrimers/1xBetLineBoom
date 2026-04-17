@@ -8,6 +8,7 @@ import { sendUserMessage } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, ICON_TO_COMPETITION, COMPETITION_DICTIONARY_MAPPING, ROOT_DIR } from '../config.js';
 import { processedDates, saveProcessedDate, checkDateCompletion, updateMatchesFromAPI } from '../services/autoCountingService.js';
+import { checkRoundInactivity } from '../services/inactivityService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -763,6 +764,17 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
       }
 
       return res.json({ message: "Статус матча успешно изменен", matchId, status, result: result || null });
+    }
+
+    // После установки результата — проверяем инактивность по туру
+    try {
+      const updatedMatch = db.prepare('SELECT event_id, round FROM matches WHERE id = ?').get(matchId);
+      if (updatedMatch?.round) {
+        // Запускаем асинхронно чтобы не задерживать ответ
+        setImmediate(() => checkRoundInactivity(updatedMatch.event_id, updatedMatch.round));
+      }
+    } catch (inactivityError) {
+      console.error('❌ Ошибка запуска проверки инактивности:', inactivityError);
     }
 
     if (
