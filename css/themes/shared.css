@@ -469,6 +469,34 @@ body.theme-cream-material .lucky-btn:hover {
 .announcement-modal-content {
   max-width: 1100px;
   width: 95vw;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+/* modal-body внутри этого модала — flex-column без своего скролла */
+.announcement-modal-content .modal-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Форма — flex-column, занимает всё место */
+.announcement-modal-content #featureAnnouncementForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Скроллящаяся зона: заголовок + split + мобильный предпросмотр */
+.announcement-scroll-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Строка заголовка */
@@ -591,7 +619,7 @@ body.theme-cream-material .lucky-btn:hover {
   background: rgba(30, 34, 44, 0.8);
 }
 
-/* Счётчик символов */
+/* Счётчик символов — прилипает к низу, вне скролла */
 .ann-char-counter {
   padding: 4px 10px;
   font-size: 0.78em;
@@ -599,6 +627,7 @@ body.theme-cream-material .lucky-btn:hover {
   text-align: right;
   background: rgba(40, 44, 54, 0.6);
   border-top: 1px solid rgba(90, 159, 212, 0.1);
+  flex-shrink: 0;
 }
 .ann-char-counter.ann-char-warn { color: #ffc107; }
 .ann-char-counter.ann-char-over { color: #f44336; }
@@ -641,12 +670,13 @@ body.theme-cream-material .lucky-btn:hover {
   display: none;
 }
 
-/* Кнопки действий */
+/* Кнопки действий — прилипают к низу, вне скролла */
 .announcement-actions {
   padding: 12px 18px;
   border-top: 1px solid rgba(90, 159, 212, 0.15);
   display: flex;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 /* Мобильная адаптация */
@@ -654,6 +684,7 @@ body.theme-cream-material .lucky-btn:hover {
   .announcement-modal-content {
     width: 98vw;
     max-width: 98vw;
+    max-height: 95vh;
   }
   .announcement-split {
     flex-direction: column;

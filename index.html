@@ -4613,6 +4613,9 @@
         </div>
         <div class="modal-body" style="padding: 0;">
           <form id="featureAnnouncementForm">
+            <!-- Скроллящаяся зона: заголовок + редактор + предпросмотр -->
+            <div class="announcement-scroll-area">
+
             <!-- Заголовок — на всю ширину -->
             <div class="announcement-title-row">
               <label for="announcementTitle">Заголовок *</label>
@@ -4680,9 +4683,6 @@
                   required
                   class="announcement-textarea"
                 ></textarea>
-                <div class="ann-char-counter">
-                  <span id="announcementCharCount">0</span> / 4096
-                </div>
               </div>
 
               <!-- Правая колонка: предпросмотр (только десктоп) -->
@@ -4709,6 +4709,12 @@
                   Введите текст чтобы увидеть предпросмотр...
                 </div>
               </div>
+            </div><!-- /announcement-preview-mobile -->
+
+            </div><!-- /announcement-scroll-area -->
+
+            <div class="ann-char-counter">
+              <span id="announcementCharCount">0</span> / 4096
             </div>
 
             <div class="form-actions announcement-actions">
