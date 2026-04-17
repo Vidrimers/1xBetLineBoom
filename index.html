@@ -40,6 +40,13 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
   <body>
+    <!-- Применяем тему до рендера контента, чтобы избежать мигания -->
+    <script>
+      (function() {
+        var theme = localStorage.getItem('selectedTheme') || 'theme-default';
+        document.body.classList.add(theme);
+      })();
+    </script>
     <!-- Загрузка SVG спрайта иконок -->
     <script>
       (function() {
