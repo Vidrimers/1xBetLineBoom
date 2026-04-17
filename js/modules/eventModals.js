@@ -485,27 +485,27 @@ export function openAnnouncementModal() {
     if (text) {
       let f = escapeHtml(text);
 
-      // Telegram MarkdownV2 → HTML для предпросмотра
-      // Жирный *текст*
-      f = f.replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
+      // Порядок совпадает с сервером
       // Подчёркнутый __текст__
       f = f.replace(/__([^_\n]+)__/g, '<u>$1</u>');
-      // Курсив _текст_
-      f = f.replace(/_([^_\n]+)_/g, '<i>$1</i>');
+      // Жирный *текст*
+      f = f.replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
       // Зачёркнутый ~текст~
       f = f.replace(/~([^~\n]+)~/g, '<s>$1</s>');
+      // Курсив _текст_
+      f = f.replace(/_([^_\n]+)_/g, '<i>$1</i>');
       // Спойлер ||текст||
-      f = f.replace(/\|\|([^|]+)\|\|/g, '<span style="background:#555;color:#555;border-radius:3px;padding:0 2px;" title="Спойлер">$1</span>');
+      f = f.replace(/\|\|([^|]+)\|\|/g, '<span style="background:#555;color:#555;border-radius:3px;padding:0 2px;cursor:pointer;" title="Спойлер (нажмите чтобы раскрыть)" onclick="this.style.color=\'#e0e6f0\'">$1</span>');
       // Код `текст`
       f = f.replace(/`([^`\n]+)`/g, '<code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px;font-family:monospace;">$1</code>');
       // Ссылка [текст](url)
-      f = f.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#5a9fd4;" target="_blank">$1</a>');
-      // Цитата >текст
-      f = f.replace(/^&gt;(.+)$/gm, '<span style="border-left:3px solid #5a9fd4;padding-left:6px;color:#b0c8e0;display:block;">$1</span>');
+      f = f.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" style="color:#5a9fd4;" target="_blank">$1</a>');
+      // Цитата >текст → blockquote
+      f = f.replace(/^&gt;(.+)$/gm, '<div style="border-left:3px solid #5a9fd4;padding-left:8px;color:#b0c8e0;margin:2px 0;">$1</div>');
       // Разделитель
       f = f.replace(/^——————————$/gm, '<hr style="border:none;border-top:1px solid rgba(90,159,212,0.3);margin:6px 0;">');
       // Маркированный список
-      f = f.replace(/^• (.+)$/gm, '  ▪ $1');
+      f = f.replace(/^• (.+)$/gm, '  ▪️ $1');
       // Нумерованный список
       f = f.replace(/^(\d+)\. (.+)$/gm, '  <b>$1.</b> $2');
 

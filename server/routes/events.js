@@ -1527,12 +1527,31 @@ router.post("/api/admin/send-feature-announcement", async (req, res) => {
 
     let formattedText = text;
 
-    formattedText = formattedText.replace(/\*([^*]+)\*/g, '<b>$1</b>');
-    formattedText = formattedText.replace(/_([^_]+)_/g, '<i>$1</i>');
-    formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
-    formattedText = formattedText.replace(/^[•\-]\s+(.+)$/gm, '  ▪️ $1');
-    formattedText = formattedText.replace(/^(\d+)\.\s+(.+)$/gm, '  <b>$1.</b> $2');
-    formattedText = formattedText.replace(/^\s{2,}([•\-])\s+(.+)$/gm, '     ◦ $2');
+    // Экранируем HTML-спецсимволы (кроме наших маркеров форматирования)
+    // Порядок важен: сначала многосимвольные маркеры, потом одиночные
+
+    // Подчёркнутый __текст__
+    formattedText = formattedText.replace(/__([^_\n]+)__/g, '<u>$1</u>');
+    // Жирный *текст*
+    formattedText = formattedText.replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
+    // Зачёркнутый ~текст~
+    formattedText = formattedText.replace(/~([^~\n]+)~/g, '<s>$1</s>');
+    // Курсив _текст_
+    formattedText = formattedText.replace(/_([^_\n]+)_/g, '<i>$1</i>');
+    // Спойлер ||текст||
+    formattedText = formattedText.replace(/\|\|([^|]+)\|\|/g, '<tg-spoiler>$1</tg-spoiler>');
+    // Код `текст`
+    formattedText = formattedText.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    // Ссылка [текст](url)
+    formattedText = formattedText.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2">$1</a>');
+    // Цитата >текст (каждая строка начинающаяся с >)
+    formattedText = formattedText.replace(/^>(.+)$/gm, '<blockquote>$1</blockquote>');
+    // Разделитель
+    formattedText = formattedText.replace(/^——————————$/gm, '━━━━━━━━━━');
+    // Маркированный список
+    formattedText = formattedText.replace(/^• (.+)$/gm, '  ▪️ $1');
+    // Нумерованный список
+    formattedText = formattedText.replace(/^(\d+)\. (.+)$/gm, '  <b>$1.</b> $2');
 
     const message = `🎉 <b>${title}</b>\n\n${formattedText}\n\n━━━━━━━━━━━━━━━━━━━━\n\n💬 Победных ставок! 🎯`;
 
