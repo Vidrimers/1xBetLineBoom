@@ -2,6 +2,7 @@ node_modules/
 temp/
 img/avatar/
 refactoring-lm/
+archive/
 .vscode/
 .DS_Store
 npm/
