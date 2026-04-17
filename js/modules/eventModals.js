@@ -465,14 +465,13 @@ export function insertEmoji(emoji) {
   textarea.dispatchEvent(new Event('input'));
 }
 
+// Глобальный обработчик предпросмотра (чтобы можно было снять)
+let _announcementPreviewHandler = null;
+
 // Открыть модальное окно объявления о новых функциях
 export function openAnnouncementModal() {
   document.getElementById('featureAnnouncementModal').style.display = 'flex';
   lockBodyScroll();
-
-  const titleInput = document.getElementById('announcementTitle');
-  const textInput = document.getElementById('announcementText');
-  const charCounter = document.getElementById('announcementCharCount');
 
   // Предпросмотры: десктопный и мобильный
   const previewDesktop = document.getElementById('announcementPreviewText');
@@ -523,14 +522,16 @@ export function openAnnouncementModal() {
   }
 
   function updatePreview() {
-    const title = titleInput.value.trim();
-    const text = textInput.value;
+    // Читаем актуальные элементы из DOM каждый раз
+    const title = document.getElementById('announcementTitle').value.trim();
+    const text = document.getElementById('announcementText').value;
     const html = buildPreviewHtml(title, text);
 
     if (previewDesktop) previewDesktop.innerHTML = html;
     if (previewMobile) previewMobile.innerHTML = html;
 
     // Счётчик символов
+    const charCounter = document.getElementById('announcementCharCount');
     const len = text.length;
     if (charCounter) {
       charCounter.textContent = len;
@@ -541,14 +542,13 @@ export function openAnnouncementModal() {
     }
   }
 
-  // Снимаем старые обработчики через замену элементов (простой способ)
-  const newTitle = titleInput.cloneNode(true);
-  const newText = textInput.cloneNode(true);
-  titleInput.parentNode.replaceChild(newTitle, titleInput);
-  textInput.parentNode.replaceChild(newText, textInput);
-
-  newTitle.addEventListener('input', updatePreview);
-  newText.addEventListener('input', updatePreview);
+  // Снимаем предыдущий обработчик если был, вешаем новый на форму (делегирование)
+  const form = document.getElementById('featureAnnouncementForm');
+  if (_announcementPreviewHandler) {
+    form.removeEventListener('input', _announcementPreviewHandler);
+  }
+  _announcementPreviewHandler = updatePreview;
+  form.addEventListener('input', _announcementPreviewHandler);
 
   updatePreview();
 }
