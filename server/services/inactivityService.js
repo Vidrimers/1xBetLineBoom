@@ -2,6 +2,56 @@ import { db } from '../database/db.js';
 
 // Количество пропущенных туров до исключения из турнира
 const INACTIVITY_ROUNDS_LIMIT = 5;
+// После скольких пропущенных туров отправлять предупреждение
+const WARNING_THRESHOLD = 4;
+
+/**
+ * Отправляет сообщение пользователю через Telegram по telegram_id.
+ * @param {number} telegramId
+ * @param {string} message
+ */
+async function sendTelegramMessage(telegramId, message) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  if (!TELEGRAM_BOT_TOKEN || !telegramId) return;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: telegramId,
+        text: message,
+        parse_mode: 'HTML',
+      }),
+    });
+  } catch (error) {
+    console.error(`❌ Ошибка отправки Telegram сообщения пользователю ${telegramId}:`, error.message);
+  }
+}
+
+/**
+ * Отправляет уведомление админу через Telegram.
+ * @param {string} message
+ */
+async function sendAdminTelegramMessage(message) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_ID) return;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_ADMIN_ID,
+        text: message,
+        parse_mode: 'HTML',
+      }),
+    });
+  } catch (error) {
+    console.error('❌ Ошибка отправки Telegram сообщения админу:', error.message);
+  }
+}
 
 /**
  * Проверяет, завершён ли тур (все матчи тура имеют результат).
@@ -22,23 +72,6 @@ function isRoundCompleted(eventId, round) {
 
   // Тур считается завершённым если все матчи имеют результат и их больше 0
   return total.cnt > 0 && total.cnt === finished.cnt;
-}
-
-/**
- * Возвращает список всех туров турнира, отсортированных по дате первого матча.
- * @param {number} eventId
- * @returns {string[]}
- */
-function getEventRounds(eventId) {
-  const rounds = db.prepare(`
-    SELECT round, MIN(match_date) as first_match_date
-    FROM matches
-    WHERE event_id = ? AND round IS NOT NULL
-    GROUP BY round
-    ORDER BY first_match_date ASC
-  `).all(eventId);
-
-  return rounds.map(r => r.round);
 }
 
 /**
@@ -66,7 +99,6 @@ function userHasBetInRound(userId, eventId, round) {
  * @param {number} eventId
  */
 function deleteUserBetsInTournament(userId, eventId) {
-  // Получаем все match_id в этом турнире
   const matchIds = db.prepare(`
     SELECT id FROM matches WHERE event_id = ?
   `).all(eventId).map(m => m.id);
@@ -75,17 +107,14 @@ function deleteUserBetsInTournament(userId, eventId) {
 
   const placeholders = matchIds.map(() => '?').join(',');
 
-  // Удаляем ставки
   const deletedBets = db.prepare(`
     DELETE FROM bets WHERE user_id = ? AND match_id IN (${placeholders})
   `).run(userId, ...matchIds);
 
-  // Удаляем прогнозы на счёт
   db.prepare(`
     DELETE FROM score_predictions WHERE user_id = ? AND match_id IN (${placeholders})
   `).run(userId, ...matchIds);
 
-  // Удаляем прогнозы на карточки
   db.prepare(`
     DELETE FROM cards_predictions WHERE user_id = ? AND match_id IN (${placeholders})
   `).run(userId, ...matchIds);
@@ -99,17 +128,19 @@ function deleteUserBetsInTournament(userId, eventId) {
  * @param {number} eventId
  * @param {string} round
  */
-export function checkRoundInactivity(eventId, round) {
+export async function checkRoundInactivity(eventId, round) {
   try {
     // Проверяем что тур действительно завершён
     if (!isRoundCompleted(eventId, round)) {
-      return; // Тур ещё не завершён — ничего не делаем
+      return;
     }
 
-    console.log(`\n🔍 Инактивность: проверяю тур "${round}" турнира ${eventId}`);
+    const event = db.prepare('SELECT name FROM events WHERE id = ?').get(eventId);
+    const eventName = event?.name || `Турнир #${eventId}`;
+
+    console.log(`\n🔍 Инактивность: проверяю тур "${round}" турнира "${eventName}"`);
 
     // Получаем всех пользователей, которые когда-либо ставили в этом турнире
-    // (включая тех, кто уже исключён — для них проверка не нужна)
     const allUsersInTournament = db.prepare(`
       SELECT DISTINCT b.user_id
       FROM bets b
@@ -117,7 +148,7 @@ export function checkRoundInactivity(eventId, round) {
       WHERE m.event_id = ?
     `).all(eventId);
 
-    // Также берём пользователей из таблицы инактивности (могли быть исключены)
+    // Также берём пользователей из таблицы инактивности
     const trackedUsers = db.prepare(`
       SELECT DISTINCT user_id FROM user_tournament_inactivity
       WHERE event_id = ?
@@ -130,6 +161,13 @@ export function checkRoundInactivity(eventId, round) {
     ]);
 
     for (const userId of userIds) {
+      const user = db.prepare(`
+        SELECT id, username, telegram_id, telegram_notifications_enabled
+        FROM users WHERE id = ?
+      `).get(userId);
+
+      if (!user) continue;
+
       // Получаем или создаём запись инактивности
       let record = db.prepare(`
         SELECT * FROM user_tournament_inactivity
@@ -163,7 +201,7 @@ export function checkRoundInactivity(eventId, round) {
           WHERE user_id = ? AND event_id = ?
         `).run(round, userId, eventId);
 
-        console.log(`✅ Инактивность: пользователь ${userId} ставил в туре "${round}" — счётчик сброшен`);
+        console.log(`✅ Инактивность: "${user.username}" ставил в туре "${round}" — счётчик сброшен`);
       } else {
         // Пользователь не ставил — увеличиваем счётчик
         const newCount = record.inactive_rounds_count + 1;
@@ -174,7 +212,23 @@ export function checkRoundInactivity(eventId, round) {
           WHERE user_id = ? AND event_id = ?
         `).run(newCount, userId, eventId);
 
-        console.log(`⚠️ Инактивность: пользователь ${userId} не ставил в туре "${round}" — счётчик: ${newCount}/${INACTIVITY_ROUNDS_LIMIT}`);
+        console.log(`⚠️ Инактивность: "${user.username}" не ставил в туре "${round}" — счётчик: ${newCount}/${INACTIVITY_ROUNDS_LIMIT}`);
+
+        // Предупреждение после 4 пропущенных туров
+        if (newCount === WARNING_THRESHOLD) {
+          console.log(`📢 Отправляю предупреждение пользователю "${user.username}"`);
+
+          const warningMessage =
+            `⚠️ <b>Предупреждение об исключении</b>\n\n` +
+            `Привет, ${user.username}!\n\n` +
+            `Ты не делал ставок в турнире <b>"${eventName}"</b> уже ${newCount} тура подряд.\n\n` +
+            `Если ты не сделаешь хотя бы одну ставку в следующем туре — ты будешь автоматически исключён из этого турнира, а все твои ставки в нём будут удалены.\n\n` +
+            `Не пропусти следующий тур! 🎯`;
+
+          if (user.telegram_id && user.telegram_notifications_enabled !== 0) {
+            await sendTelegramMessage(user.telegram_id, warningMessage);
+          }
+        }
 
         // Если достигли лимита — исключаем из турнира
         if (newCount >= INACTIVITY_ROUNDS_LIMIT) {
@@ -186,9 +240,31 @@ export function checkRoundInactivity(eventId, round) {
             WHERE user_id = ? AND event_id = ?
           `).run(userId, eventId);
 
-          const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId);
-          const event = db.prepare('SELECT name FROM events WHERE id = ?').get(eventId);
-          console.log(`🚫 Инактивность: пользователь "${user?.username}" исключён из турнира "${event?.name}" (${INACTIVITY_ROUNDS_LIMIT} туров без ставок)`);
+          console.log(`🚫 Инактивность: "${user.username}" исключён из турнира "${eventName}"`);
+
+          const time = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+
+          // Уведомление пользователю об исключении
+          const userExcludedMessage =
+            `🚫 <b>Ты исключён из турнира</b>\n\n` +
+            `Привет, ${user.username}!\n\n` +
+            `Ты был автоматически исключён из турнира <b>"${eventName}"</b>, так как не делал ставок ${INACTIVITY_ROUNDS_LIMIT} туров подряд.\n\n` +
+            `Все твои ставки в этом турнире удалены.\n\n` +
+            `Если хочешь вернуться — просто сделай ставку в любом матче этого турнира. Ты начнёшь с нуля очков. 🔄`;
+
+          if (user.telegram_id && user.telegram_notifications_enabled !== 0) {
+            await sendTelegramMessage(user.telegram_id, userExcludedMessage);
+          }
+
+          // Уведомление админу об исключении
+          const adminMessage =
+            `🚫 <b>ИСКЛЮЧЕНИЕ ИЗ ТУРНИРА</b>\n\n` +
+            `👤 Пользователь: ${user.username}\n` +
+            `🏆 Турнир: ${eventName}\n` +
+            `📊 Пропущено туров: ${INACTIVITY_ROUNDS_LIMIT}\n` +
+            `🕐 Время: ${time}`;
+
+          await sendAdminTelegramMessage(adminMessage);
         }
       }
     }
@@ -211,7 +287,6 @@ export function handleUserBetInTournament(userId, eventId) {
     `).get(userId, eventId);
 
     if (record && record.is_excluded) {
-      // Пользователь был исключён и снова ставит — сбрасываем полностью
       db.prepare(`
         UPDATE user_tournament_inactivity
         SET is_excluded = 0, excluded_at = NULL, inactive_rounds_count = 0,
@@ -221,7 +296,7 @@ export function handleUserBetInTournament(userId, eventId) {
 
       const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId);
       const event = db.prepare('SELECT name FROM events WHERE id = ?').get(eventId);
-      console.log(`🔄 Инактивность: пользователь "${user?.username}" вернулся в турнир "${event?.name}" — начинает с нуля`);
+      console.log(`🔄 Инактивность: "${user?.username}" вернулся в турнир "${event?.name}" — начинает с нуля`);
     }
   } catch (error) {
     console.error('❌ Ошибка обработки возврата пользователя:', error);

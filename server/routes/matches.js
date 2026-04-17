@@ -770,8 +770,11 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
     try {
       const updatedMatch = db.prepare('SELECT event_id, round FROM matches WHERE id = ?').get(matchId);
       if (updatedMatch?.round) {
-        // Запускаем асинхронно чтобы не задерживать ответ
-        setImmediate(() => checkRoundInactivity(updatedMatch.event_id, updatedMatch.round));
+        // Запускаем асинхронно чтобы не задерживать ответ клиенту
+        setImmediate(() => {
+          checkRoundInactivity(updatedMatch.event_id, updatedMatch.round)
+            .catch(err => console.error('❌ Ошибка проверки инактивности:', err));
+        });
       }
     } catch (inactivityError) {
       console.error('❌ Ошибка запуска проверки инактивности:', inactivityError);
