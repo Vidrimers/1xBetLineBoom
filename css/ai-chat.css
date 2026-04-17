@@ -574,3 +574,54 @@ body.theme-leagueEurope .message-button {
     background: #ffd700;
     color: #000000;
 }
+
+/* Cream Material */
+body.theme-cream-material .ai-chat-window {
+    background: #fffdf9;
+    border-color: #cac4d0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+body.theme-cream-material .ai-chat-messages {
+    background: #fffdf9;
+}
+
+body.theme-cream-material .ai-chat-header {
+    background: linear-gradient(135deg, #6750a4 0%, #7965af 100%);
+}
+
+body.theme-cream-material .message.ai .message-content {
+    background: #ede7f6;
+    color: #1c1b1f;
+    box-shadow: 0 2px 8px rgba(103, 80, 164, 0.1);
+    border: 1px solid #cac4d0;
+}
+
+body.theme-cream-material .message.user .message-content {
+    background: #6750a4;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(103, 80, 164, 0.3);
+}
+
+body.theme-cream-material .ai-chat-input {
+    background: #f5f0e8;
+    border-color: #cac4d0;
+    color: #1c1b1f;
+}
+
+body.theme-cream-material .ai-chat-input:focus {
+    border-color: #6750a4;
+}
+
+body.theme-cream-material .message-button {
+    background: #6750a4;
+    color: #ffffff;
+}
+
+body.theme-cream-material .ai-chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(103, 80, 164, 0.3);
+}
+
+body.theme-cream-material .ai-chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(103, 80, 164, 0.5);
+}

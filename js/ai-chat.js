@@ -382,7 +382,7 @@ class AIChat {
         <img src="/img/default-avatar.jpg" alt="AI" onerror="this.src='/img/default-avatar.jpg'">
       </div>
       <div class="message-content">
-        ${this.escapeHtml(text)}
+        ${this.formatAiText(text)}
         ${buttonsHTML}
       </div>
     `;
@@ -513,6 +513,31 @@ class AIChat {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // Форматирует текст ответа AI: разрешает безопасные теги и markdown
+  formatAiText(text) {
+    // Сначала экранируем всё
+    const div = document.createElement('div');
+    div.textContent = text;
+    let escaped = div.innerHTML;
+
+    // Затем восстанавливаем безопасные теги
+    escaped = escaped
+      .replace(/&lt;b&gt;(.*?)&lt;\/b&gt;/g, '<strong>$1</strong>')
+      .replace(/&lt;i&gt;(.*?)&lt;\/i&gt;/g, '<em>$1</em>')
+      .replace(/&lt;br\s*\/?&gt;/g, '<br>')
+      .replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/g, '<u>$1</u>')
+      // markdown **bold**
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // markdown *italic*
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // markdown _italic_
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      // переносы строк
+      .replace(/\n/g, '<br>');
+
+    return escaped;
   }
 }
 
