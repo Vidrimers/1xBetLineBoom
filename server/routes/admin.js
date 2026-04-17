@@ -2216,17 +2216,22 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
           const maxPoints = tournament.users[0].points;
           const winners = tournament.users.filter(u => u.points === maxPoints);
           
-          message += `\n👑 <b>Лучший за период ${dateFromFormatted} - ${dateToFormatted}:</b>\n`;
-          
-          if (winners.length === 1) {
-            message += `Поздравляем, малютка ${winners[0].username}! 🎉\n`;
-            if (winners[0].correctScores > 0) {
-              message += `🎯 Угадано счетов: ${winners[0].correctScores}\n`;
-            }
+          if (maxPoints === 0) {
+            // Все набрали 0 очков — никого поздравлять не с чем
+            message += `\n😶 <b>Никто ничего не угадал за период ${dateFromFormatted} - ${dateToFormatted}.</b> Бывает.\n`;
           } else {
-            // Несколько победителей с одинаковыми очками
-            const winnerNames = winners.map(w => w.username).join(' и ');
-            message += `Поздравляем малюток ${winnerNames}! 🎉\n`;
+            message += `\n👑 <b>Лучший за период ${dateFromFormatted} - ${dateToFormatted}:</b>\n`;
+            
+            if (winners.length === 1) {
+              message += `Поздравляем, малютка ${winners[0].username}! 🎉\n`;
+              if (winners[0].correctScores > 0) {
+                message += `🎯 Угадано счетов: ${winners[0].correctScores}\n`;
+              }
+            } else {
+              // Несколько победителей с одинаковыми очками
+              const winnerNames = winners.map(w => w.username).join(' и ');
+              message += `Поздравляем малюток ${winnerNames}! 🎉\n`;
+            }
           }
         }
       } else {
@@ -2360,7 +2365,10 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
 
           if (user.points === maxPoints) {
             // Пользователь лучший (или один из лучших)
-            if (winners.length === 1) {
+            if (maxPoints === 0) {
+              // Все набрали 0 — никто не победил
+              personalMessage += `😶 Сегодня никто ничего не угадал, ты не одинок в своём провале, малютка ${user.username}.`;
+            } else if (winners.length === 1) {
               personalMessage += `Сегодня ты лучший, у тебя <b>${user.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${user.username}! 🎉`;
             } else {
               personalMessage += `Сегодня ты один из лучших, у тебя <b>${user.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${user.username}! 🎉`;
@@ -2998,7 +3006,10 @@ router.post("/api/admin/recount-results", async (req, res) => {
 
             if (stats.points === maxPoints) {
               // Пользователь лучший (или один из лучших)
-              if (winners.length === 1) {
+              if (maxPoints === 0) {
+                // Все набрали 0 — никто не победил
+                personalMessage += `😶 Сегодня никто ничего не угадал, ты не одинок в своём провале, малютка ${username}.`;
+              } else if (winners.length === 1) {
                 personalMessage += `Сегодня ты лучший, у тебя <b>${stats.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${username}! 🎉`;
               } else {
                 personalMessage += `Сегодня ты один из лучших, у тебя <b>${stats.points} ${userPointsWord}</b>, поздравляю, малютка 👑 ${username}! 🎉`;
