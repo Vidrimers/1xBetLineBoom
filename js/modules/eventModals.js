@@ -346,16 +346,18 @@ export async function formatText(type) {
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
   const selectedText = textarea.value.substring(start, end);
-  
-  if (!selectedText && (type === 'bold' || type === 'italic' || type === 'code')) {
-    await showCustomAlert('Выделите текст для форматирования', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
+
+  // Типы, требующие выделения
+  const requiresSelection = ['bold', 'italic', 'underline', 'strikethrough', 'code', 'spoiler'];
+  if (!selectedText && requiresSelection.includes(type)) {
+    await showCustomAlert('Выделите текст для форматирования', 'Уведомление', '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>');
     return;
   }
-  
+
   let formattedText = '';
   let cursorOffset = 0;
-  
-  switch(type) {
+
+  switch (type) {
     case 'bold':
       formattedText = `*${selectedText}*`;
       cursorOffset = selectedText.length + 2;
@@ -364,44 +366,85 @@ export async function formatText(type) {
       formattedText = `_${selectedText}_`;
       cursorOffset = selectedText.length + 2;
       break;
+    case 'underline':
+      // Telegram: __текст__
+      formattedText = `__${selectedText}__`;
+      cursorOffset = selectedText.length + 4;
+      break;
+    case 'strikethrough':
+      // Telegram: ~текст~
+      formattedText = `~${selectedText}~`;
+      cursorOffset = selectedText.length + 2;
+      break;
     case 'code':
       formattedText = `\`${selectedText}\``;
       cursorOffset = selectedText.length + 2;
       break;
+    case 'spoiler':
+      // Telegram: ||текст||
+      formattedText = `||${selectedText}||`;
+      cursorOffset = selectedText.length + 4;
+      break;
+    case 'quote':
+      // Telegram: >текст (каждая строка)
+      if (selectedText) {
+        formattedText = selectedText.split('\n').map(line => `>${line}`).join('\n');
+        cursorOffset = formattedText.length;
+      } else {
+        formattedText = '>';
+        cursorOffset = 1;
+      }
+      break;
     case 'bullet':
-      // Если текст выделен - добавляем маркер к каждой строке
       if (selectedText) {
         formattedText = selectedText.split('\n').map(line => line.trim() ? `• ${line}` : line).join('\n');
         cursorOffset = formattedText.length;
       } else {
-        // Если ничего не выделено - вставляем шаблон
         formattedText = '• ';
         cursorOffset = 2;
       }
       break;
     case 'number':
-      // Если текст выделен - добавляем нумерацию к каждой строке
       if (selectedText) {
         let counter = 1;
         formattedText = selectedText.split('\n').map(line => line.trim() ? `${counter++}. ${line}` : line).join('\n');
         cursorOffset = formattedText.length;
       } else {
-        // Если ничего не выделено - вставляем шаблон
         formattedText = '1. ';
         cursorOffset = 3;
       }
       break;
+    case 'divider':
+      // Разделитель — вставляем на новой строке
+      formattedText = '\n——————————\n';
+      cursorOffset = formattedText.length;
+      break;
+    case 'link': {
+      // Запрашиваем URL через prompt (простой способ без доп. модала)
+      const url = window.prompt('Введите URL ссылки:', 'https://');
+      if (!url) return;
+      const linkText = selectedText || 'текст ссылки';
+      formattedText = `[${linkText}](${url})`;
+      cursorOffset = formattedText.length;
+      break;
+    }
+    default:
+      return;
   }
-  
-  // Заменяем выделенный текст на отформатированный
+
   textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
-  
-  // Устанавливаем курсор в конец отформатированного текста
   textarea.focus();
   textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
-  
-  // Обновляем предпросмотр
   textarea.dispatchEvent(new Event('input'));
+}
+
+// Очистить текст объявления
+export function clearAnnouncementText() {
+  const textarea = document.getElementById('announcementText');
+  if (textarea.value && !window.confirm('Очистить текст объявления?')) return;
+  textarea.value = '';
+  textarea.dispatchEvent(new Event('input'));
+  textarea.focus();
 }
 
 // Вставка эмодзи в позицию курсора
@@ -426,56 +469,87 @@ export function insertEmoji(emoji) {
 export function openAnnouncementModal() {
   document.getElementById('featureAnnouncementModal').style.display = 'flex';
   lockBodyScroll();
-  
-  // Добавляем обработчик для предпросмотра
+
   const titleInput = document.getElementById('announcementTitle');
   const textInput = document.getElementById('announcementText');
-  const preview = document.getElementById('announcementPreviewText');
-  
+  const charCounter = document.getElementById('announcementCharCount');
+
+  // Предпросмотры: десктопный и мобильный
+  const previewDesktop = document.getElementById('announcementPreviewText');
+  const previewMobile = document.getElementById('announcementPreviewTextMobile');
+
+  function buildPreviewHtml(title, text) {
+    if (!title && !text) return 'Введите текст чтобы увидеть предпросмотр...';
+
+    let result = '';
+    if (title) result += `<b>${escapeHtml(title)}</b>\n\n`;
+    if (text) {
+      let f = escapeHtml(text);
+
+      // Telegram MarkdownV2 → HTML для предпросмотра
+      // Жирный *текст*
+      f = f.replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
+      // Подчёркнутый __текст__
+      f = f.replace(/__([^_\n]+)__/g, '<u>$1</u>');
+      // Курсив _текст_
+      f = f.replace(/_([^_\n]+)_/g, '<i>$1</i>');
+      // Зачёркнутый ~текст~
+      f = f.replace(/~([^~\n]+)~/g, '<s>$1</s>');
+      // Спойлер ||текст||
+      f = f.replace(/\|\|([^|]+)\|\|/g, '<span style="background:#555;color:#555;border-radius:3px;padding:0 2px;" title="Спойлер">$1</span>');
+      // Код `текст`
+      f = f.replace(/`([^`\n]+)`/g, '<code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px;font-family:monospace;">$1</code>');
+      // Ссылка [текст](url)
+      f = f.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#5a9fd4;" target="_blank">$1</a>');
+      // Цитата >текст
+      f = f.replace(/^&gt;(.+)$/gm, '<span style="border-left:3px solid #5a9fd4;padding-left:6px;color:#b0c8e0;display:block;">$1</span>');
+      // Разделитель
+      f = f.replace(/^——————————$/gm, '<hr style="border:none;border-top:1px solid rgba(90,159,212,0.3);margin:6px 0;">');
+      // Маркированный список
+      f = f.replace(/^• (.+)$/gm, '  ▪ $1');
+      // Нумерованный список
+      f = f.replace(/^(\d+)\. (.+)$/gm, '  <b>$1.</b> $2');
+
+      result += f;
+    }
+    return result.replace(/\n/g, '<br>');
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   function updatePreview() {
     const title = titleInput.value.trim();
-    const text = textInput.value.trim();
-    
-    if (!title && !text) {
-      preview.innerHTML = 'Введите текст чтобы увидеть предпросмотр...';
-      return;
+    const text = textInput.value;
+    const html = buildPreviewHtml(title, text);
+
+    if (previewDesktop) previewDesktop.innerHTML = html;
+    if (previewMobile) previewMobile.innerHTML = html;
+
+    // Счётчик символов
+    const len = text.length;
+    if (charCounter) {
+      charCounter.textContent = len;
+      const counter = charCounter.parentElement;
+      counter.classList.remove('ann-char-warn', 'ann-char-over');
+      if (len > 4096) counter.classList.add('ann-char-over');
+      else if (len > 3500) counter.classList.add('ann-char-warn');
     }
-    
-    let previewText = '';
-    if (title) {
-      previewText += `<b>${title}</b>\n\n`;
-    }
-    if (text) {
-      // Применяем то же форматирование что и на сервере
-      let formatted = text;
-      
-      // *текст* → жирный
-      formatted = formatted.replace(/\*([^*]+)\*/g, '<b>$1</b>');
-      
-      // _текст_ → курсив
-      formatted = formatted.replace(/_([^_]+)_/g, '<i>$1</i>');
-      
-      // `текст` → моноширинный
-      formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px;">$1</code>');
-      
-      // Списки с • или -
-      formatted = formatted.replace(/^[•\-]\s+(.+)$/gm, '  ▪ $1');
-      
-      // Цифровые списки
-      formatted = formatted.replace(/^(\d+)\.\s+(.+)$/gm, '  <b>$1.</b> $2');
-      
-      // Подпункты
-      formatted = formatted.replace(/^\s{2,}([•\-])\s+(.+)$/gm, '     ◦ $2');
-      
-      previewText += formatted;
-    }
-    
-    preview.innerHTML = previewText.replace(/\n/g, '<br>');
   }
-  
-  titleInput.addEventListener('input', updatePreview);
-  textInput.addEventListener('input', updatePreview);
-  
+
+  // Снимаем старые обработчики через замену элементов (простой способ)
+  const newTitle = titleInput.cloneNode(true);
+  const newText = textInput.cloneNode(true);
+  titleInput.parentNode.replaceChild(newTitle, titleInput);
+  textInput.parentNode.replaceChild(newText, textInput);
+
+  newTitle.addEventListener('input', updatePreview);
+  newText.addEventListener('input', updatePreview);
+
   updatePreview();
 }
 
@@ -484,7 +558,16 @@ export function closeAnnouncementModal() {
   document.getElementById('featureAnnouncementModal').style.display = 'none';
   unlockBodyScroll();
   document.getElementById('featureAnnouncementForm').reset();
-  document.getElementById('announcementPreviewText').innerHTML = 'Введите текст чтобы увидеть предпросмотр...';
+  const placeholder = 'Введите текст чтобы увидеть предпросмотр...';
+  const d = document.getElementById('announcementPreviewText');
+  const m = document.getElementById('announcementPreviewTextMobile');
+  if (d) d.innerHTML = placeholder;
+  if (m) m.innerHTML = placeholder;
+  const counter = document.getElementById('announcementCharCount');
+  if (counter) {
+    counter.textContent = '0';
+    counter.parentElement.classList.remove('ann-char-warn', 'ann-char-over');
+  }
 }
 
 // Отправить объявление себе для проверки

@@ -462,3 +462,234 @@ body.theme-cream-material .lucky-btn:hover {
   background: #ede7f6 !important;
   border-color: #4a3880 !important;
 }
+
+/* === Модал объявлений: split-view редактор === */
+
+/* Контейнер модала — широкий на десктопе */
+.announcement-modal-content {
+  max-width: 1100px;
+  width: 95vw;
+}
+
+/* Строка заголовка */
+.announcement-title-row {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(90, 159, 212, 0.15);
+}
+.announcement-title-row label {
+  display: block;
+  font-size: 0.85em;
+  color: #b0b8c8;
+  margin-bottom: 5px;
+}
+.announcement-title-row input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 0.95em;
+  box-sizing: border-box;
+}
+
+/* Split-контейнер */
+.announcement-split {
+  display: flex;
+  gap: 0;
+  min-height: 420px;
+}
+
+/* Левая колонка — редактор */
+.announcement-editor-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(90, 159, 212, 0.2);
+  min-width: 0;
+}
+
+/* Тулбар */
+.ann-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 8px;
+  background: rgba(40, 44, 54, 0.8);
+  border-bottom: 1px solid rgba(90, 159, 212, 0.2);
+}
+.ann-toolbar-group {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.ann-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(90, 159, 212, 0.25);
+  margin: 0 3px;
+  align-self: center;
+}
+.ann-btn {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82em;
+  padding: 3px 7px;
+  line-height: 1.4;
+  transition: opacity 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.ann-btn:hover { opacity: 0.85; }
+.ann-btn-fmt {
+  background: rgba(90, 159, 212, 0.45);
+  border-color: rgba(90, 159, 212, 0.7);
+  color: #e0e6f0;
+  min-width: 28px;
+  text-align: center;
+}
+.ann-btn-struct {
+  background: rgba(76, 175, 80, 0.4);
+  border-color: rgba(76, 175, 80, 0.7);
+  color: #e0e6f0;
+}
+.ann-btn-link {
+  background: rgba(156, 39, 176, 0.4);
+  border-color: rgba(156, 39, 176, 0.7);
+  color: #e0e6f0;
+}
+.ann-btn-emoji {
+  background: rgba(255, 193, 7, 0.3);
+  border-color: rgba(255, 193, 7, 0.5);
+  color: #e0e6f0;
+  font-size: 1em;
+  padding: 2px 5px;
+}
+.ann-btn-clear {
+  background: rgba(244, 67, 54, 0.35);
+  border-color: rgba(244, 67, 54, 0.6);
+  color: #e0e6f0;
+  font-size: 1em;
+  padding: 2px 6px;
+}
+
+/* Textarea */
+.announcement-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 10px;
+  font-size: 0.93em;
+  line-height: 1.6;
+  border: none;
+  border-radius: 0;
+  background: rgba(30, 34, 44, 0.6);
+  color: #e0e6f0;
+  resize: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  min-height: 300px;
+}
+.announcement-textarea:focus {
+  outline: none;
+  background: rgba(30, 34, 44, 0.8);
+}
+
+/* Счётчик символов */
+.ann-char-counter {
+  padding: 4px 10px;
+  font-size: 0.78em;
+  color: #7a8898;
+  text-align: right;
+  background: rgba(40, 44, 54, 0.6);
+  border-top: 1px solid rgba(90, 159, 212, 0.1);
+}
+.ann-char-counter.ann-char-warn { color: #ffc107; }
+.ann-char-counter.ann-char-over { color: #f44336; }
+
+/* Правая колонка — предпросмотр (только десктоп) */
+.announcement-preview-col {
+  flex: 0 0 42%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 24, 34, 0.5);
+  min-width: 0;
+}
+.ann-preview-header {
+  padding: 8px 12px;
+  font-size: 0.82em;
+  color: #7a9fc8;
+  border-bottom: 1px solid rgba(90, 159, 212, 0.15);
+  background: rgba(40, 44, 54, 0.5);
+}
+.ann-preview-bubble {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+/* Имитация пузыря Telegram */
+.ann-preview-bubble > div {
+  background: rgba(56, 118, 235, 0.12);
+  border: 1px solid rgba(56, 118, 235, 0.25);
+  border-radius: 12px 12px 12px 4px;
+  padding: 10px 14px;
+  font-size: 0.93em;
+  line-height: 1.65;
+  color: #e0e6f0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Мобильный предпросмотр — скрыт на десктопе */
+.announcement-preview-mobile {
+  display: none;
+}
+
+/* Кнопки действий */
+.announcement-actions {
+  padding: 12px 18px;
+  border-top: 1px solid rgba(90, 159, 212, 0.15);
+  display: flex;
+  gap: 10px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 860px) {
+  .announcement-modal-content {
+    width: 98vw;
+    max-width: 98vw;
+  }
+  .announcement-split {
+    flex-direction: column;
+    min-height: unset;
+  }
+  .announcement-editor-col {
+    border-right: none;
+    border-bottom: 1px solid rgba(90, 159, 212, 0.2);
+  }
+  .announcement-textarea {
+    min-height: 200px;
+  }
+  /* Скрываем правую колонку предпросмотра на мобильных */
+  .announcement-preview-col {
+    display: none;
+  }
+  /* Показываем мобильный предпросмотр */
+  .announcement-preview-mobile {
+    display: block;
+    margin: 0 18px 12px;
+  }
+  .announcement-preview-mobile .ann-preview-bubble {
+    padding: 8px;
+  }
+  .ann-toolbar {
+    gap: 2px;
+  }
+  .ann-btn {
+    padding: 3px 5px;
+    font-size: 0.78em;
+  }
+  .announcement-actions {
+    flex-wrap: wrap;
+  }
+  .announcement-actions button {
+    flex: 1 1 calc(50% - 5px);
+    min-width: 120px;
+  }
+}

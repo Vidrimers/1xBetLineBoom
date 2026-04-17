@@ -4606,100 +4606,119 @@
 
     <!-- Модальное окно объявления о новых функциях -->
     <div id="featureAnnouncementModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'featureAnnouncementModal', closeAnnouncementModal)">
-      <div class="modal-content" style="max-width: 600px">
+      <div class="modal-content announcement-modal-content">
         <div class="modal-header">
           <h2><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Объявление о новых функциях</h2>
-          <button class="modal-close" onclick="closeAnnouncementModal()">
-            &times;
-          </button>
+          <button class="modal-close" onclick="closeAnnouncementModal()">&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="padding: 0;">
           <form id="featureAnnouncementForm">
-            <div class="form-group">
+            <!-- Заголовок — на всю ширину -->
+            <div class="announcement-title-row">
               <label for="announcementTitle">Заголовок *</label>
               <input
                 type="text"
                 id="announcementTitle"
                 placeholder="Например: Новые функции!"
                 required
-                style="width: 100%; padding: 8px; font-size: 0.95em"
               />
             </div>
-            <div class="form-group">
-              <label for="announcementText">Текст объявления *</label>
-              <div style="background: rgba(40, 44, 54, 0.8); border: 1px solid rgba(90, 159, 212, 0.3); border-radius: 8px 8px 0 0; padding: 6px; display: flex; gap: 4px; flex-wrap: nowrap;">
-                <button type="button" onclick="formatText('bold')" style="background: rgba(90, 159, 212, 0.5); border: 1px solid #5a9fd4; color: #e0e6f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.85em;" title="Жирный текст">
-                  <b>Ж</b>
-                </button>
-                <button type="button" onclick="formatText('italic')" style="background: rgba(90, 159, 212, 0.5); border: 1px solid #5a9fd4; color: #e0e6f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-style: italic; font-size: 0.85em;" title="Курсив">
-                  <i>К</i>
-                </button>
-                <button type="button" onclick="formatText('code')" style="background: rgba(90, 159, 212, 0.5); border: 1px solid #5a9fd4; color: #e0e6f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-family: monospace; font-size: 0.85em;" title="Моноширинный">
-                  &lt;/&gt;
-                </button>
-                <span style="width: 1px; background: rgba(90, 159, 212, 0.3); margin: 0 3px;"></span>
-                <button type="button" onclick="formatText('bullet')" style="background: rgba(76, 175, 80, 0.5); border: 1px solid #4caf50; color: #e0e6f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.85em;" title="Маркированный список">
-                  • Список
-                </button>
-                <button type="button" onclick="formatText('number')" style="background: rgba(76, 175, 80, 0.5); border: 1px solid #4caf50; color: #e0e6f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.85em;" title="Нумерованный список">
-                  1. Список
-                </button>
-                <span style="width: 1px; background: rgba(90, 159, 212, 0.3); margin: 0 3px;"></span>
-                <button type="button" onclick="insertEmoji('🎉')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  <svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg>
-                </button>
-                <button type="button" onclick="insertEmoji('✨')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  <svg class="icon" aria-hidden="true"><use href="#icon-sparkle"></use></svg>
-                </button>
-                <button type="button" onclick="insertEmoji('🚀')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  <svg class="icon" aria-hidden="true"><use href="#icon-fast"></use></svg>
-                </button>
-                <button type="button" onclick="insertEmoji('⚡')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  <svg class="icon" aria-hidden="true"><use href="#icon-fast"></use></svg>
-                </button>
-                <button type="button" onclick="insertEmoji('🎯')" style="background: rgba(255, 193, 7, 0.5); border: 1px solid #ffc107; color: #e0e6f0; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.95em;" title="Вставить эмодзи">
-                  <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg>
-                </button>
+
+            <!-- Split-view: редактор + предпросмотр -->
+            <div class="announcement-split">
+
+              <!-- Левая колонка: тулбар + textarea -->
+              <div class="announcement-editor-col">
+                <div class="ann-toolbar">
+                  <!-- Форматирование текста -->
+                  <div class="ann-toolbar-group">
+                    <button type="button" onclick="formatText('bold')" class="ann-btn ann-btn-fmt" title="Жирный (*текст*)"><b>Ж</b></button>
+                    <button type="button" onclick="formatText('italic')" class="ann-btn ann-btn-fmt" title="Курсив (_текст_)"><i>К</i></button>
+                    <button type="button" onclick="formatText('underline')" class="ann-btn ann-btn-fmt" title="Подчёркнутый (__текст__)"><u>П</u></button>
+                    <button type="button" onclick="formatText('strikethrough')" class="ann-btn ann-btn-fmt" title="Зачёркнутый (~текст~)"><s>З</s></button>
+                    <button type="button" onclick="formatText('code')" class="ann-btn ann-btn-fmt" title="Моноширинный (`текст`)" style="font-family: monospace;">&lt;/&gt;</button>
+                    <button type="button" onclick="formatText('spoiler')" class="ann-btn ann-btn-fmt" title="Спойлер (||текст||)">👁</button>
+                  </div>
+                  <div class="ann-toolbar-sep"></div>
+                  <!-- Структура -->
+                  <div class="ann-toolbar-group">
+                    <button type="button" onclick="formatText('bullet')" class="ann-btn ann-btn-struct" title="Маркированный список">• Список</button>
+                    <button type="button" onclick="formatText('number')" class="ann-btn ann-btn-struct" title="Нумерованный список">1. Список</button>
+                    <button type="button" onclick="formatText('quote')" class="ann-btn ann-btn-struct" title="Цитата (>текст)">❝ Цитата</button>
+                    <button type="button" onclick="formatText('divider')" class="ann-btn ann-btn-struct" title="Разделитель">— —</button>
+                  </div>
+                  <div class="ann-toolbar-sep"></div>
+                  <!-- Ссылка -->
+                  <div class="ann-toolbar-group">
+                    <button type="button" onclick="formatText('link')" class="ann-btn ann-btn-link" title="Вставить ссылку">🔗 Ссылка</button>
+                  </div>
+                  <div class="ann-toolbar-sep"></div>
+                  <!-- Эмодзи -->
+                  <div class="ann-toolbar-group ann-emoji-group">
+                    <button type="button" onclick="insertEmoji('🎉')" class="ann-btn ann-btn-emoji" title="Праздник">🎉</button>
+                    <button type="button" onclick="insertEmoji('✨')" class="ann-btn ann-btn-emoji" title="Блеск">✨</button>
+                    <button type="button" onclick="insertEmoji('🚀')" class="ann-btn ann-btn-emoji" title="Ракета">🚀</button>
+                    <button type="button" onclick="insertEmoji('⚡')" class="ann-btn ann-btn-emoji" title="Молния">⚡</button>
+                    <button type="button" onclick="insertEmoji('🎯')" class="ann-btn ann-btn-emoji" title="Цель">🎯</button>
+                    <button type="button" onclick="insertEmoji('🔥')" class="ann-btn ann-btn-emoji" title="Огонь">🔥</button>
+                    <button type="button" onclick="insertEmoji('💡')" class="ann-btn ann-btn-emoji" title="Идея">💡</button>
+                    <button type="button" onclick="insertEmoji('✅')" class="ann-btn ann-btn-emoji" title="Готово">✅</button>
+                    <button type="button" onclick="insertEmoji('⚠️')" class="ann-btn ann-btn-emoji" title="Внимание">⚠️</button>
+                    <button type="button" onclick="insertEmoji('📢')" class="ann-btn ann-btn-emoji" title="Объявление">📢</button>
+                    <button type="button" onclick="insertEmoji('🏆')" class="ann-btn ann-btn-emoji" title="Трофей">🏆</button>
+                    <button type="button" onclick="insertEmoji('⚽')" class="ann-btn ann-btn-emoji" title="Мяч">⚽</button>
+                  </div>
+                  <div class="ann-toolbar-sep"></div>
+                  <!-- Очистить -->
+                  <div class="ann-toolbar-group">
+                    <button type="button" onclick="clearAnnouncementText()" class="ann-btn ann-btn-clear" title="Очистить текст">🗑</button>
+                  </div>
+                </div>
+                <textarea
+                  id="announcementText"
+                  placeholder="Напишите текст объявления...&#10;&#10;Выделите текст и нажмите кнопку форматирования выше.&#10;&#10;Форматирование Telegram:&#10;*жирный*  _курсив_  __подчёркнутый__&#10;~зачёркнутый~  `код`  ||спойлер||&#10;>цитата  [текст](ссылка)"
+                  required
+                  class="announcement-textarea"
+                ></textarea>
+                <div class="ann-char-counter">
+                  <span id="announcementCharCount">0</span> / 4096
+                </div>
               </div>
-              <textarea
-                id="announcementText"
-                placeholder="Напишите текст объявления...&#10;&#10;Выделите текст и нажмите кнопку форматирования выше"
-                rows="10"
-                required
-                style="width: 100%; padding: 8px; font-size: 0.95em; line-height: 1.5; border-radius: 0 0 8px 8px; border: 1px solid rgba(90, 159, 212, 0.3); border-top: none; background: rgba(40, 44, 54, 0.5); color: #e0e6f0;"
-              ></textarea>
+
+              <!-- Правая колонка: предпросмотр (только десктоп) -->
+              <div class="announcement-preview-col">
+                <div class="ann-preview-header">
+                  <svg class="icon" aria-hidden="true"><use href="#icon-hint"></use></svg> Предпросмотр Telegram
+                </div>
+                <div class="ann-preview-bubble">
+                  <div id="announcementPreviewText" class="ann-preview-text">
+                    Введите текст чтобы увидеть предпросмотр...
+                  </div>
+                </div>
+              </div>
+
             </div>
-            <div style="background: rgba(56, 118, 235, 0.1); border: 1px solid rgba(56, 118, 235, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 15px;">
-              <div style="font-size: 0.9em; color: #b0b8c8; margin-bottom: 8px;">
-                <svg class="icon" aria-hidden="true"><use href="#icon-hint"></use></svg> Предпросмотр:
+
+            <!-- Предпросмотр для мобильных (под редактором) -->
+            <div class="announcement-preview-mobile">
+              <div class="ann-preview-header">
+                <svg class="icon" aria-hidden="true"><use href="#icon-hint"></use></svg> Предпросмотр Telegram
               </div>
-              <div id="announcementPreviewText" style="white-space: pre-wrap; line-height: 1.6; color: #e0e6f0; font-size: 0.95em;">
-                Введите текст чтобы увидеть предпросмотр...
+              <div class="ann-preview-bubble">
+                <div id="announcementPreviewTextMobile" class="ann-preview-text">
+                  Введите текст чтобы увидеть предпросмотр...
+                </div>
               </div>
             </div>
-            <div class="form-actions" style="display: flex; gap: 10px;">
-              <button
-                type="button"
-                class="form-btn-preview"
-                onclick="sendAnnouncementToSelf()"
-                style="background: rgba(56, 118, 235, 0.7); border-color: #3876eb; flex: 1;"
-              >
+
+            <div class="form-actions announcement-actions">
+              <button type="button" class="form-btn-preview" onclick="sendAnnouncementToSelf()" style="background: rgba(56, 118, 235, 0.7); border-color: #3876eb; flex: 1;">
                 <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить себе
               </button>
-              <button
-                type="button"
-                class="form-btn-submit"
-                onclick="sendAnnouncementToAll()"
-                style="flex: 1;"
-              >
+              <button type="button" class="form-btn-submit" onclick="sendAnnouncementToAll()" style="flex: 1;">
                 <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Отправить всем
               </button>
-              <button
-                type="button"
-                class="form-btn-cancel"
-                onclick="closeAnnouncementModal()"
-                style="flex: 1;"
-              >
+              <button type="button" class="form-btn-cancel" onclick="closeAnnouncementModal()" style="flex: 1;">
                 <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
               </button>
             </div>
