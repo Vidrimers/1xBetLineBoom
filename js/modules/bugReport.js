@@ -508,7 +508,7 @@ function updateBugReportFilterCounts() {
       'rejected': '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отклонено'
     };
 
-    btn.textContent = `${labels[status]} (${count})`;
+    btn.innerHTML = `${labels[status]} (${count})`;
   });
 }
 
