@@ -1,6 +1,5 @@
 /* === THEME CREAM MATERIAL (Светлая кремовая, Google Material Design 3) === */
 
-/* CSS-переменные темы */
 body.theme-cream-material {
   --sticky-header-bg: #fffdf9;
   --dropdown-bg: rgba(255, 253, 249, 0.98);
@@ -453,7 +452,6 @@ body.theme-cream-material .user-input #authBtn:hover {
   box-shadow: 0 2px 8px rgba(103,80,164,0.4) !important;
 }
 
-body.theme-cream-material button#adminBtn,
 body.theme-cream-material button#addMatchBtn,
 body.theme-cream-material .user-input #adminUsersBtn {
   background: #6750a4 !important;
@@ -889,4 +887,16 @@ body.theme-cream-material .user-profile-modal {
 
 body.theme-cream-material .user-profile-modal h2 {
   color: #1c1b1f !important;
+}
+
+/* === Кнопка баг-репорта === */
+body.theme-cream-material button[onclick="openBugReportModal()"] {
+  color: #b3261e !important;
+  border-color: #b3261e !important;
+}
+
+/* === matches-header / tournaments-header === */
+body.theme-cream-material .matches-header,
+body.theme-cream-material .tournaments-header {
+  background: #fffdf9 !important;
 }

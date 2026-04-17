@@ -359,3 +359,106 @@ body.theme-leagueChampions .bracket-filter-btn:hover {
 }
 
 /* leagueEurope оставляем золотой — он там уместен */
+
+/* === matchRemindersBtn и adminBtn — сброс для всех тем === */
+body.theme-hacker-green #matchRemindersBtn,
+body.theme-solarized #matchRemindersBtn,
+body.theme-matrix #matchRemindersBtn,
+body.theme-cyberpunk #matchRemindersBtn,
+body.theme-leagueChampions #matchRemindersBtn,
+body.theme-leagueEurope #matchRemindersBtn,
+body.theme-cream-material #matchRemindersBtn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.theme-hacker-green #matchRemindersBtn:hover,
+body.theme-solarized #matchRemindersBtn:hover,
+body.theme-matrix #matchRemindersBtn:hover,
+body.theme-cyberpunk #matchRemindersBtn:hover,
+body.theme-leagueChampions #matchRemindersBtn:hover,
+body.theme-leagueEurope #matchRemindersBtn:hover,
+body.theme-cream-material #matchRemindersBtn:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* === lucky-btn по темам === */
+body.theme-hacker-green .lucky-btn {
+  color: #00ff00 !important;
+  border-color: #00ff00 !important;
+  background: transparent !important;
+  box-shadow: 0 2px 8px rgba(0,255,0,0.08) !important;
+}
+body.theme-hacker-green .lucky-btn:hover {
+  background: rgba(0,255,0,0.1) !important;
+  border-color: #00cc00 !important;
+}
+
+body.theme-solarized .lucky-btn {
+  color: #268bd2 !important;
+  border-color: #268bd2 !important;
+  background: transparent !important;
+  box-shadow: 0 2px 8px rgba(38,139,210,0.08) !important;
+}
+body.theme-solarized .lucky-btn:hover {
+  background: rgba(38,139,210,0.1) !important;
+  border-color: #2aa198 !important;
+}
+
+body.theme-matrix .lucky-btn {
+  color: #00ff41 !important;
+  border-color: #00ff41 !important;
+  background: transparent !important;
+  box-shadow: 0 2px 8px rgba(0,255,65,0.08) !important;
+}
+body.theme-matrix .lucky-btn:hover {
+  background: rgba(0,255,65,0.1) !important;
+  border-color: #00cc33 !important;
+}
+
+body.theme-cyberpunk .lucky-btn {
+  color: #ff00ff !important;
+  border-color: #ff00ff !important;
+  background: transparent !important;
+  box-shadow: 0 2px 8px rgba(255,0,255,0.08) !important;
+}
+body.theme-cyberpunk .lucky-btn:hover {
+  background: rgba(255,0,255,0.1) !important;
+  border-color: #00ffff !important;
+}
+
+body.theme-leagueChampions .lucky-btn {
+  color: #1b9ce5 !important;
+  border-color: #1b9ce5 !important;
+  background: transparent !important;
+  box-shadow: 0 2px 8px rgba(27,156,229,0.08) !important;
+}
+body.theme-leagueChampions .lucky-btn:hover {
+  background: rgba(27,156,229,0.1) !important;
+  border-color: #00d9ff !important;
+}
+
+body.theme-leagueEurope .lucky-btn {
+  color: #ffd700 !important;
+  border-color: #ffd700 !important;
+  background: transparent !important;
+  box-shadow: 0 2px 8px rgba(255,215,0,0.08) !important;
+}
+body.theme-leagueEurope .lucky-btn:hover {
+  background: rgba(255,215,0,0.1) !important;
+  border-color: #ffed4e !important;
+}
+
+body.theme-cream-material .lucky-btn {
+  color: #6750a4 !important;
+  border-color: #6750a4 !important;
+  background: transparent !important;
+  box-shadow: 0 2px 8px rgba(103,80,164,0.08) !important;
+}
+body.theme-cream-material .lucky-btn:hover {
+  background: #ede7f6 !important;
+  border-color: #4a3880 !important;
+}

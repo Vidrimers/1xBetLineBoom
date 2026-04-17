@@ -187,3 +187,11 @@ body.theme-hacker-green .goal-notification-header button {
 body.theme-hacker-green .goal-notification-header button:hover {
   color: #00ff00 !important;
 }
+
+/* CSS-переменные для инлайн стилей */
+body.theme-hacker-green {
+  --sticky-header-bg: #001100;
+  --dropdown-bg: rgba(0, 17, 0, 0.98);
+  --input-bg: rgba(0, 17, 0, 0.9);
+  --text-primary: #00ff00;
+}

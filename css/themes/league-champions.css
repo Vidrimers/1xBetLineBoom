@@ -16,7 +16,7 @@ body.theme-leagueChampions .header {
 }
 
 body.theme-leagueChampions .section {
-  background: linear-gradient(135deg, #162447 0%, #1f4068 100%) !important;
+  background: #1f4068 !important;
   border: 2px solid #1b9ce5;
 }
 
@@ -202,4 +202,12 @@ body.theme-leagueChampions .goal-notification-header button {
 body.theme-leagueChampions .goal-notification-header button:hover {
   color: #00d9ff !important;
   text-shadow: 0 0 10px rgba(0, 217, 255, 0.7);
+}
+
+/* CSS-переменные для инлайн стилей */
+body.theme-leagueChampions {
+  --sticky-header-bg: #1f4068;
+  --dropdown-bg: rgba(22, 36, 71, 0.98);
+  --input-bg: rgba(22, 36, 71, 0.9);
+  --text-primary: #e8e8e8;
 }

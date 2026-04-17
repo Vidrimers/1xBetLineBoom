@@ -17,7 +17,7 @@ body.theme-cyberpunk .header {
 }
 
 body.theme-cyberpunk .section {
-  background: linear-gradient(135deg, #16213e 0%, #1a0a2e 100%) !important;
+  background: #1a0a2e !important;
   border: 2px solid #ff00ff;
   box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
 }
@@ -228,4 +228,12 @@ body.theme-cyberpunk .goal-notification-header button:hover {
   50% { 
     text-shadow: 0 0 25px rgba(255, 0, 255, 1), 0 0 10px rgba(0, 255, 255, 0.8);
   }
+}
+
+/* CSS-переменные для инлайн стилей */
+body.theme-cyberpunk {
+  --sticky-header-bg: #1a0a2e;
+  --dropdown-bg: rgba(10, 0, 20, 0.98);
+  --input-bg: rgba(10, 0, 20, 0.9);
+  --text-primary: #00ffff;
 }

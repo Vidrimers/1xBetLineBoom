@@ -210,7 +210,7 @@ body.theme-cyberpunk .header {
 }
 
 body.theme-cyberpunk .section {
-  background: linear-gradient(135deg, #16213e 0%, #1a0a2e 100%) !important;
+  background: #1a0a2e !important;
   border: 2px solid #ff00ff;
   box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
 }
@@ -296,7 +296,7 @@ body.theme-leagueChampions .header {
 }
 
 body.theme-leagueChampions .section {
-  background: linear-gradient(135deg, #162447 0%, #1f4068 100%) !important;
+  background: #1f4068 !important;
   border: 2px solid #1b9ce5;
 }
 
@@ -372,7 +372,7 @@ body.theme-leagueEurope .header {
 }
 
 body.theme-leagueEurope .section {
-  background: linear-gradient(135deg, #1a1f2e 0%, #252d3d 100%) !important;
+  background: #252d3d !important;
   border: 2px solid #ffd700;
 }
 

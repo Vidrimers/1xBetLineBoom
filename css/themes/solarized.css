@@ -174,3 +174,11 @@ body.theme-solarized .goal-notification-header button {
 body.theme-solarized .goal-notification-header button:hover {
   color: #93a1a1 !important;
 }
+
+/* CSS-переменные для инлайн стилей */
+body.theme-solarized {
+  --sticky-header-bg: #073642;
+  --dropdown-bg: rgba(7, 54, 66, 0.98);
+  --input-bg: rgba(7, 54, 66, 0.9);
+  --text-primary: #93a1a1;
+}

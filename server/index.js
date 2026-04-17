@@ -2,11 +2,8 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
 
-dotenv.config();
-
-// ===== КОНФИГ =====
+// ===== КОНФИГ (dotenv загружается внутри config.js) =====
 import { PORT, BACKUPS_DIR, TERMINAL_LOGS_PATH } from "./config.js";
 
 // ===== ЛОГГЕР (инициализируем до всего остального) =====

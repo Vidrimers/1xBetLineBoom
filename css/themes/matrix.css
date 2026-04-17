@@ -204,3 +204,11 @@ body.theme-matrix .goal-notification-header button:hover {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
+
+/* CSS-переменные для инлайн стилей */
+body.theme-matrix {
+  --sticky-header-bg: #000a00;
+  --dropdown-bg: rgba(0, 10, 0, 0.98);
+  --input-bg: rgba(0, 10, 0, 0.9);
+  --text-primary: #00ff41;
+}

@@ -16,7 +16,7 @@ body.theme-leagueEurope .header {
 }
 
 body.theme-leagueEurope .section {
-  background: linear-gradient(135deg, #1a1f2e 0%, #252d3d 100%) !important;
+  background: #252d3d !important;
   border: 2px solid #ffd700;
 }
 
@@ -204,4 +204,12 @@ body.theme-leagueEurope .goal-notification-header button {
 body.theme-leagueEurope .goal-notification-header button:hover {
   color: #ff9800 !important;
   text-shadow: 0 0 10px rgba(255, 152, 0, 0.7);
+}
+
+/* CSS-переменные для инлайн стилей */
+body.theme-leagueEurope {
+  --sticky-header-bg: #252d3d;
+  --dropdown-bg: rgba(26, 31, 46, 0.98);
+  --input-bg: rgba(26, 31, 46, 0.9);
+  --text-primary: #ffffff;
 }
