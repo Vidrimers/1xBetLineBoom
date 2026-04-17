@@ -755,7 +755,7 @@ export async function loadParsePreview() {
     document.getElementById('bulkParseSubmitBtn').disabled = true;
   } finally {
     updateBtn.disabled = false;
-    updateBtn.textContent = '<svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить';
+    updateBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить';
   }
 }
 

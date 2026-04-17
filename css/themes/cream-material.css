@@ -900,3 +900,40 @@ body.theme-cream-material .matches-header,
 body.theme-cream-material .tournaments-header {
   background: #fffdf9 !important;
 }
+
+/* === Карточки настроек — перекрытие инлайн цветов текста === */
+body.theme-cream-material .settings-item h3,
+body.theme-cream-material .settings-item [style*="color: #fff"],
+body.theme-cream-material .settings-item [style*="color:#fff"],
+body.theme-cream-material .settings-item [style*="color: white"] {
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .settings-item [style*="color: #e0e6f0"],
+body.theme-cream-material .settings-item [style*="color: #e0e0e0"] {
+  color: #1c1b1f !important;
+}
+
+body.theme-cream-material .settings-item [style*="color: #b0b8c8"],
+body.theme-cream-material .settings-item [style*="color: #aaa"],
+body.theme-cream-material .settings-item [style*="color: #999"] {
+  color: #49454f !important;
+}
+
+body.theme-cream-material .settings-item [style*="color: #5a9fd4"] {
+  color: #6750a4 !important;
+}
+
+/* Инпуты и select внутри карточек настроек */
+body.theme-cream-material .settings-item input,
+body.theme-cream-material .settings-item select,
+body.theme-cream-material .settings-item textarea {
+  background: #f5f0e8 !important;
+  border-color: #cac4d0 !important;
+  color: #1c1b1f !important;
+}
+
+/* Фон самих карточек */
+body.theme-cream-material .settings-item {
+  background: rgba(103,80,164,0.05) !important;
+}
