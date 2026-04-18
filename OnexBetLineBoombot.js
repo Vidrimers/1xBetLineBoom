@@ -2677,15 +2677,7 @@ export async function startBot() {
     // Регистрируем telegram пользователя (сохраняем связку username → chat_id)
     registerTelegramUser(msg);
     
-    // Пробуем обработать сообщение через AI (если не команда)
-    if (text && !text.startsWith('/')) {
-      const handled = await handleAIMessage(msg, bot);
-      if (handled) {
-        return; // AI обработал сообщение, дальше не идем
-      }
-    }
-
-    // Проверяем, ожидает ли пользователь ввода багрепорта
+    // Проверяем, ожидает ли пользователь ввода багрепорта (ПРИОРИТЕТ над AI)
     if (userId && bugReportStates.has(userId)) {
       const state = bugReportStates.get(userId);
       
@@ -2737,6 +2729,14 @@ export async function startBot() {
 
     // Игнорируем команды (начинаются с /)
     if (text && text.startsWith("/")) return;
+
+    // Пробуем обработать сообщение через AI (если не команда и не режим багрепорта)
+    if (text && !text.startsWith('/')) {
+      const handled = await handleAIMessage(msg, bot);
+      if (handled) {
+        return; // AI обработал сообщение, дальше не идем
+      }
+    }
 
     // Обработка keyboard кнопок в группах
     if (msg.chat.type !== 'private' && text) {
