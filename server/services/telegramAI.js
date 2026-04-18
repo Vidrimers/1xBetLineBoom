@@ -269,7 +269,7 @@ export async function handleAIMessage(msg, bot) {
     // Получаем полный контекст из БД
     const telegramUsername = msg.from?.username;
     const telegramId = msg.from?.id;
-    const dbContext = buildFullAIContext(telegramUsername, null, telegramId);
+    const dbContext = buildFullAIContext(telegramUsername, null, telegramId, text);
     
     if (telegramUsername && !dbContext.currentUser) {
       dbContext.currentUser = `Пользователь: @${telegramUsername} (не привязан к аккаунту на сайте)`;

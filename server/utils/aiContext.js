@@ -267,7 +267,7 @@ function buildTournamentContext(telegramUsername, tournamentName) {
  * @param {string} siteUsername - Username на сайте (опционально, для веб-чата)
  * @param {number} telegramId - Telegram ID пользователя (приоритетный способ поиска)
  */
-export function buildFullAIContext(telegramUsername = null, siteUsername = null, telegramId = null) {
+export function buildFullAIContext(telegramUsername = null, siteUsername = null, telegramId = null, messageText = null) {
   const context = {};
 
   try {
@@ -373,6 +373,25 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null,
         const profile = getUserProfile(currentUser.id);
         if (profile) {
           context.userProfile = `${profile.username}:ставок${profile.total_bets},угадано${profile.won_bets}(${profile.win_rate}%),турниров${profile.tournaments_count},наград${profile.awards_count}`;
+        }
+
+        // Если в сообщении упоминается другой пользователь — подгружаем его профиль
+        if (messageText) {
+          const allUsers = db.prepare('SELECT id, username FROM users').all();
+          const mentionedUsers = allUsers.filter(u =>
+            u.id !== currentUser.id &&
+            messageText.toLowerCase().includes(u.username.toLowerCase())
+          );
+          if (mentionedUsers.length > 0) {
+            const mentionedProfiles = mentionedUsers.map(u => {
+              const p = getUserProfile(u.id);
+              if (!p) return null;
+              return `${p.username}:ставок${p.total_bets},угадано${p.won_bets}(${p.win_rate}%),турниров${p.tournaments_count},наград${p.awards_count}`;
+            }).filter(Boolean);
+            if (mentionedProfiles.length > 0) {
+              context.mentionedProfiles = mentionedProfiles.join('\n');
+            }
+          }
         }
 
         const userBetsData = [];
