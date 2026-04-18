@@ -107,7 +107,7 @@ export function displayParticipants(participants) {
         }
         <div class="participant-stats">
           <span>Ставок за всё время: ${participant.total_bets || 0} |</span>
-          <span>Угаданных ставок за всё время: ${participant.won_bets || 0} |</span>
+          <span>Угаданных ставок за всё время: ${participant.won_count || 0} |</span>
           <span>Неугаданных ставок за всё время: ${participant.lost_bets || 0} |</span>
           <span>В ожидании: ${participant.pending_bets || 0}</span>
         </div>
