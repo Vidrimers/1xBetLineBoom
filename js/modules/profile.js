@@ -124,7 +124,7 @@ export function displayProfile(profile) {
       </div>
       <div class="stat-card won">
         <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угаданных ставок</div>
-        <div class="stat-value">${profile.won_bets}</div>
+        <div class="stat-value">${profile.won_count}</div>
       </div>
       <div class="stat-card" style="background: rgba(76, 175, 80, 0.15); border-left: 4px solid #4caf50; cursor: help;" title="${profile.max_win_streak_event ? `Турнир: ${profile.max_win_streak_event}` : 'Нет серии'}">
         <div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-streak"></use></svg> Угаданных подряд</div>

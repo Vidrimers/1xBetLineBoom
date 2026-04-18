@@ -730,7 +730,7 @@ Object.assign(window, {
       const statsGrid = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
           <div class="stat-card"><div class="stat-label">Ставок за всё время</div><div class="stat-value" style="color:#7ab0e0">${userData.total_bets||0}</div></div>
-          <div class="stat-card won"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угаданных ставок</div><div class="stat-value" style="color:#4caf50">${userData.won_bets||0}</div></div>
+          <div class="stat-card won"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Угаданных ставок</div><div class="stat-value" style="color:#4caf50">${userData.won_count||0}</div></div>
           <div class="stat-card won" style="cursor:help" title="${userData.max_win_streak_event ? `Турнир: ${userData.max_win_streak_event}` : 'Нет серии'}"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-streak"></use></svg> Угаданных подряд</div><div class="stat-value" style="color:#4caf50">${userData.max_win_streak||0}</div></div>
           <div class="stat-card lost"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Неугаданных ставок</div><div class="stat-value" style="color:#f44336">${userData.lost_bets||0}</div></div>
           <div class="stat-card"><div class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-pending"></use></svg> В ожидании</div><div class="stat-value" style="color:#ff9800">${userData.pending_bets||0}</div></div>
