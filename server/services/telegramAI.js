@@ -186,11 +186,25 @@ function getDBContext(telegramUsername = null) {
     `).all();
     
     if (events.length > 0) {
-      context.events = events.map(e => `• ${e.name} (${e.status || 'активный'})`).join('\n');
-      
-      // Загружаем участников для КАЖДОГО турнира
+      const now = new Date();
+
+      // Разделяем турниры на начавшиеся и предстоящие (как на сайте — по start_date)
+      const startedEvents = events.filter(e => e.start_date && new Date(e.start_date) <= now);
+      const upcomingEvents = events.filter(e => !e.start_date || new Date(e.start_date) > now);
+
+      const eventLines = [
+        ...startedEvents.map(e => `• ${e.name} (активный)`),
+        ...upcomingEvents.map(e => `• ${e.name} (предстоящий, старт: ${e.start_date})`),
+      ];
+      context.events = eventLines.join('\n');
+
+      if (upcomingEvents.length > 0) {
+        context.events += `\n\nВАЖНО: Турниры помеченные как "предстоящий" ещё не начались. Очки там у всех нулевые — это норма, не показатель активности игроков.`;
+      }
+
+      // Загружаем таблицу очков ТОЛЬКО для начавшихся турниров
       const allParticipants = [];
-      for (const event of events) {
+      for (const event of startedEvents) {
         try {
           const participants = getTournamentParticipantsWithPoints(event.id);
           if (participants && participants.length > 0) {
@@ -205,7 +219,7 @@ function getDBContext(telegramUsername = null) {
           // Пропускаем турнир если ошибка
         }
       }
-      
+
       if (allParticipants.length > 0) {
         context.participants = allParticipants.join('\n\n');
       }
