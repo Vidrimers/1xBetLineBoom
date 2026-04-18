@@ -134,6 +134,35 @@ export async function loadSettings() {
       liveSoundCheckbox.checked = notifData.live_sound === true; // По умолчанию выключено
     }
 
+    // Загружаем значения select-настроек из API
+    try {
+      const [betsRes, luckyRes, xgRes] = await Promise.all([
+        fetch(`/api/user/${state.currentUser.id}/show-bets`),
+        fetch(`/api/user/${state.currentUser.id}/show-lucky-button`),
+        fetch(`/api/user/${state.currentUser.id}/show-xg-button`),
+      ]);
+      const [betsData, luckyData, xgData] = await Promise.all([
+        betsRes.json(), luckyRes.json(), xgRes.json()
+      ]);
+
+      const showBetsSelect = document.getElementById('showBetsSelect');
+      if (showBetsSelect && betsData.show_bets) {
+        showBetsSelect.value = betsData.show_bets;
+      }
+
+      const showLuckyButtonSelect = document.getElementById('showLuckyButtonSelect');
+      if (showLuckyButtonSelect && luckyData.show_lucky_button !== undefined) {
+        showLuckyButtonSelect.value = luckyData.show_lucky_button;
+      }
+
+      const showXgButtonSelect = document.getElementById('showXgButtonSelect');
+      if (showXgButtonSelect && xgData.show_xg_button !== undefined) {
+        showXgButtonSelect.value = xgData.show_xg_button;
+      }
+    } catch (e) {
+      console.error('Ошибка загрузки select-настроек:', e);
+    }
+
     // Инициализируем часовые поясы
     await initTimezoneSettings();
 
