@@ -21,14 +21,12 @@ function startFavoriteMatchesPolling() {
     }
   }, 30000);
 
-  console.log('✅ Polling избранных матчей запущен (глобально)');
 }
 
 function stopFavoriteMatchesPolling() {
   if (favoriteMatchesInterval) {
     clearInterval(favoriteMatchesInterval);
     favoriteMatchesInterval = null;
-    console.log('⏹ Polling избранных матчей остановлен');
   }
 }
 
@@ -77,7 +75,6 @@ function updateFavoriteMatchesData(liveMatches) {
       };
 
       saveFavoriteMatchData(matchId, matchData);
-      console.log(`💾 Обновлены данные матча ${matchId}:`, matchData);
     }
   });
 }
@@ -125,7 +122,7 @@ function toggleFavoriteMatch(matchId, event) {
           action: 'remove_favorite',
           details: matchInfo
         })
-      }).catch(err => console.log('Ошибка отправки уведомления:', err));
+      }).catch(err => console.error('Ошибка отправки уведомления:', err));
     }
   } else {
     if (favorites.length >= 20) {
@@ -157,11 +154,9 @@ function toggleFavoriteMatch(matchId, event) {
       };
 
       saveFavoriteMatchData(matchId, matchData);
-      console.log('💾 Сохранены данные матча:', matchData);
 
       const isDesktop = window.innerWidth > 1400;
       if (isDesktop) {
-        console.log('🖥 ДЕСКТОП: Создаем карточку сразу после добавления в избранное');
         updateDesktopNotification(matchData);
       }
     }
@@ -175,12 +170,11 @@ function toggleFavoriteMatch(matchId, event) {
           action: 'add_favorite',
           details: matchInfo
         })
-      }).catch(err => console.log('Ошибка отправки уведомления:', err));
+      }).catch(err => console.error('Ошибка отправки уведомления:', err));
     }
   }
 
   saveFavoriteMatches(favorites);
-  console.log('💾 Сохранен список избранных:', favorites);
   updateFavoriteStars();
 
   if (index > -1) {
@@ -210,8 +204,6 @@ async function updateLiveIndicator() {
   }
 
   try {
-    console.log('🔄 Обновление индикатора LIVE...');
-
     const eventsResponse = await fetch('/api/events');
     if (!eventsResponse.ok) {
       console.error('❌ Ошибка загрузки турниров для индикатора');
@@ -228,8 +220,6 @@ async function updateLiveIndicator() {
       return new Date(event.start_date) <= now;
     });
 
-    console.log(`📊 Активных турниров: ${activeEvents.length}`);
-
     let hasAnyLiveMatches = false;
 
     for (const event of activeEvents) {
@@ -241,7 +231,6 @@ async function updateLiveIndicator() {
           const liveMatches = matches.filter(m => m.status === 'live' || m.status === 'in_progress');
 
           if (liveMatches.length > 0) {
-            console.log(`🔴 Найдены LIVE матчи в турнире "${event.name}": ${liveMatches.length}`);
             hasAnyLiveMatches = true;
             break;
           }
@@ -252,10 +241,8 @@ async function updateLiveIndicator() {
     }
 
     if (hasAnyLiveMatches) {
-      console.log('🔴 Индикатор: КРАСНЫЙ (есть live матчи)');
       indicator.classList.remove('static');
     } else {
-      console.log('🔵 Индикатор: СИНИЙ (нет live матчей)');
       indicator.classList.add('static');
     }
   } catch (error) {
@@ -266,12 +253,10 @@ async function updateLiveIndicator() {
 
 async function pollFavoriteMatches() {
   if (!currentUser) {
-    console.log('⏸ Polling избранных: пользователь не залогинен');
     return;
   }
 
   const favorites = getFavoriteMatches();
-  console.log(`🔄 Polling избранных матчей: ${favorites.length} в списке`, favorites);
 
   let needsSave = false;
   deletedFinishedMatches.forEach(matchId => {
@@ -282,18 +267,15 @@ async function pollFavoriteMatches() {
   });
   if (needsSave) {
     saveDeletedFinishedMatches();
-    console.log('🧹 Очищены старые записи из deletedFinishedMatches');
   }
 
   if (favorites.length === 0) {
     const container = document.getElementById('goalNotifications');
     if (container) container.innerHTML = '';
-    console.log('📭 Нет избранных матчей, контейнер очищен');
     return;
   }
 
   const isDesktop = window.innerWidth > 1400;
-  console.log(`💻 Режим: ${isDesktop ? 'ДЕСКТОП' : 'МОБИЛЬНАЯ'} (ширина: ${window.innerWidth}px)`);
 
   try {
     const response = await fetch('/api/live-matches-by-ids', {
@@ -304,7 +286,6 @@ async function pollFavoriteMatches() {
 
     if (response.ok) {
       const apiMatches = await response.json();
-      console.log(`📡 Получено ${apiMatches.length} матчей через API`);
 
       apiMatches.forEach(match => {
         let betTeam = null;
@@ -326,14 +307,12 @@ async function pollFavoriteMatches() {
         saveFavoriteMatchData(match.id, matchData);
       });
 
-      console.log('✅ Данные в localStorage обновлены');
 
       if (currentUser && currentUser.id && favorites.length > 0) {
         checkMatchEventsForNotifications(favorites, currentUser.id);
       }
     }
   } catch (error) {
-    console.log('⚠ Не удалось обновить через API, используем данные из localStorage:', error.message);
   }
 
   const matches = [];
@@ -352,7 +331,6 @@ async function pollFavoriteMatches() {
     }
   });
 
-  console.log(`📦 Загружено ${matches.length} матчей из localStorage`);
 
   if (matches.length > 0) {
     processMatches(matches, favorites, isDesktop);
@@ -363,7 +341,6 @@ function cleanupOldFavorites() {
   const favorites = getFavoriteMatches();
   if (favorites.length === 0) return;
 
-  console.log(`🧹 Проверка ${favorites.length} избранных матчей на актуальность...`);
 
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -373,7 +350,6 @@ function cleanupOldFavorites() {
     const matchData = getFavoriteMatchData(matchId);
 
     if (!matchData) {
-      console.log(`🗑 Удаляем матч ${matchId} - нет данных`);
       removeFavoriteMatchData(matchId);
       cleaned++;
       return false;
@@ -389,7 +365,6 @@ function cleanupOldFavorites() {
                       matchData.status === 'COMPLETED';
 
     if (isFinished) {
-      console.log(`🗑 Удаляем матч ${matchId} - завершен`);
       removeFavoriteMatchData(matchId);
       cleaned++;
       return false;
@@ -399,7 +374,6 @@ function cleanupOldFavorites() {
     if (timestamp) {
       const updatedAt = new Date(timestamp);
       if (updatedAt < oneDayAgo) {
-        console.log(`🗑 Удаляем матч ${matchId} - данные старше 24 часов`);
         removeFavoriteMatchData(matchId);
         cleaned++;
         return false;
@@ -411,9 +385,7 @@ function cleanupOldFavorites() {
 
   if (cleaned > 0) {
     saveFavoriteMatches(updatedFavorites);
-    console.log(`✅ Очищено ${cleaned} старых матчей из избранного`);
   } else {
-    console.log('✅ Все избранные матчи актуальны');
   }
 }
 

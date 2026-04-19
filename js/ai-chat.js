@@ -24,7 +24,6 @@ class AIChat {
   }
 
   async loadUserAvatar() {
-    console.log('AI Chat: Попытка загрузки аватара...');
     
     // Пробуем получить currentUser из разных источников
     let currentUser = window.currentUser;
@@ -35,31 +34,24 @@ class AIChat {
       if (savedUser) {
         try {
           currentUser = JSON.parse(savedUser);
-          console.log('AI Chat: currentUser загружен из localStorage:', currentUser);
         } catch (e) {
           console.error('AI Chat: Ошибка парсинга currentUser из localStorage:', e);
         }
       }
     } else {
-      console.log('AI Chat: currentUser найден в window:', currentUser);
     }
     
     // Получаем текущего пользователя
     if (currentUser && currentUser.id) {
       try {
-        console.log('AI Chat: Отправка запроса на /api/user/' + currentUser.id + '/profile');
         const response = await fetch(`/api/user/${currentUser.id}/profile?viewerUsername=${encodeURIComponent(currentUser.username)}`);
-        console.log('AI Chat: Ответ получен, status:', response.status);
         
         if (response.ok) {
           const userData = await response.json();
-          console.log('AI Chat: Данные пользователя:', userData);
           this.userAvatar = userData.avatar || '/img/default-avatar.jpg';
-          console.log('AI Chat: Установлен аватар:', this.userAvatar);
           
           // Обновляем аватары в уже отображённых сообщениях пользователя
           const userAvatars = this.chatMessages.querySelectorAll('.message.user .message-avatar img');
-          console.log('AI Chat: Найдено аватаров для обновления:', userAvatars.length);
           userAvatars.forEach(img => {
             img.src = this.userAvatar;
           });
@@ -68,7 +60,6 @@ class AIChat {
         console.error('AI Chat: Ошибка загрузки аватара:', error);
       }
     } else {
-      console.log('AI Chat: Пользователь не залогинен, используется дефолтный аватар');
     }
   }
 
@@ -205,18 +196,8 @@ class AIChat {
       const pageContext = this.getCurrentPageContext();
       
       // Логируем контекст для отладки
-      console.log('🤖 AI Chat - Отправка запроса:');
-      console.log('  - Пользователь:', currentUsername);
-      console.log('  - Контекст страницы:', pageContext);
-      console.log('  - Текущий турнир:', pageContext.event ? pageContext.event.name : 'не выбран');
-      console.log('  - eventId:', pageContext.eventId);
-      console.log('  - window.state:', window.state ? 'доступен' : 'недоступен');
-      console.log('  - window.currentEventId:', window.currentEventId);
-      console.log('  - window.events:', window.events ? `${window.events.length} турниров` : 'недоступны');
       
       if (window.state) {
-        console.log('  - window.state.currentEventId:', window.state.currentEventId);
-        console.log('  - window.state.events:', window.state.events ? window.state.events.length : 'нет');
       }
 
       // Отправляем на сервер

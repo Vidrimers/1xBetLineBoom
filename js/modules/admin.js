@@ -13,36 +13,28 @@ export function isAdmin() {
 // Загрузить права модератора для текущего пользователя
 export async function loadModeratorPermissions() {
   if (!currentUser) {
-    console.log("❌ currentUser не определен");
     return;
   }
 
   if (currentUser.isAdmin) {
     currentUser.isModerator = false;
     currentUser.moderatorPermissions = [];
-    console.log("👑 Пользователь - админ, права модератора не нужны");
     return;
   }
 
   try {
-    console.log("📡 Запрос списка модераторов...");
     const response = await fetch("/api/moderators");
     const moderators = await response.json();
 
-    console.log("📋 Получено модераторов:", moderators);
-    console.log("🔎 Ищем модератора с user_id:", currentUser.id);
 
     const moderator = moderators.find(mod => mod.user_id === currentUser.id);
 
     if (moderator) {
       currentUser.isModerator = true;
       currentUser.moderatorPermissions = moderator.permissions || [];
-      console.log("✅ Права модератора загружены:", currentUser.moderatorPermissions);
-      console.log("👤 currentUser после загрузки:", currentUser);
     } else {
       currentUser.isModerator = false;
       currentUser.moderatorPermissions = [];
-      console.log("ℹ Пользователь не является модератором");
     }
   } catch (error) {
     console.error("❌ Ошибка загрузки прав модератора:", error);

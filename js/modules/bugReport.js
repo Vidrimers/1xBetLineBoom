@@ -10,24 +10,40 @@ export function updateSettingsIconState(bugReports) {
   const settingsBtn = document.getElementById('settingsTabBtn');
   if (!settingsBtn) return;
 
-  const icon = settingsBtn.querySelector('use[href="#icon-settings"]');
-  if (!icon) return;
-
+  const svgIcon = document.getElementById('settings-tab-icon');
   const reports = bugReports || allBugReports;
   const hasNew = reports.some(r => r.status === 'new');
   const hasInProgress = reports.some(r => r.status === 'in_progress');
 
-  // Сбрасываем все классы анимации
+  // Сброс
   settingsBtn.classList.remove('settings-icon--new', 'settings-icon--in-progress');
+  if (svgIcon) {
+    svgIcon.style.animation = '';
+    svgIcon.style.transformOrigin = '';
+    svgIcon.style.transformBox = '';
+    svgIcon.style.display = '';
+    svgIcon.setAttribute('stroke', 'currentColor');
+  }
 
   if (hasNew) {
-    // Красный + пульс (приоритет над зелёным)
     settingsBtn.classList.add('settings-icon--new');
+    if (svgIcon) {
+      svgIcon.setAttribute('stroke', '#f44336');
+      svgIcon.style.animation = 'settings-pulse 1.2s ease-in-out infinite';
+      svgIcon.style.transformOrigin = 'center';
+      svgIcon.style.transformBox = 'fill-box';
+      svgIcon.style.display = 'inline-block';
+    }
   } else if (hasInProgress) {
-    // Зелёный + вращение
     settingsBtn.classList.add('settings-icon--in-progress');
+    if (svgIcon) {
+      svgIcon.setAttribute('stroke', '#4caf50');
+      svgIcon.style.animation = 'settings-spin 2s linear infinite';
+      svgIcon.style.transformOrigin = 'center';
+      svgIcon.style.transformBox = 'fill-box';
+      svgIcon.style.display = 'inline-block';
+    }
   }
-  // Иначе — дефолтное состояние
 }
 
 // Запросить багрепорты с сервера и обновить иконку (для вызова при логине)
@@ -39,7 +55,7 @@ export async function checkBugReportsForAdmin() {
     const bugReports = await response.json();
     updateSettingsIconState(bugReports);
   } catch (e) {
-    // Тихо игнорируем — не критично
+    // тихо игнорируем
   }
 }
 

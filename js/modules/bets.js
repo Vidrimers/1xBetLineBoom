@@ -82,7 +82,6 @@ export async function placeBet(matchId, teamName, prediction) {
           }),
         });
       } catch (error) {
-        console.log("Прогноз на счет не найден или уже удален");
       }
     }
 
@@ -613,9 +612,6 @@ export async function placeFinalBet(matchId, parameterType) {
     }
 
     // Создаём новую ставку на финальный параметр
-    console.log(
-      `<svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg> Отправляю ставку: matchId=${matchId}, parameter=${parameterType}, value=${betValue}`
-    );
     const response = await fetch("/api/bets", {
       method: "POST",
       headers: {
@@ -632,13 +628,11 @@ export async function placeFinalBet(matchId, parameterType) {
     });
 
     if (response.ok) {
-      console.log(`✅ Ставка успешно создана`);
 
       // Обновляем список ставок
       const checkResponse = await fetch(`/api/user/${state.currentUser.id}/bets`);
       const bets = await checkResponse.json();
       setUserBets(bets);
-      console.log("💰 Мои ставки:", bets);
 
       // Загружаем параметры финала для корректного отображения статуса
       let finalParameters = {};
@@ -646,7 +640,6 @@ export async function placeFinalBet(matchId, parameterType) {
         const paramsResponse = await fetch("/api/final-parameters-results");
         if (paramsResponse.ok) {
           finalParameters = await paramsResponse.json();
-          console.log("📊 Загруженные параметры финала:", finalParameters);
         }
       } catch (paramError) {
         console.warn("Не удалось загрузить параметры финала:", paramError);
@@ -680,7 +673,6 @@ export async function placeFinalBet(matchId, parameterType) {
 
 export async function loadMyBets() {
   if (!state.currentUser) {
-    console.log("❌ loadMyBets: currentUser не установлен");
     return;
   }
 
@@ -695,10 +687,7 @@ export async function loadMyBets() {
 
     const response = await fetch(`/api/user/${state.currentUser.id}/bets`);
     const bets = await response.json();
-    console.log(
-      `<svg class="icon" aria-hidden="true"><use href="#icon-import"></use></svg> Загружено ${bets.length} ставок для пользователя ${state.currentUser.id}`
-    );
-    setUserBets(bets); // Сохраняем в глобальную переменную
+    setUserBets(bets);
 
     // Загружаем параметры финала для проверки ставок
     let finalParameters = {};
@@ -706,7 +695,6 @@ export async function loadMyBets() {
       const paramsResponse = await fetch("/api/final-parameters-results");
       if (paramsResponse.ok) {
         finalParameters = await paramsResponse.json();
-        console.log("📊 Загруженные параметры финала:", finalParameters);
       }
     } catch (paramError) {
       console.warn("Не удалось загрузить параметры финала:", paramError);
@@ -1340,12 +1328,9 @@ export async function deleteBet(betId) {
         });
         
         if (deleteScoreResponse.ok) {
-          console.log("✅ Прогноз на счет удален");
         } else {
-          console.log("⚠ Прогноз на счет не найден или уже удален");
         }
       } catch (error) {
-        console.log("⚠ Ошибка при удалении прогноза на счет:", error);
       }
 
       // Удаляем прогноз на карточки
@@ -1361,12 +1346,9 @@ export async function deleteBet(betId) {
         });
         
         if (deleteCardsResponse.ok) {
-          console.log("✅ Прогноз на карточки удален");
         } else {
-          console.log("⚠ Прогноз на карточки не найден или уже удален");
         }
       } catch (error) {
-        console.log("⚠ Ошибка при удалении прогноза на карточки:", error);
       }
 
       // Очищаем прогнозы в объекте матча
@@ -1376,7 +1358,6 @@ export async function deleteBet(betId) {
         match.predicted_score_team2 = null;
         match.predicted_yellow_cards = null;
         match.predicted_red_cards = null;
-        console.log(`🧹 Очищены прогнозы для матча ${matchId}`);
       }
     }
 

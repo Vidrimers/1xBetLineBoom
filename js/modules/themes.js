@@ -24,7 +24,6 @@ const ALL_THEMES = [
 
 // Предварительный просмотр темы (без сохранения на сервере)
 export function previewTheme(themeName) {
-  console.log(`🎨 Предпросмотр темы: ${themeName}`);
 
   // Удаляем все классы тем
   document.body.classList.remove(...ALL_THEMES);
@@ -32,7 +31,6 @@ export function previewTheme(themeName) {
   // Добавляем новый класс темы
   document.body.classList.add(themeName);
 
-  console.log(`✅ Тема ${themeName} применена для предпросмотра`);
 }
 
 // Сохранить выбранную тему
@@ -73,7 +71,6 @@ export async function saveTheme() {
 
 // Изменить тему (используется при загрузке сохраненной темы)
 export async function changeTheme(themeName) {
-  console.log(`🎨 Смена темы на: ${themeName}`);
 
   // Удаляем все классы тем
   document.body.classList.remove(...ALL_THEMES);
@@ -81,15 +78,12 @@ export async function changeTheme(themeName) {
   // Добавляем новый класс темы
   document.body.classList.add(themeName);
 
-  console.log(`✅ Тема ${themeName} применена`);
 }
 
 // Загрузить сохраненную тему при загрузке страницы
 export async function loadSavedTheme() {
   // Сначала загружаем из localStorage для быстрого применения
   let savedTheme = localStorage.getItem("selectedTheme") || "theme-default";
-
-  console.log(`📂 Загружена тема из localStorage: ${savedTheme}`);
 
   // Применяем тему
   document.body.classList.add(savedTheme);
@@ -119,7 +113,6 @@ export async function loadSavedTheme() {
             themeSelect.value = savedTheme;
           }
 
-          console.log(`📂 Тема обновлена с сервера: ${savedTheme}`);
         }
       }
     } catch (error) {
