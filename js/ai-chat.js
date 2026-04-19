@@ -88,7 +88,7 @@ class AIChat {
     chatWindow.id = 'aiChatWindow';
     chatWindow.innerHTML = `
       <div class="ai-chat-header">
-        <h3><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg> AI Помощник <span style="font-size: 10px; background: rgba(255, 255, 255, 0.2); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal;">BETA</span></h3>
+        <h3><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg> Мистер Додеп <span style="font-size: 10px; background: rgba(255, 255, 255, 0.2); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal;">BETA</span></h3>
         <button class="ai-chat-close" id="aiChatClose">×</button>
       </div>
       <div class="ai-chat-messages" id="aiChatMessages"></div>
