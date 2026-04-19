@@ -64,6 +64,46 @@ function getUserBets(userId, viewerUserId, eventId) {
 }
 
 /**
+ * Форматирует ставки компактно: последний завершённый тур + текущий незавершённый.
+ * Это позволяет уложиться в лимит токенов ИИ и не обрезать ответ.
+ */
+function formatBetsCompact(bets, label) {
+  // Разбиваем на завершённые и незавершённые
+  const finished = bets.filter(b => !b.hidden && b.result !== 'pending');
+  const pending  = bets.filter(b => !b.hidden && b.result === 'pending');
+  const hidden   = bets.filter(b => b.hidden);
+
+  const lines = [];
+
+  // Последний завершённый тур
+  if (finished.length > 0) {
+    const rounds = [...new Set(finished.map(b => b.round))].sort((a, b) => b - a);
+    const lastRound = rounds[0];
+    const lastRoundBets = finished.filter(b => b.round === lastRound);
+    const won = lastRoundBets.filter(b => b.result === 'won').length;
+    const total = lastRoundBets.length;
+    const matchLines = lastRoundBets.map(b => {
+      const r = b.result === 'won' ? '✅' : '❌';
+      return `${b.team1}-${b.team2}:${b.prediction_display}${r}`;
+    }).join(', ');
+    lines.push(`Тур${lastRound}(${won}/${total}): ${matchLines}`);
+  }
+
+  // Текущий незавершённый тур (только количество, без деталей — экономим токены)
+  if (pending.length > 0) {
+    const rounds = [...new Set(pending.map(b => b.round))];
+    lines.push(`Ожидают результата: ${pending.length} ставок (туры: ${rounds.join(',')})`);
+  }
+
+  if (hidden.length > 0) {
+    lines.push(`Скрыто ставок: ${hidden.length}`);
+  }
+
+  if (lines.length === 0) return null;
+  return `${label}:\n${lines.join('\n')}`;
+}
+
+/**
  * Получает матчи турнира
  */
 function getMatches(eventId) {
@@ -398,16 +438,33 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null,
         for (const event of activeEventsForMatches) {
           const bets = getUserBets(currentUser.id, currentUser.id, event.id);
           if (bets && bets.length > 0) {
-            const betsText = `${event.name}:\n` +
-              bets.map(b => {
-                if (b.hidden) return `${b.team1}vs${b.team2}:[скрыта]`;
-                const r = b.result === 'won' ? '✅' : b.result === 'lost' ? '❌' : '⏳';
-                return `${b.team1}vs${b.team2}:${b.prediction_display}${r}`;
-              }).join(', ');
-            userBetsData.push(betsText);
+            const betsText = formatBetsCompact(bets, event.name);
+            if (betsText) userBetsData.push(betsText);
           }
         }
         if (userBetsData.length > 0) context.userBets = userBetsData.join('\n');
+
+        // Ставки упомянутых пользователей (с учётом show_bets)
+        if (messageText) {
+          const mentionedBetsData = [];
+          const allUsers = db.prepare('SELECT id, username FROM users').all();
+          const mentionedForBets = allUsers.filter(u =>
+            u.id !== currentUser.id &&
+            messageText.toLowerCase().includes(u.username.toLowerCase())
+          );
+          for (const mu of mentionedForBets) {
+            for (const event of activeEventsForMatches) {
+              const bets = getUserBets(mu.id, currentUser.id, event.id);
+              if (bets && bets.length > 0) {
+                const betsText = formatBetsCompact(bets, `${event.name} (${mu.username})`);
+                if (betsText) mentionedBetsData.push(betsText);
+              }
+            }
+          }
+          if (mentionedBetsData.length > 0) {
+            context.mentionedBets = mentionedBetsData.join('\n');
+          }
+        }
       }
     }
 

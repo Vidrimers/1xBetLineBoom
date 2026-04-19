@@ -528,12 +528,14 @@ class AIChat {
       .replace(/&lt;i&gt;(.*?)&lt;\/i&gt;/g, '<em>$1</em>')
       .replace(/&lt;br\s*\/?&gt;/g, '<br>')
       .replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/g, '<u>$1</u>')
-      // markdown **bold**
+      // markdown **bold** — до одиночных звёздочек
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // markdown *italic*
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // markdown *italic* — только если * не является маркером списка (нет пробела/таба после *)
+      .replace(/\*(\S.*?\S|\S)\*/g, '<em>$1</em>')
       // markdown _italic_
-      .replace(/_(.*?)_/g, '<em>$1</em>')
+      .replace(/\b_(.*?)_\b/g, '<em>$1</em>')
+      // маркеры списка (* текст или - текст в начале строки) → • текст
+      .replace(/(^|&lt;br&gt;|<br>)\s*[*\-]\s+/g, '$1• ')
       // переносы строк
       .replace(/\n/g, '<br>');
 
