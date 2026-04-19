@@ -801,7 +801,6 @@ Object.assign(window, {
 
 // ===== DOMContentLoaded — ГЛАВНЫЙ БЛОК ИНИЦИАЛИЗАЦИИ =====
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🔄 DOMContentLoaded - начало загрузки");
 
   // Экспортируем состояние в window для доступа из AI чата
   window.state = state;

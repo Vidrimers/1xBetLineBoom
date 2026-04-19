@@ -632,7 +632,6 @@ export async function displayMatches() {
       if (roundsContainer) {
         const maxScroll = roundsContainer.scrollWidth - roundsContainer.clientWidth;
         roundsContainer.scrollLeft = maxScroll;
-        console.log(`📜 Прокрутка к последнему туру: scrollLeft=${roundsContainer.scrollLeft}, maxScroll=${maxScroll}, scrollWidth=${roundsContainer.scrollWidth}, clientWidth=${roundsContainer.clientWidth}, активен: ${currentRoundFilter}`);
       }
     };
     
