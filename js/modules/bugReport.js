@@ -3,6 +3,46 @@
 import * as state from './state.js';
 import { showCustomAlert, showCustomConfirm } from './ui.js';
 
+// ===== ИНДИКАТОР ИКОНКИ НАСТРОЕК =====
+
+// Обновить состояние иконки #icon-settings на кнопке настроек
+export function updateSettingsIconState(bugReports) {
+  const settingsBtn = document.getElementById('settingsTabBtn');
+  if (!settingsBtn) return;
+
+  const icon = settingsBtn.querySelector('use[href="#icon-settings"]');
+  if (!icon) return;
+
+  const reports = bugReports || allBugReports;
+  const hasNew = reports.some(r => r.status === 'new');
+  const hasInProgress = reports.some(r => r.status === 'in_progress');
+
+  // Сбрасываем все классы анимации
+  settingsBtn.classList.remove('settings-icon--new', 'settings-icon--in-progress');
+
+  if (hasNew) {
+    // Красный + пульс (приоритет над зелёным)
+    settingsBtn.classList.add('settings-icon--new');
+  } else if (hasInProgress) {
+    // Зелёный + вращение
+    settingsBtn.classList.add('settings-icon--in-progress');
+  }
+  // Иначе — дефолтное состояние
+}
+
+// Запросить багрепорты с сервера и обновить иконку (для вызова при логине)
+export async function checkBugReportsForAdmin() {
+  if (!state.currentUser) return;
+  try {
+    const response = await fetch(`/api/admin/bug-reports?username=${state.currentUser.username}`);
+    if (!response.ok) return;
+    const bugReports = await response.json();
+    updateSettingsIconState(bugReports);
+  } catch (e) {
+    // Тихо игнорируем — не критично
+  }
+}
+
 // Массив для хранения изображений багрепорта
 let bugReportImages = [];
 
@@ -309,6 +349,7 @@ async function loadBugReports() {
     allBugReports = bugReports;
 
     updateBugReportFilterCounts();
+    updateSettingsIconState();
 
     const hasNew = bugReports.some(r => r.status === 'new');
     const hasInProgress = bugReports.some(r => r.status === 'in_progress');

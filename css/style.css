@@ -4961,3 +4961,29 @@ body.login-modal-open {
 .match-row.match-cancelled .match-date-text {
   filter: grayscale(100%);
 }
+
+/* ===== Индикатор иконки настроек (багрепорты) ===== */
+
+/* Новый багрепорт — красный fill + пульс scale */
+#settingsTabBtn.settings-icon--new .icon {
+  fill: #f44336;
+  color: #f44336;
+  animation: settings-pulse 1.2s ease-in-out infinite;
+}
+
+/* Багрепорт "В работе" — зелёный fill + вращение */
+#settingsTabBtn.settings-icon--in-progress .icon {
+  fill: #4caf50;
+  color: #4caf50;
+  animation: settings-spin 2s linear infinite;
+}
+
+@keyframes settings-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(0.8); }
+}
+
+@keyframes settings-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

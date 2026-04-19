@@ -481,6 +481,7 @@ import {
   deleteBugReport,
   initBugReportListeners,
   openBugReportsModal,
+  checkBugReportsForAdmin,
 } from './modules/bugReport.js';
 import { openDevicesModal, closeDevicesModal, logoutDevice, toggleTrustedDevice } from './modules/devices.js';
 import {
@@ -917,6 +918,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("adminBtn").style.display = "inline-block";
       document.getElementById("countingBtn").style.display = "inline-block";
       document.getElementById("adminSettingsPanel").style.display = "block";
+      // Проверяем багрепорты и обновляем иконку настроек
+      checkBugReportsForAdmin();
     }
 
     // Загружаем права модератора
