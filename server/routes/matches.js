@@ -763,21 +763,22 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
         console.error("❌ Ошибка проверки лидера и прогресса:", error);
       }
 
-      return res.json({ message: "Статус матча успешно изменен", matchId, status, result: result || null });
-    }
-
-    // После установки результата — проверяем инактивность по туру
-    try {
-      const updatedMatch = db.prepare('SELECT event_id, round FROM matches WHERE id = ?').get(matchId);
-      if (updatedMatch?.round) {
-        // Запускаем асинхронно чтобы не задерживать ответ клиенту
-        setImmediate(() => {
-          checkRoundInactivity(updatedMatch.event_id, updatedMatch.round)
-            .catch(err => console.error('❌ Ошибка проверки инактивности:', err));
-        });
+      // После установки результата — проверяем инактивность по туру (только если winner установлен)
+      if (winner) {
+        try {
+          const updatedMatch = db.prepare('SELECT event_id, round FROM matches WHERE id = ?').get(matchId);
+          if (updatedMatch?.round) {
+            setImmediate(() => {
+              checkRoundInactivity(updatedMatch.event_id, updatedMatch.round)
+                .catch(err => console.error('❌ Ошибка проверки инактивности:', err));
+            });
+          }
+        } catch (inactivityError) {
+          console.error('❌ Ошибка запуска проверки инактивности:', inactivityError);
+        }
       }
-    } catch (inactivityError) {
-      console.error('❌ Ошибка запуска проверки инактивности:', inactivityError);
+
+      return res.json({ message: "Статус матча успешно изменен", matchId, status, result: result || null });
     }
 
     if (
