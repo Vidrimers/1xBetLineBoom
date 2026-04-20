@@ -603,6 +603,12 @@ export async function loginWithTelegram() {
 
 // Проверка статуса авторизации через Telegram
 export async function checkTelegramAuthStatus(authToken) {
+  // Очищаем предыдущий интервал если он вдруг остался
+  if (authCheckInterval) {
+    clearInterval(authCheckInterval);
+    setAuthCheckInterval(null);
+  }
+
   let attempts = 0;
   const maxAttempts = 60; // 60 попыток по 2 секунды = 2 минуты
 
