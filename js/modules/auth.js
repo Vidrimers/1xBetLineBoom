@@ -5,8 +5,9 @@ import {
   ADMIN_LOGIN,
   ADMIN_DB_NAME,
   authCheckInterval,
+  setCurrentUser,
+  setAuthCheckInterval,
 } from './state.js';
-import { setCurrentUser, setAuthCheckInterval } from './state.js';
 import { showCustomAlert, showCustomConfirm, showCustomPrompt } from './ui.js';
 import { loadSavedTheme } from './themes.js';
 import { loadEventsList } from './events.js';
@@ -605,8 +606,7 @@ export async function checkTelegramAuthStatus(authToken) {
   let attempts = 0;
   const maxAttempts = 60; // 60 попыток по 2 секунды = 2 минуты
 
-  // eslint-disable-next-line no-global-assign
-  authCheckInterval = setInterval(async () => {
+  setAuthCheckInterval(setInterval(async () => {
     attempts++;
 
     if (attempts > maxAttempts) {
@@ -729,5 +729,5 @@ export async function checkTelegramAuthStatus(authToken) {
     } catch (error) {
       console.error("Ошибка проверки статуса авторизации:", error);
     }
-  }, 2000); // Проверяем каждые 2 секунды
+  }, 2000)); // Проверяем каждые 2 секунды
 }
