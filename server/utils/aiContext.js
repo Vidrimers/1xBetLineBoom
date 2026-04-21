@@ -103,6 +103,73 @@ function formatBetsCompact(bets, label) {
   return `${label}:\n${lines.join('\n')}`;
 }
 
+// Карта аббревиатур турниров → ключевые слова для поиска в названии
+const TOURNAMENT_ALIASES = {
+  'лч': 'чемпионов',
+  'лига чемпионов': 'чемпионов',
+  'champions league': 'чемпионов',
+  ' cl ': 'чемпионов',
+  'лe': 'европы',
+  'лига европы': 'европы',
+  'europa league': 'европы',
+  ' el ': 'европы',
+  'лк': 'конференций',
+  'лига конференций': 'конференций',
+  'conference league': 'конференций',
+  'рпл': 'премьер лига',
+  'российская премьер': 'премьер лига',
+  'апл': 'английская',
+  'английская премьер': 'английская',
+  'premier league': 'английская',
+  'ла лига': 'ла лига',
+  'la liga': 'ла лига',
+  ' лм ': 'ла лига',
+  'бундеслига': 'бундеслига',
+  'bundesliga': 'бундеслига',
+  ' бл ': 'бундеслига',
+  'серия а': 'серия а',
+  'serie a': 'серия а',
+  ' са ': 'серия а',
+  'лига 1': 'лига 1',
+  'ligue 1': 'лига 1',
+  ' л1 ': 'лига 1',
+};
+
+// Ключевые слова статистических запросов
+const STATS_KEYWORDS = [
+  'карточк', 'красн', 'жёлт', 'желт', 'угловы', 'пенальти', 'статистик',
+  'red card', 'yellow card', 'corner',
+];
+
+/**
+ * Определяет, является ли запрос статистическим
+ */
+function isStatsQuery(text) {
+  const lower = text.toLowerCase();
+  return STATS_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+/**
+ * Определяет ID турнира по тексту запроса
+ * @param {string} text - Текст сообщения
+ * @param {Array} events - Список турниров из БД
+ * @returns {number|null} ID турнира или null
+ */
+function detectTournamentFromText(text, events) {
+  const lower = ` ${text.toLowerCase()} `;
+  for (const [alias, keyword] of Object.entries(TOURNAMENT_ALIASES)) {
+    if (lower.includes(alias)) {
+      const found = events.find(e => e.name.toLowerCase().includes(keyword));
+      if (found) return found.id;
+    }
+  }
+  // Попробуем прямое совпадение с названием турнира
+  for (const event of events) {
+    if (lower.includes(event.name.toLowerCase())) return event.id;
+  }
+  return null;
+}
+
 /**
  * Получает матчи турнира
  */
@@ -384,13 +451,34 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null,
         context.participants = allParticipants.join('\n');
       }
 
-      // Матчи всех активных турниров (6 предстоящих + 6 завершённых)
+      // Матчи: умный контекст в зависимости от запроса
       const activeEventsForMatches = events.filter(e => e.status === 'active');
       const matchesData = [];
-      for (const event of activeEventsForMatches) {
+      const statsQuery = messageText && isStatsQuery(messageText);
+      const targetEventId = messageText ? detectTournamentFromText(messageText, events) : null;
+
+      // Если статистический запрос без указания турнира — просим уточнить
+      if (statsQuery && !targetEventId) {
+        context.statsQueryNeedsClarification = true;
+      }
+
+      // Определяем какие турниры обрабатывать
+      const eventsToProcess = targetEventId
+        ? activeEventsForMatches.filter(e => e.id === targetEventId)
+        : activeEventsForMatches;
+
+      for (const event of eventsToProcess) {
         const matches = getMatches(event.id);
         const upcoming = matches.filter(m => !m.winner && m.status !== 'cancelled').slice(0, 6);
-        const finished = matches.filter(m => m.winner).slice(-6);
+
+        let finished;
+        if (statsQuery) {
+          // Статистический запрос — все завершённые матчи турнира (или конкретного турнира)
+          finished = matches.filter(m => m.winner);
+        } else {
+          // Обычный запрос — последние 6
+          finished = matches.filter(m => m.winner).slice(-6);
+        }
 
         if (upcoming.length > 0 || finished.length > 0) {
           let matchText = `${event.name}:`;
@@ -401,7 +489,11 @@ export function buildFullAIContext(telegramUsername = null, siteUsername = null,
           finished.forEach(m => {
             const score = m.score_team1 !== null ? `${m.score_team1}:${m.score_team2}` : '';
             const winner = m.winner === 'team1' ? m.team1 : m.winner === 'team2' ? m.team2 : 'Ничья';
-            matchText += `\n✅${m.team1} vs ${m.team2}:${winner}${score}`;
+            const cards = [];
+            if (m.yellow_cards !== null && m.yellow_cards !== undefined) cards.push(`🟨${m.yellow_cards}`);
+            if (m.red_cards !== null && m.red_cards !== undefined) cards.push(`🟥${m.red_cards}`);
+            const cardsStr = cards.length > 0 ? ` [${cards.join(' ')}]` : '';
+            matchText += `\n✅${m.team1} vs ${m.team2}:${winner}${score}${cardsStr}`;
           });
           matchesData.push(matchText);
         }

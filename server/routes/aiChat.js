@@ -45,7 +45,8 @@ router.post('/api/ai-chat', async (req, res) => {
     console.log('🤖 AI Chat - обработка запроса от:', username);
 
     // Полный контекст из БД
-    const dbContext = buildFullAIContext(null, username);
+    const lastMessage = messages[messages.length - 1]?.content || '';
+    const dbContext = buildFullAIContext(null, username, null, lastMessage);
 
     // Контекст страницы
     if (context) {
