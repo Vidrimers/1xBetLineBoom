@@ -447,6 +447,7 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
       <div style="text-align: left; margin-top: 5px;">
         <button 
           onclick="showMoreCompletedDays(${eventId})" 
+          class="completed-days-earlier-btn"
           style="background: transparent; border: none; box-shadow: none; color: #7ab0e0; padding: 4px 8px; cursor: pointer; font-size: 0.85em; outline: none;"
           onmouseover="this.style.background='transparent'"
           onmouseout="this.style.background='transparent'"

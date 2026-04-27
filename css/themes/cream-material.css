@@ -937,3 +937,13 @@ body.theme-cream-material .settings-item textarea {
 body.theme-cream-material .settings-item {
   background: rgba(103,80,164,0.05) !important;
 }
+
+/* Кнопка "Ранее" в Live разделе */
+body.theme-cream-material .completed-days-earlier-btn,
+body.theme-cream-material .completed-days-earlier-btn:hover,
+body.theme-cream-material .completed-days-earlier-btn:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  color: #7ab0e0 !important;
+}
