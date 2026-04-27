@@ -686,31 +686,9 @@ export async function displayMatches() {
     return 0;
   });
 
-  // ===== ОГРАНИЧЕНИЕ ЗАВЕРШЁННЫХ МАТЧЕЙ =====
-  // Разделяем матчи на незавершённые и завершённые
-  const activeMatches = sortedMatches.filter(m => {
-    const s = getMatchStatusByDate(m);
-    return s !== 'finished' && !['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(s);
-  });
-  const finishedMatches = sortedMatches.filter(m => {
-    const s = getMatchStatusByDate(m);
-    return s === 'finished' || ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(s);
-  });
-
-  // Завершённые: показываем последние (самые свежие) с учётом offset
-  // finishedMatches отсортированы по дате по возрастанию, берём с конца
-  const totalFinished = finishedMatches.length;
-  const showCount = FINISHED_MATCHES_LIMIT + finishedMatchesOffset;
-  const hasMoreFinished = totalFinished > showCount;
-  // Берём последние showCount завершённых (самые свежие)
-  const visibleFinished = finishedMatches.slice(Math.max(0, totalFinished - showCount));
-
-  // Итоговый список для отображения
-  const displayedMatches = [...activeMatches, ...visibleFinished];
-
   // Группируем матчи по датам
   const matchesByDate = {};
-  displayedMatches.forEach((match) => {
+  sortedMatches.forEach((match) => {
     let dateKey = "Без даты";
     if (match.match_date) {
       const date = new Date(match.match_date);
@@ -757,23 +735,6 @@ export async function displayMatches() {
 
   // Генерируем HTML с разделителями по датам
   let htmlContent = "";
-  
-  // Кнопка "Ранее" — показывается если есть скрытые завершённые матчи
-  if (hasMoreFinished) {
-    const hiddenCount = totalFinished - showCount;
-    htmlContent += `
-      <div style="text-align: center; margin: 10px 0 5px 0;">
-        <button 
-          onclick="showMoreFinishedMatches()" 
-          style="background: rgba(58, 123, 213, 0.15); border: 1px solid rgba(58, 123, 213, 0.5); color: #7ab0e0; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.85em; transition: all 0.2s;"
-          onmouseover="this.style.background='rgba(58, 123, 213, 0.3)'"
-          onmouseout="this.style.background='rgba(58, 123, 213, 0.15)'"
-        >
-          <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Ранее (ещё ${hiddenCount > FINISHED_MATCHES_LIMIT ? FINISHED_MATCHES_LIMIT : hiddenCount})
-        </button>
-      </div>
-    `;
-  }
   
   sortedDateKeys.forEach((dateKey) => {
     // Добавляем разделитель даты
