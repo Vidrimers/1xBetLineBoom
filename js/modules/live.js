@@ -352,6 +352,7 @@ async function loadCompletedDays(eventId, forceReload = false) {
     }
 
     if (forceReload || !completedDaysData) {
+      completedDaysOffset = 0; // Сбрасываем пагинацию при перезагрузке данных
       const response = await fetch(`/api/yesterday-matches?eventId=${eventId}`);
       if (!response.ok) {
         throw new Error(`Ошибка: ${response.status}`);
@@ -369,6 +370,11 @@ async function loadCompletedDays(eventId, forceReload = false) {
     console.error('Ошибка загрузки завершенных дней:', error);
   }
 }
+
+// Количество завершённых дней, показываемых по умолчанию
+const COMPLETED_DAYS_LIMIT = 5;
+// Текущий сдвиг для показа дополнительных завершённых дней
+let completedDaysOffset = 0;
 
 function renderCompletedDays(eventId, savedOpenSections = null) {
   if (!completedDaysData) return;
@@ -394,9 +400,34 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
     });
   }
 
+  // Ограничиваем количество отображаемых дней
+  // completedDays отсортированы от новых к старым (или наоборот) — берём последние (самые свежие)
+  const totalDays = completedDays.length;
+  const showCount = COMPLETED_DAYS_LIMIT + completedDaysOffset;
+  const hasMoreDays = totalDays > showCount;
+  // Показываем первые showCount дней (самые свежие идут первыми)
+  const visibleDays = completedDays.slice(0, showCount);
+
   let html = '';
 
-  for (const day of completedDays) {
+  // Кнопка "Ранее" — показывается если есть скрытые дни
+  if (hasMoreDays) {
+    const hiddenCount = totalDays - showCount;
+    html += `
+      <div style="text-align: center; margin: 5px 0 15px 0;">
+        <button 
+          onclick="showMoreCompletedDays(${eventId})" 
+          style="background: rgba(58, 123, 213, 0.15); border: 1px solid rgba(58, 123, 213, 0.5); color: #7ab0e0; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.85em; transition: all 0.2s;"
+          onmouseover="this.style.background='rgba(58, 123, 213, 0.3)'"
+          onmouseout="this.style.background='rgba(58, 123, 213, 0.15)'"
+        >
+          <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Ранее (ещё ${hiddenCount > COMPLETED_DAYS_LIMIT ? COMPLETED_DAYS_LIMIT : hiddenCount})
+        </button>
+      </div>
+    `;
+  }
+
+  for (const day of visibleDays) {
     const dayDate = new Date(day.date + 'T00:00:00');
     const dateStr = dayDate.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
     const dayId = `day-${day.date}`;
@@ -434,6 +465,12 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
       renderCompletedDayMatches(dayId);
     }
   });
+}
+
+// Показать ещё завершённые дни (кнопка "Ранее")
+function showMoreCompletedDays(eventId) {
+  completedDaysOffset += COMPLETED_DAYS_LIMIT;
+  renderCompletedDays(eventId);
 }
 
 function renderCompletedDayMatches(dayId) {
@@ -731,6 +768,7 @@ export {
   renderCompletedDayMatches,
   toggleCompletedDay,
   toggleYesterdayMatches,
+  showMoreCompletedDays,
   startLiveMatchesAutoUpdate,
   stopLiveMatchesAutoUpdate,
 };

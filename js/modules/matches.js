@@ -5,11 +5,6 @@ import { canManageMatches, canEditMatches, canDeleteMatches, canManageResults } 
 import { loadAndDisplayBetStats } from './betStats.js';
 import { showCustomAlert } from './ui.js';
 
-// Количество завершённых матчей, показываемых по умолчанию
-const FINISHED_MATCHES_LIMIT = 5;
-// Текущий сдвиг для показа дополнительных завершённых матчей (сколько уже показано сверх лимита)
-let finishedMatchesOffset = 0;
-
 // Форматирование даты/времени матча
 function formatMatchTime(dateStr) {
   try {
@@ -105,7 +100,6 @@ export async function loadMatches(eventId) {
     const response = await fetch(url);
     setMatches(await response.json());
     setCurrentRoundFilter("all"); // Сбрасываем фильтр при загрузке нового турнира
-    finishedMatchesOffset = 0; // Сбрасываем пагинацию завершённых при смене турнира
     displayMatches();
 
     // Обновляем видимость кнопки "Мне повезет"
@@ -119,14 +113,7 @@ export async function loadMatches(eventId) {
 
 // Фильтрация матчей по туру
 export function filterByRound(round) {
-  finishedMatchesOffset = 0; // Сбрасываем пагинацию завершённых при смене тура
   setCurrentRoundFilter(round);
-  displayMatches();
-}
-
-// Показать ещё завершённые матчи (кнопка "Ранее")
-export function showMoreFinishedMatches() {
-  finishedMatchesOffset += FINISHED_MATCHES_LIMIT;
   displayMatches();
 }
 

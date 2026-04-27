@@ -62,7 +62,6 @@ import {
   loadMatches,
   displayMatches,
   filterByRound,
-  showMoreFinishedMatches,
   initToggleStates,
   initMatchResultToggles,
   initAdminActionToggles,
@@ -219,6 +218,7 @@ import {
   renderCompletedDayMatches,
   toggleCompletedDay,
   toggleYesterdayMatches,
+  showMoreCompletedDays,
   startLiveMatchesAutoUpdate,
   stopLiveMatchesAutoUpdate,
 } from './modules/live.js';
@@ -534,7 +534,7 @@ Object.assign(window, {
   toggleAdminButtons, closeAdminButtons, initEventItemClickHandlers,
   restoreMobileActiveEvent, initEventAdminToggles,
   // matches
-  loadMatches, displayMatches, filterByRound, showMoreFinishedMatches, initToggleStates,
+  loadMatches, displayMatches, filterByRound, initToggleStates,
   initMatchResultToggles, initAdminActionToggles, initMatchRowClickHandlers,
   getMatchStatusByDate, displayTournamentWinner,
   // bets
@@ -596,7 +596,7 @@ Object.assign(window, {
   // live
   loadLiveMatches, showLiveEventMatches, backToLiveEvents, loadCompletedDays,
   renderCompletedDays, renderCompletedDayMatches, toggleCompletedDay,
-  toggleYesterdayMatches, startLiveMatchesAutoUpdate, stopLiveMatchesAutoUpdate,
+  toggleYesterdayMatches, showMoreCompletedDays, startLiveMatchesAutoUpdate, stopLiveMatchesAutoUpdate,
   // liveFavorites
   getFavoriteMatches, saveFavoriteMatches, getFavoriteMatchData,
   saveFavoriteMatchData, removeFavoriteMatchData, updateFavoriteMatchesData,
