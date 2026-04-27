@@ -444,10 +444,12 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
   // Кнопка "Ранее" — показывается если есть скрытые дни, размещается после всех дней
   if (hasMoreDays) {
     html += `
-      <div style="text-align: center; margin-top: 5px;">
+      <div style="text-align: left; margin-top: 5px;">
         <button 
           onclick="showMoreCompletedDays(${eventId})" 
-          style="background: transparent; border: none; color: #7ab0e0; padding: 4px 8px; cursor: pointer; font-size: 0.85em;"
+          style="background: transparent; border: none; box-shadow: none; color: #7ab0e0; padding: 4px 8px; cursor: pointer; font-size: 0.85em; outline: none;"
+          onmouseover="this.style.background='transparent'"
+          onmouseout="this.style.background='transparent'"
         >
           <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Ранее
         </button>
