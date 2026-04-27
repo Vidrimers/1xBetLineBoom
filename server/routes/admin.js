@@ -1378,12 +1378,13 @@ router.put("/api/admin/bug-reports/:id/status", async (req, res) => {
           'rejected': 'Отклонено'
         };
 
+        const cleanBugText = bugReport.bug_text.replace(/<[^>]*>/g, '').trim();
         const message = `🐛 ОБНОВЛЕНИЕ СТАТУСА БАГРЕПОРТА #${id}
 
 ${statusEmoji[status]} Статус изменен на: <b>${statusText[status]}</b>
 
 📝 Ваше сообщение:
-${bugReport.bug_text.substring(0, 200)}${bugReport.bug_text.length > 200 ? '...' : ''}
+${cleanBugText.substring(0, 200)}${cleanBugText.length > 200 ? '...' : ''}
 
 ${status === 'resolved' ? '✅ Спасибо за помощь, малютка!' : ''}
 ${status === 'in_progress' ? '🔄 Как нехуй - щас починим.' : ''}
