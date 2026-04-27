@@ -2498,9 +2498,11 @@ export async function startBot() {
           minute: '2-digit'
         });
         
-        const shortText = report.bug_text.length > 100 
-          ? report.bug_text.substring(0, 100) + '...' 
-          : report.bug_text;
+        // Очищаем текст от HTML/SVG тегов перед отправкой в Telegram
+        const cleanText = report.bug_text.replace(/<[^>]*>/g, '').trim();
+        const shortText = cleanText.length > 100 
+          ? cleanText.substring(0, 100) + '...' 
+          : cleanText;
         
         message += `<b>#${report.id}</b> | ${date}\n`;
         message += `${shortText}\n\n`;
