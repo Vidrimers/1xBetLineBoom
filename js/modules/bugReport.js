@@ -650,7 +650,7 @@ export async function openBugReportImagesModal(bugReportId, startIndex = 0) {
     const modal = document.getElementById('bugReportImagesModal');
     const title = document.getElementById('bugReportImagesTitle');
 
-    title.textContent = `<svg class="icon" aria-hidden="true"><use href="#icon-photo"></use></svg> Изображения багрепорта #${bugReportId}`;
+    title.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-photo"></use></svg> Изображения багрепорта #${bugReportId}`;
 
     displayCurrentBugReportImage();
 
