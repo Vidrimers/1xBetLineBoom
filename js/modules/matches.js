@@ -5,6 +5,11 @@ import { canManageMatches, canEditMatches, canDeleteMatches, canManageResults } 
 import { loadAndDisplayBetStats } from './betStats.js';
 import { showCustomAlert } from './ui.js';
 
+// Количество завершённых матчей, показываемых по умолчанию
+const FINISHED_MATCHES_LIMIT = 5;
+// Текущий сдвиг для показа дополнительных завершённых матчей (сколько уже показано сверх лимита)
+let finishedMatchesOffset = 0;
+
 // Форматирование даты/времени матча
 function formatMatchTime(dateStr) {
   try {
@@ -100,6 +105,7 @@ export async function loadMatches(eventId) {
     const response = await fetch(url);
     setMatches(await response.json());
     setCurrentRoundFilter("all"); // Сбрасываем фильтр при загрузке нового турнира
+    finishedMatchesOffset = 0; // Сбрасываем пагинацию завершённых при смене турнира
     displayMatches();
 
     // Обновляем видимость кнопки "Мне повезет"
@@ -113,7 +119,14 @@ export async function loadMatches(eventId) {
 
 // Фильтрация матчей по туру
 export function filterByRound(round) {
+  finishedMatchesOffset = 0; // Сбрасываем пагинацию завершённых при смене тура
   setCurrentRoundFilter(round);
+  displayMatches();
+}
+
+// Показать ещё завершённые матчи (кнопка "Ранее")
+export function showMoreFinishedMatches() {
+  finishedMatchesOffset += FINISHED_MATCHES_LIMIT;
   displayMatches();
 }
 
@@ -686,9 +699,31 @@ export async function displayMatches() {
     return 0;
   });
 
+  // ===== ОГРАНИЧЕНИЕ ЗАВЕРШЁННЫХ МАТЧЕЙ =====
+  // Разделяем матчи на незавершённые и завершённые
+  const activeMatches = sortedMatches.filter(m => {
+    const s = getMatchStatusByDate(m);
+    return s !== 'finished' && !['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(s);
+  });
+  const finishedMatches = sortedMatches.filter(m => {
+    const s = getMatchStatusByDate(m);
+    return s === 'finished' || ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(s);
+  });
+
+  // Завершённые: показываем последние (самые свежие) с учётом offset
+  // finishedMatches отсортированы по дате по возрастанию, берём с конца
+  const totalFinished = finishedMatches.length;
+  const showCount = FINISHED_MATCHES_LIMIT + finishedMatchesOffset;
+  const hasMoreFinished = totalFinished > showCount;
+  // Берём последние showCount завершённых (самые свежие)
+  const visibleFinished = finishedMatches.slice(Math.max(0, totalFinished - showCount));
+
+  // Итоговый список для отображения
+  const displayedMatches = [...activeMatches, ...visibleFinished];
+
   // Группируем матчи по датам
   const matchesByDate = {};
-  sortedMatches.forEach((match) => {
+  displayedMatches.forEach((match) => {
     let dateKey = "Без даты";
     if (match.match_date) {
       const date = new Date(match.match_date);
@@ -735,6 +770,23 @@ export async function displayMatches() {
 
   // Генерируем HTML с разделителями по датам
   let htmlContent = "";
+  
+  // Кнопка "Ранее" — показывается если есть скрытые завершённые матчи
+  if (hasMoreFinished) {
+    const hiddenCount = totalFinished - showCount;
+    htmlContent += `
+      <div style="text-align: center; margin: 10px 0 5px 0;">
+        <button 
+          onclick="showMoreFinishedMatches()" 
+          style="background: rgba(58, 123, 213, 0.15); border: 1px solid rgba(58, 123, 213, 0.5); color: #7ab0e0; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.85em; transition: all 0.2s;"
+          onmouseover="this.style.background='rgba(58, 123, 213, 0.3)'"
+          onmouseout="this.style.background='rgba(58, 123, 213, 0.15)'"
+        >
+          <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Ранее (ещё ${hiddenCount > FINISHED_MATCHES_LIMIT ? FINISHED_MATCHES_LIMIT : hiddenCount})
+        </button>
+      </div>
+    `;
+  }
   
   sortedDateKeys.forEach((dateKey) => {
     // Добавляем разделитель даты

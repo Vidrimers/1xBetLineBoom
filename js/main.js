@@ -62,6 +62,7 @@ import {
   loadMatches,
   displayMatches,
   filterByRound,
+  showMoreFinishedMatches,
   initToggleStates,
   initMatchResultToggles,
   initAdminActionToggles,
@@ -533,7 +534,7 @@ Object.assign(window, {
   toggleAdminButtons, closeAdminButtons, initEventItemClickHandlers,
   restoreMobileActiveEvent, initEventAdminToggles,
   // matches
-  loadMatches, displayMatches, filterByRound, initToggleStates,
+  loadMatches, displayMatches, filterByRound, showMoreFinishedMatches, initToggleStates,
   initMatchResultToggles, initAdminActionToggles, initMatchRowClickHandlers,
   getMatchStatusByDate, displayTournamentWinner,
   // bets
