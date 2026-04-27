@@ -410,23 +410,6 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
 
   let html = '';
 
-  // Кнопка "Ранее" — показывается если есть скрытые дни
-  if (hasMoreDays) {
-    const hiddenCount = totalDays - showCount;
-    html += `
-      <div style="text-align: center; margin: 5px 0 15px 0;">
-        <button 
-          onclick="showMoreCompletedDays(${eventId})" 
-          style="background: rgba(58, 123, 213, 0.15); border: 1px solid rgba(58, 123, 213, 0.5); color: #7ab0e0; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.85em; transition: all 0.2s;"
-          onmouseover="this.style.background='rgba(58, 123, 213, 0.3)'"
-          onmouseout="this.style.background='rgba(58, 123, 213, 0.15)'"
-        >
-          <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Ранее (ещё ${hiddenCount > COMPLETED_DAYS_LIMIT ? COMPLETED_DAYS_LIMIT : hiddenCount})
-        </button>
-      </div>
-    `;
-  }
-
   for (const day of visibleDays) {
     const dayDate = new Date(day.date + 'T00:00:00');
     const dateStr = dayDate.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -457,6 +440,21 @@ function renderCompletedDays(eventId, savedOpenSections = null) {
   }
 
   container.innerHTML = html;
+
+  // Кнопка "Ранее" — показывается если есть скрытые дни, размещается после всех дней
+  if (hasMoreDays) {
+    html += `
+      <div style="text-align: center; margin-top: 5px;">
+        <button 
+          onclick="showMoreCompletedDays(${eventId})" 
+          style="background: transparent; border: none; color: #7ab0e0; padding: 4px 8px; cursor: pointer; font-size: 0.85em;"
+        >
+          <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Ранее
+        </button>
+      </div>
+    `;
+    container.innerHTML = html;
+  }
 
   openSections.forEach(dayId => {
     completedDaysLoaded[dayId] = false;
