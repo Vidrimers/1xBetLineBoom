@@ -466,10 +466,10 @@
 .bracket-result-select {
   flex: 1;
   padding: 3px 6px;
-  background: rgba(40, 44, 54, 0.95);
-  border: 1px solid rgba(90, 159, 212, 0.25);
+  background: var(--input-bg, rgba(40, 44, 54, 0.9));
+  border: 1px solid var(--border-color, rgba(90, 159, 212, 0.25));
   border-radius: 3px;
-  color: #e0e6f0;
+  color: var(--text-primary, #e0e6f0);
   font-size: 0.8em;
   cursor: pointer;
   transition: all 0.2s;
@@ -480,26 +480,27 @@
 }
 
 .bracket-result-select:hover {
-  border-color: rgba(90, 159, 212, 0.5);
-  background: rgba(40, 44, 54, 1);
+  border-color: var(--accent-color, rgba(90, 159, 212, 0.5));
+  background: var(--input-bg-hover, rgba(40, 44, 54, 1));
 }
 
 .bracket-result-select:focus {
   outline: none;
-  border-color: #5a9fd4;
-  box-shadow: 0 0 0 1px rgba(90, 159, 212, 0.2);
+  border-color: var(--accent-color, #5a9fd4);
+  box-shadow: 0 0 0 1px var(--accent-color-alpha, rgba(90, 159, 212, 0.2));
 }
 
 .bracket-result-select option {
-  background: rgba(40, 44, 54, 1);
-  color: #e0e6f0;
+  background: var(--dropdown-bg, #2c3038);
+  color: var(--text-primary, #e0e6f0);
   padding: 4px;
 }
 
 .bracket-result-select optgroup {
   font-weight: 600;
-  color: #5a9fd4;
+  color: var(--accent-color, #5a9fd4);
   font-style: normal;
+  background: var(--dropdown-bg, #2c3038);
 }
 
 /* Старые стили радиокнопок - оставляем для обратной совместимости, но скрываем */
