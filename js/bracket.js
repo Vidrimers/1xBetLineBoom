@@ -189,19 +189,30 @@ async function rebuildBracketFromPredictions() {
 // Загрузить команды из выбранного файла
 async function loadTeams(filePath = null) {
   try {
-    // Если путь не указан, используем сохраненный для текущей сетки или дефолтный
+    // Если путь не указан, используем team_file из сетки или дефолтный
     if (!filePath) {
-      const bracketId = currentBracket ? currentBracket.id : null;
-      if (bracketId) {
-        filePath = localStorage.getItem(`selectedTeamFile_${bracketId}`) || '/names/LeagueOfChampionsTeams.json';
+      if (currentBracket && currentBracket.team_file) {
+        filePath = currentBracket.team_file;
       } else {
-        filePath = '/names/LeagueOfChampionsTeams.json';
+        const bracketId = currentBracket ? currentBracket.id : null;
+        if (bracketId) {
+          filePath = localStorage.getItem(`selectedTeamFile_${bracketId}`) || '/names/LeagueOfChampionsTeams.json';
+        } else {
+          filePath = '/names/LeagueOfChampionsTeams.json';
+        }
       }
     }
     
+    // Добавляем / в начало если его нет
+    if (!filePath.startsWith('/')) {
+      filePath = '/' + filePath;
+    }
+    
+    console.log(`📡 Загружаем команды из: ${filePath}`);
+    
     const response = await fetch(filePath);
     if (!response.ok) {
-      throw new Error('Ошибка загрузки команд');
+      throw new Error(`Ошибка загрузки команд: ${response.status}`);
     }
     
     // Определяем формат файла по расширению
@@ -255,10 +266,11 @@ async function loadTeams(filePath = null) {
     // Сортируем команды по алфавиту
     allTeams.sort((a, b) => a.localeCompare(b, 'ru'));
     
-    console.log(`✅ Загружено ${allTeams.length} команд из ${filePath}`);
+    console.log(`✅ Загружено ${allTeams.length} команд из ${filePath}:`, allTeams.slice(0, 5));
     return allTeams;
   } catch (error) {
-    console.error('Ошибка загрузки команд:', error);
+    console.error('❌ Ошибка загрузки команд:', error);
+    allTeams = [];
     return [];
   }
 }
@@ -431,10 +443,6 @@ async function openBracketModal(bracketId, viewUserId = null) {
   }
 
   try {
-    console.log('📡 Загружаем команды...');
-    // Загружаем команды
-    await loadTeams();
-    
     console.log('📡 Загружаем данные сетки:', bracketId);
     // Загружаем данные сетки
     const response = await fetch(`/api/brackets/${bracketId}`);
@@ -445,7 +453,13 @@ async function openBracketModal(bracketId, viewUserId = null) {
     
     console.log('✅ Сетка загружена');
     currentBracket = await response.json();
+    console.log('🔍 currentBracket.team_file:', currentBracket.team_file);
     isEditingBracket = false;
+    
+    console.log('📡 Загружаем команды...');
+    // Загружаем команды ПОСЛЕ загрузки сетки, чтобы использовать team_file
+    await loadTeams();
+    console.log('✅ Команды загружены, allTeams.length:', allTeams.length);
     
     // Получаем иконку турнира
     let eventIcon = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
@@ -1112,9 +1126,10 @@ function renderStageMatchesVertical(stage, isClosed, startIndex, endIndex, showA
     html += `
       <div class="bracket-match-vertical ${matchClass}" data-stage="${stage.id}" data-match="${i}">
         <div class="bracket-match-teams-vertical">
-          ${renderTeamSlotWithRadio(stage.id, i, 0, matchData?.team1, prediction, isClosed, actualWinner, showAdminButtons)}
-          ${renderTeamSlotWithRadio(stage.id, i, 1, matchData?.team2, prediction, isClosed, actualWinner, showAdminButtons)}
+          ${renderTeamSlot(stage.id, i, 0, matchData?.team1, prediction, isClosed)}
+          ${renderTeamSlot(stage.id, i, 1, matchData?.team2, prediction, isClosed)}
         </div>
+        ${showAdminButtons ? renderBracketResultSelector(stage.id, i, matchData, actualWinner) : ''}
       </div>
     `;
   }
@@ -1151,31 +1166,63 @@ function isDuplicateTeam(teamName) {
   return selectedTeams.get(teamName) > 1;
 }
 
-// Отрисовать слот команды с радиокнопкой (если админ)
-function renderTeamSlotWithRadio(stageId, matchIndex, teamIndex, teamName, prediction, isClosed, actualWinner, isAdmin) {
-  const slot = renderTeamSlot(stageId, matchIndex, teamIndex, teamName, prediction, isClosed);
+// Отрисовать селект для выбора победителя матча (только для админа)
+function renderBracketResultSelector(stageId, matchIndex, matchData, actualWinner) {
+  // Получаем команды матча
+  const team1 = matchData?.team1 || '';
+  const team2 = matchData?.team2 || '';
   
-  // Если админ и команда есть, добавляем радиокнопку
-  if (isAdmin && teamName) {
-    return `
-      <div class="bracket-team-slot-wrapper">
-        <div class="bracket-result-selector">
-          <label class="bracket-radio-label">
-            <input type="radio" 
-                   name="result_${stageId}_${matchIndex}" 
-                   value="${teamName}"
-                   ${actualWinner === teamName ? 'checked' : ''}
-                   onchange="setBracketMatchResult('${stageId}', ${matchIndex}, '${teamName.replace(/'/g, "\\'")}')"
-                   class="bracket-radio">
-            <span class="bracket-radio-custom"></span>
-          </label>
-        </div>
-        ${slot}
-      </div>
-    `;
+  // Используем allTeams из window (синхронизируется из модуля)
+  const availableTeams = window.allTeams || allTeams || [];
+  
+  console.log(`🔍 renderBracketResultSelector: stage=${stageId}, match=${matchIndex}, availableTeams.length=${availableTeams.length}`);
+  
+  // Формируем список команд для селекта
+  let options = '<option value="">— Не выбрано —</option>';
+  
+  // Сначала команды из матча (если есть)
+  const matchTeams = [];
+  if (team1) matchTeams.push(team1);
+  if (team2) matchTeams.push(team2);
+  
+  if (matchTeams.length > 0) {
+    options += '<optgroup label="Команды матча">';
+    matchTeams.forEach(team => {
+      const selected = actualWinner === team ? 'selected' : '';
+      options += `<option value="${team}" ${selected}>${team}</option>`;
+    });
+    options += '</optgroup>';
   }
   
-  return slot;
+  // Затем все остальные команды из словаря турнира
+  if (availableTeams && availableTeams.length > 0) {
+    const otherTeams = availableTeams.filter(team => !matchTeams.includes(team));
+    if (otherTeams.length > 0) {
+      options += '<optgroup label="Все команды турнира">';
+      otherTeams.forEach(team => {
+        const selected = actualWinner === team ? 'selected' : '';
+        options += `<option value="${team}" ${selected}>${team}</option>`;
+      });
+      options += '</optgroup>';
+    }
+  } else {
+    console.warn('⚠️ availableTeams пустой или не загружен!');
+  }
+  
+  return `
+    <div class="bracket-result-selector-wrapper">
+      <label class="bracket-result-label">
+        <svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+      </label>
+      <select 
+        class="bracket-result-select"
+        data-stage="${stageId}"
+        data-match="${matchIndex}"
+        onchange="setBracketMatchResult('${stageId}', ${matchIndex}, this.value)">
+        ${options}
+      </select>
+    </div>
+  `;
 }
 
 // Отрисовать слот команды
@@ -2689,26 +2736,53 @@ async function setBracketMatchResult(stageId, matchIndex, actualWinner) {
   if (!getCurrentUser() || !getCurrentUser().isAdmin || !currentBracket) return;
   
   try {
-    const response = await fetch(`/api/admin/brackets/${currentBracket.id}/results`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: getCurrentUser().username,
-        stage: stageId,
-        match_index: matchIndex,
-        actual_winner: actualWinner
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error('Ошибка установки результата');
+    // Если выбрано "Не выбрано", удаляем результат
+    if (!actualWinner || actualWinner === '') {
+      const response = await fetch(`/api/admin/brackets/${currentBracket.id}/results`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: getCurrentUser().username,
+          stage: stageId,
+          match_index: matchIndex
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Ошибка удаления результата');
+      }
+      
+      // Удаляем из локальных результатов
+      if (bracketResults[stageId]) {
+        delete bracketResults[stageId][matchIndex];
+      }
+      
+      console.log(`✅ Результат удалён: ${stageId}, матч ${matchIndex}`);
+    } else {
+      // Устанавливаем результат
+      const response = await fetch(`/api/admin/brackets/${currentBracket.id}/results`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: getCurrentUser().username,
+          stage: stageId,
+          match_index: matchIndex,
+          actual_winner: actualWinner
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Ошибка установки результата');
+      }
+      
+      // Обновляем локальные результаты
+      if (!bracketResults[stageId]) {
+        bracketResults[stageId] = {};
+      }
+      bracketResults[stageId][matchIndex] = actualWinner;
+      
+      console.log(`✅ Результат установлен: ${stageId}, матч ${matchIndex}, победитель: ${actualWinner}`);
     }
-    
-    // Обновляем локальные результаты
-    if (!bracketResults[stageId]) {
-      bracketResults[stageId] = {};
-    }
-    bracketResults[stageId][matchIndex] = actualWinner;
     
     // Обновляем цвет карточки без перерисовки всей модалки
     const matchCard = document.querySelector(`.bracket-match-vertical[data-stage="${stageId}"][data-match="${matchIndex}"]`);
@@ -2718,8 +2792,8 @@ async function setBracketMatchResult(stageId, matchIndex, actualWinner) {
       // Удаляем старые классы
       matchCard.classList.remove('bracket-match-correct', 'bracket-match-incorrect');
       
-      // Добавляем новый класс если есть прогноз
-      if (prediction) {
+      // Добавляем новый класс если есть прогноз и результат
+      if (prediction && actualWinner) {
         if (prediction === actualWinner) {
           matchCard.classList.add('bracket-match-correct');
         } else {
@@ -2727,8 +2801,6 @@ async function setBracketMatchResult(stageId, matchIndex, actualWinner) {
         }
       }
     }
-    
-    console.log(`✅ Результат установлен: ${stageId}, матч ${matchIndex}, победитель: ${actualWinner}`);
   } catch (error) {
     console.error('Ошибка при установке результата:', error);
     if (typeof showCustomAlert === 'function') {

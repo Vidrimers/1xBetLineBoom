@@ -57,8 +57,15 @@ router.get("/api/team-files", (req, res) => {
 router.get("/api/brackets/:bracketId", (req, res) => {
   try {
     const { bracketId } = req.params;
+    
+    // Получаем сетку вместе с team_file из события
     const bracket = db
-      .prepare("SELECT * FROM brackets WHERE id = ?")
+      .prepare(`
+        SELECT b.*, e.team_file 
+        FROM brackets b
+        LEFT JOIN events e ON b.event_id = e.id
+        WHERE b.id = ?
+      `)
       .get(bracketId);
     
     if (!bracket) {
@@ -1073,6 +1080,42 @@ router.put("/api/admin/brackets/:bracketId/results", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Ошибка установки результата матча:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Удалить результат матча в сетке (только для админа)
+router.delete("/api/admin/brackets/:bracketId/results", async (req, res) => {
+  try {
+    const { bracketId } = req.params;
+    const { username, stage, match_index } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: "Требуется авторизация" });
+    }
+    
+    // Проверяем, что пользователь - админ
+    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Доступ запрещен" });
+    }
+    
+    if (!stage || match_index === undefined) {
+      return res.status(400).json({ error: "Не все поля заполнены" });
+    }
+    
+    // Удаляем результат
+    db.prepare(`
+      DELETE FROM bracket_results 
+      WHERE bracket_id = ? AND stage = ? AND match_index = ?
+    `).run(bracketId, stage, match_index);
+    
+    console.log(`✅ Результат матча удалён: сетка ${bracketId}, ${stage}, матч ${match_index}`);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Ошибка удаления результата матча:", error);
     res.status(500).json({ error: error.message });
   }
 });

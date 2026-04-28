@@ -73,14 +73,53 @@ function isBracketClosed(bracket, stageId = null) {
 
 async function loadTeams(filePath = null) {
   try {
-    const teamFilePath = filePath || currentBracket?.team_file || 'names/LeagueOfChampionsTeams.json';
-    const response = await fetch(`/${teamFilePath}`);
-    if (!response.ok) throw new Error('Ошибка загрузки команд');
+    // Используем team_file из сетки или дефолтный
+    let teamFilePath = filePath || currentBracket?.team_file || 'names/LeagueOfChampionsTeams.json';
+    
+    // Добавляем / в начало если его нет
+    if (!teamFilePath.startsWith('/')) {
+      teamFilePath = '/' + teamFilePath;
+    }
+    
+    console.log(`📡 Загружаем команды из: ${teamFilePath}`);
+    
+    const response = await fetch(teamFilePath);
+    if (!response.ok) {
+      throw new Error(`Ошибка загрузки команд: ${response.status}`);
+    }
+    
     const data = await response.json();
-    allTeams = Array.isArray(data) ? data : (data.teams || []);
+    
+    // Обрабатываем разные форматы
+    allTeams = [];
+    
+    if (data.teams_by_status) {
+      // Формат с категориями
+      Object.values(data.teams_by_status).forEach(category => {
+        if (category.teams && Array.isArray(category.teams)) {
+          category.teams.forEach(team => {
+            allTeams.push(team.name);
+          });
+        }
+      });
+    } else if (data.teams && typeof data.teams === 'object' && !Array.isArray(data.teams)) {
+      // Формат с маппингом (объект)
+      allTeams = Object.keys(data.teams);
+    } else if (data.teams && Array.isArray(data.teams)) {
+      // Формат с массивом teams
+      allTeams = data.teams.map(t => typeof t === 'string' ? t : t.name).filter(Boolean);
+    } else if (Array.isArray(data)) {
+      // Простой массив
+      allTeams = data.filter(item => typeof item === 'string' && item.trim());
+    }
+    
+    // Сортируем
+    allTeams.sort((a, b) => a.localeCompare(b, 'ru'));
+    
+    console.log(`✅ Загружено ${allTeams.length} команд:`, allTeams.slice(0, 5));
     return allTeams;
   } catch (error) {
-    console.error('Ошибка загрузки команд:', error);
+    console.error('❌ Ошибка загрузки команд:', error);
     allTeams = [];
     return [];
   }
@@ -254,16 +293,24 @@ export async function openBracketModal(bracketId, viewUserId = null) {
   }
 
   try {
-    await loadTeams();
-
+    console.log('📡 Загружаем данные сетки:', bracketId);
     const response = await fetch(`/api/brackets/${bracketId}`);
     if (!response.ok) throw new Error('Ошибка загрузки сетки');
 
     currentBracket = await response.json();
+    console.log('✅ Сетка загружена, team_file:', currentBracket.team_file);
     isEditingBracket = false;
 
     // Синхронизируем с глобальным скоупом для js/bracket.js
     window.currentBracket = currentBracket;
+    
+    // Загружаем команды ПОСЛЕ загрузки сетки
+    console.log('📡 Загружаем команды...');
+    await loadTeams();
+    console.log('✅ Команды загружены, allTeams.length:', allTeams.length);
+    
+    // Синхронизируем allTeams с глобальным скоупом для js/bracket.js
+    window.allTeams = allTeams;
 
     // Получаем иконку турнира
     let eventIcon = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
