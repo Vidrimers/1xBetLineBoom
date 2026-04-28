@@ -137,6 +137,8 @@ async function loadBracketsForEvent(eventId) {
 }
 
 async function rebuildBracketFromPredictions() {
+  console.log('🔄 rebuildBracketFromPredictions, isViewingOtherUserBracket:', isViewingOtherUserBracket);
+  
   const stageOrder = ['round_of_16', 'round_of_8', 'quarter_finals', 'semi_finals', 'final'];
   const lockDates = currentBracket?.lock_dates || {};
   const now = new Date();
@@ -162,13 +164,29 @@ async function rebuildBracketFromPredictions() {
           currentBracket.matches[nextStageId][nextMatchIndex] = { team1: '', team2: '' };
         }
 
-        const adminTeam1 = currentBracket.matches[nextStageId][nextMatchIndex]?.team1;
-        const adminTeam2 = currentBracket.matches[nextStageId][nextMatchIndex]?.team2;
+        console.log(`📍 ${currentStageId}[${matchIndex}] winner: ${winner} → ${nextStageId}[${nextMatchIndex}] pos ${teamPosition}, isViewing: ${isViewingOtherUserBracket}`);
 
-        if (teamPosition === 0 && !adminTeam1) {
-          currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
-        } else if (teamPosition === 1 && !adminTeam2) {
-          currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
+        // При просмотре чужой сетки - всегда показываем прогнозы пользователя
+        // При просмотре своей сетки - не перезаписываем админские команды
+        if (isViewingOtherUserBracket) {
+          // Показываем прогнозы пользователя поверх админских команд
+          if (teamPosition === 0) {
+            currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
+            console.log(`✅ Установлен team1 = ${winner}`);
+          } else if (teamPosition === 1) {
+            currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
+            console.log(`✅ Установлен team2 = ${winner}`);
+          }
+        } else {
+          // Для своей сетки - только если слот пустой
+          const adminTeam1 = currentBracket.matches[nextStageId][nextMatchIndex]?.team1;
+          const adminTeam2 = currentBracket.matches[nextStageId][nextMatchIndex]?.team2;
+
+          if (teamPosition === 0 && !adminTeam1) {
+            currentBracket.matches[nextStageId][nextMatchIndex].team1 = winner;
+          } else if (teamPosition === 1 && !adminTeam2) {
+            currentBracket.matches[nextStageId][nextMatchIndex].team2 = winner;
+          }
         }
       });
     }
@@ -350,6 +368,13 @@ export async function openBracketModal(bracketId, viewUserId = null) {
           bracketPredictions[p.stage][p.match_index] = p.predicted_winner;
         });
 
+        // Устанавливаем флаг просмотра чужой сетки ДО rebuild
+        const isViewMode = viewUserId && viewUserId !== (state.currentUser ? state.currentUser.id : null);
+        isViewingOtherUserBracket = isViewMode;
+        window.isViewingOtherUserBracket = isViewMode;
+        viewingUserId = viewUserId;
+        window.viewingUserId = viewUserId;
+
         await rebuildBracketFromPredictions();
       } else {
         bracketPredictions = {};
@@ -377,11 +402,15 @@ export async function openBracketModal(bracketId, viewUserId = null) {
     }
 
     const isClosed = isBracketClosed(currentBracket);
+    
+    // Устанавливаем флаг просмотра если ещё не установлен
     const isViewMode = viewUserId && viewUserId !== (state.currentUser ? state.currentUser.id : null);
-    isViewingOtherUserBracket = isViewMode;
-    window.isViewingOtherUserBracket = isViewMode;
-    viewingUserId = viewUserId;
-    window.viewingUserId = viewUserId;
+    if (!isViewingOtherUserBracket) {
+      isViewingOtherUserBracket = isViewMode;
+      window.isViewingOtherUserBracket = isViewMode;
+      viewingUserId = viewUserId;
+      window.viewingUserId = viewUserId;
+    }
 
     // Синхронизируем данные с js/bracket.js
     window.bracketPredictions = bracketPredictions;
