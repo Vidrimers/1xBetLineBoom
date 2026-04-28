@@ -74,6 +74,24 @@ function shouldRespond(msg, botUsername) {
   // Если AI выключен
   if (currentMode === AI_MODES.OFF) return false;
   
+  // Игнорируем нажатия на кнопки клавиатуры (они начинаются с эмодзи)
+  const text = msg.text || '';
+  const keyboardButtons = [
+    '📊 Статус',
+    '📅 Турниры',
+    '💰 Мои ставки',
+    '⚽ Ближайший матч',
+    '📈 Статистика',
+    '👤 Профиль',
+    '🏆 Мои награды',
+    '📢 Новости',
+    '🌐 Открыть сайт'
+  ];
+  
+  if (keyboardButtons.includes(text)) {
+    return false; // Не обрабатываем кнопки клавиатуры через AI
+  }
+  
   // Проверяем thread - если это группа с thread_id, проверяем что это нужный thread
   const TELEGRAM_CHAT_ID = parseInt(process.env.TELEGRAM_CHAT_ID, 10);
   const THREAD_ID = process.env.THREAD_ID ? parseInt(process.env.THREAD_ID, 10) : null;
@@ -86,16 +104,16 @@ function shouldRespond(msg, botUsername) {
     }
   }
   
-  const text = msg.text?.toLowerCase() || '';
+  const textLower = text.toLowerCase();
   
   // Команда /ask всегда работает
-  if (text.startsWith('/ask')) return true;
+  if (textLower.startsWith('/ask')) return true;
   
   // Команда /clear всегда работает
-  if (text.startsWith('/clear')) return true;
+  if (textLower.startsWith('/clear')) return true;
   
   // Упоминание бота
-  const isMentioned = text.includes(`@${botUsername.toLowerCase()}`);
+  const isMentioned = textLower.includes(`@${botUsername.toLowerCase()}`);
   
   // В режиме MENTION - только по упоминанию
   if (currentMode === AI_MODES.MENTION) {
