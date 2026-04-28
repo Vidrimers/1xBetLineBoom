@@ -424,13 +424,30 @@
 
 /* Селектор результата матча (для админа) */
 .bracket-result-selector-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: rgba(90, 159, 212, 0.08);
-  border-top: 1px solid rgba(90, 159, 212, 0.15);
-  margin-top: 6px;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(90, 159, 212, 0.05);
+  border-top: 1px solid rgba(90, 159, 212, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 100;
+}
+
+/* Добавляем отступ снизу для карточек с селектом */
+.bracket-match-vertical:has(.bracket-result-selector-wrapper) {
+  padding: 12px 8px 36px 8px;
+  z-index: 50;
+}
+
+/* Уменьшаем z-index для обычных карточек чтобы не перекрывали селект */
+.bracket-match-vertical {
+  z-index: 1;
 }
 
 .bracket-result-label {
@@ -440,40 +457,43 @@
 }
 
 .bracket-result-label .icon {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   fill: #5a9fd4;
+  opacity: 0.7;
 }
 
 .bracket-result-select {
   flex: 1;
-  padding: 5px 8px;
-  background: rgba(40, 44, 54, 0.9);
-  border: 1px solid rgba(90, 159, 212, 0.3);
-  border-radius: 4px;
+  padding: 3px 6px;
+  background: rgba(40, 44, 54, 0.95);
+  border: 1px solid rgba(90, 159, 212, 0.25);
+  border-radius: 3px;
   color: #e0e6f0;
-  font-size: 0.85em;
+  font-size: 0.8em;
   cursor: pointer;
   transition: all 0.2s;
   min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
+  height: 24px;
 }
 
 .bracket-result-select:hover {
-  border-color: rgba(90, 159, 212, 0.6);
+  border-color: rgba(90, 159, 212, 0.5);
   background: rgba(40, 44, 54, 1);
 }
 
 .bracket-result-select:focus {
   outline: none;
   border-color: #5a9fd4;
-  box-shadow: 0 0 0 2px rgba(90, 159, 212, 0.2);
+  box-shadow: 0 0 0 1px rgba(90, 159, 212, 0.2);
 }
 
 .bracket-result-select option {
   background: rgba(40, 44, 54, 1);
   color: #e0e6f0;
-  padding: 6px;
+  padding: 4px;
 }
 
 .bracket-result-select optgroup {
