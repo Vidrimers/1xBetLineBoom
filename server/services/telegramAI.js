@@ -314,10 +314,10 @@ export async function handleAIMessage(msg, bot) {
         console.log('🔍 Проверяем reply на период. Текст:', replyText.substring(0, 200));
         
         // Проверяем, это ли сообщение с результатами за период
-        const periodMatch = replyText.match(/📊.*Результаты за период.*?📅\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/s);
+        const periodMatch = replyText.match(/Результаты за период[\s\S]*?(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/);
         const tournamentMatch = replyText.match(/🏆\s*(.+?)(?:\n|$)/);
         
-        console.log('🔍 periodMatch:', periodMatch ? 'найдено' : 'не найдено');
+        console.log('🔍 periodMatch:', periodMatch ? `найдено: ${periodMatch[1]} - ${periodMatch[2]}` : 'не найдено');
         console.log('🔍 tournamentMatch:', tournamentMatch ? tournamentMatch[1] : 'не найдено');
         
         if (periodMatch && tournamentMatch) {
