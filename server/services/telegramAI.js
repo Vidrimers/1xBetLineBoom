@@ -306,15 +306,24 @@ export async function handleAIMessage(msg, bot) {
       } else {
         const replyText = replyMsg.text || replyMsg.caption || '';
         
+        console.log('🔍 Проверяем reply на период. Текст:', replyText.substring(0, 200));
+        
         // Проверяем, это ли сообщение с результатами за период
         const periodMatch = replyText.match(/📊.*Результаты за период.*?📅\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/s);
         const tournamentMatch = replyText.match(/🏆\s*(.+?)(?:\n|$)/);
+        
+        console.log('🔍 periodMatch:', periodMatch ? 'найдено' : 'не найдено');
+        console.log('🔍 tournamentMatch:', tournamentMatch ? tournamentMatch[1] : 'не найдено');
         
         if (periodMatch && tournamentMatch) {
           // Извлекаем период и турнир
           const dateFrom = periodMatch[1];
           const dateTo = periodMatch[2];
           const tournamentName = tournamentMatch[1].trim();
+          
+          console.log('📅 Период:', dateFrom, '-', dateTo);
+          console.log('🏆 Турнир:', tournamentName);
+          console.log('❓ Вопрос:', text);
           
           // Проверяем, упоминается ли в вопросе конкретный пользователь
           let targetUser = null;
@@ -324,6 +333,7 @@ export async function handleAIMessage(msg, bot) {
           for (const u of allUsers) {
             if (text.toLowerCase().includes(u.username.toLowerCase())) {
               targetUser = u;
+              console.log('👤 Найден упомянутый пользователь:', u.username);
               break;
             }
           }
@@ -331,12 +341,26 @@ export async function handleAIMessage(msg, bot) {
           // Если пользователь не упомянут, проверяем того кто спрашивает
           if (!targetUser && telegramId) {
             targetUser = db.prepare('SELECT id, username FROM users WHERE telegram_id = ?').get(telegramId);
+            if (targetUser) {
+              console.log('👤 Используем пользователя который спрашивает:', targetUser.username);
+            }
+          }
+          
+          if (!targetUser) {
+            console.log('❌ Пользователь не найден');
           }
           
           // Получаем ставки пользователя за этот период
           if (targetUser) {
             try {
               const event = db.prepare('SELECT id FROM events WHERE name = ?').get(tournamentName);
+              
+              if (!event) {
+                console.log('❌ Турнир не найден в БД:', tournamentName);
+              } else {
+                console.log('✅ Турнир найден, id:', event.id);
+              }
+              
               if (event) {
                 // Конвертируем даты в формат YYYY-MM-DD
                 const [dayFrom, monthFrom, yearFrom] = dateFrom.split('.');
