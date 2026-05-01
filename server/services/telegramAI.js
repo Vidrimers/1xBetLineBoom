@@ -293,6 +293,11 @@ export async function handleAIMessage(msg, bot) {
     // Показываем что бот печатает
     await bot.sendChatAction(chatId, 'typing');
     
+    console.log('🔍 msg.reply_to_message:', msg.reply_to_message ? 'есть' : 'НЕТ');
+    if (msg.reply_to_message) {
+      console.log('🔍 reply_to_message.text:', msg.reply_to_message.text?.substring(0, 100));
+    }
+    
     // Проверяем, отвечает ли пользователь на сообщение
     let replyContext = '';
     let periodContext = ''; // Отдельная переменная для контекста периода
