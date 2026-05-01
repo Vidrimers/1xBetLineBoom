@@ -364,8 +364,10 @@ export async function handleAIMessage(msg, bot) {
                 if (bets.length > 0) {
                   const correct = bets.filter(b => b.is_correct).length;
                   replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} в этом периоде: ${bets.length} ставок, из них ${correct} правильных]`;
+                  console.log('✅ Контекст периода:', replyContext);
                 } else {
                   replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} НЕТ ставок в этом периоде - он не делал ставки на матчи этой даты]`;
+                  console.log('✅ Контекст периода:', replyContext);
                 }
               }
             } catch (e) {
@@ -393,6 +395,11 @@ export async function handleAIMessage(msg, bot) {
     const telegramUsername = msg.from?.username;
     const telegramId = msg.from?.id;
     const dbContext = buildFullAIContext(telegramUsername, null, telegramId, text);
+    
+    // Добавляем контекст периода если есть
+    if (replyContext) {
+      dbContext.periodContext = replyContext;
+    }
     
     if (telegramUsername && !dbContext.currentUser) {
       dbContext.currentUser = `Пользователь: @${telegramUsername} (не привязан к аккаунту на сайте)`;
