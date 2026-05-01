@@ -308,16 +308,32 @@ export async function handleAIMessage(msg, bot) {
         const periodMatch = replyText.match(/📊.*Результаты за период.*?📅\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/s);
         const tournamentMatch = replyText.match(/🏆\s*(.+?)(?:\n|$)/);
         
-        if (periodMatch && tournamentMatch && telegramId) {
+        if (periodMatch && tournamentMatch) {
           // Извлекаем период и турнир
           const dateFrom = periodMatch[1];
           const dateTo = periodMatch[2];
           const tournamentName = tournamentMatch[1].trim();
           
+          // Проверяем, упоминается ли в вопросе конкретный пользователь
+          let targetUser = null;
+          const allUsers = db.prepare('SELECT id, username FROM users').all();
+          
+          // Ищем упоминание пользователя в тексте вопроса
+          for (const u of allUsers) {
+            if (text.toLowerCase().includes(u.username.toLowerCase())) {
+              targetUser = u;
+              break;
+            }
+          }
+          
+          // Если пользователь не упомянут, проверяем того кто спрашивает
+          if (!targetUser && telegramId) {
+            targetUser = db.prepare('SELECT id, username FROM users WHERE telegram_id = ?').get(telegramId);
+          }
+          
           // Получаем ставки пользователя за этот период
-          try {
-            const user = db.prepare('SELECT id, username FROM users WHERE telegram_id = ?').get(telegramId);
-            if (user) {
+          if (targetUser) {
+            try {
               const event = db.prepare('SELECT id FROM events WHERE name = ?').get(tournamentName);
               if (event) {
                 // Конвертируем даты в формат YYYY-MM-DD
@@ -343,18 +359,18 @@ export async function handleAIMessage(msg, bot) {
                     AND m.event_id = ?
                     AND DATE(m.match_date) BETWEEN ? AND ?
                     AND m.winner IS NOT NULL
-                `).all(user.id, event.id, dateFromSQL, dateToSQL);
+                `).all(targetUser.id, event.id, dateFromSQL, dateToSQL);
                 
                 if (bets.length > 0) {
                   const correct = bets.filter(b => b.is_correct).length;
-                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${user.username} в этом периоде: ${bets.length} ставок, из них ${correct} правильных]`;
+                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} в этом периоде: ${bets.length} ставок, из них ${correct} правильных]`;
                 } else {
-                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${user.username} НЕТ ставок в этом периоде - возможно он не участвовал или не сделал ни одной ставки]`;
+                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} НЕТ ставок в этом периоде - он не делал ставки на матчи этой даты]`;
                 }
               }
+            } catch (e) {
+              console.error('Ошибка получения ставок за период:', e);
             }
-          } catch (e) {
-            console.error('Ошибка получения ставок за период:', e);
           }
         }
         
