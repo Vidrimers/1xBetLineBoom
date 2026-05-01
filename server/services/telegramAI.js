@@ -304,14 +304,71 @@ export async function handleAIMessage(msg, bot) {
       } else {
         const replyText = replyMsg.text || replyMsg.caption || '';
         
-        // Если это ответ на сообщение бота
-        if (replyMsg.from?.is_bot && replyMsg.from?.username === botUsername) {
-          replyContext = `\n\n[Пользователь отвечает на сообщение бота: "${replyText.substring(0, 500)}"]`;
-        } 
-        // Если это ответ на сообщение другого пользователя
-        else {
-          const replyUsername = replyMsg.from?.username || replyMsg.from?.first_name || 'Неизвестный';
-          replyContext = `\n\n[Пользователь отвечает на сообщение @${replyUsername}: "${replyText.substring(0, 500)}"]`;
+        // Проверяем, это ли сообщение с результатами за период
+        const periodMatch = replyText.match(/📊.*Результаты за период.*?📅\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/s);
+        const tournamentMatch = replyText.match(/🏆\s*(.+?)(?:\n|$)/);
+        
+        if (periodMatch && tournamentMatch && telegramId) {
+          // Извлекаем период и турнир
+          const dateFrom = periodMatch[1];
+          const dateTo = periodMatch[2];
+          const tournamentName = tournamentMatch[1].trim();
+          
+          // Получаем ставки пользователя за этот период
+          try {
+            const user = db.prepare('SELECT id, username FROM users WHERE telegram_id = ?').get(telegramId);
+            if (user) {
+              const event = db.prepare('SELECT id FROM events WHERE name = ?').get(tournamentName);
+              if (event) {
+                // Конвертируем даты в формат YYYY-MM-DD
+                const [dayFrom, monthFrom, yearFrom] = dateFrom.split('.');
+                const [dayTo, monthTo, yearTo] = dateTo.split('.');
+                const dateFromSQL = `${yearFrom}-${monthFrom}-${dayFrom}`;
+                const dateToSQL = `${yearTo}-${monthTo}-${dayTo}`;
+                
+                // Получаем ставки пользователя за период
+                const bets = db.prepare(`
+                  SELECT 
+                    m.team1_name, m.team2_name, m.winner, m.match_date,
+                    b.prediction,
+                    CASE 
+                      WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                           (b.prediction = 'team2' AND m.winner = 'team2') OR
+                           (b.prediction = 'draw' AND m.winner = 'draw') THEN 1
+                      ELSE 0
+                    END as is_correct
+                  FROM bets b
+                  JOIN matches m ON b.match_id = m.id
+                  WHERE b.user_id = ? 
+                    AND m.event_id = ?
+                    AND DATE(m.match_date) BETWEEN ? AND ?
+                    AND m.winner IS NOT NULL
+                `).all(user.id, event.id, dateFromSQL, dateToSQL);
+                
+                if (bets.length > 0) {
+                  const correct = bets.filter(b => b.is_correct).length;
+                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${user.username} в этом периоде: ${bets.length} ставок, из них ${correct} правильных]`;
+                } else {
+                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${user.username} НЕТ ставок в этом периоде - возможно он не участвовал или не сделал ни одной ставки]`;
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Ошибка получения ставок за период:', e);
+          }
+        }
+        
+        // Если не удалось распарсить период, добавляем обычный контекст
+        if (!replyContext) {
+          // Если это ответ на сообщение бота
+          if (replyMsg.from?.is_bot && replyMsg.from?.username === botUsername) {
+            replyContext = `\n\n[Пользователь отвечает на сообщение бота: "${replyText.substring(0, 500)}"]`;
+          } 
+          // Если это ответ на сообщение другого пользователя
+          else {
+            const replyUsername = replyMsg.from?.username || replyMsg.from?.first_name || 'Неизвестный';
+            replyContext = `\n\n[Пользователь отвечает на сообщение @${replyUsername}: "${replyText.substring(0, 500)}"]`;
+          }
         }
       }
     }
