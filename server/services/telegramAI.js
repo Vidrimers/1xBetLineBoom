@@ -308,10 +308,29 @@ export async function handleAIMessage(msg, bot) {
       console.log('🔍 ЗАШЛИ в блок reply_to_message');
       const replyMsg = msg.reply_to_message;
       
-      // Игнорируем сообщения с inline-кнопками (типа "Открыть сайт")
+      console.log('🔍 replyMsg.reply_markup:', replyMsg.reply_markup ? 'есть' : 'НЕТ');
+      console.log('🔍 inline_keyboard:', replyMsg.reply_markup?.inline_keyboard ? 'есть' : 'НЕТ');
+      
+      // Проверяем это ли кнопки-реакции (только эмодзи)
+      let isReactionButtons = false;
       if (replyMsg.reply_markup?.inline_keyboard) {
-        // Не добавляем контекст для сообщений с inline-кнопками
+        // Реакции - это кнопки где text содержит только эмодзи (1-2 символа)
+        const allButtons = replyMsg.reply_markup.inline_keyboard.flat();
+        isReactionButtons = allButtons.every(button => {
+          const text = button.text || '';
+          // Эмодзи обычно 1-2 символа, обычные кнопки длиннее
+          return text.length <= 2;
+        });
+      }
+      
+      console.log('🔍 isReactionButtons:', isReactionButtons ? 'да' : 'нет');
+      
+      // Игнорируем только кнопки-реакции (эмодзи)
+      if (isReactionButtons) {
+        console.log('⚠️ Игнорируем кнопки-реакции (эмодзи)');
+        // Не добавляем контекст для сообщений с реакциями
       } else {
+        console.log('✅ Обычные кнопки или их нет, продолжаем');
         const replyText = replyMsg.text || replyMsg.caption || '';
         
         console.log('🔍 Проверяем reply на период. Текст:', replyText.substring(0, 200));
