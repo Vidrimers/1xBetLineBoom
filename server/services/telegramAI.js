@@ -323,14 +323,16 @@ export async function handleAIMessage(msg, bot) {
         });
       }
       
-      console.log('🔍 isReactionButtons:', isReactionButtons ? 'да' : 'нет');
+      console.log('🔍 isReactionButtons:', isReactionButtons ? 'да (не мешают обработке)' : 'нет');
       
-      // Игнорируем только кнопки-реакции (эмодзи)
-      if (isReactionButtons) {
-        console.log('⚠️ Игнорируем кнопки-реакции (эмодзи)');
-        // Не добавляем контекст для сообщений с реакциями
+      // Реакции не мешают обработке, игнорируем только обычные inline-кнопки
+      const shouldIgnore = replyMsg.reply_markup?.inline_keyboard && !isReactionButtons;
+      
+      if (shouldIgnore) {
+        console.log('⚠️ Игнорируем сообщение с обычными inline-кнопками');
+        // Не добавляем контекст для сообщений с обычными кнопками
       } else {
-        console.log('✅ Обычные кнопки или их нет, продолжаем');
+        console.log('✅ Обрабатываем сообщение (реакции не мешают)');
         const replyText = replyMsg.text || replyMsg.caption || '';
         
         console.log('🔍 Проверяем reply на период. Текст:', replyText.substring(0, 200));
