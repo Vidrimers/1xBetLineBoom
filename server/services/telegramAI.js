@@ -298,11 +298,14 @@ export async function handleAIMessage(msg, bot) {
       console.log('🔍 reply_to_message.text:', msg.reply_to_message.text?.substring(0, 100));
     }
     
+    console.log('🔍 ПЕРЕД проверкой reply_to_message');
+    
     // Проверяем, отвечает ли пользователь на сообщение
     let replyContext = '';
     let periodContext = ''; // Отдельная переменная для контекста периода
     
     if (msg.reply_to_message) {
+      console.log('🔍 ЗАШЛИ в блок reply_to_message');
       const replyMsg = msg.reply_to_message;
       
       // Игнорируем сообщения с inline-кнопками (типа "Открыть сайт")
