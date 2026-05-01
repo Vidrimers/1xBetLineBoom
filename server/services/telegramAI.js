@@ -92,6 +92,15 @@ function shouldRespond(msg, botUsername) {
     return false; // Не обрабатываем кнопки клавиатуры через AI
   }
   
+  // Если пользователь отвечает на сообщение бота - всегда обрабатываем
+  // НО игнорируем если это сообщение с inline-кнопками (там reply_markup)
+  if (msg.reply_to_message?.from?.is_bot && msg.reply_to_message?.from?.username === botUsername) {
+    // Проверяем что это не сообщение с inline-кнопками
+    if (!msg.reply_to_message.reply_markup?.inline_keyboard) {
+      return true;
+    }
+  }
+  
   // Проверяем thread - если это группа с thread_id, проверяем что это нужный thread
   const TELEGRAM_CHAT_ID = parseInt(process.env.TELEGRAM_CHAT_ID, 10);
   const THREAD_ID = process.env.THREAD_ID ? parseInt(process.env.THREAD_ID, 10) : null;
@@ -284,6 +293,29 @@ export async function handleAIMessage(msg, bot) {
     // Показываем что бот печатает
     await bot.sendChatAction(chatId, 'typing');
     
+    // Проверяем, отвечает ли пользователь на сообщение
+    let replyContext = '';
+    if (msg.reply_to_message) {
+      const replyMsg = msg.reply_to_message;
+      
+      // Игнорируем сообщения с inline-кнопками (типа "Открыть сайт")
+      if (replyMsg.reply_markup?.inline_keyboard) {
+        // Не добавляем контекст для сообщений с inline-кнопками
+      } else {
+        const replyText = replyMsg.text || replyMsg.caption || '';
+        
+        // Если это ответ на сообщение бота
+        if (replyMsg.from?.is_bot && replyMsg.from?.username === botUsername) {
+          replyContext = `\n\n[Пользователь отвечает на сообщение бота: "${replyText.substring(0, 500)}"]`;
+        } 
+        // Если это ответ на сообщение другого пользователя
+        else {
+          const replyUsername = replyMsg.from?.username || replyMsg.from?.first_name || 'Неизвестный';
+          replyContext = `\n\n[Пользователь отвечает на сообщение @${replyUsername}: "${replyText.substring(0, 500)}"]`;
+        }
+      }
+    }
+    
     // Получаем полный контекст из БД
     const telegramUsername = msg.from?.username;
     const telegramId = msg.from?.id;
@@ -297,8 +329,8 @@ export async function handleAIMessage(msg, bot) {
     const userId = msg.from.id;
     const userMessages = getUserContext(userId);
     
-    // Добавляем новое сообщение пользователя в контекст
-    addToUserContext(userId, 'user', text);
+    // Добавляем новое сообщение пользователя в контекст (с контекстом ответа если есть)
+    addToUserContext(userId, 'user', text + replyContext);
     
     // Формируем полную историю сообщений для AI (включая предыдущие)
     const messages = [...userMessages];
