@@ -295,6 +295,8 @@ export async function handleAIMessage(msg, bot) {
     
     // Проверяем, отвечает ли пользователь на сообщение
     let replyContext = '';
+    let periodContext = ''; // Отдельная переменная для контекста периода
+    
     if (msg.reply_to_message) {
       const replyMsg = msg.reply_to_message;
       
@@ -363,11 +365,11 @@ export async function handleAIMessage(msg, bot) {
                 
                 if (bets.length > 0) {
                   const correct = bets.filter(b => b.is_correct).length;
-                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} в этом периоде: ${bets.length} ставок, из них ${correct} правильных]`;
-                  console.log('✅ Контекст периода:', replyContext);
+                  periodContext = `[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} в этом периоде: ${bets.length} ставок, из них ${correct} правильных]`;
+                  console.log('✅ Контекст периода:', periodContext);
                 } else {
-                  replyContext = `\n\n[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} НЕТ ставок в этом периоде - он не делал ставки на матчи этой даты]`;
-                  console.log('✅ Контекст периода:', replyContext);
+                  periodContext = `[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} НЕТ ставок в этом периоде - он не делал ставки на матчи этой даты]`;
+                  console.log('✅ Контекст периода:', periodContext);
                 }
               }
             } catch (e) {
@@ -376,8 +378,8 @@ export async function handleAIMessage(msg, bot) {
           }
         }
         
-        // Если не удалось распарсить период, добавляем обычный контекст
-        if (!replyContext) {
+        // Обычный контекст ответа (для истории диалога)
+        if (!periodContext) {
           // Если это ответ на сообщение бота
           if (replyMsg.from?.is_bot && replyMsg.from?.username === botUsername) {
             replyContext = `\n\n[Пользователь отвечает на сообщение бота: "${replyText.substring(0, 500)}"]`;
@@ -394,12 +396,22 @@ export async function handleAIMessage(msg, bot) {
     // Получаем полный контекст из БД
     const telegramUsername = msg.from?.username;
     const telegramId = msg.from?.id;
-    const dbContext = buildFullAIContext(telegramUsername, null, telegramId, text);
     
-    // Добавляем контекст периода если есть
-    if (replyContext) {
-      dbContext.periodContext = replyContext;
+    let dbContext;
+    
+    // Если есть контекст периода - используем ТОЛЬКО его, без общей информации
+    if (periodContext) {
+      console.log('📊 Используем ТОЛЬКО контекст периода:', periodContext);
+      dbContext = {
+        periodContext: periodContext,
+        currentUser: telegramUsername ? `Пользователь: @${telegramUsername}` : null
+      };
+    } else {
+      // Обычный контекст со всей информацией
+      dbContext = buildFullAIContext(telegramUsername, null, telegramId, text);
     }
+    
+    console.log('🔍 Финальный dbContext:', JSON.stringify(dbContext, null, 2));
     
     if (telegramUsername && !dbContext.currentUser) {
       dbContext.currentUser = `Пользователь: @${telegramUsername} (не привязан к аккаунту на сайте)`;
@@ -409,7 +421,7 @@ export async function handleAIMessage(msg, bot) {
     const userId = msg.from.id;
     const userMessages = getUserContext(userId);
     
-    // Добавляем новое сообщение пользователя в контекст (с контекстом ответа если есть)
+    // Добавляем новое сообщение пользователя в контекст (с обычным replyContext если есть)
     addToUserContext(userId, 'user', text + replyContext);
     
     // Формируем полную историю сообщений для AI (включая предыдущие)
