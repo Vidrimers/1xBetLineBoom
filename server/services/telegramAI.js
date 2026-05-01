@@ -293,23 +293,13 @@ export async function handleAIMessage(msg, bot) {
     // Показываем что бот печатает
     await bot.sendChatAction(chatId, 'typing');
     
-    console.log('🔍 msg.reply_to_message:', msg.reply_to_message ? 'есть' : 'НЕТ');
-    if (msg.reply_to_message) {
-      console.log('🔍 reply_to_message.text:', msg.reply_to_message.text?.substring(0, 100));
-    }
-    
-    console.log('🔍 ПЕРЕД проверкой reply_to_message');
-    
     // Проверяем, отвечает ли пользователь на сообщение
     let replyContext = '';
     let periodContext = ''; // Отдельная переменная для контекста периода
     
     if (msg.reply_to_message) {
-      console.log('🔍 ЗАШЛИ в блок reply_to_message');
       const replyMsg = msg.reply_to_message;
       
-      console.log('🔍 replyMsg.reply_markup:', replyMsg.reply_markup ? 'есть' : 'НЕТ');
-      console.log('🔍 inline_keyboard:', replyMsg.reply_markup?.inline_keyboard ? 'есть' : 'НЕТ');
       
       // Проверяем это ли кнопки-реакции (только эмодзи)
       let isReactionButtons = false;
@@ -323,36 +313,21 @@ export async function handleAIMessage(msg, bot) {
         });
       }
       
-      console.log('🔍 isReactionButtons:', isReactionButtons ? 'да (не мешают обработке)' : 'нет');
-      
       // Реакции не мешают обработке, игнорируем только обычные inline-кнопки
       const shouldIgnore = replyMsg.reply_markup?.inline_keyboard && !isReactionButtons;
       
-      if (shouldIgnore) {
-        console.log('⚠️ Игнорируем сообщение с обычными inline-кнопками');
-        // Не добавляем контекст для сообщений с обычными кнопками
-      } else {
-        console.log('✅ Обрабатываем сообщение (реакции не мешают)');
+      if (!shouldIgnore) {
         const replyText = replyMsg.text || replyMsg.caption || '';
-        
-        console.log('🔍 Проверяем reply на период. Текст:', replyText.substring(0, 200));
         
         // Проверяем, это ли сообщение с результатами за период
         const periodMatch = replyText.match(/Результаты за период[\s\S]*?(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/);
         const tournamentMatch = replyText.match(/🏆\s*(.+?)(?:\n|$)/);
-        
-        console.log('🔍 periodMatch:', periodMatch ? `найдено: ${periodMatch[1]} - ${periodMatch[2]}` : 'не найдено');
-        console.log('🔍 tournamentMatch:', tournamentMatch ? tournamentMatch[1] : 'не найдено');
         
         if (periodMatch && tournamentMatch) {
           // Извлекаем период и турнир
           const dateFrom = periodMatch[1];
           const dateTo = periodMatch[2];
           const tournamentName = tournamentMatch[1].trim();
-          
-          console.log('📅 Период:', dateFrom, '-', dateTo);
-          console.log('🏆 Турнир:', tournamentName);
-          console.log('❓ Вопрос:', text);
           
           // Проверяем, упоминается ли в вопросе конкретный пользователь
           let targetUser = null;
@@ -362,7 +337,6 @@ export async function handleAIMessage(msg, bot) {
           for (const u of allUsers) {
             if (text.toLowerCase().includes(u.username.toLowerCase())) {
               targetUser = u;
-              console.log('👤 Найден упомянутый пользователь:', u.username);
               break;
             }
           }
@@ -370,25 +344,12 @@ export async function handleAIMessage(msg, bot) {
           // Если пользователь не упомянут, проверяем того кто спрашивает
           if (!targetUser && telegramId) {
             targetUser = db.prepare('SELECT id, username FROM users WHERE telegram_id = ?').get(telegramId);
-            if (targetUser) {
-              console.log('👤 Используем пользователя который спрашивает:', targetUser.username);
-            }
-          }
-          
-          if (!targetUser) {
-            console.log('❌ Пользователь не найден');
           }
           
           // Получаем ставки пользователя за этот период
           if (targetUser) {
             try {
               const event = db.prepare('SELECT id FROM events WHERE name = ?').get(tournamentName);
-              
-              if (!event) {
-                console.log('❌ Турнир не найден в БД:', tournamentName);
-              } else {
-                console.log('✅ Турнир найден, id:', event.id);
-              }
               
               if (event) {
                 // Конвертируем даты в формат YYYY-MM-DD
@@ -419,10 +380,8 @@ export async function handleAIMessage(msg, bot) {
                 if (bets.length > 0) {
                   const correct = bets.filter(b => b.is_correct).length;
                   periodContext = `[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} в этом периоде: ${bets.length} ставок, из них ${correct} правильных]`;
-                  console.log('✅ Контекст периода:', periodContext);
                 } else {
                   periodContext = `[Пользователь отвечает на результаты за период ${dateFrom}-${dateTo}, турнир "${tournamentName}". У пользователя ${targetUser.username} НЕТ ставок в этом периоде - он не делал ставки на матчи этой даты]`;
-                  console.log('✅ Контекст периода:', periodContext);
                 }
               }
             } catch (e) {
@@ -454,7 +413,6 @@ export async function handleAIMessage(msg, bot) {
     
     // Если есть контекст периода - используем ТОЛЬКО его, без общей информации
     if (periodContext) {
-      console.log('📊 Используем ТОЛЬКО контекст периода:', periodContext);
       dbContext = {
         periodContext: periodContext,
         currentUser: telegramUsername ? `Пользователь: @${telegramUsername}` : null
@@ -463,8 +421,6 @@ export async function handleAIMessage(msg, bot) {
       // Обычный контекст со всей информацией
       dbContext = buildFullAIContext(telegramUsername, null, telegramId, text);
     }
-    
-    console.log('🔍 Финальный dbContext:', JSON.stringify(dbContext, null, 2));
     
     if (telegramUsername && !dbContext.currentUser) {
       dbContext.currentUser = `Пользователь: @${telegramUsername} (не привязан к аккаунту на сайте)`;
