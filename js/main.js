@@ -101,7 +101,7 @@ import {
   filterTournamentParticipantBets,
   closeTournamentParticipantBetsModal,
 } from './modules/participants.js';
-import { loadProfile, displayProfile, loadUserAwards, getAwardIcon, closeAvatarModal, saveAvatar, deleteAvatar, editUsername, saveUsername } from './modules/profile.js';
+import { loadProfile, displayProfile, loadUserAwards, getAwardIcon, openAvatarModal, closeAvatarModal, saveAvatar, deleteAvatar, editUsername, saveUsername } from './modules/profile.js';
 import {
   loadSettings,
   openTelegramBindInfoModal,
@@ -551,7 +551,7 @@ Object.assign(window, {
   closeTournamentParticipantBetsModal,
   // profile
   loadProfile, displayProfile, loadUserAwards, getAwardIcon,
-  closeAvatarModal, saveAvatar, deleteAvatar, editUsername, saveUsername,
+  openAvatarModal, closeAvatarModal, saveAvatar, deleteAvatar, editUsername, saveUsername,
   // settings
   loadSettings, openTelegramBindInfoModal, deleteTelegramUsername,
   initTimezoneSettings, loadUserTimezone, saveTimezoneSettings,

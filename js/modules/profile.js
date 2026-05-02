@@ -283,6 +283,114 @@ export function getAwardIcon(awardType) {
 // Переменная для хранения экземпляра Cropper
 let cropper = null;
 
+export function openAvatarModal() {
+  console.log("openAvatarModal вызвана");
+  const modal = document.getElementById("avatarModal");
+  const input = document.getElementById("avatarInput");
+  const container = document.getElementById("cropperContainer");
+  const saveBtn = document.getElementById("savAvatarBtn");
+
+  if (!modal || !input || !container || !saveBtn) {
+    console.error("❌ Не найдены необходимые элементы");
+    alert("Ошибка: модальное окно не инициализировано корректно");
+    return;
+  }
+
+  modal.style.display = "flex";
+  input.value = "";
+  container.style.display = "none";
+  document.getElementById("gifPreviewColumn").style.display = "none";
+  document.querySelector(".avatar-result-container").style.display = "none";
+  document.getElementById("gifResultPreview").style.display = "none";
+  saveBtn.style.display = "none";
+  if (cropper) {
+    cropper.destroy();
+    cropper = null;
+  }
+
+  // Инициализируем обработчик выбора файла если ещё не инициализирован
+  if (input && !input.hasAttribute("data-initialized")) {
+    input.setAttribute("data-initialized", "true");
+    input.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const isGif = file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
+
+      if (isGif) {
+        alert("GIF файлы не поддерживаются. Пожалуйста, выберите изображение в формате PNG, JPG или JPEG.");
+        e.target.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = document.getElementById("avatarImage");
+        img.src = event.target.result;
+
+        if (cropper) {
+          cropper.destroy();
+          cropper = null;
+        }
+
+        document.getElementById("gifPreviewColumn").style.display = "none";
+        document.getElementById("cropperContainer").style.display = "block";
+        document.getElementById("pngPreviewContainer").style.display = "block";
+        document.getElementById("gifResultPreview").style.display = "none";
+        document.querySelector(".avatar-result-container").style.display = "none";
+        document.getElementById("savAvatarBtn").style.display = "block";
+
+        // Очищаем GIF данные
+        window.gifAvatarData = null;
+        window.gifBase64 = null;
+        window.gifPositionX = 0;
+        window.gifPositionY = 0;
+        window.gifZoom = 1;
+
+        if (window.gifMouseMoveHandler) {
+          document.removeEventListener("mousemove", window.gifMouseMoveHandler);
+          window.gifMouseMoveHandler = null;
+        }
+        if (window.gifMouseUpHandler) {
+          document.removeEventListener("mouseup", window.gifMouseUpHandler);
+          window.gifMouseUpHandler = null;
+        }
+        if (window.gifWheelHandler) {
+          const gifPreviewColumn = document.getElementById("gifPreviewColumn");
+          if (gifPreviewColumn) {
+            gifPreviewColumn.removeEventListener("wheel", window.gifWheelHandler);
+          }
+          window.gifWheelHandler = null;
+        }
+
+        try {
+          cropper = new Cropper(img, {
+            aspectRatio: 1,
+            viewMode: 1,
+            autoCropArea: 1,
+            responsive: true,
+            restore: true,
+            guides: true,
+            center: true,
+            highlight: true,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: true,
+          });
+          console.log("✅ Cropper создан успешно");
+        } catch (err) {
+          console.error("❌ Ошибка при создании Cropper:", err);
+          alert("❌ Ошибка инициализации редактора изображений: " + err.message);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Блокируем скролл страницы при открытии модального окна
+  document.body.style.overflow = "hidden";
+}
+
 export function closeAvatarModal(event) {
   if (event && event.target.id !== "avatarModal") {
     return;
