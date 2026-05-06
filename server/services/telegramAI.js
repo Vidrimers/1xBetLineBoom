@@ -16,6 +16,22 @@ const userContexts = new Map();
 // Максимальное количество сообщений в контексте (чтобы не превысить лимиты токенов)
 const MAX_CONTEXT_MESSAGES = 10;
 
+// Хранилище пользователей которые попросили бота замолчать
+const silencedUsers = new Set();
+
+// Фразы для замолчания бота
+const SILENCE_PHRASES = [
+  'не отвечай', 'замолчи', 'заткнись', 'не пиши', 'отстань', 'хватит',
+  'не надо отвечать', 'не нужно отвечать', 'молчи', 'стоп',
+  'dont answer', 'stop answering', 'shut up', 'be quiet'
+];
+
+// Фразы для возобновления ответов
+const UNSILENCE_PHRASES = [
+  'отвечай', 'можешь отвечать', 'начни отвечать', 'отвечай снова',
+  'продолжай отвечать', 'ответь', 'привет', 'answer me', 'start answering'
+];
+
 // Режимы работы AI
 const AI_MODES = {
   ACTIVE: 'active',
@@ -272,6 +288,7 @@ export async function handleAIMessage(msg, bot) {
     }
     
     const chatId = msg.chat.id;
+    const userId = msg.from.id;
     let text = msg.text || '';
     
     // Убираем команду /ask и упоминание бота из текста
@@ -279,6 +296,28 @@ export async function handleAIMessage(msg, bot) {
       .replace(/^\/ask\s*/i, '')
       .replace(new RegExp(`@${botUsername}`, 'gi'), '')
       .trim();
+    
+    const textLower = text.toLowerCase();
+    
+    // Проверяем хочет ли пользователь чтобы бот замолчал
+    if (SILENCE_PHRASES.some(phrase => textLower.includes(phrase))) {
+      silencedUsers.add(userId);
+      await bot.sendMessage(chatId, 'ок, бывай 👋', {
+        reply_to_message_id: msg.message_id,
+        ...(msg.message_thread_id ? { message_thread_id: msg.message_thread_id } : {})
+      });
+      return true;
+    }
+    
+    // Проверяем хочет ли пользователь возобновить ответы
+    if (silencedUsers.has(userId)) {
+      if (UNSILENCE_PHRASES.some(phrase => textLower.includes(phrase))) {
+        silencedUsers.delete(userId);
+        // Продолжаем обработку как обычно
+      } else {
+        return true; // Молчим
+      }
+    }
     
     // Если это команда /clear - обрабатываем отдельно
     if (msg.text?.toLowerCase().startsWith('/clear')) {
@@ -427,7 +466,6 @@ export async function handleAIMessage(msg, bot) {
     }
     
     // Получаем историю диалога пользователя
-    const userId = msg.from.id;
     const userMessages = getUserContext(userId);
     
     // Добавляем новое сообщение пользователя в контекст (с обычным replyContext если есть)
