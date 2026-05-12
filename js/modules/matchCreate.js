@@ -280,7 +280,7 @@ export async function submitCreateMatch(event) {
   const scorePredictionEnabled = document.getElementById('matchScorePrediction').checked;
   const yellowCardsPredictionEnabled = document.getElementById('matchYellowCardsPrediction').checked;
   const redCardsPredictionEnabled = document.getElementById('matchRedCardsPrediction').checked;
-  if (isFinal) round = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал';
+  if (isFinal) round = '🏆 Финал';
   const showExactScore = document.getElementById('showExactScore').checked;
   const showYellowCards = document.getElementById('showYellowCards').checked;
   const showRedCards = document.getElementById('showRedCards').checked;

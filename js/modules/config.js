@@ -53,17 +53,17 @@ export function openRoundsOrderModal() {
     ...new Set(state.matches.map((m) => m.round).filter((r) => r && r.trim())),
   ];
 
-  // Добавляем '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал' если есть финальные матчи
+  // Добавляем '🏆 Финал' если есть финальные матчи
   const hasFinalMatches = state.matches.some(
     (m) => m.is_final === 1 || m.is_final === true
   );
-  if (hasFinalMatches && !uniqueRounds.includes('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал')) {
-    uniqueRounds.push('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал');
+  if (hasFinalMatches && !uniqueRounds.includes('🏆 Финал')) {
+    uniqueRounds.push('🏆 Финал');
   }
 
   // Убедимся, что финал есть в roundsOrder если он есть в uniqueRounds
-  if (hasFinalMatches && !state.roundsOrder.includes('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал')) {
-    setRoundsOrder([...state.roundsOrder, '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>'+ ' Финал']);
+  if (hasFinalMatches && !state.roundsOrder.includes('🏆 Финал')) {
+    setRoundsOrder([...state.roundsOrder, '🏆 Финал']);
   }
 
   // Сортируем туры по сохраненному порядку

@@ -21,12 +21,12 @@ export function toggleFinalMatch(modal) {
   if (!isFinalCheckbox || !finalParams || !roundInput) return;
   if (isFinalCheckbox.checked) {
     finalParams.style.display = 'block';
-    roundInput.value = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал';
+    roundInput.value = '🏆 Финал';
     roundInput.disabled = true;
   } else {
     finalParams.style.display = 'none';
     roundInput.disabled = false;
-    if (roundInput.value === '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал') roundInput.value = '';
+    if (roundInput.value === '🏆 Финал') roundInput.value = '';
   }
 }
 
@@ -101,7 +101,7 @@ export async function submitEditMatch(event) {
   const scorePredictionEnabled = document.getElementById('editMatchScorePrediction').checked;
   const yellowCardsPredictionEnabled = document.getElementById('editMatchYellowCardsPrediction').checked;
   const redCardsPredictionEnabled = document.getElementById('editMatchRedCardsPrediction').checked;
-  if (isFinal) round = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Финал';
+  if (isFinal) round = '🏆 Финал';
   const showExactScore = document.getElementById('editShowExactScore').checked;
   const showYellowCards = document.getElementById('editShowYellowCards').checked;
   const showRedCards = document.getElementById('editShowRedCards').checked;

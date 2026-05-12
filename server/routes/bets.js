@@ -1009,9 +1009,20 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
     username,
   } = req.body;
 
-  // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
-    return res.status(403).json({ error: "Недостаточно прав" });
+  // Проверяем, является ли пользователь админом или модератором с правами
+  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  if (!isAdminUser) {
+    const moderator = db.prepare(`
+      SELECT permissions FROM moderators 
+      WHERE user_id = (SELECT id FROM users WHERE username = ?)
+    `).get(username);
+    if (!moderator) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+    const permissions = JSON.parse(moderator.permissions || "[]");
+    if (!permissions.includes("manage_results") && !permissions.includes("edit_matches") && !permissions.includes("view_counting")) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
   }
 
   try {
@@ -1108,6 +1119,8 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
             isCorrect = parseInt(bet.prediction) === red_cards;
           } else if (bet.parameter_type === 'corners' && corners !== undefined) {
             isCorrect = parseInt(bet.prediction) === corners;
+          } else if (bet.parameter_type === 'exact_score' && exact_score) {
+            isCorrect = bet.prediction === exact_score;
           } else if (bet.parameter_type === 'penalties_in_game' && penalties_in_game) {
             isCorrect = bet.prediction === penalties_in_game;
           } else if (bet.parameter_type === 'extra_time' && extra_time) {
@@ -1159,6 +1172,7 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
                       WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
                       WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
                       WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                      WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 2
                       WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                       WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                       WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2

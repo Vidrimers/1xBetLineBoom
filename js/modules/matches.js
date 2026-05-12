@@ -484,7 +484,7 @@ export async function displayMatches() {
                ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(status);
       });
       if (!allFinalFinished) {
-        return '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал';
+        return '🏆 Финал';
       }
     }
 
@@ -504,8 +504,8 @@ export async function displayMatches() {
   );
 
   // Если есть финальные матчи и финала нет в roundsOrder, добавляем его
-  if (hasFinalMatches && !roundsOrder.includes('<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал')) {
-    setRoundsOrder([...roundsOrder, '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал']);
+  if (hasFinalMatches && !roundsOrder.includes('🏆 Финал')) {
+    setRoundsOrder([...roundsOrder, '🏆 Финал']);
     // Сохраняем новый порядок в БД
     saveRoundsOrderToStorage().catch((e) =>
       console.error("Ошибка сохранения финала в порядок:", e)
@@ -517,7 +517,7 @@ export async function displayMatches() {
     if (
       currentRoundFilter === "all" ||
       (!rounds.includes(currentRoundFilter) &&
-        currentRoundFilter !== '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал')
+        currentRoundFilter !== '🏆 Финал')
     ) {
       currentRoundFilter = getFirstUnfinishedRound();
       setCurrentRoundFilter(currentRoundFilter);
@@ -648,7 +648,7 @@ export async function displayMatches() {
   // Фильтруем матчи по выбранному туру
   let filteredMatches = matches;
   if (currentRoundFilter !== "all") {
-    // Обычный фильтр по туру (включая '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' Финал')
+    // Обычный фильтр по туру (включая '🏆 Финал')
     filteredMatches = matches.filter((m) => m.round === currentRoundFilter);
   }
 
