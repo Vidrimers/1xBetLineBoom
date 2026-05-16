@@ -140,7 +140,7 @@ export function generateEventHTML(
             ${
               isCompleted
                 ? `<button onclick="unlockEvent(${event.id})" style="background: rgba(76, 175, 80, 0.3); padding: 5px; font-size: 0.8em; border: 1px solid #4caf50; color: #7ed321; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(76, 175, 80, 0.5)'" onmouseout="this.style.background='rgba(76, 175, 80, 0.3)'" aria-label="Разблокировать турнир"><svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg></button>`
-                : `<button onclick="openLockEventModal(${event.id}, '${event.name.replace(/'/g, "\\'")}')  style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'" aria-label="Заблокировать турнир"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg></button>`
+                : `<button onclick="openLockEventModal(${event.id}, '${event.name.replace(/'/g, "\\'")}'"  style="background: transparent; padding: 5px; font-size: 0.7em; border: 1px solid #f57c00; color: #ffe0b2; border-radius: 3px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 152, 0, 0.5)'" onmouseout="this.style.background='transparent'" aria-label="Заблокировать турнир"><svg class="icon" aria-hidden="true"><use href="#icon-hidden"></use></svg></button>`
             }
             ${canDeleteTournaments() ? `<button class="event-delete-btn" onclick="deleteEvent(${
               event.id
