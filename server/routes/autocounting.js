@@ -1,8 +1,15 @@
 import { Router } from 'express';
 import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { db } from '../database/db.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE } from '../config.js';
 import { getAutoCountingEnabled, setAutoCountingEnabled, processedDates } from '../services/autoCountingService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// Корень проекта — два уровня вверх от server/routes/
+const PROJECT_ROOT = join(__dirname, '../../');
 
 const router = Router();
 
@@ -221,12 +228,13 @@ router.post("/api/admin/run-utility", (req, res) => {
   
   try {
     const command = `node ${scriptInfo.file} ${args.join(' ')}`;
-    console.log(`🔧 Запуск утилиты: ${command}`);
+    console.log(`🔧 Запуск утилиты: ${command} (cwd: ${PROJECT_ROOT})`);
     
     const result = execSync(command, { 
       encoding: 'utf8',
       timeout: 30000,
-      maxBuffer: 1024 * 1024 * 10 // 10MB
+      maxBuffer: 1024 * 1024 * 10, // 10MB
+      cwd: PROJECT_ROOT
     });
     
     res.json({ 
