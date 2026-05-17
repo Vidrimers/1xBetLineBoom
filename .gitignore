@@ -1,75 +1,90 @@
-node_modules/
-dist/
-logs/
-temp/
-img/avatar/
-refactoring-lm/
-archive/
-.vscode/
+# Системные/IDE файлы
 .DS_Store
-npm/
+.ai_mode
 .kiro/
-backups/
-migrations/
+.vscode/
+
+# Зависимости и сборка
+dist/
+node_modules/
+npm/
 package-lock.json
+
+# Окружение и конфиги
 .env
 .env copy
-upload.md
-serverjs.md
-replacements.txt
+
+# Директории (генерируемые/временные)
+archive/
+backups/
+docs/
+img/avatar/
+logs/
+migrations/
+refactoring-lm/
+temp/
+
+# Базы данных
+*.db
+*.db-shm
+*.db-wal
+* copy*.db
+*-copy*.db
+
+# Копии файлов (паттерны)
 * copy*.js
 *-copy*.js
-*-copy*.db
-* copy*.db
-*.db
-*.db-wal
-*.db-shm
-backups/
-reset-db.js
-add-timezone-column.js
-log.html
-terminal-logs.txt
+
+# Скрипты миграций/утилит
+add-admin-panel-config-table.cjs
 add-event-columns.js
+add-group-reminders-visibility-setting.cjs
+add-news-reactions-table.cjs
+add-news-table.cjs
+add-rss-keywords-table.cjs
 add-theme-column.js
-MIGRATION-README.md
-test-tournament-result-card.html
-test-tournament-no-final.html
+add-timezone-column.js
+check-check.md
+check-david-milan-cards.cjs
+fix-telegram-username-case.cjs
+migrate-rounds-order.cjs
+remove-configure-button.cjs
+reset-db.js
+
+# Тестовые HTML файлы
+ai-chat-demo.html
 test-award-card.html
 test-telegram-messages.html
-финал.txt
-финал
+test-tournament-no-final.html
+test-tournament-result-card.html
+
+# Документация/markdown
+AI-INTEGRATION-PLAN.md
+AI-PROVIDERS-SETUP.md
+CLOUDFLARE-SETUP.md
+DISCORD_OAUTH_SETUP.md
+MIGRATION-README.md
+serverjs.md
+upload.md
+ИНСТРУКЦИЯ_МАППИНГ_КОМАНД.md
+МИГРАЦИЯ_SSTATS.md
+
+# Текстовые файлы и заметки
+Glicko2.txt
+live.txt
+log.html
+negative-reactions.json
+positive-reactions.json
+terminal-logs.txt
+парсинг.txt
 АПИПереход.js
 АПИПереходFootball-data.json
 АПИПереходSStats.json
 АПИПереходSStats-Маппинг.md
-МИГРАЦИЯ_SSTATS.md
-ИНСТРУКЦИЯ_МАППИНГ_КОМАНД.md
-fix-telegram-username-case.cjs
-add-group-reminders-visibility-setting.cjs
-negative-reactions.json
-positive-reactions.json
-docs/
 
-парсинг.txt
-live.txt
-Glicko2.txt
-add-news-table.cjs
-add-news-reactions-table.cjs
-add-rss-keywords-table.cjs
-add-admin-panel-config-table.cjs
-remove-configure-button.cjs
-check-david-milan-cards.cjs
+# Прочие файлы
 AI-assist
-AI-INTEGRATION-PLAN.md
-ai-chat-demo.html
-migrate-rounds-order.cjs
-
 Autoparsing.js
-
-DISCORD_OAUTH_SETUP.md
-AI-PROVIDERS-SETUP.md
-CLOUDFLARE-SETUP.md
-check-check.md
-
-# AI режим
-.ai_mode
+replacements.txt
+финал.txt
+финал
