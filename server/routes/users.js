@@ -1020,14 +1020,29 @@ router.put("/api/user/:userId/username", async (req, res) => {
       const checkName = capitalizedUsername.trim().toLowerCase();
       const bannedNames = db.prepare("SELECT name, is_partial FROM banned_names").all();
       for (const banned of bannedNames) {
-        if (banned.is_partial) {
-          if (checkName.includes(banned.name)) {
-            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя содержит запрещённое слово "${banned.name}"` });
-          }
-        } else {
-          if (checkName === banned.name) {
-            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя "${banned.name}" запрещено к использованию` });
-          }
+        const matched = banned.is_partial ? checkName.includes(banned.name) : checkName === banned.name;
+        if (matched) {
+          const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+          const matchType = banned.is_partial ? 'частичное' : 'точное';
+          const reason = banned.is_partial
+            ? `Имя содержит запрещённое слово "${banned.name}"`
+            : `Имя "${banned.name}" запрещено к использованию`;
+
+          // Уведомляем админа
+          const message = `🚫 ПОПЫТКА ИСПОЛЬЗОВАТЬ ЗАПРЕТНОЕ ИМЯ
+
+📝 Введённое имя: ${capitalizedUsername}
+👤 Кто: ${user.username} (ID: ${userId})
+🌍 IP: ${ip_address}
+📋 Правило: "${banned.name}" (${matchType} совпадение)
+📍 Контекст: Самостоятельная смена имени
+🕐 Время: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+
+          notifyAdmin(message).catch(err => {
+            console.error("⚠️ Не удалось отправить уведомление о запретном имени:", err);
+          });
+
+          return res.status(400).json({ error: "BANNED_NAME", reason });
         }
       }
     }
