@@ -317,65 +317,82 @@ export async function loadNewsList(reset = false) {
       // Проверяем является ли пользователь админом
       const isAdmin = currentUser && currentUser.isAdmin === true;
 
-      html += `
-        <div class="news-item" style="
-          background: ${bgColor};
-          border: 1px solid ${borderColor};
-        " data-news-id="${item.id}">
-          ${isAdmin ? `<button class="news-delete-btn" onclick="deleteNews(${item.id})" title="Удалить новость">×</button>` : ''}
+      // Проверяем: это карточка завершения турнира (JSON в message)?
+      let isTournamentCompletion = false;
+      let tournamentData = null;
+      if (item.type === 'tournament' && item.message && item.message.startsWith('{')) {
+        try {
+          tournamentData = JSON.parse(item.message);
+          isTournamentCompletion = true;
+        } catch (e) {
+          // Не JSON — обычная новость
+        }
+      }
 
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.5em;">${emoji}</span>
-              <span style="
-                background: rgba(255, 255, 255, 0.1);
-                padding: 4px 12px;
-                border-radius: 12px;
-                font-size: 0.85em;
-                color: #b0b8c8;
-              ">${typeName}</span>
+      if (isTournamentCompletion && tournamentData) {
+        // Рендерим специальную карточку завершения турнира
+        html += renderTournamentCompletionCard(item, tournamentData, formattedDate, isAdmin);
+      } else {
+        html += `
+          <div class="news-item" style="
+            background: ${bgColor};
+            border: 1px solid ${borderColor};
+          " data-news-id="${item.id}">
+            ${isAdmin ? `<button class="news-delete-btn" onclick="deleteNews(${item.id})" title="Удалить новость">×</button>` : ''}
+
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.5em;">${emoji}</span>
+                <span style="
+                  background: rgba(255, 255, 255, 0.1);
+                  padding: 4px 12px;
+                  border-radius: 12px;
+                  font-size: 0.85em;
+                  color: #b0b8c8;
+                ">${typeName}</span>
+              </div>
+              <span style="color: #7a8394; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> ${formattedDate}</span>
             </div>
-            <span style="color: #7a8394; font-size: 0.9em;"><svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> ${formattedDate}</span>
+
+            <h3 style="
+              color: #e0e6f0;
+              margin: 0 0 10px 0;
+              font-size: 1.1em;
+              font-weight: 600;
+            ">${item.title}</h3>
+
+            <p style="
+              color: #b0b8c8;
+              margin: 0 0 15px 0;
+              line-height: 1.6;
+              white-space: pre-wrap;
+            ">${item.message}</p>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button
+                class="news-reaction-btn ${item.user_reaction === 'like' ? 'active' : ''}"
+                onclick="reactToNews(${item.id}, 'like')"
+                onmouseenter="showReactionTooltip(${item.id}, 'like', this)"
+                onmouseleave="scheduleHideTooltip()"
+                data-news-id="${item.id}"
+                data-reaction="like"
+              >
+                <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> <span class="like-count">${item.likes || 0}</span>
+              </button>
+              <button
+                class="news-reaction-btn dislike ${item.user_reaction === 'dislike' ? 'active' : ''}"
+                onclick="reactToNews(${item.id}, 'dislike')"
+                onmouseenter="showReactionTooltip(${item.id}, 'dislike', this)"
+                onmouseleave="scheduleHideTooltip()"
+                data-news-id="${item.id}"
+                data-reaction="dislike"
+              >
+                <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> <span class="dislike-count">${item.dislikes || 0}</span>
+              </button>
+            </div>
           </div>
-
-          <h3 style="
-            color: #e0e6f0;
-            margin: 0 0 10px 0;
-            font-size: 1.1em;
-            font-weight: 600;
-          ">${item.title}</h3>
-
-          <p style="
-            color: #b0b8c8;
-            margin: 0 0 15px 0;
-            line-height: 1.6;
-            white-space: pre-wrap;
-          ">${item.message}</p>
-
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <button
-              class="news-reaction-btn ${item.user_reaction === 'like' ? 'active' : ''}"
-              onclick="reactToNews(${item.id}, 'like')"
-              onmouseenter="showReactionTooltip(${item.id}, 'like', this)"
-              onmouseleave="scheduleHideTooltip()"
-              data-news-id="${item.id}"
-              data-reaction="like"
-            >
-              <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> <span class="like-count">${item.likes || 0}</span>
-            </button>
-            <button
-              class="news-reaction-btn dislike ${item.user_reaction === 'dislike' ? 'active' : ''}"
-              onclick="reactToNews(${item.id}, 'dislike')"
-              onmouseenter="showReactionTooltip(${item.id}, 'dislike', this)"
-              onmouseleave="scheduleHideTooltip()"
-              data-news-id="${item.id}"
-              data-reaction="dislike"
-            >
-              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> <span class="dislike-count">${item.dislikes || 0}</span>
-            </button>
-          </div>
-        </div>
-      `;
+        `;
+      }
     });
 
     container.innerHTML = html;
@@ -712,4 +729,186 @@ export async function publishNews() {
       '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'
     );
   }
+}
+
+// ============================================
+// КАРТОЧКА ЗАВЕРШЕНИЯ ТУРНИРА
+// ============================================
+
+/**
+ * Рендерит специальную карточку завершения турнира
+ */
+function renderTournamentCompletionCard(item, data, formattedDate, isAdmin) {
+  const w = data.winner;
+  const f = data.finalMatch;
+  const participants = data.participants || [];
+
+  // Формируем строку счёта финала
+  const scoreHtml = f.score ? `
+    <div style="display: inline-flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 18px; margin-bottom: 10px;">
+      <span style="font-size: 14px; font-weight: 600; color: ${f.winnerTeam === f.team1 ? '#ffd54f' : '#c9d1d9'};">${f.team1}</span>
+      <span style="font-size: 22px; font-weight: 800; color: #e6edf3; letter-spacing: 2px;">${f.score.replace(':', ' : ')}</span>
+      <span style="font-size: 14px; font-weight: 600; color: ${f.winnerTeam === f.team2 ? '#ffd54f' : '#c9d1d9'};">${f.team2}</span>
+    </div>
+  ` : '';
+
+  // Форматируем дату финала
+  let finalDateStr = '';
+  if (f.date) {
+    const fDate = new Date(f.date);
+    finalDateStr = fDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // Статистика победителя
+  const accuracy = w.accuracy || 0;
+
+  // Формируем список участников
+  let participantsHtml = '';
+  participants.forEach((p, idx) => {
+    const isFirst = idx === 0;
+    const placeBadge = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.08);font-size:12px;font-weight:700;color:#8b949e;">${p.position}</span>`;
+    const avatarUrl = p.avatar || '/img/default-avatar.jpg';
+    const avatarBorder = isFirst ? 'border:2px solid #ffc107;box-shadow:0 0 10px rgba(255,193,7,0.4);' : '';
+    const nameStyle = isFirst ? 'font-weight:700;color:#ffd54f;' : 'font-weight:500;color:#c9d1d9;';
+    const pointsStyle = isFirst
+      ? 'color:#ffc107;background:rgba(255,193,7,0.12);border:1px solid rgba(255,193,7,0.35);'
+      : 'color:#5a9fd4;background:rgba(90,159,212,0.1);border:1px solid rgba(90,159,212,0.25);';
+    const rowBg = isFirst
+      ? 'background:rgba(255,193,7,0.1);border-color:rgba(255,193,7,0.35);'
+      : 'background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.06);';
+
+    // Склонение "очков"
+    const pointsWord = getPointsWord(p.totalPoints);
+
+    participantsHtml += `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid;${rowBg}">
+        <span style="font-size:18px;line-height:1;min-width:28px;text-align:center;">${placeBadge}</span>
+        <img src="${avatarUrl}" alt="${p.username}" onerror="this.src='/img/default-avatar.jpg'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;${avatarBorder}">
+        <span style="flex:1;font-size:14px;${nameStyle}">${p.username}</span>
+        <span style="font-size:14px;font-weight:700;border-radius:6px;padding:3px 10px;white-space:nowrap;${pointsStyle}">${p.totalPoints} ${pointsWord}</span>
+      </div>
+    `;
+  });
+
+  return `
+    <div class="news-item tournament-completion-card" style="
+      background: rgba(255, 152, 0, 0.07);
+      border: 1px solid rgba(255, 152, 0, 0.5);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,152,0,0.1);
+      padding: 0;
+    " data-news-id="${item.id}">
+      ${isAdmin ? `<button class="news-delete-btn" onclick="deleteNews(${item.id})" title="Удалить новость" style="position:absolute;top:10px;right:10px;z-index:5;">×</button>` : ''}
+
+      <!-- Шапка -->
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid rgba(255,152,0,0.2);background:rgba(255,152,0,0.08);">
+        <span style="font-size:20px;line-height:1;">🏆</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;background:rgba(255,152,0,0.25);border:1px solid rgba(255,152,0,0.5);color:#ff9800;font-size:12px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;">🏆 Турниры</span>
+        <span style="margin-left:auto;font-size:12px;color:#8b949e;">${formattedDate}</span>
+      </div>
+
+      <!-- Тело -->
+      <div style="padding:20px 18px;">
+
+        <!-- Заголовок -->
+        <div style="font-size:18px;font-weight:700;color:#e6edf3;margin-bottom:20px;line-height:1.4;">${item.title}</div>
+
+        <!-- Блок победителя -->
+        <div style="background:linear-gradient(135deg,rgba(255,193,7,0.12) 0%,rgba(255,152,0,0.08) 100%);border:1px solid rgba(255,193,7,0.35);border-radius:12px;padding:22px 18px;text-align:center;margin-bottom:20px;position:relative;overflow:hidden;">
+          <div style="font-size:52px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 0 12px rgba(255,193,7,0.5));">🏆</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffc107;margin-bottom:6px;opacity:0.85;">Победитель турнира</div>
+          <div style="font-size:28px;font-weight:800;color:#ffd54f;letter-spacing:0.5px;margin-bottom:12px;text-shadow:0 0 20px rgba(255,213,79,0.3);">${w.username}</div>
+          ${scoreHtml}
+          ${finalDateStr ? `<div style="font-size:12px;color:#8b949e;margin-top:4px;">Финал · ${finalDateStr}</div>` : ''}
+        </div>
+
+        <!-- Статистика победителя -->
+        <div style="margin-bottom:22px;">
+          <div style="font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#8b949e;margin-bottom:12px;">Статистика ${w.username} в турнире</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;">
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 8px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:#5a9fd4;line-height:1;margin-bottom:4px;">${w.totalBets}</div>
+              <div style="font-size:11px;color:#8b949e;font-weight:500;">Прогнозов</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 8px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:#3fb950;line-height:1;margin-bottom:4px;">${w.totalPoints}</div>
+              <div style="font-size:11px;color:#8b949e;font-weight:500;">Очков</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 8px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:#ffc107;line-height:1;margin-bottom:4px;">${w.wonCount}</div>
+              <div style="font-size:11px;color:#8b949e;font-weight:500;">Угадано</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 8px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:#f85149;line-height:1;margin-bottom:4px;">${w.lostCount}</div>
+              <div style="font-size:11px;color:#8b949e;font-weight:500;">Не угадано</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 8px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:#ff9800;line-height:1;margin-bottom:4px;">${accuracy}%</div>
+              <div style="font-size:11px;color:#8b949e;font-weight:500;">Точность</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Разделитель -->
+        <div style="display:flex;align-items:center;gap:12px;margin:22px 0 16px;">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
+          <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8b949e;white-space:nowrap;">Участники турнира</span>
+          <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
+        </div>
+
+        <!-- Список участников -->
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+          ${participantsHtml}
+        </div>
+
+        <!-- Поздравление -->
+        <div style="background:linear-gradient(135deg,rgba(90,159,212,0.1) 0%,rgba(255,152,0,0.08) 100%);border:1px solid rgba(90,159,212,0.25);border-radius:12px;padding:16px 18px;margin-bottom:20px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:8px;">🎉</div>
+          <div style="font-size:14px;color:#c9d1d9;line-height:1.6;">
+            Поздравляем победителя турнира <strong style="color:#ffd54f;font-weight:700;">${w.username}</strong>!<br>
+            Отличная игра на протяжении всего турнира <strong style="color:#ffd54f;font-weight:700;">${data.eventName}</strong>!<br>
+            <span style="font-size:12px;color:#8b949e;margin-top:6px;display:inline-block;">${w.totalPoints} ${getPointsWord(w.totalPoints)} · ${w.totalBets} прогнозов · ${accuracy}% точность</span>
+          </div>
+        </div>
+
+        <!-- Реакции -->
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button
+            class="news-reaction-btn ${item.user_reaction === 'like' ? 'active' : ''}"
+            onclick="reactToNews(${item.id}, 'like')"
+            onmouseenter="showReactionTooltip(${item.id}, 'like', this)"
+            onmouseleave="scheduleHideTooltip()"
+            data-news-id="${item.id}"
+            data-reaction="like"
+          >
+            <svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> <span class="like-count">${item.likes || 0}</span>
+          </button>
+          <button
+            class="news-reaction-btn dislike ${item.user_reaction === 'dislike' ? 'active' : ''}"
+            onclick="reactToNews(${item.id}, 'dislike')"
+            onmouseenter="showReactionTooltip(${item.id}, 'dislike', this)"
+            onmouseleave="scheduleHideTooltip()"
+            data-news-id="${item.id}"
+            data-reaction="dislike"
+          >
+            <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> <span class="dislike-count">${item.dislikes || 0}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Склонение слова "очко/очка/очков"
+ */
+function getPointsWord(n) {
+  const abs = Math.abs(n) % 100;
+  const lastDigit = abs % 10;
+  if (abs >= 11 && abs <= 19) return 'очков';
+  if (lastDigit === 1) return 'очко';
+  if (lastDigit >= 2 && lastDigit <= 4) return 'очка';
+  return 'очков';
 }

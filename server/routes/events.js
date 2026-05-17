@@ -486,6 +486,7 @@ router.get("/api/events/:eventId/tournament-winner", (req, res) => {
       return res.status(404).json({ error: "Турнир не найден" });
     }
 
+    // Ищем победителя через tournament_awards
     const tournamentAward = db
       .prepare(
         `
@@ -500,129 +501,174 @@ router.get("/api/events/:eventId/tournament-winner", (req, res) => {
       )
       .get(eventId);
 
-    console.log(`🏆 Найденная автоматическая награда:`, tournamentAward);
+    let winnerId = null;
 
     if (tournamentAward) {
-      const winnerData = {
-        id: tournamentAward.id,
-        user_id: tournamentAward.user_id,
-        event_id: tournamentAward.event_id,
-        username: tournamentAward.username,
-        avatar_path: tournamentAward.avatar_path,
-        avatar: tournamentAward.avatar,
-        won_bets_count: tournamentAward.won_bets,
-        created_at: tournamentAward.created_at,
-        description: `"${event.name}"`,
-      };
-
-      return res.json({
-        tournament: event,
-        winner: winnerData,
-      });
-    }
-
-    const award = db
-      .prepare(
-        `
-        SELECT a.id, a.user_id, a.event_id, a.description, a.created_at, u.username, u.avatar_path, u.avatar
-        FROM awards a
-        JOIN users u ON a.user_id = u.id
-        WHERE a.event_id = ?
-        ORDER BY a.created_at ASC
-        LIMIT 1
-      `
-      )
-      .get(eventId);
-
-    console.log(`🏆 Найденная пользовательская награда:`, award);
-
-    if (!award) {
-      const awardWithoutJoin = db
-        .prepare(
-          `
-          SELECT a.id, a.user_id, a.event_id, a.description, a.created_at
-          FROM awards a
-          WHERE a.event_id = ?
-          ORDER BY a.created_at ASC
-          LIMIT 1
-        `
-        )
+      winnerId = tournamentAward.user_id;
+    } else {
+      // Ищем через awards
+      const award = db
+        .prepare(`SELECT user_id FROM awards WHERE event_id = ? ORDER BY created_at ASC LIMIT 1`)
         .get(eventId);
+      if (award) winnerId = award.user_id;
+    }
 
-      if (!awardWithoutJoin) {
-        return res.json({
-          tournament: event,
-          winner: null,
-          message: "Победитель отсутствует",
-        });
-      }
-
-      const user = db
-        .prepare("SELECT id, username, avatar_path, avatar FROM users WHERE id = ?")
-        .get(awardWithoutJoin.user_id);
-
-      if (!user) {
-        return res.status(404).json({ error: "Пользователь не найден" });
-      }
-
-      const wonBetsResult = db
-        .prepare(
-          `
-          SELECT COUNT(*) as won_count
-          FROM bets b
-          JOIN matches m ON b.match_id = m.id
-          WHERE b.user_id = ? AND m.event_id = ? AND m.winner IS NOT NULL
-          AND (
-            (b.prediction = 'team1' AND m.winner = 'team1') OR
-            (b.prediction = 'team2' AND m.winner = 'team2') OR
-            (b.prediction = 'draw' AND m.winner = 'draw') OR
-            (b.prediction = m.team1_name AND m.winner = 'team1') OR
-            (b.prediction = m.team2_name AND m.winner = 'team2')
-          )
-        `
-        )
-        .get(awardWithoutJoin.user_id, eventId);
-
-      const winnerData = {
-        ...awardWithoutJoin,
-        username: user.username,
-        avatar_path: user.avatar_path,
-        avatar: user.avatar,
-        won_bets_count: wonBetsResult?.won_count || 0,
-      };
-
+    if (!winnerId) {
       return res.json({
         tournament: event,
-        winner: winnerData,
+        winner: null,
+        message: "Победитель отсутствует",
       });
     }
 
-    const wonBetsResult = db
-      .prepare(
-        `
-        SELECT COUNT(*) as won_count
-        FROM bets b
-        JOIN matches m ON b.match_id = m.id
-        WHERE b.user_id = ? AND m.event_id = ? AND m.winner IS NOT NULL
-        AND (
-          (b.prediction = 'team1' AND m.winner = 'team1') OR
-          (b.prediction = 'team2' AND m.winner = 'team2') OR
-          (b.prediction = 'draw' AND m.winner = 'draw') OR
-          (b.prediction = m.team1_name AND m.winner = 'team1') OR
-          (b.prediction = m.team2_name AND m.winner = 'team2')
-        )
-      `
-      )
-      .get(award.user_id, eventId);
+    // Получаем данные пользователя
+    const user = db.prepare("SELECT id, username, avatar_path, avatar FROM users WHERE id = ?").get(winnerId);
+    if (!user) {
+      return res.json({ tournament: event, winner: null, message: "Пользователь не найден" });
+    }
 
-    const winnerData = {
-      ...award,
-      won_bets_count: wonBetsResult?.won_count || 0,
-    };
+    // Считаем полную статистику победителя в этом турнире
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(DISTINCT b.id) as total_bets,
+        (SUM(CASE 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
+            CASE 
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                       CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+                       CASE 
+                         WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
+                         THEN 1 ELSE 0 
+                       END +
+                       CASE 
+                         WHEN m.yellow_cards_prediction_enabled = 1 AND
+                              cp.yellow_cards IS NOT NULL AND m.yellow_cards IS NOT NULL AND
+                              cp.yellow_cards = m.yellow_cards
+                         THEN 1 ELSE 0
+                       END +
+                       CASE 
+                         WHEN m.red_cards_prediction_enabled = 1 AND
+                              cp.red_cards IS NOT NULL AND m.red_cards IS NOT NULL AND
+                              cp.red_cards = m.red_cards
+                         THEN 1 ELSE 0
+                       END
+                  ELSE 0 
+                END
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 2
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                  ELSE 0
+                END
+              ELSE 0
+            END 
+          ELSE 0 
+        END) + COALESCE((
+          SELECT SUM(CASE WHEN bp.stage = 'final' THEN 3 ELSE 1 END)
+          FROM bracket_predictions bp
+          INNER JOIN bracket_results br ON bp.bracket_id = br.bracket_id 
+            AND bp.stage = br.stage 
+            AND bp.match_index = br.match_index
+          INNER JOIN brackets bk ON bp.bracket_id = bk.id
+          WHERE bp.user_id = ?
+            AND bk.event_id = ?
+            AND bp.predicted_winner = br.actual_winner
+        ), 0)) as total_points,
+        SUM(CASE 
+          WHEN m.winner IS NOT NULL OR fpr.id IS NOT NULL THEN 
+            CASE 
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                       (b.prediction = 'team2' AND m.winner = 'team2') OR
+                       (b.prediction = 'draw' AND m.winner = 'draw') OR
+                       (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                       (b.prediction = m.team2_name AND m.winner = 'team2') THEN 1
+                  ELSE 0 
+                END
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0
+            END 
+          ELSE 0 
+        END) as won_count,
+        SUM(CASE 
+          WHEN (m.winner IS NOT NULL OR fpr.id IS NOT NULL) THEN 
+            CASE 
+              WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+                CASE 
+                  WHEN NOT ((b.prediction = 'team1' AND m.winner = 'team1') OR
+                            (b.prediction = 'team2' AND m.winner = 'team2') OR
+                            (b.prediction = 'draw' AND m.winner = 'draw') OR
+                            (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                            (b.prediction = m.team2_name AND m.winner = 'team2')) THEN 1 
+                  ELSE 0 
+                End
+              WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+                CASE 
+                  WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) != fpr.yellow_cards THEN 1
+                  WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) != fpr.red_cards THEN 1
+                  WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) != fpr.corners THEN 1
+                  WHEN b.parameter_type = 'exact_score' AND b.prediction != fpr.exact_score THEN 1
+                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
+                  WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
+                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  ELSE 0
+                END
+              ELSE 0 
+            END 
+          ELSE 0 
+        END) as lost_count
+      FROM bets b
+      INNER JOIN matches m ON b.match_id = m.id
+      LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+      LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
+      WHERE b.user_id = ? AND m.event_id = ?
+    `).get(winnerId, eventId, winnerId, eventId);
+
+    const totalBets = stats?.total_bets || 0;
+    const totalPoints = stats?.total_points || 0;
+    const wonCount = stats?.won_count || 0;
+    const lostCount = stats?.lost_count || 0;
+    const accuracy = totalBets > 0 ? Math.round((wonCount / totalBets) * 100) : 0;
 
     res.json({
       tournament: event,
-      winner: winnerData,
+      winner: {
+        user_id: user.id,
+        username: user.username,
+        avatar_path: user.avatar_path,
+        avatar: user.avatar,
+        totalBets,
+        totalPoints,
+        wonCount,
+        lostCount,
+        accuracy
+      },
     });
   } catch (error) {
     console.error("❌ Ошибка в endpoint tournament-winner:", error);

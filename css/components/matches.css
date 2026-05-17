@@ -210,6 +210,15 @@ body.theme-cyberpunk .countTournaments button.active {
   border-color: #f44336;
 }
 
+/* Карточка завершения турнира */
+.tournament-completion-card {
+  padding: 0 !important;
+}
+
+.tournament-completion-card:hover {
+  transform: none;
+}
+
 /* Tooltip для показа пользователей, поставивших реакцию */
 .reaction-tooltip {
   position: fixed;

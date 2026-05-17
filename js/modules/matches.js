@@ -281,9 +281,7 @@ export function initMatchRowClickHandlers() {
 export async function displayTournamentWinner(eventId) {
   try {
     const matchesContainer = document.getElementById("matchesContainer");
-    const roundsFilterContainer = document.getElementById(
-      "roundsFilterContainer"
-    );
+    const roundsFilterContainer = document.getElementById("roundsFilterContainer");
 
     // Скрываем фильтры туров
     if (roundsFilterContainer) {
@@ -292,30 +290,24 @@ export async function displayTournamentWinner(eventId) {
 
     console.log(`🏆 Загрузка победителя для турнира ${eventId}`);
 
-    // Загружаем данные о победителе
     const response = await fetch(`/api/events/${eventId}/tournament-winner`);
     const data = await response.json();
 
-    console.log(`📡 Ответ сервера:`, data);
-    console.log(`🏆 Данные победителя:`, data.winner);
-
     // Если победитель отсутствует
     if (!data.winner) {
-      console.log(`⚠ Победитель не найден для турнира ${eventId}`);
       const tournamentIcon = data.tournament.icon || "icon-trophy";
       const displayIcon = tournamentIcon.startsWith("img/")
-        ? `<img src="${tournamentIcon}" alt="tournament" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
+        ? `<img src="${tournamentIcon}" alt="tournament" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
         : tournamentIcon.startsWith("icon-")
         ? `<svg class="icon" aria-hidden="true"><use href="#${tournamentIcon}"></use></svg>`
         : tournamentIcon;
 
-      const noWinnerHTML = `
+      matchesContainer.innerHTML = `
         <div class="tournament-winner-container">
           <div class="tournament-winner-card">
             <div class="winner-header">
               ${displayIcon} Турнир "${data.tournament.name}"
             </div>
-            
             <div class="winner-content">
               <div class="no-winner-message">
                 <svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg> Победитель отсутствует
@@ -324,73 +316,75 @@ export async function displayTournamentWinner(eventId) {
           </div>
         </div>
       `;
-      matchesContainer.innerHTML = noWinnerHTML;
       return;
     }
 
     const { tournament, winner } = data;
 
-    // Правильно формируем путь к аватарке
+    // Аватар
     let avatarPath = "/img/default-avatar.jpg";
     if (winner.avatar_path) {
       avatarPath = `/img/${winner.avatar_path}`;
     } else if (winner.avatar) {
-      avatarPath = winner.avatar; // base64 или полный путь
+      avatarPath = winner.avatar;
     }
 
-    console.log(`✅ Отображение победителя:`, winner.username);
-
+    // Иконка турнира
     const tournamentIcon = tournament.icon || "icon-trophy";
     const displayIcon = tournamentIcon.startsWith("img/")
-      ? `<img src="${tournamentIcon}" alt="tournament" class="tournament-icon" style="width: 1.2em; height: 1.2em; vertical-align: middle;">`
+      ? `<img src="${tournamentIcon}" alt="tournament" style="width: 24px; height: 24px; vertical-align: middle;">`
       : tournamentIcon.startsWith("icon-")
       ? `<svg class="icon" aria-hidden="true"><use href="#${tournamentIcon}"></use></svg>`
       : tournamentIcon;
 
-    const winnerHTML = `
+    matchesContainer.innerHTML = `
       <div class="tournament-winner-container">
         <div class="tournament-winner-card">
+          
+          <!-- Название турнира -->
           <div class="winner-header">
-            ${displayIcon} "${tournament.name}"
+            ${displayIcon} ${tournament.name}
           </div>
           
           <div class="winner-content">
-            <div class="winner-avatar">
-              <img src="${avatarPath}" alt="${winner.username}" />
+            <!-- Аватар и имя -->
+            <div class="winner-avatar-block">
+              <div class="winner-trophy-icon">🏆</div>
+              <img src="${avatarPath}" alt="${winner.username}" class="winner-avatar-img" onerror="this.src='/img/default-avatar.jpg'" />
+              <div class="winner-label">Победитель турнира</div>
+              <div class="winner-username">${winner.username}</div>
             </div>
-            
-            <div class="winner-info">
-              <div class="winner-name">${winner.username}</div>
-              
-              <div class="winner-stats">
-                
-                
-                <div class="stat-item">
-                  <span class="stat-label">Награда:</span>
-                  <span class="stat-value award-description">${
-                    winner.description
-                  }</span>
-                </div>
-                
-                <div class="stat-item">
-                  <span class="stat-label">Дата присуждения:</span>
-                  <span class="stat-value">${new Date(
-                    winner.created_at
-                  ).toLocaleDateString("ru-RU")}</span>
-                </div>
+
+            <!-- Статистика -->
+            <div class="winner-stats-grid">
+              <div class="winner-stat-card">
+                <div class="winner-stat-value">${winner.totalBets}</div>
+                <div class="winner-stat-label">Прогнозов</div>
+              </div>
+              <div class="winner-stat-card">
+                <div class="winner-stat-value green">${winner.totalPoints}</div>
+                <div class="winner-stat-label">Очков</div>
+              </div>
+              <div class="winner-stat-card">
+                <div class="winner-stat-value yellow">${winner.wonCount}</div>
+                <div class="winner-stat-label">Угадано</div>
+              </div>
+              <div class="winner-stat-card">
+                <div class="winner-stat-value red">${winner.lostCount}</div>
+                <div class="winner-stat-label">Не угадано</div>
+              </div>
+              <div class="winner-stat-card">
+                <div class="winner-stat-value orange">${winner.accuracy}%</div>
+                <div class="winner-stat-label">Точность</div>
               </div>
             </div>
           </div>
         </div>
       </div>
     `;
-
-    matchesContainer.innerHTML = winnerHTML;
   } catch (error) {
     console.error("❌ Ошибка при загрузке информации о победителе:", error);
-    document.getElementById(
-      "matchesContainer"
-    ).innerHTML = `<div class="empty-message">Ошибка при загрузке информации о победителе: ${error.message}</div>`;
+    document.getElementById("matchesContainer").innerHTML = `<div class="empty-message">Ошибка при загрузке информации о победителе: ${error.message}</div>`;
   }
 }
 

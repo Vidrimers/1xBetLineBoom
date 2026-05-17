@@ -9,6 +9,7 @@ import { writeBetLog } from '../utils/logger.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, ICON_TO_COMPETITION, COMPETITION_DICTIONARY_MAPPING, ROOT_DIR } from '../config.js';
 import { processedDates, saveProcessedDate, checkDateCompletion, updateMatchesFromAPI } from '../services/autoCountingService.js';
 import { checkRoundInactivity } from '../services/inactivityService.js';
+import { checkAndCreateTournamentCompletionNews } from '../services/tournamentCompletionService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -776,6 +777,13 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
           }
         } catch (inactivityError) {
           console.error('❌ Ошибка запуска проверки инактивности:', inactivityError);
+        }
+
+        // Проверяем завершение турнира (если это финальный матч)
+        try {
+          checkAndCreateTournamentCompletionNews(parseInt(matchId));
+        } catch (completionError) {
+          console.error('❌ Ошибка проверки завершения турнира:', completionError);
         }
       }
 
