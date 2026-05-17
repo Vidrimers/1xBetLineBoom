@@ -19,14 +19,28 @@ export function toggleFinalMatch(modal) {
     prefix ? 'editMatchRound' : 'matchRound'
   );
   if (!isFinalCheckbox || !finalParams || !roundInput) return;
+
+  // Чекбоксы обычных параметров (прогноз на счёт, жёлтые, красные)
+  const scorePrediction = document.getElementById(prefix ? 'editMatchScorePrediction' : 'matchScorePrediction');
+  const yellowPrediction = document.getElementById(prefix ? 'editMatchYellowCardsPrediction' : 'matchYellowCardsPrediction');
+  const redPrediction = document.getElementById(prefix ? 'editMatchRedCardsPrediction' : 'matchRedCardsPrediction');
+
   if (isFinalCheckbox.checked) {
     finalParams.style.display = 'block';
     roundInput.value = '🏆 Финал';
     roundInput.disabled = true;
+    // Скрываем обычные чекбоксы прогнозов
+    if (scorePrediction) scorePrediction.closest('.form-group').style.display = 'none';
+    if (yellowPrediction) yellowPrediction.closest('.form-group').style.display = 'none';
+    if (redPrediction) redPrediction.closest('.form-group').style.display = 'none';
   } else {
     finalParams.style.display = 'none';
     roundInput.disabled = false;
     if (roundInput.value === '🏆 Финал') roundInput.value = '';
+    // Показываем обычные чекбоксы прогнозов
+    if (scorePrediction) scorePrediction.closest('.form-group').style.display = '';
+    if (yellowPrediction) yellowPrediction.closest('.form-group').style.display = '';
+    if (redPrediction) redPrediction.closest('.form-group').style.display = '';
   }
 }
 
