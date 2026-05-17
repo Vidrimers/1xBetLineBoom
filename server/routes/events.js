@@ -2030,8 +2030,6 @@ router.put("/api/admin/events/:eventId/lock", async (req, res) => {
         console.error("Ошибка при выдаче награды:", error);
       }
 
-      sendTournamentWinnerNotification(event.name, winner.username);
-
       // Проверяем: причина содержит "завершен"/"завершён" И нет финального матча?
       const reasonLower = reason.trim().toLowerCase();
       const isCompleted = reasonLower.includes('завершен') || reasonLower.includes('завершён');
