@@ -466,80 +466,20 @@ router.get("/api/participants", (req, res) => {
 
     // Для каждого участника подсчитываем победы в турнирах (заблокированных событиях)
     const result = participants.map((participant) => {
-      // Получаем все завершенные турниры (с locked_reason)
-      const tournaments = db
+      // Получаем победы из tournament_awards
+      const awards = db
         .prepare(
           `
-        SELECT DISTINCT e.id, e.name, e.icon
-        FROM events e
-        WHERE e.locked_reason IS NOT NULL
+        SELECT ta.event_id, e.icon
+        FROM tournament_awards ta
+        JOIN events e ON e.id = ta.event_id
+        WHERE ta.user_id = ?
       `
         )
-        .all();
+        .all(participant.id);
 
-      let tournament_wins = 0;
-      let won_icons = [];
-
-      // Для каждого завершенного турнира проверяем, выиграл ли участник
-      tournaments.forEach((tournament) => {
-        // Подсчитываем выигрыши участника в этом турнире
-        const userWinsInTournament =
-          db
-            .prepare(
-              `
-          SELECT COUNT(*) as wins
-          FROM bets b
-          JOIN matches m ON b.match_id = m.id
-          WHERE b.user_id = ?
-          AND m.event_id = ?
-          AND m.winner IS NOT NULL
-          AND (
-            (b.prediction = 'team1' AND m.winner = 'team1') OR
-            (b.prediction = 'team2' AND m.winner = 'team2') OR
-            (b.prediction = 'draw' AND m.winner = 'draw') OR
-            (b.prediction = m.team1_name AND m.winner = 'team1') OR
-            (b.prediction = m.team2_name AND m.winner = 'team2')
-          )
-        `
-            )
-            .get(participant.id, tournament.id)?.wins || 0;
-
-        // Подсчитываем максимальные выигрыши в этом турнире (кто первый)
-        const maxWinsInTournament =
-          db
-            .prepare(
-              `
-          SELECT MAX(wins) as max_wins
-          FROM (
-            SELECT 
-              b.user_id,
-              COUNT(*) as wins
-            FROM bets b
-            JOIN matches m ON b.match_id = m.id
-            WHERE m.event_id = ?
-            AND m.winner IS NOT NULL
-            AND (
-              (b.prediction = 'team1' AND m.winner = 'team1') OR
-              (b.prediction = 'team2' AND m.winner = 'team2') OR
-              (b.prediction = 'draw' AND m.winner = 'draw') OR
-              (b.prediction = m.team1_name AND m.winner = 'team1') OR
-              (b.prediction = m.team2_name AND m.winner = 'team2')
-            )
-            GROUP BY b.user_id
-          )
-        `
-            )
-            .get(tournament.id)?.max_wins || 0;
-
-        // Если участник имеет максимальные выигрыши в турнире — он победитель
-        if (
-          userWinsInTournament > 0 &&
-          userWinsInTournament === maxWinsInTournament
-        ) {
-          tournament_wins++;
-          won_icons.push(tournament.icon);
-        }
-      });
+      const tournament_wins = awards.length;
+      const won_icons = awards.map(a => a.icon);
 
       return {
         ...participant,

@@ -53,10 +53,7 @@ reset-db.js
 
 # Тестовые HTML файлы
 ai-chat-demo.html
-test-award-card.html
-test-telegram-messages.html
-test-tournament-no-final.html
-test-tournament-result-card.html
+test*.html
 
 # Документация/markdown
 AI-INTEGRATION-PLAN.md
