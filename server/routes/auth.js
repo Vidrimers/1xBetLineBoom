@@ -74,6 +74,21 @@ router.post("/api/user", async (req, res) => {
       .get(username);
 
     if (!user) {
+      // Проверка на запрещенные имена при регистрации
+      const checkName = username.trim().toLowerCase();
+      const bannedNames = db.prepare("SELECT name, is_partial FROM banned_names").all();
+      for (const banned of bannedNames) {
+        if (banned.is_partial) {
+          if (checkName.includes(banned.name)) {
+            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя содержит запрещённое слово "${banned.name}"` });
+          }
+        } else {
+          if (checkName === banned.name) {
+            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя "${banned.name}" запрещено к использованию` });
+          }
+        }
+      }
+
       // Получаем IP адрес
       const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
       

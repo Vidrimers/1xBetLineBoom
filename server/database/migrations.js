@@ -342,4 +342,19 @@ export function runMigrations() {
   } catch (error) {
     console.error("❌ Ошибка создания таблицы user_tournament_inactivity:", error);
   }
+
+  // Миграция: таблица запретных имён
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS banned_names (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        is_partial INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ Таблица banned_names готова");
+  } catch (error) {
+    console.error("❌ Ошибка создания таблицы banned_names:", error);
+  }
 }

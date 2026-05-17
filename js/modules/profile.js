@@ -1,5 +1,7 @@
 import { currentUser } from './state.js';
 import { showCustomAlert, showCustomPrompt } from './ui.js';
+import { showBannedNameAlert } from './bannedNames.js';
+import { isAdmin } from './admin.js';
 
 // ===== ПРОФИЛЬ =====
 
@@ -652,12 +654,6 @@ export async function deleteAvatar() {
 
 export async function saveUsername(newUsername) {
   try {
-    const forbiddenBase = newUsername.toLowerCase().replace(/[\s\d.\-]/g, '');
-    if (forbiddenBase === 'мемослав' || forbiddenBase === 'memoslav' || forbiddenBase === 'memoslave') {
-      await showCustomAlert('Are you ohuel tam?', 'Ошибка', '🚫');
-      return;
-    }
-
     const response = await fetch(`/api/user/${currentUser.id}/username`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -667,6 +663,15 @@ export async function saveUsername(newUsername) {
     const result = await response.json();
 
     if (!response.ok) {
+      // Обработка запретного имени — кастомный алерт с возможностью ввести другое
+      if (result.error === 'BANNED_NAME') {
+        const { newName } = await showBannedNameAlert(result.reason || 'Это имя запрещено к использованию на сайте');
+        if (newName) {
+          const capitalized = newName.charAt(0).toUpperCase() + newName.slice(1);
+          await saveUsername(capitalized);
+        }
+        return;
+      }
       await showCustomAlert(result.error || 'Не удалось изменить имя', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }

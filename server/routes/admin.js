@@ -474,10 +474,21 @@ router.put("/api/admin/users/:userId", async (req, res) => {
       return res.status(400).json({ error: "Это имя уже занято" });
     }
 
-    // Проверка на запрещенные имена
-    const forbiddenBase = capitalizedNewUsername.toLowerCase().replace(/[\s\d\.\-]/g, ''); // Убираем пробелы, цифры, точки, дефисы
-    if (forbiddenBase === 'мемослав' || forbiddenBase === 'memoslav' || forbiddenBase === 'memoslave') {
-      return res.status(400).json({ error: "Are you, ohuel tam?" });
+    // Проверка на запрещенные имена (из БД) — админ может ставить любое имя
+    if (!isAdminUser) {
+      const checkName = capitalizedNewUsername.trim().toLowerCase();
+      const bannedNames = db.prepare("SELECT name, is_partial FROM banned_names").all();
+      for (const banned of bannedNames) {
+        if (banned.is_partial) {
+          if (checkName.includes(banned.name)) {
+            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя содержит запрещённое слово "${banned.name}"` });
+          }
+        } else {
+          if (checkName === banned.name) {
+            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя "${banned.name}" запрещено к использованию` });
+          }
+        }
+      }
     }
 
     const result = db
@@ -5046,10 +5057,24 @@ router.get("/api/admin/panel-config", (req, res) => {
     if (!config) {
       return res.status(404).json({ error: "Конфигурация не найдена" });
     }
+
+    // Автоматически добавляем кнопку "Запретные имена" если её нет
+    let configData = JSON.parse(config.config_data);
+    if (configData && configData.categories) {
+      const utilitiesCategory = configData.categories.find(c => c.id === 'utilities');
+      if (utilitiesCategory && utilitiesCategory.buttons) {
+        const hasBannedNames = utilitiesCategory.buttons.some(b => b.id === 'banned-names');
+        if (!hasBannedNames) {
+          utilitiesCategory.buttons.push({ id: 'banned-names', text: '🚫 Запретные имена', action: 'openBannedNamesModal()', type: 'modal' });
+          // Сохраняем обновлённую конфигурацию
+          db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
+        }
+      }
+    }
     
     res.json({
       success: true,
-      config: JSON.parse(config.config_data),
+      config: configData,
       updated_at: config.updated_at,
       updated_by: config.updated_by
     });
@@ -5184,7 +5209,8 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
             { id: 'event-ids', text: '🏆 ID турниров', action: 'runUtilityScript("check-event-id")', type: 'modal' },
             { id: 'db-structure', text: '🗄️ Структура БД', action: 'runUtilityScript("check-tables")', type: 'modal' },
             { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()', type: 'modal' },
-            { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()', type: 'modal' }
+            { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()', type: 'modal' },
+            { id: 'banned-names', text: '🚫 Запретные имена', action: 'openBannedNamesModal()', type: 'modal' }
           ]
         }
       ]
@@ -5213,6 +5239,136 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
   } catch (error) {
     console.error("❌ Ошибка сброса конфигурации админ-панели:", error.message);
     res.status(500).json({ error: error.message });
+  }
+});
+
+
+// ===== ЗАПРЕТНЫЕ ИМЕНА =====
+
+// GET /api/admin/banned-names - Получить список запретных имён
+router.get("/api/admin/banned-names", (req, res) => {
+  try {
+    const names = db.prepare("SELECT * FROM banned_names ORDER BY created_at DESC").all();
+    res.json({ names });
+  } catch (error) {
+    console.error("❌ Ошибка получения запретных имён:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/banned-names - Добавить запретное имя
+router.post("/api/admin/banned-names", (req, res) => {
+  try {
+    const { username, name, is_partial } = req.body;
+
+    if (username !== process.env.ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ error: "Имя не может быть пустым" });
+    }
+
+    const trimmedName = name.trim().toLowerCase();
+
+    // Проверяем, не добавлено ли уже
+    const existing = db.prepare("SELECT id FROM banned_names WHERE LOWER(name) = ?").get(trimmedName);
+    if (existing) {
+      return res.status(400).json({ error: "Это имя уже в списке запретных" });
+    }
+
+    const result = db.prepare("INSERT INTO banned_names (name, is_partial) VALUES (?, ?)").run(trimmedName, is_partial ? 1 : 0);
+
+    console.log(`🚫 Добавлено запретное имя: "${trimmedName}" (частичное: ${is_partial ? 'да' : 'нет'})`);
+
+    res.json({ success: true, id: result.lastInsertRowid, name: trimmedName, is_partial: is_partial ? 1 : 0 });
+  } catch (error) {
+    console.error("❌ Ошибка добавления запретного имени:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/banned-names/:id - Обновить запретное имя (is_partial)
+router.put("/api/admin/banned-names/:id", (req, res) => {
+  try {
+    const { username, is_partial } = req.body;
+    const { id } = req.params;
+
+    if (username !== process.env.ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+
+    const result = db.prepare("UPDATE banned_names SET is_partial = ? WHERE id = ?").run(is_partial ? 1 : 0, id);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Запретное имя не найдено" });
+    }
+
+    console.log(`🔄 Обновлено запретное имя ID ${id}: частичное = ${is_partial ? 'да' : 'нет'}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка обновления запретного имени:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/banned-names/:id - Удалить запретное имя
+router.delete("/api/admin/banned-names/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username } = req.body;
+
+    if (username !== process.env.ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+
+    const name = db.prepare("SELECT name FROM banned_names WHERE id = ?").get(id);
+    const result = db.prepare("DELETE FROM banned_names WHERE id = ?").run(id);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Запретное имя не найдено" });
+    }
+
+    console.log(`✅ Удалено запретное имя: "${name ? name.name : id}"`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка удаления запретного имени:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/check-banned-name - Проверить, является ли имя запретным (публичный)
+router.get("/api/check-banned-name", (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name) {
+      return res.json({ banned: false });
+    }
+
+    const checkName = name.trim().toLowerCase();
+    const bannedNames = db.prepare("SELECT name, is_partial FROM banned_names").all();
+
+    for (const banned of bannedNames) {
+      if (banned.is_partial) {
+        // Частичное совпадение — проверяем содержит ли имя запретную подстроку
+        if (checkName.includes(banned.name)) {
+          return res.json({ banned: true, reason: `Имя содержит запрещённое слово "${banned.name}"` });
+        }
+      } else {
+        // Точное совпадение (регистронезависимое)
+        if (checkName === banned.name) {
+          return res.json({ banned: true, reason: `Имя "${banned.name}" запрещено к использованию` });
+        }
+      }
+    }
+
+    res.json({ banned: false });
+  } catch (error) {
+    console.error("❌ Ошибка проверки запретного имени:", error.message);
+    res.json({ banned: false });
   }
 });
 

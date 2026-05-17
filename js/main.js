@@ -439,6 +439,16 @@ import {
   clearProcessedDates,
 } from './modules/adminUtils.js';
 import {
+  openBannedNamesModal,
+  closeBannedNamesModal,
+  loadBannedNames,
+  addBannedName,
+  toggleBannedNamePartial,
+  deleteBannedName,
+  checkAndHandleBannedName,
+  showBannedNameAlert,
+} from './modules/bannedNames.js';
+import {
   openTerminalModal,
   closeTerminalModal,
   refreshTerminalLogs,
@@ -672,6 +682,9 @@ Object.assign(window, {
   // adminUtils
   runUtilityScript, formatUtilityOutput, openDatesManagementModal, loadDatesData,
   clearProcessedDates,
+  // bannedNames
+  openBannedNamesModal, closeBannedNamesModal, loadBannedNames, addBannedName,
+  toggleBannedNamePartial, deleteBannedName, checkAndHandleBannedName, showBannedNameAlert,
   // terminal
   openTerminalModal, closeTerminalModal, refreshTerminalLogs, escapeHtml,
   clearTerminalLogs, saveTerminalLogs, toggleTerminalAutoScroll,

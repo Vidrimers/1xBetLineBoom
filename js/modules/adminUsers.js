@@ -2,7 +2,8 @@
 // Управление пользователями, синхронизация Telegram, тест уведомлений
 
 import { currentUser, ADMIN_DB_NAME } from './state.js';
-import { showCustomAlert, showCustomConfirm, unlockBodyScroll } from './ui.js';
+import { showCustomAlert, showCustomConfirm, showCustomPrompt, unlockBodyScroll } from './ui.js';
+import { showBannedNameAlert } from './bannedNames.js';
 import {
   isAdmin,
   hasModeratorPermission,
@@ -342,7 +343,30 @@ export async function renameUser(userId, currentUsername) {
       body: JSON.stringify({ username: currentUser.username, newUsername: newUsername.trim() }),
     });
     const result = await response.json();
-    if (!response.ok) { await showCustomAlert('Ошибка: ' + result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>'); return; }
+    if (!response.ok) {
+      // Обработка запретного имени
+      if (result.error === 'BANNED_NAME') {
+        const { newName } = await showBannedNameAlert(result.reason || 'Это имя запрещено к использованию на сайте');
+        if (newName) {
+          // Рекурсивно пробуем с новым именем
+          const retryResponse = await fetch(`/api/admin/users/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser.username, newUsername: newName.trim() }),
+          });
+          const retryResult = await retryResponse.json();
+          if (!retryResponse.ok) {
+            await showCustomAlert('Ошибка: ' + (retryResult.reason || retryResult.error), 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+            return;
+          }
+          await showCustomAlert(retryResult.message, 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
+          loadAdminUsers();
+        }
+        return;
+      }
+      await showCustomAlert('Ошибка: ' + result.error, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+      return;
+    }
     await showCustomAlert(result.message, 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     loadAdminUsers();
   } catch (e) {

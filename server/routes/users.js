@@ -1014,10 +1014,22 @@ router.put("/api/user/:userId/username", async (req, res) => {
       return res.status(400).json({ error: "Это имя уже используется" });
     }
 
-    // Проверка на запрещенные имена
-    const forbiddenBase = capitalizedUsername.toLowerCase().replace(/[\s\d\.\-]/g, ''); // Убираем пробелы, цифры, точки, дефисы
-    if (forbiddenBase === 'мемослав' || forbiddenBase === 'memoslav' || forbiddenBase === 'memoslave') {
-      return res.status(400).json({ error: "Are you, ohuel tam?" });
+    // Проверка на запрещенные имена (из БД)
+    const isAdminUser = user.username === process.env.ADMIN_DB_NAME;
+    if (!isAdminUser) {
+      const checkName = capitalizedUsername.trim().toLowerCase();
+      const bannedNames = db.prepare("SELECT name, is_partial FROM banned_names").all();
+      for (const banned of bannedNames) {
+        if (banned.is_partial) {
+          if (checkName.includes(banned.name)) {
+            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя содержит запрещённое слово "${banned.name}"` });
+          }
+        } else {
+          if (checkName === banned.name) {
+            return res.status(400).json({ error: "BANNED_NAME", reason: `Имя "${banned.name}" запрещено к использованию` });
+          }
+        }
+      }
     }
 
     // Обновляем имя

@@ -341,6 +341,21 @@ export async function initUser() {
 
     const result = await response.json();
 
+    // Проверяем, запрещено ли имя
+    if (!response.ok && result.error === 'BANNED_NAME') {
+      const { showBannedNameAlert } = await import('./bannedNames.js');
+      const { newName } = await showBannedNameAlert(result.reason || 'Это имя запрещено к использованию на сайте');
+      if (newName) {
+        // Пользователь ввёл новое имя — подставляем и пробуем снова
+        const usernameField = document.getElementById('username');
+        const usernameMobileField = document.getElementById('username-mobile');
+        if (usernameField) usernameField.value = newName;
+        if (usernameMobileField) usernameMobileField.value = newName;
+        return initUser();
+      }
+      return;
+    }
+
     // Проверяем, требуется ли подтверждение через Telegram
     if (result.requiresConfirmation) {
       // Запрашиваем код подтверждения
