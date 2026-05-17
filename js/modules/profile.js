@@ -221,7 +221,7 @@ export async function loadUserAwards(userId) {
       awardsHTML += `
         <div class="award-card">
           <div class="award-icon">${awardIcon}</div>
-          <div class="award-title">Победитель в турнире "${award.event_name}"</div>
+          <div class="award-title">Победитель<br><span class="award-tournament-name">"${award.event_name}"</span></div>
           <div class="award-date">${awardDate}</div>
         </div>
       `;

@@ -753,10 +753,10 @@ Object.assign(window, {
               if (isTournament) {
                 const icon = award.event_icon || '🏆';
                 const iconHtml = icon.startsWith('img/') ? `<img src="${icon}" alt="trophy" class="tournament-icon">` : icon;
-                return `<div class="award-card" style="height:180px;display:flex;flex-direction:column;justify-content:space-between;padding:10px;text-align:center;">
+                return `<div class="award-card" style="height:auto;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;gap:10px;">
                   <div class="award-icon">${iconHtml}</div>
-                  <div style="font-weight:600;font-size:0.85em;text-shadow:0 2px 4px rgba(0,0,0,0.7);">Победитель "${award.event_name}"</div>
-                  <div style="font-size:0.75em;opacity:0.8;">${date}</div>
+                  <div class="award-title">Победитель<br><span class="award-tournament-name">"${award.event_name}"</span></div>
+                  <div class="award-date">${date}</div>
                 </div>`;
               } else {
                 const icon = awardIconMap[award.award_type] || '🏆';
