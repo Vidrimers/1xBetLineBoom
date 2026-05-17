@@ -743,18 +743,20 @@ function renderTournamentCompletionCard(item, data, formattedDate, isAdmin) {
   const f = data.finalMatch;
   const participants = data.participants || [];
 
-  // Формируем строку счёта финала
-  const scoreHtml = f.score ? `
-    <div style="display: inline-flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 18px; margin-bottom: 10px;">
-      <span style="font-size: 14px; font-weight: 600; color: ${f.winnerTeam === f.team1 ? '#ffd54f' : '#c9d1d9'};">${f.team1}</span>
-      <span style="font-size: 22px; font-weight: 800; color: #e6edf3; letter-spacing: 2px;">${f.score.replace(':', ' : ')}</span>
-      <span style="font-size: 14px; font-weight: 600; color: ${f.winnerTeam === f.team2 ? '#ffd54f' : '#c9d1d9'};">${f.team2}</span>
-    </div>
-  ` : '';
-
-  // Форматируем дату финала
+  // Формируем строку счёта финала (только если есть финальный матч)
+  let scoreHtml = '';
   let finalDateStr = '';
-  if (f.date) {
+  if (f && f.score) {
+    scoreHtml = `
+      <div style="display: inline-flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 18px; margin-bottom: 10px;">
+        <span style="font-size: 14px; font-weight: 600; color: ${f.winnerTeam === f.team1 ? '#ffd54f' : '#c9d1d9'};">${f.team1}</span>
+        <span style="font-size: 22px; font-weight: 800; color: #e6edf3; letter-spacing: 2px;">${f.score.replace(':', ' : ')}</span>
+        <span style="font-size: 14px; font-weight: 600; color: ${f.winnerTeam === f.team2 ? '#ffd54f' : '#c9d1d9'};">${f.team2}</span>
+      </div>
+    `;
+  }
+
+  if (f && f.date) {
     const fDate = new Date(f.date);
     finalDateStr = fDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   }

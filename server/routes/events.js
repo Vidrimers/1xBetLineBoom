@@ -1963,7 +1963,7 @@ router.delete("/api/admin/events/:eventId", async (req, res) => {
 });
 
 // PUT /api/admin/events/:eventId/lock
-router.put("/api/admin/events/:eventId/lock", (req, res) => {
+router.put("/api/admin/events/:eventId/lock", async (req, res) => {
   const { eventId } = req.params;
   const { username, reason } = req.body;
 
@@ -2032,18 +2032,48 @@ router.put("/api/admin/events/:eventId/lock", (req, res) => {
 
       sendTournamentWinnerNotification(event.name, winner.username);
 
-      try {
-        const newsTitle = `🏆 Победитель турнира: ${event.name}`;
-        const newsMessage = `Поздравляем победителя турнира "${event.name}"!\n\n👑 Победитель: ${winner.username}\n🎯 Угаданных прогнозов: ${winner.wins}\n\n🎉 Отличная игра! Так держать!`;
+      // Проверяем: причина содержит "завершен"/"завершён" И нет финального матча?
+      const reasonLower = reason.trim().toLowerCase();
+      const isCompleted = reasonLower.includes('завершен') || reasonLower.includes('завершён');
+      const hasFinalMatch = db.prepare(`SELECT COUNT(*) as count FROM matches WHERE event_id = ? AND is_final = 1`).get(eventId).count > 0;
 
-        db.prepare(`
-          INSERT INTO news (type, title, message)
-          VALUES (?, ?, ?)
-        `).run('achievement', newsTitle, newsMessage);
+      if (isCompleted && !hasFinalMatch) {
+        // Создаём красивую карточку завершения турнира (без финала)
+        try {
+          const { checkAndCreateTournamentCompletionNewsOnLock } = await import('../services/tournamentCompletionService.js');
+          checkAndCreateTournamentCompletionNewsOnLock(parseInt(eventId));
+        } catch (error) {
+          console.error("❌ Ошибка создания карточки завершения турнира:", error);
+        }
+      } else {
+        // Обычная новость о победителе
+        try {
+          const newsTitle = `🏆 Победитель турнира: ${event.name}`;
+          const newsMessage = `Поздравляем победителя турнира "${event.name}"!\n\n👑 Победитель: ${winner.username}\n🎯 Угаданных прогнозов: ${winner.wins}\n\n🎉 Отличная игра! Так держать!`;
 
-        console.log(`✅ Автоматически создана новость о победителе турнира: ${event.name}`);
-      } catch (error) {
-        console.error("❌ Ошибка создания новости о победителе:", error);
+          db.prepare(`
+            INSERT INTO news (type, title, message)
+            VALUES (?, ?, ?)
+          `).run('achievement', newsTitle, newsMessage);
+
+          console.log(`✅ Автоматически создана новость о победителе турнира: ${event.name}`);
+        } catch (error) {
+          console.error("❌ Ошибка создания новости о победителе:", error);
+        }
+      }
+    } else {
+      // Нет победителя, но причина "завершен" и нет финала — всё равно создаём карточку
+      const reasonLower = reason.trim().toLowerCase();
+      const isCompleted = reasonLower.includes('завершен') || reasonLower.includes('завершён');
+      const hasFinalMatch = db.prepare(`SELECT COUNT(*) as count FROM matches WHERE event_id = ? AND is_final = 1`).get(eventId).count > 0;
+
+      if (isCompleted && !hasFinalMatch) {
+        try {
+          const { checkAndCreateTournamentCompletionNewsOnLock } = await import('../services/tournamentCompletionService.js');
+          checkAndCreateTournamentCompletionNewsOnLock(parseInt(eventId));
+        } catch (error) {
+          console.error("❌ Ошибка создания карточки завершения турнира:", error);
+        }
       }
     }
 

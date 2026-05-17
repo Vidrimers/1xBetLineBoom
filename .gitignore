@@ -33,6 +33,7 @@ add-event-columns.js
 add-theme-column.js
 MIGRATION-README.md
 test-tournament-result-card.html
+test-tournament-no-final.html
 финал.txt
 финал
 АПИПереход.js
