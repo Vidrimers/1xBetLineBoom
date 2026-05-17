@@ -1,4 +1,5 @@
 import { db } from '../database/db.js';
+import { sendUserMessage, sendGroupNotification } from '../../OnexBetLineBoombot.js';
 
 /**
  * Проверяет, завершён ли турнир (все матчи имеют результат),
@@ -249,6 +250,11 @@ export function checkAndCreateTournamentCompletionNews(matchId) {
     db.prepare(`UPDATE events SET status = 'completed' WHERE id = ?`).run(match.event_id);
     console.log(`✅ Статус турнира "${match.event_name}" обновлён на "completed"`);
 
+    // Отправляем Telegram-уведомления
+    sendTournamentCompletionTelegram(match.event_id, participants).catch(err => {
+      console.error('❌ Ошибка отправки Telegram-уведомлений:', err);
+    });
+
   } catch (error) {
     console.error('❌ Ошибка создания новости о завершении турнира:', error);
   }
@@ -458,7 +464,141 @@ export function checkAndCreateTournamentCompletionNewsOnLock(eventId) {
 
     console.log(`🏆 Создана новость о завершении турнира "${event.name}" (без финала). Победитель: ${winner.username} (${winner.total_points} очков)`);
 
+    // Отправляем Telegram-уведомления
+    sendTournamentCompletionTelegram(event.id, participants).catch(err => {
+      console.error('❌ Ошибка отправки Telegram-уведомлений:', err);
+    });
+
   } catch (error) {
     console.error('❌ Ошибка создания новости о завершении турнира (lock):', error);
   }
+}
+
+
+/**
+ * Отправляет Telegram-уведомления о завершении турнира:
+ * - В личку каждому участнику (персональная статистика)
+ * - В группу (THREAD_ID=89) — победитель + топ-10
+ * 
+ * @param {number} eventId - ID турнира
+ * @param {Array} participants - массив участников (из checkAndCreateTournamentCompletionNews)
+ */
+export async function sendTournamentCompletionTelegram(eventId, participants) {
+  try {
+    const event = db.prepare(`SELECT id, name FROM events WHERE id = ?`).get(eventId);
+    if (!event || !participants || participants.length === 0) return;
+
+    const winner = participants[0];
+    const totalParticipants = participants.length;
+
+    // === 1. Сообщение в группу (THREAD_ID=89) ===
+    try {
+      let groupMessage = `🏆 <b>Турнир завершён!</b>\n\n`;
+      groupMessage += `<b>${event.name}</b>\n\n`;
+      groupMessage += `👑 <b>Победитель: ${winner.username}</b>\n`;
+      groupMessage += `⭐ Очков: <b>${winner.total_points}</b>\n`;
+      groupMessage += `\n<b>📊 Итоговая таблица:</b>\n\n`;
+
+      const top10 = participants.slice(0, 10);
+      top10.forEach((p, idx) => {
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+        const pointsWord = getPointsWordServer(p.total_points);
+        groupMessage += `${medal} ${p.username} — ${p.total_points} ${pointsWord}\n`;
+      });
+
+      groupMessage += `\n🎉 Поздравляем победителя! До встречи в следующем турнире!`;
+
+      await sendGroupNotification(groupMessage);
+      console.log(`✅ Сообщение о завершении турнира "${event.name}" отправлено в группу`);
+    } catch (error) {
+      console.error(`❌ Ошибка отправки в группу:`, error.message);
+    }
+
+    // === 2. Личные сообщения каждому участнику ===
+    for (let i = 0; i < participants.length; i++) {
+      const p = participants[i];
+      const position = i + 1;
+
+      // Получаем telegram_id пользователя
+      const user = db.prepare(`
+        SELECT telegram_id, telegram_notifications_enabled 
+        FROM users WHERE id = ?
+      `).get(p.id);
+
+      if (!user || !user.telegram_id || !user.telegram_notifications_enabled) continue;
+
+      // Проверяем настройки уведомлений
+      const notifSettings = db.prepare(`
+        SELECT tournament_announcements FROM user_notification_settings WHERE user_id = ?
+      `).get(p.id);
+      if (notifSettings && !notifSettings.tournament_announcements) continue;
+
+      const accuracy = p.total_bets > 0 ? Math.round((p.won_count / p.total_bets) * 100) : 0;
+
+      let personalMessage = `🏆 <b>Турнир завершён!</b>\n\n`;
+      personalMessage += `<b>${event.name}</b>\n\n`;
+      personalMessage += `👑 <b>Победитель:</b> ${winner.username}\n`;
+      personalMessage += `⭐ <b>Очков победителя:</b> ${winner.total_points}\n`;
+      personalMessage += `\n<b>📊 Твоя статистика:</b>\n\n`;
+      personalMessage += `📍 Позиция: <b>${position} из ${totalParticipants}</b>\n`;
+      personalMessage += `⭐ Очков: <b>${p.total_points}</b>\n`;
+      personalMessage += `✅ Угадано: <b>${p.won_count}</b>\n`;
+      personalMessage += `❌ Не угадано: <b>${p.lost_count}</b>\n`;
+      personalMessage += `📈 Точность: <b>${accuracy}%</b>\n`;
+      personalMessage += `📝 Прогнозов: <b>${p.total_bets}</b>\n`;
+      personalMessage += `\n`;
+
+      // Персональное сообщение в зависимости от позиции
+      personalMessage += getPersonalEnding(position, totalParticipants);
+
+      try {
+        await sendUserMessage(parseInt(user.telegram_id), personalMessage, { parse_mode: 'HTML' });
+        console.log(`📩 Личное сообщение отправлено: ${p.username} (позиция ${position})`);
+      } catch (error) {
+        console.error(`❌ Ошибка отправки личного сообщения ${p.username}:`, error.message);
+      }
+
+      // Задержка между сообщениями чтобы не словить rate limit
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    console.log(`✅ Все Telegram-уведомления о завершении "${event.name}" отправлены`);
+  } catch (error) {
+    console.error('❌ Ошибка отправки Telegram-уведомлений о завершении турнира:', error);
+  }
+}
+
+/**
+ * Персональная концовка сообщения в зависимости от позиции
+ */
+function getPersonalEnding(position, total) {
+  if (position === 1) {
+    return '🎉 Красавчик! Ты забрал этот турнир. Заслуженная победа, так держать!';
+  }
+  if (position === 2) {
+    return '🥈 Совсем чуть-чуть не хватило! Серебро — это тоже результат. В следующий раз будет золото... может быть.';
+  }
+  if (position === 3) {
+    return '🥉 Бронза! Подиум — это уже достижение. Но ты ведь хочешь выше, правда?';
+  }
+  if (position === total && total > 3) {
+    return '🫡 Даже не представляю, какая мотивация тебя держала на этом турнире. Уважаю стойкость.';
+  }
+  if (position === total - 1 && total > 4) {
+    return '😅 Предпоследнее место — зато не последнее! Стакан наполовину полон.';
+  }
+  // Остальные
+  return '😏 Неплохо, но до победы не дотянул. Повезёт в следующий раз... или нет, откуда я знаю.';
+}
+
+/**
+ * Склонение "очко/очка/очков" (серверная версия)
+ */
+function getPointsWordServer(n) {
+  const abs = Math.abs(n) % 100;
+  const lastDigit = abs % 10;
+  if (abs >= 11 && abs <= 19) return 'очков';
+  if (lastDigit === 1) return 'очко';
+  if (lastDigit >= 2 && lastDigit <= 4) return 'очка';
+  return 'очков';
 }
