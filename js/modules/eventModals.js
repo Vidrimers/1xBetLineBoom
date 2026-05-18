@@ -948,6 +948,39 @@ export function openLockEventModal(eventId, eventName) {
   }
 }
 
+export async function submitLockEvent(e) {
+  e.preventDefault();
+  const form = document.getElementById('lockEventForm');
+  const eventId = form.dataset.eventId;
+  const reason = document.getElementById('eventLockReason').value.trim();
+
+  if (!reason) return;
+
+  try {
+    const response = await fetch(`/api/admin/events/${eventId}/lock`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: window.state?.currentUser?.username, reason }),
+    });
+    const result = await response.json();
+
+    if (response.ok) {
+      closeLockEventModal();
+      loadEventsList();
+      await showCustomAlert(
+        `Турнир заблокирован${result.winner ? `\n\n🏆 Победитель: ${result.winner.username}` : ''}`,
+        'Турнир заблокирован',
+        '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
+      );
+    } else {
+      await showCustomAlert(`Ошибка: ${result.error}`, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
+  } catch (error) {
+    console.error('Ошибка блокировки турнира:', error);
+    await showCustomAlert('Ошибка при блокировке турнира', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
 export async function unlockEvent(eventId) {
   const confirmed = await showCustomConfirm(
     'Вы уверены, что хотите разблокировать этот турнир?',

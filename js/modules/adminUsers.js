@@ -50,7 +50,7 @@ function displayAdminUsersModal() {
         ${canViewSettings() ? `
         <button class="admin-btn admin-btn-settings" onclick="sendUserSettingsToAdmin(${
           user.id
-        }, '${user.username}')" title="Получить настройки пользователя"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg></button>
+        }, '${user.username}')" title="Получить настройки пользователя в ТГ"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg></button>
         ` : ''}
         ${canEditUsers() && (isAdmin() || user.username !== ADMIN_DB_NAME) ? `
         <button class="admin-btn admin-btn-rename" onclick="renameUser(${

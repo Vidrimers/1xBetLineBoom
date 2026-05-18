@@ -206,6 +206,7 @@ import {
   closeEventTeamFileSelector,
   closeLockEventModal,
   openLockEventModal,
+  submitLockEvent,
   unlockEvent,
   deleteEvent,
 } from './modules/eventModals.js';
@@ -602,7 +603,7 @@ Object.assign(window, {
   openTournamentInfoModal,
   openEventTeamFileSelector, selectEventTeamFile, closeEventTeamFileSelector,
   closeLockEventModal,
-  openLockEventModal, unlockEvent, deleteEvent,
+  openLockEventModal, submitLockEvent, unlockEvent, deleteEvent,
   // live
   loadLiveMatches, showLiveEventMatches, backToLiveEvents, loadCompletedDays,
   renderCompletedDays, renderCompletedDayMatches, toggleCompletedDay,
