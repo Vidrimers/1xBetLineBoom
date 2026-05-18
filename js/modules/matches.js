@@ -497,12 +497,26 @@ export async function displayMatches() {
     (m) => m.is_final === 1 || m.is_final === true
   );
 
-  // Если есть финальные матчи и финала нет в roundsOrder, добавляем его
+  // Если есть финальные матчи и финала нет в roundsOrder, добавляем его В КОНЕЦ
   if (hasFinalMatches && !roundsOrder.includes('🏆 Финал')) {
     setRoundsOrder([...roundsOrder, '🏆 Финал']);
-    // Сохраняем новый порядок в БД
     saveRoundsOrderToStorage().catch((e) =>
       console.error("Ошибка сохранения финала в порядок:", e)
+    );
+  }
+
+  // Добавляем любые новые туры (которых нет в roundsOrder) в конец
+  const allRounds = [...new Set(matches.map(m => m.round).filter(r => r && r.trim()))];
+  let orderChanged = false;
+  allRounds.forEach(r => {
+    if (!state.roundsOrder.includes(r)) {
+      setRoundsOrder([...state.roundsOrder, r]);
+      orderChanged = true;
+    }
+  });
+  if (orderChanged) {
+    saveRoundsOrderToStorage().catch((e) =>
+      console.error("Ошибка сохранения порядка туров:", e)
     );
   }
 
