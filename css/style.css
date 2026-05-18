@@ -1109,6 +1109,89 @@ button:active {
   gap: 8px;
 }
 
+.bet-buttons-three.bet-buttons-two {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Финальные параметры — компактная сетка */
+.final-params-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.final-param-item {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(90,159,212,0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.final-param-item.wide {
+  grid-column: 1 / -1;
+}
+
+.final-param-label {
+  font-size: 0.8em;
+  color: #b0b8c8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.final-param-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.final-param-input {
+  width: 55px;
+  padding: 4px 6px;
+  background: #2a3f5f;
+  border: 1px solid #5a9fd4;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.final-param-vs {
+  color: #7ab0e0;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.final-param-btn {
+  background: #4db8a8;
+  border: none;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.final-param-btn:hover {
+  background: #3da898;
+}
+
+@media (max-width: 480px) {
+  .final-params-grid {
+    grid-template-columns: 1fr;
+  }
+  .final-param-item.wide {
+    grid-column: auto;
+  }
+}
+
 .bet-btn {
   padding: 3px 12px;
   font-size: 0.9em;

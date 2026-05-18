@@ -942,7 +942,7 @@ export async function displayMatches() {
                       )}</span>${statusBadge}</div>`
                     : `<div class="match-noDate" style="text-align: center; font-size: 0.8em; color: #666; margin: 10px auto;"><span class="match-date-text">Дата не указана</span>${statusBadge}</div>`
                 }
-                <div class="bet-buttons-three">
+                <div class="bet-buttons-three${match.is_final ? ' bet-buttons-two' : ''}">
                     <button class="bet-btn team1 ${
                       userBetOnMatch?.prediction === "team1" ? "selected" : ""
                     }" onclick="placeBet(${match.id}, '${
@@ -987,16 +987,17 @@ export async function displayMatches() {
                 <div style="background: rgba(58, 123, 213, 0.1); padding: 12px; border-radius: 4px; margin: 10px 0;">
                   <div style="color: #7ab0e0; font-size: 0.85em; font-weight: 500; margin-bottom: 12px;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> ФИНАЛЬНЫЕ ПАРАМЕТРЫ:</div>
                   
+                  <div class="final-params-grid">
                   ${
                     match.show_exact_score
                       ? `
-                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Точный счет</div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <input type="number" id="exactScore1_${match.id}" min="0" value="0" style="width: 50px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <span style="color: #7ab0e0;">vs</span>
-                      <input type="number" id="exactScore2_${match.id}" min="0" value="0" style="width: 50px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'exact_score')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
+                  <div class="final-param-item wide">
+                    <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Точный счет</div>
+                    <div class="final-param-controls">
+                      <input type="number" id="exactScore1_${match.id}" min="0" value="0" class="final-param-input">
+                      <span class="final-param-vs">vs</span>
+                      <input type="number" id="exactScore2_${match.id}" min="0" value="0" class="final-param-input">
+                      <button onclick="placeFinalBet(${match.id}, 'exact_score')" class="final-param-btn"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1006,11 +1007,11 @@ export async function displayMatches() {
                   ${
                     match.show_yellow_cards
                       ? `
-                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Желтые карточки</div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <input type="number" id="yellowCards_${match.id}" min="0" value="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'yellow_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
+                  <div class="final-param-item">
+                    <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Жёлтые</div>
+                    <div class="final-param-controls">
+                      <input type="number" id="yellowCards_${match.id}" min="0" value="0" class="final-param-input">
+                      <button onclick="placeFinalBet(${match.id}, 'yellow_cards')" class="final-param-btn"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1020,11 +1021,11 @@ export async function displayMatches() {
                   ${
                     match.show_red_cards
                       ? `
-                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные карточки</div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <input type="number" id="redCards_${match.id}" min="0" value="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'red_cards')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
+                  <div class="final-param-item">
+                    <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные</div>
+                    <div class="final-param-controls">
+                      <input type="number" id="redCards_${match.id}" min="0" value="0" class="final-param-input">
+                      <button onclick="placeFinalBet(${match.id}, 'red_cards')" class="final-param-btn"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1034,11 +1035,11 @@ export async function displayMatches() {
                   ${
                     match.show_corners
                       ? `
-                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Угловые</div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <input type="number" id="corners_${match.id}" min="0" value="0" style="width: 70px; padding: 4px; background: #2a3f5f; border: 1px solid #5a9fd4; color: #fff; border-radius: 3px;">
-                      <button onclick="placeFinalBet(${match.id}, 'corners')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
+                  <div class="final-param-item">
+                    <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Угловые</div>
+                    <div class="final-param-controls">
+                      <input type="number" id="corners_${match.id}" min="0" value="0" class="final-param-input">
+                      <button onclick="placeFinalBet(${match.id}, 'corners')" class="final-param-btn"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1048,20 +1049,18 @@ export async function displayMatches() {
                   ${
                     match.show_penalties_in_game
                       ? `
-                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в игре</div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <span id="penaltiesInGame_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
-                        <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
-                          <input type="checkbox" id="penaltiesInGame_${match.id}" data-toggle-state="neutral" style="display: none;">
-                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #666666; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('penaltiesInGame_${match.id}'); const currentState = checkbox.getAttribute('data-toggle-state'); let newState; if (currentState === 'neutral') { newState = 'true'; } else { newState = currentState === 'true' ? 'false' : 'true'; } checkbox.setAttribute('data-toggle-state', newState); checkbox.checked = newState === 'true'; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); const yesLabel = document.getElementById('penaltiesInGame_yes_${match.id}'); const noLabel = document.getElementById('penaltiesInGame_no_${match.id}'); if (newState === 'true') { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(-11px)'; yesLabel.style.color = '#4db8a8'; noLabel.style.color = '#888888'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(17px)'; yesLabel.style.color = '#888888'; noLabel.style.color = '#4db8a8'; } })();">
-                            <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 13px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
-                          </span>
-                        </label>
-                        <span id="penaltiesInGame_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
-                      </div>
-                      <button onclick="placeFinalBet(${match.id}, 'penalties_in_game')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
+                  <div class="final-param-item">
+                    <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в игре</div>
+                    <div class="final-param-controls">
+                      <span id="penaltiesInGame_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
+                      <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                        <input type="checkbox" id="penaltiesInGame_${match.id}" data-toggle-state="neutral" style="display: none;">
+                        <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #666666; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('penaltiesInGame_${match.id}'); const currentState = checkbox.getAttribute('data-toggle-state'); let newState; if (currentState === 'neutral') { newState = 'true'; } else { newState = currentState === 'true' ? 'false' : 'true'; } checkbox.setAttribute('data-toggle-state', newState); checkbox.checked = newState === 'true'; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); const yesLabel = document.getElementById('penaltiesInGame_yes_${match.id}'); const noLabel = document.getElementById('penaltiesInGame_no_${match.id}'); if (newState === 'true') { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(-11px)'; yesLabel.style.color = '#4db8a8'; noLabel.style.color = '#888888'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(17px)'; yesLabel.style.color = '#888888'; noLabel.style.color = '#4db8a8'; } })();">
+                          <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 13px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
+                        </span>
+                      </label>
+                      <span id="penaltiesInGame_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
+                      <button onclick="placeFinalBet(${match.id}, 'penalties_in_game')" class="final-param-btn"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1071,20 +1070,18 @@ export async function displayMatches() {
                   ${
                     match.show_extra_time
                       ? `
-                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Дополнительное время</div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <span id="extraTime_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
-                        <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
-                          <input type="checkbox" id="extraTime_${match.id}" data-toggle-state="neutral" style="display: none;">
-                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #666666; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('extraTime_${match.id}'); const currentState = checkbox.getAttribute('data-toggle-state'); let newState; if (currentState === 'neutral') { newState = 'true'; } else { newState = currentState === 'true' ? 'false' : 'true'; } checkbox.setAttribute('data-toggle-state', newState); checkbox.checked = newState === 'true'; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); const yesLabel = document.getElementById('extraTime_yes_${match.id}'); const noLabel = document.getElementById('extraTime_no_${match.id}'); if (newState === 'true') { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(-11px)'; yesLabel.style.color = '#4db8a8'; noLabel.style.color = '#888888'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(17px)'; yesLabel.style.color = '#888888'; noLabel.style.color = '#4db8a8'; } })();">
-                            <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 13px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
-                          </span>
-                        </label>
-                        <span id="extraTime_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
-                      </div>
-                      <button onclick="placeFinalBet(${match.id}, 'extra_time')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
+                  <div class="final-param-item">
+                    <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Доп. время</div>
+                    <div class="final-param-controls">
+                      <span id="extraTime_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
+                      <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                        <input type="checkbox" id="extraTime_${match.id}" data-toggle-state="neutral" style="display: none;">
+                        <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #666666; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('extraTime_${match.id}'); const currentState = checkbox.getAttribute('data-toggle-state'); let newState; if (currentState === 'neutral') { newState = 'true'; } else { newState = currentState === 'true' ? 'false' : 'true'; } checkbox.setAttribute('data-toggle-state', newState); checkbox.checked = newState === 'true'; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); const yesLabel = document.getElementById('extraTime_yes_${match.id}'); const noLabel = document.getElementById('extraTime_no_${match.id}'); if (newState === 'true') { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(-11px)'; yesLabel.style.color = '#4db8a8'; noLabel.style.color = '#888888'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(17px)'; yesLabel.style.color = '#888888'; noLabel.style.color = '#4db8a8'; } })();">
+                          <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 13px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
+                        </span>
+                      </label>
+                      <span id="extraTime_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
+                      <button onclick="placeFinalBet(${match.id}, 'extra_time')" class="final-param-btn"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1094,25 +1091,24 @@ export async function displayMatches() {
                   ${
                     match.show_penalties_at_end
                       ? `
-                  <div style="margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <div style="color: #b0b8c8; font-size: 0.85em; margin-bottom: 6px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в конце</div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <span id="penaltiesAtEnd_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
-                        <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
-                          <input type="checkbox" id="penaltiesAtEnd_${match.id}" data-toggle-state="neutral" style="display: none;">
-                          <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #666666; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('penaltiesAtEnd_${match.id}'); const currentState = checkbox.getAttribute('data-toggle-state'); let newState; if (currentState === 'neutral') { newState = 'true'; } else { newState = currentState === 'true' ? 'false' : 'true'; } checkbox.setAttribute('data-toggle-state', newState); checkbox.checked = newState === 'true'; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); const yesLabel = document.getElementById('penaltiesAtEnd_yes_${match.id}'); const noLabel = document.getElementById('penaltiesAtEnd_no_${match.id}'); if (newState === 'true') { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(-11px)'; yesLabel.style.color = '#4db8a8'; noLabel.style.color = '#888888'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(17px)'; yesLabel.style.color = '#888888'; noLabel.style.color = '#4db8a8'; } })();">
-                            <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 13px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
-                          </span>
-                        </label>
-                        <span id="penaltiesAtEnd_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
-                      </div>
-                      <button onclick="placeFinalBet(${match.id}, 'penalties_at_end')" style="background: #4db8a8; border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 0.85em;"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
+                  <div class="final-param-item">
+                    <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Пенальти в конце</div>
+                    <div class="final-param-controls">
+                      <span id="penaltiesAtEnd_yes_${match.id}" style="color: #888888; font-size: 0.85em; font-weight: 500;">ДА</span>
+                      <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                        <input type="checkbox" id="penaltiesAtEnd_${match.id}" data-toggle-state="neutral" style="display: none;">
+                        <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #666666; border-radius: 24px; transition: background-color 0.3s; cursor: pointer;" onclick="(function() { const checkbox = document.getElementById('penaltiesAtEnd_${match.id}'); const currentState = checkbox.getAttribute('data-toggle-state'); let newState; if (currentState === 'neutral') { newState = 'true'; } else { newState = currentState === 'true' ? 'false' : 'true'; } checkbox.setAttribute('data-toggle-state', newState); checkbox.checked = newState === 'true'; const span = checkbox.nextElementSibling; const circle = span.querySelector('span'); const yesLabel = document.getElementById('penaltiesAtEnd_yes_${match.id}'); const noLabel = document.getElementById('penaltiesAtEnd_no_${match.id}'); if (newState === 'true') { span.style.backgroundColor = '#4db8a8'; circle.style.transform = 'translateX(-11px)'; yesLabel.style.color = '#4db8a8'; noLabel.style.color = '#888888'; } else { span.style.backgroundColor = '#3a5f7a'; circle.style.transform = 'translateX(17px)'; yesLabel.style.color = '#888888'; noLabel.style.color = '#4db8a8'; } })();">
+                          <span style="position: absolute; height: 18px; width: 18px; top: 3px; left: 13px; background-color: white; border-radius: 50%; transition: transform 0.3s;"></span>
+                        </span>
+                      </label>
+                      <span id="penaltiesAtEnd_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
+                      <button onclick="placeFinalBet(${match.id}, 'penalties_at_end')" class="final-param-btn"><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
                       : ""
                   }
+                  </div>
                 </div>
                 `
                     : ""
