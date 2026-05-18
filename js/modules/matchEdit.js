@@ -243,7 +243,6 @@ export function openFinalMatchResultModal(matchId) {
   buttonsContainer.innerHTML = '';
   buttonsContainer.innerHTML = `
     <button id="finalResult_team1" class="result-btn" onclick="setFinalResult('team1')" style="flex: 1">${match.team1_name || 'Team 1'}</button>
-    <button id="finalResult_draw" class="result-btn" onclick="setFinalResult('draw')" style="flex: 1">Ничья</button>
     <button id="finalResult_team2" class="result-btn" onclick="setFinalResult('team2')" style="flex: 1">${match.team2_name || 'Team 2'}</button>
   `;
   if (match.is_final) {

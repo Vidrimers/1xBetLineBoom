@@ -956,7 +956,7 @@ export async function displayMatches() {
       }>
                         ${match.team1_name}
                     </button>
-                    <button class="bet-btn draw ${
+                    ${!match.is_final ? `<button class="bet-btn draw ${
                       userBetOnMatch?.prediction === "draw" ? "selected" : ""
                     }" onclick="placeBet(${match.id}, 'draw', 'draw')" ${
         effectiveStatus !== "pending"
@@ -966,7 +966,7 @@ export async function displayMatches() {
           : ""
       }>
                           Ничья
-                      </button>
+                      </button>` : ''}
                     <button class="bet-btn team2 ${
                       userBetOnMatch?.prediction === "team2" ? "selected" : ""
                     }" onclick="placeBet(${match.id}, '${
