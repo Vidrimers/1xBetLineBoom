@@ -464,6 +464,10 @@ export function checkAndCreateTournamentCompletionNewsOnLock(eventId) {
 
     console.log(`🏆 Создана новость о завершении турнира "${event.name}" (без финала). Победитель: ${winner.username} (${winner.total_points} очков)`);
 
+    // Обновляем статус турнира на "completed"
+    db.prepare(`UPDATE events SET status = 'completed' WHERE id = ?`).run(event.id);
+    console.log(`✅ Статус турнира "${event.name}" обновлён на "completed"`);
+
     // Отправляем Telegram-уведомления
     sendTournamentCompletionTelegram(event.id, participants).catch(err => {
       console.error('❌ Ошибка отправки Telegram-уведомлений:', err);
