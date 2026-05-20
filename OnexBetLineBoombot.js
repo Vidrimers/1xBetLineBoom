@@ -684,11 +684,19 @@ export async function notifyNewBet(
   prediction,
   eventName
 ) {
+  // Определяем тип ставки для отображения
+  let betTypeInfo = '';
+  if (prediction && prediction.includes(':') && (prediction.includes('Точный') || prediction.includes('Жёлтые') || prediction.includes('Красные') || prediction.includes('Угловые') || prediction.includes('Пенальти') || prediction.includes('Доп.'))) {
+    // Финальный параметр — показываем только тип без значения
+    const paramType = prediction.split(':')[0].trim();
+    betTypeInfo = `\n🎯 Тип: <b>${paramType}</b>`;
+  }
+
   const message =
     `💰 <b>НОВАЯ СТАВКА!</b>\n\n` +
     `👤 Пользователь: <b>${username}</b>\n` +
     `⚽ Матч: <b>${team1}</b> vs <b>${team2}</b>\n` +
-    `🏆 Турнир: ${eventName || "Неизвестный"}\n` +
+    `🏆 Турнир: ${eventName || "Неизвестный"}${betTypeInfo}\n` +
     `⏰ ${new Date().toLocaleString("ru-RU")}`;
 
   await sendAdminNotification(message);
