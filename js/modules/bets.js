@@ -907,11 +907,47 @@ export function displayMyBets(bets) {
         };
       });
 
+  // Объединяем финальные ставки одного матча в одну карточку
+  const mergedBets = [];
+  const finalBetsByMatch = {};
+
+  betsWithStatus.forEach(betData => {
+    if (betData.bet.is_final_bet) {
+      const key = betData.bet.match_id;
+      if (!finalBetsByMatch[key]) {
+        finalBetsByMatch[key] = [];
+      }
+      finalBetsByMatch[key].push(betData);
+    } else {
+      mergedBets.push(betData);
+    }
+  });
+
+  // Для каждого финального матча — находим основную ставку и прикрепляем параметры
+  Object.entries(finalBetsByMatch).forEach(([matchId, finalBets]) => {
+    // Ищем основную ставку на этот матч (is_final_bet = 0)
+    const mainBetIndex = mergedBets.findIndex(b => b.bet.match_id === parseInt(matchId) && !b.bet.is_final_bet);
+    
+    if (mainBetIndex !== -1) {
+      // Прикрепляем финальные параметры к основной ставке
+      mergedBets[mainBetIndex].finalParams = finalBets;
+    } else {
+      // Нет основной ставки — создаём виртуальную карточку из первого параметра
+      const first = finalBets[0];
+      mergedBets.push({
+        ...first,
+        finalParams: finalBets,
+        statusClass: first.statusClass,
+        statusText: first.statusText,
+      });
+    }
+  });
+
   // Сортируем ВСЕ ставки: 
   // 1. Сначала "pending"
   // 2. Потом завершенные (won/lost) по дате турнира (новые первыми)
   // 3. Турниры без даты в самом низу
-  const sortedBets = betsWithStatus.sort((a, b) => {
+  const sortedBets = mergedBets.sort((a, b) => {
     // Сначала все pending
     if (a.statusClass === 'pending' && b.statusClass !== 'pending') return -1;
     if (a.statusClass !== 'pending' && b.statusClass === 'pending') return 1;
@@ -1107,8 +1143,8 @@ export function displayMyBets(bets) {
       `;
       
       // Ставки этой группы
-      group.bets.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled }) => {
-        html += generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled);
+      group.bets.forEach(({ bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled, finalParams }) => {
+        html += generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled, finalParams || null);
       });
     });
     
@@ -1121,11 +1157,57 @@ export function displayMyBets(bets) {
 }
 
 // Вспомогательная функция для генерации HTML одной ставки
-export function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled = false) {
+export function generateBetHTML(bet, statusClass, statusText, normalizedPrediction, deleteBtn, isCancelled = false, finalParams = null) {
   // Стили для отменённых матчей: зачёркнутый текст и чёрно-белый фильтр
   const cancelledStyle = isCancelled 
     ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' 
     : '';
+
+  // Генерируем HTML для финальных параметров (если есть)
+  let finalParamsHTML = '';
+  if (finalParams && finalParams.length > 0) {
+    const paramNames = {
+      exact_score: "Точный счет",
+      yellow_cards: "Желтые",
+      red_cards: "Красные",
+      corners: "Угловые",
+      penalties_in_game: "Пенальти в игре",
+      extra_time: "Доп. время",
+      penalties_at_end: "Пенальти в конце",
+    };
+    const paramIcons = {
+      exact_score: '<svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg>',
+      yellow_cards: '<svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg>',
+      red_cards: '<svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg>',
+      corners: '<svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>',
+      penalties_in_game: '<svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>',
+      extra_time: '<svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg>',
+      penalties_at_end: '<svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>',
+    };
+
+    finalParams.forEach(fp => {
+      const paramName = paramNames[fp.bet.parameter_type] || fp.bet.parameter_type;
+      const paramIcon = paramIcons[fp.bet.parameter_type] || '';
+      let predictionDisplay = fp.bet.prediction;
+      if (fp.bet.parameter_type === 'exact_score') {
+        predictionDisplay = `${fp.bet.team1_name} ${fp.bet.prediction} ${fp.bet.team2_name}`;
+      }
+
+      // Определяем стиль результата
+      let resultHTML = '';
+      if (fp.statusClass === 'won') {
+        resultHTML = ' <span style="color: #4caf50; font-size: 0.85em;">✓</span>';
+      } else if (fp.statusClass === 'lost') {
+        resultHTML = ' <span style="color: #f44336; font-size: 0.85em;">✗</span>';
+      }
+
+      finalParamsHTML += `<div style="font-size: 0.85em; color: #b0b8c8; margin-bottom: 3px; padding-left: 4px;">
+        ${paramIcon} ${paramName}: <strong>${predictionDisplay}</strong>${resultHTML}
+      </div>`;
+    });
+
+    finalParamsHTML = `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">${finalParamsHTML}</div>`;
+  }
   
   return `
     <div class="bet-item ${statusClass}" data-bet-id="${bet.id}" style="${cancelledStyle}">
@@ -1246,6 +1328,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
         <div class="bet-round" style="font-size: 0.85em; color: #b0b8c8; margin-top: 5px;">
             ${bet.is_final ? '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>' + ' ФИНАЛ' : bet.round ? `${bet.round}` : ""}
         </div>
+        ${finalParamsHTML}
         ${deleteBtn}
     </div>
   `;
