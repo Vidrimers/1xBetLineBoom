@@ -1468,7 +1468,43 @@ router.post("/api/live-matches-by-ids", async (req, res) => {
         }
         
         if (!match) {
-          console.log(`⏭️ Матч ${matchId} не найден в БД (ни по id, ни по sstats_match_id)`);
+          console.log(`⏭️ Матч ${matchId} не найден в БД, пробуем напрямую из SStats API...`);
+          // Матч не в БД — это SStats game ID, запрашиваем напрямую из API
+          try {
+            const url = `${SSTATS_API_BASE}/Games/${matchId}`;
+            console.log(`🔍 Прямой запрос к SStats API: ${url}`);
+            const response = await fetch(url, {
+              headers: { 'X-API-Key': SSTATS_API_KEY }
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              const details = result.data || result;
+              const game = details.game;
+              
+              if (game) {
+                console.log(`✅ SStats API вернул данные для матча ${matchId}: ${game.homeTeam?.name} ${game.homeResult || 0}:${game.awayResult || 0} ${game.awayTeam?.name}`);
+                allMatches.push({
+                  id: matchId,
+                  team1: game.homeTeam?.name || 'Команда 1',
+                  team2: game.awayTeam?.name || 'Команда 2',
+                  homeTeam: game.homeTeam?.name || 'Команда 1',
+                  awayTeam: game.awayTeam?.name || 'Команда 2',
+                  score: `${game.homeResult || 0}:${game.awayResult || 0}`,
+                  homeResult: game.homeResult || 0,
+                  awayResult: game.awayResult || 0,
+                  status: game.statusName || 'live',
+                  statusName: game.statusName,
+                  elapsed: game.elapsed
+                });
+                continue;
+              }
+            } else {
+              console.log(`⚠️ SStats API вернул ошибку ${response.status} для матча ${matchId}`);
+            }
+          } catch (apiError) {
+            console.log(`⚠️ Ошибка прямого запроса SStats API для матча ${matchId}: ${apiError.message}`);
+          }
           continue;
         }
         

@@ -296,10 +296,15 @@ async function pollFavoriteMatches() {
           if (bet) betTeam = bet.prediction;
         }
 
+        // Сохраняем русские названия из localStorage, если они уже есть
+        const existingData = getFavoriteMatchData(match.id);
+        const team1 = (existingData && existingData.team1) || match.team1 || match.homeTeam;
+        const team2 = (existingData && existingData.team2) || match.team2 || match.awayTeam;
+
         const matchData = {
           id: match.id,
-          team1: match.team1 || match.homeTeam,
-          team2: match.team2 || match.awayTeam,
+          team1: team1,
+          team2: team2,
           score: match.score || `${match.homeResult || 0}:${match.awayResult || 0}`,
           status: match.status || match.statusName || 'live',
           elapsed: match.elapsed || null,
