@@ -129,6 +129,29 @@ export function initToggleStates() {
 
   state.userBets.forEach((bet) => {
     if (bet.is_final_bet) {
+      // Подгружаем числовые значения в инпуты
+      if (bet.parameter_type === 'exact_score' && bet.prediction) {
+        const parts = bet.prediction.split(':');
+        if (parts.length === 2) {
+          const input1 = document.getElementById(`exactScore1_${bet.match_id}`);
+          const input2 = document.getElementById(`exactScore2_${bet.match_id}`);
+          if (input1) input1.value = parts[0];
+          if (input2) input2.value = parts[1];
+        }
+      }
+      if (bet.parameter_type === 'yellow_cards' && bet.prediction) {
+        const input = document.getElementById(`yellowCards_${bet.match_id}`);
+        if (input) input.value = bet.prediction;
+      }
+      if (bet.parameter_type === 'red_cards' && bet.prediction) {
+        const input = document.getElementById(`redCards_${bet.match_id}`);
+        if (input) input.value = bet.prediction;
+      }
+      if (bet.parameter_type === 'corners' && bet.prediction) {
+        const input = document.getElementById(`corners_${bet.match_id}`);
+        if (input) input.value = bet.prediction;
+      }
+
       // Инициализируем toggle'ы
       if (toggleParameterMap[bet.parameter_type]) {
         const paramType = bet.parameter_type;
