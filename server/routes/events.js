@@ -778,12 +778,25 @@ router.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
         SELECT DISTINCT m.round
         FROM matches m
         WHERE m.event_id = ? AND m.round IS NOT NULL
-        ORDER BY m.round ASC
       `
       )
       .all(eventId)
       .map((r) => r.round)
       .filter((r) => r);
+
+    // Сортируем по сохранённому порядку туров
+    const roundsOrderKey = `rounds_order_${eventId}`;
+    const roundsOrderSetting = db.prepare("SELECT value FROM site_settings WHERE key = ?").get(roundsOrderKey);
+    const savedOrder = roundsOrderSetting ? JSON.parse(roundsOrderSetting.value) : [];
+
+    rounds.sort((a, b) => {
+      const indexA = savedOrder.indexOf(a);
+      const indexB = savedOrder.indexOf(b);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
 
     const completedRounds = db
       .prepare(
