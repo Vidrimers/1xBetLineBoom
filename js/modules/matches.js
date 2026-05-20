@@ -1017,9 +1017,11 @@ export async function displayMatches() {
                   <div class="final-param-item wide">
                     <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Точный счет</div>
                     <div class="final-param-controls">
+                      <span style="font-size:0.8em;color:#b0b8c8;font-weight:500;">${match.team1_name}</span>
                       <input type="number" id="exactScore1_${match.id}" min="0" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
                       <span class="final-param-vs">vs</span>
                       <input type="number" id="exactScore2_${match.id}" min="0" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
+                      <span style="font-size:0.8em;color:#b0b8c8;font-weight:500;">${match.team2_name}</span>
                     </div>
                   </div>
                   `
