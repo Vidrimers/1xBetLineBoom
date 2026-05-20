@@ -529,7 +529,7 @@ export async function placeAllFinalBets(matchId) {
     const s1 = document.getElementById(`exactScore1_${matchId}`);
     const s2 = document.getElementById(`exactScore2_${matchId}`);
     if (s1 && s2 && (s1.value !== '' || s2.value !== '')) {
-      try { await placeFinalBet(matchId, 'exact_score'); placed++; } catch(e) { errors++; }
+      try { await placeFinalBet(matchId, 'exact_score', true); placed++; } catch(e) { errors++; }
     }
   }
 
@@ -537,7 +537,7 @@ export async function placeAllFinalBets(matchId) {
   if (match.show_yellow_cards) {
     const input = document.getElementById(`yellowCards_${matchId}`);
     if (input && input.value !== '') {
-      try { await placeFinalBet(matchId, 'yellow_cards'); placed++; } catch(e) { errors++; }
+      try { await placeFinalBet(matchId, 'yellow_cards', true); placed++; } catch(e) { errors++; }
     }
   }
 
@@ -545,7 +545,7 @@ export async function placeAllFinalBets(matchId) {
   if (match.show_red_cards) {
     const input = document.getElementById(`redCards_${matchId}`);
     if (input && input.value !== '') {
-      try { await placeFinalBet(matchId, 'red_cards'); placed++; } catch(e) { errors++; }
+      try { await placeFinalBet(matchId, 'red_cards', true); placed++; } catch(e) { errors++; }
     }
   }
 
@@ -553,7 +553,7 @@ export async function placeAllFinalBets(matchId) {
   if (match.show_corners) {
     const input = document.getElementById(`corners_${matchId}`);
     if (input && input.value !== '') {
-      try { await placeFinalBet(matchId, 'corners'); placed++; } catch(e) { errors++; }
+      try { await placeFinalBet(matchId, 'corners', true); placed++; } catch(e) { errors++; }
     }
   }
 
@@ -561,7 +561,7 @@ export async function placeAllFinalBets(matchId) {
   if (match.show_penalties_in_game) {
     const checkbox = document.getElementById(`penaltiesInGame_${matchId}`);
     if (checkbox && checkbox.getAttribute('data-toggle-state') !== 'neutral') {
-      try { await placeFinalBet(matchId, 'penalties_in_game'); placed++; } catch(e) { errors++; }
+      try { await placeFinalBet(matchId, 'penalties_in_game', true); placed++; } catch(e) { errors++; }
     }
   }
 
@@ -569,7 +569,7 @@ export async function placeAllFinalBets(matchId) {
   if (match.show_extra_time) {
     const checkbox = document.getElementById(`extraTime_${matchId}`);
     if (checkbox && checkbox.getAttribute('data-toggle-state') !== 'neutral') {
-      try { await placeFinalBet(matchId, 'extra_time'); placed++; } catch(e) { errors++; }
+      try { await placeFinalBet(matchId, 'extra_time', true); placed++; } catch(e) { errors++; }
     }
   }
 
@@ -577,8 +577,15 @@ export async function placeAllFinalBets(matchId) {
   if (match.show_penalties_at_end) {
     const checkbox = document.getElementById(`penaltiesAtEnd_${matchId}`);
     if (checkbox && checkbox.getAttribute('data-toggle-state') !== 'neutral') {
-      try { await placeFinalBet(matchId, 'penalties_at_end'); placed++; } catch(e) { errors++; }
+      try { await placeFinalBet(matchId, 'penalties_at_end', true); placed++; } catch(e) { errors++; }
     }
+  }
+
+  // Перерисовываем один раз в конце
+  if (placed > 0) {
+    const { displayMatches } = await import('./matches.js');
+    displayMatches();
+    initToggleStates();
   }
 
   if (placed > 0 && errors === 0) {
@@ -588,7 +595,7 @@ export async function placeAllFinalBets(matchId) {
   }
 }
 
-export async function placeFinalBet(matchId, parameterType) {
+export async function placeFinalBet(matchId, parameterType, skipRefresh = false) {
   if (!state.currentUser) {
     await showCustomAlert("Сначала введите ваше имя", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
     return;
@@ -730,11 +737,13 @@ export async function placeFinalBet(matchId, parameterType) {
 
       displayMyBets(bets);
 
-      // Перерисовываем матчи чтобы кнопки команд обновились
-      displayMatches();
+      // Перерисовываем матчи чтобы кнопки команд обновились (если не пропускаем)
+      if (!skipRefresh) {
+        displayMatches();
 
-      // Восстанавливаем состояние всех тоглов (displayMatches их сбрасывает)
-      initToggleStates();
+        // Восстанавливаем состояние всех тоглов (displayMatches их сбрасывает)
+        initToggleStates();
+      }
 
       // Блокируем параметр после успешного сохранения ставки
       lockFinalParameter(matchId, parameterType);

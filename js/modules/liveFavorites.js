@@ -177,9 +177,8 @@ function toggleFavoriteMatch(matchId, event) {
   saveFavoriteMatches(favorites);
   updateFavoriteStars();
 
-  if (index > -1) {
-    pollFavoriteMatches();
-  }
+  // Вызываем polling сразу при любом изменении (добавление или удаление)
+  pollFavoriteMatches();
 }
 
 function updateFavoriteStars() {
@@ -256,6 +255,8 @@ async function pollFavoriteMatches() {
     return;
   }
 
+  console.log('⭐ pollFavoriteMatches вызвана, вкладка:', document.querySelector('.tab-btn.active')?.textContent?.trim() || 'неизвестно');
+
   const favorites = getFavoriteMatches();
 
   let needsSave = false;
@@ -286,6 +287,7 @@ async function pollFavoriteMatches() {
 
     if (response.ok) {
       const apiMatches = await response.json();
+      console.log(`⭐ API /live-matches-by-ids вернул ${apiMatches.length} матчей:`, apiMatches.map(m => `${m.team1} ${m.score} ${m.team2}`));
 
       apiMatches.forEach(match => {
         let betTeam = null;
@@ -313,6 +315,7 @@ async function pollFavoriteMatches() {
       }
     }
   } catch (error) {
+    console.error('⭐❌ Ошибка fetch в pollFavoriteMatches:', error);
   }
 
   const matches = [];

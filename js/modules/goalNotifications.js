@@ -165,6 +165,7 @@ export function playGoalSound() {
 }
 
 export function processMatches(matches, favorites, isDesktop) {
+  console.log(`⭐ processMatches: ${matches.length} матчей, isDesktop=${isDesktop}, вкладка: ${document.querySelector('.tab-btn.active')?.textContent?.trim() || 'неизвестно'}`);
   const foundMatchIds = matches.map(m => m.id);
 
   if (isDesktop) {
