@@ -830,34 +830,7 @@ export function displayTournamentParticipantBets(bets) {
     console.log("Загружено ставок:", bets.length);
   }
 
-  // Объединяем финальные ставки одного матча в одну карточку
-  const mergedBets = [];
-  const finalBetsByMatch = {};
-
-  bets.forEach(bet => {
-    if (bet.is_final_bet) {
-      const key = bet.match_id;
-      if (!finalBetsByMatch[key]) finalBetsByMatch[key] = [];
-      finalBetsByMatch[key].push(bet);
-    } else {
-      mergedBets.push(bet);
-    }
-  });
-
-  // Прикрепляем финальные параметры к основной ставке
-  Object.entries(finalBetsByMatch).forEach(([matchId, finalBets]) => {
-    const mainBetIndex = mergedBets.findIndex(b => b.match_id === parseInt(matchId) && !b.is_final_bet);
-    if (mainBetIndex !== -1) {
-      mergedBets[mainBetIndex]._finalParams = finalBets;
-    } else {
-      // Нет основной ставки — создаём виртуальную из первого параметра
-      const first = { ...finalBets[0] };
-      first._finalParams = finalBets;
-      mergedBets.push(first);
-    }
-  });
-
-  betsList.innerHTML = mergedBets
+  betsList.innerHTML = bets
     .map(
       (bet) => {
         // Переводим названия команд на русский
@@ -1003,18 +976,6 @@ export function displayTournamentParticipantBets(bets) {
           ? `<div style="color: #666; font-size: 0.85em; ${isCancelled ? 'text-decoration: line-through; filter: grayscale(100%); opacity: 0.7;' : ''}">${bet.round}</div>`
           : ""
       }
-      ${bet._finalParams && bet._finalParams.length > 0 ? `
-        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
-          ${bet._finalParams.map(fp => {
-            const paramNames = { exact_score: "Точный счёт", yellow_cards: "Жёлтые", red_cards: "Красные", corners: "Угловые", penalties_in_game: "Пенальти в игре", extra_time: "Доп. время", penalties_at_end: "Пенальти в конце" };
-            const paramName = paramNames[fp.parameter_type] || fp.parameter_type;
-            const resultIcon = fp.result === 'won' ? '<span style="color:#4caf50;">✓</span>' : fp.result === 'lost' ? '<span style="color:#f44336;">✗</span>' : '';
-            return `<div style="color: #999; font-size: 0.85em; margin-bottom: 3px;">
-              ${paramName}: <strong>${fp.prediction_display || fp.prediction}</strong> ${resultIcon}
-            </div>`;
-          }).join('')}
-        </div>
-      ` : ''}
     </div>
   `;
       }
