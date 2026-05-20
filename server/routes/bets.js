@@ -163,6 +163,20 @@ router.post("/api/bets", async (req, res) => {
       } else if (prediction === "team2" || prediction === match.team2_name) {
         predictionText = match.team2_name;
       }
+
+      // Для финальных параметров добавляем тип
+      if (is_final_bet && parameter_type) {
+        const paramNames = {
+          exact_score: "Точный счёт",
+          yellow_cards: "Жёлтые карточки",
+          red_cards: "Красные карточки",
+          corners: "Угловые",
+          penalties_in_game: "Пенальти в игре",
+          extra_time: "Доп. время",
+          penalties_at_end: "Пенальти в конце",
+        };
+        predictionText = `${paramNames[parameter_type] || parameter_type}: ${prediction}`;
+      }
       
       await notifyNewBet(
         user?.username || "неизвестный",
@@ -198,6 +212,20 @@ router.post("/api/bets", async (req, res) => {
             prediction === match.team2_name
           ) {
             predictionText = match.team2_name;
+          }
+
+          // Для финальных параметров добавляем тип
+          if (is_final_bet && parameter_type) {
+            const paramNames = {
+              exact_score: "Точный счёт",
+              yellow_cards: "Жёлтые карточки",
+              red_cards: "Красные карточки",
+              corners: "Угловые",
+              penalties_in_game: "Пенальти в игре",
+              extra_time: "Доп. время",
+              penalties_at_end: "Пенальти в конце",
+            };
+            predictionText = `${paramNames[parameter_type] || parameter_type}: ${prediction}`;
           }
 
           const betMessage =
