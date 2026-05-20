@@ -56,6 +56,15 @@ export async function loadAndDisplayBetStats(matchId, forceAnimate = false) {
       return;
     }
 
+    // Показываем проценты только после начала матча
+    const matchDateAttr = matchRow.dataset.matchDate;
+    if (matchDateAttr) {
+      const matchDate = new Date(matchDateAttr);
+      if (matchDate > new Date()) {
+        return; // Матч ещё не начался
+      }
+    }
+
     // Проверяем, были ли уже показаны проценты для этого матча
     const wasDisplayed = displayedBetStats.has(matchId);
 

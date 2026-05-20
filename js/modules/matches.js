@@ -815,7 +815,7 @@ export async function displayMatches() {
       const isCancelled = ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(effectiveStatus);
 
       const matchHtml = `
-        <div class="match-row ${betClass} ${isCancelled ? 'match-cancelled' : ''}" data-match-id="${match.id}" style="position: relative;">
+        <div class="match-row ${betClass} ${isCancelled ? 'match-cancelled' : ''}" data-match-id="${match.id}" data-match-date="${match.match_date || ''}" style="position: relative;">
             ${
               canManageMatches()
                 ? `
