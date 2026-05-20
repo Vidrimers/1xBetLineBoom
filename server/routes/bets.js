@@ -559,6 +559,20 @@ router.delete("/api/bets/:betId", async (req, res) => {
       } else if (bet.prediction === "team2" || bet.prediction === match?.team2_name) {
         predictionText = match?.team2_name || "?";
       }
+
+      // Для финальных параметров — админу показываем только тип (без значения)
+      if (bet.is_final_bet && bet.parameter_type) {
+        const paramNames = {
+          exact_score: "Точный счёт",
+          yellow_cards: "Жёлтые карточки",
+          red_cards: "Красные карточки",
+          corners: "Угловые",
+          penalties_in_game: "Пенальти в игре",
+          extra_time: "Доп. время",
+          penalties_at_end: "Пенальти в конце",
+        };
+        predictionText = paramNames[bet.parameter_type] || bet.parameter_type;
+      }
       
       await notifyBetDeleted(
         betUser?.username || "неизвестный",
@@ -601,6 +615,20 @@ router.delete("/api/bets/:betId", async (req, res) => {
             bet.prediction === match?.team2_name
           ) {
             predictionText = match?.team2_name || "?";
+          }
+
+          // Для финальных параметров — пользователю показываем тип + значение
+          if (bet.is_final_bet && bet.parameter_type) {
+            const paramNames = {
+              exact_score: "Точный счёт",
+              yellow_cards: "Жёлтые карточки",
+              red_cards: "Красные карточки",
+              corners: "Угловые",
+              penalties_in_game: "Пенальти в игре",
+              extra_time: "Доп. время",
+              penalties_at_end: "Пенальти в конце",
+            };
+            predictionText = `${paramNames[bet.parameter_type] || bet.parameter_type}: ${bet.prediction}`;
           }
 
           const deleteMessage =
