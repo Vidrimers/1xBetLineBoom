@@ -779,11 +779,14 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
           console.error('❌ Ошибка запуска проверки инактивности:', inactivityError);
         }
 
-        // Проверяем завершение турнира (если это финальный матч)
-        try {
-          checkAndCreateTournamentCompletionNews(parseInt(matchId));
-        } catch (completionError) {
-          console.error('❌ Ошибка проверки завершения турнира:', completionError);
+        // Проверяем завершение турнира (только для НЕ финальных матчей — для финальных проверка в POST /api/admin/final-parameters-results)
+        const matchForCheck = db.prepare('SELECT is_final FROM matches WHERE id = ?').get(matchId);
+        if (!matchForCheck || !matchForCheck.is_final) {
+          try {
+            checkAndCreateTournamentCompletionNews(parseInt(matchId));
+          } catch (completionError) {
+            console.error('❌ Ошибка проверки завершения турнира:', completionError);
+          }
         }
       }
 

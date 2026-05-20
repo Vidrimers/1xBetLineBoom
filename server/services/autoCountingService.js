@@ -106,6 +106,7 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
       WHERE event_id = ?
         AND round = ?
         AND DATE(match_date) = ?
+        AND is_final = 0
     `).all(event_id, round, date);
 
     if (allDbMatches.length === 0) {

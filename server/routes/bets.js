@@ -1024,7 +1024,7 @@ router.get("/api/match-bet-stats/:matchId", (req, res) => {
 });
 
 // POST /api/admin/final-parameters-results - Установить результаты финальных параметров
-router.post("/api/admin/final-parameters-results", (req, res) => {
+router.post("/api/admin/final-parameters-results", async (req, res) => {
   const {
     matchId,
     exact_score,
@@ -1240,6 +1240,17 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
       }
     } catch (error) {
       console.error("❌ Ошибка проверки везунчика и рекорда очков:", error);
+    }
+
+    // Проверяем завершение турнира (для финальных матчей)
+    try {
+      const matchForCompletion = db.prepare('SELECT is_final FROM matches WHERE id = ?').get(matchId);
+      if (matchForCompletion && matchForCompletion.is_final) {
+        const { checkAndCreateTournamentCompletionNews } = await import('../services/tournamentCompletionService.js');
+        checkAndCreateTournamentCompletionNews(parseInt(matchId));
+      }
+    } catch (completionError) {
+      console.error('❌ Ошибка проверки завершения турнира:', completionError);
     }
 
     res.json({
