@@ -512,6 +512,82 @@ export function lockFinalParameter(matchId, parameterType) {
   }
 }
 
+export async function placeAllFinalBets(matchId) {
+  if (!state.currentUser) {
+    await showCustomAlert("Сначала введите ваше имя", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
+    return;
+  }
+
+  const match = state.matches.find(m => m.id === matchId);
+  if (!match) return;
+
+  let placed = 0;
+  let errors = 0;
+
+  // Точный счёт
+  if (match.show_exact_score) {
+    const s1 = document.getElementById(`exactScore1_${matchId}`);
+    const s2 = document.getElementById(`exactScore2_${matchId}`);
+    if (s1 && s2 && (s1.value !== '' || s2.value !== '')) {
+      try { await placeFinalBet(matchId, 'exact_score'); placed++; } catch(e) { errors++; }
+    }
+  }
+
+  // Жёлтые
+  if (match.show_yellow_cards) {
+    const input = document.getElementById(`yellowCards_${matchId}`);
+    if (input && input.value !== '') {
+      try { await placeFinalBet(matchId, 'yellow_cards'); placed++; } catch(e) { errors++; }
+    }
+  }
+
+  // Красные
+  if (match.show_red_cards) {
+    const input = document.getElementById(`redCards_${matchId}`);
+    if (input && input.value !== '') {
+      try { await placeFinalBet(matchId, 'red_cards'); placed++; } catch(e) { errors++; }
+    }
+  }
+
+  // Угловые
+  if (match.show_corners) {
+    const input = document.getElementById(`corners_${matchId}`);
+    if (input && input.value !== '') {
+      try { await placeFinalBet(matchId, 'corners'); placed++; } catch(e) { errors++; }
+    }
+  }
+
+  // Пенальти в игре
+  if (match.show_penalties_in_game) {
+    const checkbox = document.getElementById(`penaltiesInGame_${matchId}`);
+    if (checkbox && checkbox.getAttribute('data-toggle-state') !== 'neutral') {
+      try { await placeFinalBet(matchId, 'penalties_in_game'); placed++; } catch(e) { errors++; }
+    }
+  }
+
+  // Доп. время
+  if (match.show_extra_time) {
+    const checkbox = document.getElementById(`extraTime_${matchId}`);
+    if (checkbox && checkbox.getAttribute('data-toggle-state') !== 'neutral') {
+      try { await placeFinalBet(matchId, 'extra_time'); placed++; } catch(e) { errors++; }
+    }
+  }
+
+  // Пенальти в конце
+  if (match.show_penalties_at_end) {
+    const checkbox = document.getElementById(`penaltiesAtEnd_${matchId}`);
+    if (checkbox && checkbox.getAttribute('data-toggle-state') !== 'neutral') {
+      try { await placeFinalBet(matchId, 'penalties_at_end'); placed++; } catch(e) { errors++; }
+    }
+  }
+
+  if (placed > 0 && errors === 0) {
+    await showCustomAlert(`Все параметры сохранены (${placed})`, "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
+  } else if (placed === 0) {
+    await showCustomAlert("Заполните хотя бы один параметр", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
+  }
+}
+
 export async function placeFinalBet(matchId, parameterType) {
   if (!state.currentUser) {
     await showCustomAlert("Сначала введите ваше имя", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');

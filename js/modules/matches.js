@@ -1020,7 +1020,6 @@ export async function displayMatches() {
                       <input type="number" id="exactScore1_${match.id}" min="0" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
                       <span class="final-param-vs">vs</span>
                       <input type="number" id="exactScore2_${match.id}" min="0" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
-                      <button onclick="placeFinalBet(${match.id}, 'exact_score')" class="final-param-btn" ${effectiveStatus !== 'pending' ? 'disabled' : ''}><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1034,7 +1033,6 @@ export async function displayMatches() {
                     <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-yellow-card"></use></svg> Жёлтые</div>
                     <div class="final-param-controls">
                       <input type="number" id="yellowCards_${match.id}" min="0" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
-                      <button onclick="placeFinalBet(${match.id}, 'yellow_cards')" class="final-param-btn" ${effectiveStatus !== 'pending' ? 'disabled' : ''}><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1048,7 +1046,6 @@ export async function displayMatches() {
                     <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-red-card"></use></svg> Красные</div>
                     <div class="final-param-controls">
                       <input type="number" id="redCards_${match.id}" min="0" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
-                      <button onclick="placeFinalBet(${match.id}, 'red_cards')" class="final-param-btn" ${effectiveStatus !== 'pending' ? 'disabled' : ''}><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1062,7 +1059,6 @@ export async function displayMatches() {
                     <div class="final-param-label"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Угловые</div>
                     <div class="final-param-controls">
                       <input type="number" id="corners_${match.id}" min="0" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
-                      <button onclick="placeFinalBet(${match.id}, 'corners')" class="final-param-btn" ${effectiveStatus !== 'pending' ? 'disabled' : ''}><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1083,7 +1079,6 @@ export async function displayMatches() {
                         </span>
                       </label>
                       <span id="penaltiesInGame_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
-                      <button onclick="placeFinalBet(${match.id}, 'penalties_in_game')" class="final-param-btn" ${effectiveStatus !== 'pending' ? 'disabled' : ''}><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1104,7 +1099,6 @@ export async function displayMatches() {
                         </span>
                       </label>
                       <span id="extraTime_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
-                      <button onclick="placeFinalBet(${match.id}, 'extra_time')" class="final-param-btn" ${effectiveStatus !== 'pending' ? 'disabled' : ''}><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
@@ -1125,13 +1119,19 @@ export async function displayMatches() {
                         </span>
                       </label>
                       <span id="penaltiesAtEnd_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
-                      <button onclick="placeFinalBet(${match.id}, 'penalties_at_end')" class="final-param-btn" ${effectiveStatus !== 'pending' ? 'disabled' : ''}><svg class="icon" aria-label="Правильно"><use href="#icon-correct"></use></svg></button>
                     </div>
                   </div>
                   `
                       : ""
                   }
                   </div>
+                  ${userBetOnMatch?.prediction && effectiveStatus === 'pending' ? `
+                  <div style="margin-top: 10px; text-align: center;">
+                    <button class="final-param-btn" onclick="placeAllFinalBets(${match.id})" style="padding: 8px 24px; font-size: 0.9em;" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
+                      <svg class="icon" aria-label="Подтвердить"><use href="#icon-correct"></use></svg> Подтвердить параметры
+                    </button>
+                  </div>
+                  ` : ''}
                 </div>
                 `
                     : ""

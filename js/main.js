@@ -79,6 +79,7 @@ import {
   unlockFinalParameter,
   lockFinalParameter,
   placeFinalBet,
+  placeAllFinalBets,
   loadMyBets,
   displayMyBets,
   generateBetHTML,
@@ -551,7 +552,7 @@ Object.assign(window, {
   // bets
   placeBet, placeScorePrediction, cancelScorePrediction, syncScoreInputs,
   showScoreAlert, closeScoreAlert, unlockFinalParameter, lockFinalParameter,
-  placeFinalBet, loadMyBets, displayMyBets, generateBetHTML,
+  placeFinalBet, placeAllFinalBets, loadMyBets, displayMyBets, generateBetHTML,
   toggleTournamentBets, deleteBet,
   // participants
   loadParticipants, displayParticipants, loadTournamentsList, displayTournaments,
