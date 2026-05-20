@@ -438,7 +438,7 @@ export async function displayMatches() {
   }
   
   // Сохраняем все введённые значения из полей
-  document.querySelectorAll('input[id^="scoreTeam"], input[id^="yellowCards"], input[id^="redCards"]').forEach(input => {
+  document.querySelectorAll('input[id^="scoreTeam"], input[id^="yellowCards"], input[id^="redCards"], input[id^="exactScore1_"], input[id^="exactScore2_"], input[id^="corners_"]').forEach(input => {
     if (input.value && input.value.trim() !== '') {
       savedInputValues[input.id] = input.value;
     }
