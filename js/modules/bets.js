@@ -589,7 +589,44 @@ export async function placeAllFinalBets(matchId) {
   }
 
   if (placed > 0 && errors === 0) {
-    await showCustomAlert(`Все параметры сохранены (${placed})`, "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
+    // Собираем информацию о сохранённых параметрах
+    let summary = '';
+    if (match.show_exact_score) {
+      const s1 = document.getElementById(`exactScore1_${matchId}`);
+      const s2 = document.getElementById(`exactScore2_${matchId}`);
+      if (s1 && s2) summary += `📊 Точный счёт: ${s1.value || 0}:${s2.value || 0}\n`;
+    }
+    if (match.show_yellow_cards) {
+      const input = document.getElementById(`yellowCards_${matchId}`);
+      if (input) summary += `🟨 Жёлтые: ${input.value || 0}\n`;
+    }
+    if (match.show_red_cards) {
+      const input = document.getElementById(`redCards_${matchId}`);
+      if (input) summary += `🟥 Красные: ${input.value || 0}\n`;
+    }
+    if (match.show_corners) {
+      const input = document.getElementById(`corners_${matchId}`);
+      if (input) summary += `⚽ Угловые: ${input.value || 0}\n`;
+    }
+    if (match.show_penalties_in_game) {
+      const cb = document.getElementById(`penaltiesInGame_${matchId}`);
+      if (cb && cb.getAttribute('data-toggle-state') !== 'neutral') {
+        summary += `⚽ Пенальти в игре: ${cb.getAttribute('data-toggle-state') === 'true' ? 'ДА' : 'НЕТ'}\n`;
+      }
+    }
+    if (match.show_extra_time) {
+      const cb = document.getElementById(`extraTime_${matchId}`);
+      if (cb && cb.getAttribute('data-toggle-state') !== 'neutral') {
+        summary += `⏱ Доп. время: ${cb.getAttribute('data-toggle-state') === 'true' ? 'ДА' : 'НЕТ'}\n`;
+      }
+    }
+    if (match.show_penalties_at_end) {
+      const cb = document.getElementById(`penaltiesAtEnd_${matchId}`);
+      if (cb && cb.getAttribute('data-toggle-state') !== 'neutral') {
+        summary += `⚽ Пенальти в конце: ${cb.getAttribute('data-toggle-state') === 'true' ? 'ДА' : 'НЕТ'}\n`;
+      }
+    }
+    await showCustomAlert(`Параметры сохранены:\n\n${summary}`, "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
   } else if (placed === 0) {
     await showCustomAlert("Заполните хотя бы один параметр", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
   }
