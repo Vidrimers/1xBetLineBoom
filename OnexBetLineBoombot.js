@@ -686,10 +686,12 @@ export async function notifyNewBet(
 ) {
   // Определяем тип ставки для отображения
   let betTypeInfo = '';
+  let systemNote = '';
   if (prediction && prediction.includes(':') && (prediction.includes('Точный') || prediction.includes('Жёлтые') || prediction.includes('Красные') || prediction.includes('Угловые') || prediction.includes('Пенальти') || prediction.includes('Доп.'))) {
     // Финальный параметр — показываем только тип без значения
     const paramType = prediction.split(':')[0].trim();
     betTypeInfo = `\n🎯 Тип: <b>${paramType}</b>`;
+    systemNote = `\n\nСистема финальных прогнозов работает`;
   }
 
   const message =
@@ -697,7 +699,7 @@ export async function notifyNewBet(
     `👤 Пользователь: <b>${username}</b>\n` +
     `⚽ Матч: <b>${team1}</b> vs <b>${team2}</b>\n` +
     `🏆 Турнир: ${eventName || "Неизвестный"}${betTypeInfo}\n` +
-    `⏰ ${new Date().toLocaleString("ru-RU")}`;
+    `⏰ ${new Date().toLocaleString("ru-RU")}${systemNote}`;
 
   await sendAdminNotification(message);
 }
