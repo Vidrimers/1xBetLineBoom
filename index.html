@@ -605,20 +605,40 @@
             "
           >
             <h2 style="margin: 0"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Турниры</h2>
-            <button
-              id="countingBtn"
-              onclick="switchTab('counting')"
-              style="
-                display: none;
-                background: transparent;
-                border: 1px solid #3a7bd5;
-                color: #e0e6f0;
-                padding: 3px 7px;
-                font-size: 0.9em;
-              "
-            >
-              <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Подсчет
-            </button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button
+                id="countingBtn"
+                onclick="switchTab('counting')"
+                style="
+                  display: none;
+                  background: transparent;
+                  border: 1px solid #3a7bd5;
+                  color: #e0e6f0;
+                  padding: 3px 7px;
+                  font-size: 0.9em;
+                "
+              >
+                <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Подсчет
+              </button>
+              <button
+                onclick="openTournamentInfoModal()"
+                style="
+                  background: transparent;
+                  color: #ffe0b2;
+                  border: 1px solid #ff9800;
+                  padding: 3px 7px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 0.9em;
+                  transition: all 0.3s ease;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Правила турнира"
+              >
+                ❔
+              </button>
+            </div>
           </div>
           <div class="events-grid" id="eventsGrid">
             <div class="empty-message">Загружаем турниры...</div>
