@@ -715,6 +715,27 @@ export async function openTournamentInfoModal() {
     console.error('Ошибка отправки уведомления:', notifyError);
   }
 
+  // Загружаем категории весов для динамического отображения
+  let weightCategoriesHtml = '<div style="color: #b0b8c8; font-style: italic;">Не удалось загрузить категории</div>';
+  try {
+    const wcResponse = await fetch('/api/admin/weight-categories');
+    const wcData = await wcResponse.json();
+    if (wcData.categories && wcData.categories.length > 0) {
+      weightCategoriesHtml = wcData.categories
+        .sort((a, b) => b.weight - a.weight)
+        .map(cat => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid rgba(90, 159, 212, 0.15);">
+            <span>${cat.label}</span>
+            <span style="color: #ff9800; font-weight: bold; min-width: 40px; text-align: right;">×${cat.weight}</span>
+          </div>
+        `).join('');
+    } else {
+      weightCategoriesHtml = '<div style="color: #b0b8c8; font-style: italic; padding: 6px 10px;">Категории весов не настроены</div>';
+    }
+  } catch (e) {
+    console.error('Ошибка загрузки категорий весов:', e);
+  }
+
   // Блокируем body
   document.body.style.overflow = 'hidden';
 
@@ -776,37 +797,87 @@ export async function openTournamentInfoModal() {
       <div style="line-height: 1.6;">
         <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Система начисления очков</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <div style="margin-bottom: 10px;">
-            <strong style="color: #4caf50;">Обычные матчи:</strong>
+          <div style="margin-bottom: 12px;">
+            <strong style="color: #4caf50;">Обычные матчи (туры):</strong>
             <ul style="margin: 5px 0; padding-left: 20px;">
               <li><strong>1 очко</strong> — за угаданный результат (победа команды 1, победа команды 2 или ничья)</li>
-              <li><strong>+1 очко</strong> — дополнительно за точный счет (если угадан результат)</li>
+              <li><strong>+1 очко</strong> — за угаданный точный счёт (если угадан результат)</li>
+              <li><strong>+1 очко</strong> — за угаданные жёлтые карточки (если включено в матче)</li>
+              <li><strong>+1 очко</strong> — за угаданные красные карточки (если включено в матче)</li>
             </ul>
+            <div style="background: #1a2530; border-left: 3px solid #f44336; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+              <strong>⚠️ Важно:</strong> Если результат матча не угадан — бонусы за счёт, жёлтые и красные карточки <strong>не засчитываются</strong>, даже если они угаданы верно.
+            </div>
+            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+              <strong>Пример:</strong> Угадал результат + точный счёт + жёлтые = 1 + 1 + 1 = <strong>3 очка</strong>
+            </div>
           </div>
-          <div style="margin-bottom: 10px;">
+          
+          <div style="margin-bottom: 12px;">
             <strong style="color: #4caf50;">Финальные матчи:</strong>
             <ul style="margin: 5px 0; padding-left: 20px;">
-              <li><strong>3 очка</strong> — за угаданный результат</li>
-              <li><strong>+1 очко</strong> — дополнительно за точный счет</li>
+              <li><strong>3 очка</strong> — за угаданный результат (только победа команды 1 или команды 2, ничьей нет)</li>
             </ul>
           </div>
-          <div>
+          
+          <div style="margin-bottom: 12px;">
             <strong style="color: #4caf50;">Финальные параметры:</strong>
             <ul style="margin: 5px 0; padding-left: 20px;">
-              <li><strong>1 очко</strong> — за каждый угаданный параметр (желтые карточки, красные карточки, угловые, точный счет, пенальти в игре, дополнительное время, серия пенальти)</li>
+              <li><strong>2 очка</strong> — за каждый угаданный параметр:</li>
+              <ul style="list-style: disc; margin-top: 3px;">
+                <li>Жёлтые карточки</li>
+                <li>Красные карточки</li>
+                <li>Угловые</li>
+                <li>Точный счёт</li>
+                <li>Пенальти в игре</li>
+                <li>Дополнительное время</li>
+                <li>Серия пенальти</li>
+              </ul>
             </ul>
+            <div style="background: #1a2530; border-left: 3px solid #4caf50; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+              <strong>✅ Важно:</strong> Финальные параметры оцениваются <strong>независимо от результата матча</strong>. Даже если результат не угадан, очки за параметры всё равно начисляются.
+            </div>
+            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+              <strong>Пример:</strong> Угадал угловые + пенальти в игре = 2 + 2 = <strong>4 очка</strong>
+            </div>
+          </div>
+          
+          <div>
+            <strong style="color: #4caf50;">Сетка турнира (если есть):</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+              <li><strong>1 очко</strong> — за угаданного победителя в обычной стадии</li>
+              <li><strong>3 очка</strong> — за угаданного победителя в финале сетки</li>
+            </ul>
+            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+              <strong>Пример:</strong> Угадал 3 матча обычных стадий + финал сетки = 3 + 3 = <strong>6 очков</strong>
+            </div>
           </div>
         </div>
 
-        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Сортировка участников</h4>
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Сортировка участников в турнире</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <p style="margin: 0 0 10px 0;">Участники сортируются по следующим критериям (в порядке приоритета):</p>
+          <p style="margin: 0 0 10px 0;">Участники внутри турнира сортируются по следующим критериям (в порядке приоритета):</p>
           <ol style="margin: 5px 0; padding-left: 20px;">
-            <li><strong>Больше очков</strong> — чем больше очков набрано, тем выше место</li>
-            <li><strong>Больше выигранных ставок</strong> — при равных очках учитывается количество угаданных результатов</li>
-            <li><strong>Меньше проигранных ставок</strong> — при равных очках и выигрышах учитывается количество проигранных ставок</li>
-            <li><strong>Больше всего ставок</strong> — при полностью одинаковых показателях учитывается общее количество сделанных ставок</li>
+            <li><strong>Больше очков</strong> — основной критерий</li>
+            <li><strong>Длиннее серия побед подряд</strong> — при равных очках учитывается максимальная серия угаданных ставок подряд</li>
+            <li><strong>Меньше проигрышей</strong> — при равных очках и серии учитывается количество неугаданных ставок</li>
           </ol>
+        </div>
+
+        <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Сортировка в общем списке участников</h4>
+        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0;">В общем списке всех участников сортировка идёт по:</p>
+          <ol style="margin: 5px 0; padding-left: 20px;">
+            <li><strong>Суммарный вес выигранных турниров</strong> — каждый турнир имеет свой вес, победы в более значимых турнирах ценятся выше</li>
+            <li><strong>Количество побед в турнирах</strong> — при равном весе учитывается число выигранных турниров</li>
+            <li><strong>Алфавитный порядок</strong> — при полном равенстве — по имени</li>
+          </ol>
+          <div style="margin-top: 12px;">
+            <strong style="color: #5a9fd4; font-size: 0.9em;">⚖️ Текущие категории весов:</strong>
+            <div style="background: #1a2530; border-radius: 6px; margin-top: 6px; overflow: hidden;">
+              ${weightCategoriesHtml}
+            </div>
+          </div>
         </div>
 
         <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Одинаковые показатели</h4>
@@ -814,21 +885,24 @@ export async function openTournamentInfoModal() {
           <p style="margin: 0 0 10px 0;">Если у нескольких участников <strong>полностью одинаковые</strong> показатели по всем критериям:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
             <li>Все участники получают <strong>одинаковое место</strong></li>
-            <li>Следующее место рассчитывается с учетом количества участников на предыдущем месте</li>
-            <li><strong>Пример:</strong> если два участника на 1-м месте, следующий будет на 2-м месте (не на 3-м)</li>
+            <li>Следующее место пропускается с учётом количества участников на предыдущем</li>
           </ul>
+          <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <strong>Пример:</strong> Два участника на 1-м месте → следующий будет на <strong>3-м</strong> месте (не на 2-м)
+          </div>
         </div>
 
         <h4 style="color: #ff9800; margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Отображение статистики</h4>
         <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
-          <p style="margin: 0;">В карточке каждого участника отображается:</p>
+          <p style="margin: 0;">В карточке каждого участника турнира отображается:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
             <li><strong>Место</strong> — позиция в рейтинге турнира</li>
             <li><strong>Очки</strong> — общее количество набранных очков</li>
             <li><strong>Всего ставок</strong> — количество сделанных ставок</li>
             <li><strong>Выиграно</strong> — количество угаданных результатов</li>
             <li><strong>Проиграно</strong> — количество неугаданных результатов</li>
-            <li><strong>Ожидание</strong> — количество ставок, результаты которых еще не известны</li>
+            <li><strong>Ожидание</strong> — ставки, результаты которых ещё не известны</li>
+            <li><strong>Серия побед</strong> — максимальная серия угаданных ставок подряд</li>
           </ul>
         </div>
       </div>
