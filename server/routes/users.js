@@ -466,13 +466,14 @@ router.get("/api/participants", (req, res) => {
 
     // Для каждого участника подсчитываем победы в турнирах (заблокированных событиях)
     const result = participants.map((participant) => {
-      // Получаем победы из tournament_awards
+      // Получаем победы из tournament_awards с весом категории
       const awards = db
         .prepare(
           `
-        SELECT ta.event_id, e.icon
+        SELECT ta.event_id, e.icon, COALESCE(wc.weight, 1) as weight
         FROM tournament_awards ta
         JOIN events e ON e.id = ta.event_id
+        LEFT JOIN weight_categories wc ON e.weight_category_id = wc.id
         WHERE ta.user_id = ?
       `
         )
@@ -480,11 +481,13 @@ router.get("/api/participants", (req, res) => {
 
       const tournament_wins = awards.length;
       const won_icons = awards.map(a => a.icon);
+      const total_weight = awards.reduce((sum, a) => sum + a.weight, 0);
 
       return {
         ...participant,
         tournament_wins,
         won_icons,
+        total_weight,
       };
     });
 

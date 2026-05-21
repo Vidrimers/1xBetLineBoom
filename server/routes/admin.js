@@ -5084,6 +5084,12 @@ router.get("/api/admin/panel-config", (req, res) => {
           // Сохраняем обновлённую конфигурацию
           db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
         }
+
+        const hasWeightCategories = utilitiesCategory.buttons.some(b => b.id === 'weight-categories');
+        if (!hasWeightCategories) {
+          utilitiesCategory.buttons.push({ id: 'weight-categories', text: '⚖️ Веса турниров', action: 'openWeightCategoriesModal()', type: 'modal' });
+          db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
+        }
       }
     }
     
@@ -5225,7 +5231,8 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
             { id: 'db-structure', text: '🗄️ Структура БД', action: 'runUtilityScript("check-tables")', type: 'modal' },
             { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()', type: 'modal' },
             { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()', type: 'modal' },
-            { id: 'banned-names', text: '🚫 Запретные имена', action: 'openBannedNamesModal()', type: 'modal' }
+            { id: 'banned-names', text: '🚫 Запретные имена', action: 'openBannedNamesModal()', type: 'modal' },
+            { id: 'weight-categories', text: '⚖️ Веса турниров', action: 'openWeightCategoriesModal()', type: 'modal' }
           ]
         }
       ]
@@ -5384,6 +5391,112 @@ router.get("/api/check-banned-name", (req, res) => {
   } catch (error) {
     console.error("❌ Ошибка проверки запретного имени:", error.message);
     res.json({ banned: false });
+  }
+});
+
+
+// ===== ВЕСА ТУРНИРОВ =====
+
+// GET /api/admin/weight-categories - Получить все категории весов
+router.get("/api/admin/weight-categories", (req, res) => {
+  try {
+    const categories = db.prepare("SELECT * FROM weight_categories ORDER BY weight DESC").all();
+    res.json({ categories });
+  } catch (error) {
+    console.error("❌ Ошибка получения категорий весов:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/weight-categories - Добавить категорию веса
+router.post("/api/admin/weight-categories", (req, res) => {
+  try {
+    const { username, weight, label } = req.body;
+
+    if (username !== process.env.ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+
+    if (!label || label.trim() === "") {
+      return res.status(400).json({ error: "Описание не может быть пустым" });
+    }
+
+    if (weight === undefined || weight === null || isNaN(weight) || weight < 0) {
+      return res.status(400).json({ error: "Вес должен быть положительным числом" });
+    }
+
+    const result = db.prepare("INSERT INTO weight_categories (weight, label) VALUES (?, ?)").run(weight, label.trim());
+
+    console.log(`⚖️ Добавлена категория веса: "${label.trim()}" (вес: ${weight})`);
+
+    res.json({ success: true, id: result.lastInsertRowid, weight, label: label.trim() });
+  } catch (error) {
+    console.error("❌ Ошибка добавления категории веса:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/weight-categories/:id - Обновить категорию веса
+router.put("/api/admin/weight-categories/:id", (req, res) => {
+  try {
+    const { username, weight, label } = req.body;
+    const { id } = req.params;
+
+    if (username !== process.env.ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+
+    if (!label || label.trim() === "") {
+      return res.status(400).json({ error: "Описание не может быть пустым" });
+    }
+
+    if (weight === undefined || weight === null || isNaN(weight) || weight < 0) {
+      return res.status(400).json({ error: "Вес должен быть положительным числом" });
+    }
+
+    const result = db.prepare("UPDATE weight_categories SET weight = ?, label = ? WHERE id = ?").run(weight, label.trim(), id);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Категория не найдена" });
+    }
+
+    console.log(`⚖️ Обновлена категория веса #${id}: "${label.trim()}" (вес: ${weight})`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка обновления категории веса:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/weight-categories/:id - Удалить категорию веса
+router.delete("/api/admin/weight-categories/:id", (req, res) => {
+  try {
+    const { username } = req.body;
+    const { id } = req.params;
+
+    if (username !== process.env.ADMIN_DB_NAME) {
+      return res.status(403).json({ error: "Недостаточно прав" });
+    }
+
+    // Проверяем, не используется ли категория в турнирах
+    const usedCount = db.prepare("SELECT COUNT(*) as count FROM events WHERE weight_category_id = ?").get(id);
+    if (usedCount.count > 0) {
+      return res.status(400).json({ error: `Нельзя удалить: категория используется в ${usedCount.count} турнире(ах)` });
+    }
+
+    const result = db.prepare("DELETE FROM weight_categories WHERE id = ?").run(id);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Категория не найдена" });
+    }
+
+    console.log(`⚖️ Удалена категория веса #${id}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка удаления категории веса:", error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 

@@ -451,6 +451,14 @@ import {
   showBannedNameAlert,
 } from './modules/bannedNames.js';
 import {
+  openWeightCategoriesModal,
+  closeWeightCategoriesModal,
+  loadWeightCategories,
+  addWeightCategory,
+  updateWeightCategory,
+  deleteWeightCategory,
+} from './modules/weightCategories.js';
+import {
   openTerminalModal,
   closeTerminalModal,
   refreshTerminalLogs,
@@ -687,6 +695,9 @@ Object.assign(window, {
   // bannedNames
   openBannedNamesModal, closeBannedNamesModal, loadBannedNames, addBannedName,
   toggleBannedNamePartial, deleteBannedName, checkAndHandleBannedName, showBannedNameAlert,
+  // weightCategories
+  openWeightCategoriesModal, closeWeightCategoriesModal, loadWeightCategories,
+  addWeightCategory, updateWeightCategory, deleteWeightCategory,
   // terminal
   openTerminalModal, closeTerminalModal, refreshTerminalLogs, escapeHtml,
   clearTerminalLogs, saveTerminalLogs, toggleTerminalAutoScroll,

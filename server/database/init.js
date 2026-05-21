@@ -452,4 +452,33 @@ export function initDatabase() {
       processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Таблица категорий весов турниров
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS weight_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      weight INTEGER NOT NULL DEFAULT 1,
+      label TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Заполняем дефолтные категории весов если таблица пуста
+  const weightCount = db.prepare("SELECT COUNT(*) as count FROM weight_categories").get();
+  if (weightCount.count === 0) {
+    const insertWeight = db.prepare("INSERT INTO weight_categories (weight, label) VALUES (?, ?)");
+    insertWeight.run(10, "ЧМ и ЧЕ");
+    insertWeight.run(6, "Лига Чемпионов");
+    insertWeight.run(4, "ЛЕ и ЛК");
+    insertWeight.run(1, "Нац.лиги, нац.кубки");
+    console.log("✅ Дефолтные категории весов турниров добавлены");
+  }
+
+  // Миграция: добавляем weight_category_id в events если его нет
+  try {
+    db.exec(`ALTER TABLE events ADD COLUMN weight_category_id INTEGER REFERENCES weight_categories(id)`);
+    console.log("✅ Колонка weight_category_id добавлена в таблицу events");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
 }

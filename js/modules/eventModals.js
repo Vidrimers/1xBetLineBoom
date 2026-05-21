@@ -17,6 +17,7 @@ export function openCreateEventModal() {
       .getElementById("customIconCheckbox")
       .addEventListener("change", handleCreateEventIconChange);
     initCustomSelect("eventIconSelect");
+    loadWeightCategoriesSelect("eventWeightCategory");
     console.log("🔧 modal opened successfully");
   } else {
     console.error("🔧 createEventModal not found!");
@@ -92,6 +93,9 @@ export function openEditEventModal(eventId) {
       // Устанавливаем team_file
       document.getElementById("editEventTeamFile").value = event.team_file || "";
 
+      // Загружаем категории весов и устанавливаем текущую
+      loadWeightCategoriesSelect("editEventWeightCategory", event.weight_category_id);
+
       // Показываем модальное окно
       const modal = document.getElementById("editEventModal");
       console.log("🔧 editEventModal element:", modal);
@@ -166,6 +170,7 @@ export async function submitCreateEvent(event) {
     team_file: document.getElementById("eventTeamFile").value || null,
     sendToUsers: document.getElementById("sendToUsersCheckbox").checked,
     sendToGroup: document.getElementById("sendToGroupCheckbox").checked,
+    weight_category_id: document.getElementById("eventWeightCategory").value || null,
   };
 
   // Определяем иконку
@@ -214,6 +219,7 @@ export async function submitEditEvent(event) {
     start_date: document.getElementById("editEventDate").value || null,
     end_date: document.getElementById("editEventEndDate").value || null,
     team_file: document.getElementById("editEventTeamFile").value || null,
+    weight_category_id: document.getElementById("editEventWeightCategory").value || null,
   };
 
   // Проверяем обязательные поля
@@ -1040,5 +1046,33 @@ export async function deleteEvent(eventId) {
   } catch (e) {
     console.error('Ошибка при удалении турнира:', e);
     await showCustomAlert('Ошибка при удалении турнира', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
+}
+
+// Загрузить категории весов в select
+async function loadWeightCategoriesSelect(selectId, selectedValue = null) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  try {
+    const response = await fetch('/api/admin/weight-categories');
+    const data = await response.json();
+
+    // Сохраняем первую опцию "Не выбрано"
+    select.innerHTML = '<option value="">— Не выбрано —</option>';
+
+    if (data.categories && data.categories.length > 0) {
+      data.categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = `${cat.weight} (${cat.label})`;
+        if (selectedValue && String(cat.id) === String(selectedValue)) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('❌ Ошибка загрузки категорий весов:', error);
   }
 }

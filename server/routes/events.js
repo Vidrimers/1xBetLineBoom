@@ -1344,6 +1344,7 @@ router.post("/api/admin/events", async (req, res) => {
     team_file,
     sendToUsers,
     sendToGroup,
+    weight_category_id,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -1374,8 +1375,8 @@ router.post("/api/admin/events", async (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO events (name, description, start_date, end_date, icon, background_color, team_file)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO events (name, description, start_date, end_date, icon, background_color, team_file, weight_category_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
       )
       .run(
@@ -1385,7 +1386,8 @@ router.post("/api/admin/events", async (req, res) => {
         end_date || null,
         icon || null,
         background_color || null,
-        team_file || null
+        team_file || null,
+        weight_category_id || null
       );
 
     if (isModerator && username) {
@@ -1744,6 +1746,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
     icon,
     background_color,
     team_file,
+    weight_category_id,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -1760,7 +1763,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
       .prepare(
         `
       UPDATE events
-      SET name = ?, description = ?, start_date = ?, end_date = ?, icon = ?, background_color = ?, team_file = ?
+      SET name = ?, description = ?, start_date = ?, end_date = ?, icon = ?, background_color = ?, team_file = ?, weight_category_id = ?
       WHERE id = ?
     `
       )
@@ -1772,6 +1775,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
         icon || null,
         background_color || null,
         team_file || null,
+        weight_category_id || null,
         eventId
       );
 
@@ -1788,6 +1792,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
       icon,
       background_color,
       team_file,
+      weight_category_id,
       message: "Событие успешно обновлено",
     });
   } catch (error) {
