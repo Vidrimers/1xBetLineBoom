@@ -176,7 +176,7 @@ router.get("/api/events/:eventId", (req, res) => {
   try {
     const { eventId } = req.params;
     const event = db
-      .prepare("SELECT * FROM events WHERE id = ? AND status = 'active'")
+      .prepare("SELECT * FROM events WHERE id = ?")
       .get(eventId);
 
     if (!event) {
