@@ -873,9 +873,13 @@ export async function openTournamentInfoModal() {
             <li><strong>Алфавитный порядок</strong> — при полном равенстве — по имени</li>
           </ol>
           <div style="margin-top: 12px;">
-            <strong style="color: #5a9fd4; font-size: 0.9em;">⚖️ Текущие категории весов:</strong>
+            <strong style="color: #5a9fd4; font-size: 0.9em;">⚖️ Категории весов:</strong>
             <div style="background: #1a2530; border-radius: 6px; margin-top: 6px; overflow: hidden;">
               ${weightCategoriesHtml}
+            </div>
+            <div style="margin-top: 8px; font-size: 0.85em; color: #b0b8c8; line-height: 1.4;">
+              Вес определяет значимость турнира при сортировке участников.<br>
+              Чем больше вес — тем выше ценится победа в турнире этой категории.
             </div>
           </div>
         </div>
