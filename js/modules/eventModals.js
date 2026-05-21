@@ -763,15 +763,15 @@ export async function openTournamentInfoModal() {
   
   modal.innerHTML = `
     <style>
-      .tournament-info-modal { color: #e0e6f0 !important; background: #1e2a3a !important; }
-      .tournament-info-modal h3 { color: #5a9fd4 !important; }
+      .tournament-info-modal { color: var(--text-primary, #e0e6f0) !important; background: var(--card-bg, #1e2a3a) !important; }
+      .tournament-info-modal h3 { color: var(--accent, #5a9fd4) !important; }
       .tournament-info-modal h4 { color: #ff9800 !important; }
       .tournament-info-modal .info-label { color: #4caf50 !important; }
-      .tournament-info-modal .info-accent { color: #5a9fd4 !important; }
-      .tournament-info-modal .info-muted { color: #b0b8c8 !important; }
+      .tournament-info-modal .info-accent { color: var(--accent, #5a9fd4) !important; }
+      .tournament-info-modal .info-muted { color: var(--text-muted, #b0b8c8) !important; }
       .tournament-info-modal .info-weight { color: #ff9800 !important; }
-      .tournament-info-modal .info-block { background: #2a3a4a !important; }
-      .tournament-info-modal .info-note { background: #1a2530 !important; }
+      .tournament-info-modal .info-block { background: var(--section-bg, #2a3a4a) !important; }
+      .tournament-info-modal .info-note { background: var(--input-bg, #1a2530) !important; color: var(--text-primary, #e0e6f0) !important; }
       .tournament-info-modal p,
       .tournament-info-modal li,
       .tournament-info-modal span,
@@ -781,7 +781,6 @@ export async function openTournamentInfoModal() {
       .tournament-info-modal ul { color: inherit !important; }
     </style>
     <div class="tournament-info-modal" style="
-      background: #1e2a3a;
       padding: 30px;
       border-radius: 12px;
       max-width: 700px;
