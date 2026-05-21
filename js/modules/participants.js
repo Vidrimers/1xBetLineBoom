@@ -33,7 +33,7 @@ export function displayParticipants(participants) {
     return;
   }
 
-  // Сортируем по сумме весов выигранных турниров, затем по имени
+  // Сортируем по сумме весов выигранных турниров, затем по количеству побед, затем по имени
   const sortedParticipants = [...participants].sort((a, b) => {
     const aWeight = a.total_weight || 0;
     const bWeight = b.total_weight || 0;
@@ -41,8 +41,15 @@ export function displayParticipants(participants) {
     if (bWeight !== aWeight) {
       return bWeight - aWeight; // Больше суммарный вес → выше
     }
+
+    // При равном весе — больше побед в турнирах → выше
+    const aWins = (a.won_icons || []).length;
+    const bWins = (b.won_icons || []).length;
+    if (bWins !== aWins) {
+      return bWins - aWins;
+    }
     
-    // При равном весе сортируем по имени (алфавитный порядок)
+    // При равном количестве побед — по имени (алфавитный порядок)
     return a.username.localeCompare(b.username, 'ru');
   });
 
@@ -57,12 +64,13 @@ export function displayParticipants(participants) {
       const prev = sortedParticipants[index - 1];
       const currentWeight = participant.total_weight || 0;
       const prevWeight = prev.total_weight || 0;
+      const currentWins = (participant.won_icons || []).length;
+      const prevWins = (prev.won_icons || []).length;
       
-      // Если суммарный вес одинаковый - то же место
-      if (currentWeight === prevWeight) {
+      // Если суммарный вес и количество побед одинаковые - то же место
+      if (currentWeight === prevWeight && currentWins === prevWins) {
         placesMap.set(index, placesMap.get(index - 1));
       } else {
-        // Следующее место учитывает количество участников на предыдущем месте
         currentPlace = index + 1;
         placesMap.set(index, currentPlace);
       }

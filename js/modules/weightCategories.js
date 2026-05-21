@@ -61,7 +61,6 @@ export async function openWeightCategoriesModal() {
         overflow-y: auto;
         border: 1px solid rgba(90, 159, 212, 0.2);
         border-radius: 6px;
-        background: rgba(20, 25, 35, 0.5);
       ">
         <div style="text-align: center; padding: 20px; color: #b0b8c8;">
           <div class="spinner"></div> Загрузка...
