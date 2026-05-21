@@ -805,10 +805,10 @@ export async function openTournamentInfoModal() {
               <li><strong>+1 очко</strong> — за угаданные жёлтые карточки (если включено в матче)</li>
               <li><strong>+1 очко</strong> — за угаданные красные карточки (если включено в матче)</li>
             </ul>
-            <div style="background: #1a2530; border-left: 3px solid #f44336; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div style="background: #1a2530; color: #e0e6f0; border-left: 3px solid #f44336; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>⚠️ Важно:</strong> Если результат матча не угадан — бонусы за счёт, жёлтые и красные карточки <strong>не засчитываются</strong>, даже если они угаданы верно.
             </div>
-            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div style="background: #1a2530; color: #e0e6f0; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>Пример:</strong> Угадал результат + точный счёт + жёлтые = 1 + 1 + 1 = <strong>3 очка</strong>
             </div>
           </div>
@@ -834,10 +834,10 @@ export async function openTournamentInfoModal() {
                 <li>Серия пенальти</li>
               </ul>
             </ul>
-            <div style="background: #1a2530; border-left: 3px solid #4caf50; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div style="background: #1a2530; color: #e0e6f0; border-left: 3px solid #4caf50; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>✅ Важно:</strong> Финальные параметры оцениваются <strong>независимо от результата матча</strong>. Даже если результат не угадан, очки за параметры всё равно начисляются.
             </div>
-            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div style="background: #1a2530; color: #e0e6f0; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>Пример:</strong> Угадал угловые + пенальти в игре = 2 + 2 = <strong>4 очка</strong>
             </div>
           </div>
@@ -848,7 +848,7 @@ export async function openTournamentInfoModal() {
               <li><strong>1 очко</strong> — за угаданного победителя в обычной стадии</li>
               <li><strong>3 очка</strong> — за угаданного победителя в финале сетки</li>
             </ul>
-            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div style="background: #1a2530; color: #e0e6f0; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>Пример:</strong> Угадал 3 матча обычных стадий + финал сетки = 3 + 3 = <strong>6 очков</strong>
             </div>
           </div>
@@ -874,7 +874,7 @@ export async function openTournamentInfoModal() {
           </ol>
           <div style="margin-top: 12px;">
             <strong style="color: #5a9fd4; font-size: 0.9em;">⚖️ Категории весов:</strong>
-            <div style="background: #1a2530; border-radius: 6px; margin-top: 6px; overflow: hidden;">
+            <div style="background: #1a2530; color: #e0e6f0; border-radius: 6px; margin-top: 6px; overflow: hidden;">
               ${weightCategoriesHtml}
             </div>
             <div style="margin-top: 8px; font-size: 0.85em; color: #b0b8c8; line-height: 1.4;">
@@ -891,7 +891,7 @@ export async function openTournamentInfoModal() {
             <li>Все участники получают <strong>одинаковое место</strong></li>
             <li>Следующее место пропускается с учётом количества участников на предыдущем</li>
           </ul>
-          <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+          <div style="background: #1a2530; color: #e0e6f0; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
             <strong>Пример:</strong> Два участника на 1-м месте → следующий будет на <strong>3-м</strong> месте (не на 2-м)
           </div>
         </div>
