@@ -904,10 +904,10 @@ export async function openTournamentInfoModal() {
           <p style="margin: 0 0 10px 0;">Если у нескольких участников <strong>полностью одинаковые</strong> показатели по всем критериям:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
             <li>Все участники получают <strong>одинаковое место</strong></li>
-            <li>Следующее место пропускается с учётом количества участников на предыдущем</li>
+            <li>Следующее место — ближайшее после текущего (без пропуска)</li>
           </ul>
           <div class="info-note" style="border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
-            <strong>Пример:</strong> Два участника на 1-м месте → следующий будет на <strong>3-м</strong> месте (не на 2-м)
+            <strong>Пример:</strong> Два участника на 1-м месте → следующий будет на <strong>2-м</strong> месте
           </div>
         </div>
 
