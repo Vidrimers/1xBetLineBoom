@@ -24,7 +24,7 @@ export async function openWeightCategoriesModal() {
       <div style="margin-bottom: 15px;">
         <div style="display: flex; gap: 8px; align-items: center;">
           <input type="number" id="weightCategoryWeightInput" placeholder="Вес" min="0" style="
-            width: 70px;
+            width: 80px;
             padding: 10px 14px;
             background: rgba(30, 35, 45, 0.8);
             border: 1px solid rgba(90, 159, 212, 0.4);
