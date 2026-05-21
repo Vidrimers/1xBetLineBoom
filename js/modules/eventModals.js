@@ -763,16 +763,22 @@ export async function openTournamentInfoModal() {
   
   modal.innerHTML = `
     <style>
-      .tournament-info-modal,
-      .tournament-info-modal * {
-        color: #e0e6f0 !important;
-      }
+      .tournament-info-modal { color: #e0e6f0 !important; background: #1e2a3a !important; }
       .tournament-info-modal h3 { color: #5a9fd4 !important; }
       .tournament-info-modal h4 { color: #ff9800 !important; }
       .tournament-info-modal .info-label { color: #4caf50 !important; }
       .tournament-info-modal .info-accent { color: #5a9fd4 !important; }
       .tournament-info-modal .info-muted { color: #b0b8c8 !important; }
       .tournament-info-modal .info-weight { color: #ff9800 !important; }
+      .tournament-info-modal .info-block { background: #2a3a4a !important; }
+      .tournament-info-modal .info-note { background: #1a2530 !important; }
+      .tournament-info-modal p,
+      .tournament-info-modal li,
+      .tournament-info-modal span,
+      .tournament-info-modal div,
+      .tournament-info-modal strong,
+      .tournament-info-modal ol,
+      .tournament-info-modal ul { color: inherit !important; }
     </style>
     <div class="tournament-info-modal" style="
       background: #1e2a3a;
@@ -806,7 +812,7 @@ export async function openTournamentInfoModal() {
       
       <div style="line-height: 1.6;">
         <h4 style="margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Система начисления очков</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <div class="info-block" style="padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <div style="margin-bottom: 12px;">
             <strong class="info-label">Обычные матчи (туры):</strong>
             <ul style="margin: 5px 0; padding-left: 20px;">
@@ -815,10 +821,10 @@ export async function openTournamentInfoModal() {
               <li><strong>+1 очко</strong> — за угаданные жёлтые карточки (если включено в матче)</li>
               <li><strong>+1 очко</strong> — за угаданные красные карточки (если включено в матче)</li>
             </ul>
-            <div style="background: #1a2530; border-left: 3px solid #f44336; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div class="info-note" style="border-left: 3px solid #f44336; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>⚠️ Важно:</strong> Если результат матча не угадан — бонусы за счёт, жёлтые и красные карточки <strong>не засчитываются</strong>, даже если они угаданы верно.
             </div>
-            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div class="info-note" style="border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>Пример:</strong> Угадал результат + точный счёт + жёлтые = 1 + 1 + 1 = <strong>3 очка</strong>
             </div>
           </div>
@@ -844,10 +850,10 @@ export async function openTournamentInfoModal() {
                 <li>Серия пенальти</li>
               </ul>
             </ul>
-            <div style="background: #1a2530; border-left: 3px solid #4caf50; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div class="info-note" style="border-left: 3px solid #4caf50; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>✅ Важно:</strong> Финальные параметры оцениваются <strong>независимо от результата матча</strong>. Даже если результат не угадан, очки за параметры всё равно начисляются.
             </div>
-            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div class="info-note" style="border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>Пример:</strong> Угадал угловые + пенальти в игре = 2 + 2 = <strong>4 очка</strong>
             </div>
           </div>
@@ -858,14 +864,14 @@ export async function openTournamentInfoModal() {
               <li><strong>1 очко</strong> — за угаданного победителя в обычной стадии</li>
               <li><strong>3 очка</strong> — за угаданного победителя в финале сетки</li>
             </ul>
-            <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+            <div class="info-note" style="border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>Пример:</strong> Угадал 3 матча обычных стадий + финал сетки = 3 + 3 = <strong>6 очков</strong>
             </div>
           </div>
         </div>
 
         <h4 style="margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Сортировка участников в турнире</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <div class="info-block" style="padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">Участники внутри турнира сортируются по следующим критериям (в порядке приоритета):</p>
           <ol style="margin: 5px 0; padding-left: 20px;">
             <li><strong>Больше очков</strong> — основной критерий</li>
@@ -875,7 +881,7 @@ export async function openTournamentInfoModal() {
         </div>
 
         <h4 style="margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Сортировка в общем списке участников</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <div class="info-block" style="padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">В общем списке всех участников сортировка идёт по:</p>
           <ol style="margin: 5px 0; padding-left: 20px;">
             <li><strong>Суммарный вес выигранных турниров</strong> — каждый турнир имеет свой вес, победы в более значимых турнирах ценятся выше</li>
@@ -884,7 +890,7 @@ export async function openTournamentInfoModal() {
           </ol>
           <div style="margin-top: 12px;">
             <strong class="info-accent" style="font-size: 0.9em;">⚖️ Категории весов:</strong>
-            <div style="background: #1a2530; border-radius: 6px; margin-top: 6px; overflow: hidden;">
+            <div class="info-note" style="border-radius: 6px; margin-top: 6px; overflow: hidden;">
               ${weightCategoriesHtml}
             </div>
             <div class="info-muted" style="margin-top: 8px; font-size: 0.85em; line-height: 1.4;">
@@ -895,19 +901,19 @@ export async function openTournamentInfoModal() {
         </div>
 
         <h4 style="margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> Одинаковые показатели</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <div class="info-block" style="padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <p style="margin: 0 0 10px 0;">Если у нескольких участников <strong>полностью одинаковые</strong> показатели по всем критериям:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
             <li>Все участники получают <strong>одинаковое место</strong></li>
             <li>Следующее место пропускается с учётом количества участников на предыдущем</li>
           </ul>
-          <div style="background: #1a2530; border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+          <div class="info-note" style="border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
             <strong>Пример:</strong> Два участника на 1-м месте → следующий будет на <strong>3-м</strong> месте (не на 2-м)
           </div>
         </div>
 
         <h4 style="margin: 20px 0 10px 0;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Отображение статистики</h4>
-        <div style="background: #2a3a4a; padding: 15px; border-radius: 8px;">
+        <div class="info-block" style="padding: 15px; border-radius: 8px;">
           <p style="margin: 0;">В карточке каждого участника турнира отображается:</p>
           <ul style="margin: 5px 0; padding-left: 20px;">
             <li><strong>Место</strong> — позиция в рейтинге турнира</li>
