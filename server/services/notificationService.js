@@ -828,6 +828,155 @@ ${matchesText}
   }
 }
 
+// Проверка и уведомление о начале турниров (предстоящий → активный)
+async function checkAndNotifyTournamentStart() {
+  try {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // Ищем турниры со статусом active, у которых start_date <= сегодня
+    const events = db.prepare(`
+      SELECT id, name, description, start_date, end_date
+      FROM events
+      WHERE status = 'active'
+        AND start_date IS NOT NULL
+        AND start_date <= ?
+    `).all(todayStr);
+
+    if (events.length === 0) return;
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+    const THREAD_ID = process.env.THREAD_ID;
+
+    if (!TELEGRAM_BOT_TOKEN) return;
+
+    for (const event of events) {
+      // Проверяем, не отправляли ли уже уведомление
+      const alreadyNotified = db.prepare(
+        "SELECT value FROM system_settings WHERE key = ?"
+      ).get(`tournament_started_${event.id}`);
+
+      if (alreadyNotified) continue;
+
+      console.log(`🚀 Турнир "${event.name}" начался! Отправляем уведомления...`);
+
+      // Формируем текст даты
+      let dateText = '';
+      if (event.start_date && event.end_date) {
+        const start = new Date(event.start_date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+        const end = new Date(event.end_date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+        dateText = `📅 ${start} - ${end}`;
+      } else if (event.start_date) {
+        const start = new Date(event.start_date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+        dateText = `📅 Начало: ${start}`;
+      }
+
+      // Сообщение в личку
+      let personalMessage = `🚀 <b>ТУРНИР НАЧАЛСЯ!</b>\n\n`;
+      personalMessage += `🏆 <b>${event.name}</b>\n\n`;
+      if (event.description) personalMessage += `${event.description}\n\n`;
+      if (dateText) personalMessage += `${dateText}\n\n`;
+      personalMessage += `Время делать прогнозы! Заходи и ставь 🎯\n\n`;
+      personalMessage += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+
+      // Сообщение в группу (THREAD_ID)
+      let groupMessage = `🚀 <b>ТУРНИР НАЧАЛСЯ!</b>\n\n`;
+      groupMessage += `🏆 <b>${event.name}</b>\n\n`;
+      if (event.description) groupMessage += `${event.description}\n\n`;
+      if (dateText) groupMessage += `${dateText}\n\n`;
+      groupMessage += `Все на сайт — делаем прогнозы! ⚽🔥\n\n`;
+      groupMessage += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+
+      // Отправляем в личку всем пользователям
+      const users = db.prepare(
+        `SELECT id, username, telegram_id FROM users WHERE telegram_id IS NOT NULL`
+      ).all();
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const user of users) {
+        try {
+          // Проверяем настройку уведомлений
+          const notifSettings = db.prepare(`
+            SELECT tournament_announcements 
+            FROM user_notification_settings 
+            WHERE user_id = ?
+          `).get(user.id);
+
+          if (notifSettings && notifSettings.tournament_announcements === 0) {
+            continue;
+          }
+
+          const response = await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: user.telegram_id,
+                text: personalMessage,
+                parse_mode: "HTML",
+              }),
+            }
+          );
+
+          const result = await response.json();
+          if (result.ok) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          errorCount++;
+        }
+      }
+
+      console.log(`📨 Личные уведомления о старте "${event.name}": ${successCount} успешно, ${errorCount} ошибок`);
+
+      // Отправляем в THREAD_ID группы
+      if (TELEGRAM_CHAT_ID) {
+        try {
+          const requestBody = {
+            chat_id: TELEGRAM_CHAT_ID,
+            text: groupMessage,
+            parse_mode: "HTML",
+          };
+
+          if (THREAD_ID) {
+            requestBody.message_thread_id = parseInt(THREAD_ID);
+          }
+
+          await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestBody),
+            }
+          );
+
+          console.log(`📨 Уведомление о старте "${event.name}" отправлено в группу`);
+        } catch (error) {
+          console.error(`❌ Ошибка отправки в группу:`, error.message);
+        }
+      }
+
+      // Помечаем что уведомление отправлено
+      db.prepare(
+        "INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)"
+      ).run(`tournament_started_${event.id}`, 'true');
+
+      console.log(`✅ Турнир "${event.name}" помечен как уведомлённый о старте`);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при проверке старта турниров:", error);
+  }
+}
+
 export {
   notifyAdmin,
   notifyUser,
@@ -838,4 +987,5 @@ export {
   checkAndNotifyMatchStart,
   sendTournamentAnnouncementToUsers,
   notifyTournamentToGroup,
+  checkAndNotifyTournamentStart,
 };

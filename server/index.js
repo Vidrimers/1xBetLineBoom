@@ -60,6 +60,7 @@ import {
   checkAndNotifyUpcomingMatches,
   checkAndSendPersonalReminders,
   checkAndNotifyMatchStart,
+  checkAndNotifyTournamentStart,
 } from "./services/notificationService.js";
 
 import { checkAndAutoCount } from "./services/autoCountingService.js";
@@ -287,6 +288,13 @@ console.log(
 const AUTO_COUNT_INTERVAL = 5 * 60 * 1000;
 setInterval(checkAndAutoCount, AUTO_COUNT_INTERVAL);
 console.log(`\n🤖 Автоподсчет активирован (проверка каждые 5 минут)\n`);
+
+// Проверка старта турниров (каждые 30 минут) + сразу при старте
+setInterval(checkAndNotifyTournamentStart, 30 * 60 * 1000);
+checkAndNotifyTournamentStart();
+console.log(
+  "🚀 Фоновая задача уведомления о старте турниров запущена (интервал: 30 минут)"
+);
 
 // ===== ЗАПУСК СЕРВЕРА =====
 app.listen(PORT, "0.0.0.0", () => {
