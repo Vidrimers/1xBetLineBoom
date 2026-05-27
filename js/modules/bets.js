@@ -533,26 +533,26 @@ export async function placeAllFinalBets(matchId) {
     }
   }
 
-  // Жёлтые
+  // Жёлтые (пустое поле = 0)
   if (match.show_yellow_cards) {
     const input = document.getElementById(`yellowCards_${matchId}`);
-    if (input && input.value !== '') {
+    if (input && !input.disabled) {
       try { await placeFinalBet(matchId, 'yellow_cards', true); placed++; } catch(e) { errors++; }
     }
   }
 
-  // Красные
+  // Красные (пустое поле = 0)
   if (match.show_red_cards) {
     const input = document.getElementById(`redCards_${matchId}`);
-    if (input && input.value !== '') {
+    if (input && !input.disabled) {
       try { await placeFinalBet(matchId, 'red_cards', true); placed++; } catch(e) { errors++; }
     }
   }
 
-  // Угловые
+  // Угловые (пустое поле = 0)
   if (match.show_corners) {
     const input = document.getElementById(`corners_${matchId}`);
-    if (input && input.value !== '') {
+    if (input && !input.disabled) {
       try { await placeFinalBet(matchId, 'corners', true); placed++; } catch(e) { errors++; }
     }
   }
@@ -662,7 +662,8 @@ export async function placeFinalBet(matchId, parameterType, skipRefresh = false)
       await showCustomAlert("Ошибка: поле ввода не найдено", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
       return;
     }
-    const value = inputField.value;
+    // Если поле пустое — считаем как 0 (валидный прогноз)
+    const value = inputField.value === '' ? '0' : inputField.value;
     betValue = value;
   } else if (
     parameterType === "penalties_in_game" ||
