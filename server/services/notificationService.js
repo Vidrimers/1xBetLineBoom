@@ -834,14 +834,19 @@ async function checkAndNotifyTournamentStart() {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Ищем турниры со статусом active, у которых start_date <= сегодня
+    // Ищем турниры со статусом active, у которых start_date наступила недавно (в пределах 2 дней)
+    const twoDaysAgo = new Date(now);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
+
     const events = db.prepare(`
       SELECT id, name, description, start_date, end_date
       FROM events
       WHERE status = 'active'
         AND start_date IS NOT NULL
         AND start_date <= ?
-    `).all(todayStr);
+        AND start_date >= ?
+    `).all(todayStr, twoDaysAgoStr);
 
     if (events.length === 0) return;
 
