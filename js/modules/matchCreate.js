@@ -582,6 +582,7 @@ export async function saveBulkEditDates() {
 // ===== ПАРСИНГ МАТЧЕЙ =====
 
 export let parsedMatches = [];
+let moduleTeamTranslations = {};
 
 // Маппинг иконок турниров на коды для API
 export const ICON_TO_COMPETITION = {
@@ -661,6 +662,9 @@ export async function loadParsePreview() {
         console.warn(`⚠ Не удалось загрузить словарь из ${dictionaryFile}`);
       }
     }
+
+    // Сохраняем переводы на уровне модуля для использования в submitBulkParse
+    moduleTeamTranslations = teamTranslations;
 
     const translateTeamName = (englishName) => {
       return teamTranslations[englishName.toLowerCase()] || englishName;
@@ -841,8 +845,8 @@ export async function submitBulkParse(event) {
       }
 
       const baseMatch = {
-        team1_name: match.homeTeam.name,
-        team2_name: match.awayTeam.name,
+        team1_name: moduleTeamTranslations[match.homeTeam.name.toLowerCase()] || match.homeTeam.name,
+        team2_name: moduleTeamTranslations[match.awayTeam.name.toLowerCase()] || match.awayTeam.name,
         match_date: match.utcDate,
         round: roundName,
         event_id: state.currentEventId,
