@@ -63,6 +63,8 @@ export function translateTeamNameToEnglish(russianName, competitionCode) {
     L1: 'names/Ligue1.json',
     ED: 'names/Eredivisie.json',
     RPL: 'names/RussianPremierLeague.json',
+    WC: 'names/Countries.json',  // Чемпионат мира
+    EC: 'names/Countries.json',  // Чемпионат Европы
   };
 
   const dictionaryFile = dictionaryFiles[competitionCode];
@@ -74,17 +76,26 @@ export function translateTeamNameToEnglish(russianName, competitionCode) {
     const dictionary = JSON.parse(fs.readFileSync(dictionaryFile, 'utf8'));
     const teams = dictionary.teams || {};
 
-    // Сначала ищем точное совпадение
+    // Сначала ищем точное совпадение по ключу (русское -> английское)
     let englishName = teams[russianName];
     if (englishName) {
       return englishName;
     }
 
-    // Если не найдено, ищем без учёта регистра
+    // Если не найдено, ищем без учёта регистра по ключу
     const lowerRussianName = russianName.toLowerCase();
     for (const [key, value] of Object.entries(teams)) {
       if (key.toLowerCase() === lowerRussianName) {
         return value;
+      }
+    }
+
+    // Если название уже на латинице (например, "USA", "Congo DR" — уже английское в БД),
+    // ищем его как значение в словаре и возвращаем как есть
+    const normalizedInput = normalizeTeamNameForAPI(russianName);
+    for (const [, value] of Object.entries(teams)) {
+      if (normalizeTeamNameForAPI(value) === normalizedInput) {
+        return value; // возвращаем каноническое английское название из словаря
       }
     }
 

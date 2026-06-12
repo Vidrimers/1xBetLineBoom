@@ -131,9 +131,10 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
       !['finished', 'cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(m.status)
     );
 
-    const leagueId = SSTATS_LEAGUE_MAPPING[competition_code];
+    // Сначала берём из маппинга, если нет — из поля sstats_league_id в таблице events
+    let leagueId = SSTATS_LEAGUE_MAPPING[competition_code];
     if (!leagueId) {
-      console.log(`⚠️ Неизвестный турнир: ${competition_code}`);
+      console.log(`⚠️ Неизвестный турнир: ${competition_code} (event_id=${event_id})`);
       return { allFinished: false, matches: [] };
     }
 
