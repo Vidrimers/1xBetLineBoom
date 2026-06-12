@@ -146,7 +146,7 @@ class AIChat {
   }
 
   addWelcomeMessage() {
-    this.addAIMessage('Привет! <svg class="icon" aria-hidden="true"><use href="#icon-celebrate"></use></svg> Я AI-помощник по ставкам на футбол. Могу помочь с анализом матчей, статистикой команд и поиском выгодных ставок. Что тебя интересует?');
+    this.addAIMessage('Привет! 🎉 Я AI-помощник по ставкам на футбол. Могу помочь с анализом матчей, статистикой команд и поиском выгодных ставок. Что тебя интересует?');
   }
 
   async sendMessage() {
@@ -175,7 +175,7 @@ class AIChat {
       this.addUserMessage(text);
       this.chatInput.value = '';
       setTimeout(() => {
-        this.addAIMessage('Извини, я не отвечаю незнакомым персонажам <svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg>‍<svg class="icon" aria-hidden="true"><use href="#icon-question"></use></svg> Войди в систему, чтобы я мог тебе помочь!');
+        this.addAIMessage('Извини, я не отвечаю незнакомым персонажам 🕵️ Войди в систему, чтобы я мог тебе помочь!');
       }, 500);
       return;
     }
