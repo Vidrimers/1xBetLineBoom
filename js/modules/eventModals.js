@@ -94,7 +94,7 @@ export function openEditEventModal(eventId) {
       document.getElementById("editEventTeamFile").value = event.team_file || "";
 
       // Устанавливаем флаг разницы голов
-      document.getElementById("editDiffGoalsEnabledCheckbox").checked = event.diff_goals_enabled === 1;
+      document.getElementById("editDiffGoalsEnabledCheckbox").checked = !!event.diff_goals_enabled;
 
       // Загружаем категории весов и устанавливаем текущую
       loadWeightCategoriesSelect("editEventWeightCategory", event.weight_category_id);
@@ -724,7 +724,7 @@ export async function openTournamentInfoModal() {
   const currentEvent = state.currentEventId
     ? state.events.find(e => e.id === state.currentEventId)
     : null;
-  const diffGoalsEnabled = currentEvent?.diff_goals_enabled === 1;
+  const diffGoalsEnabled = !!currentEvent?.diff_goals_enabled;
 
   // Загружаем категории весов для динамического отображения
   let weightCategoriesHtml = '<div style="color: #b0b8c8; font-style: italic;">Не удалось загрузить категории</div>';
