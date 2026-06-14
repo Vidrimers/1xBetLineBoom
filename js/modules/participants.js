@@ -927,7 +927,19 @@ export function displayTournamentParticipantBets(bets) {
                     ? ' <span style="color: #ff9800; font-size: 0.85em;">(не засчитано)</span>'
                     : ""
                 }
-              </div>`
+              </div>
+              ${
+                // Разница голов: только если матч выигран, не ничья, счёт не угадан точно, но разница совпала
+                bet.result === 'won' &&
+                bet.actual_score_team1 != null && bet.actual_score_team2 != null &&
+                bet.actual_result !== 'Ничья' &&
+                !(Number(bet.score_team1) === Number(bet.actual_score_team1) && Number(bet.score_team2) === Number(bet.actual_score_team2)) &&
+                (Number(bet.score_team1) - Number(bet.score_team2)) === (Number(bet.actual_score_team1) - Number(bet.actual_score_team2))
+                  ? `<div style="color: #81c784; font-size: 0.9em; margin-bottom: 5px;">
+                      ⚖️ Разница голов угадана: <strong>+1 очко</strong>
+                    </div>`
+                  : ""
+              }`
             : ""
         }
         ${
