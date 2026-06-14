@@ -93,9 +93,6 @@ export function openEditEventModal(eventId) {
       // Устанавливаем team_file
       document.getElementById("editEventTeamFile").value = event.team_file || "";
 
-      // Устанавливаем флаг разницы голов
-      document.getElementById("editDiffGoalsEnabledCheckbox").checked = !!event.diff_goals_enabled;
-
       // Загружаем категории весов и устанавливаем текущую
       loadWeightCategoriesSelect("editEventWeightCategory", event.weight_category_id);
 
@@ -109,6 +106,13 @@ export function openEditEventModal(eventId) {
           .getElementById("editCustomIconCheckbox")
           .addEventListener("change", handleEditEventIconChange);
         initCustomSelect("editEventIconSelect");
+
+        // Устанавливаем флаг разницы голов после показа (чтобы reset формы не сбросил)
+        setTimeout(() => {
+          const cb = document.getElementById("editDiffGoalsEnabledCheckbox");
+          if (cb) cb.checked = !!event.diff_goals_enabled;
+        }, 0);
+
         console.log("🔧 edit modal opened successfully");
       } else {
         console.error("🔧 editEventModal not found!");

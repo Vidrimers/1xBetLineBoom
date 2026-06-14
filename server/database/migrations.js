@@ -366,4 +366,12 @@ export function runMigrations() {
   } catch (e) {
     // Колонка уже существует, игнорируем
   }
+
+  // Включаем разницу голов для текущего активного турнира (id=23, Чемпионат мира 2026)
+  try {
+    db.prepare("UPDATE events SET diff_goals_enabled = 1 WHERE id = 23 AND diff_goals_enabled = 0").run();
+    console.log("✅ diff_goals_enabled = 1 для турнира id=23");
+  } catch (e) {
+    // Игнорируем
+  }
 }
