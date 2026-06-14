@@ -459,6 +459,11 @@ import {
   deleteWeightCategory,
 } from './modules/weightCategories.js';
 import {
+  openTimezoneOffsetModal,
+  closeTimezoneOffsetModal,
+  saveTimezoneOffset,
+} from './modules/timezoneOffset.js';
+import {
   openTerminalModal,
   closeTerminalModal,
   refreshTerminalLogs,
@@ -698,6 +703,8 @@ Object.assign(window, {
   // weightCategories
   openWeightCategoriesModal, closeWeightCategoriesModal, loadWeightCategories,
   addWeightCategory, updateWeightCategory, deleteWeightCategory,
+  // timezoneOffset
+  openTimezoneOffsetModal, closeTimezoneOffsetModal, saveTimezoneOffset,
   // terminal
   openTerminalModal, closeTerminalModal, refreshTerminalLogs, escapeHtml,
   clearTerminalLogs, saveTerminalLogs, toggleTerminalAutoScroll,

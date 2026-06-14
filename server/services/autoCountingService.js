@@ -60,22 +60,37 @@ function setAutoCountingEnabled(enabled) {
 }
 
 /**
+ * Получить смещение часового пояса из system_settings (в часах)
+ */
+function getTimezoneOffset() {
+  try {
+    const setting = db.prepare("SELECT value FROM system_settings WHERE key = 'timezone_offset'").get();
+    return setting ? parseInt(setting.value, 10) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+/**
  * Получить активные даты с незавершенными матчами или недавно завершенными
  */
 function getActiveDates() {
   try {
+    const offset = getTimezoneOffset();
+    // SQLite модификатор времени должен быть строкой: '+3 hours'
+    const offsetMod = offset === 0 ? '' : `, '${offset > 0 ? '+' : ''}${offset} hours'`;
     const dates = db.prepare(`
       SELECT DISTINCT 
         m.event_id,
         e.icon,
         m.round,
-        DATE(m.match_date) as date
+        DATE(m.match_date${offsetMod}) as date
       FROM matches m
       JOIN events e ON m.event_id = e.id
       WHERE m.match_date IS NOT NULL
-        AND DATE(m.match_date) >= DATE('now', '-2 days')
-        AND DATE(m.match_date) <= DATE('now', '+1 days')
-      GROUP BY m.event_id, e.icon, m.round, DATE(m.match_date)
+        AND DATE(m.match_date${offsetMod}) >= DATE('now'${offsetMod}, '-2 days')
+        AND DATE(m.match_date${offsetMod}) <= DATE('now'${offsetMod}, '+1 days')
+      GROUP BY m.event_id, e.icon, m.round, DATE(m.match_date${offsetMod})
       ORDER BY m.match_date
     `).all();
 
@@ -101,11 +116,14 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
       return { allFinished: false, matches: [] };
     }
 
+    const offset = getTimezoneOffset();
+    const offsetMod = offset === 0 ? '' : `, '${offset > 0 ? '+' : ''}${offset} hours'`;
+
     const allDbMatches = db.prepare(`
       SELECT * FROM matches
       WHERE event_id = ?
         AND round = ?
-        AND DATE(match_date) = ?
+        AND DATE(match_date${offsetMod}) = ?
         AND is_final = 0
     `).all(event_id, round, date);
 

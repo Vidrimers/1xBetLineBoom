@@ -5090,6 +5090,12 @@ router.get("/api/admin/panel-config", (req, res) => {
           utilitiesCategory.buttons.push({ id: 'weight-categories', text: '⚖️ Веса турниров', action: 'openWeightCategoriesModal()', type: 'modal' });
           db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
         }
+
+        const hasTimezoneOffset = utilitiesCategory.buttons.some(b => b.id === 'timezone-offset');
+        if (!hasTimezoneOffset) {
+          utilitiesCategory.buttons.push({ id: 'timezone-offset', text: '🕐 Смещение часового пояса', action: 'openTimezoneOffsetModal()', type: 'modal' });
+          db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
+        }
       }
     }
     
@@ -5232,7 +5238,8 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
             { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()', type: 'modal' },
             { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()', type: 'modal' },
             { id: 'banned-names', text: '🚫 Запретные имена', action: 'openBannedNamesModal()', type: 'modal' },
-            { id: 'weight-categories', text: '⚖️ Веса турниров', action: 'openWeightCategoriesModal()', type: 'modal' }
+            { id: 'weight-categories', text: '⚖️ Веса турниров', action: 'openWeightCategoriesModal()', type: 'modal' },
+            { id: 'timezone-offset', text: '🕐 Смещение часового пояса', action: 'openTimezoneOffsetModal()', type: 'modal' }
           ]
         }
       ]
@@ -5500,5 +5507,45 @@ router.delete("/api/admin/weight-categories/:id", (req, res) => {
   }
 });
 
+// GET /api/admin/timezone-offset - Получить текущее смещение часового пояса
+router.get("/api/admin/timezone-offset", (req, res) => {
+  try {
+    const setting = db.prepare("SELECT value FROM system_settings WHERE key = 'timezone_offset'").get();
+    const offset = setting ? parseInt(setting.value, 10) : 0;
+    res.json({ success: true, offset });
+  } catch (error) {
+    console.error('❌ Ошибка получения timezone_offset:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/timezone-offset - Сохранить смещение часового пояса
+router.post("/api/admin/timezone-offset", (req, res) => {
+  const { username, offset } = req.body;
+  const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
+
+  if (username !== ADMIN_DB_NAME) {
+    return res.status(403).json({ error: "Недостаточно прав" });
+  }
+
+  const value = parseInt(offset, 10);
+  if (isNaN(value) || value < -12 || value > 14) {
+    return res.status(400).json({ error: "Смещение должно быть числом от -12 до +14" });
+  }
+
+  try {
+    const existing = db.prepare("SELECT id FROM system_settings WHERE key = 'timezone_offset'").get();
+    if (existing) {
+      db.prepare("UPDATE system_settings SET value = ?, updated_at = datetime('now') WHERE key = 'timezone_offset'").run(String(value));
+    } else {
+      db.prepare("INSERT INTO system_settings (key, value, updated_at) VALUES ('timezone_offset', ?, datetime('now'))").run(String(value));
+    }
+    console.log(`🕐 Смещение часового пояса для авто-подсчёта изменено на UTC${value >= 0 ? '+' : ''}${value}`);
+    res.json({ success: true, offset: value });
+  } catch (error) {
+    console.error('❌ Ошибка сохранения timezone_offset:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;
