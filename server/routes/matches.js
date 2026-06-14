@@ -713,6 +713,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
                 CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR (b.prediction = 'team2' AND m.winner = 'team2') OR (b.prediction = 'draw' AND m.winner = 'draw') OR (b.prediction = m.team1_name AND m.winner = 'team1') OR (b.prediction = m.team2_name AND m.winner = 'team2') THEN
                   CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
                   CASE WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 THEN 1 ELSE 0 END +
+                  CASE WHEN m.is_final = 0 AND m.winner != 'draw' AND sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2) THEN 1 ELSE 0 END +
                   CASE WHEN m.yellow_cards_prediction_enabled = 1 AND cp.yellow_cards IS NOT NULL AND m.yellow_cards IS NOT NULL AND cp.yellow_cards = m.yellow_cards THEN 1 ELSE 0 END +
                   CASE WHEN m.red_cards_prediction_enabled = 1 AND cp.red_cards IS NOT NULL AND m.red_cards IS NOT NULL AND cp.red_cards = m.red_cards THEN 1 ELSE 0 END
                 ELSE 0 END

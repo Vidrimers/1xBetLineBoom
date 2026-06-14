@@ -475,7 +475,7 @@ async function triggerAutoCountingForDate(dateGroup) {
     bets.forEach(bet => {
       const username = bet.username;
       if (!userStats[username]) {
-        userStats[username] = { points: 0, correctResults: 0, correctScores: 0, correctYellowCards: 0, correctRedCards: 0 };
+        userStats[username] = { points: 0, correctResults: 0, correctScores: 0, correctDiff: 0, correctYellowCards: 0, correctRedCards: 0 };
       }
 
       let isWon = false;
@@ -489,12 +489,31 @@ async function triggerAutoCountingForDate(dateGroup) {
         userStats[username].points++;
         userStats[username].correctResults++;
 
-        if (bet.score_prediction_enabled === 1 &&
-            bet.score_team1 != null && bet.score_team2 != null &&
-            bet.score_team1 === bet.actual_score_team1 &&
-            bet.score_team2 === bet.actual_score_team2) {
+        const exactScoreGuessed = (
+          bet.score_prediction_enabled === 1 &&
+          bet.score_team1 != null && bet.score_team2 != null &&
+          bet.score_team1 === bet.actual_score_team1 &&
+          bet.score_team2 === bet.actual_score_team2
+        );
+
+        if (exactScoreGuessed) {
           userStats[username].points++;
           userStats[username].correctScores++;
+        }
+
+        // Разница голов — только если: не ничья, не угадан точный счёт, счёт был введён
+        const isDraw = (bet.winner === 'draw');
+        if (!exactScoreGuessed &&
+            !isDraw &&
+            bet.score_prediction_enabled === 1 &&
+            bet.score_team1 != null && bet.score_team2 != null &&
+            bet.actual_score_team1 != null && bet.actual_score_team2 != null) {
+          const predictedDiff = bet.score_team1 - bet.score_team2;
+          const actualDiff = bet.actual_score_team1 - bet.actual_score_team2;
+          if (predictedDiff === actualDiff) {
+            userStats[username].points++;
+            userStats[username].correctDiff++;
+          }
         }
 
         if (bet.yellow_cards_prediction_enabled === 1 &&
@@ -534,6 +553,7 @@ async function triggerAutoCountingForDate(dateGroup) {
         const statsText = [];
         if (stats.correctResults > 0) statsText.push(`✅ ${stats.correctResults}`);
         if (stats.correctScores > 0) statsText.push(`🎯 ${stats.correctScores}`);
+        if (stats.correctDiff > 0) statsText.push(`⚖️ ${stats.correctDiff}`);
         if (stats.correctYellowCards > 0) statsText.push(`🟨 ${stats.correctYellowCards}`);
         if (stats.correctRedCards > 0) statsText.push(`🟥 ${stats.correctRedCards}`);
         const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';

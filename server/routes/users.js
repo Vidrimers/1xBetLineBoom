@@ -94,6 +94,16 @@ router.get("/api/users/:userId/global-stats", (req, res) => {
                               sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
                          THEN 1 
                          ELSE 0 
+                       END +
+                       -- Очко за угаданную разницу голов (обычный матч, не ничья, не угадан точный счёт)
+                       CASE
+                         WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                              (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2)
+                         THEN 1
+                         ELSE 0
                        END
                   ELSE 0 
                 END
@@ -364,6 +374,16 @@ router.get("/api/participants", (req, res) => {
                               sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
                          THEN 1 
                          ELSE 0 
+                       END +
+                       -- Очко за угаданную разницу голов (обычный матч, не ничья, не угадан точный счёт)
+                       CASE
+                         WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                              (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2)
+                         THEN 1
+                         ELSE 0
                        END
                   ELSE 0 
                 END
@@ -565,6 +585,16 @@ router.get("/api/user/:userId/profile", async (req, res) => {
                               sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
                          THEN 1 
                          ELSE 0 
+                       END +
+                       -- Очко за угаданную разницу голов (обычный матч, не ничья, не угадан точный счёт)
+                       CASE
+                         WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                              (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2)
+                         THEN 1
+                         ELSE 0
                        END
                   ELSE 0 
                 END
@@ -1755,7 +1785,8 @@ router.post("/api/notify-counting-results", async (req, res) => {
         userStats[username] = {
           points: 0,
           correctResults: 0,
-          correctScores: 0
+          correctScores: 0,
+          correctDiff: 0
         };
       }
       
@@ -1768,6 +1799,12 @@ router.post("/api/notify-counting-results", async (req, res) => {
         if (result.scoreIsWon) {
           userStats[username].points++;
           userStats[username].correctScores++;
+        }
+
+        // Разница голов — только если не ничья и не угадан точный счёт
+        if (result.diffIsWon) {
+          userStats[username].points++;
+          userStats[username].correctDiff++;
         }
       }
     });
@@ -1812,6 +1849,9 @@ router.post("/api/notify-counting-results", async (req, res) => {
         }
         if (stats.correctScores > 0) {
           statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        if (stats.correctDiff > 0) {
+          statsText.push(`⚖️ ${stats.correctDiff}`);
         }
         const statsStr = statsText.length > 0 ? ` (${statsText.join(', ')})` : '';
         message += `• ${username}: ${stats.points} ${stats.points === 1 ? 'очко' : stats.points < 5 ? 'очка' : 'очков'}${statsStr}\n`;

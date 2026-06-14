@@ -34,6 +34,16 @@ export function getTournamentParticipantsWithPoints(eventId) {
                          THEN 1 
                          ELSE 0 
                        END +
+                       -- Очко за угаданную разницу голов (только обычный матч, не ничья, не угадан точный счёт)
+                       CASE
+                         WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                              (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2)
+                         THEN 1
+                         ELSE 0
+                       END +
                        -- Дополнительное очко за угаданные желтые карточки
                        CASE 
                          WHEN m.yellow_cards_prediction_enabled = 1 AND

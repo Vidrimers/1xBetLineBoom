@@ -653,10 +653,18 @@ function checkBetsResults(bets, fdMatches) {
 
       // Проверяем прогноз на счет если есть
       let scoreIsWon = false;
+      let diffIsWon = false;
       let hasScorePrediction = false;
       if (bet.score_team1 != null && bet.score_team2 != null) {
         hasScorePrediction = true;
         scoreIsWon = (bet.score_team1 === homeScore && bet.score_team2 === awayScore);
+
+        // Разница голов — только если не ничья и не угадан точный счёт
+        if (!scoreIsWon && result !== 'draw' && isWon) {
+          const predictedDiff = bet.score_team1 - bet.score_team2;
+          const actualDiff = homeScore - awayScore;
+          diffIsWon = (predictedDiff === actualDiff);
+        }
       }
 
       results.push({
@@ -667,6 +675,7 @@ function checkBetsResults(bets, fdMatches) {
         score: `${homeScore}:${awayScore}`,
         hasScorePrediction: hasScorePrediction,
         scoreIsWon: scoreIsWon,
+        diffIsWon: diffIsWon,
         actualScore: { home: homeScore, away: awayScore }
       });
     } else {
@@ -680,6 +689,7 @@ function checkBetsResults(bets, fdMatches) {
         score: "Матч не найден",
         hasScorePrediction: bet.score_team1 != null && bet.score_team2 != null,
         scoreIsWon: false,
+        diffIsWon: false,
       });
     }
   });
@@ -705,6 +715,7 @@ function displayCalculationResults(results, originalBets) {
         notFound: 0,
         scoreWon: 0,
         scoreLost: 0,
+        diffWon: 0,
         bets: [],
       };
     }
@@ -724,6 +735,9 @@ function displayCalculationResults(results, originalBets) {
         grouped[key].scoreWon++;
       } else {
         grouped[key].scoreLost++;
+        if (result.diffIsWon) {
+          grouped[key].diffWon++;
+        }
       }
     }
 
@@ -750,6 +764,7 @@ function displayCalculationResults(results, originalBets) {
         <div style="display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap;">
           <span style="color: #4db8a8;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Результаты: ${group.won}/${group.total - group.notFound} (${winRate}%)</span>
           ${scoreTotal > 0 ? `<span style="color: #ffa726;"><svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg> Счет: ${group.scoreWon}/${scoreTotal} (${scoreRate}%)</span>` : ''}
+          ${group.diffWon > 0 ? `<span style="color: #81c784;">⚖️ Разница: ${group.diffWon}</span>` : ''}
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
     `;
@@ -802,6 +817,14 @@ function displayCalculationResults(results, originalBets) {
               ${scoreIcon} Прогноз счета: <strong style="color: ${scoreColor};">${bet.score_team1}:${bet.score_team2}</strong> | Факт: <strong>${bet.actualScore.home}:${bet.actualScore.away}</strong>
             </div>
           `;
+          // Разница голов — показываем если не угадан точный счёт, но угадана разница
+          if (!bet.scoreIsWon && bet.diffIsWon) {
+            scorePredictionHtml += `
+            <div style="font-size: 0.85em; margin-bottom: 4px; padding: 4px 6px; background: rgba(76, 175, 80, 0.15); border-radius: 4px; border-left: 2px solid #4caf50;">
+              ⚖️ Разница голов угадана: <strong style="color: #4caf50;">+1 очко</strong>
+            </div>
+          `;
+          }
         } else {
           // Матч не найден или счет не установлен, но прогноз был
           scorePredictionHtml = `

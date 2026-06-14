@@ -2113,6 +2113,7 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
             points: 0,
             correctResults: 0,
             correctScores: 0,
+            correctDiff: 0,
             correctYellowCards: 0,
             correctRedCards: 0
           };
@@ -2134,13 +2135,23 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
           if (bet.score_prediction_enabled === 1 &&
               bet.predicted_score1 !== null && bet.predicted_score2 !== null &&
               bet.actual_score1 !== null && bet.actual_score2 !== null) {
-            const scoreCorrect = 
+            const exactScoreCorrect = 
               bet.predicted_score1 === bet.actual_score1 && 
               bet.predicted_score2 === bet.actual_score2;
             
-            if (scoreCorrect) {
+            if (exactScoreCorrect) {
               userPoints[bet.user_id].points++;
               userPoints[bet.user_id].correctScores++;
+            }
+
+            // Разница голов — только для обычных матчей, не ничья, не угадан точный счёт
+            if (!exactScoreCorrect && !bet.is_final && bet.winner !== 'draw') {
+              const predictedDiff = bet.predicted_score1 - bet.predicted_score2;
+              const actualDiff = bet.actual_score1 - bet.actual_score2;
+              if (predictedDiff === actualDiff) {
+                userPoints[bet.user_id].points++;
+                userPoints[bet.user_id].correctDiff++;
+              }
             }
           }
 
@@ -2224,6 +2235,9 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
           }
           if (user.correctScores > 0) {
             stats.push(`🎯 ${user.correctScores}`);
+          }
+          if (user.correctDiff > 0) {
+            stats.push(`⚖️ ${user.correctDiff}`);
           }
           if (user.correctYellowCards > 0) {
             stats.push(`🟨 ${user.correctYellowCards}`);
@@ -4298,6 +4312,20 @@ router.get("/api/test/score-points/:userId", (req, res) => {
           THEN 1 
           ELSE 0 
         END as score_correct,
+        CASE
+          WHEN m.is_final = 0 AND m.winner != 'draw' AND
+               m.score_prediction_enabled = 1 AND
+               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+               NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+               (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2) AND
+               (b.prediction = 'team1' AND m.winner = 'team1') OR
+               (b.prediction = 'team2' AND m.winner = 'team2') OR
+               (b.prediction = m.team1_name AND m.winner = 'team1') OR
+               (b.prediction = m.team2_name AND m.winner = 'team2')
+          THEN 1
+          ELSE 0
+        END as diff_correct,
         CASE 
           WHEN m.yellow_cards_prediction_enabled = 1 AND
                cp.yellow_cards IS NOT NULL AND
@@ -4330,6 +4358,16 @@ router.get("/api/test/score-points/:userId", (req, res) => {
                    sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
               THEN 1 
               ELSE 0 
+            END +
+            CASE
+              WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                   m.score_prediction_enabled = 1 AND
+                   sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                   ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                   NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                   (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2)
+              THEN 1
+              ELSE 0
             END +
             CASE 
               WHEN m.yellow_cards_prediction_enabled = 1 AND
@@ -4869,6 +4907,7 @@ async function triggerAutoCountingForDate(dateGroup) {
           points: 0,
           correctResults: 0,
           correctScores: 0,
+          correctDiff: 0,
           correctYellowCards: 0,
           correctRedCards: 0
         };
@@ -4895,10 +4934,26 @@ async function triggerAutoCountingForDate(dateGroup) {
         // Проверяем счет (только если включен прогноз на счет для этого матча)
         if (bet.score_prediction_enabled === 1 &&
             bet.score_team1 != null && bet.score_team2 != null &&
+            bet.actual_score_team1 != null && bet.actual_score_team2 != null) {
+          const exactScoreGuessed = (
             bet.score_team1 === bet.actual_score_team1 &&
-            bet.score_team2 === bet.actual_score_team2) {
-          userStats[username].points++;
-          userStats[username].correctScores++;
+            bet.score_team2 === bet.actual_score_team2
+          );
+
+          if (exactScoreGuessed) {
+            userStats[username].points++;
+            userStats[username].correctScores++;
+          }
+
+          // Разница голов — только если: не ничья, не угадан точный счёт
+          if (!exactScoreGuessed && bet.winner !== 'draw') {
+            const predictedDiff = bet.score_team1 - bet.score_team2;
+            const actualDiff = bet.actual_score_team1 - bet.actual_score_team2;
+            if (predictedDiff === actualDiff) {
+              userStats[username].points++;
+              userStats[username].correctDiff++;
+            }
+          }
         }
         
         // Проверяем желтые карточки (только если включен прогноз на желтые карточки для этого матча)
@@ -4944,6 +4999,9 @@ async function triggerAutoCountingForDate(dateGroup) {
         }
         if (stats.correctScores > 0) {
           statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        if (stats.correctDiff > 0) {
+          statsText.push(`⚖️ ${stats.correctDiff}`);
         }
         if (stats.correctYellowCards > 0) {
           statsText.push(`🟨 ${stats.correctYellowCards}`);

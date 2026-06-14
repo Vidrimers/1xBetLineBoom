@@ -73,6 +73,14 @@ export function checkAndCreateTournamentCompletionNews(matchId) {
                               sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
                          THEN 1 ELSE 0 
                        END +
+                       CASE
+                         WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                              (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2)
+                         THEN 1 ELSE 0
+                       END +
                        CASE 
                          WHEN m.yellow_cards_prediction_enabled = 1 AND
                               cp.yellow_cards IS NOT NULL AND m.yellow_cards IS NOT NULL AND
@@ -307,6 +315,14 @@ export function checkAndCreateTournamentCompletionNewsOnLock(eventId) {
                               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                               sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 
                          THEN 1 ELSE 0 
+                       END +
+                       CASE
+                         WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                              ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                              NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                              (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2)
+                         THEN 1 ELSE 0
                        END +
                        CASE 
                          WHEN m.yellow_cards_prediction_enabled = 1 AND
