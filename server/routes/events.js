@@ -227,6 +227,7 @@ router.get("/api/events/:eventId/tournament-participants", (req, res) => {
                        -- Очко за угаданную разницу голов (обычный матч, не ничья, не угадан точный счёт)
                        CASE
                          WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              e.diff_goals_enabled = 1 AND
                               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                               NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
@@ -345,6 +346,7 @@ router.get("/api/events/:eventId/tournament-participants", (req, res) => {
       FROM users u
       INNER JOIN bets b ON u.id = b.user_id
       INNER JOIN matches m ON b.match_id = m.id
+      INNER JOIN events e ON m.event_id = e.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id
@@ -560,6 +562,7 @@ router.get("/api/events/:eventId/tournament-winner", (req, res) => {
                        END +
                        CASE
                          WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              e.diff_goals_enabled = 1 AND
                               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                               NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
@@ -661,6 +664,7 @@ router.get("/api/events/:eventId/tournament-winner", (req, res) => {
         END) as lost_count
       FROM bets b
       INNER JOIN matches m ON b.match_id = m.id
+      INNER JOIN events e ON m.event_id = e.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id
@@ -1363,6 +1367,7 @@ router.post("/api/admin/events", async (req, res) => {
     sendToUsers,
     sendToGroup,
     weight_category_id,
+    diff_goals_enabled,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -1393,8 +1398,8 @@ router.post("/api/admin/events", async (req, res) => {
     const result = db
       .prepare(
         `
-      INSERT INTO events (name, description, start_date, end_date, icon, background_color, team_file, weight_category_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO events (name, description, start_date, end_date, icon, background_color, team_file, weight_category_id, diff_goals_enabled)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
       )
       .run(
@@ -1405,7 +1410,8 @@ router.post("/api/admin/events", async (req, res) => {
         icon || null,
         background_color || null,
         team_file || null,
-        weight_category_id || null
+        weight_category_id || null,
+        diff_goals_enabled != null ? diff_goals_enabled : 1
       );
 
     if (isModerator && username) {
@@ -1765,6 +1771,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
     background_color,
     team_file,
     weight_category_id,
+    diff_goals_enabled,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -1781,7 +1788,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
       .prepare(
         `
       UPDATE events
-      SET name = ?, description = ?, start_date = ?, end_date = ?, icon = ?, background_color = ?, team_file = ?, weight_category_id = ?
+      SET name = ?, description = ?, start_date = ?, end_date = ?, icon = ?, background_color = ?, team_file = ?, weight_category_id = ?, diff_goals_enabled = ?
       WHERE id = ?
     `
       )
@@ -1794,6 +1801,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
         background_color || null,
         team_file || null,
         weight_category_id || null,
+        diff_goals_enabled != null ? diff_goals_enabled : 1,
         eventId
       );
 
@@ -2052,6 +2060,8 @@ router.put("/api/admin/events/:eventId/lock", async (req, res) => {
                          END +
                          CASE
                            WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                                e.diff_goals_enabled = 1 AND
+                              e.diff_goals_enabled = 1 AND
                                 sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                                 ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                                 NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
@@ -2100,6 +2110,7 @@ router.put("/api/admin/events/:eventId/lock", async (req, res) => {
         FROM users u
         INNER JOIN bets b ON u.id = b.user_id
         INNER JOIN matches m ON b.match_id = m.id
+        INNER JOIN events e ON m.event_id = e.id
         LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
         LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
         LEFT JOIN match_scores ms ON b.match_id = ms.match_id

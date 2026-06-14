@@ -454,11 +454,13 @@ async function triggerAutoCountingForDate(dateGroup) {
         m.score_prediction_enabled,
         m.yellow_cards_prediction_enabled,
         m.red_cards_prediction_enabled,
+        e.diff_goals_enabled,
         cp.yellow_cards as predicted_yellow_cards,
         cp.red_cards as predicted_red_cards
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
+      JOIN events e ON m.event_id = e.id
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date) = ?
         AND m.status = 'finished'
@@ -501,10 +503,11 @@ async function triggerAutoCountingForDate(dateGroup) {
           userStats[username].correctScores++;
         }
 
-        // Разница голов — только если: не ничья, не угадан точный счёт, счёт был введён
+        // Разница голов — только если: не ничья, не угадан точный счёт, счёт был введён, турнир поддерживает
         const isDraw = (bet.winner === 'draw');
         if (!exactScoreGuessed &&
             !isDraw &&
+            bet.diff_goals_enabled === 1 &&
             bet.score_prediction_enabled === 1 &&
             bet.score_team1 != null && bet.score_team2 != null &&
             bet.actual_score_team1 != null && bet.actual_score_team2 != null) {

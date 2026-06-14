@@ -93,6 +93,9 @@ export function openEditEventModal(eventId) {
       // Устанавливаем team_file
       document.getElementById("editEventTeamFile").value = event.team_file || "";
 
+      // Устанавливаем флаг разницы голов
+      document.getElementById("editDiffGoalsEnabledCheckbox").checked = event.diff_goals_enabled === 1;
+
       // Загружаем категории весов и устанавливаем текущую
       loadWeightCategoriesSelect("editEventWeightCategory", event.weight_category_id);
 
@@ -171,6 +174,7 @@ export async function submitCreateEvent(event) {
     sendToUsers: document.getElementById("sendToUsersCheckbox").checked,
     sendToGroup: document.getElementById("sendToGroupCheckbox").checked,
     weight_category_id: document.getElementById("eventWeightCategory").value || null,
+    diff_goals_enabled: document.getElementById("diffGoalsEnabledCheckbox").checked ? 1 : 0,
   };
 
   // Определяем иконку
@@ -220,6 +224,7 @@ export async function submitEditEvent(event) {
     end_date: document.getElementById("editEventEndDate").value || null,
     team_file: document.getElementById("editEventTeamFile").value || null,
     weight_category_id: document.getElementById("editEventWeightCategory").value || null,
+    diff_goals_enabled: document.getElementById("editDiffGoalsEnabledCheckbox").checked ? 1 : 0,
   };
 
   // Проверяем обязательные поля

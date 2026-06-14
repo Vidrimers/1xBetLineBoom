@@ -98,6 +98,7 @@ router.get("/api/users/:userId/global-stats", (req, res) => {
                        -- Очко за угаданную разницу голов (обычный матч, не ничья, не угадан точный счёт)
                        CASE
                          WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              e.diff_goals_enabled = 1 AND
                               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                               NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
@@ -190,6 +191,7 @@ router.get("/api/users/:userId/global-stats", (req, res) => {
         COUNT(DISTINCT m.event_id) as tournaments_count
       FROM bets b
       LEFT JOIN matches m ON b.match_id = m.id
+      LEFT JOIN events e ON m.event_id = e.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id
@@ -378,6 +380,7 @@ router.get("/api/participants", (req, res) => {
                        -- Очко за угаданную разницу голов (обычный матч, не ничья, не угадан точный счёт)
                        CASE
                          WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              e.diff_goals_enabled = 1 AND
                               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                               NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
@@ -476,6 +479,7 @@ router.get("/api/participants", (req, res) => {
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+      LEFT JOIN events e ON m.event_id = e.id
       -- Учитываем ставку только если пользователь НЕ исключён из этого турнира
       WHERE uti.id IS NULL OR b.id IS NULL
       GROUP BY u.id, u.username, u.avatar
@@ -589,6 +593,7 @@ router.get("/api/user/:userId/profile", async (req, res) => {
                        -- Очко за угаданную разницу голов (обычный матч, не ничья, не угадан точный счёт)
                        CASE
                          WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              e.diff_goals_enabled = 1 AND
                               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                               NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
@@ -680,6 +685,7 @@ router.get("/api/user/:userId/profile", async (req, res) => {
         END) as pending_bets
       FROM bets b
       LEFT JOIN matches m ON b.match_id = m.id
+      LEFT JOIN events e ON m.event_id = e.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id

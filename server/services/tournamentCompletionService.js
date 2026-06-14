@@ -75,6 +75,7 @@ export function checkAndCreateTournamentCompletionNews(matchId) {
                        END +
                        CASE
                          WHEN m.is_final = 0 AND m.winner != 'draw' AND
+                              e.diff_goals_enabled = 1 AND
                               sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
                               ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
                               NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
@@ -177,6 +178,7 @@ export function checkAndCreateTournamentCompletionNews(matchId) {
       FROM users u
       INNER JOIN bets b ON u.id = b.user_id
       INNER JOIN matches m ON b.match_id = m.id
+      INNER JOIN events e ON m.event_id = e.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id
@@ -420,6 +422,7 @@ export function checkAndCreateTournamentCompletionNewsOnLock(eventId) {
       FROM users u
       INNER JOIN bets b ON u.id = b.user_id
       INNER JOIN matches m ON b.match_id = m.id
+      INNER JOIN events e ON m.event_id = e.id
       LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN match_scores ms ON b.match_id = ms.match_id

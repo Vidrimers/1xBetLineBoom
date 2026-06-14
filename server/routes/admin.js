@@ -2083,6 +2083,7 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
           m.score_prediction_enabled,
           m.yellow_cards_prediction_enabled,
           m.red_cards_prediction_enabled,
+          e.diff_goals_enabled,
           u.username, 
           u.telegram_username,
           sp.score_team1 as predicted_score1,
@@ -2095,6 +2096,7 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
           m.red_cards as actual_red_cards
         FROM bets b
         JOIN matches m ON b.match_id = m.id
+        JOIN events e ON m.event_id = e.id
         JOIN users u ON b.user_id = u.id
         LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
         LEFT JOIN match_scores ms ON b.match_id = ms.match_id
@@ -2144,8 +2146,8 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
               userPoints[bet.user_id].correctScores++;
             }
 
-            // Разница голов — только для обычных матчей, не ничья, не угадан точный счёт
-            if (!exactScoreCorrect && !bet.is_final && bet.winner !== 'draw') {
+            // Разница голов — только для обычных матчей, не ничья, не угадан точный счёт, турнир поддерживает
+            if (!exactScoreCorrect && !bet.is_final && bet.winner !== 'draw' && bet.diff_goals_enabled === 1) {
               const predictedDiff = bet.predicted_score1 - bet.predicted_score2;
               const actualDiff = bet.actual_score1 - bet.actual_score2;
               if (predictedDiff === actualDiff) {
@@ -4881,11 +4883,13 @@ async function triggerAutoCountingForDate(dateGroup) {
         m.score_prediction_enabled,
         m.yellow_cards_prediction_enabled,
         m.red_cards_prediction_enabled,
+        e.diff_goals_enabled,
         cp.yellow_cards as predicted_yellow_cards,
         cp.red_cards as predicted_red_cards
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
+      JOIN events e ON m.event_id = e.id
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date) = ?
         AND m.status = 'finished'
@@ -4945,8 +4949,8 @@ async function triggerAutoCountingForDate(dateGroup) {
             userStats[username].correctScores++;
           }
 
-          // Разница голов — только если: не ничья, не угадан точный счёт
-          if (!exactScoreGuessed && bet.winner !== 'draw') {
+          // Разница голов — только если: не ничья, не угадан точный счёт, турнир поддерживает
+          if (!exactScoreGuessed && bet.winner !== 'draw' && bet.diff_goals_enabled === 1) {
             const predictedDiff = bet.score_team1 - bet.score_team2;
             const actualDiff = bet.actual_score_team1 - bet.actual_score_team2;
             if (predictedDiff === actualDiff) {

@@ -357,4 +357,13 @@ export function runMigrations() {
   } catch (error) {
     console.error("❌ Ошибка создания таблицы banned_names:", error);
   }
+
+  // Миграция: добавляем diff_goals_enabled в events (учёт разницы голов)
+  // Старые турниры получат 0, новые будут создаваться с 1
+  try {
+    db.prepare("ALTER TABLE events ADD COLUMN diff_goals_enabled INTEGER DEFAULT 0").run();
+    console.log("✅ Колонка diff_goals_enabled добавлена в таблицу events");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
 }
