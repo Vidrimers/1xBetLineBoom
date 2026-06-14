@@ -720,6 +720,12 @@ export async function openTournamentInfoModal() {
     console.error('Ошибка отправки уведомления:', notifyError);
   }
 
+  // Получаем флаг разницы голов текущего турнира
+  const currentEvent = state.currentEventId
+    ? state.events.find(e => e.id === state.currentEventId)
+    : null;
+  const diffGoalsEnabled = currentEvent?.diff_goals_enabled === 1;
+
   // Загружаем категории весов для динамического отображения
   let weightCategoriesHtml = '<div style="color: #b0b8c8; font-style: italic;">Не удалось загрузить категории</div>';
   try {
@@ -822,6 +828,7 @@ export async function openTournamentInfoModal() {
             <ul style="margin: 5px 0; padding-left: 20px;">
               <li><strong>1 очко</strong> — за угаданный результат (победа команды 1, победа команды 2 или ничья)</li>
               <li><strong>+1 очко</strong> — за угаданный точный счёт (если угадан результат)</li>
+              ${diffGoalsEnabled ? '<li><strong>+1 очко</strong> — за угаданную разницу голов (если угадан результат, не ничья, но точный счёт не совпал)</li>' : ''}
               <li><strong>+1 очко</strong> — за угаданные жёлтые карточки (если включено в матче)</li>
               <li><strong>+1 очко</strong> — за угаданные красные карточки (если включено в матче)</li>
             </ul>
@@ -830,6 +837,7 @@ export async function openTournamentInfoModal() {
             </div>
             <div class="info-note" style="border-left: 3px solid #ff9800; padding: 8px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 0.9em;">
               <strong>Пример:</strong> Угадал результат + точный счёт + жёлтые = 1 + 1 + 1 = <strong>3 очка</strong>
+              ${diffGoalsEnabled ? '<br><strong>Пример (разница):</strong> Угадал результат + разницу голов + жёлтые = 1 + 1 + 1 = <strong>3 очка</strong>' : ''}
             </div>
           </div>
           
