@@ -1062,6 +1062,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }, 30000));
 
+  // Фоновый опрос api_finished — обновляет плашки "Завершён" без открытия Live вкладки
+  setInterval(() => {
+    if (state.currentEventId && state.matches.some(m => m.status === 'ongoing' || (m.status === 'pending' && new Date(m.match_date) < new Date()))) {
+      fetch(`/api/live-matches?eventId=${state.currentEventId}`)
+        .then(r => r.json())
+        .catch(() => {});
+    }
+  }, 60000); // Каждую минуту
+
   // Обновляем настройки когда пользователь возвращается на вкладку
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && state.currentUser) {
