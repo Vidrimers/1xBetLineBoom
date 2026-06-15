@@ -1640,7 +1640,7 @@ router.get("/api/live-match-stats", async (req, res) => {
               match.status === 'technical_loss' ? '⚠️ Тех. поражение' :
               match.status === 'walkover' ? '⚠️ Неявка' :
               'Предстоящий',
-      matchTime: match.match_time,
+      matchTime: match.match_date,
       elapsed: match.elapsed || null,
       statistics: [],
       events: [],
