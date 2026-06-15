@@ -4,7 +4,6 @@ import { loadRoundsOrder, saveRoundsOrderToStorage, sortRoundsByOrder } from './
 import { canManageMatches, canEditMatches, canDeleteMatches, canManageResults } from './admin.js';
 import { loadAndDisplayBetStats } from './betStats.js';
 import { showCustomAlert } from './ui.js';
-import { showLiveTeamStats } from './liveStats.js';
 
 // Форматирование даты/времени матча
 function formatMatchTime(dateStr) {
@@ -1240,12 +1239,6 @@ export async function openMatchStats(dbMatchId, sstatsMatchId) {
           return diffMinutes < 120; // В пределах 2 часов — тот же матч
         }) : null;
 
-        const found = matchDate ? liveMatches.find(m => {
-          const liveDate = new Date(m.match_time);
-          const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
-          return diffMinutes < 120; // В пределах 2 часов — тот же матч
-        }) : null;
-
         if (found) {
           liveMatchId = found.id;
           console.log(`✅ Найден SStats ID по дате для ${data.team1} vs ${data.team2}: ${liveMatchId}`);
@@ -1274,7 +1267,7 @@ export async function openMatchStats(dbMatchId, sstatsMatchId) {
       elapsed: data.elapsed
     };
 
-    await showLiveTeamStats(matchData);
+    await window.showLiveTeamStats(matchData);
   } catch (error) {
     console.error('❌ Ошибка открытия статистики матча:', error);
   }
