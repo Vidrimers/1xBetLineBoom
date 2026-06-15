@@ -4,6 +4,7 @@ import { loadRoundsOrder, saveRoundsOrderToStorage, sortRoundsByOrder } from './
 import { canManageMatches, canEditMatches, canDeleteMatches, canManageResults } from './admin.js';
 import { loadAndDisplayBetStats } from './betStats.js';
 import { showCustomAlert } from './ui.js';
+import { showLiveTeamStats } from './liveStats.js';
 
 // Форматирование даты/времени матча
 function formatMatchTime(dateStr) {
@@ -694,15 +695,22 @@ export async function displayMatches() {
     const statusA = getMatchStatusByDate(a);
     const statusB = getMatchStatusByDate(b);
 
-    // Приоритет статусов: ongoing > pending > finished
+    // Приоритет статусов: ongoing > api_finished > pending > finished
     const statusPriority = {
       ongoing: 0,
-      pending: 1,
-      finished: 2,
+      api_finished: 1,
+      pending: 2,
+      finished: 3,
     };
 
-    const priorityA = statusPriority[statusA] ?? 99;
-    const priorityB = statusPriority[statusB] ?? 99;
+    const getEffectivePriority = (match) => {
+      const s = getMatchStatusByDate(match);
+      if (s === 'ongoing' && match.api_finished === 1) return statusPriority.api_finished;
+      return statusPriority[s] ?? 99;
+    };
+
+    const priorityA = getEffectivePriority(a);
+    const priorityB = getEffectivePriority(b);
 
     // Сначала сортируем по приоритету статуса
     if (priorityA !== priorityB) {
@@ -800,9 +808,13 @@ export async function displayMatches() {
 
       // Определяем текст и цвет статуса
       let statusBadge = "";
-      if (effectiveStatus === "ongoing") {
+      if (effectiveStatus === "ongoing" && match.api_finished === 1) {
+        // Матч физически завершён по API, но день ещё не закончился
         statusBadge =
-          '<span style="display: inline-block; padding: 3px 8px; background: #ff9800; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> ИДЕТ</span>';
+          `<span onclick="openMatchStats(${match.id}, ${match.sstats_match_id || 'null'})" style="display: inline-block; padding: 3px 8px; background: #607d8b; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px; cursor: pointer;" title="Нажмите для просмотра статистики"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ЗАВЕРШЕН</span>`;
+      } else if (effectiveStatus === "ongoing") {
+        statusBadge =
+          `<span onclick="openMatchStats(${match.id}, ${match.sstats_match_id || 'null'})" style="display: inline-block; padding: 3px 8px; background: #ff9800; color: white; border-radius: 12px; font-size: 0.75em; margin-left: 5px; cursor: pointer;" title="Нажмите для просмотра статистики"><svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> ИДЕТ</span>`;
       } else if (effectiveStatus === "finished") {
         statusBadge =
           '<span style="display: inline-block; padding: 3px 8px; background: rgba(100, 100, 100, 0.8); color: #e0e0e0; border-radius: 12px; font-size: 0.75em; margin-left: 5px;"><svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> ЗАВЕРШЕН</span>';
@@ -1201,4 +1213,41 @@ export async function displayMatches() {
   filteredMatches.forEach(match => {
     loadAndDisplayBetStats(match.id, false);
   });
+}
+
+// Открыть статистику матча по клику на плашку "ИДЕТ" / "ЗАВЕРШЕН"
+export async function openMatchStats(dbMatchId, sstatsMatchId) {
+  try {
+    // Получаем данные матча из БД
+    const matchesResponse = await fetch(`/api/events/${state.currentEventId}/matches`);
+    const matchesList = await matchesResponse.json();
+    const match = matchesList.find(m => m.id === dbMatchId);
+
+    if (!match) {
+      console.warn('⚠ Матч не найден:', dbMatchId);
+      return;
+    }
+
+    // Формируем объект в формате который ожидает showLiveTeamStats
+    const matchData = {
+      id: sstatsMatchId || dbMatchId,
+      dbId: dbMatchId,
+      team1: match.team1_name,
+      team2: match.team2_name,
+      homeTeam: match.team1_name,
+      awayTeam: match.team2_name,
+      score: (match.team1_score != null && match.team2_score != null)
+        ? `${match.team1_score}:${match.team2_score}`
+        : null,
+      homeResult: match.team1_score ?? 0,
+      awayResult: match.team2_score ?? 0,
+      status: match.api_finished === 1 ? 'finished' : 'live',
+      statusName: match.api_finished === 1 ? 'Finished' : 'Live',
+      elapsed: null
+    };
+
+    await showLiveTeamStats(matchData);
+  } catch (error) {
+    console.error('❌ Ошибка открытия статистики матча:', error);
+  }
 }

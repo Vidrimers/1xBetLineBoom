@@ -1526,6 +1526,14 @@ router.post("/api/live-matches-by-ids", async (req, res) => {
               
               if (game) {
                 console.log(`✅ API вернул данные для матча ${matchId}: ${game.homeResult || 0}:${game.awayResult || 0}`);
+
+                // Обновляем api_finished если матч физически завершён
+                const apiFinishedStatuses = [8, 9, 10];
+                if (apiFinishedStatuses.includes(game.status) && match.api_finished !== 1) {
+                  db.prepare('UPDATE matches SET api_finished = 1 WHERE id = ?').run(match.id);
+                  console.log(`✅ api_finished = 1 для матча ${match.id} (${match.team1_name} vs ${match.team2_name})`);
+                }
+
                 allMatches.push({
                   id: matchId, // Используем тот ID который пришел в запросе (SStats ID)
                   dbId: match.id, // ID из нашей БД
@@ -1538,7 +1546,8 @@ router.post("/api/live-matches-by-ids", async (req, res) => {
                   awayResult: game.awayResult || 0,
                   status: game.statusName || 'live',
                   statusName: game.statusName,
-                  elapsed: game.elapsed
+                  elapsed: game.elapsed,
+                  api_finished: apiFinishedStatuses.includes(game.status) ? 1 : 0
                 });
                 continue;
               }

@@ -358,6 +358,14 @@ export function runMigrations() {
     console.error("❌ Ошибка создания таблицы banned_names:", error);
   }
 
+  // Миграция: добавляем api_finished в matches (матч физически завершён по API, но очки ещё не посчитаны)
+  try {
+    db.prepare("ALTER TABLE matches ADD COLUMN api_finished INTEGER DEFAULT 0").run();
+    console.log("✅ Колонка api_finished добавлена в таблицу matches");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
   // Миграция: добавляем diff_goals_enabled в events (учёт разницы голов)
   // Старые турниры получат 0, новые будут создаваться с 1
   try {

@@ -68,6 +68,7 @@ import {
   initMatchRowClickHandlers,
   getMatchStatusByDate,
   displayTournamentWinner,
+  openMatchStats,
 } from './modules/matches.js';
 import {
   placeBet,
@@ -561,7 +562,7 @@ Object.assign(window, {
   // matches
   loadMatches, displayMatches, filterByRound, initToggleStates,
   initMatchResultToggles, initAdminActionToggles, initMatchRowClickHandlers,
-  getMatchStatusByDate, displayTournamentWinner,
+  getMatchStatusByDate, displayTournamentWinner, openMatchStats,
   // bets
   placeBet, placeScorePrediction, cancelScorePrediction, syncScoreInputs,
   showScoreAlert, closeScoreAlert, unlockFinalParameter, lockFinalParameter,
