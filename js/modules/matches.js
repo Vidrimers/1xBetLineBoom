@@ -694,11 +694,11 @@ export async function displayMatches() {
     const statusA = getMatchStatusByDate(a);
     const statusB = getMatchStatusByDate(b);
 
-    // Приоритет статусов: ongoing > api_finished > pending > finished
+    // Приоритет статусов: ongoing > pending > api_finished > finished
     const statusPriority = {
       ongoing: 0,
-      api_finished: 1,
-      pending: 2,
+      pending: 1,
+      api_finished: 2,
       finished: 3,
     };
 
