@@ -474,22 +474,25 @@ router.get("/api/live-matches", async (req, res) => {
       });
     }
 
-    // Обновляем api_finished для завершённых матчей — сопоставляем по sstats_match_id
+    // Обновляем api_finished для завершённых матчей — сопоставляем по дате
     const finishedSstatsStatuses = ['Finished', 'After ET', 'After Penalties'];
     for (const match of matches) {
       if (finishedSstatsStatuses.some(s => (match.statusName || '').includes(s))) {
-        // Ищем матч в БД по sstats_match_id или по дате
         const matchDate = new Date(match.match_time);
         const dateFrom = new Date(matchDate.getTime() - 90 * 60 * 1000).toISOString();
         const dateTo = new Date(matchDate.getTime() + 90 * 60 * 1000).toISOString();
 
+        console.log(`🔍 Ищем завершённый матч: ${match.team1} vs ${match.team2}, дата=${match.match_time}, dateFrom=${dateFrom}, dateTo=${dateTo}, eventId=${eventId}`);
+
         const dbMatch = db.prepare(`
-          SELECT id, api_finished FROM matches 
+          SELECT id, api_finished, match_date FROM matches 
           WHERE event_id = ? 
-            AND (sstats_match_id = ? OR (match_date >= ? AND match_date <= ?))
+            AND match_date >= ? AND match_date <= ?
             AND status != 'finished'
           LIMIT 1
-        `).get(eventId, match.id, dateFrom, dateTo);
+        `).get(parseInt(eventId), dateFrom, dateTo);
+
+        console.log(`🔍 Найден в БД:`, dbMatch);
 
         if (dbMatch && dbMatch.api_finished !== 1) {
           db.prepare('UPDATE matches SET api_finished = 1, sstats_match_id = ? WHERE id = ?')
