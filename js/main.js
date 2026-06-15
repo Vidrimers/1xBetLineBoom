@@ -842,6 +842,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Экспортируем состояние в window для доступа из AI чата
   window.state = state;
 
+  // Подсказка для разработчика
+  console.log('%c💡 Остановить обновление карточек матчей:\n  state.isMatchUpdatingEnabled = false\n\n▶ Возобновить:\n  state.isMatchUpdatingEnabled = true', 'color: #5a9fd4; font-size: 11px;');
+
   // Очищаем старые завершенные матчи из избранного
   cleanupOldFavorites();
 
