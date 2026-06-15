@@ -843,7 +843,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.state = state;
 
   // Подсказка для разработчика
-  console.log('%c💡 Остановить обновление карточек матчей:\n  state.isMatchUpdatingEnabled = false\n\n▶ Возобновить:\n  state.isMatchUpdatingEnabled = true', 'color: #5a9fd4; font-size: 11px;');
+  console.log('%c💡 Остановить обновление карточек матчей:\n  window.matchUpdatingPaused = true\n\n▶ Возобновить:\n  window.matchUpdatingPaused = false', 'color: #5a9fd4; font-size: 11px;');
 
   // Очищаем старые завершенные матчи из избранного
   cleanupOldFavorites();
@@ -1062,7 +1062,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Запускаем обновление статусов матчей каждые 30 секунд
   setMatchUpdateInterval(setInterval(() => {
-    if (state.currentEventId && state.matches.length > 0 && state.isMatchUpdatingEnabled) {
+    if (state.currentEventId && state.matches.length > 0 && !window.matchUpdatingPaused && state.isMatchUpdatingEnabled) {
       // Перезагружаем матчи чтобы подтянуть api_finished из БД
       const username = state.currentUser?.username;
       const url = username
