@@ -1148,7 +1148,7 @@ export function displayMyBets(bets) {
             text-align: center; 
             color: #5a9fd4; 
             font-size: 0.95em; 
-            margin: 15px 0 10px 0; 
+            margin: 5px 0px 5px;
             cursor: pointer;
             user-select: none;
             padding: 8px;

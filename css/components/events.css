@@ -1,5 +1,5 @@
 .event-item {
-  padding: 15px;
+  padding: 7px 10px;
   background: rgba(44, 50, 63, 0.7);
   border-radius: 8px;
   cursor: pointer;
@@ -89,7 +89,8 @@
   gap: 10px;
   align-items: center;
   margin-bottom: 15px;
-  padding: 15px;
+  /* padding: 15px; */
+  padding: 7px 10px;
   background: rgba(44, 50, 63, 0.7);
   border-radius: 8px;
   border-left: 4px solid #3a7bd5;
