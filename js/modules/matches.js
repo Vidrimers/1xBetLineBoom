@@ -1218,32 +1218,34 @@ export async function displayMatches() {
 // Открыть статистику матча по клику на плашку "ИДЕТ" / "ЗАВЕРШЕН"
 export async function openMatchStats(dbMatchId, sstatsMatchId) {
   try {
-    // Получаем данные матча из БД
-    const matchesResponse = await fetch(`/api/events/${state.currentEventId}/matches`);
-    const matchesList = await matchesResponse.json();
-    const match = matchesList.find(m => m.id === dbMatchId);
-
-    if (!match) {
-      console.warn('⚠ Матч не найден:', dbMatchId);
+    // Запрашиваем статистику через /api/live-match-stats — он использует dbMatchId
+    // и сам ищет актуальный SStats ID через live API
+    const response = await fetch(`/api/live-match-stats?matchId=${dbMatchId}&eventId=${state.currentEventId}`);
+    
+    if (!response.ok) {
+      console.warn('⚠ Не удалось загрузить статистику матча');
       return;
     }
 
-    // Формируем объект в формате который ожидает showLiveTeamStats
+    const data = await response.json();
+
+    // Формируем matchData для showLiveTeamStats
+    // id = null чтобы showLiveTeamStats показал базовую статистику из данных матча
+    // (sstats_match_id ещё не привязан пока Live не опросит API)
     const matchData = {
-      id: sstatsMatchId || dbMatchId,
+      id: null,
       dbId: dbMatchId,
-      team1: match.team1_name,
-      team2: match.team2_name,
-      homeTeam: match.team1_name,
-      awayTeam: match.team2_name,
-      score: (match.team1_score != null && match.team2_score != null)
-        ? `${match.team1_score}:${match.team2_score}`
-        : null,
-      homeResult: match.team1_score ?? 0,
-      awayResult: match.team2_score ?? 0,
-      status: match.api_finished === 1 ? 'finished' : 'live',
-      statusName: match.api_finished === 1 ? 'Finished' : 'Live',
-      elapsed: null
+      team1: data.team1,
+      team2: data.team2,
+      homeTeam: data.team1,
+      awayTeam: data.team2,
+      score: data.score || null,
+      homeResult: data.score ? parseInt(data.score.split(':')[0]) : 0,
+      awayResult: data.score ? parseInt(data.score.split(':')[1]) : 0,
+      status: data.api_finished ? 'finished' : 'live',
+      statusName: data.api_finished ? 'Finished' : 'Live',
+      matchTime: data.matchTime,
+      elapsed: data.elapsed
     };
 
     await showLiveTeamStats(matchData);

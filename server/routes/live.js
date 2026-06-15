@@ -1627,6 +1627,8 @@ router.get("/api/live-match-stats", async (req, res) => {
     // Базовая информация о матче (всегда возвращаем)
     const result = {
       matchId: match.id,
+      sstatsMatchId: match.sstats_match_id || null,
+      api_finished: match.api_finished || 0,
       team1: match.team1_name,
       team2: match.team2_name,
       score: match.score || null,
