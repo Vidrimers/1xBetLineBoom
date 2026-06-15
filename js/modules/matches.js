@@ -1218,22 +1218,42 @@ export async function displayMatches() {
 // Открыть статистику матча по клику на плашку "ИДЕТ" / "ЗАВЕРШЕН"
 export async function openMatchStats(dbMatchId, sstatsMatchId) {
   try {
-    // Запрашиваем статистику через /api/live-match-stats — он использует dbMatchId
-    // и сам ищет актуальный SStats ID через live API
-    const response = await fetch(`/api/live-match-stats?matchId=${dbMatchId}&eventId=${state.currentEventId}`);
-    
-    if (!response.ok) {
-      console.warn('⚠ Не удалось загрузить статистику матча');
-      return;
+    // Получаем данные матча из БД
+    const dbResponse = await fetch(`/api/live-match-stats?matchId=${dbMatchId}&eventId=${state.currentEventId}`);
+    if (!dbResponse.ok) return;
+    const data = await dbResponse.json();
+
+    // Ищем актуальный SStats ID через /api/live-matches (тот же источник что и Live вкладка)
+    let liveMatchId = null;
+    try {
+      const liveResponse = await fetch(`/api/live-matches?eventId=${state.currentEventId}`);
+      if (liveResponse.ok) {
+        const liveData = await liveResponse.json();
+        const liveMatches = liveData.matches || [];
+
+        // Нормализуем название для поиска
+        const norm = (s) => (s || '').toLowerCase().trim();
+        const t1 = norm(data.team1);
+        const t2 = norm(data.team2);
+
+        const found = liveMatches.find(m => {
+          const mt1 = norm(m.team1);
+          const mt2 = norm(m.team2);
+          return (mt1.includes(t1.substring(0, 5)) || t1.includes(mt1.substring(0, 5))) &&
+                 (mt2.includes(t2.substring(0, 5)) || t2.includes(mt2.substring(0, 5)));
+        });
+
+        if (found) {
+          liveMatchId = found.id; // SStats ID
+          console.log(`✅ Найден SStats ID для ${data.team1} vs ${data.team2}: ${liveMatchId}`);
+        }
+      }
+    } catch (e) {
+      console.warn('⚠ Не удалось найти матч в live:', e.message);
     }
 
-    const data = await response.json();
-
-    // Формируем matchData для showLiveTeamStats
-    // id = null чтобы showLiveTeamStats показал базовую статистику из данных матча
-    // (sstats_match_id ещё не привязан пока Live не опросит API)
     const matchData = {
-      id: null,
+      id: liveMatchId, // SStats ID — если null, покажется базовая статистика
       dbId: dbMatchId,
       team1: data.team1,
       team2: data.team2,
