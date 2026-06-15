@@ -1231,21 +1231,27 @@ export async function openMatchStats(dbMatchId, sstatsMatchId) {
         const liveData = await liveResponse.json();
         const liveMatches = liveData.matches || [];
 
-        // Нормализуем название для поиска
-        const norm = (s) => (s || '').toLowerCase().trim();
-        const t1 = norm(data.team1);
-        const t2 = norm(data.team2);
+        // Ищем по дате матча (точнее чем по названию команд на разных языках)
+        const matchDate = data.matchTime ? new Date(data.matchTime) : null;
 
-        const found = liveMatches.find(m => {
-          const mt1 = norm(m.team1);
-          const mt2 = norm(m.team2);
-          return (mt1.includes(t1.substring(0, 5)) || t1.includes(mt1.substring(0, 5))) &&
-                 (mt2.includes(t2.substring(0, 5)) || t2.includes(mt2.substring(0, 5)));
-        });
+        const found = matchDate ? liveMatches.find(m => {
+          const liveDate = new Date(m.match_time);
+          const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
+          return diffMinutes < 120; // В пределах 2 часов — тот же матч
+        }) : null;
+
+        const found = matchDate ? liveMatches.find(m => {
+          const liveDate = new Date(m.match_time);
+          const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
+          return diffMinutes < 120; // В пределах 2 часов — тот же матч
+        }) : null;
 
         if (found) {
-          liveMatchId = found.id; // SStats ID
-          console.log(`✅ Найден SStats ID для ${data.team1} vs ${data.team2}: ${liveMatchId}`);
+          liveMatchId = found.id;
+          console.log(`✅ Найден SStats ID по дате для ${data.team1} vs ${data.team2}: ${liveMatchId}`);
+        } else {
+          console.log(`⚠ Не найден матч в live. matchTime=${data.matchTime}`);
+          console.log('Live matches:', liveMatches.map(m => `${m.team1} vs ${m.team2} @ ${m.match_time} id=${m.id}`));
         }
       }
     } catch (e) {
