@@ -1267,6 +1267,9 @@ export async function openMatchStats(dbMatchId, sstatsMatchId) {
       elapsed: data.elapsed
     };
 
+    // Устанавливаем currentLiveEventId чтобы showLiveTeamStats загрузил словарь игроков
+    if (window.setCurrentLiveEventId) window.setCurrentLiveEventId(state.currentEventId);
+
     await window.showLiveTeamStats(matchData);
   } catch (error) {
     console.error('❌ Ошибка открытия статистики матча:', error);

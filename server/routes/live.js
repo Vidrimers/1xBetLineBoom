@@ -309,7 +309,9 @@ router.get("/api/live-matches", async (req, res) => {
       'CL': path.join(ROOT_DIR, 'names', 'LeagueOfChampionsTeams.json'),
       'EL': path.join(ROOT_DIR, 'names', 'EuropaLeague.json'),
       'ECL': path.join(ROOT_DIR, 'names', 'ConferenceLeague.json'),
-      'RPL': path.join(ROOT_DIR, 'names', 'RussianPremierLeague.json')
+      'RPL': path.join(ROOT_DIR, 'names', 'RussianPremierLeague.json'),
+      'WC': path.join(ROOT_DIR, 'names', 'Countries.json'),
+      'EC': path.join(ROOT_DIR, 'names', 'Countries.json'),
     };
     
     let teamMapping = {}; // Русское -> Английское
@@ -1772,6 +1774,58 @@ router.get("/api/matches/:matchId/events/players", async (req, res) => {
     res.json({ success: true, events });
   } catch (error) {
     console.error("❌ Ошибка при получении имен игроков:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/matches/:matchId/events/player - Сохранить имя игрока для события матча
+router.post("/api/matches/:matchId/events/player", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { sstats_event_id, event_type, minute, extra_minute, team_id, player_name } = req.body;
+
+    if (!sstats_event_id || !player_name) {
+      return res.status(400).json({ error: "Требуются sstats_event_id и player_name" });
+    }
+
+    // Создаём таблицу если не существует
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS match_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        match_id INTEGER NOT NULL,
+        sstats_event_id INTEGER NOT NULL,
+        event_type INTEGER,
+        minute INTEGER,
+        extra_minute INTEGER,
+        team_id INTEGER,
+        player_name TEXT,
+        assist_player_name TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(match_id, sstats_event_id)
+      )
+    `);
+
+    // Вставляем или обновляем
+    const existing = db.prepare(`
+      SELECT id FROM match_events WHERE match_id = ? AND sstats_event_id = ?
+    `).get(matchId, sstats_event_id);
+
+    if (existing) {
+      db.prepare(`
+        UPDATE match_events SET player_name = ?, event_type = ?, minute = ?
+        WHERE match_id = ? AND sstats_event_id = ?
+      `).run(player_name, event_type || null, minute || null, matchId, sstats_event_id);
+    } else {
+      db.prepare(`
+        INSERT INTO match_events (match_id, sstats_event_id, event_type, minute, extra_minute, team_id, player_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(matchId, sstats_event_id, event_type || null, minute || null, extra_minute || null, team_id || null, player_name);
+    }
+
+    console.log(`✅ Сохранено имя игрока: ${player_name} для события ${sstats_event_id} матча ${matchId}`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Ошибка при сохранении имени игрока:", error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -2,7 +2,7 @@
 
 // ===== ИМПОРТЫ =====
 import * as state from './modules/state.js';
-import { setCurrentUser, setSessionCheckInterval, setMatchUpdateInterval } from './modules/state.js';
+import { setCurrentUser, setSessionCheckInterval, setMatchUpdateInterval, setCurrentLiveEventId } from './modules/state.js';
 import { originalFetch } from './modules/api.js';
 import {
   showCustomAlert,
@@ -543,6 +543,8 @@ import { loadCounting, selectCompetition, calculateCountingResults } from './cou
 // ===== ЭКСПОРТ В ГЛОБАЛЬНЫЙ SCOPE (для onclick в HTML) =====
 // Все функции которые вызываются из HTML через onclick="..."
 Object.assign(window, {
+  // state
+  setCurrentLiveEventId,
   // auth
   initUser, loginFromModal, closeLoginModal, openLoginModal, logoutUser,
   loginWithTelegram, checkTelegramAuthStatus, initGuestMode, exitGuestMode,
@@ -1057,8 +1059,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Запускаем обновление статусов матчей каждые 30 секунд
   setMatchUpdateInterval(setInterval(() => {
-    if (state.matches.length > 0 && state.isMatchUpdatingEnabled) {
-      displayMatches();
+    if (state.currentEventId && state.matches.length > 0 && state.isMatchUpdatingEnabled) {
+      // Перезагружаем матчи чтобы подтянуть api_finished из БД
+      const username = state.currentUser?.username;
+      const url = username
+        ? `/api/events/${state.currentEventId}/matches?username=${encodeURIComponent(username)}`
+        : `/api/events/${state.currentEventId}/matches`;
+      fetch(url)
+        .then(r => r.json())
+        .then(matches => {
+          if (matches && matches.length > 0) {
+            state.setMatches(matches);
+            displayMatches();
+          }
+        })
+        .catch(() => displayMatches());
     }
   }, 30000));
 
