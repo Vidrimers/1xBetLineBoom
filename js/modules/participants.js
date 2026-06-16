@@ -880,7 +880,7 @@ export function displayTournamentParticipantBets(bets) {
   let htmlContent = "";
 
   sortedDateKeys.forEach((dateKey) => {
-    htmlContent += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0; background: rgba(0, 0, 0, 0.2); padding: 5px; border-radius: 4px;">━━━ ${dateKey} ━━━</div>`;
+    htmlContent += `<div style="grid-column: 1 / -1; text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0; background: rgba(0, 0, 0, 0.2); padding: 5px; border-radius: 4px;">━━━ ${dateKey} ━━━</div>`;
 
     htmlContent += betsByDate[dateKey].map(
       (bet) => {
