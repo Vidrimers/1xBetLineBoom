@@ -226,7 +226,7 @@ export function loadCounting() {
   }
 }
 
-async function updateCountingResults() {
+export async function updateCountingResults() {
   const dateFrom = document.getElementById("countingDateFrom")?.value;
   const dateTo = document.getElementById("countingDateTo")?.value;
 
@@ -512,7 +512,8 @@ export async function calculateCountingResults() {
 }
 
 async function confirmMatchesFromCounting(results) {
-  if (!canViewCounting() || !currentUser) {
+  const user = window.state?.currentUser || window.currentUser;
+  if (!canViewCounting() || !user) {
     return;
   }
 
@@ -526,7 +527,7 @@ async function confirmMatchesFromCounting(results) {
     }
   });
 
-  const adminUsername = currentUser.username;
+  const adminUsername = user.username;
   const updateEntries = Object.entries(toUpdate);
 
   for (const [matchId, fdMatch] of updateEntries) {

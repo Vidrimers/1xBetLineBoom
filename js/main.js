@@ -538,7 +538,7 @@ import {
   createBracket,
 } from './modules/bracket.js';
 import { openXgModal, closeXgModal, refreshXgData, toggleXgButton } from './xg-modal.js';
-import { loadCounting, selectCompetition, calculateCountingResults } from './counting.js';
+import { loadCounting, selectCompetition, calculateCountingResults, updateCountingResults } from './counting.js';
 
 // ===== ЭКСПОРТ В ГЛОБАЛЬНЫЙ SCOPE (для onclick в HTML) =====
 // Все функции которые вызываются из HTML через onclick="..."
@@ -742,7 +742,7 @@ Object.assign(window, {
   // xg-modal
   openXgModal, closeXgModal, refreshXgData, toggleXgButton,
   // counting
-  loadCounting, selectCompetition, calculateCountingResults,
+  loadCounting, selectCompetition, calculateCountingResults, updateCountingResults,
   // ui
   showCustomAlert, showCustomConfirm, showCustomSaveConfirm, showCustomPrompt,
   lockBodyScroll, unlockBodyScroll, closeModalOnOutsideClick,
