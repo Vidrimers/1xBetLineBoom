@@ -838,8 +838,51 @@ export function displayTournamentParticipantBets(bets) {
     console.log("Загружено ставок:", bets.length);
   }
 
-  betsList.innerHTML = bets
-    .map(
+  // Группируем ставки по датам матча
+  const betsByDate = {};
+  bets.forEach((bet) => {
+    let dateKey = "Без даты";
+    if (bet.match_date) {
+      const date = new Date(bet.match_date);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      dateKey = `${day}.${month}.${year}`;
+    }
+    if (!betsByDate[dateKey]) {
+      betsByDate[dateKey] = [];
+    }
+    betsByDate[dateKey].push(bet);
+  });
+
+  // Сортируем ключи дат: незавершённые даты выше завершённых
+  const sortedDateKeys = Object.keys(betsByDate).sort((a, b) => {
+    if (a === "Без даты") return 1;
+    if (b === "Без даты") return -1;
+
+    const isAllFinished = (dateKey) => betsByDate[dateKey].every((bet) => {
+      return bet.result !== "pending" ||
+        ['cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover'].includes(bet.match_status);
+    });
+
+    const allFinishedA = isAllFinished(a);
+    const allFinishedB = isAllFinished(b);
+
+    if (allFinishedA && !allFinishedB) return 1;
+    if (!allFinishedA && allFinishedB) return -1;
+
+    const [dayA, monthA, yearA] = a.split(".").map(Number);
+    const [dayB, monthB, yearB] = b.split(".").map(Number);
+    return new Date(yearA, monthA - 1, dayA) - new Date(yearB, monthB - 1, dayB);
+  });
+
+  // Генерируем HTML с разделителями по датам
+  let htmlContent = "";
+
+  sortedDateKeys.forEach((dateKey) => {
+    htmlContent += `<div style="text-align: center; color: #b0b8c8; font-size: 0.9em; margin: 15px 0 10px 0; background: rgba(0, 0, 0, 0.2); padding: 5px; border-radius: 4px;">━━━ ${dateKey} ━━━</div>`;
+
+    htmlContent += betsByDate[dateKey].map(
       (bet) => {
         // Переводим названия команд на русский
         const team1 = window.translateTeamNameForBets ? window.translateTeamNameForBets(bet.team1) : bet.team1;
@@ -999,8 +1042,10 @@ export function displayTournamentParticipantBets(bets) {
     </div>
   `;
       }
-    )
-    .join("");
+    ).join("");
+  });
+
+  betsList.innerHTML = htmlContent;
 }
 
 // Фильтр ставок по туру
