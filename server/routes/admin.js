@@ -4585,8 +4585,11 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
     
     // Фильтруем матчи по дате
     const apiMatches = (sstatsData.data || []).filter(game => {
-      const gameDate = game.date.split('T')[0];
-      return gameDate === date;
+      const gameDateUtc = game.date.split('T')[0];
+      const d = new Date(game.date);
+      d.setUTCHours(d.getUTCHours() + offset);
+      const gameDateTz = d.toISOString().split('T')[0];
+      return gameDateUtc === date || gameDateTz === date;
     });
     
     console.log(`📊 Матчей для даты ${date}: ${apiMatches.length}`);
