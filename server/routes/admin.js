@@ -2655,12 +2655,15 @@ router.post("/api/admin/recount-results", async (req, res) => {
     console.log(`🔄 Тур: ${round}`);
     console.log(`🔄 ========================================\n`);
 
+    const offset = getTimezoneOffset();
+    const offsetMod = offset === 0 ? '' : `, '${offset > 0 ? '+' : ''}${offset} hours'`;
+
     // Шаг 1: Получаем все матчи для этой даты и тура
     const matches = db.prepare(`
       SELECT m.*, e.icon, e.name as event_name
       FROM matches m
       JOIN events e ON m.event_id = e.id
-      WHERE DATE(m.match_date) = ?
+      WHERE DATE(m.match_date${offsetMod}) = ?
         AND m.round = ?
         ${eventId ? 'AND m.event_id = ?' : ''}
     `).all(...[date, round, ...(eventId ? [eventId] : [])]);
@@ -2807,7 +2810,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
       JOIN matches m ON b.match_id = m.id
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
-      WHERE DATE(m.match_date) = ?
+      WHERE DATE(m.match_date${offsetMod}) = ?
         AND m.round = ?
         AND m.event_id = ?
         AND m.status = 'finished'
@@ -4466,6 +4469,15 @@ function setAutoCountingEnabled(enabled) {
     .run(enabled ? 'true' : 'false');
 }
 
+function getTimezoneOffset() {
+  try {
+    const setting = db.prepare("SELECT value FROM system_settings WHERE key = 'timezone_offset'").get();
+    return setting ? parseInt(setting.value, 10) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
 // normalizeTeamNameForAPI, translateTeamNameToEnglish — перенесены в server/utils/helpers.js
 
 /**
@@ -4513,11 +4525,14 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
     }
     
     // Получаем ВСЕ матчи из БД для этой даты (включая завершенные)
+    const offset = getTimezoneOffset();
+    const offsetMod = offset === 0 ? '' : `, '${offset > 0 ? '+' : ''}${offset} hours'`;
+    
     const allDbMatches = db.prepare(`
       SELECT * FROM matches
       WHERE event_id = ?
         AND round = ?
-        AND DATE(match_date) = ?
+        AND DATE(match_date${offsetMod}) = ?
     `).all(event_id, round, date);
     
     if (allDbMatches.length === 0) {
