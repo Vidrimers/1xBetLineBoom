@@ -5,8 +5,9 @@ import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
+import { normalizeTeamNameForAPI, translateTeamNameToEnglish } from '../utils/helpers.js';
 import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIllegalBet } from '../../OnexBetLineBoombot.js';
-import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR } from '../config.js';
+import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR, ICON_TO_COMPETITION, SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING } from '../config.js';
 
 const router = Router();
 const __filename = fileURLToPath(import.meta.url);
