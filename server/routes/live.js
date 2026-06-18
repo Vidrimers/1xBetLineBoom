@@ -152,6 +152,42 @@ router.get("/api/fd-matches", async (req, res) => {
   }
 });
 
+// GET /api/sstats-game/:gameId - Получить детали матча из SStats (карточки и т.д.)
+router.get("/api/sstats-game/:gameId", async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const apiKey = process.env.SSTATS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "SSTATS_API_KEY не задан" });
+    }
+
+    const url = `${SSTATS_API_BASE}/Games/${gameId}`;
+    const response = await fetch(url, {
+      headers: { "X-API-Key": apiKey }
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `SStats API ошибка: ${response.status}` });
+    }
+
+    const data = await response.json();
+    const eventsArray = data.data?.events || data.events;
+
+    let yellowCards = null;
+    let redCards = null;
+
+    if (eventsArray && Array.isArray(eventsArray)) {
+      yellowCards = eventsArray.filter(e => e.name === 'Yellow Card').length;
+      redCards = eventsArray.filter(e => e.name === 'Red Card').length;
+    }
+
+    res.json({ yellowCards, redCards });
+  } catch (error) {
+    console.error("❌ /api/sstats-game ошибка:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/sstats-teams - Получить список команд из SStats для маппинга
 router.get("/api/sstats-teams", async (req, res) => {
   try {

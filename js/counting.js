@@ -540,6 +540,22 @@ async function confirmMatchesFromCounting(results) {
         ? "team2_win"
         : "draw";
 
+    let yellowCards = null;
+    let redCards = null;
+
+    if (fdMatch.id) {
+      try {
+        const cardsResponse = await fetch(`/api/sstats-game/${fdMatch.id}`);
+        if (cardsResponse.ok) {
+          const cardsData = await cardsResponse.json();
+          yellowCards = cardsData.yellowCards;
+          redCards = cardsData.redCards;
+        }
+      } catch (e) {
+        console.warn(`Не удалось получить карточки для матча ${matchId}:`, e.message);
+      }
+    }
+
     try {
       const response = await fetch(`/api/admin/matches/${matchId}`, {
         method: "PUT",
@@ -550,6 +566,8 @@ async function confirmMatchesFromCounting(results) {
           result: resultKey,
           score_team1: homeScore,
           score_team2: awayScore,
+          yellow_cards: yellowCards,
+          red_cards: redCards,
         }),
       });
 
