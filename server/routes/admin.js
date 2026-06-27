@@ -4628,8 +4628,8 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
       const dbTeam2English = translateTeamNameToEnglish(dbMatch.team2_name, competition_code);
       
       const apiMatch = apiMatches.find(api => {
-        const apiHome = normalizeTeamNameForAPI(api.homeTeam.name);
-        const apiAway = normalizeTeamNameForAPI(api.awayTeam.name);
+        const apiHome = normalizeTeamNameForAPI(translateTeamNameToEnglish(api.homeTeam.name, competition_code));
+        const apiAway = normalizeTeamNameForAPI(translateTeamNameToEnglish(api.awayTeam.name, competition_code));
         const dbHome = normalizeTeamNameForAPI(dbTeam1English);
         const dbAway = normalizeTeamNameForAPI(dbTeam2English);
         
@@ -4769,7 +4769,7 @@ async function updateMatchesFromAPI(matches) {
       const competition_code = event ? ICON_TO_COMPETITION[event.icon] : null;
       
       // Определяем победителя с учетом возможного обратного порядка команд
-      const apiHome = normalizeTeamNameForAPI(apiMatch.homeTeam.name);
+      const apiHome = normalizeTeamNameForAPI(translateTeamNameToEnglish(apiMatch.homeTeam.name, competition_code));
       // ИСПРАВЛЕНИЕ: переводим русское название в английское перед сравнением
       const dbTeam1English = translateTeamNameToEnglish(dbMatch.team1_name, competition_code);
       const dbHome = normalizeTeamNameForAPI(dbTeam1English);

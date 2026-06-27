@@ -213,8 +213,8 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
       const dbTeam2English = translateTeamNameToEnglish(dbMatch.team2_name, competition_code);
 
       const apiMatch = apiMatches.find(api => {
-        const apiHome = normalizeTeamNameForAPI(api.homeTeam.name);
-        const apiAway = normalizeTeamNameForAPI(api.awayTeam.name);
+        const apiHome = normalizeTeamNameForAPI(translateTeamNameToEnglish(api.homeTeam.name, competition_code));
+        const apiAway = normalizeTeamNameForAPI(translateTeamNameToEnglish(api.awayTeam.name, competition_code));
         const dbHome = normalizeTeamNameForAPI(dbTeam1English);
         const dbAway = normalizeTeamNameForAPI(dbTeam2English);
 
@@ -336,7 +336,7 @@ async function updateMatchesFromAPI(matches) {
       const event = db.prepare("SELECT icon FROM events WHERE id = ?").get(dbMatch.event_id);
       const competition_code = event ? ICON_TO_COMPETITION[event.icon] : null;
 
-      const apiHome = normalizeTeamNameForAPI(apiMatch.homeTeam.name);
+      const apiHome = normalizeTeamNameForAPI(translateTeamNameToEnglish(apiMatch.homeTeam.name, competition_code));
       const dbTeam1English = translateTeamNameToEnglish(dbMatch.team1_name, competition_code);
       const dbHome = normalizeTeamNameForAPI(dbTeam1English);
       const isReversed = apiHome !== dbHome;
@@ -443,6 +443,9 @@ async function triggerAutoCountingForDate(dateGroup) {
     saveProcessedDate(dateKey);
     console.log(`✅ Дата ${dateKey} помечена как обработанная`);
 
+    const offset = getTimezoneOffset();
+    const offsetMod = offset === 0 ? '' : `, '${offset > 0 ? '+' : ''}${offset} hours'`;
+
     const bets = db.prepare(`
       SELECT 
         b.*,
@@ -465,7 +468,7 @@ async function triggerAutoCountingForDate(dateGroup) {
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
-      WHERE DATE(m.match_date) = ?
+      WHERE DATE(m.match_date${offsetMod}) = ?
         AND m.status = 'finished'
         AND b.is_final_bet = 0
     `).all(date);
