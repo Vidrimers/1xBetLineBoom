@@ -368,6 +368,9 @@ async function selectTeamFile(filePath) {
     // Перезагружаем команды
     await loadTeams(filePath);
     
+    // Синхронизируем allTeams с глобальным скоупом
+    window.allTeams = allTeams;
+    
     // Закрываем модалку выбора файла
     closeTeamFileSelector();
     
@@ -460,6 +463,9 @@ async function openBracketModal(bracketId, viewUserId = null) {
     // Загружаем команды ПОСЛЕ загрузки сетки, чтобы использовать team_file
     await loadTeams();
     console.log('✅ Команды загружены, allTeams.length:', allTeams.length);
+    
+    // Синхронизируем allTeams с глобальным скоупом для openTeamSelectionModal
+    window.allTeams = allTeams;
     
     // Получаем иконку турнира
     let eventIcon = '<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>';
