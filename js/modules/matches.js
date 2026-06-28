@@ -1236,26 +1236,33 @@ export async function openMatchStats(dbMatchId, sstatsMatchId) {
           const liveMatches = liveData.matches || [];
           const matchDate = data.matchTime ? new Date(data.matchTime) : null;
 
-          // Сначала ищем точное совпадение по времени (±5 мин)
+          const normalize = s => (s || '').toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
+          const t1Norm = normalize(data.team1);
+          const t2Norm = normalize(data.team2);
+
+          function teamNamesMatch(m) {
+            const mT1 = normalize(m.team1);
+            const mT2 = normalize(m.team2);
+            const directMatch = (mT1.includes(t1Norm) || t1Norm.includes(mT1)) &&
+                                (mT2.includes(t2Norm) || t2Norm.includes(mT2));
+            const reversedMatch = (mT1.includes(t2Norm) || t2Norm.includes(mT1)) &&
+                                  (mT2.includes(t1Norm) || t1Norm.includes(mT2));
+            return directMatch || reversedMatch;
+          }
+
+          // 1. Лучшее совпадение: время ±30 мин + имена команд
           let found = matchDate ? liveMatches.find(m => {
             const liveDate = new Date(m.match_time);
             const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
-            return diffMinutes < 5;
+            return diffMinutes < 30 && teamNamesMatch(m);
           }) : null;
 
-          // Если точного нет, ищем по названиям команд + timeframe 30 мин
+          // 2. Только по времени ±5 мин (если имена не совпали)
           if (!found && matchDate) {
-            const normalize = s => (s || '').toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
-            const t1Norm = normalize(data.team1);
-            const t2Norm = normalize(data.team2);
             found = liveMatches.find(m => {
               const liveDate = new Date(m.match_time);
               const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
-              if (diffMinutes > 30) return false;
-              const mT1 = normalize(m.team1);
-              const mT2 = normalize(m.team2);
-              return (mT1.includes(t1Norm) || t1Norm.includes(mT1)) &&
-                     (mT2.includes(t2Norm) || t2Norm.includes(mT2));
+              return diffMinutes < 5;
             });
           }
 
