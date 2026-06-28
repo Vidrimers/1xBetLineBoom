@@ -1222,33 +1222,54 @@ export async function openMatchStats(dbMatchId, sstatsMatchId) {
     if (!dbResponse.ok) return;
     const data = await dbResponse.json();
 
-    // Ищем актуальный SStats ID через /api/live-matches (тот же источник что и Live вкладка)
-    let liveMatchId = null;
-    try {
-      const liveResponse = await fetch(`/api/live-matches?eventId=${state.currentEventId}`);
-      if (liveResponse.ok) {
-        const liveData = await liveResponse.json();
-        const liveMatches = liveData.matches || [];
+    // Используем переданный sstatsMatchId если он есть, иначе ищем по дате
+    let liveMatchId = sstatsMatchId ? parseInt(sstatsMatchId) || null : null;
+    
+    if (liveMatchId) {
+      console.log(`✅ Используем переданный SStats ID для ${data.team1} vs ${data.team2}: ${liveMatchId}`);
+    } else {
+      // sstatsMatchId не передан — ищем по дате через /api/live-matches
+      try {
+        const liveResponse = await fetch(`/api/live-matches?eventId=${state.currentEventId}`);
+        if (liveResponse.ok) {
+          const liveData = await liveResponse.json();
+          const liveMatches = liveData.matches || [];
+          const matchDate = data.matchTime ? new Date(data.matchTime) : null;
 
-        // Ищем по дате матча (точнее чем по названию команд на разных языках)
-        const matchDate = data.matchTime ? new Date(data.matchTime) : null;
+          // Сначала ищем точное совпадение по времени (±5 мин)
+          let found = matchDate ? liveMatches.find(m => {
+            const liveDate = new Date(m.match_time);
+            const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
+            return diffMinutes < 5;
+          }) : null;
 
-        const found = matchDate ? liveMatches.find(m => {
-          const liveDate = new Date(m.match_time);
-          const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
-          return diffMinutes < 120; // В пределах 2 часов — тот же матч
-        }) : null;
+          // Если точного нет, ищем по названиям команд + timeframe 30 мин
+          if (!found && matchDate) {
+            const normalize = s => (s || '').toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
+            const t1Norm = normalize(data.team1);
+            const t2Norm = normalize(data.team2);
+            found = liveMatches.find(m => {
+              const liveDate = new Date(m.match_time);
+              const diffMinutes = Math.abs(matchDate - liveDate) / (1000 * 60);
+              if (diffMinutes > 30) return false;
+              const mT1 = normalize(m.team1);
+              const mT2 = normalize(m.team2);
+              return (mT1.includes(t1Norm) || t1Norm.includes(mT1)) &&
+                     (mT2.includes(t2Norm) || t2Norm.includes(mT2));
+            });
+          }
 
-        if (found) {
-          liveMatchId = found.id;
-          console.log(`✅ Найден SStats ID по дате для ${data.team1} vs ${data.team2}: ${liveMatchId}`);
-        } else {
-          console.log(`⚠ Не найден матч в live. matchTime=${data.matchTime}`);
-          console.log('Live matches:', liveMatches.map(m => `${m.team1} vs ${m.team2} @ ${m.match_time} id=${m.id}`));
+          if (found) {
+            liveMatchId = found.id;
+            console.log(`✅ Найден SStats ID по дате для ${data.team1} vs ${data.team2}: ${liveMatchId}`);
+          } else {
+            console.log(`⚠ Не найден матч в live. matchTime=${data.matchTime}`);
+            console.log('Live matches:', liveMatches.map(m => `${m.team1} vs ${m.team2} @ ${m.match_time} id=${m.id}`));
+          }
         }
+      } catch (e) {
+        console.warn('⚠ Не удалось найти матч в live:', e.message);
       }
-    } catch (e) {
-      console.warn('⚠ Не удалось найти матч в live:', e.message);
     }
 
     const matchData = {
