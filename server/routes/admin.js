@@ -2379,6 +2379,9 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
             if (u.correctScores > 0) {
               stats.push(`🎯 ${u.correctScores}`);
             }
+            if (u.correctDiff > 0) {
+              stats.push(`⚖️ ${u.correctDiff}`);
+            }
             if (u.correctYellowCards > 0) {
               stats.push(`🟨 ${u.correctYellowCards}`);
             }

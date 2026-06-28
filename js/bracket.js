@@ -2107,7 +2107,7 @@ function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
     }
   };
   
-  const teamsListHTML = allTeams.map(team => {
+  const teamsListHTML = (window.allTeams || allTeams).map(team => {
     const isSelected = currentTeam === team || tempTeams.includes(team);
     return `
       <div class="team-option ${isSelected ? 'selected' : ''}" 
