@@ -308,17 +308,25 @@ async function checkAndNotifyUpcomingMatches() {
       `🔔 checkAndNotifyUpcomingMatches: Ищем матчи от ${threeHoursLaterMinus5.toISOString()} до ${threeHoursLaterPlus5.toISOString()}`
     );
 
-    const upcomingMatches = db
+    // Загружаем все незавершённые матчи и фильтруем в JS,
+    // чтобы корректно работать с датами, содержащими смещение таймзоны (+03:00 и т.д.)
+    const allMatches = db
       .prepare(
         `
       SELECT DISTINCT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name, e.id as event_id
       FROM matches m
       JOIN events e ON m.event_id = e.id
-      WHERE m.match_date >= ? AND m.match_date <= ? AND m.winner IS NULL AND m.match_date IS NOT NULL
+      WHERE m.winner IS NULL AND m.match_date IS NOT NULL
       ORDER BY m.match_date ASC
+      LIMIT 100
     `
       )
-      .all(threeHoursLaterMinus5.toISOString(), threeHoursLaterPlus5.toISOString());
+      .all();
+
+    const upcomingMatches = allMatches.filter((match) => {
+      const matchTime = new Date(match.match_date).getTime();
+      return matchTime > threeHoursLaterMinus5.getTime() && matchTime <= threeHoursLaterPlus5.getTime();
+    });
 
     console.log(`🔔 Найдено ${upcomingMatches.length} матчей которые начнутся через ~3 часа`);
 
@@ -476,20 +484,25 @@ async function checkAndSendPersonalReminders() {
       const targetTimeMinus5 = new Date(targetTime.getTime() - 5 * 60 * 1000);
       const targetTimePlus5 = new Date(targetTime.getTime() + 5 * 60 * 1000);
 
-      const upcomingMatches = db
+      // Загружаем все матчи турнира и фильтруем в JS,
+      // чтобы корректно работать с датами, содержащими смещение таймзоны (+03:00 и т.д.)
+      const allEventMatches = db
         .prepare(
           `
         SELECT m.id, m.team1_name, m.team2_name, m.match_date
         FROM matches m
-        WHERE m.event_id = ? 
-          AND m.match_date >= ? 
-          AND m.match_date <= ? 
-          AND m.winner IS NULL 
+        WHERE m.event_id = ?
+          AND m.winner IS NULL
           AND m.match_date IS NOT NULL
         ORDER BY m.match_date ASC
       `
         )
-        .all(reminder.event_id, targetTimeMinus5.toISOString(), targetTimePlus5.toISOString());
+        .all(reminder.event_id);
+
+      const upcomingMatches = allEventMatches.filter((match) => {
+        const matchTime = new Date(match.match_date).getTime();
+        return matchTime > targetTimeMinus5.getTime() && matchTime <= targetTimePlus5.getTime();
+      });
 
       if (upcomingMatches.length === 0) continue;
 
