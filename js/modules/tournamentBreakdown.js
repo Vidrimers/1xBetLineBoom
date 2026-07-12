@@ -1,7 +1,7 @@
 // ========== МОДУЛЬ TOURNAMENT BREAKDOWN ==========
 // Разбивка очков турнира по категориям
 
-import { showCustomAlert } from './ui.js';
+import { showCustomAlert, showCustomConfirm } from './ui.js';
 
 const CATEGORIES = [
   { key: 'result_pts', label: 'Результат', default: true },
@@ -56,7 +56,15 @@ export async function openTournamentBreakdownModal() {
         <div style="color:#888;text-align:center;padding:40px;">Выберите турнир и нажмите "Рассчитать"</div>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:15px;justify-content:flex-end;">
+      <div style="display:flex;gap:10px;margin-top:15px;justify-content:flex-end;flex-wrap:wrap;">
+        <div style="position:relative;display:none;" id="breakdownSendWrapper">
+          <button id="breakdownSendBtn" onclick="toggleBreakdownSendMenu()" style="padding:10px 20px;background:#ff9800;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">📤 Отправить ▾</button>
+          <div id="breakdownSendMenu" style="display:none;position:absolute;bottom:100%;right:0;margin-bottom:5px;background:rgba(40,44,54,0.98);border:1px solid rgba(90,159,212,0.3);border-radius:8px;overflow:hidden;z-index:10;min-width:200px;box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+            <button onclick="sendBreakdownTo('group')" style="display:block;width:100%;padding:10px 16px;background:transparent;border:none;color:#e0e6f0;cursor:pointer;text-align:left;font-size:0.9em;">📤 В группу</button>
+            <button onclick="sendBreakdownTo('all')" style="display:block;width:100%;padding:10px 16px;background:transparent;border:none;color:#e0e6f0;cursor:pointer;text-align:left;font-size:0.9em;border-top:1px solid rgba(90,159,212,0.2);">📤 Всем участникам</button>
+            <button onclick="sendBreakdownTo('self')" style="display:block;width:100%;padding:10px 16px;background:transparent;border:none;color:#e0e6f0;cursor:pointer;text-align:left;font-size:0.9em;border-top:1px solid rgba(90,159,212,0.2);">📤 Себе</button>
+          </div>
+        </div>
         <button id="breakdownExportJpg" onclick="exportBreakdownJpg()" style="display:none;padding:10px 20px;background:#4caf50;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">💾 JPG</button>
         <button id="breakdownExportMd" onclick="exportBreakdownMd()" style="display:none;padding:10px 20px;background:#2196f3;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">📄 .md</button>
         <button onclick="closeTournamentBreakdownModal()" style="padding:10px 20px;background:#607d8b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">Закрыть</button>
@@ -65,6 +73,16 @@ export async function openTournamentBreakdownModal() {
   `;
 
   document.body.appendChild(modal);
+
+  // Close dropdown when clicking outside
+  modal.addEventListener('click', (e) => {
+    const menu = document.getElementById('breakdownSendMenu');
+    const btn = document.getElementById('breakdownSendBtn');
+    if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+
   await loadTournamentsForBreakdown();
 }
 
@@ -115,6 +133,7 @@ export async function calculateBreakdown() {
     currentBreakdownData = data;
     renderBreakdownTable(data);
 
+    document.getElementById('breakdownSendWrapper').style.display = 'block';
     document.getElementById('breakdownExportJpg').style.display = 'inline-block';
     document.getElementById('breakdownExportMd').style.display = 'inline-block';
   } catch (error) {
@@ -413,4 +432,120 @@ export function exportBreakdownMd() {
   link.href = URL.createObjectURL(blob);
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+// ===== ОТПРАВКА В TG =====
+
+export function toggleBreakdownSendMenu() {
+  const menu = document.getElementById('breakdownSendMenu');
+  if (menu) {
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+export async function sendBreakdownTo(target) {
+  const menu = document.getElementById('breakdownSendMenu');
+  if (menu) menu.style.display = 'none';
+
+  if (!currentBreakdownData) {
+    await showCustomAlert('Сначала рассчитайте разбивку', 'Внимание', '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
+    return;
+  }
+
+  const targetLabels = {
+    group: 'в группу',
+    all: 'всем участникам турнира',
+    self: 'себе (админу)'
+  };
+
+  const confirmed = await showCustomConfirm(
+    `Отправить разбивку турнира "${currentBreakdownData.tournament.name}" ${targetLabels[target]}?`,
+    'Подтверждение отправки',
+    '<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg>'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    // Генерируем JPG в base64
+    const tableContainer = document.getElementById('breakdownTableContainer');
+    if (!tableContainer) return;
+
+    // Build render HTML for export
+    const data = currentBreakdownData;
+    const enabledCategories = Array.from(document.querySelectorAll('.breakdown-cat-checkbox:checked')).map(cb => cb.value);
+    const cs = window.getComputedStyle(tableContainer);
+    const bgColor = cs.backgroundColor;
+    const textColor = cs.color;
+
+    let renderHtml = `
+      <div style="background:${bgColor};color:${textColor};padding:20px;font-family:'Segoe UI',Tahoma,sans-serif;white-space:nowrap;">
+        <div style="font-size:18px;font-weight:600;margin-bottom:5px;">${data.tournament.name}</div>
+        <div style="font-size:13px;opacity:0.7;margin-bottom:15px;">Матчей: ${data.matches.total} (завершено: ${data.matches.completed})</div>
+        <table style="border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="border-bottom:2px solid rgba(90,159,212,0.3);">
+              <th style="padding:10px 14px;text-align:center;">#</th>
+              <th style="padding:10px 14px;text-align:left;">Игрок</th>
+              ${enabledCategories.map(key => {
+                const cat = CATEGORIES.find(c => c.key === key);
+                return '<th style="padding:10px 14px;text-align:center;">' + cat.label + '</th>';
+              }).join('')}
+              <th style="padding:10px 14px;text-align:center;font-weight:700;">Итого</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.users.map((user, idx) => `
+              <tr style="border-bottom:1px solid rgba(90,159,212,0.1);${idx % 2 === 0 ? 'background:rgba(90,159,212,0.05);' : ''}">
+                <td style="padding:10px 14px;text-align:center;opacity:0.5;">${idx + 1}</td>
+                <td style="padding:10px 14px;font-weight:500;">${user.username}</td>
+                ${enabledCategories.map(key => {
+                  const val = user[key] || 0;
+                  return '<td style="padding:10px 14px;text-align:center;' + (val === 0 ? 'opacity:0.3;' : '') + '">' + val + '</td>';
+                }).join('')}
+                <td style="padding:10px 14px;text-align:center;font-weight:700;">${user.total_points}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:0;top:0;z-index:-1;opacity:1;';
+    wrapper.innerHTML = renderHtml;
+    document.body.appendChild(wrapper);
+    const renderTarget = wrapper.firstElementChild;
+
+    const canvas = await html2canvas(renderTarget, {
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+
+    document.body.removeChild(wrapper);
+
+    const imageBase64 = canvas.toDataURL('image/jpeg', 0.95);
+
+    const response = await fetch('/api/admin/send-breakdown-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageBase64,
+        eventId: data.tournament.id,
+        target
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      await showCustomAlert(result.message, 'Отправлено', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
+    } else {
+      await showCustomAlert(result.error || 'Ошибка отправки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
+  } catch (error) {
+    console.error('Ошибка отправки:', error);
+    await showCustomAlert('Ошибка: ' + error.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+  }
 }

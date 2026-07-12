@@ -6,6 +6,13 @@ import { handleAIMessage, handleAIModeCommand, handleAIModeCallback, handleClear
 
 dotenv.config();
 
+// Реестр callback-обработчиков (для избежания циклических зависимостей)
+const callbackHandlers = new Map();
+
+export function registerCallbackHandler(prefix, handler) {
+  callbackHandlers.set(prefix, handler);
+}
+
 // Инициализируем переменные окружения
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ADMIN_ID = parseInt(process.env.TELEGRAM_ADMIN_ID, 10);
@@ -2824,6 +2831,15 @@ export async function startBot() {
       if (data.startsWith("ai_mode_")) {
         await handleAIModeCallback(callbackQuery, bot, TELEGRAM_ADMIN_ID);
         return;
+      }
+
+      // ===== ОБРАБОТКА ЗАРЕГИСТРИРОВАННЫХ CALLBACK =====
+      for (const [prefix, handler] of callbackHandlers) {
+        if (data.startsWith(prefix)) {
+          await bot.answerCallbackQuery(callbackQuery.id);
+          const handled = handler(data, callbackQuery);
+          if (handled) return;
+        }
       }
       
       // ===== ОБРАБОТКА КНОПОК МЕНЮ =====

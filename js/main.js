@@ -447,6 +447,8 @@ import {
   calculateBreakdown,
   exportBreakdownJpg,
   exportBreakdownMd,
+  toggleBreakdownSendMenu,
+  sendBreakdownTo,
 } from './modules/tournamentBreakdown.js';
 import {
   openBannedNamesModal,
@@ -710,6 +712,7 @@ Object.assign(window, {
   // tournamentBreakdown
   openTournamentBreakdownModal, closeTournamentBreakdownModal,
   calculateBreakdown, exportBreakdownJpg, exportBreakdownMd,
+  toggleBreakdownSendMenu, sendBreakdownTo,
   // bannedNames
   openBannedNamesModal, closeBannedNamesModal, loadBannedNames, addBannedName,
   toggleBannedNamePartial, deleteBannedName, checkAndHandleBannedName, showBannedNameAlert,

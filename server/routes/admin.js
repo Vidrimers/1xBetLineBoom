@@ -7,6 +7,7 @@ import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { normalizeTeamNameForAPI, translateTeamNameToEnglish } from '../utils/helpers.js';
 import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIllegalBet } from '../../OnexBetLineBoombot.js';
+import { registerCallbackHandler } from '../../OnexBetLineBoombot.js';
 import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR, ICON_TO_COMPETITION, SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING } from '../config.js';
 
 const router = Router();
@@ -5812,5 +5813,408 @@ router.get("/api/admin/tournament-breakdown", (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ===== РАЗБИВКА ТУРНИРА: ОТПРАВКА В TG =====
+
+// Хранилище состояния рассылки (в памяти)
+const breakdownSendState = {
+  active: false,
+  eventId: null,
+  imageBuffer: null,
+  caption: null,
+  remainingUsers: [],
+  sentCount: 0,
+  totalCount: 0,
+  failedUsers: [],
+  messageId: null
+};
+
+// Сгенерировать подпись к фото разбивки
+function generateBreakdownCaption(event) {
+  const lines = [];
+  lines.push(`📊 ${event.name}`);
+  lines.push(`👥 Участников: ${event.participantCount}`);
+
+  const startDate = event.start_date ? new Date(event.start_date).toLocaleDateString('ru-RU') : '—';
+  const endDate = event.end_date ? new Date(event.end_date).toLocaleDateString('ru-RU') : '—';
+  lines.push(`📅 ${startDate} — ${endDate}`);
+
+  if (event.status === 'finished' && event.winner) {
+    lines.push(`🏆 Победитель: ${event.winner.username} (${event.winner.total_points} очков)`);
+  } else {
+    lines.push(`⏳ Турнир ещё идёт`);
+  }
+
+  return lines.join('\n');
+}
+
+// POST /api/admin/send-breakdown-photo - Отправить разбивку турнира в TG
+router.post("/api/admin/send-breakdown-photo", async (req, res) => {
+  try {
+    const { imageBase64, eventId, target } = req.body;
+
+    if (!imageBase64 || !eventId || !target) {
+      return res.status(400).json({ error: "Не указаны imageBase64, eventId или target" });
+    }
+
+    if (!['group', 'self', 'all'].includes(target)) {
+      return res.status(400).json({ error: "target должен быть: group, self или all" });
+    }
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = parseInt(process.env.TELEGRAM_ADMIN_ID);
+    const TELEGRAM_CHAT_ID = parseInt(process.env.TELEGRAM_CHAT_ID);
+
+    if (!TELEGRAM_BOT_TOKEN) {
+      return res.status(500).json({ error: "TELEGRAM_BOT_TOKEN не настроен" });
+    }
+
+    // Получаем данные турнира
+    const event = db.prepare("SELECT * FROM events WHERE id = ?").get(eventId);
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+
+    // Подсчитываем участников
+    const participantCount = db.prepare(
+      "SELECT COUNT(DISTINCT user_id) as count FROM bets WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)"
+    ).get(eventId).count;
+
+    // Определяем победителя (если турнир завершен)
+    let winner = null;
+    if (event.status === 'finished') {
+      // Используем ту же логику что и main ranking
+      const winnerRow = db.prepare(`
+        SELECT u.username,
+          SUM(CASE WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+            CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                 (b.prediction = 'team2' AND m.winner = 'team2') OR
+                 (b.prediction = 'draw' AND m.winner = 'draw') OR
+                 (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                 (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+              CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+              CASE WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                        ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                        sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 THEN 1 ELSE 0 END +
+              CASE WHEN m.is_final = 0 AND m.winner != 'draw' AND e.diff_goals_enabled = 1 AND
+                        sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                        ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                        NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                        (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2) THEN 1 ELSE 0 END +
+              CASE WHEN m.yellow_cards_prediction_enabled = 1 AND cp.yellow_cards IS NOT NULL AND
+                        m.yellow_cards IS NOT NULL AND cp.yellow_cards = m.yellow_cards THEN 1 ELSE 0 END +
+              CASE WHEN m.red_cards_prediction_enabled = 1 AND cp.red_cards IS NOT NULL AND
+                        m.red_cards IS NOT NULL AND cp.red_cards = m.red_cards THEN 1 ELSE 0 END
+            ELSE 0 END
+          ELSE 0 END) + COALESCE((
+            SELECT SUM(CASE WHEN bp.stage = 'final' THEN 3 ELSE 1 END)
+            FROM bracket_predictions bp
+            INNER JOIN bracket_results br ON bp.bracket_id = br.bracket_id AND bp.stage = br.stage AND bp.match_index = br.match_index
+            INNER JOIN brackets bk ON bp.bracket_id = bk.id
+            WHERE bp.user_id = u.id AND bk.event_id = ? AND bp.predicted_winner = br.actual_winner
+          ), 0) + SUM(
+            CASE WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+              CASE WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
+                   WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
+                   WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                   WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 2
+                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
+                   WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
+                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                   ELSE 0 END
+            ELSE 0 END
+          ) AS total_points
+        FROM users u
+        LEFT JOIN bets b ON b.user_id = u.id
+        LEFT JOIN matches m ON b.match_id = m.id
+        LEFT JOIN events e ON m.event_id = e.id
+        LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+        LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+        LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+        LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
+        WHERE m.event_id = ?
+        GROUP BY u.id, u.username
+        ORDER BY total_points DESC
+        LIMIT 1
+      `).get(eventId, eventId, eventId);
+
+      if (winnerRow) {
+        winner = { username: winnerRow.username, total_points: winnerRow.total_points };
+      }
+    }
+
+    const caption = generateBreakdownCaption({ ...event, participantCount, winner });
+    const imageBuffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+
+    // Вспомогательная функция отправки фото
+    async function sendPhotoToChat(chatId, caption) {
+      const formData = new FormData();
+      formData.append('chat_id', String(chatId));
+      formData.append('photo', new Blob([imageBuffer], { type: 'image/jpeg' }), 'breakdown.jpg');
+      formData.append('caption', caption);
+
+      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.description || 'Telegram API error');
+      }
+      return response.json();
+    }
+
+    // Вспомогательная функция отправки фото с inline клавиатурой
+    async function sendPhotoWithKeyboard(chatId, caption, replyMarkup) {
+      const formData = new FormData();
+      formData.append('chat_id', String(chatId));
+      formData.append('photo', new Blob([imageBuffer], { type: 'image/jpeg' }), 'breakdown.jpg');
+      formData.append('caption', caption);
+      formData.append('reply_markup', JSON.stringify(replyMarkup));
+
+      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.description || 'Telegram API error');
+      }
+      return response.json();
+    }
+
+    // Вспомогательная функция редактирования сообщения
+    async function editMessage(chatId, messageId, text, replyMarkup) {
+      const params = {
+        chat_id: String(chatId),
+        message_id: messageId,
+        text: text,
+        parse_mode: 'HTML'
+      };
+      if (replyMarkup) {
+        params.reply_markup = JSON.stringify(replyMarkup);
+      }
+
+      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+      return response.json();
+    }
+
+    // Отправка в группу
+    if (target === 'group') {
+      try {
+        await sendPhotoToChat(TELEGRAM_CHAT_ID, caption);
+        res.json({ success: true, message: "Фото отправлено в группу" });
+      } catch (err) {
+        console.error("❌ Ошибка отправки в группу:", err.message);
+        res.status(500).json({ error: "Ошибка отправки: " + err.message });
+      }
+      return;
+    }
+
+    // Отправка себе (админу)
+    if (target === 'self') {
+      try {
+        await sendPhotoToChat(TELEGRAM_ADMIN_ID, caption);
+        res.json({ success: true, message: "Фото отправлено админу" });
+      } catch (err) {
+        console.error("❌ Ошибка отправки админу:", err.message);
+        res.status(500).json({ error: "Ошибка отправки: " + err.message });
+      }
+      return;
+    }
+
+    // Отправка всем участникам турнира
+    if (target === 'all') {
+      if (breakdownSendState.active) {
+        return res.status(409).json({ error: "Рассылка уже идёт. Дождитесь завершения." });
+      }
+
+      // Получаем участников с telegram_id
+      const participants = db.prepare(`
+        SELECT DISTINCT u.id, u.username, u.telegram_id
+        FROM bets b
+        JOIN users u ON b.user_id = u.id
+        JOIN matches m ON b.match_id = m.id
+        WHERE m.event_id = ? AND u.telegram_id IS NOT NULL
+      `).all(eventId);
+
+      if (participants.length === 0) {
+        return res.status(404).json({ error: "Нет участников с привязанным Telegram" });
+      }
+
+      // Сразу отвечаем что рассылка началась
+      res.json({
+        success: true,
+        message: `Рассылка запущена для ${participants.length} участников`,
+        total: participants.length
+      });
+
+      // Запускаем рассылку асинхронно
+      breakdownSendState.active = true;
+      breakdownSendState.eventId = eventId;
+      breakdownSendState.imageBuffer = imageBuffer;
+      breakdownSendState.caption = caption;
+      breakdownSendState.remainingUsers = [...participants];
+      breakdownSendState.sentCount = 0;
+      breakdownSendState.totalCount = participants.length;
+      breakdownSendState.failedUsers = [];
+      breakdownSendState.messageId = null;
+
+      processBreakdownSend().catch(err => {
+        console.error("❌ Критическая ошибка рассылки:", err);
+        breakdownSendState.active = false;
+      });
+    }
+  } catch (error) {
+    console.error("❌ Ошибка в send-breakdown-photo:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Фоновая обработка рассылки разбивки
+async function processBreakdownSend() {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_ADMIN_ID = parseInt(process.env.TELEGRAM_ADMIN_ID);
+
+  while (breakdownSendState.active && breakdownSendState.remainingUsers.length > 0) {
+    const user = breakdownSendState.remainingUsers[0];
+
+    try {
+      const formData = new FormData();
+      formData.append('chat_id', user.telegram_id);
+      formData.append('photo', new Blob([breakdownSendState.imageBuffer], { type: 'image/jpeg' }), 'breakdown.jpg');
+      formData.append('caption', breakdownSendState.caption);
+
+      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.description || 'Telegram API error');
+      }
+
+      // Успешно — убираем из очереди
+      breakdownSendState.remainingUsers.shift();
+      breakdownSendState.sentCount++;
+
+    } catch (err) {
+      console.error(`❌ Ошибка отправки @${user.username} (${user.telegram_id}):`, err.message);
+
+      // Останавливаем и уведомляем админа
+      breakdownSendState.active = false;
+
+      try {
+        const errorText = `⚠️ <b>Ошибка рассылки разбивки</b>\n\n` +
+          `Турнир: ${breakdownSendState.caption.split('\n')[0]}\n` +
+          `Ошибка: @${user.username} (${user.telegram_id})\n` +
+          `${err.message}\n\n` +
+          `Отправлено: ${breakdownSendState.sentCount} из ${breakdownSendState.totalCount}`;
+
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: String(TELEGRAM_ADMIN_ID),
+            text: errorText,
+            parse_mode: 'HTML',
+            reply_markup: JSON.stringify({
+              inline_keyboard: [
+                [
+                  { text: '▶️ Продолжить', callback_data: `breakdown_continue` },
+                  { text: '⏹️ Остановить', callback_data: `breakdown_stop` }
+                ]
+              ]
+            })
+          })
+        });
+
+        const msgResult = await telegramResponse.json();
+        breakdownSendState.messageId = msgResult.result?.message_id;
+      } catch (notifyErr) {
+        console.error("❌ Не удалось отправить уведомление админу:", notifyErr.message);
+      }
+
+      return; // Выходим из цикла, ждём callback
+    }
+
+    // Задержка между отправками (Telegram лимит ~30 msg/sec для разных чатов)
+    await new Promise(resolve => setTimeout(resolve, 35));
+  }
+
+  // Рассылка завершена успешно
+  if (breakdownSendState.active) {
+    try {
+      const summary = `✅ <b>Рассылка разбивки завершена</b>\n\n` +
+        `${breakdownSendState.caption.split('\n')[0]}\n` +
+        `Отправлено: ${breakdownSendState.sentCount} из ${breakdownSendState.totalCount}`;
+
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: String(TELEGRAM_ADMIN_ID),
+          text: summary,
+          parse_mode: 'HTML'
+        })
+      });
+    } catch (err) {
+      console.error("❌ Ошибка отправки итогов:", err.message);
+    }
+  }
+
+  breakdownSendState.active = false;
+}
+
+// Обработка callback кнопок продолжить/остановить рассылку
+export function handleBreakdownCallback(data) {
+  if (data !== 'breakdown_continue' && data !== 'breakdown_stop') {
+    return false;
+  }
+
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_ADMIN_ID = parseInt(process.env.TELEGRAM_ADMIN_ID);
+
+  if (data === 'breakdown_continue') {
+    breakdownSendState.active = true;
+    processBreakdownSend().catch(err => {
+      console.error("❌ Ошибка при продолжении рассылки:", err);
+      breakdownSendState.active = false;
+    });
+    return true;
+  }
+
+  if (data === 'breakdown_stop') {
+    const summary = `⏹️ <b>Рассылка остановлена</b>\n\n` +
+      `${breakdownSendState.caption ? breakdownSendState.caption.split('\n')[0] : 'Разбивка'}\n` +
+      `Отправлено: ${breakdownSendState.sentCount} из ${breakdownSendState.totalCount}\n` +
+      `Не отправлено: ${breakdownSendState.remainingUsers.length}`;
+
+    fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: String(TELEGRAM_ADMIN_ID),
+        text: summary,
+        parse_mode: 'HTML'
+      })
+    }).catch(err => console.error("❌ Ошибка отправки итогов:", err.message));
+
+    breakdownSendState.active = false;
+    return true;
+  }
+
+  return false;
+}
+
+// Регистрируем обработчик callback кнопок разбивки
+registerCallbackHandler('breakdown_', handleBreakdownCallback);
 
 export default router;
