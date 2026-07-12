@@ -5323,7 +5323,8 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
             { id: 'update-sstats', text: '🔄 Обновить SStats ID', action: 'openUpdateSstatsModal()', type: 'modal' },
             { id: 'banned-names', text: '🚫 Запретные имена', action: 'openBannedNamesModal()', type: 'modal' },
             { id: 'weight-categories', text: '⚖️ Веса турниров', action: 'openWeightCategoriesModal()', type: 'modal' },
-            { id: 'timezone-offset', text: '🕐 Смещение часового пояса', action: 'openTimezoneOffsetModal()', type: 'modal' }
+            { id: 'timezone-offset', text: '🕐 Смещение часового пояса', action: 'openTimezoneOffsetModal()', type: 'modal' },
+            { id: 'tournament-breakdown', text: '📊 Разбивка турнира', action: 'openTournamentBreakdownModal()', type: 'modal' }
           ]
         }
       ]
@@ -5628,6 +5629,186 @@ router.post("/api/admin/timezone-offset", (req, res) => {
     res.json({ success: true, offset: value });
   } catch (error) {
     console.error('❌ Ошибка сохранения timezone_offset:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/tournament-breakdown - Разбивка очков турнира по категориям
+router.get("/api/admin/tournament-breakdown", (req, res) => {
+  try {
+    const { eventId } = req.query;
+
+    if (!eventId) {
+      return res.status(400).json({ error: "Не указан eventId" });
+    }
+
+    const event = db.prepare("SELECT id, name FROM events WHERE id = ?").get(eventId);
+    if (!event) {
+      return res.status(404).json({ error: "Турнир не найден" });
+    }
+
+    const matchStats = db.prepare(`
+      SELECT COUNT(*) as total,
+             SUM(CASE WHEN winner IS NOT NULL THEN 1 ELSE 0 END) as completed
+      FROM matches WHERE event_id = ?
+    `).get(eventId);
+
+    const users = db.prepare(`
+      SELECT
+        u.username,
+        SUM(
+          CASE WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+            CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                 (b.prediction = 'team2' AND m.winner = 'team2') OR
+                 (b.prediction = 'draw' AND m.winner = 'draw') OR
+                 (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                 (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+              CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END
+            ELSE 0 END
+          ELSE 0 END
+        ) AS result_pts,
+        SUM(
+          CASE WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+            CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                 (b.prediction = 'team2' AND m.winner = 'team2') OR
+                 (b.prediction = 'draw' AND m.winner = 'draw') OR
+                 (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                 (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+              CASE WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                        ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                        sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 THEN 1 ELSE 0 END
+            ELSE 0 END
+          ELSE 0 END
+        ) AS exact_score_pts,
+        SUM(
+          CASE WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+            CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                 (b.prediction = 'team2' AND m.winner = 'team2') OR
+                 (b.prediction = 'draw' AND m.winner = 'draw') OR
+                 (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                 (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+              CASE WHEN m.is_final = 0 AND m.winner != 'draw' AND e.diff_goals_enabled = 1 AND
+                        sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                        ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                        NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                        (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2) THEN 1 ELSE 0 END
+            ELSE 0 END
+          ELSE 0 END
+        ) AS diff_goals_pts,
+        SUM(
+          CASE WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+            CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                 (b.prediction = 'team2' AND m.winner = 'team2') OR
+                 (b.prediction = 'draw' AND m.winner = 'draw') OR
+                 (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                 (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+              CASE WHEN m.yellow_cards_prediction_enabled = 1 AND cp.yellow_cards IS NOT NULL AND
+                        m.yellow_cards IS NOT NULL AND cp.yellow_cards = m.yellow_cards THEN 1 ELSE 0 END
+            ELSE 0 END
+          ELSE 0 END
+        ) AS yellow_cards_pts,
+        SUM(
+          CASE WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+            CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                 (b.prediction = 'team2' AND m.winner = 'team2') OR
+                 (b.prediction = 'draw' AND m.winner = 'draw') OR
+                 (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                 (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+              CASE WHEN m.red_cards_prediction_enabled = 1 AND cp.red_cards IS NOT NULL AND
+                        m.red_cards IS NOT NULL AND cp.red_cards = m.red_cards THEN 1 ELSE 0 END
+            ELSE 0 END
+          ELSE 0 END
+        ) AS red_cards_pts,
+        SUM(
+          CASE WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+            CASE WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
+                 WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
+                 WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                 WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 2
+                 WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
+                 WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
+                 WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                 ELSE 0 END
+          ELSE 0 END
+        ) AS final_bets_pts,
+        COALESCE((
+          SELECT SUM(CASE WHEN bp.stage = 'final' THEN 3 ELSE 1 END)
+          FROM bracket_predictions bp
+          INNER JOIN bracket_results br ON bp.bracket_id = br.bracket_id
+              AND bp.stage = br.stage
+              AND bp.match_index = br.match_index
+          INNER JOIN brackets bk ON bp.bracket_id = bk.id
+          WHERE bp.user_id = u.id
+              AND bk.event_id = ?
+              AND bp.predicted_winner = br.actual_winner
+        ), 0) AS bracket_pts,
+        (
+          SUM(
+            CASE WHEN b.is_final_bet = 0 AND m.winner IS NOT NULL THEN
+              CASE WHEN (b.prediction = 'team1' AND m.winner = 'team1') OR
+                   (b.prediction = 'team2' AND m.winner = 'team2') OR
+                   (b.prediction = 'draw' AND m.winner = 'draw') OR
+                   (b.prediction = m.team1_name AND m.winner = 'team1') OR
+                   (b.prediction = m.team2_name AND m.winner = 'team2') THEN
+                CASE WHEN m.is_final = 1 THEN 3 ELSE 1 END +
+                CASE WHEN sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                          ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                          sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2 THEN 1 ELSE 0 END +
+                CASE WHEN m.is_final = 0 AND m.winner != 'draw' AND e.diff_goals_enabled = 1 AND
+                          sp.score_team1 IS NOT NULL AND sp.score_team2 IS NOT NULL AND
+                          ms.score_team1 IS NOT NULL AND ms.score_team2 IS NOT NULL AND
+                          NOT (sp.score_team1 = ms.score_team1 AND sp.score_team2 = ms.score_team2) AND
+                          (sp.score_team1 - sp.score_team2) = (ms.score_team1 - ms.score_team2) THEN 1 ELSE 0 END +
+                CASE WHEN m.yellow_cards_prediction_enabled = 1 AND cp.yellow_cards IS NOT NULL AND
+                          m.yellow_cards IS NOT NULL AND cp.yellow_cards = m.yellow_cards THEN 1 ELSE 0 END +
+                CASE WHEN m.red_cards_prediction_enabled = 1 AND cp.red_cards IS NOT NULL AND
+                          m.red_cards IS NOT NULL AND cp.red_cards = m.red_cards THEN 1 ELSE 0 END
+              ELSE 0 END
+            ELSE 0 END
+          ) + COALESCE((
+            SELECT SUM(CASE WHEN bp.stage = 'final' THEN 3 ELSE 1 END)
+            FROM bracket_predictions bp
+            INNER JOIN bracket_results br ON bp.bracket_id = br.bracket_id
+                AND bp.stage = br.stage
+                AND bp.match_index = br.match_index
+            INNER JOIN brackets bk ON bp.bracket_id = bk.id
+            WHERE bp.user_id = u.id
+                AND bk.event_id = ?
+                AND bp.predicted_winner = br.actual_winner
+          ), 0) + SUM(
+            CASE WHEN b.is_final_bet = 1 AND fpr.id IS NOT NULL THEN
+              CASE WHEN b.parameter_type = 'yellow_cards' AND CAST(b.prediction AS INTEGER) = fpr.yellow_cards THEN 2
+                   WHEN b.parameter_type = 'red_cards' AND CAST(b.prediction AS INTEGER) = fpr.red_cards THEN 2
+                   WHEN b.parameter_type = 'corners' AND CAST(b.prediction AS INTEGER) = fpr.corners THEN 2
+                   WHEN b.parameter_type = 'exact_score' AND b.prediction = fpr.exact_score THEN 2
+                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
+                   WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
+                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                   ELSE 0 END
+            ELSE 0 END
+          )
+        ) AS total_points
+      FROM users u
+      LEFT JOIN bets b ON b.user_id = u.id
+      LEFT JOIN matches m ON b.match_id = m.id
+      LEFT JOIN events e ON m.event_id = e.id
+      LEFT JOIN final_parameters_results fpr ON b.match_id = fpr.match_id AND b.is_final_bet = 1
+      LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
+      LEFT JOIN match_scores ms ON b.match_id = ms.match_id
+      LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
+      WHERE m.event_id = ?
+      GROUP BY u.id, u.username
+      HAVING total_points > 0
+      ORDER BY total_points DESC
+    `).all(eventId, eventId, eventId, eventId);
+
+    res.json({
+      tournament: event,
+      matches: matchStats,
+      users
+    });
+  } catch (error) {
+    console.error("❌ Ошибка в tournament-breakdown:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

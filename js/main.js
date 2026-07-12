@@ -442,6 +442,13 @@ import {
   clearProcessedDates,
 } from './modules/adminUtils.js';
 import {
+  openTournamentBreakdownModal,
+  closeTournamentBreakdownModal,
+  calculateBreakdown,
+  exportBreakdownJpg,
+  exportBreakdownMd,
+} from './modules/tournamentBreakdown.js';
+import {
   openBannedNamesModal,
   closeBannedNamesModal,
   loadBannedNames,
@@ -700,6 +707,9 @@ Object.assign(window, {
   // adminUtils
   runUtilityScript, formatUtilityOutput, openDatesManagementModal, loadDatesData,
   clearProcessedDates,
+  // tournamentBreakdown
+  openTournamentBreakdownModal, closeTournamentBreakdownModal,
+  calculateBreakdown, exportBreakdownJpg, exportBreakdownMd,
   // bannedNames
   openBannedNamesModal, closeBannedNamesModal, loadBannedNames, addBannedName,
   toggleBannedNamePartial, deleteBannedName, checkAndHandleBannedName, showBannedNameAlert,

@@ -2141,7 +2141,7 @@ function openTeamSelectionModal(stageId, matchIndex, teamIndex, event) {
         
         <input type="text" 
                id="teamSearchInput" 
-               placeholder='<svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>' + ' Поиск команды...' 
+               placeholder="🔍 Поиск команды..." 
                style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(40, 44, 54, 0.9); border: 1px solid rgba(90, 159, 212, 0.5); border-radius: 6px; color: #e0e6ed; font-size: 14px;"
                oninput="filterTeamsList(this.value)">
         
