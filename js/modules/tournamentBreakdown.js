@@ -508,8 +508,23 @@ export async function sendBreakdownTo(target) {
             `).join('')}
           </tbody>
         </table>
-      </div>
     `;
+
+    if (document.getElementById('breakdownShowObservations')?.checked && data.users.length > 0) {
+      const observations = generateObservations(data, enabledCategories);
+      if (observations.length > 0) {
+        renderHtml += `
+          <div style="margin-top:15px;padding:15px;background:rgba(90,159,212,0.1);border-radius:8px;border:1px solid rgba(90,159,212,0.2);">
+            <div style="font-weight:600;margin-bottom:10px;">Наблюдения</div>
+            <ul style="margin:0;padding-left:20px;line-height:1.8;">
+              ${observations.map(obs => '<li>' + obs.replace(/<[^>]+>/g, '') + '</li>').join('')}
+            </ul>
+          </div>
+        `;
+      }
+    }
+
+    renderHtml += '</div>';
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:fixed;left:0;top:0;z-index:-1;opacity:1;';

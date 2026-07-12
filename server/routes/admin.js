@@ -5839,7 +5839,7 @@ function generateBreakdownCaption(event) {
   const endDate = event.end_date ? new Date(event.end_date).toLocaleDateString('ru-RU') : '—';
   lines.push(`📅 ${startDate} — ${endDate}`);
 
-  if (event.status === 'finished' && event.winner) {
+  if (event.status === 'completed' && event.winner) {
     lines.push(`🏆 Победитель: ${event.winner.username} (${event.winner.total_points} очков)`);
   } else {
     lines.push(`⏳ Турнир ещё идёт`);
@@ -5882,7 +5882,7 @@ router.post("/api/admin/send-breakdown-photo", async (req, res) => {
 
     // Определяем победителя (если турнир завершен)
     let winner = null;
-    if (event.status === 'finished') {
+    if (event.status === 'completed') {
       // Используем ту же логику что и main ranking
       const winnerRow = db.prepare(`
         SELECT u.username,
@@ -5936,7 +5936,7 @@ router.post("/api/admin/send-breakdown-photo", async (req, res) => {
         GROUP BY u.id, u.username
         ORDER BY total_points DESC
         LIMIT 1
-      `).get(eventId, eventId, eventId);
+      `).get(eventId, eventId);
 
       if (winnerRow) {
         winner = { username: winnerRow.username, total_points: winnerRow.total_points };
