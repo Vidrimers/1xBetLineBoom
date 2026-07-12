@@ -18,35 +18,38 @@ let currentBreakdownData = null;
 export async function openTournamentBreakdownModal() {
   const modal = document.createElement('div');
   modal.id = 'tournamentBreakdownModal';
-  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;';
+  modal.className = 'modal';
+  modal.style.cssText = 'display:flex;';
 
   modal.innerHTML = `
-    <div style="background:#1e2a3a;padding:30px;border-radius:12px;max-width:1100px;width:95%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+    <div class="modal-content" style="max-width:1300px;width:95%;max-height:90vh;display:flex;flex-direction:column;padding:30px;overflow:hidden;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h3 style="margin:0;color:#5a9fd4;"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Разбивка турнира</h3>
-        <button onclick="closeTournamentBreakdownModal()" style="background:none;border:none;color:#888;font-size:1.5em;cursor:pointer;padding:0 5px;">&times;</button>
+        <h3 style="margin:0;color:var(--text-primary, #5a9fd4);"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Разбивка турнира</h3>
+        <button onclick="closeTournamentBreakdownModal()" style="background:none;border:none;color:var(--text-muted, #888);font-size:1.5em;cursor:pointer;padding:0 5px;">&times;</button>
       </div>
 
-      <div style="display:flex;gap:15px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;">
-        <div style="flex:1;min-width:200px;">
-          <label style="color:#b0b8c8;font-size:0.9em;display:block;margin-bottom:5px;">Турнир</label>
-          <select id="breakdownTournamentSelect" style="width:100%;padding:10px;background:#2a3a4a;color:#e0e6f0;border:1px solid rgba(90,159,212,0.3);border-radius:6px;font-size:0.95em;">
-            <option value="">Загрузка...</option>
-          </select>
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;gap:15px;align-items:flex-end;margin-bottom:12px;">
+          <div style="flex:1;min-width:200px;">
+            <label style="color:var(--text-secondary, #b0b8c8);font-size:0.9em;display:block;margin-bottom:5px;">Турнир</label>
+            <select id="breakdownTournamentSelect" style="width:100%;padding:10px;background:var(--input-bg, #2a3a4a);color:var(--text-primary, #e0e6f0);border:1px solid rgba(90,159,212,0.3);border-radius:6px;font-size:0.95em;">
+              <option value="">Загрузка...</option>
+            </select>
+          </div>
+          <button id="breakdownCalcBtn" onclick="calculateBreakdown()" style="padding:10px 20px;background:#5a9fd4;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;white-space:nowrap;">Рассчитать</button>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${CATEGORIES.map(cat => `
-            <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:rgba(90,159,212,0.1);border:1px solid rgba(90,159,212,0.3);border-radius:6px;cursor:pointer;font-size:0.85em;color:#b0b8c8;white-space:nowrap;">
+            <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:rgba(90,159,212,0.1);border:1px solid rgba(90,159,212,0.3);border-radius:6px;cursor:pointer;font-size:0.85em;color:var(--text-secondary, #b0b8c8);white-space:nowrap;">
               <input type="checkbox" class="breakdown-cat-checkbox" value="${cat.key}" ${cat.default ? 'checked' : ''} style="cursor:pointer;">
               ${cat.label}
             </label>
           `).join('')}
-          <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;cursor:pointer;font-size:0.85em;color:#c8e6c9;white-space:nowrap;">
+          <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;cursor:pointer;font-size:0.85em;color:var(--accent, #c8e6c9);white-space:nowrap;">
             <input type="checkbox" id="breakdownShowObservations" checked style="cursor:pointer;">
             Наблюдения
           </label>
         </div>
-        <button id="breakdownCalcBtn" onclick="calculateBreakdown()" style="padding:10px 20px;background:#5a9fd4;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;white-space:nowrap;">Рассчитать</button>
       </div>
 
       <div id="breakdownResults" style="flex:1;overflow:auto;min-height:100px;">
@@ -131,32 +134,32 @@ function renderBreakdownTable(data) {
   const showObservations = document.getElementById('breakdownShowObservations')?.checked;
 
   let html = `
-    <div id="breakdownTableContainer" style="background:#1a2332;border-radius:8px;padding:15px;border:1px solid rgba(90,159,212,0.2);">
-      <div style="color:#5a9fd4;font-size:1.1em;font-weight:600;margin-bottom:5px;">${data.tournament.name}</div>
-      <div style="color:#888;font-size:0.85em;margin-bottom:15px;">Матчей: ${data.matches.total} (завершено: ${data.matches.completed})</div>
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.9em;">
+    <div id="breakdownTableContainer" style="border-radius:8px;padding:15px;border:1px solid rgba(90,159,212,0.2);">
+      <div style="color:var(--text-primary, #5a9fd4);font-size:1.1em;font-weight:600;margin-bottom:5px;">${data.tournament.name}</div>
+      <div style="color:var(--text-muted, #888);font-size:0.85em;margin-bottom:15px;">Матчей: ${data.matches.total} (завершено: ${data.matches.completed})</div>
+      <div>
+        <table style="border-collapse:collapse;font-size:0.9em;">
           <thead>
             <tr style="border-bottom:2px solid rgba(90,159,212,0.3);">
-              <th style="padding:10px 8px;text-align:left;color:#5a9fd4;white-space:nowrap;">#</th>
-              <th style="padding:10px 8px;text-align:left;color:#5a9fd4;white-space:nowrap;">Игрок</th>
+              <th style="padding:10px 12px;text-align:center;color:var(--text-primary, #5a9fd4);">#</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--text-primary, #5a9fd4);">Игрок</th>
               ${enabledCategories.map(key => {
                 const cat = CATEGORIES.find(c => c.key === key);
-                return '<th style="padding:10px 8px;text-align:center;color:#5a9fd4;white-space:nowrap;">' + cat.label + '</th>';
+                return '<th style="padding:10px 12px;text-align:center;color:var(--text-primary, #5a9fd4);">' + cat.label + '</th>';
               }).join('')}
-              <th style="padding:10px 8px;text-align:center;color:#4caf50;font-weight:700;white-space:nowrap;">Итого</th>
+              <th style="padding:10px 12px;text-align:center;color:var(--accent, #4caf50);font-weight:700;">Итого</th>
             </tr>
           </thead>
           <tbody>
             ${data.users.map((user, idx) => `
               <tr style="border-bottom:1px solid rgba(90,159,212,0.1);${idx % 2 === 0 ? 'background:rgba(90,159,212,0.05);' : ''}">
-                <td style="padding:10px 8px;color:#888;">${idx + 1}</td>
-                <td style="padding:10px 8px;color:#e0e6f0;font-weight:500;white-space:nowrap;">${user.username}</td>
+                <td style="padding:10px 12px;text-align:center;color:var(--text-muted, #888);">${idx + 1}</td>
+                <td style="padding:10px 12px;color:var(--text-primary, #e0e6f0);font-weight:500;">${user.username}</td>
                 ${enabledCategories.map(key => {
                   const val = user[key] || 0;
-                  return '<td style="padding:10px 8px;text-align:center;color:' + (val > 0 ? '#e0e6f0' : '#555') + ';">' + val + '</td>';
+                  return '<td style="padding:10px 12px;text-align:center;color:' + (val > 0 ? 'var(--text-primary, #e0e6f0)' : 'var(--text-muted, #555)') + ';">' + val + '</td>';
                 }).join('')}
-                <td style="padding:10px 8px;text-align:center;color:#4caf50;font-weight:700;">${user.total_points}</td>
+                <td style="padding:10px 12px;text-align:center;color:var(--accent, #4caf50);font-weight:700;">${user.total_points}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -169,8 +172,8 @@ function renderBreakdownTable(data) {
     if (observations.length > 0) {
       html += `
         <div style="margin-top:15px;padding:15px;background:rgba(90,159,212,0.1);border-radius:8px;border:1px solid rgba(90,159,212,0.2);">
-          <div style="color:#5a9fd4;font-weight:600;margin-bottom:10px;">Наблюдения</div>
-          <ul style="margin:0;padding-left:20px;color:#b0b8c8;line-height:1.8;">
+          <div style="color:var(--text-primary, #5a9fd4);font-weight:600;margin-bottom:10px;">Наблюдения</div>
+          <ul style="margin:0;padding-left:20px;color:var(--text-secondary, #b0b8c8);line-height:1.8;">
             ${observations.map(obs => '<li>' + obs + '</li>').join('')}
           </ul>
         </div>
@@ -238,15 +241,82 @@ export function exportBreakdownJpg() {
     return;
   }
 
-  html2canvas(tableContainer, {
-    backgroundColor: '#1a2332',
-    scale: 2
+  // Build a standalone render container with inline-resolved styles
+  const data = currentBreakdownData;
+  const enabledCategories = Array.from(document.querySelectorAll('.breakdown-cat-checkbox:checked')).map(cb => cb.value);
+  const showObservations = document.getElementById('breakdownShowObservations')?.checked;
+
+  // Get actual computed colors from the visible table
+  const cs = window.getComputedStyle(tableContainer);
+  const bgColor = cs.backgroundColor;
+  const textColor = cs.color;
+
+  let renderHtml = `
+    <div style="background:${bgColor};color:${textColor};padding:20px;font-family:'Segoe UI',Tahoma,sans-serif;white-space:nowrap;">
+      <div style="font-size:18px;font-weight:600;margin-bottom:5px;">${data.tournament.name}</div>
+      <div style="font-size:13px;opacity:0.7;margin-bottom:15px;">Матчей: ${data.matches.total} (завершено: ${data.matches.completed})</div>
+      <table style="border-collapse:collapse;font-size:14px;">
+        <thead>
+          <tr style="border-bottom:2px solid rgba(90,159,212,0.3);">
+            <th style="padding:10px 14px;text-align:center;">#</th>
+            <th style="padding:10px 14px;text-align:left;">Игрок</th>
+            ${enabledCategories.map(key => {
+              const cat = CATEGORIES.find(c => c.key === key);
+              return '<th style="padding:10px 14px;text-align:center;">' + cat.label + '</th>';
+            }).join('')}
+            <th style="padding:10px 14px;text-align:center;font-weight:700;">Итого</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.users.map((user, idx) => `
+            <tr style="border-bottom:1px solid rgba(90,159,212,0.1);${idx % 2 === 0 ? 'background:rgba(90,159,212,0.05);' : ''}">
+              <td style="padding:10px 14px;text-align:center;opacity:0.5;">${idx + 1}</td>
+              <td style="padding:10px 14px;font-weight:500;">${user.username}</td>
+              ${enabledCategories.map(key => {
+                const val = user[key] || 0;
+                return '<td style="padding:10px 14px;text-align:center;' + (val === 0 ? 'opacity:0.3;' : '') + '">' + val + '</td>';
+              }).join('')}
+              <td style="padding:10px 14px;text-align:center;font-weight:700;">${user.total_points}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+  `;
+
+  if (showObservations && data.users.length > 0) {
+    const observations = generateObservations(data, enabledCategories);
+    if (observations.length > 0) {
+      renderHtml += `
+        <div style="margin-top:15px;padding:15px;background:rgba(90,159,212,0.1);border-radius:8px;border:1px solid rgba(90,159,212,0.2);">
+          <div style="font-weight:600;margin-bottom:10px;">Наблюдения</div>
+          <ul style="margin:0;padding-left:20px;line-height:1.8;">
+            ${observations.map(obs => '<li>' + obs.replace(/<[^>]+>/g, '') + '</li>').join('')}
+          </ul>
+        </div>
+      `;
+    }
+  }
+
+  renderHtml += '</div>';
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:0;top:0;z-index:-1;opacity:1;';
+  wrapper.innerHTML = renderHtml;
+  document.body.appendChild(wrapper);
+  const renderTarget = wrapper.firstElementChild;
+
+  html2canvas(renderTarget, {
+    scale: 2,
+    useCORS: true,
+    logging: false
   }).then(canvas => {
+    document.body.removeChild(wrapper);
     const link = document.createElement('a');
-    link.download = 'tournament_breakdown_' + currentBreakdownData.tournament.id + '.jpg';
+    link.download = 'tournament_breakdown_' + data.tournament.id + '.jpg';
     link.href = canvas.toDataURL('image/jpeg', 0.95);
     link.click();
   }).catch(err => {
+    document.body.removeChild(wrapper);
     console.error('Ошибка экспорта JPG:', err);
     showCustomAlert('Ошибка экспорта: ' + err.message, 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   });
@@ -257,30 +327,87 @@ export function exportBreakdownMd() {
 
   const data = currentBreakdownData;
   const enabledCategories = Array.from(document.querySelectorAll('.breakdown-cat-checkbox:checked')).map(cb => cb.value);
+  const showObservations = document.getElementById('breakdownShowObservations')?.checked;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU');
 
   let md = '# Разбивка турнира: ' + data.tournament.name + '\n\n';
-  md += 'Матчей: ' + data.matches.total + ' (завершено: ' + data.matches.completed + ')\n\n';
+  md += '> Дата отчёта: ' + dateStr + '\n';
+  md += '> Матчей: ' + data.matches.total + ' (завершено: ' + data.matches.completed + ')\n\n';
 
+  // Table
   const headers = ['#', 'Игрок'];
   for (const key of enabledCategories) {
     const cat = CATEGORIES.find(c => c.key === key);
     headers.push(cat.label);
   }
-  headers.push('Итого');
+  headers.push('**Итого**');
 
   md += '| ' + headers.join(' | ') + ' |\n';
-  md += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+  md += '| ' + headers.map((_, i) => i === 0 ? '---' : ':---:').join(' | ') + ' |\n';
 
   data.users.forEach((user, idx) => {
     const row = [String(idx + 1), user.username];
     for (const key of enabledCategories) {
-      row.push(String(user[key] || 0));
+      const val = user[key] || 0;
+      row.push(val === 0 ? '—' : String(val));
     }
-    row.push(String(user.total_points));
+    row.push('**' + user.total_points + '**');
     md += '| ' + row.join(' | ') + ' |\n';
   });
 
-  const blob = new Blob([md], { type: 'text/markdown' });
+  // Summary
+  if (data.users.length > 0) {
+    md += '\n---\n\n## Сводка\n\n';
+    md += '- **Лидер:** ' + data.users[0].username + ' — ' + data.users[0].total_points + ' очков\n';
+    if (data.users.length > 1) {
+      const gap = data.users[0].total_points - data.users[1].total_points;
+      md += '- **Отрыв от 2-го места:** ' + gap + ' очков\n';
+    }
+    if (data.users.length > 2) {
+      const leaderCount = data.users.filter(u => u.total_points === data.users[0].total_points).length;
+      if (leaderCount > 1) {
+        md += '- **Лидеров с одинаковым счётом:** ' + leaderCount + '\n';
+      }
+    }
+  }
+
+  // Category leaders
+  if (enabledCategories.length > 0) {
+    md += '\n## Лидеры по категориям\n\n';
+    for (const key of enabledCategories) {
+      const cat = CATEGORIES.find(c => c.key === key);
+      let maxVal = 0;
+      let maxUsers = [];
+      for (const user of data.users) {
+        const val = user[key] || 0;
+        if (val > maxVal) {
+          maxVal = val;
+          maxUsers = [user.username];
+        } else if (val === maxVal && val > 0) {
+          maxUsers.push(user.username);
+        }
+      }
+      if (maxVal > 0) {
+        md += '- **' + cat.label + ':** ' + maxUsers.join(', ') + ' (' + maxVal + ')\n';
+      }
+    }
+  }
+
+  // Observations
+  if (showObservations && data.users.length > 0) {
+    const observations = generateObservations(data, enabledCategories);
+    if (observations.length > 0) {
+      md += '\n## Наблюдения\n\n';
+      for (const obs of observations) {
+        const plain = obs.replace(/<[^>]+>/g, '');
+        md += '- ' + plain + '\n';
+      }
+    }
+  }
+
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const link = document.createElement('a');
   link.download = 'tournament_breakdown_' + data.tournament.id + '.md';
   link.href = URL.createObjectURL(blob);

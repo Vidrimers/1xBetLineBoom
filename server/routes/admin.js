@@ -5800,7 +5800,7 @@ router.get("/api/admin/tournament-breakdown", (req, res) => {
       GROUP BY u.id, u.username
       HAVING total_points > 0
       ORDER BY total_points DESC
-    `).all(eventId, eventId, eventId, eventId);
+    `).all(eventId, eventId, eventId);
 
     res.json({
       tournament: event,
