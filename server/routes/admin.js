@@ -5947,11 +5947,15 @@ router.post("/api/admin/send-breakdown-photo", async (req, res) => {
     const imageBuffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
     // Вспомогательная функция отправки фото
-    async function sendPhotoToChat(chatId, caption) {
+    async function sendPhotoToChat(chatId, caption, options = {}) {
+      const THREAD_ID = process.env.THREAD_ID;
       const formData = new FormData();
       formData.append('chat_id', String(chatId));
       formData.append('photo', new Blob([imageBuffer], { type: 'image/jpeg' }), 'breakdown.jpg');
       formData.append('caption', caption);
+      if (options.threadId || (THREAD_ID && String(chatId) === String(TELEGRAM_CHAT_ID))) {
+        formData.append('message_thread_id', String(options.threadId || THREAD_ID));
+      }
 
       const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
         method: 'POST',
