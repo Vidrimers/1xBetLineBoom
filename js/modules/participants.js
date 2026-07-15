@@ -226,7 +226,7 @@ export async function displayTournaments(events) {
           const winner = participants.sort(
             (a, b) => (b.event_won || 0) - (a.event_won || 0)
           )[0];
-          winnerInfo = `<div class="event-card-winner"><svg class="icon" aria-hidden="true"><use href="#icon-crown"></use></svg> Победитель: <strong>${winner.username}</strong></div>`;
+          winnerInfo = `<div class="event-card-winner"><svg class="icon" aria-hidden="true"><use href="#icon-crown"></use></svg> Победитель:<br><strong>${winner.username}</strong></div>`;
         }
       } catch (error) {
         console.error("Ошибка при загрузке участников турнира:", error);
