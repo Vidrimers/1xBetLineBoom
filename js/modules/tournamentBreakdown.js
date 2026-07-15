@@ -169,6 +169,12 @@ function renderBreakdownTable(data) {
   const enabledCategories = Array.from(document.querySelectorAll('.breakdown-cat-checkbox:checked')).map(cb => cb.value);
   const showObservations = document.getElementById('breakdownShowObservations')?.checked;
 
+  const sortedUsers = [...data.users].sort((a, b) => getAdjustedTotal(b, enabledCategories) - getAdjustedTotal(a, enabledCategories));
+
+  container.style.opacity = '0';
+  container.style.transition = 'opacity 0.15s ease';
+
+  setTimeout(() => {
   let html = `
     <div id="breakdownTableContainer" style="border-radius:8px;padding:15px;border:1px solid rgba(90,159,212,0.2);">
       <div style="color:var(--text-primary, #5a9fd4);font-size:1.1em;font-weight:600;margin-bottom:5px;">${data.tournament.name}</div>
@@ -187,7 +193,7 @@ function renderBreakdownTable(data) {
             </tr>
           </thead>
           <tbody>
-            ${data.users.map((user, idx) => `
+            ${sortedUsers.map((user, idx) => `
               <tr style="border-bottom:1px solid rgba(90,159,212,0.1);${idx % 2 === 0 ? 'background:rgba(90,159,212,0.05);' : ''}">
                 <td style="padding:10px 12px;text-align:center;color:var(--text-muted, #888);">${idx + 1}</td>
                 <td style="padding:10px 12px;color:var(--text-primary, #e0e6f0);font-weight:500;">${user.username}</td>
@@ -203,8 +209,9 @@ function renderBreakdownTable(data) {
       </div>
   `;
 
-  if (showObservations && data.users.length > 0) {
-    const observations = generateObservations(data, enabledCategories);
+  if (showObservations && sortedUsers.length > 0) {
+    const sortedData = { ...data, users: sortedUsers };
+    const observations = generateObservations(sortedData, enabledCategories);
     if (observations.length > 0) {
       html += `
         <div style="margin-top:15px;padding:15px;background:rgba(90,159,212,0.1);border-radius:8px;border:1px solid rgba(90,159,212,0.2);">
@@ -219,6 +226,8 @@ function renderBreakdownTable(data) {
 
   html += '</div>';
   container.innerHTML = html;
+  container.style.opacity = '1';
+  }, 150);
 }
 
 function generateObservations(data, enabledCategories) {
