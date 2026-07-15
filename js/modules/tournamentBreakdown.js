@@ -81,12 +81,15 @@ export async function openTournamentBreakdownModal() {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside, close modal when clicking on overlay
   modal.addEventListener('click', (e) => {
     const menu = document.getElementById('breakdownSendMenu');
     const btn = document.getElementById('breakdownSendBtn');
     if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
       menu.style.display = 'none';
+    }
+    if (e.target === modal) {
+      closeTournamentBreakdownModal();
     }
   });
 
