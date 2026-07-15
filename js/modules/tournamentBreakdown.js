@@ -15,6 +15,12 @@ const CATEGORIES = [
 
 let currentBreakdownData = null;
 
+function getAdjustedTotal(user, enabledCategories) {
+  const disabledKeys = CATEGORIES.filter(c => !enabledCategories.includes(c.key)).map(c => c.key);
+  const disabledSum = disabledKeys.reduce((sum, key) => sum + (user[key] || 0), 0);
+  return user.total_points - disabledSum;
+}
+
 export async function openTournamentBreakdownModal() {
   const modal = document.createElement('div');
   modal.id = 'tournamentBreakdownModal';
@@ -178,7 +184,7 @@ function renderBreakdownTable(data) {
                   const val = user[key] || 0;
                   return '<td style="padding:10px 12px;text-align:center;color:' + (val > 0 ? 'var(--text-primary, #e0e6f0)' : 'var(--text-muted, #555)') + ';">' + val + '</td>';
                 }).join('')}
-                <td style="padding:10px 12px;text-align:center;color:var(--accent, #4caf50);font-weight:700;">${user.total_points}</td>
+                <td style="padding:10px 12px;text-align:center;color:var(--accent, #4caf50);font-weight:700;">${getAdjustedTotal(user, enabledCategories)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -210,9 +216,11 @@ function generateObservations(data, enabledCategories) {
   if (users.length === 0) return obs;
 
   const leader = users[0];
+  const leaderTotal = getAdjustedTotal(leader, enabledCategories);
   if (users.length > 1) {
-    const gap = leader.total_points - users[1].total_points;
-    obs.push('<b>' + leader.username + '</b> лидирует с <b>' + leader.total_points + '</b> очками, опережая <b>' + users[1].username + '</b> на <b>' + gap + '</b> очков.');
+    const secondTotal = getAdjustedTotal(users[1], enabledCategories);
+    const gap = leaderTotal - secondTotal;
+    obs.push('<b>' + leader.username + '</b> лидирует с <b>' + leaderTotal + '</b> очками, опережая <b>' + users[1].username + '</b> на <b>' + gap + '</b> очков.');
   }
 
   const categoryLeaders = {};
@@ -234,8 +242,9 @@ function generateObservations(data, enabledCategories) {
   }
 
   const minUser = users[users.length - 1];
-  if (users.length > 1 && minUser.total_points < leader.total_points) {
-    obs.push('<b>' + minUser.username + '</b> замыкает таблицу с <b>' + minUser.total_points + '</b> очками.');
+  const minTotal = getAdjustedTotal(minUser, enabledCategories);
+  if (users.length > 1 && minTotal < leaderTotal) {
+    obs.push('<b>' + minUser.username + '</b> замыкает таблицу с <b>' + minTotal + '</b> очками.');
   }
 
   for (const key of enabledCategories) {
@@ -295,7 +304,7 @@ export function exportBreakdownJpg() {
                 const val = user[key] || 0;
                 return '<td style="padding:10px 14px;text-align:center;' + (val === 0 ? 'opacity:0.3;' : '') + '">' + val + '</td>';
               }).join('')}
-              <td style="padding:10px 14px;text-align:center;font-weight:700;">${user.total_points}</td>
+              <td style="padding:10px 14px;text-align:center;font-weight:700;">${getAdjustedTotal(user, enabledCategories)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -372,20 +381,22 @@ export function exportBreakdownMd() {
       const val = user[key] || 0;
       row.push(val === 0 ? '—' : String(val));
     }
-    row.push('**' + user.total_points + '**');
+    row.push('**' + getAdjustedTotal(user, enabledCategories) + '**');
     md += '| ' + row.join(' | ') + ' |\n';
   });
 
   // Summary
   if (data.users.length > 0) {
+    const leaderTotal = getAdjustedTotal(data.users[0], enabledCategories);
     md += '\n---\n\n## Сводка\n\n';
-    md += '- **Лидер:** ' + data.users[0].username + ' — ' + data.users[0].total_points + ' очков\n';
+    md += '- **Лидер:** ' + data.users[0].username + ' — ' + leaderTotal + ' очков\n';
     if (data.users.length > 1) {
-      const gap = data.users[0].total_points - data.users[1].total_points;
+      const secondTotal = getAdjustedTotal(data.users[1], enabledCategories);
+      const gap = leaderTotal - secondTotal;
       md += '- **Отрыв от 2-го места:** ' + gap + ' очков\n';
     }
     if (data.users.length > 2) {
-      const leaderCount = data.users.filter(u => u.total_points === data.users[0].total_points).length;
+      const leaderCount = data.users.filter(u => getAdjustedTotal(u, enabledCategories) === leaderTotal).length;
       if (leaderCount > 1) {
         md += '- **Лидеров с одинаковым счётом:** ' + leaderCount + '\n';
       }
@@ -503,7 +514,7 @@ export async function sendBreakdownTo(target) {
                   const val = user[key] || 0;
                   return '<td style="padding:10px 14px;text-align:center;' + (val === 0 ? 'opacity:0.3;' : '') + '">' + val + '</td>';
                 }).join('')}
-                <td style="padding:10px 14px;text-align:center;font-weight:700;">${user.total_points}</td>
+                <td style="padding:10px 14px;text-align:center;font-weight:700;">${getAdjustedTotal(user, enabledCategories)}</td>
               </tr>
             `).join('')}
           </tbody>
