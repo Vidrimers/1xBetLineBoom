@@ -156,9 +156,12 @@ export async function calculateBreakdown() {
     currentBreakdownData = data;
     renderBreakdownTable(data);
 
-    document.getElementById('breakdownSendWrapper').style.display = 'block';
-    document.getElementById('breakdownExportJpg').style.display = 'inline-block';
-    document.getElementById('breakdownExportMd').style.display = 'inline-block';
+    const sendWrapper = document.getElementById('breakdownSendWrapper');
+    const exportJpg = document.getElementById('breakdownExportJpg');
+    const exportMd = document.getElementById('breakdownExportMd');
+    if (sendWrapper) sendWrapper.style.display = 'block';
+    if (exportJpg) exportJpg.style.display = 'inline-block';
+    if (exportMd) exportMd.style.display = 'inline-block';
   } catch (error) {
     container.innerHTML = `<div style="color:#f44336;text-align:center;padding:20px;">Ошибка: ${error.message}</div>`;
     console.error('Ошибка подсчета:', error);
