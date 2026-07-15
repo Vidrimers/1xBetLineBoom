@@ -91,6 +91,12 @@ export async function openTournamentBreakdownModal() {
   });
 
   await loadTournamentsForBreakdown();
+
+  modal.querySelectorAll('.breakdown-cat-checkbox, #breakdownShowObservations').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (currentBreakdownData) renderBreakdownTable(currentBreakdownData);
+    });
+  });
 }
 
 export function closeTournamentBreakdownModal() {
