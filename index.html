@@ -622,6 +622,24 @@
                 <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Подсчет
               </button>
               <button
+                onclick="openPublicTournamentBreakdownModal()"
+                style="
+                  background: transparent;
+                  border: 1px solid #4caf50;
+                  color: #e0e6f0;
+                  padding: 3px 7px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 0.9em;
+                  transition: all 0.3s ease;
+                "
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'"
+                title="Статистика турниров"
+              >
+                <svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика
+              </button>
+              <button
                 onclick="openTournamentInfoModal()"
                 style="
                   background: transparent;

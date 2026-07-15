@@ -443,6 +443,7 @@ import {
 } from './modules/adminUtils.js';
 import {
   openTournamentBreakdownModal,
+  openPublicTournamentBreakdownModal,
   closeTournamentBreakdownModal,
   calculateBreakdown,
   exportBreakdownJpg,
@@ -710,7 +711,7 @@ Object.assign(window, {
   runUtilityScript, formatUtilityOutput, openDatesManagementModal, loadDatesData,
   clearProcessedDates,
   // tournamentBreakdown
-  openTournamentBreakdownModal, closeTournamentBreakdownModal,
+  openTournamentBreakdownModal, openPublicTournamentBreakdownModal, closeTournamentBreakdownModal,
   calculateBreakdown, exportBreakdownJpg, exportBreakdownMd,
   toggleBreakdownSendMenu, sendBreakdownTo,
   // bannedNames

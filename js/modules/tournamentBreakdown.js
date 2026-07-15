@@ -21,7 +21,7 @@ function getAdjustedTotal(user, enabledCategories) {
   return user.total_points - disabledSum;
 }
 
-export async function openTournamentBreakdownModal() {
+export async function openTournamentBreakdownModal(isAdmin = true) {
   const modal = document.createElement('div');
   modal.id = 'tournamentBreakdownModal';
   modal.className = 'modal';
@@ -63,6 +63,7 @@ export async function openTournamentBreakdownModal() {
       </div>
 
       <div style="display:flex;gap:10px;margin-top:15px;justify-content:flex-end;flex-wrap:wrap;">
+        ${isAdmin ? `
         <div style="position:relative;display:none;" id="breakdownSendWrapper">
           <button id="breakdownSendBtn" onclick="toggleBreakdownSendMenu()" style="padding:10px 20px;background:#ff9800;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">📤 Отправить ▾</button>
           <div id="breakdownSendMenu" style="display:none;position:absolute;bottom:100%;right:0;margin-bottom:5px;background:rgba(40,44,54,0.98);border:1px solid rgba(90,159,212,0.3);border-radius:8px;overflow:hidden;z-index:10;min-width:200px;box-shadow:0 4px 12px rgba(0,0,0,0.4);">
@@ -71,6 +72,7 @@ export async function openTournamentBreakdownModal() {
             <button onclick="sendBreakdownTo('self')" style="display:block;width:100%;padding:10px 16px;background:transparent;border:none;color:#e0e6f0;cursor:pointer;text-align:left;font-size:0.9em;border-top:1px solid rgba(90,159,212,0.2);">📤 Себе</button>
           </div>
         </div>
+        ` : ''}
         <button id="breakdownExportJpg" onclick="exportBreakdownJpg()" style="display:none;padding:10px 20px;background:#4caf50;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">💾 JPG</button>
         <button id="breakdownExportMd" onclick="exportBreakdownMd()" style="display:none;padding:10px 20px;background:#2196f3;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">📄 .md</button>
         <button onclick="closeTournamentBreakdownModal()" style="padding:10px 20px;background:#607d8b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;">Закрыть</button>
@@ -85,7 +87,7 @@ export async function openTournamentBreakdownModal() {
   modal.addEventListener('click', (e) => {
     const menu = document.getElementById('breakdownSendMenu');
     const btn = document.getElementById('breakdownSendBtn');
-    if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+    if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
       menu.style.display = 'none';
     }
     if (e.target === modal) {
@@ -107,6 +109,10 @@ export function closeTournamentBreakdownModal() {
   if (modal) modal.remove();
   document.body.style.overflow = '';
   currentBreakdownData = null;
+}
+
+export async function openPublicTournamentBreakdownModal() {
+  return openTournamentBreakdownModal(false);
 }
 
 async function loadTournamentsForBreakdown() {
