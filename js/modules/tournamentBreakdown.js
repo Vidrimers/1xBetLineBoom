@@ -79,6 +79,7 @@ export async function openTournamentBreakdownModal() {
   `;
 
   document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
 
   // Close dropdown when clicking outside
   modal.addEventListener('click', (e) => {
@@ -95,6 +96,7 @@ export async function openTournamentBreakdownModal() {
 export function closeTournamentBreakdownModal() {
   const modal = document.getElementById('tournamentBreakdownModal');
   if (modal) modal.remove();
+  document.body.style.overflow = '';
   currentBreakdownData = null;
 }
 
