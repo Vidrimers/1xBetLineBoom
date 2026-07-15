@@ -343,6 +343,7 @@
 }
 
 .event-card-winner {
+  width: 100%;
   font-size: 0.9em;
   color: #ffd700;
   margin-top: 10px;
