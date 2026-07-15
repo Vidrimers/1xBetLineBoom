@@ -30,7 +30,7 @@ export async function openTournamentBreakdownModal() {
   modal.innerHTML = `
     <div class="modal-content" style="max-width:1300px;width:95%;max-height:90vh;display:flex;flex-direction:column;padding:30px;overflow:hidden;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h3 style="margin:0;color:var(--text-primary, #5a9fd4);"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Разбивка турнира</h3>
+        <h3 style="margin:0;color:var(--text-primary, #5a9fd4);"><svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg> Статистика турниров</h3>
         <button onclick="closeTournamentBreakdownModal()" style="background:none;border:none;color:var(--text-muted, #888);font-size:1.5em;cursor:pointer;padding:0 5px;">&times;</button>
       </div>
 
@@ -380,7 +380,7 @@ export function exportBreakdownMd() {
   const now = new Date();
   const dateStr = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU');
 
-  let md = '# Разбивка турнира: ' + data.tournament.name + '\n\n';
+  let md = '# Статистика турниров: ' + data.tournament.name + '\n\n';
   md += '> Дата отчёта: ' + dateStr + '\n';
   md += '> Матчей: ' + data.matches.total + ' (завершено: ' + data.matches.completed + ')\n\n';
 

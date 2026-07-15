@@ -5325,7 +5325,7 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
             { id: 'banned-names', text: '🚫 Запретные имена', action: 'openBannedNamesModal()', type: 'modal' },
             { id: 'weight-categories', text: '⚖️ Веса турниров', action: 'openWeightCategoriesModal()', type: 'modal' },
             { id: 'timezone-offset', text: '🕐 Смещение часового пояса', action: 'openTimezoneOffsetModal()', type: 'modal' },
-            { id: 'tournament-breakdown', text: '📊 Разбивка турнира', action: 'openTournamentBreakdownModal()', type: 'modal' }
+            { id: 'tournament-breakdown', text: '📊 Статистика турниров', action: 'openTournamentBreakdownModal()', type: 'modal' }
           ]
         }
       ]
@@ -6197,7 +6197,7 @@ export function handleBreakdownCallback(data) {
 
   if (data === 'breakdown_stop') {
     const summary = `⏹️ <b>Рассылка остановлена</b>\n\n` +
-      `${breakdownSendState.caption ? breakdownSendState.caption.split('\n')[0] : 'Разбивка'}\n` +
+      `${breakdownSendState.caption ? breakdownSendState.caption.split('\n')[0] : 'Статистика'}\n` +
       `Отправлено: ${breakdownSendState.sentCount} из ${breakdownSendState.totalCount}\n` +
       `Не отправлено: ${breakdownSendState.remainingUsers.length}`;
 
