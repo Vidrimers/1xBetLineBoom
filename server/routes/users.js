@@ -187,8 +187,10 @@ router.get("/api/users/:userId/global-stats", (req, res) => {
           ELSE 0 
         END) as lost_bets,
         SUM(CASE 
-          WHEN (b.is_final_bet = 0 AND m.winner IS NULL) OR 
-               (b.is_final_bet = 1 AND fpr.id IS NULL) THEN 1 
+          WHEN ((b.is_final_bet = 0 AND m.winner IS NULL) OR 
+               (b.is_final_bet = 1 AND fpr.id IS NULL))
+            AND m.status NOT IN ('cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover')
+          THEN 1 
           ELSE 0 
         END) as pending_bets,
         COUNT(DISTINCT m.event_id) as tournaments_count
@@ -472,8 +474,10 @@ router.get("/api/participants", (req, res) => {
           ELSE 0 
         END) as lost_bets,
         SUM(CASE 
-          WHEN (b.is_final_bet = 0 AND m.winner IS NULL) OR 
-               (b.is_final_bet = 1 AND fpr.id IS NULL) THEN 1 
+          WHEN ((b.is_final_bet = 0 AND m.winner IS NULL) OR 
+               (b.is_final_bet = 1 AND fpr.id IS NULL))
+            AND m.status NOT IN ('cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover')
+          THEN 1 
           ELSE 0 
         END) as pending_bets
       FROM users u
@@ -688,8 +692,10 @@ router.get("/api/user/:userId/profile", async (req, res) => {
           ELSE 0 
         END) as lost_bets,
         SUM(CASE 
-          WHEN (b.is_final_bet = 0 AND m.winner IS NULL) OR 
-               (b.is_final_bet = 1 AND fpr.id IS NULL) THEN 1 
+          WHEN ((b.is_final_bet = 0 AND m.winner IS NULL) OR 
+               (b.is_final_bet = 1 AND fpr.id IS NULL))
+            AND m.status NOT IN ('cancelled', 'postponed', 'abandoned', 'technical_loss', 'walkover')
+          THEN 1 
           ELSE 0 
         END) as pending_bets
       FROM bets b
