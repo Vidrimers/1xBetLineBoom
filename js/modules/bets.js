@@ -581,6 +581,14 @@ export async function placeAllFinalBets(matchId) {
     }
   }
 
+  // Разница голов (пустое поле = 0)
+  if (match.show_goal_difference) {
+    const input = document.getElementById(`goalDifference_${matchId}`);
+    if (input && !input.disabled) {
+      try { await placeFinalBet(matchId, 'goal_difference', true); placed++; } catch(e) { errors++; }
+    }
+  }
+
   // Перерисовываем один раз в конце
   if (placed > 0) {
     const { displayMatches } = await import('./matches.js');
@@ -626,6 +634,10 @@ export async function placeAllFinalBets(matchId) {
         summary += `⚽ Пенальти в конце: ${cb.getAttribute('data-toggle-state') === 'true' ? 'ДА' : 'НЕТ'}\n`;
       }
     }
+    if (match.show_goal_difference) {
+      const input = document.getElementById(`goalDifference_${matchId}`);
+      if (input) summary += `⚖️ Разница голов: ${input.value || 0}\n`;
+    }
     await showCustomAlert(`Параметры сохранены:\n\n${summary}`, "Успех", '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
   } else if (placed === 0) {
     await showCustomAlert("Заполните хотя бы один параметр", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
@@ -648,13 +660,15 @@ export async function placeFinalBet(matchId, parameterType, skipRefresh = false)
   } else if (
     parameterType === "yellow_cards" ||
     parameterType === "red_cards" ||
-    parameterType === "corners"
+    parameterType === "corners" ||
+    parameterType === "goal_difference"
   ) {
     // Преобразуем параметр в camelCase для ID
     let fieldId;
     if (parameterType === "yellow_cards") fieldId = `yellowCards_${matchId}`;
     if (parameterType === "red_cards") fieldId = `redCards_${matchId}`;
     if (parameterType === "corners") fieldId = `corners_${matchId}`;
+    if (parameterType === "goal_difference") fieldId = `goalDifference_${matchId}`;
 
     const inputField = document.getElementById(fieldId);
     if (!inputField) {
@@ -925,6 +939,11 @@ export function displayMyBets(bets) {
                 params.penalties_at_end !== null &&
                 params.penalties_at_end !== undefined &&
                 params.penalties_at_end !== "";
+            } else if (bet.parameter_type === "goal_difference") {
+              parameterIsSet =
+                params.goal_difference !== null &&
+                params.goal_difference !== undefined &&
+                params.goal_difference !== "";
             }
           }
 
@@ -950,6 +969,8 @@ export function displayMyBets(bets) {
               isWon = bet.prediction === params.extra_time;
             } else if (bet.parameter_type === "penalties_at_end") {
               isWon = bet.prediction === params.penalties_at_end;
+            } else if (bet.parameter_type === "goal_difference") {
+              isWon = parseInt(bet.prediction) === parseInt(params.goal_difference);
             }
 
             if (isWon) {
@@ -1297,6 +1318,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
       penalties_in_game: "Пенальти в игре",
       extra_time: "Доп. время",
       penalties_at_end: "Пенальти в конце",
+      goal_difference: "Разница голов",
     };
     const paramIcons = {
       exact_score: '<svg class="icon" aria-hidden="true"><use href="#icon-stats"></use></svg>',
@@ -1306,6 +1328,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
       penalties_in_game: '<svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>',
       extra_time: '<svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg>',
       penalties_at_end: '<svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg>',
+      goal_difference: '⚖️',
     };
 
     finalParams.forEach(fp => {
@@ -1350,6 +1373,7 @@ export function generateBetHTML(bet, statusClass, statusText, normalizedPredicti
                   penalties_in_game: "Пенальти в игре",
                   extra_time: "Доп. время",
                   penalties_at_end: "Пенальти в конце",
+                  goal_difference: "Разница голов",
                 }[bet.parameter_type];
 
                 if (bet.parameter_type === "exact_score") {

@@ -75,6 +75,7 @@ export async function openEditMatchModal(id, team1, team2, date, round) {
     document.getElementById('editShowPenaltiesInGame').checked = match.show_penalties_in_game || false;
     document.getElementById('editShowExtraTime').checked = match.show_extra_time || false;
     document.getElementById('editShowPenaltiesAtEnd').checked = match.show_penalties_at_end || false;
+    document.getElementById('editShowGoalDifference').checked = match.show_goal_difference || false;
     document.getElementById('editMatchScorePrediction').checked = match.score_prediction_enabled || false;
     document.getElementById('editMatchYellowCardsPrediction').checked = match.yellow_cards_prediction_enabled || false;
     document.getElementById('editMatchRedCardsPrediction').checked = match.red_cards_prediction_enabled || false;
@@ -123,6 +124,7 @@ export async function submitEditMatch(event) {
   const showPenaltiesInGame = document.getElementById('editShowPenaltiesInGame').checked;
   const showExtraTime = document.getElementById('editShowExtraTime').checked;
   const showPenaltiesAtEnd = document.getElementById('editShowPenaltiesAtEnd').checked;
+  const showGoalDifference = document.getElementById('editShowGoalDifference').checked;
   if (!team1 || !team2) { await showCustomAlert('Заполните названия обеих команд', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   try {
     let matchDateUTC = null;
@@ -150,6 +152,7 @@ export async function submitEditMatch(event) {
         show_penalties_in_game: showPenaltiesInGame,
         show_extra_time: showExtraTime,
         show_penalties_at_end: showPenaltiesAtEnd,
+        show_goal_difference: showGoalDifference,
       }),
     });
     const result = await response.json();
@@ -171,6 +174,7 @@ export async function submitEditMatch(event) {
           show_penalties_in_game: showPenaltiesInGame,
           show_extra_time: showExtraTime,
           show_penalties_at_end: showPenaltiesAtEnd,
+          show_goal_difference: showGoalDifference,
         };
       }
       await loadMyBets();

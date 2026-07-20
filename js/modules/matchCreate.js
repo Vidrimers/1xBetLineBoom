@@ -239,6 +239,7 @@ export async function openCreateMatchModal() {
   document.getElementById('showPenaltiesInGame').checked = false;
   document.getElementById('showExtraTime').checked = false;
   document.getElementById('showPenaltiesAtEnd').checked = false;
+  document.getElementById('showGoalDifference').checked = false;
 
   loadRoundsForModal('create', state.currentEventId);
 
@@ -288,6 +289,7 @@ export async function submitCreateMatch(event) {
   const showPenaltiesInGame = document.getElementById('showPenaltiesInGame').checked;
   const showExtraTime = document.getElementById('showExtraTime').checked;
   const showPenaltiesAtEnd = document.getElementById('showPenaltiesAtEnd').checked;
+  const showGoalDifference = document.getElementById('showGoalDifference').checked;
   if (!team1 || !team2) { await showCustomAlert('Пожалуйста, введите обе команды', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>'); return; }
   if (!state.currentEventId) { await showCustomAlert('Турнир не выбран', "Уведомление", '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>'); return; }
   const copiesCount = Math.min(Math.max(copies, 1), 20);
@@ -321,6 +323,7 @@ export async function submitCreateMatch(event) {
           show_penalties_in_game: showPenaltiesInGame,
           show_extra_time: showExtraTime,
           show_penalties_at_end: showPenaltiesAtEnd,
+          show_goal_difference: showGoalDifference,
         }),
       });
       const result = await response.json();

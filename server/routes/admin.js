@@ -3294,17 +3294,27 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
         penalties_in_game TEXT,
         extra_time TEXT,
         penalties_at_end TEXT,
+        goal_difference TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (match_id) REFERENCES matches(id)
       )
     `);
 
+    // Автоматически вычисляем разницу голов из счёта матча
+    let computedGoalDifference = goal_difference;
+    if (computedGoalDifference === undefined) {
+      const matchScore = db.prepare("SELECT score_team1, score_team2 FROM match_scores WHERE match_id = ?").get(matchId);
+      if (matchScore && matchScore.score_team1 !== null && matchScore.score_team2 !== null) {
+        computedGoalDifference = String(matchScore.score_team1 - matchScore.score_team2);
+      }
+    }
+
     // Вставляем или обновляем результаты
     db.prepare(
       `
       INSERT INTO final_parameters_results 
-      (match_id, exact_score, yellow_cards, red_cards, corners, penalties_in_game, extra_time, penalties_at_end)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (match_id, exact_score, yellow_cards, red_cards, corners, penalties_in_game, extra_time, penalties_at_end, goal_difference)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(match_id) DO UPDATE SET
         exact_score = excluded.exact_score,
         yellow_cards = excluded.yellow_cards,
@@ -3312,7 +3322,8 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
         corners = excluded.corners,
         penalties_in_game = excluded.penalties_in_game,
         extra_time = excluded.extra_time,
-        penalties_at_end = excluded.penalties_at_end
+        penalties_at_end = excluded.penalties_at_end,
+        goal_difference = excluded.goal_difference
     `
     ).run(
       matchId,
@@ -3322,7 +3333,8 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
       corners !== undefined ? corners : null,
       penalties_in_game || null,
       extra_time || null,
-      penalties_at_end || null
+      penalties_at_end || null,
+      computedGoalDifference !== undefined ? computedGoalDifference : null
     );
 
     console.log(
@@ -3383,8 +3395,10 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
             isCorrect = bet.prediction === extra_time;
           } else if (bet.parameter_type === 'penalties_at_end' && penalties_at_end) {
             isCorrect = bet.prediction === penalties_at_end;
+          } else if (bet.parameter_type === 'goal_difference' && computedGoalDifference !== undefined && computedGoalDifference !== null) {
+            isCorrect = parseInt(bet.prediction) === parseInt(computedGoalDifference);
           }
-          
+
           if (isCorrect) {
             matchPoints += 2;
             correctParams++;
@@ -3432,6 +3446,7 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
                       WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                       WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                       WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                      WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                       ELSE 0
                     END
                   ELSE 0
@@ -5729,6 +5744,7 @@ router.get("/api/admin/tournament-breakdown", (req, res) => {
                  WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                  WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                  WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                 WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                  ELSE 0 END
           ELSE 0 END
         ) AS final_bets_pts,
@@ -5785,6 +5801,7 @@ router.get("/api/admin/tournament-breakdown", (req, res) => {
                    WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                    WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                    WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                   WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                    ELSE 0 END
             ELSE 0 END
           )
@@ -5921,6 +5938,7 @@ router.post("/api/admin/send-breakdown-photo", async (req, res) => {
                    WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                    WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                    WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                   WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                    ELSE 0 END
             ELSE 0 END
           ) AS total_points

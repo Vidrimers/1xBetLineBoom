@@ -1232,6 +1232,7 @@ router.post("/api/admin/final-parameters-results", async (req, res) => {
                       WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                       WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                       WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                      WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                       ELSE 0
                     END
                   ELSE 0

@@ -382,4 +382,20 @@ export function runMigrations() {
   } catch (e) {
     // Игнорируем
   }
+
+  // Миграция: добавляем show_goal_difference в matches (разница голов как финальный параметр)
+  try {
+    db.prepare("ALTER TABLE matches ADD COLUMN show_goal_difference BOOLEAN DEFAULT 0").run();
+    console.log("✅ Колонка show_goal_difference добавлена в таблицу matches");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+  // Миграция: добавляем goal_difference в final_parameters_results
+  try {
+    db.prepare("ALTER TABLE final_parameters_results ADD COLUMN goal_difference TEXT").run();
+    console.log("✅ Колонка goal_difference добавлена в таблицу final_parameters_results");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
 }

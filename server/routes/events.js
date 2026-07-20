@@ -263,6 +263,7 @@ router.get("/api/events/:eventId/tournament-participants", (req, res) => {
                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                   WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                  WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                   ELSE 0
                 END
               ELSE 0
@@ -302,6 +303,7 @@ router.get("/api/events/:eventId/tournament-participants", (req, res) => {
                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
                   WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                   ELSE 0
                 END
               ELSE 0
@@ -331,6 +333,7 @@ router.get("/api/events/:eventId/tournament-participants", (req, res) => {
                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
                   WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) != CAST(fpr.goal_difference AS INTEGER) THEN 1
                   ELSE 0
                 END
               ELSE 0 
@@ -592,6 +595,7 @@ router.get("/api/events/:eventId/tournament-winner", (req, res) => {
                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                   WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                  WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                   ELSE 0
                 END
               ELSE 0
@@ -629,6 +633,7 @@ router.get("/api/events/:eventId/tournament-winner", (req, res) => {
                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 1
                   WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 1
                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                   ELSE 0
                 END
               ELSE 0
@@ -656,6 +661,7 @@ router.get("/api/events/:eventId/tournament-winner", (req, res) => {
                   WHEN b.parameter_type = 'penalties_in_game' AND b.prediction != fpr.penalties_in_game THEN 1
                   WHEN b.parameter_type = 'extra_time' AND b.prediction != fpr.extra_time THEN 1
                   WHEN b.parameter_type = 'penalties_at_end' AND b.prediction != fpr.penalties_at_end THEN 1
+                  WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) != CAST(fpr.goal_difference AS INTEGER) THEN 1
                   ELSE 0
                 END
               ELSE 0 
@@ -932,6 +938,7 @@ router.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
             WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 'won'
             WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 'won'
             WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 'won'
+            WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 'won'
             ELSE 'lost'
           END as result,
           CASE 
@@ -942,6 +949,7 @@ router.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
             WHEN b.parameter_type = 'penalties_in_game' THEN COALESCE(fpr.penalties_in_game, '?')
             WHEN b.parameter_type = 'extra_time' THEN COALESCE(fpr.extra_time, '?')
             WHEN b.parameter_type = 'penalties_at_end' THEN COALESCE(fpr.penalties_at_end, '?')
+            WHEN b.parameter_type = 'goal_difference' THEN COALESCE(fpr.goal_difference, '?')
             ELSE NULL
           END as actual_result
         FROM bets b
@@ -2091,6 +2099,7 @@ router.put("/api/admin/events/:eventId/lock", async (req, res) => {
                     WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                     WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                     WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                   WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                     ELSE 0
                   END
                 ELSE 0

@@ -217,6 +217,7 @@ router.post("/api/admin/matches", async (req, res) => {
     show_penalties_in_game,
     show_extra_time,
     show_penalties_at_end,
+    show_goal_difference,
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
@@ -266,9 +267,10 @@ router.post("/api/admin/matches", async (req, res) => {
         event_id, team1_name, team2_name, match_date, round,
         is_final, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled,
         show_exact_score, show_yellow_cards, show_red_cards,
-        show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end
+        show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end,
+        show_goal_difference
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
       )
       .run(
@@ -287,7 +289,8 @@ router.post("/api/admin/matches", async (req, res) => {
         show_corners ? 1 : 0,
         show_penalties_in_game ? 1 : 0,
         show_extra_time ? 1 : 0,
-        show_penalties_at_end ? 1 : 0
+        show_penalties_at_end ? 1 : 0,
+        show_goal_difference ? 1 : 0
       );
 
     // Отправляем уведомление админу если это модератор
@@ -725,6 +728,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
                      WHEN b.parameter_type = 'penalties_in_game' AND b.prediction = fpr.penalties_in_game THEN 2
                      WHEN b.parameter_type = 'extra_time' AND b.prediction = fpr.extra_time THEN 2
                      WHEN b.parameter_type = 'penalties_at_end' AND b.prediction = fpr.penalties_at_end THEN 2
+                     WHEN b.parameter_type = 'goal_difference' AND CAST(b.prediction AS INTEGER) = CAST(fpr.goal_difference AS INTEGER) THEN 1
                      ELSE 0 END
               ELSE 0 END ELSE 0 END) as total_points
           FROM users u
@@ -801,9 +805,10 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
       yellow_cards_prediction_enabled !== undefined || red_cards_prediction_enabled !== undefined ||
       show_exact_score !== undefined || show_yellow_cards !== undefined || show_red_cards !== undefined ||
       show_corners !== undefined || show_penalties_in_game !== undefined ||
-      show_extra_time !== undefined || show_penalties_at_end !== undefined
+      show_extra_time !== undefined || show_penalties_at_end !== undefined ||
+      show_goal_difference !== undefined
     ) {
-      const currentMatch = db.prepare(`SELECT team1_name, team2_name, match_date, round, is_final, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled, show_exact_score, show_yellow_cards, show_red_cards, show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end FROM matches WHERE id = ?`).get(matchId);
+      const currentMatch = db.prepare(`SELECT team1_name, team2_name, match_date, round, is_final, score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled, show_exact_score, show_yellow_cards, show_red_cards, show_corners, show_penalties_in_game, show_extra_time, show_penalties_at_end, show_goal_difference FROM matches WHERE id = ?`).get(matchId);
       if (!currentMatch) return res.status(404).json({ error: "Матч не найден" });
 
       const dateChanged = match_date !== undefined && match_date !== currentMatch.match_date;
@@ -813,7 +818,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
         console.log(`✅ Напоминания удалены. При новой дате напоминание отправится заново.`);
       }
 
-      db.prepare(`UPDATE matches SET team1_name = ?, team2_name = ?, match_date = ?, round = ?, is_final = ?, score_prediction_enabled = ?, yellow_cards_prediction_enabled = ?, red_cards_prediction_enabled = ?, show_exact_score = ?, show_yellow_cards = ?, show_red_cards = ?, show_corners = ?, show_penalties_in_game = ?, show_extra_time = ?, show_penalties_at_end = ? WHERE id = ?`).run(
+      db.prepare(`UPDATE matches SET team1_name = ?, team2_name = ?, match_date = ?, round = ?, is_final = ?, score_prediction_enabled = ?, yellow_cards_prediction_enabled = ?, red_cards_prediction_enabled = ?, show_exact_score = ?, show_yellow_cards = ?, show_red_cards = ?, show_corners = ?, show_penalties_in_game = ?, show_extra_time = ?, show_penalties_at_end = ?, show_goal_difference = ? WHERE id = ?`).run(
         team1_name || currentMatch.team1_name,
         team2_name || currentMatch.team2_name,
         match_date !== undefined ? match_date : currentMatch.match_date,
@@ -829,6 +834,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
         show_penalties_in_game !== undefined ? (show_penalties_in_game ? 1 : 0) : currentMatch.show_penalties_in_game,
         show_extra_time !== undefined ? (show_extra_time ? 1 : 0) : currentMatch.show_extra_time,
         show_penalties_at_end !== undefined ? (show_penalties_at_end ? 1 : 0) : currentMatch.show_penalties_at_end,
+        show_goal_difference !== undefined ? (show_goal_difference ? 1 : 0) : currentMatch.show_goal_difference,
         matchId
       );
 

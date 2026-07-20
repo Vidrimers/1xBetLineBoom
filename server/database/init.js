@@ -256,6 +256,7 @@ export function initDatabase() {
       penalties_in_game TEXT,
       extra_time TEXT,
       penalties_at_end TEXT,
+      goal_difference TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (match_id) REFERENCES matches(id)
     );

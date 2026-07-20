@@ -151,6 +151,10 @@ export function initToggleStates() {
         const input = document.getElementById(`corners_${bet.match_id}`);
         if (input) input.value = bet.prediction;
       }
+      if (bet.parameter_type === 'goal_difference' && bet.prediction) {
+        const input = document.getElementById(`goalDifference_${bet.match_id}`);
+        if (input) input.value = bet.prediction;
+      }
 
       // Инициализируем toggle'ы
       if (toggleParameterMap[bet.parameter_type]) {
@@ -1132,6 +1136,19 @@ export async function displayMatches() {
                         </span>
                       </label>
                       <span id="penaltiesAtEnd_no_${match.id}" style="color: #888888; font-size: 0.85em;">НЕТ</span>
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+
+                  ${
+                    match.show_goal_difference
+                      ? `
+                  <div class="final-param-item">
+                    <div class="final-param-label">⚖️ Разница голов</div>
+                    <div class="final-param-controls">
+                      <input type="number" id="goalDifference_${match.id}" min="-20" max="20" value="0" class="final-param-input" ${effectiveStatus !== 'pending' ? 'disabled' : ''}>
                     </div>
                   </div>
                   `
