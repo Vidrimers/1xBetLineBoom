@@ -1537,10 +1537,17 @@ router.post("/api/admin/send-tournament-announcement", async (req, res) => {
     const ADMIN_TELEGRAM_ID = process.env.TELEGRAM_ADMIN_ID;
 
     if (TELEGRAM_BOT_TOKEN && ADMIN_TELEGRAM_ID) {
+      // Очищаем SVG-теги и unsupported HTML перед отправкой в Telegram
+      const cleanMessage = message
+        .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/?(?!b>|b |i>|i |u>|u |s>|s |code>|code |pre>|pre |a>|a |em>|strong>)[a-z][^>]*>/gi, '')
+        .trim();
+
       const adminMessage = `📢 <b>ЗАПРОС НА ПУБЛИКАЦИЮ ТУРНИРА</b>\n\n` +
         `👤 От ${isAdmin ? 'админа' : 'модератора'}: <b>${username}</b>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
-        `${message}\n` +
+        `${cleanMessage}\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `Нажмите кнопку ниже чтобы опубликовать объявление всем пользователям.`;
 
