@@ -212,6 +212,12 @@ export async function submitCreateEvent(event) {
     eventData.icon = iconSelect.value;
   }
 
+  // Проверяем что иконка не осталась по умолчанию
+  if (eventData.icon === "icon-trophy" && !eventData.icon.startsWith("img/")) {
+    await showCustomAlert('Выберите иконку турнира из списка', "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
+    return;
+  }
+
   // Определяем цвет фона
   eventData.background_color = document.getElementById(
     "eventBackgroundColor"
