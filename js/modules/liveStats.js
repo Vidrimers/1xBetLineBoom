@@ -15,13 +15,16 @@ export function determineTournamentCode(icon) {
   const iconMapping = {
     'img/cups/champions-league.png': 'CL',
     'img/cups/european-league.png': 'EL',
+    'img/cups/conference-league.png': 'ECL',
     'img/cups/england-premier-league.png': 'PL',
     'img/cups/bundesliga.png': 'BL1',
     'img/cups/spain-la-liga.png': 'PD',
     'img/cups/serie-a.png': 'SA',
     'img/cups/france-league-ligue-1.png': 'FL1',
     'img/cups/rpl.png': 'RPL',
-    'img/cups/world-cup.png': 'WC'
+    'img/cups/world-cup.png': 'WC',
+    'img/cups/uefa-euro.png': 'EC',
+    '🇳🇱': 'DED'
   };
 
   return iconMapping[icon] || 'CL';
@@ -30,6 +33,7 @@ export function determineTournamentCode(icon) {
 export const PLAYERS_DICT_FILES = {
   'CL': 'names/LeagueOfChampionsPlayers.json',
   'EL': 'names/EuropaLeaguePlayers.json',
+  'ECL': 'names/ConferenceLeaguePlayers.json',
   'PL': 'names/PremierLeaguePlayers.json',
   'BL1': 'names/BundesligaPlayers.json',
   'PD': 'names/LaLigaPlayers.json',
