@@ -1,3 +1,18 @@
+// Маппинг иконок на словари команд (для автоподстановки team_file)
+const ICON_TO_TEAM_FILE = {
+  'img/cups/champions-league.png': 'names/LeagueOfChampionsTeams.json',
+  'img/cups/european-league.png': 'names/EuropaLeague.json',
+  'img/cups/conference-league.png': 'names/ConferenceLeague.json',
+  'img/cups/england-premier-league.png': 'names/PremierLeague.json',
+  'img/cups/bundesliga.png': 'names/Bundesliga.json',
+  'img/cups/spain-la-liga.png': 'names/LaLiga.json',
+  'img/cups/serie-a.png': 'names/SerieA.json',
+  'img/cups/france-league-ligue-1.png': 'names/Ligue1.json',
+  'img/cups/rpl.png': 'names/RussianPremierLeague.json',
+  'img/cups/world-cup.png': 'names/Countries.json',
+  'img/cups/uefa-euro.png': 'names/Countries.json',
+};
+
 // Инициализация кастомного select
 export function initCustomSelect(selectId) {
   const customSelect = document.getElementById(selectId);
@@ -30,11 +45,13 @@ export function initCustomSelect(selectId) {
       selectSelected.innerHTML = text;
       selectItems.classList.add("select-hide");
 
-      // Вызвать обработчик изменения, если есть
-      if (selectId === "eventIconSelect") {
-        // Для create, ничего, так как custom через чекбокс
-      } else if (selectId === "editEventIconSelect") {
-        // Аналогично
+      // Автоподстановка team_file при выборе иконки турнира
+      if (selectId === "eventIconSelect" || selectId === "editEventIconSelect") {
+        const teamFileInputId = selectId === "eventIconSelect" ? "eventTeamFile" : "editEventTeamFile";
+        const teamFileInput = document.getElementById(teamFileInputId);
+        if (teamFileInput && ICON_TO_TEAM_FILE[value]) {
+          teamFileInput.value = ICON_TO_TEAM_FILE[value];
+        }
       }
     });
   });

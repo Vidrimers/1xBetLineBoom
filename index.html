@@ -2229,6 +2229,7 @@
           <div class="modal-body">
             <form id="editEventForm" onsubmit="submitEditEvent(event)">
               <input type="hidden" id="editEventId" />
+              <input type="hidden" id="editEventTeamFile" value="" />
               <div class="form-group">
                 <label for="editEventName">Название турнира *</label>
                 <input
@@ -2276,6 +2277,7 @@
                     🇫🇷 Лига 1
                   </option>
                   <option value="img/cups/bundesliga.png">🇩🇪 Бундеслига</option>
+                  <option value="img/cups/rpl.png">🇷🇺 Российская Премьер Лига</option>
                   <option value="custom">Свой турнир</option>
                 </select>
               </div>
@@ -2368,6 +2370,8 @@
           </div>
           <div class="modal-body">
             <form id="editEventForm" onsubmit="submitEditEvent(event)">
+              <input type="hidden" id="editEventId" />
+              <input type="hidden" id="editEventTeamFile" value="" />
               <div class="form-group">
                 <label for="editEventName">Название турнира *</label>
                 <input

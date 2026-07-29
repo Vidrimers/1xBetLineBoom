@@ -107,6 +107,29 @@ export function openEditEventModal(eventId) {
           .addEventListener("change", handleEditEventIconChange);
         initCustomSelect("editEventIconSelect");
 
+        // Автоподстановка team_file для стандартных select в других edit-модалках
+        const ICON_TO_TEAM_FILE = {
+          'img/cups/champions-league.png': 'names/LeagueOfChampionsTeams.json',
+          'img/cups/european-league.png': 'names/EuropaLeague.json',
+          'img/cups/conference-league.png': 'names/ConferenceLeague.json',
+          'img/cups/england-premier-league.png': 'names/PremierLeague.json',
+          'img/cups/bundesliga.png': 'names/Bundesliga.json',
+          'img/cups/spain-la-liga.png': 'names/LaLiga.json',
+          'img/cups/serie-a.png': 'names/SerieA.json',
+          'img/cups/france-league-ligue-1.png': 'names/Ligue1.json',
+          'img/cups/rpl.png': 'names/RussianPremierLeague.json',
+          'img/cups/world-cup.png': 'names/Countries.json',
+          'img/cups/uefa-euro.png': 'names/Countries.json',
+        };
+        document.querySelectorAll('select#editEventIcon').forEach(sel => {
+          sel.addEventListener('change', function() {
+            const teamFileInput = document.getElementById('editEventTeamFile');
+            if (teamFileInput && ICON_TO_TEAM_FILE[this.value]) {
+              teamFileInput.value = ICON_TO_TEAM_FILE[this.value];
+            }
+          });
+        });
+
         // Устанавливаем флаг разницы голов после показа (чтобы reset формы не сбросил)
         setTimeout(() => {
           const cb = document.getElementById("editDiffGoalsEnabledCheckbox");
