@@ -4589,9 +4589,10 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
     const dateObj = new Date(date);
     let year = dateObj.getFullYear();
     
-    // Для лиг: если дата в первой половине года, это прошлый сезон
+    // Для лиг: если дата до июля (январь-июнь), это прошлый сезон
+    // С июля начинается новый сезон
     const cupTournaments = ['WC', 'EC'];
-    if (!cupTournaments.includes(competition_code) && dateObj.getMonth() < 7) {
+    if (!cupTournaments.includes(competition_code) && dateObj.getMonth() < 6) {
       year = year - 1;
     }
     

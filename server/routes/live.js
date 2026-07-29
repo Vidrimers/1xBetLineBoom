@@ -41,9 +41,10 @@ router.get("/api/fd-matches", async (req, res) => {
     const cupTournaments = ['WC', 'EC']; // World Cup, Euro Championship
     
     if (!cupTournaments.includes(competition)) {
-      // Для лиг: если дата в первой половине года (январь-июль),
+      // Для лиг: если дата до июля (январь-июнь),
       // это продолжение сезона который начался в прошлом году
-      if (dateFromObj.getMonth() < 7) {
+      // С июля начинается новый сезон
+      if (dateFromObj.getMonth() < 6) {
         year = year - 1;
       }
     }

@@ -160,7 +160,7 @@ async function checkDateCompletion(dateGroup, forceUpdate = false) {
     let year = dateObj.getFullYear();
 
     const cupTournaments = ['WC', 'EC'];
-    if (!cupTournaments.includes(competition_code) && dateObj.getMonth() < 7) {
+    if (!cupTournaments.includes(competition_code) && dateObj.getMonth() < 6) {
       year = year - 1;
     }
 
