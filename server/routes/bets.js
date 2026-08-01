@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../database/db.js';
+import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin, notifyUser } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { notifyNewBet, notifyBetDeleted, notifyNewScorePrediction, notifyIllegalBet, sendUserMessage, sendAdminNotification } from '../../OnexBetLineBoombot.js';
@@ -10,7 +11,7 @@ import { handleUserBetInTournament } from '../services/inactivityService.js';
 const router = Router();
 
 // POST /api/bets - Создать ставку
-router.post("/api/bets", async (req, res) => {
+router.post("/api/bets", requireOwnership, async (req, res) => {
   try {
     const {
       user_id,
@@ -439,7 +440,8 @@ router.get("/api/counting-bets", (req, res) => {
 router.delete("/api/bets/:betId", async (req, res) => {
   try {
     const { betId } = req.params;
-    const { user_id, username } = req.body;
+    const { username } = req.body;
+    const authenticatedUserId = req.authenticatedUserId;
 
     // Проверяем, является ли пользователь админом
     const isAdmin = username === process.env.ADMIN_DB_NAME;
@@ -464,7 +466,7 @@ router.delete("/api/bets/:betId", async (req, res) => {
       .get(bet.user_id);
 
     // Если не админ - проверяем принадлежность ставки
-    if (!isAdmin && bet.user_id !== user_id) {
+    if (!isAdmin && bet.user_id !== authenticatedUserId) {
       return res.status(403).json({ error: "Эта ставка не принадлежит вам" });
     }
 
@@ -660,7 +662,7 @@ router.delete("/api/bets/:betId", async (req, res) => {
 // ===== ПРОГНОЗЫ НА СЧЕТ =====
 
 // POST /api/score-predictions - Создать/обновить прогноз на счет
-router.post("/api/score-predictions", async (req, res) => {
+router.post("/api/score-predictions", requireOwnership, async (req, res) => {
   try {
     const { user_id, match_id, score_team1, score_team2 } = req.body;
 
@@ -824,7 +826,7 @@ router.post("/api/score-predictions", async (req, res) => {
 });
 
 // POST /api/cards-predictions - Создать/обновить прогноз на карточки
-router.post("/api/cards-predictions", async (req, res) => {
+router.post("/api/cards-predictions", requireOwnership, async (req, res) => {
   try {
     const { user_id, match_id, yellow_cards, red_cards } = req.body;
 
@@ -941,7 +943,7 @@ router.post("/api/cards-predictions", async (req, res) => {
 router.delete("/api/score-predictions/:matchId", async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { user_id } = req.body;
+    const user_id = req.authenticatedUserId;
 
     // Проверяем существует ли прогноз
     const prediction = db
@@ -966,7 +968,7 @@ router.delete("/api/score-predictions/:matchId", async (req, res) => {
 router.delete("/api/cards-predictions/:matchId", async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { user_id } = req.body;
+    const user_id = req.authenticatedUserId;
 
     // Проверяем существует ли прогноз
     const prediction = db

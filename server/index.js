@@ -111,37 +111,31 @@ app.post("/telegram-webhook", async (req, res) => {
   }
 });
 
-// ===== MIDDLEWARE: обновление last_activity при каждом запросе =====
-import { db } from "./database/db.js";
+// ===== MIDDLEWARE: авторизация =====
+import { requireAuth } from "./middleware/auth.js";
 
-app.use((req, res, next) => {
-  // Пропускаем статические файлы
-  if (
-    req.path.startsWith("/css/") ||
-    req.path.startsWith("/js/") ||
-    req.path.startsWith("/img/") ||
-    req.path.endsWith(".html")
-  ) {
+// Публичные пути (без авторизации)
+const PUBLIC_PATHS = [
+  '/api/user',                          // POST: логин/регистрация
+  '/api/sessions',                      // POST: создание сессии (логин)
+  '/api/sessions/',                     // GET: валидация сессии
+  '/api/user/login/',                   // 2FA эндпоинты
+  '/api/telegram-auth/',                // Telegram авторизация
+  '/api/notify-admin-login-attempt',    // Уведомление о попытке входа
+  '/admin/notifications',               // Админ-панель HTML
+  '/admin/notifications/',              // Админ-панель API
+];
+
+function isPublicPath(path) {
+  return PUBLIC_PATHS.some(p => path.startsWith(p));
+}
+
+// Применяем auth ко всем /api/* кроме публичных
+app.use('/api', (req, res, next) => {
+  if (isPublicPath(req.path)) {
     return next();
   }
-
-  // Получаем session_token из заголовка или cookies
-  const sessionToken =
-    req.headers["x-session-token"] || req.cookies?.session_token;
-
-  if (sessionToken) {
-    try {
-      db.prepare(`
-        UPDATE sessions 
-        SET last_activity = CURRENT_TIMESTAMP 
-        WHERE session_token = ?
-      `).run(sessionToken);
-    } catch (error) {
-      console.error("Ошибка обновления last_activity:", error);
-    }
-  }
-
-  next();
+  requireAuth(req, res, next);
 });
 
 // ===== ПОДКЛЮЧЕНИЕ РОУТОВ =====

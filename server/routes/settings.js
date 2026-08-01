@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../database/db.js';
+import { requireOwnership } from '../middleware/auth.js';
 import { PORT, SERVER_IP } from '../config.js';
 import { notifyIllegalBet, sendAdminNotification, sendGroupNotification, notifyReminderEnabled, notifyReminderDeleted } from '../../OnexBetLineBoombot.js';
 
@@ -37,6 +38,12 @@ router.post("/api/user/timezone", async (req, res) => {
       return res
         .status(400)
         .json({ error: "Не указаны username или timezone" });
+    }
+
+    // Проверяем что username принадлежит аутентифицированному пользователю
+    const authUser = db.prepare("SELECT username FROM users WHERE id = ?").get(req.authenticatedUserId);
+    if (!authUser || authUser.username !== username) {
+      return res.status(403).json({ error: "Нет прав для этого действия" });
     }
 
     const validTimezones = Intl.supportedValuesOf("timeZone");
@@ -124,7 +131,7 @@ router.get("/api/user/:userId/event/:eventId/reminders", (req, res) => {
 });
 
 // POST /api/user/:userId/event/:eventId/reminders
-router.post("/api/user/:userId/event/:eventId/reminders", async (req, res) => {
+router.post("/api/user/:userId/event/:eventId/reminders", requireOwnership, async (req, res) => {
   try {
     const { userId, eventId } = req.params;
     const { hours_before } = req.body;
@@ -166,7 +173,7 @@ router.post("/api/user/:userId/event/:eventId/reminders", async (req, res) => {
 });
 
 // DELETE /api/user/:userId/event/:eventId/reminders
-router.delete("/api/user/:userId/event/:eventId/reminders", async (req, res) => {
+router.delete("/api/user/:userId/event/:eventId/reminders", requireOwnership, async (req, res) => {
   try {
     const { userId, eventId } = req.params;
     
@@ -228,7 +235,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
 });
 
 // POST /api/user/:userId/notification-settings
-router.post("/api/user/:userId/notification-settings", async (req, res) => {
+router.post("/api/user/:userId/notification-settings", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages } = req.body;

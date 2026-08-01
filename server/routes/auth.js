@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../database/db.js';
+import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { sendUserMessage, notifyTelegramLinked } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
@@ -604,7 +605,7 @@ router.get("/api/user/:userId/telegram", (req, res) => {
 });
 
 // PUT /api/user/:userId/telegram - Сохранить/обновить Telegram username
-router.put("/api/user/:userId/telegram", async (req, res) => {
+router.put("/api/user/:userId/telegram", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     let { telegram_username } = req.body;
@@ -742,7 +743,7 @@ router.put("/api/user/:userId/telegram", async (req, res) => {
 });
 
 // DELETE /api/user/:userId/telegram - Удалить Telegram username
-router.delete("/api/user/:userId/telegram", async (req, res) => {
+router.delete("/api/user/:userId/telegram", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -811,7 +812,7 @@ router.delete("/api/user/:userId/telegram", async (req, res) => {
 });
 
 // POST /api/user/:userId/telegram/request-change - Запросить изменение Telegram username
-router.post("/api/user/:userId/telegram/request-change", async (req, res) => {
+router.post("/api/user/:userId/telegram/request-change", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { new_telegram_username } = req.body;
@@ -865,7 +866,7 @@ router.post("/api/user/:userId/telegram/request-change", async (req, res) => {
 });
 
 // POST /api/user/:userId/telegram/confirm-change - Подтвердить изменение Telegram username
-router.post("/api/user/:userId/telegram/confirm-change", async (req, res) => {
+router.post("/api/user/:userId/telegram/confirm-change", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { new_telegram_username, confirmation_code } = req.body;
@@ -980,7 +981,7 @@ router.post("/api/user/:userId/telegram/confirm-change", async (req, res) => {
 });
 
 // POST /api/user/:userId/telegram/request-delete - Запросить удаление Telegram username
-router.post("/api/user/:userId/telegram/request-delete", async (req, res) => {
+router.post("/api/user/:userId/telegram/request-delete", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -1030,7 +1031,7 @@ router.post("/api/user/:userId/telegram/request-delete", async (req, res) => {
 });
 
 // POST /api/user/:userId/telegram/confirm-delete - Подтвердить удаление Telegram username
-router.post("/api/user/:userId/telegram/confirm-delete", async (req, res) => {
+router.post("/api/user/:userId/telegram/confirm-delete", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { confirmation_code } = req.body;
@@ -1206,7 +1207,7 @@ router.get("/api/sessions/:sessionToken/validate", async (req, res) => {
 });
 
 // DELETE /api/user/:userId/sessions/:sessionToken - Удалить конкретную сессию
-router.delete("/api/user/:userId/sessions/:sessionToken", async (req, res) => {
+router.delete("/api/user/:userId/sessions/:sessionToken", requireOwnership, async (req, res) => {
   try {
     const { userId, sessionToken } = req.params;
 
@@ -1230,7 +1231,7 @@ router.delete("/api/user/:userId/sessions/:sessionToken", async (req, res) => {
 });
 
 // POST /api/user/:userId/sessions/:sessionToken/request-logout - Запросить выход с устройства
-router.post("/api/user/:userId/sessions/:sessionToken/request-logout", async (req, res) => {
+router.post("/api/user/:userId/sessions/:sessionToken/request-logout", requireOwnership, async (req, res) => {
   try {
     const { userId, sessionToken } = req.params;
 
@@ -1293,7 +1294,7 @@ router.post("/api/user/:userId/sessions/:sessionToken/request-logout", async (re
 });
 
 // POST /api/user/:userId/sessions/:sessionToken/confirm-logout - Подтвердить выход с устройства
-router.post("/api/user/:userId/sessions/:sessionToken/confirm-logout", async (req, res) => {
+router.post("/api/user/:userId/sessions/:sessionToken/confirm-logout", requireOwnership, async (req, res) => {
   try {
     const { userId, sessionToken } = req.params;
     const { confirmation_code } = req.body;

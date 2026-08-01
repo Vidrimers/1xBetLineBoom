@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
+import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { sendUserMessage, sendAdminNotification, notifyReminderEnabled, notifyReminderDeleted } from '../../OnexBetLineBoombot.js';
@@ -932,7 +933,7 @@ ${eventName ? `🏆 Турнир: ${eventName}` : ''}
 });
 
 // POST /api/user/:userId/avatar - Сохранить аватар пользователя
-router.post("/api/user/:userId/avatar", (req, res) => {
+router.post("/api/user/:userId/avatar", requireOwnership, (req, res) => {
   try {
     const { userId } = req.params;
     const { avatarData, fileType } = req.body;
@@ -995,7 +996,7 @@ router.post("/api/user/:userId/avatar", (req, res) => {
 });
 
 // DELETE /api/user/:userId/avatar - Удалить аватар пользователя
-router.delete("/api/user/:userId/avatar", (req, res) => {
+router.delete("/api/user/:userId/avatar", requireOwnership, (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -1034,7 +1035,7 @@ router.delete("/api/user/:userId/avatar", (req, res) => {
 });
 
 // PUT /api/user/:userId/username - Изменить username пользователя
-router.put("/api/user/:userId/username", async (req, res) => {
+router.put("/api/user/:userId/username", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { username } = req.body;
@@ -1225,7 +1226,7 @@ router.get("/api/user/:userId/show-bets", (req, res) => {
 });
 
 // PUT /api/user/:userId/show-bets - Сохранить настройку показа ставок
-router.put("/api/user/:userId/show-bets", async (req, res) => {
+router.put("/api/user/:userId/show-bets", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { show_bets } = req.body;
@@ -1362,7 +1363,7 @@ router.get("/api/user/:userId/show-lucky-button", (req, res) => {
 });
 
 // PUT /api/user/:userId/show-lucky-button - Сохранить настройку показа кнопки "Мне повезет"
-router.put("/api/user/:userId/show-lucky-button", async (req, res) => {
+router.put("/api/user/:userId/show-lucky-button", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { show_lucky_button } = req.body;
@@ -1499,7 +1500,7 @@ router.get("/api/user/:userId/show-xg-button", (req, res) => {
 });
 
 // PUT /api/user/:userId/show-xg-button - Сохранить настройку показа кнопки xG
-router.put("/api/user/:userId/show-xg-button", async (req, res) => {
+router.put("/api/user/:userId/show-xg-button", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { show_xg_button } = req.body;
@@ -1588,7 +1589,7 @@ router.get("/api/user/:userId/notify-on-view", (req, res) => {
 });
 
 // PUT /api/user/:userId/notify-on-view - Сохранить настройку уведомлений о просмотре
-router.put("/api/user/:userId/notify-on-view", async (req, res) => {
+router.put("/api/user/:userId/notify-on-view", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { notify_on_view } = req.body;

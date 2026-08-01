@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../database/db.js';
+import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { sendTournamentAnnouncementToUsers, notifyTournamentToGroup } from '../services/notificationService.js';
@@ -1014,7 +1015,7 @@ router.get("/api/admin/all-events", (req, res) => {
 });
 
 // PUT /api/user/:userId/settings
-router.put("/api/user/:userId/settings", async (req, res) => {
+router.put("/api/user/:userId/settings", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
     const { telegram_notifications_enabled, telegram_group_reminders_enabled, theme, require_login_2fa, live_sound } =
