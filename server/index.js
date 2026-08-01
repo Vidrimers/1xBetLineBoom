@@ -123,6 +123,7 @@ const PUBLIC_PATHS_EXACT = [
   '/events',                            // GET: список турниров
   '/participants',                      // GET: участники
   '/config',                            // GET: конфиг приложения
+  '/xg-button-visibility',              // GET: видимость кнопки xG
 ];
 
 const PUBLIC_PATHS_PREFIX = [
@@ -130,6 +131,7 @@ const PUBLIC_PATHS_PREFIX = [
   '/user/login/',                       // 2FA эндпоинты
   '/telegram-auth/',                    // Telegram авторизация
   '/events/',                           // GET: матчи турниров, статистика
+  '/match-bet-stats/',                  // GET: статистика ставок по матчу
 ];
 
 function isPublicPath(path) {
