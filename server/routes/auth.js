@@ -168,7 +168,9 @@ router.post("/api/user", async (req, res) => {
     } else {
       // Пользователь существует - проверяем, нужна ли 2FA
       // Проверяем: есть ли telegram_id И включена ли настройка require_login_2fa
-      if (user.telegram_id && user.require_login_2fa !== 0) {
+      // Для админа 2FA обязательна всегда (если привязан Telegram)
+      const isAdminAccount = user.username === process.env.ADMIN_DB_NAME;
+      if (user.telegram_id && (user.require_login_2fa !== 0 || isAdminAccount)) {
         // Проверяем, было ли это устройство доверенным ранее
         const { device_info, browser, os } = req.body;
         const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
