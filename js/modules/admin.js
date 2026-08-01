@@ -24,8 +24,19 @@ export async function loadModeratorPermissions() {
 
   try {
     const response = await fetch("/api/moderators");
+    if (!response.ok) {
+      // Если не авторизован или ошибка — просто выходим
+      currentUser.isModerator = false;
+      currentUser.moderatorPermissions = [];
+      return;
+    }
     const moderators = await response.json();
 
+    if (!Array.isArray(moderators)) {
+      currentUser.isModerator = false;
+      currentUser.moderatorPermissions = [];
+      return;
+    }
 
     const moderator = moderators.find(mod => mod.user_id === currentUser.id);
 
