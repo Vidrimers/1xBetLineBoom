@@ -119,12 +119,16 @@ const PUBLIC_PATHS_EXACT = [
   '/api/user',                          // POST: логин/регистрация
   '/api/sessions',                      // POST: создание сессии (логин)
   '/api/notify-admin-login-attempt',    // Уведомление о попытке входа
+  '/api/events',                        // GET: список турниров
+  '/api/participants',                  // GET: участники
+  '/api/config',                        // GET: конфиг приложения
 ];
 
 const PUBLIC_PATHS_PREFIX = [
   '/api/sessions/',                     // GET: валидация сессии
   '/api/user/login/',                   // 2FA эндпоинты
   '/api/telegram-auth/',                // Telegram авторизация
+  '/api/events/',                       // GET: матчи турниров, статистика
   '/admin/notifications',               // Админ-панель HTML + API
 ];
 
