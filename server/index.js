@@ -132,6 +132,7 @@ const PUBLIC_PATHS_PREFIX = [
   '/telegram-auth/',                    // Telegram авторизация
   '/events/',                           // GET: матчи турниров, статистика
   '/match-bet-stats/',                  // GET: статистика ставок по матчу
+  '/rounds-order/',                     // GET: порядок туров
 ];
 
 function isPublicPath(path) {

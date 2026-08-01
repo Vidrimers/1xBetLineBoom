@@ -42,7 +42,10 @@ export async function saveRoundsOrderToStorage() {
     }
   } catch (e) {
     console.error("Ошибка сохранения порядка туров:", e);
-    await showCustomAlert("Ошибка сохранения порядка туров", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    // Не показываем алерт для гостей — они не могут сохранять
+    if (state.currentUser) {
+      await showCustomAlert("Ошибка сохранения порядка туров", "Ошибка", '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
   }
 }
 
