@@ -13,6 +13,18 @@ const confirmationCodes = new Map();
 // Хранилище токенов авторизации через Telegram (в памяти)
 const telegramAuthTokens = new Map();
 
+// Хранилище токенов создания сессий (после успешного логина/2FA)
+// Ключ: user_id, Значение: {token, expiresAt}
+const sessionCreationTokens = new Map();
+
+// Очистка истёкших токенов каждые 5 минут
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of sessionCreationTokens) {
+    if (val.expiresAt < now) sessionCreationTokens.delete(key);
+  }
+}, 5 * 60 * 1000);
+
 // Вспомогательная функция для отправки сообщения пользователю по telegram_username
 async function sendTelegramMessageByUsername(telegram_username, message) {
   const cleanUsername = telegram_username.toLowerCase();
@@ -195,7 +207,10 @@ router.post("/api/user", async (req, res) => {
         if (wasTrusted) {
           // Устройство было доверенным, пропускаем 2FA
           console.log("✅ Устройство доверенное, пропускаем 2FA");
-          res.json(user);
+          // Генерируем токен создания сессии
+          const sessionCreationToken = `${user.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          sessionCreationTokens.set(user.id, { token: sessionCreationToken, expiresAt: Date.now() + 5 * 60 * 1000 });
+          res.json({ ...user, sessionCreationToken });
         } else {
           // Требуется подтверждение через Telegram
           console.log("⚠️ Требуется 2FA");
@@ -207,7 +222,10 @@ router.post("/api/user", async (req, res) => {
         }
       } else {
         // 2FA не настроена или отключена, возвращаем пользователя
-        res.json(user);
+        // Генерируем токен создания сессии
+        const sessionCreationToken = `${user.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        sessionCreationTokens.set(user.id, { token: sessionCreationToken, expiresAt: Date.now() + 5 * 60 * 1000 });
+        res.json({ ...user, sessionCreationToken });
       }
     }
   } catch (error) {
@@ -299,7 +317,11 @@ router.post("/api/user/login/confirm", async (req, res) => {
     // Удаляем использованный код
     confirmationCodes.delete(`login_${userId}`);
 
-    res.json(user);
+    // Генерируем токен создания сессии
+    const sessionCreationToken = `${user.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    sessionCreationTokens.set(user.id, { token: sessionCreationToken, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+    res.json({ ...user, sessionCreationToken });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -363,7 +385,8 @@ router.get("/api/telegram-auth/check-status", async (req, res) => {
       res.json({
         status: 'completed',
         user: tokenData.user,
-        isNewUser: tokenData.isNewUser
+        isNewUser: tokenData.isNewUser,
+        sessionCreationToken: tokenData.sessionCreationToken
       });
       
       // Удаляем токен после успешной авторизации
@@ -475,10 +498,15 @@ router.post("/api/telegram-auth/complete", async (req, res) => {
       });
     }
 
+    // Генерируем токен создания сессии
+    const sessionCreationToken = `${user.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    sessionCreationTokens.set(user.id, { token: sessionCreationToken, expiresAt: Date.now() + 5 * 60 * 1000 });
+
     // Обновляем токен с данными пользователя
     tokenData.status = 'completed';
     tokenData.user = user;
     tokenData.isNewUser = isNewUser;
+    tokenData.sessionCreationToken = sessionCreationToken;
     telegramAuthTokens.set(auth_token, tokenData);
 
     res.json({ 
@@ -1104,7 +1132,15 @@ router.post("/api/user/:userId/telegram/confirm-delete", requireOwnership, async
 // POST /api/sessions - Создать новую сессию
 router.post("/api/sessions", async (req, res) => {
   try {
-    const { user_id, device_info, browser, os } = req.body;
+    const { user_id, device_info, browser, os, sessionCreationToken } = req.body;
+
+    // Проверяем токен создания сессии (требуется после логина/2FA)
+    const pending = sessionCreationTokens.get(user_id);
+    if (!pending || pending.token !== sessionCreationToken || pending.expiresAt < Date.now()) {
+      return res.status(403).json({ error: 'Требуется авторизация для создания сессии' });
+    }
+    // Удаляем использованный токен
+    sessionCreationTokens.delete(user_id);
 
     // Получаем IP адрес
     const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';

@@ -357,6 +357,7 @@ export async function initUser() {
     }
 
     // Проверяем, требуется ли подтверждение через Telegram
+    let sessionCreationToken = null;
     if (result.requiresConfirmation) {
       // Запрашиваем код подтверждения
       const shouldContinue = await showCustomConfirm(
@@ -410,6 +411,8 @@ export async function initUser() {
           // eslint-disable-next-line no-global-assign
           setCurrentUser(confirmResult);
           currentUser.isAdmin = isAdminUser;
+          // Сохраняем токен создания сессии
+          sessionCreationToken = confirmResult.sessionCreationToken;
 
           // Загружаем права модератора
           await loadModeratorPermissions();
@@ -427,6 +430,8 @@ export async function initUser() {
       // eslint-disable-next-line no-global-assign
       setCurrentUser(result);
       currentUser.isAdmin = isAdminUser;
+      // Сохраняем токен создания сессии
+      sessionCreationToken = result.sessionCreationToken;
 
       // Загружаем права модератора
       await loadModeratorPermissions();
@@ -441,7 +446,8 @@ export async function initUser() {
           user_id: currentUser.id,
           device_info: deviceData.deviceInfo,
           browser: deviceData.browser,
-          os: deviceData.os
+          os: deviceData.os,
+          sessionCreationToken
         })
       });
 
@@ -652,6 +658,7 @@ export async function checkTelegramAuthStatus(authToken) {
         // eslint-disable-next-line no-global-assign
         setCurrentUser(result.user);
         currentUser.isAdmin = currentUser.username === ADMIN_DB_NAME;
+        const sessionCreationToken = result.sessionCreationToken;
 
         // Загружаем права модератора
         await loadModeratorPermissions();
@@ -669,7 +676,8 @@ export async function checkTelegramAuthStatus(authToken) {
               user_id: currentUser.id,
               device_info: deviceData.deviceInfo,
               browser: deviceData.browser,
-              os: deviceData.os
+              os: deviceData.os,
+              sessionCreationToken
             })
           });
 

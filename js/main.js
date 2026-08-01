@@ -922,28 +922,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.warn("⚠ Не удалось проверить сессию при загрузке (возможно временная проблема с БД):", err.message);
       }
     } else {
-      // Если нет токена сессии, создаем новую
-      const deviceData = getDeviceInfo();
-      try {
-        const sessionResponse = await fetch("/api/sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: state.currentUser.id,
-            device_info: deviceData.deviceInfo,
-            browser: deviceData.browser,
-            os: deviceData.os
-          })
-        });
-
-        if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
-          localStorage.setItem("sessionToken", sessionData.session_token);
-          console.log("✅ Сессия создана при загрузке:", sessionData.session_token);
-        }
-      } catch (err) {
-        console.error("⚠ Ошибка создания сессии при загрузке:", err);
-      }
+      // Нет токена сессии — разлогиниваем пользователя
+      console.log("⚠ Нет токена сессии, выполняется выход");
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("sessionToken");
+      location.reload();
+      return;
     }
 
     // Обновляем классы контейнера для показа контента
