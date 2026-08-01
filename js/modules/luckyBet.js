@@ -99,6 +99,13 @@ export function getIconTitle(icon) {
 
 export { iconTitles };
 
+// Пуассон-распределение для реалистичного счёта (λ = 1.3, среднее ~2.6 голов за матч)
+function poissonRandom(lambda) {
+  let L = Math.exp(-lambda), k = 0, p = 1;
+  do { k++; p *= Math.random(); } while (p > L);
+  return k - 1;
+}
+
 export async function luckyBetForCurrentRound() {
   if (!currentUser) {
     await showCustomAlert("Сначала войдите в аккаунт", "Внимание", '<svg class="icon" aria-hidden="true"><use href="#icon-warning"></use></svg>');
@@ -132,17 +139,17 @@ export async function luckyBetForCurrentRound() {
   // Ждем 2 секунды пока кубик крутится
   await new Promise(resolve => setTimeout(resolve, 2000));
   
-  // Подсчитываем сколько матчей с прогнозами на счёт и карточки
+  // Генерируем все ставки и собираем промисы для параллельной отправки
+  const allPromises = [];
   let scorePredictionsCount = 0;
   let cardsPredictionsCount = 0;
   
-  // Для каждого такого матча делаем случайную ставку
   for (const match of matchesToBet) {
-    // Генерируем рандомный счет (0-5 голов для каждой команды)
-    const team1Score = Math.floor(Math.random() * 6);
-    const team2Score = Math.floor(Math.random() * 6);
+    // Генерируем счёт через Пуассон-распределение (λ = 1.3)
+    const team1Score = poissonRandom(1.3);
+    const team2Score = poissonRandom(1.3);
     
-    // Определяем результат на основе счета
+    // Определяем результат на основе счёта
     let prediction;
     if (team1Score > team2Score) {
       prediction = "team1";
@@ -152,13 +159,13 @@ export async function luckyBetForCurrentRound() {
       prediction = "draw";
     }
     
-    // Генерируем рандомные карточки (общее количество в матче)
-    const yellowCards = Math.floor(Math.random() * 9); // 0-8 желтых карточек
-    const redCards = Math.floor(Math.random() * 4); // 0-3 красных карточек
+    // Генерируем карточки
+    const yellowCards = Math.floor(Math.random() * 9); // 0-8 жёлтых
+    const redCards = Math.floor(Math.random() * 4); // 0-3 красных
     
-    try {
-      // Отправляем ставку на результат
-      await fetch("/api/bets", {
+    // Ставка на результат
+    allPromises.push(
+      fetch("/api/bets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -167,11 +174,13 @@ export async function luckyBetForCurrentRound() {
           prediction: prediction,
           amount: 0,
         }),
-      });
-      
-      // Отправляем прогноз на счет если включен для матча
-      if (match.score_prediction_enabled) {
-        await fetch("/api/score-predictions", {
+      })
+    );
+    
+    // Прогноз на счёт
+    if (match.score_prediction_enabled) {
+      allPromises.push(
+        fetch("/api/score-predictions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -180,13 +189,15 @@ export async function luckyBetForCurrentRound() {
             score_team1: team1Score,
             score_team2: team2Score,
           }),
-        });
-        scorePredictionsCount++;
-      }
-      
-      // Отправляем прогноз на карточки если включен для матча
-      if (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) {
-        await fetch("/api/cards-predictions", {
+        })
+      );
+      scorePredictionsCount++;
+    }
+    
+    // Прогноз на карточки
+    if (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) {
+      allPromises.push(
+        fetch("/api/cards-predictions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -195,13 +206,17 @@ export async function luckyBetForCurrentRound() {
             yellow_cards: match.yellow_cards_prediction_enabled ? yellowCards : null,
             red_cards: match.red_cards_prediction_enabled ? redCards : null,
           }),
-        });
-        cardsPredictionsCount++;
-      }
-      
-    } catch (e) {
-      console.error("Ошибка при отправке случайной ставки:", e);
+        })
+      );
+      cardsPredictionsCount++;
     }
+  }
+  
+  // Отправляем все запросы параллельно
+  try {
+    await Promise.all(allPromises);
+  } catch (e) {
+    console.error("Ошибка при отправке случайных ставок:", e);
   }
   
   // Отправляем уведомление админу
