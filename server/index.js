@@ -115,19 +115,22 @@ app.post("/telegram-webhook", async (req, res) => {
 import { requireAuth } from "./middleware/auth.js";
 
 // Публичные пути (без авторизации)
-const PUBLIC_PATHS = [
+const PUBLIC_PATHS_EXACT = [
   '/api/user',                          // POST: логин/регистрация
   '/api/sessions',                      // POST: создание сессии (логин)
+  '/api/notify-admin-login-attempt',    // Уведомление о попытке входа
+];
+
+const PUBLIC_PATHS_PREFIX = [
   '/api/sessions/',                     // GET: валидация сессии
   '/api/user/login/',                   // 2FA эндпоинты
   '/api/telegram-auth/',                // Telegram авторизация
-  '/api/notify-admin-login-attempt',    // Уведомление о попытке входа
-  '/admin/notifications',               // Админ-панель HTML
-  '/admin/notifications/',              // Админ-панель API
+  '/admin/notifications',               // Админ-панель HTML + API
 ];
 
 function isPublicPath(path) {
-  return PUBLIC_PATHS.some(p => path.startsWith(p));
+  return PUBLIC_PATHS_EXACT.includes(path) ||
+         PUBLIC_PATHS_PREFIX.some(p => path.startsWith(p));
 }
 
 // Применяем auth ко всем /api/* кроме публичных
