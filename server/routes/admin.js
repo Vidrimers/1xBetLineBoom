@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
+import { requireAdmin } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { normalizeTeamNameForAPI, translateTeamNameToEnglish } from '../utils/helpers.js';
@@ -41,7 +42,7 @@ router.get("/api/moderators", (req, res) => {
 });
 
 // 5.3 Назначить нового модератора
-router.post("/api/moderators", async (req, res) => {
+router.post("/api/moderators", requireAdmin, async (req, res) => {
   try {
     const { user_id, permissions } = req.body;
 
@@ -167,7 +168,7 @@ ${permissionsText}`;
 });
 
 // 5.4 Удалить модератора
-router.delete("/api/moderators/:moderatorId", (req, res) => {
+router.delete("/api/moderators/:moderatorId", requireAdmin, (req, res) => {
   try {
     const { moderatorId } = req.params;
 
@@ -207,7 +208,7 @@ router.delete("/api/moderators/:moderatorId", (req, res) => {
 });
 
 // 5.5 Обновить разрешения модератора
-router.put("/api/moderators/:moderatorId/permissions", async (req, res) => {
+router.put("/api/moderators/:moderatorId/permissions", requireAdmin, async (req, res) => {
   try {
     const { moderatorId } = req.params;
     const { permissions } = req.body;
