@@ -476,16 +476,18 @@ router.post("/api/telegram-auth/complete", async (req, res) => {
 
       const time = new Date().toLocaleString("ru-RU");
       
+      const displayIp = (ip_address === '127.0.0.1' || ip_address === '::1') ? 'Telegram (IP недоступен)' : ip_address;
+      
       let message = `👤 НОВЫЙ ПОЛЬЗОВАТЕЛЬ (Telegram)
 
 🆔 ID: ${user.id}
 👤 Имя: ${username}
 📱 Telegram: ${first_name || 'N/A'} ${tg_username ? `(@${tg_username})` : ''}
 🔑 TG ID: ${telegram_id}
-🌍 IP: ${ip_address}
+🌍 IP: ${displayIp}
 🕐 Время: ${time}`;
 
-      if (otherUsers.length > 0) {
+      if (otherUsers.length > 0 && displayIp !== 'Telegram (IP недоступен)') {
         message += `\n\n⚠️ С этого IP уже заходили:`;
         otherUsers.forEach(u => {
           message += `\n  • ${u.username}`;
@@ -583,6 +585,7 @@ router.post("/api/user/telegram-auth", async (req, res) => {
       `).all(ip_address, user.id);
 
       const time = new Date().toLocaleString("ru-RU");
+      const displayIp = (ip_address === '127.0.0.1' || ip_address === '::1') ? 'Telegram (IP недоступен)' : ip_address;
       
       let message = `👤 НОВЫЙ ПОЛЬЗОВАТЕЛЬ (Telegram)
 
@@ -590,10 +593,10 @@ router.post("/api/user/telegram-auth", async (req, res) => {
 👤 Имя: ${username}
 📱 Telegram: ${first_name || 'N/A'} ${tg_username ? `(@${tg_username})` : ''}
 🔑 TG ID: ${telegram_id}
-🌍 IP: ${ip_address}
+🌍 IP: ${displayIp}
 🕐 Время: ${time}`;
 
-      if (otherUsers.length > 0) {
+      if (otherUsers.length > 0 && displayIp !== 'Telegram (IP недоступен)') {
         message += `\n\n⚠️ С этого IP уже заходили:`;
         otherUsers.forEach(u => {
           message += `\n  • ${u.username}`;
