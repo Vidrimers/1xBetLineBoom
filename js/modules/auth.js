@@ -274,7 +274,7 @@ export function exitGuestMode() {
 
 // ===== ОСНОВНЫЕ ФУНКЦИИ ВХОДА =====
 
-export async function initUser() {
+export async function initUser(skipSimilarCheck = false) {
   // Получаем значение из обоих инпутов
   let username = document.getElementById("username").value.trim();
   const usernameMobile = document.getElementById("username-mobile")?.value.trim();
@@ -335,7 +335,8 @@ export async function initUser() {
         username: usernameToSend,
         device_info: deviceData.deviceInfo,
         browser: deviceData.browser,
-        os: deviceData.os
+        os: deviceData.os,
+        skipSimilarCheck
       }),
     });
 
@@ -354,6 +355,25 @@ export async function initUser() {
         return initUser();
       }
       return;
+    }
+
+    // Проверяем, найден ли похожий ник
+    if (result.similarFound) {
+      const useExisting = await showCustomConfirm(
+        `На сайте есть пользователь с похожим ником (${result.suggestedUsername}), возможно вы ошиблись. Это так?`,
+        'Похожий ник найден',
+        '<svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>'
+      );
+      if (useExisting) {
+        // Пользователь подтвердил — логинимся под найденным ником
+        const usernameField = document.getElementById('username');
+        const usernameMobileField = document.getElementById('username-mobile');
+        if (usernameField) usernameField.value = result.suggestedUsername;
+        if (usernameMobileField) usernameMobileField.value = result.suggestedUsername;
+        return initUser();
+      }
+      // Если отказался — продолжаем регистрацию с введённым именем, пропуская проверку похожих
+      return initUser(true);
     }
 
     // Проверяем, требуется ли подтверждение через Telegram

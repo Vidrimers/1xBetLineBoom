@@ -120,3 +120,49 @@ export function normalizeTeamName(name) {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/**
+ * Расстояние Левенштейна между двумя строками
+ */
+export function levenshteinDistance(a, b) {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      matrix[i][j] = b[i - 1] === a[j - 1]
+        ? matrix[i - 1][j - 1]
+        : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+/**
+ * Найти похожего пользователя по имени
+ * Возвращает { username, distance } или null
+ */
+export function findSimilarUsername(inputUsername, allUsernames, maxDistance = 2) {
+  const normalized = inputUsername.trim().toLowerCase();
+  
+  // Исключение: "Малютка" + цифры — не сравниваем
+  if (/^малютка\d+$/.test(normalized)) return null;
+  
+  let bestMatch = null;
+  let bestDistance = maxDistance + 1;
+  
+  for (const username of allUsernames) {
+    const candidate = username.trim().toLowerCase();
+    
+    // Исключение: оба начинаются с "Малютка" + цифры
+    if (/^малютка\d+$/.test(normalized) && /^малютка\d+$/.test(candidate)) continue;
+    
+    const distance = levenshteinDistance(normalized, candidate);
+    if (distance <= maxDistance && distance < bestDistance) {
+      bestDistance = distance;
+      bestMatch = username;
+    }
+  }
+  
+  return bestMatch ? { username: bestMatch, distance: bestDistance } : null;
+}

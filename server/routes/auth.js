@@ -4,6 +4,7 @@ import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { sendUserMessage, notifyTelegramLinked } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
+import { findSimilarUsername } from '../utils/helpers.js';
 
 const router = Router();
 
@@ -79,7 +80,7 @@ router.post("/api/notify-admin-login-attempt", async (req, res) => {
 // POST /api/user
 router.post("/api/user", async (req, res) => {
   try {
-    const { username } = req.body;
+    const { username, skipSimilarCheck } = req.body;
 
     // Проверяем, существует ли пользователь
     let user = db
@@ -114,6 +115,19 @@ router.post("/api/user", async (req, res) => {
           });
 
           return res.status(400).json({ error: "BANNED_NAME", reason });
+        }
+      }
+
+      // Проверяем похожие ники (если не отключен флагом)
+      if (!skipSimilarCheck) {
+        const allUsernames = db.prepare("SELECT username FROM users").all().map(u => u.username);
+        const similar = findSimilarUsername(username, allUsernames);
+        if (similar) {
+          return res.status(200).json({ 
+            similarFound: true, 
+            suggestedUsername: similar.username,
+            distance: similar.distance
+          });
         }
       }
 
