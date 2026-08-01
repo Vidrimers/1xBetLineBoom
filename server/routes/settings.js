@@ -325,7 +325,7 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
 router.post("/api/admin/test-group-notification", async (req, res) => {
   const { username: adminUsername, testMode } = req.body;
 
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 

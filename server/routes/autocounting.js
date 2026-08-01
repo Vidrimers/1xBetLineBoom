@@ -23,7 +23,7 @@ router.post("/api/admin/toggle-auto-counting", (req, res) => {
   const { username } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
   
-  if (username !== ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
   
@@ -158,7 +158,7 @@ router.post("/api/admin/clear-processed-dates", (req, res) => {
   const { username, dateKeys } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
   
-  if (username !== ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
   
@@ -205,7 +205,7 @@ router.post("/api/admin/run-utility", (req, res) => {
   const { username, script, args = [] } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
   
-  if (username !== ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
   

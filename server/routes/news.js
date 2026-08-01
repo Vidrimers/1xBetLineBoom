@@ -202,7 +202,7 @@ router.delete("/api/admin/news/:id", async (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
     const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
     
-    if (!user || user.username !== ADMIN_DB_NAME) {
+    if (!user || req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Доступ запрещен" });
     }
     
@@ -370,7 +370,7 @@ router.post("/api/admin/rss-keywords", (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
     const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
     
-    if (!user || user.username !== ADMIN_DB_NAME) {
+    if (!user || req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Access denied" });
     }
     
@@ -430,7 +430,7 @@ router.delete("/api/admin/rss-keywords/:id", (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
     const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
     
-    if (!user || user.username !== ADMIN_DB_NAME) {
+    if (!user || req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Access denied" });
     }
     
@@ -477,7 +477,7 @@ router.put("/api/admin/rss-keywords/:id", (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
     const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
     
-    if (!user || user.username !== ADMIN_DB_NAME) {
+    if (!user || req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Access denied" });
     }
     
@@ -562,7 +562,7 @@ router.post("/api/admin/news", async (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
     const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
     
-    if (!user || user.username !== ADMIN_DB_NAME) {
+    if (!user || req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Доступ запрещен" });
     }
     

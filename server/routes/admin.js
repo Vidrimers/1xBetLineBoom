@@ -366,7 +366,7 @@ router.get("/api/admin/users", (req, res) => {
   }
 
   // Проверяем, является ли пользователь админом
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   
   console.log(`🔍 Проверка прав: isAdmin=${isAdminUser}, ADMIN_DB_NAME=${process.env.ADMIN_DB_NAME}`);
   
@@ -426,7 +426,7 @@ router.put("/api/admin/users/:userId", async (req, res) => {
   const { username: adminUsername, newUsername } = req.body;
 
   // Проверяем, является ли пользователь админом или модератором с правами
-  const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -590,7 +590,7 @@ router.get("/api/admin/users/:userId/bot-contact-check", (req, res) => {
   const username = req.query.username;
 
   // Проверяем, является ли пользователь админом
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -659,7 +659,7 @@ router.post("/api/admin/sync-telegram-ids", async (req, res) => {
   const { username } = req.body;
   
   // Проверяем, является ли пользователь админом
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -772,7 +772,7 @@ router.delete("/api/admin/users/:userId", async (req, res) => {
   const { username: adminUsername } = req.body;
 
   // Проверяем, является ли пользователь админом или модератором с правами
-  const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
   
   if (!isAdminUser) {
@@ -919,7 +919,7 @@ router.put("/api/admin/group-reminders-card-visibility", (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
     // Проверка прав админа
-    if (admin_username !== ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Доступ запрещен" });
     }
 
@@ -966,7 +966,7 @@ router.post("/api/admin/toggle-xg-button", (req, res) => {
     }
 
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
-    if (admin_username !== ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Доступ запрещен" });
     }
 
@@ -1056,7 +1056,7 @@ router.post("/api/admin/user-settings/:userId", async (req, res) => {
   const { username: adminUsername } = req.body;
 
   // Проверяем, является ли пользователь админом
-  const isAdminUser = adminUsername === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
   let moderatorChatId = null;
   
@@ -1321,7 +1321,7 @@ router.get("/api/admin/bug-reports", (req, res) => {
   const { username: adminUsername } = req.query;
 
   // Проверяем, является ли пользователь админом
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -1368,7 +1368,7 @@ router.put("/api/admin/bug-reports/:id/status", async (req, res) => {
   const { status, username: adminUsername } = req.body;
 
   // Проверяем, является ли пользователь админом
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -1467,7 +1467,7 @@ router.delete("/api/admin/bug-reports/:id", async (req, res) => {
   const { username: adminUsername } = req.body;
 
   // Проверяем, является ли пользователь админом
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -1499,7 +1499,7 @@ router.post("/api/admin/test-auto-counting", async (req, res) => {
   const { username: adminUsername, eventId, testMode } = req.body;
 
   // Проверяем, является ли пользователь админом
-  if (adminUsername !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -1919,7 +1919,7 @@ router.delete("/api/admin/matches/:matchId", async (req, res) => {
   const { username } = req.body;
 
   // Проверяем права
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
   
   if (!isAdminUser) {
@@ -1996,7 +1996,7 @@ router.delete("/api/admin/rounds/:roundName", (req, res) => {
   const { roundName } = req.params;
   const { username, event_id } = req.body;
 
-  if (username !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -2526,7 +2526,7 @@ router.post("/api/admin/cleanup-disabled-predictions", async (req, res) => {
 
   // Проверяем права (админ или модератор с правами на подсчет)
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
-  const isAdmin = username === ADMIN_DB_NAME;
+  const isAdmin = req.authenticatedUsername === ADMIN_DB_NAME;
   
   if (!isAdmin) {
     const moderator = db.prepare(`
@@ -2624,7 +2624,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
 
   // Проверяем права (админ или модератор с правами на подсчет)
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
-  const isAdmin = username === ADMIN_DB_NAME;
+  const isAdmin = req.authenticatedUsername === ADMIN_DB_NAME;
   
   if (!isAdmin) {
     console.log('Проверка прав модератора для:', username);
@@ -3150,7 +3150,7 @@ router.post("/api/admin/clear-logs", (req, res) => {
   const { username } = req.body;
 
   // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -3168,7 +3168,7 @@ router.post("/api/admin/migrate-logs", (req, res) => {
   const { username } = req.body;
 
   // Проверяем, является ли пользователь админом
-  if (username !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -3266,7 +3266,7 @@ router.post("/api/admin/final-parameters-results", (req, res) => {
   } = req.body;
 
   // Проверяем, является ли пользователь админом или модератором с правами
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   if (!isAdminUser) {
     const moderator = db.prepare(`
       SELECT permissions FROM moderators 
@@ -3524,7 +3524,7 @@ router.post("/api/backup", async (req, res) => {
     const { username } = req.body;
     
     // Проверяем что юзер админ или модератор с правами
-    const isAdminUser = username === process.env.ADMIN_DB_NAME;
+    const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
 
     const timestamp = new Date()
       .toISOString()
@@ -3605,7 +3605,7 @@ router.get("/download-backup/:filename", async (req, res) => {
     const username = req.query.username; // Получаем username из query параметров
 
     // Проверяем права
-    const isAdminUser = username === process.env.ADMIN_DB_NAME;
+    const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     let isModerator = false;
     
     if (!isAdminUser) {
@@ -3753,7 +3753,7 @@ router.post("/api/admin/restore-backup", async (req, res) => {
   const { filename, username } = req.body;
 
   // Проверяем права
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -3853,7 +3853,7 @@ router.post("/api/admin/delete-backup", async (req, res) => {
   const { filename, username } = req.body;
 
   // Проверяем права
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   
   if (!isAdminUser) {
     // Проверяем права модератора
@@ -3953,7 +3953,7 @@ router.post("/api/admin/toggle-backup-lock", (req, res) => {
   const { filename, username } = req.body;
 
   // Проверяем что пользователь админ
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   
   if (!isAdminUser) {
     return res.status(403).json({ error: "Только админ может блокировать/разблокировать бэкапы" });
@@ -4031,7 +4031,7 @@ router.get("/api/admin/orphaned-data", (req, res) => {
   console.log(`🔍 Запрос orphaned-data от пользователя: "${username}"`);
 
   // Проверяем права
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
   
   if (!isAdminUser) {
@@ -4146,7 +4146,7 @@ router.post("/api/admin/cleanup-orphaned-data", async (req, res) => {
   const { username, dataType } = req.body;
 
   // Проверяем, является ли пользователь админом или модератором с правами
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
   
   if (!isAdminUser) {
@@ -5127,7 +5127,7 @@ router.post("/api/admin/deactivate-events", (req, res) => {
   const { username, eventIds } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
   
-  if (username !== ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
   
@@ -5221,7 +5221,7 @@ router.post("/api/admin/panel-config", (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
     const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
     
-    if (!user || user.username !== ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Доступ запрещён" });
     }
     
@@ -5264,7 +5264,7 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
     const user = db.prepare("SELECT username FROM users WHERE username = ?").get(username);
     
-    if (!user || user.username !== ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Доступ запрещён" });
     }
     
@@ -5392,7 +5392,7 @@ router.post("/api/admin/banned-names", (req, res) => {
   try {
     const { username, name, is_partial } = req.body;
 
-    if (username !== process.env.ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
 
@@ -5425,7 +5425,7 @@ router.put("/api/admin/banned-names/:id", (req, res) => {
     const { username, is_partial } = req.body;
     const { id } = req.params;
 
-    if (username !== process.env.ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
 
@@ -5450,7 +5450,7 @@ router.delete("/api/admin/banned-names/:id", (req, res) => {
     const { id } = req.params;
     const { username } = req.body;
 
-    if (username !== process.env.ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
 
@@ -5522,7 +5522,7 @@ router.post("/api/admin/weight-categories", (req, res) => {
   try {
     const { username, weight, label } = req.body;
 
-    if (username !== process.env.ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
 
@@ -5551,7 +5551,7 @@ router.put("/api/admin/weight-categories/:id", (req, res) => {
     const { username, weight, label } = req.body;
     const { id } = req.params;
 
-    if (username !== process.env.ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
 
@@ -5584,7 +5584,7 @@ router.delete("/api/admin/weight-categories/:id", (req, res) => {
     const { username } = req.body;
     const { id } = req.params;
 
-    if (username !== process.env.ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
 
@@ -5626,7 +5626,7 @@ router.post("/api/admin/timezone-offset", (req, res) => {
   const { username, offset } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
-  if (username !== ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 

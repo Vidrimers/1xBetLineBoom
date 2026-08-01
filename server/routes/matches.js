@@ -222,7 +222,7 @@ router.post("/api/admin/matches", async (req, res) => {
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
   // Проверяем, является ли пользователь админом или модератором с правами
-  const isAdminUser = username === ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === ADMIN_DB_NAME;
   let isModerator = false;
   
   if (!isAdminUser) {
@@ -498,7 +498,7 @@ router.post("/api/matches/bulk-update-dates", async (req, res) => {
   }
 
   // Проверка прав доступа
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
   
   if (!isAdminUser) {
@@ -579,7 +579,7 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
 
   console.log("🔧 PUT /api/admin/matches/:matchId", { matchId, username, status, result });
 
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
   let hasPermission = false;
   

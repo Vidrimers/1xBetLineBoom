@@ -628,7 +628,7 @@ router.delete("/api/brackets/:bracketId/predictions/cleanup", (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });
@@ -663,7 +663,7 @@ router.post("/api/admin/brackets", (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });
@@ -727,7 +727,7 @@ router.put("/api/admin/brackets/:bracketId", (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });
@@ -778,7 +778,7 @@ router.put("/api/admin/brackets/:bracketId/teams", (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });
@@ -960,7 +960,7 @@ router.put("/api/admin/brackets/:bracketId/lock", (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });
@@ -1006,7 +1006,7 @@ router.put("/api/admin/brackets/:bracketId/results", async (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });
@@ -1095,7 +1095,7 @@ router.delete("/api/admin/brackets/:bracketId/results", async (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });
@@ -1149,7 +1149,7 @@ router.delete("/api/admin/brackets/:bracketId", (req, res) => {
     }
     
     // Проверяем, что пользователь - админ
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
     
     if (!isAdmin) {
       return res.status(403).json({ error: "Доступ запрещен" });

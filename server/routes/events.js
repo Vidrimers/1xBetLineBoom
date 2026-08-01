@@ -1380,7 +1380,7 @@ router.post("/api/admin/events", async (req, res) => {
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
-  const isAdminUser = username === ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === ADMIN_DB_NAME;
   let isModerator = false;
 
   if (!isAdminUser) {
@@ -1507,7 +1507,7 @@ router.post("/api/admin/send-tournament-announcement", async (req, res) => {
 
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
-    const isAdmin = username === ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === ADMIN_DB_NAME;
     let hasPermission = isAdmin;
 
     if (!isAdmin) {
@@ -1616,7 +1616,7 @@ router.post("/api/admin/send-feature-announcement", async (req, res) => {
 
     const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
-    if (username !== ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== ADMIN_DB_NAME) {
       return res.status(403).json({ error: "Недостаточно прав" });
     }
 
@@ -1791,7 +1791,7 @@ router.put("/api/admin/events/:eventId", (req, res) => {
   } = req.body;
   const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
 
-  if (username !== ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -1874,7 +1874,7 @@ router.delete("/api/admin/events/:eventId", async (req, res) => {
   const { eventId } = req.params;
   const username = req.body.username;
 
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
 
   if (!isAdminUser) {
@@ -2027,7 +2027,7 @@ router.put("/api/admin/events/:eventId/lock", async (req, res) => {
   const { eventId } = req.params;
   const { username, reason } = req.body;
 
-  if (username !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -2217,7 +2217,7 @@ router.put("/api/admin/events/:eventId/unlock", (req, res) => {
   const { eventId } = req.params;
   const { username } = req.body;
 
-  if (username !== process.env.ADMIN_DB_NAME) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
     return res.status(403).json({ error: "Недостаточно прав" });
   }
 
@@ -2252,7 +2252,7 @@ router.put("/api/admin/events/:eventId", async (req, res) => {
   const { eventId } = req.params;
   const { username, name, description, start_date, end_date } = req.body;
 
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   let isModerator = false;
 
   if (!isAdminUser) {

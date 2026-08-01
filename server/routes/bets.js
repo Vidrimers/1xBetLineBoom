@@ -444,7 +444,7 @@ router.delete("/api/bets/:betId", async (req, res) => {
     const authenticatedUserId = req.authenticatedUserId;
 
     // Проверяем, является ли пользователь админом
-    const isAdmin = username === process.env.ADMIN_DB_NAME;
+    const isAdmin = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
 
     // Проверяем, что ставка существует
     const bet = db.prepare("SELECT * FROM bets WHERE id = ?").get(betId);
@@ -1068,7 +1068,7 @@ router.post("/api/admin/final-parameters-results", async (req, res) => {
   } = req.body;
 
   // Проверяем, является ли пользователь админом или модератором с правами
-  const isAdminUser = username === process.env.ADMIN_DB_NAME;
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
   if (!isAdminUser) {
     const moderator = db.prepare(`
       SELECT permissions FROM moderators 

@@ -2,7 +2,7 @@ import { db } from '../database/db.js';
 
 /**
  * Middleware: проверяет x-session-token заголовок.
- * При успехе кладёт req.authenticatedUserId.
+ * При успехе кладёт req.authenticatedUserId и req.authenticatedUsername.
  * Возвращает 401 если токен отсутствует или невалидный.
  */
 function requireAuth(req, res, next) {
@@ -25,7 +25,21 @@ function requireAuth(req, res, next) {
     UPDATE sessions SET last_activity = CURRENT_TIMESTAMP WHERE session_token = ?
   `).run(sessionToken);
 
+  // Получаем username из БД (НЕ из запроса!)
+  const user = db.prepare('SELECT username FROM users WHERE id = ?').get(session.user_id);
+  
   req.authenticatedUserId = session.user_id;
+  req.authenticatedUsername = user ? user.username : null;
+  next();
+}
+
+/**
+ * Middleware: требует чтобы аутентифицированный пользователь был админом.
+ */
+function requireAdmin(req, res, next) {
+  if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
+    return res.status(403).json({ error: 'Требуются права администратора' });
+  }
   next();
 }
 
@@ -47,8 +61,7 @@ function requireOwnership(req, res, next) {
   }
 
   if (authId !== claimedUserId) {
-    const authUser = db.prepare('SELECT username FROM users WHERE id = ?').get(authId);
-    if (!authUser || authUser.username !== process.env.ADMIN_DB_NAME) {
+    if (req.authenticatedUsername !== process.env.ADMIN_DB_NAME) {
       return res.status(403).json({ error: 'Нет прав для этого действия' });
     }
   }
@@ -66,4 +79,4 @@ function checkAdminAuth(req, res) {
   return admin && admin === process.env.ADMIN_LOGIN;
 }
 
-export { requireAuth, requireOwnership, checkAdminAuth };
+export { requireAuth, requireAdmin, requireOwnership, checkAdminAuth };
