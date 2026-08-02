@@ -20,9 +20,20 @@ const processedDates = new Set();
 db.exec(`
   CREATE TABLE IF NOT EXISTS auto_counting_processed (
     date_key TEXT PRIMARY KEY,
-    processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    results_sent INTEGER DEFAULT 0
   )
 `);
+
+// Миграция: добавляем столбец results_sent если его нет
+try {
+  db.prepare("SELECT results_sent FROM auto_counting_processed LIMIT 1").get();
+} catch {
+  db.exec("ALTER TABLE auto_counting_processed ADD COLUMN results_sent INTEGER DEFAULT 0");
+  // Помечаем все существующие записи как отправленные (они уже были отправлены ранее)
+  db.prepare("UPDATE auto_counting_processed SET results_sent = 1").run();
+  console.log('✅ Миграция: добавлен столбец results_sent, старые записи помечены как отправленные');
+}
 
 // Загружаем обработанные даты из БД при старте
 const loadProcessedDates = () => {
@@ -35,17 +46,103 @@ const loadProcessedDates = () => {
   }
 };
 
-// Сохранить обработанную дату в БД
+// Сохранить обработанную дату в БД (results_sent = 0 до отправки)
 const saveProcessedDate = (dateKey) => {
   try {
-    db.prepare('INSERT OR IGNORE INTO auto_counting_processed (date_key) VALUES (?)').run(dateKey);
+    db.prepare('INSERT OR IGNORE INTO auto_counting_processed (date_key, results_sent) VALUES (?, 0)').run(dateKey);
   } catch (error) {
     console.error('❌ Ошибка сохранения обработанной даты:', error);
   }
 };
 
+// Пометить результаты как отправленные
+const markResultsSent = (dateKey) => {
+  try {
+    db.prepare('UPDATE auto_counting_processed SET results_sent = 1 WHERE date_key = ?').run(dateKey);
+    console.log(`✅ Результаты помечены как отправленные для ${dateKey}`);
+  } catch (error) {
+    console.error('❌ Ошибка пометки результатов:', error);
+  }
+};
+
+// Получить токен сессии админа для внутренних запросов
+const getAdminSessionToken = () => {
+  try {
+    const adminUsername = process.env.ADMIN_DB_NAME;
+    if (!adminUsername) return null;
+    const session = db.prepare(`
+      SELECT s.session_token FROM sessions s
+      JOIN users u ON s.user_id = u.id
+      WHERE u.username = ?
+      ORDER BY s.last_activity DESC LIMIT 1
+    `).get(adminUsername);
+    return session ? session.session_token : null;
+  } catch (error) {
+    console.error('❌ Ошибка получения токена админа:', error);
+    return null;
+  }
+};
+
+// Отправить результаты (с токеном админа)
+const sendResultsWithAuth = async (dateFrom, dateTo) => {
+  const token = getAdminSessionToken();
+  if (!token) {
+    console.error('❌ Не удалось получить токен админа для отправки результатов');
+    return false;
+  }
+  
+  const response = await fetch(`http://localhost:${PORT}/api/admin/send-counting-results`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'x-session-token': token
+    },
+    body: JSON.stringify({ dateFrom, dateTo })
+  });
+  return response.ok;
+};
+
+// Отправить неотправленные результаты при старте сервера
+const sendUnsentResultsOnStartup = async () => {
+  try {
+    const unsentDates = db.prepare('SELECT date_key FROM auto_counting_processed WHERE results_sent = 0').all();
+    
+    if (unsentDates.length === 0) {
+      console.log('📋 Нет неотправленных результатов');
+      return;
+    }
+    
+    console.log(`📬 Найдено ${unsentDates.length} неотправленных результатов, отправляем...`);
+    
+    for (const row of unsentDates) {
+      const dateKey = row.date_key;
+      // Извлекаем дату из date_key (формат: "2026-08-01_Тур 2_RPL")
+      const date = dateKey.split('_')[0];
+      
+      try {
+        console.log(`📤 Отправка результатов за ${date}...`);
+        const ok = await sendResultsWithAuth(date, date);
+        
+        if (ok) {
+          markResultsSent(dateKey);
+          console.log(`✅ Результаты за ${date} отправлены`);
+        } else {
+          console.error(`❌ Ошибка отправки результатов за ${date}`);
+        }
+      } catch (error) {
+        console.error(`❌ Ошибка отправки результатов за ${date}:`, error.message);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Ошибка проверки неотправленных результатов:', error);
+  }
+};
+
 // Загружаем при старте
 loadProcessedDates();
+
+// Отправляем неотправленные результаты при старте (с задержкой5 секунд для готовности сервера)
+setTimeout(sendUnsentResultsOnStartup, 5000);
 
 // Получить статус автоподсчета из БД
 function getAutoCountingEnabled() {
@@ -576,16 +673,13 @@ async function triggerAutoCountingForDate(dateGroup) {
       try {
         console.log(`📤 Отправка результатов в группу и пользователям...`);
 
-        const response = await fetch(`http://localhost:${PORT}/api/admin/send-counting-results`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dateFrom: date, dateTo: date })
-        });
+        const ok = await sendResultsWithAuth(date, date);
 
-        if (response.ok) {
+        if (ok) {
           console.log(`✅ Результаты отправлены в группу и пользователям`);
+          markResultsSent(dateKey);
         } else {
-          console.error(`❌ Ошибка отправки результатов: ${response.status}`);
+          console.error(`❌ Ошибка отправки результатов`);
         }
       } catch (error) {
         console.error(`❌ Ошибка отправки результатов:`, error);
