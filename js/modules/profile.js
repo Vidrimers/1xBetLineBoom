@@ -652,7 +652,7 @@ export async function deleteAvatar() {
 
 // ===== РЕДАКТИРОВАНИЕ ИМЕНИ ПОЛЬЗОВАТЕЛЯ =====
 
-export async function saveUsername(newUsername) {
+export async function saveUsername(newUsername, oldUsername) {
   try {
     const response = await fetch(`/api/user/${currentUser.id}/username`, {
       method: 'PUT',
@@ -668,7 +668,7 @@ export async function saveUsername(newUsername) {
         const { newName } = await showBannedNameAlert(result.reason || 'Это имя запрещено к использованию на сайте');
         if (newName) {
           const capitalized = newName.charAt(0).toUpperCase() + newName.slice(1);
-          await saveUsername(capitalized);
+          await saveUsername(capitalized, oldUsername);
         }
         return;
       }
@@ -677,7 +677,8 @@ export async function saveUsername(newUsername) {
     }
 
     await showCustomAlert(
-      `Имя успешно изменено на "${newUsername}".\n\nВы будете разлогинены со всех устройств.\nВойдите заново с новым именем.`,
+      `<span style="text-decoration: line-through; color: #9e9e9e;">${oldUsername}</span> → <b>${newUsername}</b><br><br>` +
+      `Со старым именем вход больше невозможен. Войдите заново с новым именем.`,
       'Имя изменено',
       '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
     );
@@ -712,5 +713,22 @@ export async function editUsername() {
   }
 
   const capitalized = newUsername.charAt(0).toUpperCase() + newUsername.slice(1);
-  await saveUsername(capitalized);
+
+  // Повторный ввод для подтверждения
+  const confirmName = await showCustomPrompt(
+    'Введите имя ещё раз для подтверждения:',
+    'Подтверждение имени',
+    '<svg class="icon" aria-hidden="true"><use href="#icon-edit"></use></svg>',
+    ''
+  );
+
+  if (!confirmName) return;
+  const confirmCapitalized = confirmName.charAt(0).toUpperCase() + confirmName.slice(1);
+
+  if (confirmCapitalized !== capitalized) {
+    await showCustomAlert('Имена не совпадают. Попробуйте снова.', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+
+  await saveUsername(capitalized, currentUsername);
 }
