@@ -99,11 +99,23 @@ export function getIconTitle(icon) {
 
 export { iconTitles };
 
+// ⚠️ ДУБЛИКАТ: аналогичная логика есть в ТГ-боте OnexBetLineBoombot.js
+// При изменении алгоритма генерации — синхронизировать оба файла
+
 // Пуассон-распределение для реалистичного счёта (λ = 1.3, среднее ~2.6 голов за матч)
 function poissonRandom(lambda) {
   let L = Math.exp(-lambda), k = 0, p = 1;
   do { k++; p *= Math.random(); } while (p > L);
   return k - 1;
+}
+
+// Взвешенный рандом для красных карточек (0 — ~75%, 1 — ~20%, 2 — ~4%, 3 — ~1%)
+function weightedRedCards() {
+  const r = Math.random();
+  if (r < 0.75) return 0;
+  if (r < 0.95) return 1;
+  if (r < 0.99) return 2;
+  return 3;
 }
 
 export async function luckyBetForCurrentRound() {
@@ -160,8 +172,8 @@ export async function luckyBetForCurrentRound() {
     }
     
     // Генерируем карточки
-    const yellowCards = Math.floor(Math.random() * 9); // 0-8 жёлтых
-    const redCards = Math.floor(Math.random() * 4); // 0-3 красных
+    const yellowCards = poissonRandom(3.5);
+    const redCards = weightedRedCards();
     
     // Ставка на результат
     allPromises.push(

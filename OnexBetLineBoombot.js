@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { handleAIMessage, handleAIModeCommand, handleAIModeCallback, handleClearContextCommand } from "./server/services/telegramAI.js";
 
-dotenv.config();
+dotenv.config({ path: path.resolve(import.meta.dirname, '.env'), override: true });
 
 // Реестр callback-обработчиков (для избежания циклических зависимостей)
 const callbackHandlers = new Map();
@@ -32,6 +32,18 @@ const portSuffix = isStandardPort ? "" : `:${SERVER_PORT}`;
 
 // Для локальных запросов из бота ВСЕГДА используем localhost (бот на том же сервере)
 const SERVER_URL = `http://localhost:${SERVER_PORT}`;
+const BOT_API_TOKEN = process.env.BOT_API_TOKEN || "";
+
+// Авторизованный fetch для защищённых API (передаёт x-bot-token)
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(BOT_API_TOKEN ? { "x-bot-token": BOT_API_TOKEN } : {}),
+    },
+  });
+}
 
 // Для внешних ссылок (которые отправляются пользователям в кнопках)
 const isLocalNetwork = SERVER_IP === "localhost" || SERVER_IP.startsWith("192.168.") || SERVER_IP.startsWith("127.0.");
@@ -1519,7 +1531,7 @@ export async function startBot() {
       }
 
       // Получаем ставки пользователя
-      const betsResponse = await fetch(
+      const betsResponse = await authFetch(
         `${SERVER_URL}/api/user/${user.id}/bets`
       );
       if (!betsResponse.ok) {
@@ -2401,7 +2413,7 @@ export async function startBot() {
   const handleMyBugReports = async (chatId, userId, user, msg) => {
     try {
       // Получаем багрепорты пользователя
-      const response = await fetch(`${SERVER_URL}/api/user/bug-reports?userId=${user.id}`);
+      const response = await authFetch(`${SERVER_URL}/api/user/bug-reports?userId=${user.id}`);
       if (!response.ok) {
         throw new Error("Failed to fetch bug reports");
       }
@@ -2460,7 +2472,7 @@ export async function startBot() {
   const handleBugReportsByStatus = async (chatId, userId, user, status, msg) => {
     try {
       // Получаем багрепорты пользователя
-      const response = await fetch(`${SERVER_URL}/api/user/bug-reports?userId=${user.id}`);
+      const response = await authFetch(`${SERVER_URL}/api/user/bug-reports?userId=${user.id}`);
       if (!response.ok) {
         throw new Error("Failed to fetch bug reports");
       }
@@ -2709,7 +2721,7 @@ export async function startBot() {
       if (state.waitingForText && text && !text.startsWith('/')) {
         // Отправляем багрепорт на сервер
         try {
-          const response = await fetch(`${SERVER_URL}/api/bug-report`, {
+          const response = await authFetch(`${SERVER_URL}/api/bug-report`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -3078,7 +3090,7 @@ export async function startBot() {
             const matches = await matchesResponse.json();
             
             // Получаем ставки пользователя
-            const betsResponse = await fetch(`${SERVER_URL}/api/user/${userId}/bets`);
+            const betsResponse = await authFetch(`${SERVER_URL}/api/user/${userId}/bets`);
             if (!betsResponse.ok) {
               throw new Error("Failed to fetch bets");
             }
@@ -3212,6 +3224,25 @@ export async function startBot() {
         }
         
         // Обработка подтверждения: luckybet_confirm_{eventId}_{userId}_{roundIndex}
+        // ⚠️ ДУБЛИКАТ: аналогичная логика есть во фронтенде js/modules/luckyBet.js
+        // При изменении алгоритма генерации — синхронизировать оба файла
+
+        // Пуассон-распределение для реалистичного счёта (λ = 1.3, среднее ~2.6 голов за матч)
+        function poissonRandom(lambda) {
+          let L = Math.exp(-lambda), k = 0, p = 1;
+          do { k++; p *= Math.random(); } while (p > L);
+          return k - 1;
+        }
+
+        // Взвешенный рандом для красных карточек (0 — ~75%, 1 — ~20%, 2 — ~4%, 3 — ~1%)
+        function weightedRedCards() {
+          const r = Math.random();
+          if (r < 0.75) return 0;
+          if (r < 0.95) return 1;
+          if (r < 0.99) return 2;
+          return 3;
+        }
+
         if (data.startsWith("luckybet_confirm_")) {
           const parts = data.split("_");
           const eventId = parseInt(parts[2]);
@@ -3246,7 +3277,7 @@ export async function startBot() {
             const matches = allMatches.filter(m => m.round === round);
             
             // Получаем ставки пользователя
-            const betsResponse = await fetch(`${SERVER_URL}/api/user/${userId}/bets`);
+            const betsResponse = await authFetch(`${SERVER_URL}/api/user/${userId}/bets`);
             if (!betsResponse.ok) {
               throw new Error("Failed to fetch bets");
             }
@@ -3276,9 +3307,9 @@ export async function startBot() {
             // Делаем рандомные ставки
             const results = [];
             for (const match of matchesToBet) {
-              // Генерируем рандомный счет
-              const team1Score = Math.floor(Math.random() * 6);
-              const team2Score = Math.floor(Math.random() * 6);
+              // Генерируем счёт через Пуассон-распределение (λ = 1.3)
+              const team1Score = poissonRandom(1.3);
+              const team2Score = poissonRandom(1.3);
               
               // Определяем результат
               let prediction;
@@ -3291,12 +3322,12 @@ export async function startBot() {
               }
               
               // Генерируем карточки
-              const yellowCards = Math.floor(Math.random() * 9);
-              const redCards = Math.floor(Math.random() * 4);
+              const yellowCards = poissonRandom(3.5);
+              const redCards = weightedRedCards();
               
               try {
                 // Ставка на результат
-                await fetch(`${SERVER_URL}/api/bets`, {
+                await authFetch(`${SERVER_URL}/api/bets`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -3309,7 +3340,7 @@ export async function startBot() {
                 
                 // Прогноз на счет
                 if (match.score_prediction_enabled) {
-                  await fetch(`${SERVER_URL}/api/score-predictions`, {
+                  await authFetch(`${SERVER_URL}/api/score-predictions`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -3323,7 +3354,7 @@ export async function startBot() {
                 
                 // Прогноз на карточки
                 if (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) {
-                  await fetch(`${SERVER_URL}/api/cards-predictions`, {
+                  await authFetch(`${SERVER_URL}/api/cards-predictions`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -3442,7 +3473,7 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
           
           try {
             // Получаем ставки пользователя
-            const betsResponse = await fetch(`${SERVER_URL}/api/user/${userId}/bets`);
+            const betsResponse = await authFetch(`${SERVER_URL}/api/user/${userId}/bets`);
             if (!betsResponse.ok) {
               throw new Error("Failed to fetch bets");
             }

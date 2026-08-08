@@ -6,6 +6,14 @@ import { db } from '../database/db.js';
  * Возвращает 401 если токен отсутствует или невалидный.
  */
 function requireAuth(req, res, next) {
+  // Бот-токен: внутренний сервис имеет полный доступ
+  const botToken = req.headers['x-bot-token'];
+  if (botToken && process.env.BOT_API_TOKEN && botToken === process.env.BOT_API_TOKEN) {
+    req.authenticatedUserId = null;
+    req.authenticatedUsername = '__bot__';
+    return next();
+  }
+
   const sessionToken = req.headers['x-session-token'];
 
   if (!sessionToken) {
