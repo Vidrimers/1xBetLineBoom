@@ -871,6 +871,7 @@ async function _completeAutoLogin(user, sessionCreationToken) {
     localStorage.setItem("sessionToken", sessionData.session_token);
   }
 
+  user.isAdmin = user.username === ADMIN_DB_NAME;
   localStorage.setItem("currentUser", JSON.stringify(user));
   setCurrentUser(user);
 }

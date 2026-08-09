@@ -881,6 +881,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const user = JSON.parse(savedUser);
     setCurrentUser(user);
 
+    // Перепроверяем isAdmin на основе ADMIN_DB_NAME (на случай если localStorage устарел)
+    state.currentUser.isAdmin = state.currentUser.username === state.ADMIN_DB_NAME;
+
     // Загружаем настройку show_lucky_button с сервера
     try {
       const response = await fetch(`/api/user/${user.id}/show-lucky-button`);
