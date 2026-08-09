@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { db } from '../database/db.js';
 import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
@@ -629,6 +631,78 @@ router.post("/api/user/telegram-auth", async (req, res) => {
     });
   } catch (error) {
     console.error("Ошибка Telegram авторизации:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== MINI APP / TELEGRAM LINK AUTO-LOGIN =====
+
+// Генерация sessionCreationToken (один на user_id)
+function generateSessionCreationToken(userId) {
+  const token = `${userId}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  sessionCreationTokens.set(userId, { token, expiresAt: Date.now() + 5 * 60 * 1000 });
+  return token;
+}
+
+// POST /api/auth/telegram-link — авто-логин по JWT из URL-кнопки бота
+router.post("/api/auth/telegram-link", async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: "Token required" });
+
+    const JWT_SECRET = process.env.MINIAPP_JWT_SECRET;
+    if (!JWT_SECRET) return res.status(500).json({ error: "MINIAPP_JWT_SECRET not configured" });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return res.status(403).json({ error: "Invalid or expired token" });
+    }
+
+    const user = db.prepare("SELECT id, username, telegram_id, telegram_username, is_admin FROM users WHERE id = ?").get(decoded.user_id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const sessionCreationToken = generateSessionCreationToken(user.id);
+    res.json({ user, sessionCreationToken });
+  } catch (error) {
+    console.error("Ошибка telegram-link auth:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/auth/telegram-miniapp — авто-логин через Telegram Mini App (initData)
+router.post("/api/auth/telegram-miniapp", async (req, res) => {
+  try {
+    const { initData } = req.body;
+    if (!initData) return res.status(400).json({ error: "initData required" });
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (!TELEGRAM_BOT_TOKEN) return res.status(500).json({ error: "TELEGRAM_BOT_TOKEN not configured" });
+
+    // Верификация initData через HMAC-SHA256
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(TELEGRAM_BOT_TOKEN).digest();
+    const dataCheckString = new URLSearchParams(initData);
+    const hash = dataCheckString.get('hash');
+    dataCheckString.delete('hash');
+    dataCheckString.sort();
+
+    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString.toString()).digest('hex');
+    if (computedHash !== hash) {
+      return res.status(403).json({ error: "Invalid initData" });
+    }
+
+    const tgUser = JSON.parse(dataCheckString.get('user') || '{}');
+    const telegramId = tgUser.id;
+    if (!telegramId) return res.status(400).json({ error: "User ID not found in initData" });
+
+    const user = db.prepare("SELECT id, username, telegram_id, telegram_username, is_admin FROM users WHERE telegram_id = ?").get(telegramId);
+    if (!user) return res.status(404).json({ error: "Telegram not linked. Use /start in bot first." });
+
+    const sessionCreationToken = generateSessionCreationToken(user.id);
+    res.json({ user, sessionCreationToken });
+  } catch (error) {
+    console.error("Ошибка telegram-miniapp auth:", error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -780,3 +780,97 @@ export async function checkTelegramAuthStatus(authToken) {
     }
   }, 2000)); // Проверяем каждые 2 секунды
 }
+
+// ===== AUTO-LOGIN ЧЕРЕЗ TELEGRAM (Mini App / Link) =====
+
+export async function autoLoginFromTelegram() {
+  // Уже залогинен — пропускаем
+  if (localStorage.getItem("currentUser") && localStorage.getItem("sessionToken")) {
+    return false;
+  }
+
+  const tg = window.Telegram?.WebApp;
+
+  // 1. Mini App: проверяем initData
+  if (tg?.initData) {
+    try {
+      const resp = await fetch("/api/auth/telegram-miniapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData: tg.initData })
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        await _completeAutoLogin(data.user, data.sessionCreationToken);
+        tg.ready();
+        tg.expand();
+        return true;
+      } else {
+        const err = await resp.json();
+        console.warn("Mini App auth failed:", err.error);
+        if (tg) {
+          tg.ready();
+          tg.expand();
+        }
+      }
+    } catch (e) {
+      console.error("Mini App auth error:", e);
+    }
+    return false;
+  }
+
+  // 2. JWT link: проверяем ?token= в URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const jwtToken = urlParams.get("token");
+  if (jwtToken) {
+    try {
+      const resp = await fetch("/api/auth/telegram-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: jwtToken })
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        await _completeAutoLogin(data.user, data.sessionCreationToken);
+        // Убираем token из URL
+        urlParams.delete("token");
+        const newUrl = window.location.pathname + (urlParams.toString() ? "?" + urlParams.toString() : "");
+        window.history.replaceState({}, "", newUrl);
+        return true;
+      } else {
+        const err = await resp.json();
+        console.warn("Telegram link auth failed:", err.error);
+      }
+    } catch (e) {
+      console.error("Telegram link auth error:", e);
+    }
+    return false;
+  }
+
+  return false;
+}
+
+// Внутренняя функция: создаёт сессию и обновляет UI после auto-login
+async function _completeAutoLogin(user, sessionCreationToken) {
+  const deviceData = getDeviceInfo();
+
+  const sessionResp = await fetch("/api/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: user.id,
+      device_info: deviceData.deviceInfo,
+      browser: deviceData.browser,
+      os: deviceData.os,
+      sessionCreationToken
+    })
+  });
+
+  if (sessionResp.ok) {
+    const sessionData = await sessionResp.json();
+    localStorage.setItem("sessionToken", sessionData.session_token);
+  }
+
+  localStorage.setItem("currentUser", JSON.stringify(user));
+  setCurrentUser(user);
+}

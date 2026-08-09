@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import jwt from "jsonwebtoken";
 import { handleAIMessage, handleAIModeCommand, handleAIModeCallback, handleClearContextCommand } from "./server/services/telegramAI.js";
 
 dotenv.config({ path: path.resolve(import.meta.dirname, '.env'), override: true });
@@ -2895,26 +2896,69 @@ export async function startBot() {
             handleNews(chatId, fakeMsg);
             break;
           case "menu_opensite":
-            // Показываем подменю с выбором способа доступа
-            bot.editMessageText(
-              '🌐 <b>Открыть сайт</b>\n\nВыберите способ доступа:',
-              {
-                chat_id: chatId,
-                message_id: msg.message_id,
-                parse_mode: 'HTML',
-                reply_markup: {
-                  inline_keyboard: [
-                    [
-                      { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                      { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
-                    ],
-                    [
-                      { text: '← Назад', callback_data: 'menu_back' }
-                    ]
-                  ]
-                }
+            try {
+              const MINIAPP_JWT_SECRET = process.env.MINIAPP_JWT_SECRET;
+              if (!MINIAPP_JWT_SECRET) {
+                await bot.sendMessage(chatId, "⚠️ MINIAPP_JWT_SECRET не настроен");
+                break;
               }
-            );
+
+              // Ищем пользователя по telegram_id
+              const { db } = await import("./server/database/db.js");
+              const user = db.prepare("SELECT id, username FROM users WHERE telegram_id = ?").get(userId);
+
+              if (!user) {
+                await bot.editMessageText(
+                  '🌐 <b>Открыть сайт</b>\n\n❌ Ты не привязан к сайту. Нажми /start и зарегистрируйся.',
+                  {
+                    chat_id: chatId,
+                    message_id: msg.message_id,
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                      inline_keyboard: [[{ text: '← Назад', callback_data: 'menu_back' }]]
+                    }
+                  }
+                );
+                break;
+              }
+
+              // Генерируем JWT (5 минут)
+              const token = jwt.sign(
+                { user_id: user.id, telegram_id: userId },
+                MINIAPP_JWT_SECRET,
+                { expiresIn: '5m' }
+              );
+
+              const vpnUrl = `https://1xbetlineboom.xyz/?token=${token}`;
+              const noVpnUrl = `https://lol.1xbetlineboom.xyz/?token=${token}`;
+              const miniAppUrl = `https://1xbetlineboom.xyz/?token=${token}`;
+
+              await bot.editMessageText(
+                '🌐 <b>Открыть сайт</b>\n\nВыберите способ доступа:',
+                {
+                  chat_id: chatId,
+                  message_id: msg.message_id,
+                  parse_mode: 'HTML',
+                  reply_markup: {
+                    inline_keyboard: [
+                      [
+                        { text: '🌐 С VPN', url: vpnUrl },
+                        { text: '🇷🇺 Без VPN', url: noVpnUrl }
+                      ],
+                      [
+                        { text: '📱 Открыть в Telegram', web_app: { url: miniAppUrl } }
+                      ],
+                      [
+                        { text: '← Назад', callback_data: 'menu_back' }
+                      ]
+                    ]
+                  }
+                }
+              );
+            } catch (error) {
+              console.error("Ошибка menu_opensite:", error);
+              await bot.sendMessage(chatId, "❌ Ошибка генерации ссылки");
+            }
             break;
           case "menu_bugreport":
             handleBugReport(chatId, fakeMsg);

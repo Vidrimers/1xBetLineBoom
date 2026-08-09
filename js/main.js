@@ -34,6 +34,7 @@ import {
   setAuthButtonToLoginState,
   hideTelegramAuthButtons,
   showTelegramAuthButtons,
+  autoLoginFromTelegram,
 } from './modules/auth.js';
 import { previewTheme, saveTheme, changeTheme, loadSavedTheme } from './modules/themes.js';
 import {
@@ -869,6 +870,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadConfig();
 
   // Порядок туров загружается в loadMatches() после выбора турнира
+
+  // Авто-логин через Telegram (Mini App / JWT link из бота)
+  await autoLoginFromTelegram();
 
   // Проверяем, есть ли пользователь в localStorage
   const savedUser = localStorage.getItem("currentUser");

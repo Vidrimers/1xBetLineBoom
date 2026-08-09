@@ -130,6 +130,7 @@ const PUBLIC_PATHS_PREFIX = [
   '/sessions/',                         // GET: валидация сессии
   '/user/login/',                       // 2FA эндпоинты
   '/telegram-auth/',                    // Telegram авторизация
+  '/auth/',                             // Mini App / Telegram Link авто-логин
   '/events/',                           // GET: матчи турниров, статистика
   '/match-bet-stats/',                  // GET: статистика ставок по матчу
   '/rounds-order/',                     // GET: порядок туров
