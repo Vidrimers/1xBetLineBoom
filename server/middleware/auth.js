@@ -54,9 +54,14 @@ function requireAdmin(req, res, next) {
 /**
  * Middleware: проверяет что req.authenticatedUserId совпадает
  * с user_id/userId из тела или параметров запроса.
- * Админ (ADMIN_DB_NAME) обходит проверку.
+ * Админ (ADMIN_DB_NAME) и бот ('__bot__') обходят проверку.
  */
 function requireOwnership(req, res, next) {
+  // Бот — доверенный внутренний сервис, может действовать от имени любого пользователя
+  if (req.authenticatedUsername === '__bot__') {
+    return next();
+  }
+
   const authId = req.authenticatedUserId;
 
   const claimedUserId = parseInt(

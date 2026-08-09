@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../database/db.js';
-import { requireOwnership } from '../middleware/auth.js';
+import { requireAuth, requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin, notifyUser } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { notifyNewBet, notifyBetDeleted, notifyNewScorePrediction, notifyIllegalBet, sendUserMessage, sendAdminNotification } from '../../OnexBetLineBoombot.js';
@@ -11,7 +11,7 @@ import { handleUserBetInTournament } from '../services/inactivityService.js';
 const router = Router();
 
 // POST /api/bets - Создать ставку
-router.post("/api/bets", requireOwnership, async (req, res) => {
+router.post("/api/bets", requireAuth, requireOwnership, async (req, res) => {
   try {
     const {
       user_id,
@@ -662,7 +662,7 @@ router.delete("/api/bets/:betId", async (req, res) => {
 // ===== ПРОГНОЗЫ НА СЧЕТ =====
 
 // POST /api/score-predictions - Создать/обновить прогноз на счет
-router.post("/api/score-predictions", requireOwnership, async (req, res) => {
+router.post("/api/score-predictions", requireAuth, requireOwnership, async (req, res) => {
   try {
     const { user_id, match_id, score_team1, score_team2 } = req.body;
 
@@ -826,7 +826,7 @@ router.post("/api/score-predictions", requireOwnership, async (req, res) => {
 });
 
 // POST /api/cards-predictions - Создать/обновить прогноз на карточки
-router.post("/api/cards-predictions", requireOwnership, async (req, res) => {
+router.post("/api/cards-predictions", requireAuth, requireOwnership, async (req, res) => {
   try {
     const { user_id, match_id, yellow_cards, red_cards } = req.body;
 

@@ -3348,8 +3348,21 @@ export async function startBot() {
               return;
             }
             
+            // Получаем данные пользователя для уведомления админу
+            const participantsRes = await fetch(`${SERVER_URL}/api/participants`);
+            const allParticipants = participantsRes.ok ? await participantsRes.json() : [];
+            const betUser = allParticipants.find(p => p.id === userId);
+            
+            // Получаем данные турнира
+            const eventRes = await fetch(`${SERVER_URL}/api/events`);
+            const allEvents = eventRes.ok ? await eventRes.json() : [];
+            const betEvent = allEvents.find(e => e.id === eventId);
+            
             // Делаем рандомные ставки
             const results = [];
+            let scorePredictionsCount = 0;
+            let cardsPredictionsCount = 0;
+            
             for (const match of matchesToBet) {
               // Генерируем счёт через Пуассон-распределение (λ = 1.3)
               const team1Score = poissonRandom(1.3);
@@ -3371,7 +3384,7 @@ export async function startBot() {
               
               try {
                 // Ставка на результат
-                await authFetch(`${SERVER_URL}/api/bets`, {
+                const betRes = await authFetch(`${SERVER_URL}/api/bets`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -3382,9 +3395,15 @@ export async function startBot() {
                   })
                 });
                 
+                if (!betRes.ok) {
+                  const errBody = await betRes.text().catch(() => '');
+                  console.error(`Error betting on match ${match.id}: HTTP ${betRes.status} - ${errBody}`);
+                  continue;
+                }
+                
                 // Прогноз на счет
                 if (match.score_prediction_enabled) {
-                  await authFetch(`${SERVER_URL}/api/score-predictions`, {
+                  const scoreRes = await authFetch(`${SERVER_URL}/api/score-predictions`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -3394,11 +3413,12 @@ export async function startBot() {
                       score_team2: team2Score
                     })
                   });
+                  if (scoreRes.ok) scorePredictionsCount++;
                 }
                 
                 // Прогноз на карточки
                 if (match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled) {
-                  await authFetch(`${SERVER_URL}/api/cards-predictions`, {
+                  const cardsRes = await authFetch(`${SERVER_URL}/api/cards-predictions`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -3408,6 +3428,7 @@ export async function startBot() {
                       red_cards: match.red_cards_prediction_enabled ? redCards : null
                     })
                   });
+                  if (cardsRes.ok) cardsPredictionsCount++;
                 }
                 
                 results.push({
@@ -3421,24 +3442,15 @@ export async function startBot() {
               }
             }
             
-            // Подсчитываем статистику для уведомления админу
-            let scorePredictionsCount = 0;
-            let cardsPredictionsCount = 0;
-            
-            results.forEach(result => {
-              if (result.score !== 'Не ставилось') scorePredictionsCount++;
-              if (result.cards !== 'Не ставилось') cardsPredictionsCount++;
-            });
-            
             // Отправляем уведомление админу
             try {
               const luckyMessage = `🎲 СЛУЧАЙНАЯ СТАВКА
 
-👤 Пользователь: ${user.username}
-🆔 ID: ${user.id}
-${user.telegram_username ? `📱 Telegram: @${user.telegram_username}` : ""}
+👤 Пользователь: ${betUser ? betUser.username : 'ID ' + userId}
+🆔 ID: ${userId}
+${betUser?.telegram_username ? `📱 Telegram: @${betUser.telegram_username}` : ""}
 
-🏆 Турнир: ${event.name}
+🏆 Турнир: ${betEvent ? betEvent.name : 'ID ' + eventId}
 🎯 Тур: ${round}
 ⚽ Матчей: ${results.length}
 
@@ -3451,6 +3463,18 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
               await sendAdminNotification(luckyMessage);
             } catch (err) {
               console.error("Ошибка отправки уведомления админу о случайной ставке:", err);
+            }
+            
+            if (results.length === 0) {
+              await bot.editMessageText(
+                `🎲 <b>Случайная ставка</b>\n\n<i>Не удалось сделать ни одной ставки. Попробуйте позже.</i>`,
+                {
+                  chat_id: chatId,
+                  message_id: msg.message_id,
+                  parse_mode: "HTML"
+                }
+              );
+              return;
             }
             
             // Формируем сообщение с результатами
