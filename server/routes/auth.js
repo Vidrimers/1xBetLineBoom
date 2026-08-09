@@ -660,7 +660,7 @@ router.post("/api/auth/telegram-link", async (req, res) => {
       return res.status(403).json({ error: "Invalid or expired token" });
     }
 
-    const user = db.prepare("SELECT id, username, telegram_id, telegram_username, is_admin FROM users WHERE id = ?").get(decoded.user_id);
+    const user = db.prepare("SELECT id, username, telegram_id, telegram_username FROM users WHERE id = ?").get(decoded.user_id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const sessionCreationToken = generateSessionCreationToken(user.id);
@@ -696,7 +696,7 @@ router.post("/api/auth/telegram-miniapp", async (req, res) => {
     const telegramId = tgUser.id;
     if (!telegramId) return res.status(400).json({ error: "User ID not found in initData" });
 
-    const user = db.prepare("SELECT id, username, telegram_id, telegram_username, is_admin FROM users WHERE telegram_id = ?").get(telegramId);
+    const user = db.prepare("SELECT id, username, telegram_id, telegram_username FROM users WHERE telegram_id = ?").get(telegramId);
     if (!user) return res.status(404).json({ error: "Telegram not linked. Use /start in bot first." });
 
     const sessionCreationToken = generateSessionCreationToken(user.id);
