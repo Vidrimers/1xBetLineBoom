@@ -687,7 +687,12 @@ router.post("/api/auth/telegram-miniapp", async (req, res) => {
     dataCheckString.delete('hash');
     dataCheckString.sort();
 
-    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString.toString()).digest('hex');
+    // Telegram требует разделитель \n, а не &
+    const dataCheckStringFormatted = [...dataCheckString.entries()]
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
+
+    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckStringFormatted).digest('hex');
     if (computedHash !== hash) {
       return res.status(403).json({ error: "Invalid initData" });
     }
