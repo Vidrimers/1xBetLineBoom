@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import { db } from '../database/db.js';
 import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
@@ -9,6 +10,15 @@ import { writeBetLog } from '../utils/logger.js';
 import { findSimilarUsername } from '../utils/helpers.js';
 
 const router = Router();
+
+// Rate limiter для auth-эндпоинтов: 10 запросов в минуту с одного IP
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many requests, try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Хранилище кодов подтверждения (в памяти)
 const confirmationCodes = new Map();
@@ -80,7 +90,7 @@ router.post("/api/notify-admin-login-attempt", async (req, res) => {
 });
 
 // POST /api/user
-router.post("/api/user", async (req, res) => {
+router.post("/api/user", authLimiter, async (req, res) => {
   try {
     const { username, skipSimilarCheck } = req.body;
 
@@ -344,7 +354,7 @@ router.post("/api/user/login/confirm", async (req, res) => {
 });
 
 // POST /api/telegram-auth/create-token - Создать токен для авторизации через Telegram
-router.post("/api/telegram-auth/create-token", async (req, res) => {
+router.post("/api/telegram-auth/create-token", authLimiter, async (req, res) => {
   try {
     const { auth_token, device_info, browser, os } = req.body;
     
@@ -645,7 +655,7 @@ function generateSessionCreationToken(userId) {
 }
 
 // POST /api/auth/telegram-link — авто-логин по JWT из URL-кнопки бота
-router.post("/api/auth/telegram-link", async (req, res) => {
+router.post("/api/auth/telegram-link", authLimiter, async (req, res) => {
   try {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: "Token required" });
@@ -672,7 +682,7 @@ router.post("/api/auth/telegram-link", async (req, res) => {
 });
 
 // POST /api/auth/telegram-miniapp — авто-логин через Telegram Mini App (initData)
-router.post("/api/auth/telegram-miniapp", async (req, res) => {
+router.post("/api/auth/telegram-miniapp", authLimiter, async (req, res) => {
   try {
     const { initData } = req.body;
     if (!initData) return res.status(400).json({ error: "initData required" });
@@ -1226,7 +1236,7 @@ router.post("/api/user/:userId/telegram/confirm-delete", requireOwnership, async
 });
 
 // POST /api/sessions - Создать новую сессию
-router.post("/api/sessions", async (req, res) => {
+router.post("/api/sessions", authLimiter, async (req, res) => {
   try {
     const { user_id, device_info, browser, os, sessionCreationToken } = req.body;
 
