@@ -4523,27 +4523,31 @@
             <div id="parsePreviewContainer" style="display: none; margin-top: 20px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h3 style="margin: 0; color: #7ab0e0;"><svg class="icon" aria-hidden="true"><use href="#icon-members"></use></svg> Превью матчей</h3>
-                <button 
-                  type="button" 
-                  onclick="loadParsePreview()" 
-                  style="
-                    padding: 8px 16px;
-                    background: rgba(58, 123, 213, 0.2);
-                    border: 1px solid #3a7bd5;
-                    color: #e0e6f0;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 0.9em;
-                  "
-                >
-                  <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить
-                </button>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                  <label id="selectAllRoundsLabel" style="display: none; align-items: center; gap: 6px; cursor: pointer; color: #b0b8c8; font-size: 0.9em;">
+                    <input type="checkbox" id="selectAllRounds" onchange="toggleAllRounds(this.checked)" style="cursor: pointer; width: 16px; height: 16px;" />
+                    Выбрать все
+                  </label>
+                  <button 
+                    type="button" 
+                    onclick="loadParsePreview()" 
+                    style="
+                      padding: 8px 16px;
+                      background: rgba(58, 123, 213, 0.2);
+                      border: 1px solid #3a7bd5;
+                      color: #e0e6f0;
+                      border-radius: 4px;
+                      cursor: pointer;
+                      font-size: 0.9em;
+                    "
+                  >
+                    <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить
+                  </button>
+                </div>
               </div>
               <div 
                 id="parsePreviewList" 
                 style="
-                  max-height: 400px;
-                  overflow-y: auto;
                   background: rgba(40, 44, 54, 0.5);
                   border: 1px solid rgba(90, 159, 212, 0.3);
                   border-radius: 8px;

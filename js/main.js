@@ -613,7 +613,7 @@ Object.assign(window, {
   openMatchTeamFileSelector, selectMatchTeamFile, closeMatchTeamFileSelector,
   initTeamAutocomplete, updateSelectedItem, selectTeam, hideSuggestions,
   toggleTeamDropdown, loadRoundsForModal, selectExistingRound,
-  loadParsePreview, toggleRoundSelection, submitBulkParse, updateParsePreview,
+  loadParsePreview, toggleRoundSelection, toggleAllRounds, submitBulkParse, updateParsePreview,
   // matchEdit
   toggleFinalMatch, openEditMatchModal, closeEditMatchModal, submitEditMatch,
   deleteMatch, openFinalMatchResultModal, closeFinalMatchResultModal,

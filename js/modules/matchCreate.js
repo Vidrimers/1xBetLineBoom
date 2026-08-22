@@ -483,6 +483,10 @@ export async function openBulkParseModal() {
   document.getElementById('parseRound').value = '';
   document.getElementById('parsePreviewContainer').style.display = 'none';
   document.getElementById('bulkParseSubmitBtn').disabled = true;
+  const selectAllLabel = document.getElementById('selectAllRoundsLabel');
+  if (selectAllLabel) selectAllLabel.style.display = 'none';
+  const selectAllCb = document.getElementById('selectAllRounds');
+  if (selectAllCb) selectAllCb.checked = false;
   parsedMatches = [];
 }
 
@@ -755,11 +759,15 @@ export async function loadParsePreview() {
     `;
 
     document.getElementById('bulkParseSubmitBtn').disabled = false;
+    const selectAllLabel = document.getElementById('selectAllRoundsLabel');
+    if (selectAllLabel) selectAllLabel.style.display = Object.keys(matchesByRound).length > 1 ? 'flex' : 'none';
 
   } catch (error) {
     console.error('Ошибка при загрузке превью:', error);
     previewList.innerHTML = `<div style="text-align: center; color: #f44336; padding: 20px;"><svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Ошибка: ${error.message}</div>`;
     document.getElementById('bulkParseSubmitBtn').disabled = true;
+    const selectAllLabel = document.getElementById('selectAllRoundsLabel');
+    if (selectAllLabel) selectAllLabel.style.display = 'none';
   } finally {
     updateBtn.disabled = false;
     updateBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg> Обновить';
@@ -783,6 +791,14 @@ export function toggleRoundSelection(roundName) {
     roundInput.value = '';
     roundInput.disabled = true;
   }
+}
+
+export function toggleAllRounds(checked) {
+  document.querySelectorAll('[id^="round_"]').forEach(cb => {
+    cb.checked = checked;
+  });
+  // Вызываем toggleRoundSelection для обновления поля "Тур"
+  toggleRoundSelection('');
 }
 
 // Отправить форму парсинга
