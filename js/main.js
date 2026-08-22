@@ -162,6 +162,7 @@ import {
   selectExistingRound,
   loadParsePreview,
   toggleRoundSelection,
+  toggleAllRounds,
   submitBulkParse,
   updateParsePreview,
 } from './modules/matchCreate.js';
