@@ -866,6 +866,7 @@ router.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
           m.round as round,
           m.match_date,
           0 as is_final_bet,
+          e.diff_goals_enabled,
           CASE WHEN m.score_prediction_enabled = 1 THEN sp.score_team1 ELSE NULL END as score_team1,
           CASE WHEN m.score_prediction_enabled = 1 THEN sp.score_team2 ELSE NULL END as score_team2,
           ms.score_team1 as actual_score_team1,
@@ -897,6 +898,7 @@ router.get("/api/event/:eventId/participant/:userId/bets", async (req, res) => {
           END as actual_result
         FROM bets b
         JOIN matches m ON b.match_id = m.id
+        JOIN events e ON m.event_id = e.id
         LEFT JOIN score_predictions sp ON sp.user_id = b.user_id AND sp.match_id = b.match_id
         LEFT JOIN match_scores ms ON ms.match_id = b.match_id
         LEFT JOIN cards_predictions cp ON cp.user_id = b.user_id AND cp.match_id = b.match_id

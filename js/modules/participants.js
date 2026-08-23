@@ -972,7 +972,8 @@ export function displayTournamentParticipantBets(bets) {
                 }
               </div>
               ${
-                // Разница голов: только если матч выигран, не ничья, счёт не угадан точно, но разница совпала
+                // Разница голов: только если включена в турнире, матч выигран, не ничья, счёт не угадан точно, но разница совпала
+                bet.diff_goals_enabled === 1 &&
                 bet.result === 'won' &&
                 bet.actual_score_team1 != null && bet.actual_score_team2 != null &&
                 bet.actual_result !== 'Ничья' &&

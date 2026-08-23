@@ -10,6 +10,7 @@ import { normalizeTeamNameForAPI, translateTeamNameToEnglish } from '../utils/he
 import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIllegalBet } from '../../OnexBetLineBoombot.js';
 import { registerCallbackHandler } from '../../OnexBetLineBoombot.js';
 import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR, ICON_TO_COMPETITION, SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING } from '../config.js';
+import { processedDates, checkDateCompletion, updateMatchesFromAPI, saveProcessedDate, getTimezoneOffset } from '../services/autoCountingService.js';
 
 const router = Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -2806,6 +2807,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
         m.score_prediction_enabled,
         m.yellow_cards_prediction_enabled,
         m.red_cards_prediction_enabled,
+        e.diff_goals_enabled,
         sp.score_team1 as predicted_score_team1,
         sp.score_team2 as predicted_score_team2,
         cp.yellow_cards as predicted_yellow_cards,
@@ -2837,6 +2839,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
           points: 0,
           correctResults: 0,
           correctScores: 0,
+          correctDiff: 0,
           correctYellowCards: 0,
           correctRedCards: 0
         };
@@ -2867,6 +2870,20 @@ router.post("/api/admin/recount-results", async (req, res) => {
             bet.predicted_score_team2 === bet.actual_score_team2) {
           userStats[username].points++;
           userStats[username].correctScores++;
+        }
+
+        // Проверяем разницу голов (только если включена в турнире, не ничья, не угадан точный счёт)
+        if (bet.diff_goals_enabled === 1 &&
+            bet.score_prediction_enabled === 1 &&
+            bet.predicted_score_team1 != null && bet.predicted_score_team2 != null &&
+            bet.winner !== 'draw' &&
+            !(bet.predicted_score_team1 === bet.actual_score_team1 && bet.predicted_score_team2 === bet.actual_score_team2)) {
+          const predictedDiff = bet.predicted_score_team1 - bet.predicted_score_team2;
+          const actualDiff = bet.actual_score_team1 - bet.actual_score_team2;
+          if (predictedDiff === actualDiff) {
+            userStats[username].points++;
+            userStats[username].correctDiff++;
+          }
         }
         
         // Проверяем желтые карточки (только если включен прогноз на желтые карточки для этого матча)
@@ -2925,6 +2942,9 @@ router.post("/api/admin/recount-results", async (req, res) => {
         }
         if (stats.correctScores > 0) {
           statsText.push(`🎯 ${stats.correctScores}`);
+        }
+        if (stats.correctDiff > 0) {
+          statsText.push(`⚖️ ${stats.correctDiff}`);
         }
         if (stats.correctYellowCards > 0) {
           statsText.push(`🟨 ${stats.correctYellowCards}`);

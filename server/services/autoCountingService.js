@@ -734,4 +734,5 @@ export {
   updateMatchesFromAPI,
   triggerAutoCountingForDate,
   checkAndAutoCount,
+  getTimezoneOffset,
 };
