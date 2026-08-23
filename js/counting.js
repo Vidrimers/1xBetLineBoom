@@ -1,5 +1,21 @@
 // ===== ПОДСЧЁТ =====
 
+// Маппинг иконок турниров на коды
+const ICON_TO_COMPETITION = {
+  'img/cups/champions-league.png': 'CL',
+  'img/cups/european-league.png': 'EL',
+  'img/cups/conference-league.png': 'ECL',
+  'img/cups/england-premier-league.png': 'PL',
+  'img/cups/bundesliga.png': 'BL1',
+  'img/cups/spain-la-liga.png': 'PD',
+  'img/cups/serie-a.png': 'SA',
+  'img/cups/france-league-ligue-1.png': 'FL1',
+  'img/cups/rpl.png': 'RPL',
+  'img/cups/world-cup.png': 'WC',
+  'img/cups/uefa-euro.png': 'EC',
+  '🇳🇱': 'DED'
+};
+
 // Маппинг кодов турниров на файлы словарей команд
 const COMPETITION_DICTIONARY_MAPPING = {
   'CL': '/names/LeagueOfChampionsTeams.json',
@@ -246,7 +262,14 @@ export async function updateCountingResults() {
     }
 
     const bets = await response.json();
-    displayCountingBets(bets, dateFrom, dateTo);
+
+    // Фильтруем ставки по выбранному турниру
+    const filteredBets = bets.filter(bet => {
+      const betCompetition = ICON_TO_COMPETITION[bet.event_icon];
+      return betCompetition === selectedCompetition;
+    });
+
+    displayCountingBets(filteredBets, dateFrom, dateTo);
   } catch (error) {
     console.error("Ошибка:", error);
     document.getElementById("countingResults").innerHTML =
@@ -459,6 +482,18 @@ export async function calculateCountingResults() {
       return;
     }
 
+    // Фильтруем ставки по выбранному турниру
+    const filteredBets = bets.filter(bet => {
+      const betCompetition = ICON_TO_COMPETITION[bet.event_icon];
+      return betCompetition === selectedCompetition;
+    });
+
+    if (filteredBets.length === 0) {
+      resultsDiv.innerHTML =
+        '<div class="empty-message">Нет ставок для выбранного турнира за этот период</div>';
+      return;
+    }
+
     // Получаем матчи через серверный прокси
     const matchesResponse = await fetch(
       `/api/fd-matches?competition=${encodeURIComponent(
@@ -477,7 +512,7 @@ export async function calculateCountingResults() {
     const matches = matchesData.matches || [];
 
     // Проверяем ставки и определяем результаты
-    const results = checkBetsResults(bets, matches);
+    const results = checkBetsResults(filteredBets, matches);
 
     // Пытаемся подтвердить результаты для матчей (обновляем статус и победителя)
     await confirmMatchesFromCounting(results);
@@ -486,7 +521,7 @@ export async function calculateCountingResults() {
     await loadMyBets();
 
     // Отображаем результаты
-    displayCalculationResults(results, bets);
+    displayCalculationResults(results, filteredBets);
 
     // Отправляем уведомление в Telegram
     try {
@@ -632,6 +667,8 @@ function checkBetsResults(bets, fdMatches) {
   const results = [];
 
   bets.forEach((bet) => {
+    const diffGoalsEnabled = bet.diff_goals_enabled === 1;
+
     // Ищем матч в результатах Football-Data
     const matchedFdMatch = fdMatches.find((m) => {
       const homeTeamNormalized = normalizeForComparison(m.homeTeam.name);
@@ -678,8 +715,8 @@ function checkBetsResults(bets, fdMatches) {
         hasScorePrediction = true;
         scoreIsWon = (bet.score_team1 === homeScore && bet.score_team2 === awayScore);
 
-        // Разница голов — только если не ничья и не угадан точный счёт
-        if (!scoreIsWon && result !== 'draw' && isWon) {
+        // Разница голов — только если включена в турнире, не ничья, не угадан точный счёт
+        if (diffGoalsEnabled && !scoreIsWon && result !== 'draw' && isWon) {
           const predictedDiff = bet.score_team1 - bet.score_team2;
           const actualDiff = homeScore - awayScore;
           diffIsWon = (predictedDiff === actualDiff);
@@ -700,7 +737,7 @@ function checkBetsResults(bets, fdMatches) {
     } else {
       // Логируем ненайденный матч
       console.warn(`⚠ Матч не найден: ${bet.team1_name} vs ${bet.team2_name}`);
-      
+
       results.push({
         ...bet,
         result: "not_found",
@@ -754,7 +791,7 @@ function displayCalculationResults(results, originalBets) {
         grouped[key].scoreWon++;
       } else {
         grouped[key].scoreLost++;
-        if (result.diffIsWon) {
+        if (result.diff_goals_enabled === 1 && result.diffIsWon) {
           grouped[key].diffWon++;
         }
       }
@@ -836,8 +873,8 @@ function displayCalculationResults(results, originalBets) {
               ${scoreIcon} Прогноз счета: <strong style="color: ${scoreColor};">${bet.score_team1}:${bet.score_team2}</strong> | Факт: <strong>${bet.actualScore.home}:${bet.actualScore.away}</strong>
             </div>
           `;
-          // Разница голов — показываем если не угадан точный счёт, но угадана разница
-          if (!bet.scoreIsWon && bet.diffIsWon) {
+          // Разница голов — показываем если включена, не угадан точный счёт, но угадана разница
+          if (bet.diff_goals_enabled === 1 && !bet.scoreIsWon && bet.diffIsWon) {
             scorePredictionHtml += `
             <div style="font-size: 0.85em; margin-bottom: 4px; padding: 4px 6px; background: rgba(76, 175, 80, 0.15); border-radius: 4px; border-left: 2px solid #4caf50;">
               ⚖️ Разница голов угадана: <strong style="color: #4caf50;">+1 очко</strong>

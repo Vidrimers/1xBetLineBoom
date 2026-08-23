@@ -112,6 +112,8 @@ router.get("/api/counting-bets", (req, res) => {
         m.is_final,
         m.match_date,
         e.name as event_name,
+        e.icon as event_icon,
+        e.diff_goals_enabled,
         sp.score_team1,
         sp.score_team2
       FROM bets b
