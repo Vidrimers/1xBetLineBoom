@@ -33,7 +33,7 @@ const COMPETITION_DICTIONARY_MAPPING = {
 };
 
 // Переменная для хранения выбранной лиги
-let selectedCompetition = "CL"; // По умолчанию Champions League
+let selectedCompetition = "ALL"; // По умолчанию все турниры
 
 // Маппинг команд из JSON файлов (русское название -> английское из API)
 let teamMappings = {};
@@ -180,6 +180,9 @@ export function loadCounting() {
       </div>
 
       <div class="countTournaments" style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; justify-content: center;">
+        <button id="comp-ALL" onclick="selectCompetition('ALL')" title="Все турниры">
+          🌐 Все
+        </button>
         <button id="comp-WC" onclick="selectCompetition('WC')" title="World Cup">
           <img src="img/cups/world-cup.png" alt="WC" style="width: 20px; height: 20px; object-fit: contain;" />
           World Cup
@@ -237,8 +240,8 @@ export function loadCounting() {
     // Автоматически загружаем ставки на сегодня
     updateCountingResults();
 
-    // Подсветим кнопку выбранной лиги по умолчанию (CL)
-    selectCompetition(selectedCompetition || "CL");
+    // Подсветим кнопку выбранной лиги по умолчанию (ALL)
+    selectCompetition(selectedCompetition || "ALL");
   }
 }
 
@@ -263,8 +266,8 @@ export async function updateCountingResults() {
 
     const bets = await response.json();
 
-    // Фильтруем ставки по выбранному турниру
-    const filteredBets = bets.filter(bet => {
+    // Фильтруем ставки по выбранному турниру (ALL — без фильтра)
+    const filteredBets = selectedCompetition === 'ALL' ? bets : bets.filter(bet => {
       const betCompetition = ICON_TO_COMPETITION[bet.event_icon];
       return betCompetition === selectedCompetition;
     });
@@ -413,12 +416,21 @@ export function selectCompetition(code) {
   
   console.log(`🏆 Выбран турнир: ${code}`);
   
-  // Загружаем маппинг команд для выбранного турнира
-  loadTeamMapping(code).then(mapping => {
-    teamMappings = mapping;
-    console.log(`📋 Маппинг команд для ${code} загружен:`, mapping);
-    console.log(`📊 Количество команд в маппинге: ${Object.keys(mapping).length}`);
-  });
+  // Загружаем маппинг команд для выбранного турнира (для ALL — все маппинги)
+  if (code === 'ALL') {
+    Promise.all(
+      Object.keys(COMPETITION_DICTIONARY_MAPPING).map(comp => loadTeamMapping(comp))
+    ).then(mappings => {
+      teamMappings = Object.assign({}, ...mappings);
+      console.log(`📋 Загружены все маппинга команд: ${Object.keys(teamMappings).length} команд`);
+    });
+  } else {
+    loadTeamMapping(code).then(mapping => {
+      teamMappings = mapping;
+      console.log(`📋 Маппинг команд для ${code} загружен:`, mapping);
+      console.log(`📊 Количество команд в маппинге: ${Object.keys(mapping).length}`);
+    });
+  }
   
   const competitionNames = {
     WC: "World Cup",
@@ -482,8 +494,8 @@ export async function calculateCountingResults() {
       return;
     }
 
-    // Фильтруем ставки по выбранному турниру
-    const filteredBets = bets.filter(bet => {
+    // Фильтруем ставки по выбранному турниру (ALL — без фильтра)
+    const filteredBets = selectedCompetition === 'ALL' ? bets : bets.filter(bet => {
       const betCompetition = ICON_TO_COMPETITION[bet.event_icon];
       return betCompetition === selectedCompetition;
     });
@@ -494,25 +506,39 @@ export async function calculateCountingResults() {
       return;
     }
 
-    // Получаем матчи через серверный прокси
-    const matchesResponse = await fetch(
-      `/api/fd-matches?competition=${encodeURIComponent(
-        selectedCompetition
-      )}&dateFrom=${dateFrom}&dateTo=${dateTo}`
-    );
+    // Получаем матчи — для ALL запрашиваем по каждому турниру отдельно
+    let allMatches = [];
 
-    if (!matchesResponse.ok) {
-      const errorText = await matchesResponse.text();
-      throw new Error(
-        `Ошибка при загрузке матчей: ${errorText || matchesResponse.statusText}`
+    if (selectedCompetition === 'ALL') {
+      const competitions = [...new Set(filteredBets.map(b => ICON_TO_COMPETITION[b.event_icon]).filter(Boolean))];
+
+      for (const comp of competitions) {
+        try {
+          const resp = await fetch(`/api/fd-matches?competition=${encodeURIComponent(comp)}&dateFrom=${dateFrom}&dateTo=${dateTo}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            allMatches.push(...(data.matches || []));
+          }
+        } catch (e) {
+          console.warn(`⚠ Не удалось загрузить матчи для ${comp}:`, e.message);
+        }
+      }
+    } else {
+      const matchesResponse = await fetch(
+        `/api/fd-matches?competition=${encodeURIComponent(selectedCompetition)}&dateFrom=${dateFrom}&dateTo=${dateTo}`
       );
+
+      if (!matchesResponse.ok) {
+        const errorText = await matchesResponse.text();
+        throw new Error(`Ошибка при загрузке матчей: ${errorText || matchesResponse.statusText}`);
+      }
+
+      const matchesData = await matchesResponse.json();
+      allMatches = matchesData.matches || [];
     }
 
-    const matchesData = await matchesResponse.json();
-    const matches = matchesData.matches || [];
-
     // Проверяем ставки и определяем результаты
-    const results = checkBetsResults(filteredBets, matches);
+    const results = checkBetsResults(filteredBets, allMatches);
 
     // Пытаемся подтвердить результаты для матчей (обновляем статус и победителя)
     await confirmMatchesFromCounting(results);
