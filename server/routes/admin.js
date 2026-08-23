@@ -2815,6 +2815,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
       FROM bets b
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
+      JOIN events e ON m.event_id = e.id
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date${offsetMod}) = ?
