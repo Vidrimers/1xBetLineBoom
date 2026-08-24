@@ -267,7 +267,7 @@ ${mentions}
 
 💬 Не забудьте сделать прогноз, малютки!
 
-🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
 
         console.log(`⏰ Отправляем напоминание в группу для ${matches.length} матчей`);
         console.log(`📝 Сообщение: ${message.substring(0, 150)}...`);
@@ -382,10 +382,6 @@ async function checkAndNotifyUpcomingMatches() {
       const matchDate = matchDateTime.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
       const matchTime = matchDateTime.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
-      const matchesList = matches.map((m, index) =>
-        `${index + 1}. ⚽ <b>${m.team1_name}</b> vs <b>${m.team2_name}</b>`
-      ).join('\n');
-
       const matchWord = matches.length === 1 ? 'НАПОМИНАНИЕ О МАТЧЕ' : 'НАПОМИНАНИЕ О МАТЧАХ';
       const startWord = matches.length === 1 ? 'Матч начнется' : 'Матчи начнутся';
 
@@ -404,6 +400,16 @@ async function checkAndNotifyUpcomingMatches() {
           }
         }
 
+        const userBetMatchIds = db
+          .prepare(`SELECT DISTINCT match_id FROM bets WHERE user_id = ? AND match_id IN (${matchIds.join(',')})`)
+          .all(user.id)
+          .map(row => row.match_id);
+
+        const matchesListWithStatus = matches.map((m, index) => {
+          const status = userBetMatchIds.includes(m.id) ? '✅' : '❌';
+          return `${index + 1}. ⚽ <b>${m.team1_name}</b> vs <b>${m.team2_name}</b> ${status}`;
+        }).join('\n');
+
         const message = `⏰ <b>${matchWord}</b>
 
 ${startWord} через 3 часа!
@@ -411,11 +417,11 @@ ${startWord} через 3 часа!
 🕐 Время начала: <b>${matchDate} ${matchTime}</b>
 📅 Турнир: ${group.event_name}
 
-${matchesList}
+${matchesListWithStatus}
 
 ⏳ Успейте сделать ставку!
 
-🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
 
         try {
           const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -538,9 +544,15 @@ async function checkAndSendPersonalReminders() {
         const matchDate = matchDateTime.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
         const matchTime = matchDateTime.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
-        const matchesList = matches.map((m, index) =>
-          `${index + 1}. ⚽ <b>${m.team1_name}</b> vs <b>${m.team2_name}</b>`
-        ).join('\n');
+        const userBetMatchIds = db
+          .prepare(`SELECT DISTINCT match_id FROM bets WHERE user_id = ? AND match_id IN (${matchIds.join(',')})`)
+          .all(reminder.user_id)
+          .map(row => row.match_id);
+
+        const matchesListWithStatus = matches.map((m, index) => {
+          const status = userBetMatchIds.includes(m.id) ? '✅' : '❌';
+          return `${index + 1}. ⚽ <b>${m.team1_name}</b> vs <b>${m.team2_name}</b> ${status}`;
+        }).join('\n');
 
         const hoursText = reminder.hours_before === 1 ? 'час' :
                           reminder.hours_before < 5 ? 'часа' : 'часов';
@@ -551,7 +563,7 @@ async function checkAndSendPersonalReminders() {
 
 🏆 Турнир: ${reminder.event_name}
 
-${matchesList}
+${matchesListWithStatus}
 
 🕐 Начало через ${reminder.hours_before} ${hoursText}
 🕐 Время начала: <b>${matchDate} ${matchTime}</b>
@@ -616,7 +628,7 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
     if (description) message += `📝 ${description}\n\n`;
     if (dateText) message += `${dateText}\n\n`;
     message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
-    message += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
 
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -726,7 +738,7 @@ async function notifyTournamentToGroup(eventId, name, description, startDate, en
     if (description) message += `📝 ${description}\n\n`;
     if (dateText) message += `${dateText}\n\n`;
     message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
-    message += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
 
     const requestBody = {
       chat_id: TELEGRAM_CHAT_ID,
@@ -896,7 +908,7 @@ async function checkAndNotifyTournamentStart() {
       if (event.description) personalMessage += `${event.description}\n\n`;
       if (dateText) personalMessage += `${dateText}\n\n`;
       personalMessage += `Время делать прогнозы! Заходи и ставь 🎯\n\n`;
-      personalMessage += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+      personalMessage += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
 
       // Сообщение в группу (THREAD_ID)
       let groupMessage = `🚀 <b>ТУРНИР НАЧАЛСЯ!</b>\n\n`;
@@ -904,7 +916,7 @@ async function checkAndNotifyTournamentStart() {
       if (event.description) groupMessage += `${event.description}\n\n`;
       if (dateText) groupMessage += `${dateText}\n\n`;
       groupMessage += `Все на сайт — делаем прогнозы! ⚽🔥\n\n`;
-      groupMessage += `🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+      groupMessage += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
 
       // Отправляем в личку всем пользователям
       const users = db.prepare(
