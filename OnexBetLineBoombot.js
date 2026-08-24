@@ -330,31 +330,7 @@ async function smartSendMessage(chatIdOrMsg, text, options = {}) {
 
 // Функция для логирования действий пользователя админу
 async function logUserAction(msg, action) {
-  try {
-    const userId = msg.from?.id || "Unknown";
-
-    // Не логируем действия админа
-    if (userId == TELEGRAM_ADMIN_ID) {
-      return;
-    }
-
-    const username = msg.from?.username || msg.from?.first_name || "Unknown";
-    const chatId = msg.chat?.id || "Unknown";
-
-    const logMessage =
-      `ℹ️ <b>Действие пользователя:</b>\n` +
-      `👤 <b>Пользователь:</b> @${username} (ID: ${userId})\n` +
-      `📝 <b>Действие:</b> ${action}\n` +
-      `🕐 <b>Время:</b> ${new Date().toLocaleString("ru-RU")}\n` +
-      `🆔 <b>Chat ID:</b> ${chatId}`;
-
-    await sendAdminNotification(logMessage);
-  } catch (error) {
-    console.error(
-      "Ошибка при логировании действия пользователя:",
-      error.message
-    );
-  }
+  // Логирование действий пользователей отключено
 }
 
 // Функция для отправки уведомления только админу
