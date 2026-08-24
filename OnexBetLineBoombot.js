@@ -1458,8 +1458,8 @@ export async function startBot() {
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                { text: '🌐 С VPN', callback_data: 'link_vpn' },
+                { text: '🇷🇺 Без VPN', callback_data: 'link_novpn' }
               ]
             ]
           }
@@ -1882,8 +1882,8 @@ export async function startBot() {
             reply_markup: {
               inline_keyboard: [
                 [
-                  { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                  { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                  { text: '🌐 С VPN', callback_data: 'link_vpn' },
+                  { text: '🇷🇺 Без VPN', callback_data: 'link_novpn' }
                 ]
               ]
             }
@@ -1946,8 +1946,8 @@ export async function startBot() {
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                { text: '🌐 С VPN', callback_data: 'link_vpn' },
+                { text: '🇷🇺 Без VPN', callback_data: 'link_novpn' }
               ]
             ]
           }
@@ -2066,8 +2066,8 @@ export async function startBot() {
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                { text: '🌐 С VPN', callback_data: 'link_vpn' },
+                { text: '🇷🇺 Без VPN', callback_data: 'link_novpn' }
               ]
             ]
           }
@@ -2196,8 +2196,8 @@ export async function startBot() {
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                { text: '🌐 С VPN', callback_data: 'link_vpn' },
+                { text: '🇷🇺 Без VPN', callback_data: 'link_novpn' }
               ]
             ]
           }
@@ -2803,8 +2803,8 @@ export async function startBot() {
             reply_markup: {
               inline_keyboard: [
                 [
-                  { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                  { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                  { text: '🌐 С VPN', callback_data: 'link_vpn' },
+                  { text: '🇷🇺 Без VPN', callback_data: 'link_novpn' }
                 ]
               ]
             }
@@ -2855,6 +2855,52 @@ export async function startBot() {
         }
       }
       
+      // ===== ОБРАБОТКА КЛИКОВ ПО ССЫЛКАМ =====
+      if (data.startsWith("link_")) {
+        const linkType = data.replace(/_token$/, "");
+        const withToken = data.endsWith("_token");
+        const labels = {
+          link_vpn: "🌐 С VPN",
+          link_novpn: "🇷🇺 Без VPN",
+          link_miniapp: "📱 Открыть в Telegram"
+        };
+        const staticUrls = {
+          link_vpn: "https://1xbetlineboom.xyz",
+          link_novpn: "https://lol.1xbetlineboom.xyz",
+          link_miniapp: "https://1xbetlineboom.xyz"
+        };
+
+        let url = staticUrls[linkType] || staticUrls.link_vpn;
+
+        if (withToken) {
+          const MINIAPP_JWT_SECRET = process.env.MINIAPP_JWT_SECRET;
+          if (MINIAPP_JWT_SECRET) {
+            const { db: linkDb } = await import("./server/database/db.js");
+            const linkUser = linkDb.prepare("SELECT id, username FROM users WHERE telegram_id = ?").get(userId);
+            if (linkUser) {
+              const token = jwt.sign(
+                { user_id: linkUser.id, telegram_id: userId },
+                MINIAPP_JWT_SECRET,
+                { expiresIn: "5m" }
+              );
+              url += `?token=${token}`;
+            }
+          }
+        }
+
+        const label = labels[linkType] || "🔗 Ссылка";
+        const clickTime = new Date().toLocaleString("ru-RU");
+        sendAdminNotification(
+          `🔗 <b>Клик по ссылке</b>\n\n` +
+          `👤 ${username} (ID: ${userId})\n` +
+          `🔗 ${label}\n` +
+          `🕐 ${clickTime}`
+        ).catch(() => {});
+
+        await bot.answerCallbackQuery(callbackQuery.id, { url });
+        return;
+      }
+
       // ===== ОБРАБОТКА КНОПОК МЕНЮ =====
       if (data.startsWith("menu_")) {
         // Отвечаем на callback чтобы убрать "часики"
@@ -2922,17 +2968,6 @@ export async function startBot() {
                 break;
               }
 
-              // Генерируем JWT (5 минут)
-              const token = jwt.sign(
-                { user_id: user.id, telegram_id: userId },
-                MINIAPP_JWT_SECRET,
-                { expiresIn: '5m' }
-              );
-
-              const vpnUrl = `https://1xbetlineboom.xyz/?token=${token}`;
-              const noVpnUrl = `https://lol.1xbetlineboom.xyz/?token=${token}`;
-              const miniAppUrl = `https://1xbetlineboom.xyz/?token=${token}`;
-
               await bot.editMessageText(
                 '🌐 <b>Открыть сайт</b>\n\nВыберите способ доступа:',
                 {
@@ -2942,11 +2977,11 @@ export async function startBot() {
                   reply_markup: {
                     inline_keyboard: [
                       [
-                        { text: '🌐 С VPN', url: vpnUrl },
-                        { text: '🇷🇺 Без VPN', url: noVpnUrl }
+                        { text: '🌐 С VPN', callback_data: 'link_vpn_token' },
+                        { text: '🇷🇺 Без VPN', callback_data: 'link_novpn_token' }
                       ],
                       [
-                        { text: '📱 Открыть в Telegram', web_app: { url: miniAppUrl } }
+                        { text: '📱 Открыть в Telegram', callback_data: 'link_miniapp_token' }
                       ],
                       [
                         { text: '← Назад', callback_data: 'menu_back' }
@@ -3646,8 +3681,8 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
                 reply_markup: {
                   inline_keyboard: [
                     [
-                      { text: '🌐 С VPN', url: 'https://1xbetlineboom.xyz' },
-                      { text: '🇷🇺 Без VPN', url: 'https://lol.1xbetlineboom.xyz' }
+                      { text: '🌐 С VPN', callback_data: 'link_vpn' },
+                      { text: '🇷🇺 Без VPN', callback_data: 'link_novpn' }
                     ],
                     [
                       { text: '🔙 Назад', callback_data: `mybets_back_${userId}` },
