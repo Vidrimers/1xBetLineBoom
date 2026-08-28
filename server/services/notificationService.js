@@ -406,7 +406,8 @@ async function checkAndNotifyUpcomingMatches() {
           .map(row => row.match_id);
 
         const matchesListWithStatus = matches.map((m, index) => {
-          const status = userBetMatchIds.includes(m.id) ? '✅' : '❌';
+          const hasBet = userBetMatchIds.includes(m.id);
+          const status = hasBet ? '✅ Ставка принята' : '❌ Нет ставки';
           return `${index + 1}. ⚽ <b>${m.team1_name}</b> vs <b>${m.team2_name}</b> ${status}`;
         }).join('\n');
 
@@ -550,7 +551,8 @@ async function checkAndSendPersonalReminders() {
           .map(row => row.match_id);
 
         const matchesListWithStatus = matches.map((m, index) => {
-          const status = userBetMatchIds.includes(m.id) ? '✅' : '❌';
+          const hasBet = userBetMatchIds.includes(m.id);
+          const status = hasBet ? '✅ Ставка принята' : '❌ Нет ставки';
           return `${index + 1}. ⚽ <b>${m.team1_name}</b> vs <b>${m.team2_name}</b> ${status}`;
         }).join('\n');
 
