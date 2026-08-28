@@ -58,7 +58,7 @@ export async function placeBet(matchId, teamName, prediction) {
         (!bet.is_final_bet || bet.is_final_bet === 0)
     );
 
-    // Если уже есть обычная ставка на этот матч - удаляем её и прогноз на счет
+    // Если уже есть обычная ставка на этот матч - удаляем её (сервер также удалит прогнозы на счёт и карточки)
     if (existingBet) {
       await fetch(`/api/bets/${existingBet.id}`, {
         method: "DELETE",
@@ -69,20 +69,6 @@ export async function placeBet(matchId, teamName, prediction) {
           user_id: state.currentUser.id,
         }),
       });
-      
-      // Удаляем прогноз на счет
-      try {
-        await fetch(`/api/score-predictions/${matchId}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_id: state.currentUser.id,
-          }),
-        });
-      } catch (error) {
-      }
     }
 
     // Создаём новую ставку
