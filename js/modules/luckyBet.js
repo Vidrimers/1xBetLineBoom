@@ -153,6 +153,7 @@ export async function luckyBetForCurrentRound() {
   
   // Генерируем все ставки и собираем промисы для параллельной отправки
   const allPromises = [];
+  const generatedPredictions = []; // Для обновления state после отправки
   let scorePredictionsCount = 0;
   let cardsPredictionsCount = 0;
   
@@ -174,6 +175,17 @@ export async function luckyBetForCurrentRound() {
     // Генерируем карточки
     const yellowCards = poissonRandom(3.5);
     const redCards = weightedRedCards();
+    
+    // Сохраняем для обновления state
+    generatedPredictions.push({
+      matchId: match.id,
+      team1Score,
+      team2Score,
+      yellowCards,
+      redCards,
+      hasScore: match.score_prediction_enabled,
+      hasCards: match.yellow_cards_prediction_enabled || match.red_cards_prediction_enabled,
+    });
     
     // Ставка на результат
     allPromises.push(
@@ -229,6 +241,21 @@ export async function luckyBetForCurrentRound() {
     await Promise.all(allPromises);
   } catch (e) {
     console.error("Ошибка при отправке случайных ставок:", e);
+  }
+  
+  // Обновляем predicted_* значения в state.matches чтобы инпуты отобразились без перезагрузки
+  for (const pred of generatedPredictions) {
+    const match = matches.find(m => m.id === pred.matchId);
+    if (match) {
+      if (pred.hasScore) {
+        match.predicted_score_team1 = pred.team1Score;
+        match.predicted_score_team2 = pred.team2Score;
+      }
+      if (pred.hasCards) {
+        match.predicted_yellow_cards = pred.yellowCards;
+        match.predicted_red_cards = pred.redCards;
+      }
+    }
   }
   
   // Отправляем уведомление админу
