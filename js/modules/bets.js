@@ -107,6 +107,35 @@ export async function placeBet(matchId, teamName, prediction) {
       // НЕ очищаем кэш, чтобы сохранить старые значения для анимации
       if (typeof loadAndDisplayBetStats === 'function') await loadAndDisplayBetStats(matchId, true);
       
+      // Если была смена ставки — сбрасываем инпуты счёта и карточек
+      if (existingBet) {
+        setTimeout(() => {
+          // Сбрасываем счёт
+          const scoreTeam1Input = document.getElementById(`scoreTeam1_${matchId}`);
+          const scoreTeam2Input = document.getElementById(`scoreTeam2_${matchId}`);
+          if (scoreTeam1Input) {
+            scoreTeam1Input.value = '';
+            scoreTeam1Input.disabled = false;
+          }
+          if (scoreTeam2Input) {
+            scoreTeam2Input.value = '';
+            scoreTeam2Input.disabled = false;
+          }
+          
+          // Сбрасываем карточки
+          const yellowCardsInput = document.getElementById(`yellowCards_${matchId}`);
+          const redCardsInput = document.getElementById(`redCards_${matchId}`);
+          if (yellowCardsInput) {
+            yellowCardsInput.value = '';
+            yellowCardsInput.disabled = false;
+          }
+          if (redCardsInput) {
+            redCardsInput.value = '';
+            redCardsInput.disabled = false;
+          }
+        }, 100);
+      }
+      
       // Если ставка на ничью, синхронизируем инпуты счета
       if (prediction === 'draw') {
         setTimeout(() => {
