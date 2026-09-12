@@ -947,3 +947,18 @@ body.theme-cream-material .completed-days-earlier-btn:focus {
   transform: none !important;
   color: #7ab0e0 !important;
 }
+
+/* Bet popup */
+body.theme-cream-material .bet-popup {
+  background: #fffdf9 !important;
+  border-color: #e8e0d4 !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12) !important;
+}
+body.theme-cream-material .bet-popup-user:hover { background: rgba(0,0,0,0.04) !important; }
+body.theme-cream-material .bet-popup-avatar { background: #e8e0d4 !important; }
+body.theme-cream-material .bet-popup-name { color: #1c1b1f !important; }
+body.theme-cream-material .bet-popup-loading,
+body.theme-cream-material .bet-popup-empty,
+body.theme-cream-material .bet-popup-more { color: #49454f !important; }
+body.theme-cream-material .bet-popup-score { color: #6750a4 !important; background: rgba(103,80,164,0.12) !important; }
+body.theme-cream-material .bet-popup-more { border-top-color: rgba(0,0,0,0.08) !important; }

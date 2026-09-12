@@ -237,3 +237,18 @@ body.theme-cyberpunk {
   --input-bg: rgba(10, 0, 20, 0.9);
   --text-primary: #00ffff;
 }
+
+/* Bet popup */
+body.theme-cyberpunk .bet-popup {
+  background: #1a0a2e !important;
+  border-color: #ff00ff !important;
+  box-shadow: 0 8px 28px rgba(255,0,255,0.3) !important;
+}
+body.theme-cyberpunk .bet-popup-user:hover { background: rgba(255,0,255,0.1) !important; }
+body.theme-cyberpunk .bet-popup-avatar { background: #0a0014 !important; }
+body.theme-cyberpunk .bet-popup-name { color: #00ffff !important; }
+body.theme-cyberpunk .bet-popup-loading,
+body.theme-cyberpunk .bet-popup-empty,
+body.theme-cyberpunk .bet-popup-more { color: #ff00ff !important; }
+body.theme-cyberpunk .bet-popup-score { color: #ff00ff !important; background: rgba(255,0,255,0.15) !important; }
+body.theme-cyberpunk .bet-popup-more { border-top-color: rgba(255,0,255,0.3) !important; }

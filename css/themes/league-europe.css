@@ -213,3 +213,18 @@ body.theme-leagueEurope {
   --input-bg: rgba(26, 31, 46, 0.9);
   --text-primary: #ffffff;
 }
+
+/* Bet popup */
+body.theme-leagueEurope .bet-popup {
+  background: #252d3d !important;
+  border-color: #ffd700 !important;
+  box-shadow: 0 8px 28px rgba(255,215,0,0.25) !important;
+}
+body.theme-leagueEurope .bet-popup-user:hover { background: rgba(255,215,0,0.08) !important; }
+body.theme-leagueEurope .bet-popup-avatar { background: #1a1f2e !important; }
+body.theme-leagueEurope .bet-popup-name { color: #ffffff !important; }
+body.theme-leagueEurope .bet-popup-loading,
+body.theme-leagueEurope .bet-popup-empty,
+body.theme-leagueEurope .bet-popup-more { color: #b0b8c8 !important; }
+body.theme-leagueEurope .bet-popup-score { color: #ffd700 !important; background: rgba(255,215,0,0.12) !important; }
+body.theme-leagueEurope .bet-popup-more { border-top-color: rgba(255,215,0,0.2) !important; }

@@ -211,3 +211,18 @@ body.theme-leagueChampions {
   --input-bg: rgba(22, 36, 71, 0.9);
   --text-primary: #e8e8e8;
 }
+
+/* Bet popup */
+body.theme-leagueChampions .bet-popup {
+  background: #1f4068 !important;
+  border-color: #1b9ce5 !important;
+  box-shadow: 0 8px 28px rgba(27,156,229,0.3) !important;
+}
+body.theme-leagueChampions .bet-popup-user:hover { background: rgba(27,156,229,0.1) !important; }
+body.theme-leagueChampions .bet-popup-avatar { background: #162447 !important; }
+body.theme-leagueChampions .bet-popup-name { color: #e8e8e8 !important; }
+body.theme-leagueChampions .bet-popup-loading,
+body.theme-leagueChampions .bet-popup-empty,
+body.theme-leagueChampions .bet-popup-more { color: #7ab0e0 !important; }
+body.theme-leagueChampions .bet-popup-score { color: #1b9ce5 !important; background: rgba(27,156,229,0.15) !important; }
+body.theme-leagueChampions .bet-popup-more { border-top-color: rgba(27,156,229,0.3) !important; }
