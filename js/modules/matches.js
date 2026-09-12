@@ -4,6 +4,7 @@ import { loadRoundsOrder, saveRoundsOrderToStorage, sortRoundsByOrder } from './
 import { canManageMatches, canEditMatches, canDeleteMatches, canManageResults } from './admin.js';
 import { loadAndDisplayBetStats } from './betStats.js';
 import { showCustomAlert } from './ui.js';
+import { initBetPopup, closeBetPopup, clearBetPopupCache } from './betPopup.js';
 
 // Форматирование даты/времени матча
 function formatMatchTime(dateStr) {
@@ -1173,6 +1174,8 @@ export async function displayMatches() {
     });
   });
 
+  closeBetPopup();
+  clearBetPopupCache();
   matchesContainer.innerHTML = htmlContent;
 
   // Добавляем обработчики для disabled кнопок
@@ -1214,6 +1217,11 @@ export async function displayMatches() {
   initMatchResultToggles();
   initAdminActionToggles();
   initMatchRowClickHandlers();
+
+  // Инициализируем popup'ы ставок на каждом ряду матча
+  matchesContainer.querySelectorAll('.match-row').forEach(row => {
+    initBetPopup(row);
+  });
   
   // ===== ВОССТАНАВЛИВАЕМ ВВЕДЁННЫЕ ЗНАЧЕНИЯ =====
   if (Object.keys(savedInputValues).length > 0) {

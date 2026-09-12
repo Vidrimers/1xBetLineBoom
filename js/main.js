@@ -105,6 +105,7 @@ import {
   closeTournamentParticipantBetsModal,
 } from './modules/participants.js';
 import { loadProfile, displayProfile, loadUserAwards, getAwardIcon, openAvatarModal, closeAvatarModal, saveAvatar, deleteAvatar, editUsername, saveUsername } from './modules/profile.js';
+import { initBetPopupSystem } from './modules/betPopup.js';
 import {
   loadSettings,
   openTelegramBindInfoModal,
@@ -869,6 +870,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Загружаем конфиг сначала
   await loadConfig();
+
+  // Инициализируем систему popup'ов ставок
+  initBetPopupSystem();
 
   // Порядок туров загружается в loadMatches() после выбора турнира
 

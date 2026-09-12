@@ -1053,6 +1053,36 @@ router.get("/api/match-bet-stats/:matchId", (req, res) => {
   }
 });
 
+// GET /api/match-bet-users/:matchId?prediction=team1 - Получить список пользователей, сделавших ставку
+router.get("/api/match-bet-users/:matchId", (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { prediction } = req.query;
+
+    if (!prediction || !['team1', 'draw', 'team2'].includes(prediction)) {
+      return res.status(400).json({ error: "prediction обязателен: team1, draw или team2" });
+    }
+
+    const users = db.prepare(`
+      SELECT u.id, u.username, u.avatar,
+             sp.score_team1, sp.score_team2,
+             cp.yellow_cards, cp.red_cards
+      FROM bets b
+      JOIN users u ON u.id = b.user_id
+      LEFT JOIN score_predictions sp ON sp.user_id = b.user_id AND sp.match_id = b.match_id
+      LEFT JOIN cards_predictions cp ON cp.user_id = b.user_id AND cp.match_id = b.match_id
+      WHERE b.match_id = ? AND b.prediction = ?
+        AND (b.is_final_bet = 0 OR b.is_final_bet IS NULL)
+      ORDER BY b.created_at ASC
+    `).all(matchId, prediction);
+
+    res.json({ users });
+  } catch (error) {
+    console.error("Ошибка при получении пользователей ставок:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/final-parameters-results - Установить результаты финальных параметров
 router.post("/api/admin/final-parameters-results", async (req, res) => {
   const {
