@@ -524,6 +524,9 @@
 .bet-popup-user:hover {
   background: rgba(255,255,255,0.05);
 }
+.bet-popup-user.clickable {
+  cursor: pointer;
+}
 
 .bet-popup-avatar {
   width: 28px;

@@ -1,4 +1,5 @@
 import * as state from './state.js';
+import { showTournamentParticipantBets } from './participants.js';
 
 const POPUP_MAX_USERS = 10;
 let popupEl = null;
@@ -28,6 +29,16 @@ function ensurePopup() {
   });
   popupEl.addEventListener('mouseleave', () => {
     hideTimeout = setTimeout(closeBetPopup, 150);
+  });
+  // Клик на пользователя — открыть модалку ставок
+  popupEl.addEventListener('click', (e) => {
+    const userRow = e.target.closest('.bet-popup-user.clickable');
+    if (!userRow) return;
+    const userId = parseInt(userRow.dataset.userId, 10);
+    const username = userRow.dataset.username;
+    if (!userId || !state.currentEventId) return;
+    closeBetPopup();
+    showTournamentParticipantBets(userId, username, state.currentEventId);
   });
 }
 
@@ -78,7 +89,7 @@ function renderUsers(users) {
     const hasRed = u.red_cards != null;
 
     return `
-      <div class="bet-popup-user">
+      <div class="bet-popup-user clickable" data-user-id="${u.id}" data-username="${u.username.replace(/"/g, '&quot;')}">
         <img class="bet-popup-avatar" src="${avatarSrc}" alt="" loading="lazy">
         <span class="bet-popup-name">${u.username}</span>
         <span class="bet-popup-details">
