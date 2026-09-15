@@ -655,6 +655,14 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
           continue;
         }
 
+        const telegramEnabled = db.prepare(`
+          SELECT telegram_notifications_enabled FROM users WHERE id = ?
+        `).get(user.id);
+
+        if (telegramEnabled && telegramEnabled.telegram_notifications_enabled === 0) {
+          continue;
+        }
+
         const replyMarkup = {
           inline_keyboard: [
             [
@@ -1053,7 +1061,26 @@ async function notifyNewRoundsToUsers(eventId, eventName, roundNames, totalMatch
 
         if (telegramEnabled && telegramEnabled.telegram_notifications_enabled === 0) continue;
 
-        await sendUserMessage(user.telegram_id, message, { parse_mode: "HTML" });
+        const replyMarkup = {
+          inline_keyboard: [
+            [
+              { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+              { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+              { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+              { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+              { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
+            ],
+            [
+              { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+              { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+              { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+              { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+              { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
+            ]
+          ]
+        };
+
+        await sendUserMessage(user.telegram_id, message, { parse_mode: "HTML", reply_markup: replyMarkup });
         successCount++;
       } catch (error) {
         errorCount++;

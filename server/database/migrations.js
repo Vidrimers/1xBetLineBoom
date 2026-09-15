@@ -412,4 +412,12 @@ export function runMigrations() {
   } catch (e) {
     // Колонка уже существует, игнорируем
   }
+
+  // Миграция: добавляем type в pending_announcements
+  try {
+    db.prepare("ALTER TABLE pending_announcements ADD COLUMN type TEXT DEFAULT 'tournament'").run();
+    console.log("✅ Колонка type добавлена в таблицу pending_announcements");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
 }

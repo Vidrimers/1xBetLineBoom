@@ -167,6 +167,8 @@ import {
   submitBulkParse,
   updateParsePreview,
   sendBulkParseToAdmin,
+  closeRoundAnnouncementModal,
+  sendRoundAnnouncementToAdmin,
 } from './modules/matchCreate.js';
 import {
   toggleFinalMatch,
@@ -616,7 +618,7 @@ Object.assign(window, {
   openMatchTeamFileSelector, selectMatchTeamFile, closeMatchTeamFileSelector,
   initTeamAutocomplete, updateSelectedItem, selectTeam, hideSuggestions,
   toggleTeamDropdown, loadRoundsForModal, selectExistingRound,
-  loadParsePreview, toggleRoundSelection, toggleAllRounds, submitBulkParse, updateParsePreview, sendBulkParseToAdmin,
+  loadParsePreview, toggleRoundSelection, toggleAllRounds, submitBulkParse, updateParsePreview, sendBulkParseToAdmin, closeRoundAnnouncementModal, sendRoundAnnouncementToAdmin,
   // matchEdit
   toggleFinalMatch, openEditMatchModal, closeEditMatchModal, submitEditMatch,
   deleteMatch, openFinalMatchResultModal, closeFinalMatchResultModal,

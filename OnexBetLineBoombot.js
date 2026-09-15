@@ -3930,43 +3930,51 @@ ${cardsPredictionsCount > 0 ? `✅ Карточки: ${cardsPredictionsCount} и
         
         console.log(`📢 Найдено ${users.length} пользователей для рассылки`);
         
-        // Форматируем даты
-        let dateText = '';
-        if (announcement.start_date && announcement.end_date) {
-          const start = new Date(announcement.start_date).toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-          const end = new Date(announcement.end_date).toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-          dateText = `📅 Даты: ${start} - ${end}`;
-        } else if (announcement.start_date) {
-          const start = new Date(announcement.start_date).toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-          dateText = `📅 Начало: ${start}`;
+        // Формируем сообщение в зависимости от типа
+        let message;
+        const isRounds = announcement.type === 'rounds';
+        
+        if (isRounds) {
+          // Для туров используем готовое сообщение
+          message = announcement.message;
+        } else {
+          // Для турнира формируем как раньше
+          let dateText = '';
+          if (announcement.start_date && announcement.end_date) {
+            const start = new Date(announcement.start_date).toLocaleDateString("ru-RU", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+            const end = new Date(announcement.end_date).toLocaleDateString("ru-RU", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+            dateText = `📅 Даты: ${start} - ${end}`;
+          } else if (announcement.start_date) {
+            const start = new Date(announcement.start_date).toLocaleDateString("ru-RU", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+            dateText = `📅 Начало: ${start}`;
+          }
+          
+          message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
+          message += `<b>${announcement.name}</b>\n\n`;
+          
+          if (announcement.description) {
+            message += `📝 ${announcement.description}\n\n`;
+          }
+          
+          if (dateText) {
+            message += `${dateText}\n\n`;
+          }
+          
+          message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
+          message += `🔗 <a href="${PUBLIC_URL}">Открыть сайт</a>`;
         }
-        
-        // Формируем сообщение
-        let message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
-        message += `<b>${announcement.name}</b>\n\n`;
-        
-        if (announcement.description) {
-          message += `📝 ${announcement.description}\n\n`;
-        }
-        
-        if (dateText) {
-          message += `${dateText}\n\n`;
-        }
-        
-        message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
-        message += `🔗 <a href="${PUBLIC_URL}">Открыть сайт</a>`;
         
         // Отправляем каждому пользователю
         let successCount = 0;

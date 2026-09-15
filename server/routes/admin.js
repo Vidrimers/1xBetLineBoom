@@ -1810,6 +1810,63 @@ router.post("/api/admin/bulk-parse-notify-admin", async (req, res) => {
   }
 });
 
+// POST /api/admin/send-round-announcement - Отправить объявление о турах на одобрение админу
+router.post("/api/admin/send-round-announcement", async (req, res) => {
+  const { message, username } = req.body;
+  if (!message || !username) return res.status(400).json({ error: "message и username required" });
+
+  try {
+    const result = db.prepare(`
+      INSERT INTO pending_announcements (name, description, start_date, end_date, message, username, type)
+      VALUES (?, NULL, NULL, NULL, ?, ?, 'rounds')
+    `).run('Новые туры', message, username);
+
+    const announcementId = result.lastInsertRowid;
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const ADMIN_TELEGRAM_ID = process.env.TELEGRAM_ADMIN_ID;
+
+    if (TELEGRAM_BOT_TOKEN && ADMIN_TELEGRAM_ID) {
+      const isAdmin = username === process.env.ADMIN_DB_NAME;
+      const adminMessage = `📢 <b>ЗАПРОС НА ПУБЛИКАЦИЮ ТУРОВ</b>\n\n` +
+        `👤 От ${isAdmin ? 'админа' : 'модератора'}: <b>${username}</b>\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `${message}\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Нажмите кнопку ниже чтобы опубликовать объявление всем пользователям.`;
+
+      const response = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: ADMIN_TELEGRAM_ID,
+            text: adminMessage,
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "✅ Опубликовать всем", callback_data: `publish_${announcementId}` }],
+                [{ text: "❌ Отклонить", callback_data: `reject_${announcementId}` }]
+              ]
+            }
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("❌ Ошибка Telegram API:", error);
+        return res.status(500).json({ error: "Не удалось отправить сообщение админу" });
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Ошибка при отправке объявления о турах:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/notify-lucky-bet - Уведомить админа о случайной ставке
 router.post("/api/admin/notify-lucky-bet", async (req, res) => {
   const { userId, eventName, round, matchesCount, scorePredictions, cardsPredictions } = req.body;

@@ -486,8 +486,39 @@ router.post("/api/matches/bulk-create", async (req, res) => {
       matches: createdMatches,
     });
 
+    // Уведомление модератору о действии
+    const { sendToUsers, sendToGroup, eventId: frontendEventId, username } = req.body;
+    if (username) {
+      const isAdminUser = username === process.env.ADMIN_DB_NAME;
+      if (!isAdminUser) {
+        try {
+          const roundSet = new Set();
+          createdMatches.forEach(m => { if (m.round) roundSet.add(m.round); });
+          const roundNames = [...roundSet];
+          const details = `⚽ Турнир ID: ${frontendEventId || createdMatches[0]?.event_id}\n📌 Туры: ${roundNames.join(', ') || 'без туров'}\n🎯 Матчей: ${createdMatches.length}`;
+          await notifyModeratorAction(username, "Массовый парсинг матчей", details);
+        } catch (modErr) {
+          console.error('Ошибка уведомления модератору:', modErr);
+        }
+      }
+    }
+
+    // Создаём новость на сайте
+    try {
+      const eventId = frontendEventId || (createdMatches.length > 0 ? createdMatches[0].event_id : null);
+      const event = eventId ? db.prepare("SELECT name FROM events WHERE id = ?").get(eventId) : null;
+      const eventName = event?.name || 'Неизвестный турнир';
+      const roundSet = new Set();
+      createdMatches.forEach(m => { if (m.round) roundSet.add(m.round); });
+      const roundNames = [...roundSet];
+      const newsTitle = roundNames.length > 0 ? `Новые туры в ${eventName}: ${roundNames.join(', ')}` : `Новые матчи в ${eventName}`;
+      const newsMessage = `Добавлено ${createdMatches.length} матчей${roundNames.length > 0 ? ` (туры: ${roundNames.join(', ')})` : ''}. Делайте свои прогнозы!`;
+      db.prepare(`INSERT INTO news (type, title, message) VALUES (?, ?, ?)`).run('announcement', newsTitle, newsMessage);
+    } catch (newsErr) {
+      console.error('Ошибка создания новости:', newsErr);
+    }
+
     // Отправляем уведомления о новых турах
-    const { sendToUsers, sendToGroup, eventId: frontendEventId } = req.body;
     if (sendToUsers || sendToGroup) {
       try {
         const eventId = frontendEventId || (createdMatches.length > 0 ? createdMatches[0].event_id : null);

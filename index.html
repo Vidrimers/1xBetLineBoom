@@ -4728,6 +4728,40 @@
       </div>
     </div>
 
+    <!-- Модальное окно предпросмотра объявления о турах -->
+    <div id="roundAnnouncementModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'roundAnnouncementModal', closeRoundAnnouncementModal)">
+      <div class="modal-content" style="max-width: 550px">
+        <div class="modal-header">
+          <h2><svg class="icon" aria-hidden="true"><use href="#icon-news"></use></svg> Предпросмотр объявления</h2>
+          <button class="modal-close" onclick="closeRoundAnnouncementModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="background: rgba(56, 118, 235, 0.1); border: 1px solid rgba(56, 118, 235, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+            <div id="roundAnnouncementPreview" style="white-space: pre-wrap; line-height: 1.6; color: #e0e6f0;">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button
+              type="button"
+              class="form-btn-submit"
+              onclick="sendRoundAnnouncementToAdmin()"
+            >
+              <svg class="icon" aria-hidden="true"><use href="#icon-submit"></use></svg> Отправить админу
+            </button>
+            <button
+              type="button"
+              class="form-btn-cancel"
+              onclick="closeRoundAnnouncementModal()"
+            >
+              <svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Модальное окно объявления о новых функциях -->
     <div id="featureAnnouncementModal" class="modal" style="display: none" onclick="closeModalOnOutsideClick(event, 'featureAnnouncementModal', closeAnnouncementModal)">
       <div class="modal-content announcement-modal-content">

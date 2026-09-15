@@ -890,7 +890,7 @@ export async function submitBulkParse(event) {
     const response = await fetch('/api/matches/bulk-create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matches: matchesToCreate, sendToUsers, sendToGroup, eventId: state.currentEventId }),
+      body: JSON.stringify({ matches: matchesToCreate, sendToUsers, sendToGroup, eventId: state.currentEventId, username: state.currentUser?.username }),
     });
 
     if (!response.ok) {
@@ -1000,18 +1000,51 @@ export async function sendBulkParseToAdmin() {
 
   message += `🔗 <a href="${window.location.origin}">Открыть сайт</a>`;
 
+  // Сохраняем для отправки
+  window.roundAnnouncementData = { message };
+
+  // Показываем предпросмотр
+  const previewText = message
+    .replace(/<b>/g, '**')
+    .replace(/<\/b>/g, '**')
+    .replace(/<a href="[^"]*">/g, '')
+    .replace(/<\/a>/g, '');
+
+  document.getElementById('roundAnnouncementPreview').innerHTML = previewText.replace(/\n/g, '<br>');
+  document.getElementById('roundAnnouncementModal').style.display = 'flex';
+  lockBodyScroll();
+}
+
+// Закрыть модалку предпросмотра объявления о турах
+export function closeRoundAnnouncementModal() {
+  document.getElementById('roundAnnouncementModal').style.display = 'none';
+  unlockBodyScroll();
+}
+
+// Отправить объявление о турах админу (из модалки предпросмотра)
+export async function sendRoundAnnouncementToAdmin() {
+  if (!window.roundAnnouncementData) {
+    await showCustomAlert('Ошибка: данные не найдены', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+
   try {
-    const resp = await fetch('/api/admin/bulk-parse-notify-admin', {
+    const resp = await fetch('/api/admin/send-round-announcement', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({
+        message: window.roundAnnouncementData.message,
+        username: state.currentUser?.username
+      })
     });
+
     if (resp.ok) {
-      await showCustomAlert('Уведомление отправлено админу', 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
+      closeRoundAnnouncementModal();
+      await showCustomAlert('Объявление отправлено админу на проверку', 'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
     } else {
-      await showCustomAlert('Ошибка при отправке уведомления', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+      await showCustomAlert('Ошибка при отправке объявления', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch {
-    await showCustomAlert('Ошибка при отправке уведомления', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    await showCustomAlert('Ошибка при отправке объявления', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
