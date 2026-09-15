@@ -998,7 +998,7 @@ export async function sendBulkParseToAdmin() {
     message += `   ${home} vs ${away} (${nearestMatch.round || '—'})\n\n`;
   }
 
-  message += `🔗 <a href="http://${window.location.hostname}:${window.location.port}">Открыть сайт</a>`;
+  message += `🔗 <a href="${window.location.origin}">Открыть сайт</a>`;
 
   try {
     const resp = await fetch('/api/admin/bulk-parse-notify-admin', {
