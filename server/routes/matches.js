@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
-import { notifyAdmin, notifyModeratorAction } from '../services/notificationService.js';
+import { notifyAdmin, notifyModeratorAction, notifyNewRoundsToUsers, notifyNewRoundsToGroup } from '../services/notificationService.js';
 import { sendUserMessage } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, ICON_TO_COMPETITION, COMPETITION_DICTIONARY_MAPPING, ROOT_DIR } from '../config.js';
@@ -485,6 +485,42 @@ router.post("/api/matches/bulk-create", async (req, res) => {
       message: `Успешно создано ${createdMatches.length} матчей`,
       matches: createdMatches,
     });
+
+    // Отправляем уведомления о новых турах
+    const { sendToUsers, sendToGroup, eventId: frontendEventId } = req.body;
+    if (sendToUsers || sendToGroup) {
+      try {
+        const eventId = frontendEventId || (createdMatches.length > 0 ? createdMatches[0].event_id : null);
+        if (eventId) {
+          const event = db.prepare("SELECT name FROM events WHERE id = ?").get(eventId);
+          const eventName = event?.name || 'Неизвестный турнир';
+
+          // Определяем уникальные туры
+          const roundSet = new Set();
+          createdMatches.forEach(m => { if (m.round) roundSet.add(m.round); });
+          const roundNames = [...roundSet];
+
+          // Ближайший матч
+          const futureMatches = createdMatches
+            .filter(m => m.match_date && new Date(m.match_date) > new Date())
+            .sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+          const nearestMatch = futureMatches[0] || null;
+
+          if (sendToUsers) {
+            notifyNewRoundsToUsers(eventId, eventName, roundNames, createdMatches.length, nearestMatch).catch(err =>
+              console.error('Ошибка отправки уведомления пользователям:', err)
+            );
+          }
+          if (sendToGroup) {
+            notifyNewRoundsToGroup(eventName, roundNames, createdMatches.length, nearestMatch).catch(err =>
+              console.error('Ошибка отправки уведомления в группу:', err)
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error('Ошибка при отправке уведомлений о турах:', notifError);
+      }
+    }
   } catch (error) {
     console.error("Ошибка при импорте матчей:", error);
     res.status(500).json({ message: error.message });

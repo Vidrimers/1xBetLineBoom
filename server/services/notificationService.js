@@ -1,4 +1,4 @@
-import { sendGroupNotification, sendAdminNotification } from "../../OnexBetLineBoombot.js";
+import { sendGroupNotification, sendAdminNotification, sendUserMessage } from "../../OnexBetLineBoombot.js";
 import { db } from "../database/db.js";
 import { PORT, SERVER_IP } from "../config.js";
 import { isUserInGroup } from "./telegramService.js";
@@ -1009,6 +1009,88 @@ async function checkAndNotifyTournamentStart() {
   }
 }
 
+// Уведомление пользователям о создании новых туров
+async function notifyNewRoundsToUsers(eventId, eventName, roundNames, totalMatches, nearestMatch) {
+  try {
+    console.log(`📢 Отправка уведомления о новых турах в "${eventName}" пользователям...`);
+
+    const users = db
+      .prepare(`SELECT id, username, telegram_id FROM users WHERE telegram_id IS NOT NULL`)
+      .all();
+
+    if (users.length === 0) return;
+
+    let message = `⚽ <b>Новые туры в турнире "${eventName}"</b>\n\n`;
+    message += `📌 Туры: ${roundNames.join(', ')}\n\n`;
+    message += `🎯 ${totalMatches} матчей добавлено\n\n`;
+
+    if (nearestMatch) {
+      const date = new Date(nearestMatch.match_date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+      message += `📅 Ближайший матч: ${date}\n`;
+      message += `   ${nearestMatch.team1_name} vs ${nearestMatch.team2_name} (${nearestMatch.round || '—'})\n\n`;
+    }
+
+    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (!TELEGRAM_BOT_TOKEN) return;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const user of users) {
+      try {
+        const notifSettings = db.prepare(`
+          SELECT new_rounds FROM user_notification_settings WHERE user_id = ?
+        `).get(user.id);
+
+        if (notifSettings && notifSettings.new_rounds === 0) continue;
+
+        const telegramEnabled = db.prepare(`
+          SELECT telegram_notifications_enabled FROM users WHERE id = ?
+        `).get(user.id);
+
+        if (telegramEnabled && telegramEnabled.telegram_notifications_enabled === 0) continue;
+
+        await sendUserMessage(user.telegram_id, message, { parse_mode: "HTML" });
+        successCount++;
+      } catch (error) {
+        errorCount++;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    console.log(`✅ Уведомление о турах "${eventName}" отправлено: ${successCount} успешно, ${errorCount} ошибок`);
+  } catch (error) {
+    console.error("❌ Ошибка при отправке уведомления о турах:", error);
+  }
+}
+
+// Уведомление в группу о создании новых туров
+async function notifyNewRoundsToGroup(eventName, roundNames, totalMatches, nearestMatch) {
+  try {
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+    if (!TELEGRAM_CHAT_ID) return;
+
+    let message = `⚽ <b>Новые туры в турнире "${eventName}"</b>\n\n`;
+    message += `📌 Туры: ${roundNames.join(', ')}\n\n`;
+    message += `🎯 ${totalMatches} матчей добавлено\n\n`;
+
+    if (nearestMatch) {
+      const date = new Date(nearestMatch.match_date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+      message += `📅 Ближайший матч: ${date}\n`;
+      message += `   ${nearestMatch.team1_name} vs ${nearestMatch.team2_name} (${nearestMatch.round || '—'})\n\n`;
+    }
+
+    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+
+    await sendGroupNotification(message);
+    console.log(`✅ Уведомление о турах "${eventName}" отправлено в группу`);
+  } catch (error) {
+    console.error("❌ Ошибка при отправке уведомления о турах в группу:", error);
+  }
+}
+
 export {
   notifyAdmin,
   notifyUser,
@@ -1020,4 +1102,6 @@ export {
   sendTournamentAnnouncementToUsers,
   notifyTournamentToGroup,
   checkAndNotifyTournamentStart,
+  notifyNewRoundsToUsers,
+  notifyNewRoundsToGroup,
 };

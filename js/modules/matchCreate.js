@@ -884,10 +884,13 @@ export async function submitBulkParse(event) {
       return baseMatch;
     });
 
+    const sendToUsers = document.getElementById('bulkParseSendToUsers')?.checked || false;
+    const sendToGroup = document.getElementById('bulkParseSendToGroup')?.checked || false;
+
     const response = await fetch('/api/matches/bulk-create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matches: matchesToCreate }),
+      body: JSON.stringify({ matches: matchesToCreate, sendToUsers, sendToGroup, eventId: state.currentEventId }),
     });
 
     if (!response.ok) {
@@ -938,5 +941,77 @@ export function updateParsePreview() {
     loadParsePreview();
   } else {
     document.getElementById('parsePreviewContainer').style.display = 'none';
+  }
+}
+
+// Отправить превью парсинга админу
+export async function sendBulkParseToAdmin() {
+  if (parsedMatches.length === 0) {
+    await showCustomAlert('Сначала загрузите превью матчей', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+
+  const selectedCheckboxes = Array.from(document.querySelectorAll('[id^="round_"]:checked'));
+  let matchesToProcess = [];
+
+  if (selectedCheckboxes.length === 0) {
+    matchesToProcess = parsedMatches;
+  } else {
+    const selectedRounds = selectedCheckboxes.map(cb => {
+      const roundId = cb.id.replace('round_', '');
+      return parsedMatches.find(m => m.round && m.round.replace(/[^a-zA-Z0-9]/g, '_') === roundId)?.round;
+    }).filter(Boolean);
+    matchesToProcess = parsedMatches.filter(m => selectedRounds.includes(m.round));
+  }
+
+  if (matchesToProcess.length === 0) {
+    await showCustomAlert('Нет матчей для отправки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    return;
+  }
+
+  // Группируем по турам
+  const roundsMap = {};
+  matchesToProcess.forEach(m => {
+    const round = m.round || 'Без тура';
+    if (!roundsMap[round]) roundsMap[round] = [];
+    roundsMap[round].push(m);
+  });
+
+  const roundNames = Object.keys(roundsMap);
+  const eventName = state.events.find(e => e.id === state.currentEventId)?.name || 'Неизвестный турнир';
+
+  // Ближайший матч
+  const futureMatches = matchesToProcess
+    .filter(m => m.utcDate && new Date(m.utcDate) > new Date())
+    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+  const nearestMatch = futureMatches[0];
+
+  let message = `⚽ <b>Новые туры в турнире "${eventName}"</b>\n\n`;
+  message += `📌 Туры: ${roundNames.join(', ')}\n\n`;
+  message += `🎯 ${matchesToProcess.length} матчей добавлено\n\n`;
+
+  if (nearestMatch) {
+    const date = new Date(nearestMatch.utcDate).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const home = nearestMatch.homeTeam?.name || '?';
+    const away = nearestMatch.awayTeam?.name || '?';
+    message += `📅 Ближайший матч: ${date}\n`;
+    message += `   ${home} vs ${away} (${nearestMatch.round || '—'})\n\n`;
+  }
+
+  message += `🔗 <a href="http://${window.location.hostname}:${window.location.port}">Открыть сайт</a>`;
+
+  try {
+    const resp = await fetch('/api/admin/bulk-parse-notify-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    if (resp.ok) {
+      await showCustomAlert('Уведомление отправлено админу', 'Успех', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>');
+    } else {
+      await showCustomAlert('Ошибка при отправке уведомления', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    }
+  } catch {
+    await showCustomAlert('Ошибка при отправке уведомления', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }

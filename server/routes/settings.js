@@ -205,7 +205,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
     const { userId } = req.params;
     
     let settings = db.prepare(`
-      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
+      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, system_messages
       FROM user_notification_settings
       WHERE user_id = ?
     `).get(userId);
@@ -216,6 +216,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
         three_hour_reminders: 1,
         only_active_tournaments: 0,
         tournament_announcements: 1,
+        new_rounds: 1,
         match_results: 1,
         system_messages: 1
       };
@@ -226,6 +227,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
       three_hour_reminders: settings.three_hour_reminders === 1,
       only_active_tournaments: settings.only_active_tournaments === 1,
       tournament_announcements: settings.tournament_announcements === 1,
+      new_rounds: settings.new_rounds === 1,
       match_results: settings.match_results === 1,
       system_messages: settings.system_messages === 1
     });
@@ -238,7 +240,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
 router.post("/api/user/:userId/notification-settings", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages } = req.body;
+    const { match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, system_messages } = req.body;
     
     const user = db.prepare("SELECT id, username FROM users WHERE id = ?").get(userId);
     if (!user) {
@@ -246,20 +248,21 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
     }
     
     const oldSettings = db.prepare(`
-      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages
+      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, system_messages
       FROM user_notification_settings
       WHERE user_id = ?
     `).get(userId);
     
     db.prepare(`
-      INSERT INTO user_notification_settings (user_id, match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, match_results, system_messages, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO user_notification_settings (user_id, match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, system_messages, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(user_id) 
       DO UPDATE SET 
         match_reminders = excluded.match_reminders,
         three_hour_reminders = excluded.three_hour_reminders,
         only_active_tournaments = excluded.only_active_tournaments,
         tournament_announcements = excluded.tournament_announcements,
+        new_rounds = excluded.new_rounds,
         match_results = excluded.match_results,
         system_messages = excluded.system_messages,
         updated_at = CURRENT_TIMESTAMP
@@ -269,6 +272,7 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
       three_hour_reminders ? 1 : 0,
       only_active_tournaments ? 1 : 0,
       tournament_announcements ? 1 : 0,
+      new_rounds ? 1 : 0,
       match_results ? 1 : 0,
       system_messages ? 1 : 0
     );
@@ -280,6 +284,7 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
       changes.push(`⏰ Напоминания за 3 часа: ${three_hour_reminders ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`🎯 Только по турнирам с ставками: ${only_active_tournaments ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`📢 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`⚽ Новые туры: ${new_rounds ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`🔔 Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
     } else {
@@ -294,6 +299,9 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
       }
       if (oldSettings.tournament_announcements !== (tournament_announcements ? 1 : 0)) {
         changes.push(`📢 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+      if (oldSettings.new_rounds !== (new_rounds ? 1 : 0)) {
+        changes.push(`⚽ Новые туры: ${new_rounds ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       if (oldSettings.match_results !== (match_results ? 1 : 0)) {
         changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);

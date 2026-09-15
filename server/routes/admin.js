@@ -1797,6 +1797,19 @@ router.post("/api/admin/notify-illegal-bet", async (req, res) => {
   }
 });
 
+// POST /api/admin/bulk-parse-notify-admin - Отправить превью парсинга админу
+router.post("/api/admin/bulk-parse-notify-admin", async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: "message required" });
+  try {
+    await sendAdminNotification(message);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Ошибка при отправке уведомления:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/admin/notify-lucky-bet - Уведомить админа о случайной ставке
 router.post("/api/admin/notify-lucky-bet", async (req, res) => {
   const { userId, eventName, round, matchesCount, scorePredictions, cardsPredictions } = req.body;

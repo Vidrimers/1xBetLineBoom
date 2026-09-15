@@ -320,6 +320,20 @@ export function runMigrations() {
     console.error("❌ Ошибка миграции user_notification_settings:", error);
   }
 
+  // Миграция: добавление колонки new_rounds если её нет
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(user_notification_settings)").all();
+    const hasNewRounds = tableInfo.some(col => col.name === 'new_rounds');
+
+    if (!hasNewRounds) {
+      console.log("🔄 Миграция: добавление колонки new_rounds в user_notification_settings");
+      db.exec(`ALTER TABLE user_notification_settings ADD COLUMN new_rounds INTEGER DEFAULT 1`);
+      console.log("✅ Миграция завершена");
+    }
+  } catch (error) {
+    console.error("❌ Ошибка миграции user_notification_settings:", error);
+  }
+
   // Миграция: таблица отслеживания инактивности пользователей по турам
   try {
     db.exec(`

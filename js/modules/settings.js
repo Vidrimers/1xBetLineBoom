@@ -726,6 +726,7 @@ export async function loadDetailedNotificationSettings() {
       document.getElementById('notifThreeHourReminders').checked = settings.three_hour_reminders !== false;
       document.getElementById('notifOnlyActiveTournaments').checked = settings.only_active_tournaments === true;
       document.getElementById('notifTournamentAnnouncements').checked = settings.tournament_announcements !== false;
+      document.getElementById('notifNewRounds').checked = settings.new_rounds !== false;
       document.getElementById('notifMatchResults').checked = settings.match_results !== false;
       document.getElementById('notifSystemMessages').checked = settings.system_messages !== false;
       
@@ -783,6 +784,7 @@ export async function saveDetailedNotificationSettings() {
     three_hour_reminders: document.getElementById('notifThreeHourReminders').checked,
     only_active_tournaments: document.getElementById('notifOnlyActiveTournaments').checked,
     tournament_announcements: document.getElementById('notifTournamentAnnouncements').checked,
+    new_rounds: document.getElementById('notifNewRounds').checked,
     match_results: document.getElementById('notifMatchResults').checked,
     system_messages: document.getElementById('notifSystemMessages').checked,
   };
