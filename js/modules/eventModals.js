@@ -329,30 +329,30 @@ export async function previewTournamentAnnouncement(event) {
       month: "2-digit",
       year: "numeric",
     });
-    dateText = `<svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Даты: ${start} - ${end}`;
+    dateText = `📅 Даты: ${start} - ${end}`;
   } else if (startDate) {
     const start = new Date(startDate).toLocaleDateString("ru-RU", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
-    dateText = `<svg class="icon" aria-hidden="true"><use href="#icon-tournaments"></use></svg> Начало: ${start}`;
+    dateText = `📅 Начало: ${start}`;
   }
   
   // Формируем сообщение
-  let message = `<svg class="icon" aria-hidden="true"><use href="#icon-trophy"></use></svg> <b>НОВЫЙ ТУРНИР!</b>\n\n`;
+  let message = `🏆 <b>НОВЫЙ ТУРНИР!</b>\n\n`;
   message += `<b>${name}</b>\n\n`;
   
   if (description) {
-    message += `<svg class="icon" aria-hidden="true"><use href="#icon-manual"></use></svg> ${description}\n\n`;
+    message += `📝 ${description}\n\n`;
   }
   
   if (dateText) {
     message += `${dateText}\n\n`;
   }
   
-  message += `Приготовьтесь делать прогнозы! <svg class="icon" aria-hidden="true"><use href="#icon-custom-tournament"></use></svg>\n\n`;
-  message += `<svg class="icon" aria-hidden="true"><use href="#icon-telegram"></use></svg> <a href="http://${window.location.hostname}:${window.location.port}">Открыть сайт</a>`;
+  message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
+  message += `🔗 <a href="${window.location.origin}">Открыть сайт</a>`;
   
   // Показываем предпросмотр (конвертируем HTML в читаемый текст)
   const previewText = message
