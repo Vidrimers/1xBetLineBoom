@@ -1030,7 +1030,8 @@ async function notifyNewRoundsToUsers(eventId, eventName, roundNames, totalMatch
       message += `   ${nearestMatch.team1_name} vs ${nearestMatch.team2_name} (${nearestMatch.round || '—'})\n\n`;
     }
 
-    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>\n\n`;
+    message += `💡 Эти уведомления можно отключить в настройках на сайте`;
 
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     if (!TELEGRAM_BOT_TOKEN) return;
