@@ -154,6 +154,8 @@ async function showLiveEventMatches(eventId) {
       return;
     }
 
+    localStorage.setItem('currentLiveEventName', event.name);
+
     const matchesResponse = await fetch(`/api/live-matches?eventId=${eventId}`);
     if (!matchesResponse.ok) {
       throw new Error(`Ошибка загрузки матчей: ${matchesResponse.status} ${matchesResponse.statusText}`);
@@ -334,6 +336,7 @@ async function showLiveEventMatches(eventId) {
 function backToLiveEvents() {
   setCurrentLiveEventId(null);
   localStorage.removeItem('currentLiveEventId');
+  localStorage.removeItem('currentLiveEventName');
   loadLiveMatches();
 }
 

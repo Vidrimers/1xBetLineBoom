@@ -1,7 +1,7 @@
 // ===== СТАТИСТИКА LIVE МАТЧЕЙ =====
 // Перенесено из js/index.js
 
-import { currentUser, currentLiveEventId } from './state.js';
+import { currentUser, currentLiveEventId, events as siteEvents, getLiveEventName } from './state.js';
 import { showCustomAlert } from './ui.js';
 
 // Кэш для словаря имен игроков
@@ -98,42 +98,31 @@ export async function showLiveTeamStats(matchData) {
   content.innerHTML = '<div class="empty-message">⏳ Загрузка статистики...</div>';
 
   if (currentLiveEventId) {
-    try {
-      const events = await fetch('/api/events').then(r => r.json());
-      const event = events.find(e => e.id === currentLiveEventId);
-      if (event && event.icon) {
-        const tournamentCode = determineTournamentCode(event.icon);
-        await loadPlayerNamesDict(tournamentCode);
-      }
-    } catch (err) {
-      console.warn('⚠ Не удалось загрузить словарь игроков:', err);
+    const event = siteEvents.find(e => e.id === currentLiveEventId);
+    if (event && event.icon) {
+      const tournamentCode = determineTournamentCode(event.icon);
+      await loadPlayerNamesDict(tournamentCode);
     }
   }
 
   if (currentUser && currentUser.username && currentLiveEventId) {
-    fetch('/api/events')
-      .then(res => res.json())
-      .then(events => {
-        const event = events.find(e => e.id === currentLiveEventId);
-        const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
-        const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
-        const statusText = isLive ? '<svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> LIVE' : isFinished ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен' : 'Предстоящий';
+    const isLive = matchData.status === 'live' || matchData.status === 'in_progress';
+    const isFinished = matchData.status === 'finished' || matchData.status === 'completed';
+    const statusText = isLive ? '<svg class="icon" aria-hidden="true"><use href="#icon-live"></use></svg> LIVE' : isFinished ? '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg> Завершен' : 'Предстоящий';
 
-        return fetch('/api/notify-live-action', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: currentUser.username,
-            action: 'open_match_stats',
-            details: {
-              match: `${matchData.team1} vs ${matchData.team2}`,
-              tournamentName: event ? event.name : 'Неизвестный турнир',
-              status: statusText
-            }
-          })
-        });
+    fetch('/api/notify-live-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        action: 'open_match_stats',
+        details: {
+          match: `${matchData.team1} vs ${matchData.team2}`,
+          tournamentName: getLiveEventName(),
+          status: statusText
+        }
       })
-      .catch(err => console.log('Ошибка отправки уведомления:', err));
+    }).catch(err => console.log('Ошибка отправки уведомления:', err));
   }
 
   try {

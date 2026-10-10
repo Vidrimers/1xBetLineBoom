@@ -136,6 +136,12 @@ export let completedDaysData = null; // Сохраняем данные с се�
 export let yesterdayMatchesLoaded = false;
 
 export function setCurrentLiveEventId(val) { currentLiveEventId = val; }
+
+// Имя турнира без запросов: state.events → localStorage → заглушка
+export function getLiveEventName() {
+  const ev = events.find(e => e.id === currentLiveEventId);
+  return ev?.name || localStorage.getItem('currentLiveEventName') || 'Неизвестный турнир';
+}
 export function setCompletedDaysData(val) { completedDaysData = val; }
 
 // ===== УВЕДОМЛЕНИЯ О ГОЛАХ =====

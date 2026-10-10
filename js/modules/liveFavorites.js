@@ -1,7 +1,7 @@
 // ===== ИЗБРАННЫЕ LIVE МАТЧИ =====
 // Перенесено из js/index.js
 
-import { currentUser, currentLiveEventId, matchScores, matchFinishTimes, deletedFinishedMatches } from './state.js';
+import { currentUser, matchScores, matchFinishTimes, deletedFinishedMatches, getLiveEventName } from './state.js';
 import { showCustomAlert } from './ui.js';
 import { saveDeletedFinishedMatches, showGoalNotification, playGoalSound, addNotificationToQueue, updateDesktopNotification, processMatches, checkMatchEventsForNotifications } from './goalNotifications.js';
 import { showLiveTeamStats } from './liveStats.js';
@@ -87,23 +87,13 @@ function toggleFavoriteMatch(matchId, event) {
   const index = favorites.indexOf(matchId);
 
   const matchCard = event.target.closest('.live-match-card');
-  let matchInfo = { match: 'Неизвестный матч', tournamentName: 'Неизвестный турнир' };
+  let matchInfo = { match: 'Неизвестный матч', tournamentName: getLiveEventName() };
 
   if (matchCard) {
     const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
     const team1 = teamDivs[0]?.textContent.trim() || 'Команда 1';
     const team2 = teamDivs[1]?.textContent.trim() || 'Команда 2';
     matchInfo.match = `${team1} vs ${team2}`;
-
-    if (currentLiveEventId) {
-      fetch('/api/events')
-        .then(res => res.json())
-        .then(events => {
-          const ev = events.find(e => e.id === currentLiveEventId);
-          if (ev) matchInfo.tournamentName = ev.name;
-        })
-        .catch(() => {});
-    }
   }
 
   if (index > -1) {
