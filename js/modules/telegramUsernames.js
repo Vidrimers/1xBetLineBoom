@@ -74,10 +74,7 @@ export async function openTelegramUsernamesModal() {
       </div>
 
       <div id="telegramUsernamesStats" style="
-        background: rgba(30, 35, 45, 0.55);
-        border: 1px solid rgba(90, 159, 212, 0.25);
-        border-radius: 8px;
-        padding: 12px 14px;
+        padding: 4px 2px;
         margin-bottom: 10px;
       ">
         <div style="color: #b0b8c8; font-size: 0.9em; line-height: 1.7;">
@@ -92,10 +89,7 @@ export async function openTelegramUsernamesModal() {
 
       <!-- История смен -->
       <div style="
-        background: rgba(30, 35, 45, 0.55);
-        border: 1px solid rgba(90, 159, 212, 0.25);
-        border-radius: 8px;
-        padding: 12px 14px;
+        padding: 4px 2px;
         margin-bottom: 12px;
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
