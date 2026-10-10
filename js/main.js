@@ -481,6 +481,11 @@ import {
   saveTimezoneOffset,
 } from './modules/timezoneOffset.js';
 import {
+  openTelegramUsernamesModal,
+  runTelegramUsernamesSync,
+  closeTelegramUsernamesModal,
+} from './modules/telegramUsernames.js';
+import {
   openTerminalModal,
   closeTerminalModal,
   refreshTerminalLogs,
@@ -728,6 +733,8 @@ Object.assign(window, {
   addWeightCategory, updateWeightCategory, deleteWeightCategory,
   // timezoneOffset
   openTimezoneOffsetModal, closeTimezoneOffsetModal, saveTimezoneOffset,
+  // telegramUsernames
+  openTelegramUsernamesModal, runTelegramUsernamesSync, closeTelegramUsernamesModal,
   // terminal
   openTerminalModal, closeTerminalModal, refreshTerminalLogs, escapeHtml,
   clearTerminalLogs, saveTerminalLogs, toggleTerminalAutoScroll,

@@ -11,6 +11,7 @@ import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIl
 import { registerCallbackHandler } from '../../OnexBetLineBoombot.js';
 import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR, ICON_TO_COMPETITION, SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING } from '../config.js';
 import { processedDates, checkDateCompletion, updateMatchesFromAPI, saveProcessedDate, getTimezoneOffset } from '../services/autoCountingService.js';
+import { syncTelegramUsernamesManual } from '../services/telegramUsernameSyncService.js';
 
 const router = Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -764,6 +765,22 @@ router.post("/api/admin/sync-telegram-ids", async (req, res) => {
     }
   } catch (error) {
     console.error("❌ Ошибка синхронизации:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/sync-telegram-usernames - Ручное обновление TG-ников (только админ)
+router.post("/api/admin/sync-telegram-usernames", async (req, res) => {
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
+  if (!isAdminUser) {
+    return res.status(403).json({ error: "Доступ запрещён" });
+  }
+
+  try {
+    const result = await syncTelegramUsernamesManual(req.authenticatedUsername);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error("❌ Ошибка ручного обновления TG-ников:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -4605,6 +4622,15 @@ router.get("/api/admin/panel-config", (req, res) => {
           db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
         }
       }
+
+      const usersCategory = configData.categories.find(c => c.id === 'users');
+      const hasTgUsernamesAnywhere = configData.categories.some(
+        c => c.buttons && c.buttons.some(b => b.id === 'tg-usernames')
+      );
+      if (!hasTgUsernamesAnywhere && usersCategory && usersCategory.buttons) {
+        usersCategory.buttons.push({ id: 'tg-usernames', text: '🔄 TG ники', action: 'openTelegramUsernamesModal()', type: 'modal' });
+        db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
+      }
     }
     
     res.json({
@@ -4699,7 +4725,8 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
           buttons: [
             { id: 'users-list', text: '👥 Пользователи', action: 'loadAdminUsers()', type: 'modal' },
             { id: 'moderators', text: '🛡️ Модераторы', action: 'openModeratorsPanel()', type: 'modal' },
-            { id: 'bugs', text: '🐛 Баги', action: 'openBugReportsModal()', type: 'modal' }
+            { id: 'bugs', text: '🐛 Баги', action: 'openBugReportsModal()', type: 'modal' },
+            { id: 'tg-usernames', text: '🔄 TG ники', action: 'openTelegramUsernamesModal()', type: 'modal' }
           ]
         },
         {

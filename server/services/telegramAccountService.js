@@ -68,9 +68,10 @@ function upsertTelegramUserRow(telegramId, cleanUsername, firstName) {
 /**
  * Обновляет telegram_username у привязанного пользователя.
  * Уведомление админу — только при реальном изменении (не дублируется ботом и cron).
- * Возвращает { changed, user } или null, если пользователь не привязан к сайту.
+ * silent: true — обновить БД без per-user уведомления (для пакетного прогона).
+ * Возвращает { changed, oldUsername, newUsername, user } или null, если не привязан к сайту.
  */
-function applyTelegramUsername({ telegramId, newUsername, firstName, source }) {
+function applyTelegramUsername({ telegramId, newUsername, firstName, source, silent = false }) {
   if (!telegramId) return null;
 
   const clean = normalizeTgUsername(newUsername);
@@ -96,7 +97,7 @@ function applyTelegramUsername({ telegramId, newUsername, firstName, source }) {
 
   upsertTelegramUserRow(telegramId, clean, firstName);
 
-  if (changed) {
+  if (changed && !silent) {
     notifyTelegramUsernameChange({
       user: { ...user, telegram_username: clean },
       oldUsername,
@@ -106,7 +107,12 @@ function applyTelegramUsername({ telegramId, newUsername, firstName, source }) {
     }).catch(() => {});
   }
 
-  return { changed, user: { ...user, telegram_username: clean } };
+  return {
+    changed,
+    oldUsername,
+    newUsername: clean,
+    user: { ...user, telegram_username: clean },
+  };
 }
 
 /**
