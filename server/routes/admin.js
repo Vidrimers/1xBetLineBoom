@@ -4630,6 +4630,18 @@ router.get("/api/admin/panel-config", (req, res) => {
         usersCategory.buttons.push({ id: 'tg-usernames', text: '🔄 TG ники', action: 'openTelegramUsernamesModal()', type: 'modal' });
         db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
       }
+
+      // Удаляем устаревшую кнопку "Напоминания группы" (видимость карточки теперь автоматическая)
+      let removedObsolete = false;
+      for (const category of configData.categories) {
+        if (!category.buttons) continue;
+        const before = category.buttons.length;
+        category.buttons = category.buttons.filter(b => b.id !== 'group-reminders');
+        if (category.buttons.length !== before) removedObsolete = true;
+      }
+      if (removedObsolete) {
+        db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
+      }
     }
     
     res.json({
