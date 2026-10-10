@@ -3,8 +3,34 @@ import { db } from '../database/db.js';
 import { requireOwnership } from '../middleware/auth.js';
 import { PORT, SERVER_IP } from '../config.js';
 import { notifyIllegalBet, sendAdminNotification, sendGroupNotification, notifyReminderEnabled, notifyReminderDeleted } from '../../OnexBetLineBoombot.js';
+import { getGroupMembershipCached } from '../services/telegramService.js';
 
 const router = Router();
+
+// GET /api/user/:userId/group-membership — состоит ли пользователь в ТГ-группе (кеш 5 мин, fail-closed)
+router.get("/api/user/:userId/group-membership", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = db
+      .prepare("SELECT telegram_id FROM users WHERE id = ?")
+      .get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    if (!user.telegram_id) {
+      return res.json({ inGroup: false });
+    }
+
+    const result = await getGroupMembershipCached(user.telegram_id);
+    // fail-closed для UI: при ошибке API карточку не показываем
+    res.json({ inGroup: result.ok === true && result.inGroup === true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // GET /api/user/timezone
 router.get("/api/user/timezone", (req, res) => {

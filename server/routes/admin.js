@@ -958,75 +958,6 @@ ${userInfo.telegram_username ? `📱 Telegram: @${userInfo.telegram_username}` :
   }
 });
 
-// GET /api/admin/group-reminders-card-visibility - Получить текущую видимость карточки напоминаний
-router.get("/api/admin/group-reminders-card-visibility", (req, res) => {
-  try {
-    // Создаём таблицу если её нет
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS global_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_by TEXT
-      )
-    `).run();
-
-    // Получаем настройку
-    const setting = db.prepare('SELECT value FROM global_settings WHERE key = ?').get('group_reminders_card_hidden');
-    
-    const hidden = setting ? setting.value === 'true' : false;
-
-    res.json({ hidden });
-  } catch (error) {
-    console.error('Ошибка при получении видимости карточки:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// PUT /api/admin/group-reminders-card-visibility - Изменить видимость карточки напоминаний в группе для всех пользователей
-router.put("/api/admin/group-reminders-card-visibility", (req, res) => {
-  try {
-    const { hidden, admin_username } = req.body;
-    const ADMIN_DB_NAME = process.env.ADMIN_DB_NAME;
-
-    // Проверка прав админа
-    if (req.authenticatedUsername !== ADMIN_DB_NAME) {
-      return res.status(403).json({ error: "Доступ запрещен" });
-    }
-
-    // Создаём таблицу если её нет
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS global_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_by TEXT
-      )
-    `).run();
-
-    // Сохраняем настройку
-    db.prepare(`
-      INSERT INTO global_settings (key, value, updated_by)
-      VALUES ('group_reminders_card_hidden', ?, ?)
-      ON CONFLICT(key) DO UPDATE SET
-        value = excluded.value,
-        updated_at = CURRENT_TIMESTAMP,
-        updated_by = excluded.updated_by
-    `).run(hidden ? 'true' : 'false', admin_username);
-
-    console.log(`🔧 Админ ${admin_username} ${hidden ? 'скрыл' : 'показал'} карточку напоминаний в группе для всех пользователей`);
-
-    res.json({ 
-      success: true, 
-      hidden,
-      message: hidden ? 'Карточка скрыта для всех пользователей' : 'Карточка показана для всех пользователей'
-    });
-  } catch (error) {
-    console.error('Ошибка при изменении видимости карточки:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // POST /api/admin/toggle-xg-button - Показать/скрыть кнопку xG для всех пользователей
 router.post("/api/admin/toggle-xg-button", (req, res) => {
   try {
@@ -4799,8 +4730,7 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
           icon: '⚙️',
           collapsed: false,
           buttons: [
-            { id: 'xg-button', text: '🎯 Кнопка xG', action: 'toggleXgButton()', type: 'toggle' },
-            { id: 'group-reminders', text: '🔔 Напоминания группы', action: 'toggleGroupRemindersCardVisibility()', type: 'toggle' }
+            { id: 'xg-button', text: '🎯 Кнопка xG', action: 'toggleXgButton()', type: 'toggle' }
           ]
         },
         {

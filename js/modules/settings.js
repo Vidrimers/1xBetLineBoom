@@ -166,6 +166,9 @@ export async function loadSettings() {
     // Инициализируем часовые поясы
     await initTimezoneSettings();
 
+    // Карточка "Напоминания в группе ТГ" — только участникам группы
+    await updateGroupRemindersCardVisibility();
+
     // Загружаем конфигурацию админ-панели для админов
     if (state.currentUser.isAdmin) {
       const { loadAdminPanelConfig } = await import('./adminPanel.js');
@@ -1120,41 +1123,66 @@ export async function deactivateSelectedEvents() {
 
 // ===== НАСТРОЙКИ ПЕРЕКЛЮЧАТЕЛЕЙ =====
 
-// Переключить видимость карточки напоминаний группы
-export async function toggleGroupRemindersCardVisibility() {
-  if (!state.currentUser || !state.currentUser.isAdmin) {
-    await showCustomAlert('У вас нет прав для этого действия', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+// Показать карточку групповых напоминаний только участникам ТГ-группы
+async function updateGroupRemindersCardVisibility() {
+  const card = document.getElementById('groupRemindersCard');
+  if (!card) return;
+
+  if (!state.currentUser) {
+    card.style.display = 'none';
     return;
   }
+
   try {
-    const card = document.getElementById('groupRemindersCard');
-    const btn = document.getElementById('toggleGroupRemindersCardBtn');
-    const isCurrentlyHidden = card ? card.style.display === 'none' : false;
-    const newVisibility = !isCurrentlyHidden;
-    const response = await fetch('/api/admin/group-reminders-card-visibility', {
+    const response = await fetch(`/api/user/${state.currentUser.id}/group-membership`);
+    if (!response.ok) {
+      card.style.display = 'none';
+      return;
+    }
+    const data = await response.json();
+    // fail-closed: если Telegram недоступен — карточку не показываем
+    card.style.display = data.inGroup ? 'block' : 'none';
+  } catch (error) {
+    console.error('Ошибка проверки членства в группе:', error);
+    card.style.display = 'none';
+  }
+}
+
+// Сохранить настройку "Напоминания в группе ТГ" (пинг @имя vs просто имя)
+export async function saveGroupRemindersSettings() {
+  try {
+    if (!state.currentUser) {
+      await showCustomAlert('Сначала войдите в систему', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+      return;
+    }
+
+    const checkbox = document.getElementById('groupRemindersCheckbox');
+    const isEnabled = checkbox.checked;
+
+    showSaveStatus('groupRemindersStatus', 'saving');
+
+    const response = await fetch(`/api/user/${state.currentUser.id}/settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hidden: newVisibility, admin_username: state.currentUser.username })
+      body: JSON.stringify({ telegram_group_reminders_enabled: isEnabled ? 1 : 0 })
     });
+
     const result = await response.json();
+
     if (response.ok) {
-      if (card) card.style.display = newVisibility ? 'none' : 'block';
-      if (btn) {
-        btn.textContent = newVisibility ? '<svg class="icon" aria-hidden="true"><use href="#icon-visible"></use></svg> Показать напоминания ТГ' : '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg> Скрыть напоминания ТГ';
-        btn.style.background = newVisibility ? 'rgba(76, 175, 80, 0.7)' : 'rgba(255, 87, 34, 0.7)';
-        btn.style.color = newVisibility ? '#c8e6c9' : '#ffe0d6';
-        btn.style.borderColor = newVisibility ? '#4caf50' : '#ff5722';
-      }
-      await showCustomAlert(
-        newVisibility ? 'Карточка скрыта для всех пользователей' : 'Карточка показана для всех пользователей',
-        'Успешно', '<svg class="icon" aria-hidden="true"><use href="#icon-correct"></use></svg>'
-      );
+      state.currentUser.telegram_group_reminders_enabled = isEnabled ? 1 : 0;
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+      showSaveStatus('groupRemindersStatus', 'saved');
     } else {
-      await showCustomAlert(result.error || 'Не удалось изменить видимость карточки', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+      console.error('Ошибка сохранения настроек групповых напоминаний:', result.error);
+      checkbox.checked = !isEnabled;
+      showSaveStatus('groupRemindersStatus', 'error');
+      await showCustomAlert(result.error || 'Ошибка при сохранении настроек', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
     }
   } catch (error) {
-    console.error('Ошибка при переключении видимости карточки:', error);
-    await showCustomAlert('Не удалось изменить видимость карточки.\n\nПроверьте подключение к серверу.', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
+    console.error('Ошибка при сохранении настроек групповых напоминаний:', error);
+    showSaveStatus('groupRemindersStatus', 'error');
+    await showCustomAlert('Ошибка при сохранении настроек', 'Ошибка', '<svg class="icon" aria-hidden="true"><use href="#icon-wrong"></use></svg>');
   }
 }
 

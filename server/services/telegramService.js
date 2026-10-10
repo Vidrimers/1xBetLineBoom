@@ -94,7 +94,7 @@ async function getGroupMembership(telegramId) {
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID || !telegramId) {
-    return { inGroup: false, user: null };
+    return { inGroup: false, user: null, ok: false };
   }
 
   const chatId = TELEGRAM_CHAT_ID.split(",")[0].trim();
@@ -104,13 +104,14 @@ async function getGroupMembership(telegramId) {
   });
 
   if (!member) {
-    // При ошибке API не исключаем пользователя (как раньше)
-    return { inGroup: true, user: null };
+    // При ошибке API не исключаем пользователя (fail-open для рассылок)
+    return { inGroup: true, user: null, ok: false };
   }
 
   const inGroup = ["member", "administrator", "creator", "restricted"].includes(member.status);
   return {
     inGroup,
+    ok: true,
     user: member.user
       ? {
           id: member.user.id,
@@ -119,6 +120,24 @@ async function getGroupMembership(telegramId) {
         }
       : null,
   };
+}
+
+// Кеш членства в группе (живой API + TTL 5 минут)
+const groupMembershipCache = new Map();
+const GROUP_MEMBERSHIP_TTL_MS = 5 * 60 * 1000;
+
+async function getGroupMembershipCached(telegramId) {
+  if (!telegramId) return { inGroup: false, user: null, ok: false };
+
+  const cached = groupMembershipCache.get(telegramId);
+  if (cached && Date.now() - cached.ts < GROUP_MEMBERSHIP_TTL_MS) {
+    return cached;
+  }
+
+  const result = await getGroupMembership(telegramId);
+  const entry = { ...result, ts: Date.now() };
+  groupMembershipCache.set(telegramId, entry);
+  return entry;
 }
 
 // Проверяет, является ли пользователь участником группы TELEGRAM_CHAT_ID
@@ -135,11 +154,18 @@ function buildUserMention(telegramId, user, fallbackName) {
   return `<a href="tg://user?id=${telegramId}">${escapeHtml(label)}</a>`;
 }
 
+// Имя без пинга (без ссылки tg:// — Telegram не уведомит)
+function buildPlainUserName(user, fallbackName) {
+  return escapeHtml(user?.username || user?.first_name || fallbackName || "Участник");
+}
+
 export {
   sendTelegramMessage,
   sendTelegramMessageByUsername,
   isUserInGroup,
   getGroupMembership,
+  getGroupMembershipCached,
   getTelegramUser,
   buildUserMention,
+  buildPlainUserName,
 };

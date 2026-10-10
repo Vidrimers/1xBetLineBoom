@@ -1,7 +1,7 @@
 import { sendGroupNotification, sendAdminNotification, sendUserMessage } from "../../OnexBetLineBoombot.js";
 import { db } from "../database/db.js";
 import { PORT, SERVER_IP } from "../config.js";
-import { getGroupMembership, buildUserMention } from "./telegramService.js";
+import { getGroupMembership, buildUserMention, buildPlainUserName } from "./telegramService.js";
 
 // Отправить уведомление админу о действиях модератора
 async function notifyModeratorAction(moderatorUsername, action, details) {
@@ -202,13 +202,13 @@ async function checkAndRemindNonVoters() {
       }
 
       const allUsers = db
-        .prepare("SELECT id, username, telegram_username, telegram_id FROM users WHERE telegram_group_reminders_enabled = 1")
+        .prepare("SELECT id, username, telegram_username, telegram_id, telegram_group_reminders_enabled FROM users WHERE telegram_id IS NOT NULL")
         .all();
 
-      console.log(`⏰ Всего пользователей с включёнными напоминаниями: ${allUsers.length}`);
+      console.log(`⏰ Всего пользователей с Telegram: ${allUsers.length}`);
 
       if (allUsers.length === 0) {
-        console.log(`⏰ ⚠️ НЕТ ПОЛЬЗОВАТЕЛЕЙ С ВКЛЮЧЕННЫМИ НАПОМИНАНИЯМИ!`);
+        console.log(`⏰ ⚠️ НЕТ ПОЛЬЗОВАТЕЛЕЙ С TELEGRAM!`);
         continue;
       }
 
@@ -243,8 +243,13 @@ async function checkAndRemindNonVoters() {
         const matchDate = matchDateTime.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
         const matchTime = matchDateTime.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
+        // Тумблер "Напоминания в группе" управляет только пингом: ВКЛ — @вася, ВЫКЛ — просто вася
         const mentions = nonVoters
-          .map((user) => buildUserMention(user.telegram_id, user.tgUser, user.telegram_username || user.username))
+          .map((user) =>
+            user.telegram_group_reminders_enabled === 0
+              ? buildPlainUserName(user.tgUser, user.telegram_username || user.username)
+              : buildUserMention(user.telegram_id, user.tgUser, user.telegram_username || user.username)
+          )
           .join(", ");
 
         const matchesList = matches.map((m, index) =>
