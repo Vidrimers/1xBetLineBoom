@@ -814,11 +814,17 @@ async function checkAndNotifyMatchStart() {
       SELECT DISTINCT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name, e.id as event_id
       FROM matches m
       JOIN events e ON m.event_id = e.id
-      WHERE m.match_date > ? AND m.match_date <= ? AND m.winner IS NULL AND m.match_date IS NOT NULL
+      WHERE m.winner IS NULL AND m.match_date IS NOT NULL
       ORDER BY m.match_date ASC
+      LIMIT 100
     `
       )
-      .all(thirtyMinutesAgo.toISOString(), now.toISOString());
+      .all()
+      .filter((match) => {
+        // Фильтруем в JS: SQL-сравнение строк ломается на смещении таймзоны (+03:00 / Z)
+        const matchTime = new Date(match.match_date).getTime();
+        return matchTime > thirtyMinutesAgo.getTime() && matchTime <= now.getTime();
+      });
 
     console.log(`⚽ Найдено ${recentlyStartedMatches.length} матчей которые начались недавно`);
 
