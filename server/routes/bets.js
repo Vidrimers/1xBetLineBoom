@@ -4,6 +4,7 @@ import { requireAuth, requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin, notifyUser } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { notifyNewBet, notifyBetDeleted, notifyNewScorePrediction, notifyIllegalBet, sendUserMessage, sendAdminNotification } from '../../OnexBetLineBoombot.js';
+import { notifyMatchResultToBettors } from '../services/notificationService.js';
 import { LOG_FILE_PATH, MAX_LOG_SIZE } from '../config.js';
 import fs from 'fs';
 import { handleUserBetInTournament } from '../services/inactivityService.js';
@@ -1160,7 +1161,14 @@ router.post("/api/admin/final-parameters-results", async (req, res) => {
     console.log(
       `✓ Результаты финальных параметров установлены для матча ${matchId}`
     );
-    
+
+    // Личные уведомления "Результат каждого матча" (в т.ч. финальные параметры)
+    setImmediate(() => {
+      notifyMatchResultToBettors(matchId).catch((err) =>
+        console.error('❌ Ошибка отправки результатов ставок (финальные параметры):', err)
+      );
+    });
+
     // 🎲 Везунчик - угадал сложную ставку (финал с параметрами)
     // 💯 Рекорд очков за матч - новый рекорд по очкам за один матч
     try {

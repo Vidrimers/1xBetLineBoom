@@ -1239,21 +1239,42 @@ async function notifyMatchResultToBettors(matchId) {
         ? `\n⚽ Счёт: <b>${match.team1_score}:${match.team2_score}</b>`
         : '';
 
+    const matchRow = db.prepare(`
+      SELECT score_prediction_enabled, yellow_cards_prediction_enabled, red_cards_prediction_enabled,
+             yellow_cards, red_cards
+      FROM matches WHERE id = ?
+    `).get(matchId);
+
+    const finalParams = db.prepare(`
+      SELECT * FROM final_parameters_results WHERE match_id = ?
+    `).get(matchId);
+
     const bettors = db.prepare(`
-      SELECT u.id, u.telegram_id,
-             b.prediction,
-             COALESCE(uns.per_match_results, 1) as per_match_results
-      FROM bets b
-      JOIN users u ON b.user_id = u.id
+      SELECT DISTINCT u.id, u.telegram_id
+      FROM users u
       LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
-      WHERE b.match_id = ?
-        AND b.is_final_bet = 0
-        AND u.telegram_notifications_enabled = 1
+      WHERE u.telegram_notifications_enabled = 1
         AND u.telegram_id IS NOT NULL
         AND COALESCE(uns.per_match_results, 1) = 1
-    `).all(matchId);
+        AND (
+          EXISTS (SELECT 1 FROM bets b WHERE b.user_id = u.id AND b.match_id = ?)
+          OR EXISTS (SELECT 1 FROM score_predictions sp WHERE sp.user_id = u.id AND sp.match_id = ?)
+          OR EXISTS (SELECT 1 FROM cards_predictions cp WHERE cp.user_id = u.id AND cp.match_id = ?)
+        )
+    `).all(matchId, matchId, matchId);
 
     if (bettors.length === 0) return;
+
+    const paramNames = {
+      yellow_cards: '🟨 Жёлтые',
+      red_cards: '🟥 Красные',
+      corners: '🚩 Угловые',
+      exact_score: '🎯 Точный счёт',
+      penalties_in_game: '⚽ Пенальти',
+      extra_time: '⏱ Доп. время',
+      penalties_at_end: '🥅 Серия пенальти',
+      goal_difference: '⚖️ Разница голов',
+    };
 
     let sentCount = 0;
 
@@ -1263,26 +1284,108 @@ async function notifyMatchResultToBettors(matchId) {
       ).get(bettor.id, matchId);
       if (alreadySent) continue;
 
-      const isWon =
-        (bettor.prediction === 'team1' && match.winner === 'team1') ||
-        (bettor.prediction === 'team2' && match.winner === 'team2') ||
-        (bettor.prediction === 'draw' && match.winner === 'draw') ||
-        (bettor.prediction === match.team1_name && match.winner === 'team1') ||
-        (bettor.prediction === match.team2_name && match.winner === 'team2');
+      const lines = [];
+      let anyWin = false;
+      let anyBet = false;
 
-      const predictionText =
-        bettor.prediction === 'team1' ? match.team1_name :
-        bettor.prediction === 'team2' ? match.team2_name :
-        bettor.prediction === 'draw' ? 'Ничья' : bettor.prediction;
+      // 1. Исход
+      const outcomeBet = db.prepare(`
+        SELECT prediction FROM bets
+        WHERE user_id = ? AND match_id = ? AND (is_final_bet = 0 OR is_final_bet IS NULL)
+      `).get(bettor.id, matchId);
 
-      const message = `${isWon ? '✅' : '❌'} <b>Результат матча</b>
+      if (outcomeBet) {
+        anyBet = true;
+        const isWon =
+          (outcomeBet.prediction === 'team1' && match.winner === 'team1') ||
+          (outcomeBet.prediction === 'team2' && match.winner === 'team2') ||
+          (outcomeBet.prediction === 'draw' && match.winner === 'draw') ||
+          (outcomeBet.prediction === match.team1_name && match.winner === 'team1') ||
+          (outcomeBet.prediction === match.team2_name && match.winner === 'team2');
+        if (isWon) anyWin = true;
+
+        const predictionText =
+          outcomeBet.prediction === 'team1' ? match.team1_name :
+          outcomeBet.prediction === 'team2' ? match.team2_name :
+          outcomeBet.prediction === 'draw' ? 'Ничья' : outcomeBet.prediction;
+
+        lines.push(`${isWon ? '✅' : '❌'} Исход: <b>${predictionText}</b>`);
+      }
+
+      // 2. Точный счёт
+      if (matchRow?.score_prediction_enabled === 1) {
+        const sp = db.prepare(`
+          SELECT score_team1, score_team2 FROM score_predictions WHERE user_id = ? AND match_id = ?
+        `).get(bettor.id, matchId);
+        if (sp) {
+          anyBet = true;
+          const isWon =
+            match.team1_score != null && match.team2_score != null &&
+            sp.score_team1 === match.team1_score && sp.score_team2 === match.team2_score;
+          if (isWon) anyWin = true;
+          lines.push(`${isWon ? '✅' : '❌'} Счёт: <b>${sp.score_team1}:${sp.score_team2}</b>`);
+        }
+      }
+
+      // 3. Карточки
+      if (matchRow?.yellow_cards_prediction_enabled === 1 || matchRow?.red_cards_prediction_enabled === 1) {
+        const cp = db.prepare(`
+          SELECT yellow_cards, red_cards FROM cards_predictions WHERE user_id = ? AND match_id = ?
+        `).get(bettor.id, matchId);
+        if (cp) {
+          const parts = [];
+          if (matchRow.yellow_cards_prediction_enabled === 1 && cp.yellow_cards != null) {
+            anyBet = true;
+            const isWon = matchRow.yellow_cards != null && cp.yellow_cards === matchRow.yellow_cards;
+            if (isWon) anyWin = true;
+            parts.push(`${isWon ? '✅' : '❌'} 🟨 <b>${cp.yellow_cards}</b>`);
+          }
+          if (matchRow.red_cards_prediction_enabled === 1 && cp.red_cards != null) {
+            anyBet = true;
+            const isWon = matchRow.red_cards != null && cp.red_cards === matchRow.red_cards;
+            if (isWon) anyWin = true;
+            parts.push(`${isWon ? '✅' : '❌'} 🟥 <b>${cp.red_cards}</b>`);
+          }
+          if (parts.length > 0) lines.push(`Карточки: ${parts.join('  ')}`);
+        }
+      }
+
+      // 4. Финальные параметры
+      const finalBets = db.prepare(`
+        SELECT parameter_type, prediction FROM bets
+        WHERE user_id = ? AND match_id = ? AND is_final_bet = 1
+      `).all(bettor.id, matchId);
+
+      // Итоги финальных параметров ставятся позже — ждём, чтобы не слать неполный отчёт
+      if (finalBets.length > 0 && !finalParams) {
+        continue;
+      }
+
+      for (const fb of finalBets) {
+        anyBet = true;
+        let actual;
+        if (fb.parameter_type === 'goal_difference') {
+          actual = finalParams.goal_difference;
+        } else {
+          actual = finalParams[fb.parameter_type];
+        }
+        const isWon = actual != null && String(fb.prediction) === String(actual);
+        if (isWon) anyWin = true;
+        const label = paramNames[fb.parameter_type] || fb.parameter_type;
+        lines.push(`${isWon ? '✅' : '❌'} ${label}: <b>${fb.prediction}</b>`);
+      }
+
+      if (!anyBet) continue;
+
+      const message = `${anyWin ? '✅' : '❌'} <b>Результат матча</b>
 
 🏆 Турнир: ${match.event_name}
 ⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>
 🏁 Итог: <b>${resultText}</b>${scoreText}
 
-🎯 Ваш прогноз: <b>${predictionText}</b>
-${isWon ? '🎉 Поздравляем! Вы угадали!' : '😔 К сожалению, прогноз не сбылся'}
+🎯 <b>Ваши прогнозы:</b>
+${lines.join('\n')}
+${anyWin ? '\n🎉 Поздравляем! Есть угаданные прогнозы!' : '\n😔 К сожалению, ни один прогноз не сбылся'}
 
 🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
 
