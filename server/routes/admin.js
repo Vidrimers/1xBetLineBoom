@@ -1753,7 +1753,8 @@ router.post("/api/admin/test-auto-counting", async (req, res) => {
                 }
                 
                 personalMessage += `\n\n📅 Дата: ${formatDate(date)}\n🏆 Тур: ${round}`;
-                
+                personalMessage += `\n\n<i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ» → «Еще» → «Результаты матчей»</i>`;
+
                 await sendTelegramMessage(stats.telegramId, personalMessage);
               }
             }
@@ -2518,6 +2519,8 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
             }
           }
 
+          personalMessage += `\n\n<i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ» → «Еще» → «Результаты матчей»</i>`;
+
           // Отправляем личное сообщение через sendUserMessage (с кнопками реакций)
           try {
             await sendUserMessage(telegramUser.telegram_id, personalMessage);
@@ -3185,7 +3188,9 @@ router.post("/api/admin/recount-results", async (req, res) => {
                 personalMessage += `Сегодня ты не лучший, у тебя <b>${stats.points} ${userPointsWord}</b>, а лучшие, это малютки 👑 ${winnerNames}! 🎉`;
               }
             }
-            
+
+            personalMessage += `\n\n<i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ» → «Еще» → «Результаты матчей»</i>`;
+
             try {
               const replyMarkup = {
                 inline_keyboard: [

@@ -1387,7 +1387,9 @@ async function notifyMatchResultToBettors(matchId) {
 ${lines.join('\n')}
 ${anyWin ? '\n🎉 Поздравляем! Есть угаданные прогнозы!' : '\n😔 К сожалению, ни один прогноз не сбылся'}
 
-🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>
+
+<i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ» → «Еще» → «Результат каждого матча»</i>`;
 
       try {
         await sendUserMessage(bettor.telegram_id, message, { parse_mode: "HTML" });
