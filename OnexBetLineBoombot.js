@@ -4185,8 +4185,7 @@ async function sendMatchReminders() {
         er.event_id,
         er.hours_before,
         u.telegram_username,
-        e.name as event_name,
-        COALESCE(uns.only_active_tournaments, 0) as only_active_tournaments
+        e.name as event_name
       FROM event_reminders er
       JOIN users u ON er.user_id = u.id
       JOIN events e ON er.event_id = e.id
@@ -4204,21 +4203,6 @@ async function sendMatchReminders() {
     
     // Для каждой настройки напоминания
     for (const reminder of reminders) {
-      // Если включена настройка "только по активным турнирам", проверяем наличие ставок
-      if (reminder.only_active_tournaments === 1) {
-        const hasBets = db.prepare(`
-          SELECT COUNT(*) as count
-          FROM predictions p
-          JOIN matches m ON p.match_id = m.id
-          WHERE p.user_id = ? AND m.event_id = ?
-        `).get(reminder.user_id, reminder.event_id);
-        
-        // Если нет ставок в этом турнире, пропускаем
-        if (!hasBets || hasBets.count === 0) {
-          continue;
-        }
-      }
-      
       // Получаем матчи турнира которые начнутся через N часов
       const matches = db.prepare(`
         SELECT id, team1, team2, match_date

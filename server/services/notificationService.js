@@ -476,7 +476,9 @@ async function checkAndSendPersonalReminders() {
       FROM event_reminders er
       JOIN users u ON er.user_id = u.id
       JOIN events e ON er.event_id = e.id
+      LEFT JOIN user_notification_settings uns ON er.user_id = uns.user_id
       WHERE u.telegram_id IS NOT NULL
+        AND COALESCE(uns.match_reminders, 1) = 1
     `
       )
       .all();
