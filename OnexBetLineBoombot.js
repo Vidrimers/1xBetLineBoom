@@ -55,6 +55,9 @@ const PUBLIC_URL = isDomain
   ? `https://${SERVER_IP}` // Для доменов всегда HTTPS без порта
   : `${PROTOCOL}://${SERVER_IP}${portSuffix}`;
 
+// Публичный URL сайта для кнопок в уведомлениях (SITE_URL в .env, без хардкода)
+const SITE_URL = process.env.SITE_URL || PUBLIC_URL;
+
 console.log(
   `📡 Конфигурация бота: SERVER_URL=${SERVER_URL}, PUBLIC_URL=${PUBLIC_URL}, isDomain=${isDomain}, USE_HTTPS=${USE_HTTPS}, PORT=${SERVER_PORT}, TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}, TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}, THREAD_ID=${THREAD_ID}`
 );
@@ -563,7 +566,7 @@ function stopNotifWorker() {
 }
 
 // Функция для отправки сообщения в группы
-export async function sendGroupNotification(message) {
+export async function sendGroupNotification(message, options = {}) {
   try {
     console.log(`🔔 sendGroupNotification: Начало отправки сообщения`);
     console.log(`   Длина сообщения: ${message.length} символов`);
@@ -588,7 +591,7 @@ export async function sendGroupNotification(message) {
     for (const chatId of chatIds) {
       try {
         console.log(`🔔 sendGroupNotification: Отправляем в чат ${chatId}...`);
-        await sendMessageWithThread(chatId, message);
+        await sendMessageWithThread(chatId, message, options);
         console.log(`✅ Сообщение отправлено в группу ${chatId}`);
       } catch (err) {
         console.error(
@@ -602,6 +605,34 @@ export async function sendGroupNotification(message) {
   }
 }
 
+// JWT для автологина по ссылке из уведомления (3 часа)
+export function buildSiteAuthToken(siteUserId, telegramId) {
+  const secret = process.env.MINIAPP_JWT_SECRET;
+  if (!secret || !siteUserId) return null;
+  try {
+    return jwt.sign(
+      { user_id: siteUserId, telegram_id: telegramId },
+      secret,
+      { expiresIn: "3h" }
+    );
+  } catch (e) {
+    console.error("⚠️ Ошибка генерации site token:", e.message);
+    return null;
+  }
+}
+
+// Ряд инлайн-кнопок «С VPN» + «Открыть в Telegram» (с JWT, без хардкода URL)
+export function buildSiteButtons(siteUserId, telegramId) {
+  const token = buildSiteAuthToken(siteUserId, telegramId);
+  const url = token ? `${SITE_URL}/?token=${token}` : SITE_URL;
+  return [
+    [
+      { text: "🌐 С VPN", url },
+      { text: "📱 Открыть в Telegram", web_app: { url } },
+    ],
+  ];
+}
+
 // Функция для отправки сообщения пользователю
 export async function sendUserMessage(userId, message, options = {}) {
   try {
@@ -609,35 +640,37 @@ export async function sendUserMessage(userId, message, options = {}) {
       console.error("❌ Бот еще не инициализирован!");
       return;
     }
-    
+
     // Добавляем кнопки реакций для личных чатов (если не отключено и это НЕ админ)
     if (!options.noReactionButtons && userId > 0 && userId !== TELEGRAM_ADMIN_ID) {
-      const reactionButtons = {
+      const reactionRows = [
+        [
+          { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
+          { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
+          { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
+          { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
+          { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
+        ],
+        [
+          { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
+          { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
+          { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
+          { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
+          { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
+        ]
+      ];
+
+      // Сохраняем кастомные ряды (например кнопки сайта) и дописываем реакции
+      const existingRows = options.reply_markup?.inline_keyboard || [];
+      options = {
+        ...options,
         reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
-              { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
-              { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
-              { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
-              { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
-            ],
-            [
-              { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
-              { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
-              { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
-              { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
-              { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
-            ]
-          ]
+          inline_keyboard: [...existingRows, ...reactionRows]
         }
       };
-      
-      // Объединяем с существующими опциями
-      options = { ...options, ...reactionButtons };
       console.log(`🔘 Добавлены кнопки реакций для пользователя ${userId}`);
     }
-    
+
     await sendMessageWithThread(userId, message, options);
     console.log(`✅ Сообщение отправлено пользователю ${userId}`);
   } catch (error) {

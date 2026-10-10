@@ -7,7 +7,7 @@ import { requireAdmin } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { normalizeTeamNameForAPI, translateTeamNameToEnglish } from '../utils/helpers.js';
-import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIllegalBet } from '../../OnexBetLineBoombot.js';
+import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIllegalBet, buildSiteButtons } from '../../OnexBetLineBoombot.js';
 import { registerCallbackHandler } from '../../OnexBetLineBoombot.js';
 import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR, ICON_TO_COMPETITION, SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING } from '../config.js';
 import { processedDates, checkDateCompletion, updateMatchesFromAPI, saveProcessedDate, getTimezoneOffset, getSqliteDateOffsetMod } from '../services/autoCountingService.js';
@@ -2522,9 +2522,14 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
 
           personalMessage += `\n\n<i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ» → «Еще» → «Результаты матчей»</i>`;
 
-          // Отправляем личное сообщение через sendUserMessage (с кнопками реакций)
+          // Отправляем личное сообщение через sendUserMessage (кнопки сайта + реакции)
           try {
-            await sendUserMessage(telegramUser.telegram_id, personalMessage);
+            await sendUserMessage(telegramUser.telegram_id, personalMessage, {
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: buildSiteButtons(telegramUser.id, telegramUser.telegram_id),
+              },
+            });
             console.log(`✅ Личное сообщение отправлено ${user.username} (${telegramUser.telegram_id})`);
           } catch (error) {
             console.error(`❌ Ошибка отправки личного сообщения ${user.username}:`, error);

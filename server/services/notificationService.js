@@ -1,7 +1,26 @@
-import { sendGroupNotification, sendAdminNotification, sendUserMessage } from "../../OnexBetLineBoombot.js";
+import { sendGroupNotification, sendAdminNotification, sendUserMessage, buildSiteButtons } from "../../OnexBetLineBoombot.js";
 import { db } from "../database/db.js";
-import { PORT, SERVER_IP } from "../config.js";
+import { PORT, SERVER_IP, SITE_URL } from "../config.js";
 import { getGroupMembership, buildUserMention, buildPlainUserName } from "./telegramService.js";
+
+// Кнопки сайта для ЛС (JWT 3 часа); без userId — обычный URL без токена
+function siteKeyboard(siteUserId, telegramId) {
+  return { reply_markup: { inline_keyboard: buildSiteButtons(siteUserId, telegramId) } };
+}
+
+// Гостевые кнопки для групповых сообщений (без JWT)
+function siteKeyboardGuest() {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "🌐 С VPN", url: SITE_URL },
+          { text: "📱 Открыть в Telegram", web_app: { url: SITE_URL } },
+        ],
+      ],
+    },
+  };
+}
 
 // Отправить уведомление админу о действиях модератора
 async function notifyModeratorAction(moderatorUsername, action, details) {
@@ -283,13 +302,13 @@ ${mentions}
 
 💬 Не забудьте сделать прогноз, малютки!
 
-🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
         console.log(`⏰ Отправляем напоминание в группу для ${matches.length} матчей`);
         console.log(`📝 Сообщение: ${message.substring(0, 150)}...`);
 
         try {
-          await sendGroupNotification(message);
+          await sendGroupNotification(message, siteKeyboardGuest());
           console.log(`✅ sendGroupNotification выполнена успешно`);
         } catch (err) {
           console.error(`❌ ОШИБКА при отправке sendGroupNotification: ${err.message}`);
@@ -438,7 +457,7 @@ ${matchesListWithStatus}
 
 ⏳ Успейте сделать ставку!
 
-🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
         try {
           const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -448,7 +467,12 @@ ${matchesListWithStatus}
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: user.telegram_id, text: message, parse_mode: "HTML" }),
+                body: JSON.stringify({
+                  chat_id: user.telegram_id,
+                  text: message,
+                  parse_mode: "HTML",
+                  reply_markup: siteKeyboard(user.id, user.telegram_id).reply_markup,
+                }),
               }
             );
             console.log(`✅ Уведомление за 3 часа отправлено пользователю ${user.username} (${user.telegram_id})`);
@@ -598,7 +622,12 @@ ${matchesListWithStatus}
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: reminder.telegram_id, text: message, parse_mode: "HTML" }),
+                body: JSON.stringify({
+                  chat_id: reminder.telegram_id,
+                  text: message,
+                  parse_mode: "HTML",
+                  reply_markup: siteKeyboard(reminder.user_id, reminder.telegram_id).reply_markup,
+                }),
               }
             );
             console.log(`✅ Персональное напоминание отправлено пользователю ${reminder.username} о ${matches.length} матчах`);
@@ -648,7 +677,7 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
     if (description) message += `📝 ${description}\n\n`;
     if (dateText) message += `${dateText}\n\n`;
     message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
-    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+    message += `🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -681,8 +710,10 @@ async function sendTournamentAnnouncementToUsers(eventId, name, description, sta
           continue;
         }
 
+        const siteRows = buildSiteButtons(user.id, user.telegram_id);
         const replyMarkup = {
           inline_keyboard: [
+            ...siteRows,
             [
               { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
               { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
@@ -766,7 +797,7 @@ async function notifyTournamentToGroup(eventId, name, description, startDate, en
     if (description) message += `📝 ${description}\n\n`;
     if (dateText) message += `${dateText}\n\n`;
     message += `Приготовьтесь делать прогнозы! 🎯\n\n`;
-    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+    message += `🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
     const requestBody = {
       chat_id: TELEGRAM_CHAT_ID,
@@ -870,7 +901,7 @@ ${matchesText}
 
 ⛔ Ставить больше нельзя!`;
 
-      await sendGroupNotification(message);
+      await sendGroupNotification(message, siteKeyboardGuest());
 
       for (const match of matches) {
         db.prepare("INSERT INTO sent_reminders (match_id, kind) VALUES (?, 'match_start')").run(match.id);
@@ -944,7 +975,10 @@ async function sendMatchStartPersonalNotifications(matches, groupMessage, matchI
       if (alreadySent) continue;
 
       try {
-        await sendUserMessage(user.telegram_id, personalMessage, { parse_mode: "HTML" });
+        await sendUserMessage(user.telegram_id, personalMessage, {
+          parse_mode: "HTML",
+          ...siteKeyboard(user.id, user.telegram_id),
+        });
         for (const matchId of matchIds) {
           db.prepare(
             "INSERT INTO sent_reminders (match_id, user_id, kind) VALUES (?, ?, 'match_start')"
@@ -1019,7 +1053,7 @@ async function checkAndNotifyTournamentStart() {
       if (event.description) personalMessage += `${event.description}\n\n`;
       if (dateText) personalMessage += `${dateText}\n\n`;
       personalMessage += `Время делать прогнозы! Заходи и ставь 🎯\n\n`;
-      personalMessage += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+      personalMessage += `🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
       // Сообщение в группу (THREAD_ID)
       let groupMessage = `🚀 <b>ТУРНИР НАЧАЛСЯ!</b>\n\n`;
@@ -1027,7 +1061,7 @@ async function checkAndNotifyTournamentStart() {
       if (event.description) groupMessage += `${event.description}\n\n`;
       if (dateText) groupMessage += `${dateText}\n\n`;
       groupMessage += `Все на сайт — делаем прогнозы! ⚽🔥\n\n`;
-      groupMessage += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+      groupMessage += `🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
       // Отправляем в личку всем пользователям
       const users = db.prepare(
@@ -1139,7 +1173,7 @@ async function notifyNewRoundsToUsers(eventId, eventName, roundNames, totalMatch
       message += `   ${nearestMatch.team1_name} vs ${nearestMatch.team2_name} (${nearestMatch.round || '—'})\n\n`;
     }
 
-    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>\n\n`;
+    message += `🔗 <a href="${SITE_URL}">Открыть сайт</a>\n\n`;
     message += `💡 Эти уведомления можно отключить в настройках на сайте`;
 
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -1162,26 +1196,11 @@ async function notifyNewRoundsToUsers(eventId, eventName, roundNames, totalMatch
 
         if (telegramEnabled && telegramEnabled.telegram_notifications_enabled === 0) continue;
 
-        const replyMarkup = {
-          inline_keyboard: [
-            [
-              { text: "👍", callback_data: `reaction_positive_thumbsup_${Date.now()}` },
-              { text: "🔥", callback_data: `reaction_positive_fire_${Date.now() + 1}` },
-              { text: "❤️", callback_data: `reaction_positive_heart_${Date.now() + 2}` },
-              { text: "🫡", callback_data: `reaction_positive_salute_${Date.now() + 3}` },
-              { text: "😂", callback_data: `reaction_positive_laugh_${Date.now() + 4}` }
-            ],
-            [
-              { text: "👎", callback_data: `reaction_negative_thumbsdown_${Date.now()}` },
-              { text: "😐", callback_data: `reaction_negative_neutral_${Date.now() + 1}` },
-              { text: "💩", callback_data: `reaction_negative_poop_${Date.now() + 2}` },
-              { text: "🤡", callback_data: `reaction_negative_clown_${Date.now() + 3}` },
-              { text: "🤮", callback_data: `reaction_negative_vomit_${Date.now() + 4}` }
-            ]
-          ]
-        };
-
-        await sendUserMessage(user.telegram_id, message, { parse_mode: "HTML", reply_markup: replyMarkup });
+        // Кнопки сайта; реакции добавит sendUserMessage
+        await sendUserMessage(user.telegram_id, message, {
+          parse_mode: "HTML",
+          ...siteKeyboard(user.id, user.telegram_id),
+        });
         successCount++;
       } catch (error) {
         errorCount++;
@@ -1211,7 +1230,7 @@ async function notifyNewRoundsToGroup(eventName, roundNames, totalMatches, neare
       message += `   ${nearestMatch.team1_name} vs ${nearestMatch.team2_name} (${nearestMatch.round || '—'})\n\n`;
     }
 
-    message += `🔗 <a href="https://${SERVER_IP}">Открыть сайт</a>`;
+    message += `🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
     await sendGroupNotification(message);
     console.log(`✅ Уведомление о турах "${eventName}" отправлено в группу`);
@@ -1391,12 +1410,15 @@ async function notifyMatchResultToBettors(matchId) {
 ${lines.join('\n')}
 ${anyWin ? '\n🎉 Поздравляем! Есть угаданные прогнозы!' : '\n😔 К сожалению, ни один прогноз не сбылся'}
 
-🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>
+🔗 <a href="${SITE_URL}">Открыть сайт</a>
 
 <i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ» → «Еще» → «Результат каждого матча»</i>`;
 
       try {
-        await sendUserMessage(bettor.telegram_id, message, { parse_mode: "HTML" });
+        await sendUserMessage(bettor.telegram_id, message, {
+          parse_mode: "HTML",
+          ...siteKeyboard(bettor.id, bettor.telegram_id),
+        });
         db.prepare(
           `INSERT INTO sent_reminders (match_id, user_id, kind) VALUES (?, ?, 'match_result')`
         ).run(matchId, bettor.id);

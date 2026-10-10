@@ -13,6 +13,8 @@ export const ROOT_DIR = path.resolve(__dirname, "..");
 
 export const PORT = process.env.PORT || 1984;
 export const SERVER_IP = process.env.SERVER_IP || "localhost";
+// Публичный URL сайта (https://domain) для ссылок в уведомлениях
+export const SITE_URL = process.env.SITE_URL || `https://${SERVER_IP}`;
 export const SSTATS_API_KEY = process.env.SSTATS_API_KEY;
 export const SSTATS_API_BASE = "https://api.sstats.net";
 
