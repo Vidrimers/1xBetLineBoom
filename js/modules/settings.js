@@ -133,6 +133,8 @@ export async function loadSettings() {
     if (liveSoundCheckbox) {
       liveSoundCheckbox.checked = notifData.live_sound === true; // По умолчанию выключено
     }
+    // Синхронизируем с currentUser, чтобы goalNotifications видел актуальный флаг
+    state.currentUser.live_sound = notifData.live_sound === true ? 1 : 0;
 
     // Загружаем значения select-настроек из API
     try {

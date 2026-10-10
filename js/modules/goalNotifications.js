@@ -142,9 +142,53 @@ export function addNotificationToQueue(match) {
   }
 }
 
+// ===== ЗВУК (Web Audio + unlock по первому жесту) =====
+// Браузеры блокируют звук без user-gesture — держим один AudioContext
+// и разблокируем его при первом клике/тапе/клавише.
+let sharedAudioContext = null;
+let audioUnlocked = false;
+
+function getAudioContext() {
+  if (!sharedAudioContext) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    sharedAudioContext = new Ctx();
+  }
+  return sharedAudioContext;
+}
+
+function unlockAudio() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      audioUnlocked = true;
+    }).catch(() => {});
+  } else {
+    audioUnlocked = true;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  const unlockEvents = ['pointerdown', 'touchstart', 'click', 'keydown'];
+  const onFirstGesture = () => {
+    unlockAudio();
+    unlockEvents.forEach((evt) => window.removeEventListener(evt, onFirstGesture, true));
+  };
+  unlockEvents.forEach((evt) => window.addEventListener(evt, onFirstGesture, true));
+}
+
 export function playGoalSound() {
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
+
+    // Если аудио ещё не разблокировано — тихо выходим (не молчим с ошибкой)
+    if (audioContext.state === 'suspended') {
+      unlockAudio();
+      return;
+    }
+
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
