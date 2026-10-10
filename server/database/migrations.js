@@ -233,6 +233,14 @@ export function runMigrations() {
     // Колонка уже существует
   }
 
+  // Миграция: добавляем kind в sent_reminders (group_vote / match_start)
+  try {
+    db.exec(`ALTER TABLE sent_reminders ADD COLUMN kind TEXT`);
+    console.log("✅ Колонка kind добавлена в таблицу sent_reminders");
+  } catch (e) {
+    // Колонка уже существует
+  }
+
   // Миграция: добавляем image_url если её нет
   try {
     db.prepare("ALTER TABLE user_awards ADD COLUMN image_url TEXT").run();

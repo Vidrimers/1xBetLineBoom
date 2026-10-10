@@ -193,7 +193,7 @@ async function checkAndRemindNonVoters() {
 
       const matchIds = matches.map(m => m.id);
       const existingReminders = db
-        .prepare(`SELECT match_id FROM sent_reminders WHERE match_id IN (${matchIds.join(',')})`)
+        .prepare(`SELECT match_id FROM sent_reminders WHERE kind = 'group_vote' AND match_id IN (${matchIds.join(',')})`)
         .all();
 
       if (existingReminders.length > 0) {
@@ -281,7 +281,7 @@ ${mentions}
         }
 
         try {
-          const stmt = db.prepare("INSERT INTO sent_reminders (match_id) VALUES (?)");
+          const stmt = db.prepare("INSERT INTO sent_reminders (match_id, kind) VALUES (?, 'group_vote')");
           matches.forEach(match => { stmt.run(match.id); });
           console.log(`📢 Записи в БД добавлены для ${matches.length} матчей`);
         } catch (err) {
@@ -811,7 +811,7 @@ async function checkAndNotifyMatchStart() {
     const matchesByTime = {};
     for (const match of recentlyStartedMatches) {
       const existingNotification = db
-        .prepare("SELECT id FROM sent_reminders WHERE match_id = ?")
+        .prepare("SELECT id FROM sent_reminders WHERE kind = 'match_start' AND match_id = ?")
         .get(match.id);
 
       if (existingNotification) {
@@ -853,7 +853,7 @@ ${matchesText}
       await sendGroupNotification(message);
 
       for (const match of matches) {
-        db.prepare("INSERT INTO sent_reminders (match_id) VALUES (?)").run(match.id);
+        db.prepare("INSERT INTO sent_reminders (match_id, kind) VALUES (?, 'match_start')").run(match.id);
       }
 
       console.log(

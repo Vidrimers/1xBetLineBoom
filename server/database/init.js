@@ -299,12 +299,14 @@ export function initDatabase() {
     )
   `);
 
-  // Таблица для отслеживания отправленных напоминаний о голосовании
+  // Таблица для отслеживания отправленных уведомлений (group_vote / match_start)
   db.exec(`
     CREATE TABLE IF NOT EXISTS sent_reminders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       match_id INTEGER NOT NULL,
       sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      user_id INTEGER,
+      kind TEXT,
       FOREIGN KEY (match_id) REFERENCES matches(id)
     )
   `);
