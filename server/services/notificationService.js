@@ -862,9 +862,7 @@ async function checkAndNotifyMatchStart() {
 ${matchesText}
 🕐 Время: ${matchDate} ${matchTime}
 
-⛔ Ставить больше нельзя!
-
-🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть результаты</a>`;
+⛔ Ставить больше нельзя!`;
 
       await sendGroupNotification(message);
 
