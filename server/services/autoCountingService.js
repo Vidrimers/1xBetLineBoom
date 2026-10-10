@@ -84,21 +84,21 @@ const getAdminSessionToken = () => {
   }
 };
 
-// Отправить результаты (с токеном админа)
-const sendResultsWithAuth = async (dateFrom, dateTo) => {
+// Отправить результаты (с токеном админа). eventId — сводка только по одному турниру
+const sendResultsWithAuth = async (dateFrom, dateTo, eventId = null) => {
   const token = getAdminSessionToken();
   if (!token) {
     console.error('❌ Не удалось получить токен админа для отправки результатов');
     return false;
   }
-  
+
   const response = await fetch(`http://localhost:${PORT}/api/admin/send-counting-results`, {
     method: 'POST',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'x-session-token': token
     },
-    body: JSON.stringify({ dateFrom, dateTo })
+    body: JSON.stringify({ dateFrom, dateTo, eventId: eventId || undefined })
   });
   return response.ok;
 };
@@ -520,7 +520,7 @@ async function updateMatchesFromAPI(matches) {
  */
 async function triggerAutoCountingForDate(dateGroup) {
   try {
-    const { date, round, competition_code } = dateGroup;
+    const { date, round, competition_code, event_id } = dateGroup;
     const dateKey = `${date}_${round}_${competition_code}`;
 
     if (processedDates.has(dateKey)) {
@@ -706,7 +706,8 @@ async function triggerAutoCountingForDate(dateGroup) {
       try {
         console.log(`📤 Отправка результатов в группу и пользователям...`);
 
-        const ok = await sendResultsWithAuth(date, date);
+        // Сводка только по турниру, чей игровой день закрылся
+        const ok = await sendResultsWithAuth(date, date, event_id);
 
         if (ok) {
           console.log(`✅ Результаты отправлены в группу и пользователям`);

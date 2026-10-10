@@ -2121,16 +2121,23 @@ router.delete("/api/admin/rounds/:roundName", (req, res) => {
 });
 
 // POST /api/admin/send-counting-results - Отправить результаты подсчета в группу
+// eventId (опционально) — сводка только по одному турниру (конец игрового дня)
 router.post("/api/admin/send-counting-results", async (req, res) => {
-  const { dateFrom, dateTo } = req.body;
+  const { dateFrom, dateTo, eventId } = req.body;
 
   try {
     if (!dateFrom || !dateTo) {
       return res.status(400).json({ error: "Не указаны даты" });
     }
 
-    // Получаем все турниры
-    const events = db.prepare("SELECT id, name FROM events").all();
+    // Получаем турниры: один (если закрылся день конкретного) или все
+    const events = eventId
+      ? db.prepare("SELECT id, name FROM events WHERE id = ?").all(eventId)
+      : db.prepare("SELECT id, name FROM events").all();
+
+    if (events.length === 0) {
+      return res.status(404).json({ error: "Турнир(ы) не найдены" });
+    }
 
     // Для каждого турнира считаем очки пользователей за период
     const tournamentResults = [];
