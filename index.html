@@ -985,6 +985,25 @@
                   </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px">
+                  <button
+                    onclick="playGoalSound()"
+                    title="Проверить звук"
+                    style="
+                      padding: 8px 14px;
+                      background: rgba(255, 87, 34, 0.15);
+                      color: #ff8a65;
+                      border: 1px solid #ff5722;
+                      border-radius: 5px;
+                      cursor: pointer;
+                      font-size: 13px;
+                      white-space: nowrap;
+                      transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='rgba(255, 87, 34, 0.3)'"
+                    onmouseout="this.style.background='rgba(255, 87, 34, 0.15)'"
+                  >
+                    <svg class="icon" aria-hidden="true"><use href="#icon-bell"></use></svg> Проверить звук
+                  </button>
                   <label class="switch">
                     <input type="checkbox" id="liveSoundCheckbox" onchange="saveLiveSoundSettings()" />
                     <span class="slider"></span>

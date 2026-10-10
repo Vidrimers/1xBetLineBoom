@@ -178,15 +178,17 @@ if (typeof window !== 'undefined') {
   unlockEvents.forEach((evt) => window.addEventListener(evt, onFirstGesture, true));
 }
 
-export function playGoalSound() {
+export async function playGoalSound() {
   try {
     const audioContext = getAudioContext();
     if (!audioContext) return;
 
-    // Если аудио ещё не разблокировано — тихо выходим (не молчим с ошибкой)
+    // Если аудио спит — пробуем разбудить (клик по кнопке = жест)
     if (audioContext.state === 'suspended') {
-      unlockAudio();
-      return;
+      try {
+        await audioContext.resume();
+      } catch (_) {}
+      if (audioContext.state === 'suspended') return;
     }
 
     const oscillator = audioContext.createOscillator();
