@@ -514,7 +514,7 @@ router.get("/api/live-matches", async (req, res) => {
       });
     }
 
-    // Обновляем api_finished для завершённых матчей — сопоставляем по дате
+    // Обновляем api_finished для завершённых матчей — сопоставляем по дате и командам
     const finishedSstatsStatuses = ['Finished', 'After ET', 'After Penalties'];
     for (const match of matches) {
       if (finishedSstatsStatuses.some(s => (match.statusName || '').includes(s))) {
@@ -524,14 +524,27 @@ router.get("/api/live-matches", async (req, res) => {
 
         console.log(`🔍 Ищем завершённый матч: ${match.team1} vs ${match.team2}, дата=${match.match_time}, dateFrom=${dateFrom}, dateTo=${dateTo}, eventId=${eventId}`);
 
-        const dbMatch = db.prepare(`
-          SELECT id, api_finished, match_date FROM matches 
+        // Получаем кандидатов по дате, затем фильтруем по именам команд
+        const candidates = db.prepare(`
+          SELECT id, api_finished, match_date, team1_name, team2_name FROM matches 
           WHERE event_id = ? 
             AND julianday(match_date) >= julianday(?)
             AND julianday(match_date) <= julianday(?)
             AND status != 'finished'
-          LIMIT 1
-        `).get(parseInt(eventId), dateFrom, dateTo);
+        `).all(parseInt(eventId), dateFrom, dateTo);
+
+        // Сверяем имена команд (нормализованно)
+        const normalize = s => (s || '').toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
+        const t1 = normalize(match.team1);
+        const t2 = normalize(match.team2);
+
+        const dbMatch = candidates.find(c => {
+          const cT1 = normalize(c.team1_name);
+          const cT2 = normalize(c.team2_name);
+          const direct = (cT1.includes(t1) || t1.includes(cT1)) && (cT2.includes(t2) || t2.includes(cT2));
+          const reversed = (cT1.includes(t2) || t2.includes(cT1)) && (cT2.includes(t1) || t1.includes(cT2));
+          return direct || reversed;
+        });
 
         console.log(`🔍 Найден в БД:`, dbMatch);
 
