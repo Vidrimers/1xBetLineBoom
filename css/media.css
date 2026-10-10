@@ -3463,17 +3463,17 @@
 
 /* ===== АДАПТИВ ДЛЯ УВЕДОМЛЕНИЙ О ГОЛАХ ===== */
 
-/* Десктоп версия (>1400px) - grid в два ряда с плавным скроллом */
+/* Десктоп версия (>1400px) - одна колонка с плавным скроллом */
 @media (min-width: 1400px) {
   #goalNotifications {
     position: absolute;
     top: 80px;
     left: 20px;
-    max-width: 480px; /* 2 колонки по 230px + gap 10px */
+    max-width: 350px; /* одна карточка */
     max-height: calc(100vh - 100px); /* Ограничиваем высоту viewport */
     overflow-y: auto; /* Скролл если много карточек */
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 10px;
     padding-right: 5px;
   }
