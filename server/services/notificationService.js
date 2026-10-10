@@ -1244,7 +1244,7 @@ async function notifyNewRoundsToGroup(eventName, roundNames, totalMatches, neare
 async function notifyMatchResultToBettors(matchId) {
   try {
     const match = db.prepare(`
-      SELECT m.id, m.team1_name, m.team2_name, m.winner, m.team1_score, m.team2_score, m.event_id, e.name as event_name
+      SELECT m.id, m.team1_name, m.team2_name, m.winner, m.team1_score, m.team2_score, m.event_id, m.is_final, e.name as event_name
       FROM matches m
       JOIN events e ON m.event_id = e.id
       WHERE m.id = ?
@@ -1271,6 +1271,12 @@ async function notifyMatchResultToBettors(matchId) {
     const finalParams = db.prepare(`
       SELECT * FROM final_parameters_results WHERE match_id = ?
     `).get(matchId);
+
+    // Финал: шлём ОДНО полное сообщение после того, как админ записал исход и параметры.
+    // Пока параметров нет — не резаем на "сначала исход, потом параметры".
+    if (match.is_final && !finalParams) {
+      return;
+    }
 
     const bettors = db.prepare(`
       SELECT DISTINCT u.id, u.telegram_id
