@@ -212,6 +212,17 @@ async function checkAndRemindNonVoters() {
         continue;
       }
 
+      // Напоминаем только тем, кто уже играет в этот турнир (есть хотя бы одна ставка в event)
+      const hasAnyBetInEvent = (userId) => {
+        const row = db.prepare(`
+          SELECT COUNT(*) as count
+          FROM bets b
+          JOIN matches m ON b.match_id = m.id
+          WHERE b.user_id = ? AND m.event_id = ?
+        `).get(userId, group.event_id);
+        return row && row.count > 0;
+      };
+
       const usersWithAllBets = allUsers.filter(user => {
         const userBets = db
           .prepare(`SELECT DISTINCT match_id FROM bets WHERE user_id = ? AND match_id IN (${matchIds.join(',')})`)
@@ -221,7 +232,7 @@ async function checkAndRemindNonVoters() {
       });
 
       const nonVotersRaw = allUsers.filter(
-        (user) => !usersWithAllBets.some(u => u.id === user.id)
+        (user) => !usersWithAllBets.some(u => u.id === user.id) && hasAnyBetInEvent(user.id)
       );
 
       const nonVoters = [];
@@ -293,7 +304,7 @@ ${mentions}
           console.error(`❌ ОШИБКА при добавлении в БД: ${err.message}`);
         }
       } else {
-        console.log(`⏰ Нет непроголосовавших пользователей для группы матчей (все сделали ставки)`);
+        console.log(`⏰ Нет непроголосовавших (все поставили, либо никто ещё не играл в этом турнире)`);
       }
     }
   } catch (error) {
