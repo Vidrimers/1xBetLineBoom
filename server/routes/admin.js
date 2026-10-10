@@ -785,6 +785,57 @@ router.post("/api/admin/sync-telegram-usernames", async (req, res) => {
   }
 });
 
+// GET /api/admin/telegram-username-changes - История смен TG-ников (пагинация + поиск)
+router.get("/api/admin/telegram-username-changes", (req, res) => {
+  const isAdminUser = req.authenticatedUsername === process.env.ADMIN_DB_NAME;
+  if (!isAdminUser) {
+    return res.status(403).json({ error: "Доступ запрещён" });
+  }
+
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 15));
+    const q = (req.query.q || '').trim().toLowerCase();
+    const offset = (page - 1) * limit;
+
+    let where = '';
+    const params = [];
+    if (q) {
+      where = `WHERE LOWER(COALESCE(site_username, '')) LIKE ?
+                  OR LOWER(COALESCE(old_username, '')) LIKE ?
+                  OR LOWER(COALESCE(new_username, '')) LIKE ?`;
+      const like = `%${q}%`;
+      params.push(like, like, like);
+    }
+
+    const total = db
+      .prepare(`SELECT COUNT(*) as cnt FROM telegram_username_changes ${where}`)
+      .get(...params).cnt;
+
+    const items = db
+      .prepare(
+        `SELECT id, user_id, site_username, old_username, new_username, source, changed_at
+         FROM telegram_username_changes
+         ${where}
+         ORDER BY changed_at DESC, id DESC
+         LIMIT ? OFFSET ?`
+      )
+      .all(...params, limit, offset);
+
+    res.json({
+      success: true,
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
+  } catch (error) {
+    console.error("❌ Ошибка получения истории TG-ников:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/admin/users/:userId - Удалить пользователя (только для админа)
 router.delete("/api/admin/users/:userId", async (req, res) => {
   const { userId } = req.params;

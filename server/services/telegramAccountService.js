@@ -93,6 +93,16 @@ function applyTelegramUsername({ telegramId, newUsername, firstName, source, sil
 
   if (changed) {
     db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(clean, user.id);
+
+    // История смен — пишем всегда, в т.ч. silent (пакетный прогон)
+    try {
+      db.prepare(
+        `INSERT INTO telegram_username_changes (user_id, site_username, old_username, new_username, source)
+         VALUES (?, ?, ?, ?, ?)`
+      ).run(user.id, user.username, oldUsername, clean, source || null);
+    } catch (err) {
+      console.error("⚠️ Не удалось записать историю смены TG ника:", err.message);
+    }
   }
 
   upsertTelegramUserRow(telegramId, clean, firstName);

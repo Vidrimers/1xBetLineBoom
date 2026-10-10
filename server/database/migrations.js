@@ -102,6 +102,25 @@ export function runMigrations() {
     // Таблица уже существует
   }
 
+  // История смен Telegram-ников
+  try {
+    db.prepare(
+      `
+      CREATE TABLE IF NOT EXISTS telegram_username_changes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        site_username TEXT,
+        old_username TEXT,
+        new_username TEXT,
+        source TEXT,
+        changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `
+    ).run();
+  } catch (error) {
+    // Таблица уже существует
+  }
+
   // Добавляем колонки для финального матча
   try {
     db.prepare("ALTER TABLE matches ADD COLUMN is_final BOOLEAN DEFAULT 0").run();

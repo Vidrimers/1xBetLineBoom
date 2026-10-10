@@ -484,6 +484,11 @@ import {
   openTelegramUsernamesModal,
   runTelegramUsernamesSync,
   closeTelegramUsernamesModal,
+  toggleTelegramHistorySearch,
+  clearTelegramHistorySearch,
+  loadTelegramHistory,
+  telegramHistoryPrev,
+  telegramHistoryNext,
 } from './modules/telegramUsernames.js';
 import {
   openTerminalModal,
@@ -735,6 +740,8 @@ Object.assign(window, {
   openTimezoneOffsetModal, closeTimezoneOffsetModal, saveTimezoneOffset,
   // telegramUsernames
   openTelegramUsernamesModal, runTelegramUsernamesSync, closeTelegramUsernamesModal,
+  toggleTelegramHistorySearch, clearTelegramHistorySearch, loadTelegramHistory,
+  telegramHistoryPrev, telegramHistoryNext,
   // terminal
   openTerminalModal, closeTerminalModal, refreshTerminalLogs, escapeHtml,
   clearTerminalLogs, saveTerminalLogs, toggleTerminalAutoScroll,
