@@ -1650,6 +1650,23 @@ router.put("/api/user/:userId/notify-on-view", requireOwnership, async (req, res
   }
 });
 
+// Cooldown уведомлений о просмотре: один пинг на просмотр за 30 минут
+const VIEW_NOTIFY_COOLDOWN_MS = 30 * 60 * 1000;
+const viewNotifyCooldown = new Map();
+
+function shouldNotifyView(type, viewedUserId, eventId) {
+  const key = `${type}:${viewedUserId}:${eventId}`;
+  const last = viewNotifyCooldown.get(key);
+  const now = Date.now();
+  if (last && now - last < VIEW_NOTIFY_COOLDOWN_MS) return false;
+  viewNotifyCooldown.set(key, now);
+  if (viewNotifyCooldown.size > 1000) {
+    const firstKey = viewNotifyCooldown.keys().next().value;
+    viewNotifyCooldown.delete(firstKey);
+  }
+  return true;
+}
+
 // POST /api/notify-view-bets - Уведомить пользователя о просмотре его ставок
 router.post("/api/notify-view-bets", async (req, res) => {
   try {
@@ -1660,15 +1677,20 @@ router.post("/api/notify-view-bets", async (req, res) => {
     }
 
     // Получаем информацию о пользователе чьи ставки смотрят
-    const user = db.prepare("SELECT username, telegram_username, notify_on_view FROM users WHERE id = ?").get(viewedUserId);
+    const user = db.prepare("SELECT username, telegram_username, notify_on_view, telegram_notifications_enabled FROM users WHERE id = ?").get(viewedUserId);
     
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    // Проверяем включены ли уведомления
-    if (user.notify_on_view === 0) {
+    // Проверяем включены ли уведомления (тумблер + мастер ЛС)
+    if (user.notify_on_view === 0 || user.telegram_notifications_enabled === 0) {
       return res.json({ success: true, notified: false, reason: "notifications_disabled" });
+    }
+
+    // Не спамим при повторных открытиях
+    if (!shouldNotifyView('bets', viewedUserId, eventId)) {
+      return res.json({ success: true, notified: false, reason: "cooldown" });
     }
 
     // Получаем информацию о турнире
@@ -1729,15 +1751,20 @@ router.post("/api/notify-view-bracket", async (req, res) => {
     }
 
     // Получаем информацию о пользователе чью сетку смотрят
-    const user = db.prepare("SELECT username, telegram_username, notify_on_view FROM users WHERE id = ?").get(viewedUserId);
+    const user = db.prepare("SELECT username, telegram_username, notify_on_view, telegram_notifications_enabled FROM users WHERE id = ?").get(viewedUserId);
     
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    // Проверяем включены ли уведомления
-    if (user.notify_on_view === 0) {
+    // Проверяем включены ли уведомления (тумблер + мастер ЛС)
+    if (user.notify_on_view === 0 || user.telegram_notifications_enabled === 0) {
       return res.json({ success: true, notified: false, reason: "notifications_disabled" });
+    }
+
+    // Не спамим при повторных открытиях
+    if (!shouldNotifyView('bracket', viewedUserId, eventId)) {
+      return res.json({ success: true, notified: false, reason: "cooldown" });
     }
 
     // Получаем информацию о турнире

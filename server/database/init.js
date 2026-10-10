@@ -92,7 +92,15 @@ export function runUsersMigrations() {
     // Колонка уже существует, игнорируем
   }
 
-  console.log("✅ Миграции для таблицы users завершены");
+    // Миграция: добавляем notify_on_view если её нет
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN notify_on_view INTEGER DEFAULT 1`);
+    console.log("✅ Колонка notify_on_view добавлена в таблицу users");
+  } catch (e) {
+    // Колонка уже существует, игнорируем
+  }
+
+console.log("✅ Миграции для таблицы users завершены");
 }
 
 // Инициализация всех таблиц БД

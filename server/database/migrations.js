@@ -389,6 +389,20 @@ export function runMigrations() {
     console.error("❌ Ошибка миграции user_notification_settings:", error);
   }
 
+  // Миграция: добавление колонки notify_on_view если её нет
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(users)").all();
+    const hasNotifyOnView = tableInfo.some(col => col.name === 'notify_on_view');
+
+    if (!hasNotifyOnView) {
+      console.log("🔄 Миграция: добавление колонки notify_on_view в users");
+      db.exec(`ALTER TABLE users ADD COLUMN notify_on_view INTEGER DEFAULT 1`);
+      console.log("✅ Миграция завершена");
+    }
+  } catch (error) {
+    console.error("❌ Ошибка миграции users:", error);
+  }
+
   // Миграция: таблица отслеживания инактивности пользователей по турам
   try {
     db.exec(`
