@@ -64,6 +64,7 @@ import {
 } from "./services/notificationService.js";
 
 import { checkAndAutoCount } from "./services/autoCountingService.js";
+import { startTelegramUsernameSync } from "./services/telegramUsernameSyncService.js";
 
 // ===== РОУТЫ =====
 import authRouter from "./routes/auth.js";
@@ -300,6 +301,9 @@ checkAndNotifyTournamentStart();
 console.log(
   "🚀 Фоновая задача уведомления о старте турниров запущена (интервал: 30 минут)"
 );
+
+// Синхронизация Telegram username (каждые 12 часов) + сразу при старте
+startTelegramUsernameSync();
 
 // ===== ЗАПУСК СЕРВЕРА =====
 app.listen(PORT, "0.0.0.0", () => {

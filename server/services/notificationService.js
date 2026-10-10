@@ -1,7 +1,7 @@
 import { sendGroupNotification, sendAdminNotification, sendUserMessage } from "../../OnexBetLineBoombot.js";
 import { db } from "../database/db.js";
 import { PORT, SERVER_IP } from "../config.js";
-import { isUserInGroup } from "./telegramService.js";
+import { getGroupMembership, buildUserMention } from "./telegramService.js";
 
 // Отправить уведомление админу о действиях модератора
 async function notifyModeratorAction(moderatorUsername, action, details) {
@@ -227,9 +227,9 @@ async function checkAndRemindNonVoters() {
       const nonVoters = [];
       for (const user of nonVotersRaw) {
         if (user.telegram_id) {
-          const inGroup = await isUserInGroup(user.telegram_id);
+          const { inGroup, user: tgUser } = await getGroupMembership(user.telegram_id);
           if (inGroup) {
-            nonVoters.push(user);
+            nonVoters.push({ ...user, tgUser });
           } else {
             console.log(`⏰ Пользователь ${user.username} (@${user.telegram_username}) не состоит в группе — пропускаем`);
           }
@@ -244,7 +244,7 @@ async function checkAndRemindNonVoters() {
         const matchTime = matchDateTime.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
         const mentions = nonVoters
-          .map((user) => user.telegram_username ? `@${user.telegram_username}` : user.username)
+          .map((user) => buildUserMention(user.telegram_id, user.tgUser, user.telegram_username || user.username))
           .join(", ");
 
         const matchesList = matches.map((m, index) =>
