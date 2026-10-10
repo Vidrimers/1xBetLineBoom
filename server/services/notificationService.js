@@ -14,7 +14,7 @@ function siteKeyboardGuest() {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: "🌐 С VPN", url: SITE_URL },
+          { text: "🌐 Сайт", url: SITE_URL },
           { text: "📱 Открыть в Telegram", web_app: { url: SITE_URL } },
         ],
       ],

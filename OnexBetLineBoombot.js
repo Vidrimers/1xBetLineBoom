@@ -627,7 +627,7 @@ export function buildSiteButtons(siteUserId, telegramId) {
   const url = token ? `${SITE_URL}/?token=${token}` : SITE_URL;
   return [
     [
-      { text: "🌐 С VPN", url },
+      { text: "🌐 Сайт", url },
       { text: "📱 Открыть в Telegram", web_app: { url } },
     ],
   ];
