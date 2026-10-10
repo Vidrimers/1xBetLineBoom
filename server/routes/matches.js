@@ -7,7 +7,7 @@ import { notifyAdmin, notifyModeratorAction, notifyNewRoundsToUsers, notifyNewRo
 import { sendUserMessage } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, ICON_TO_COMPETITION, COMPETITION_DICTIONARY_MAPPING, ROOT_DIR } from '../config.js';
-import { processedDates, saveProcessedDate, checkDateCompletion, updateMatchesFromAPI } from '../services/autoCountingService.js';
+import { processedDates, saveProcessedDate, checkDateCompletion, updateMatchesFromAPI, getSqliteDateOffsetMod } from '../services/autoCountingService.js';
 import { checkRoundInactivity } from '../services/inactivityService.js';
 import { checkAndCreateTournamentCompletionNews } from '../services/tournamentCompletionService.js';
 
@@ -122,8 +122,8 @@ router.get("/api/counting-bets", (req, res) => {
       JOIN events e ON m.event_id = e.id
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       WHERE m.winner IS NULL
-        AND DATE(m.match_date) >= DATE(?)
-        AND DATE(m.match_date) <= DATE(?)
+        AND DATE(m.match_date${getSqliteDateOffsetMod()}) >= DATE(?)
+        AND DATE(m.match_date${getSqliteDateOffsetMod()}) <= DATE(?)
       ORDER BY e.name, u.username, m.match_date
     `
       )

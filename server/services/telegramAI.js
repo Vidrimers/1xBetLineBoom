@@ -7,6 +7,7 @@ import { sendToAI } from './aiChatService.js';
 import { db } from '../database/db.js';
 import { getTournamentParticipantsWithPoints } from '../utils/tournamentData.js';
 import { buildFullAIContext } from '../utils/aiContext.js';
+import { getSqliteDateOffsetMod } from './autoCountingService.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -412,7 +413,7 @@ export async function handleAIMessage(msg, bot) {
                   JOIN matches m ON b.match_id = m.id
                   WHERE b.user_id = ? 
                     AND m.event_id = ?
-                    AND DATE(m.match_date) BETWEEN ? AND ?
+                    AND DATE(m.match_date${getSqliteDateOffsetMod()}) BETWEEN ? AND ?
                     AND m.winner IS NOT NULL
                 `).all(targetUser.id, event.id, dateFromSQL, dateToSQL);
                 

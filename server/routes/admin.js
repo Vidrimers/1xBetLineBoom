@@ -10,7 +10,7 @@ import { normalizeTeamNameForAPI, translateTeamNameToEnglish } from '../utils/he
 import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIllegalBet } from '../../OnexBetLineBoombot.js';
 import { registerCallbackHandler } from '../../OnexBetLineBoombot.js';
 import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR, ICON_TO_COMPETITION, SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING } from '../config.js';
-import { processedDates, checkDateCompletion, updateMatchesFromAPI, saveProcessedDate, getTimezoneOffset } from '../services/autoCountingService.js';
+import { processedDates, checkDateCompletion, updateMatchesFromAPI, saveProcessedDate, getTimezoneOffset, getSqliteDateOffsetMod } from '../services/autoCountingService.js';
 import { syncTelegramUsernamesManual } from '../services/telegramUsernameSyncService.js';
 
 const router = Router();
@@ -1606,7 +1606,7 @@ router.post("/api/admin/test-auto-counting", async (req, res) => {
         JOIN matches m ON b.match_id = m.id
         LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
         LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
-        WHERE DATE(m.match_date) = ?
+        WHERE DATE(m.match_date${getSqliteDateOffsetMod()}) = ?
           AND m.round = ?
           AND m.status != 'finished'
           AND b.is_final_bet = 0
@@ -2137,13 +2137,14 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
 
     for (const event of events) {
       // Получаем завершенные матчи в указанном периоде
+      const dateMod = getSqliteDateOffsetMod();
       const matches = db.prepare(`
         SELECT id, team1_name, team2_name, winner, match_date
         FROM matches
         WHERE event_id = ? 
           AND winner IS NOT NULL
-          AND DATE(match_date) >= DATE(?)
-          AND DATE(match_date) <= DATE(?)
+          AND DATE(match_date${dateMod}) >= DATE(?)
+          AND DATE(match_date${dateMod}) <= DATE(?)
       `).all(event.id, dateFrom, dateTo);
 
       if (matches.length === 0) continue;
@@ -2561,7 +2562,7 @@ router.get("/api/admin/get-events-for-date", (req, res) => {
         COUNT(*) as matches_count
       FROM matches m
       JOIN events e ON m.event_id = e.id
-      WHERE DATE(m.match_date) = ?
+      WHERE DATE(m.match_date${getSqliteDateOffsetMod()}) = ?
       GROUP BY e.id, e.name
       ORDER BY e.name
     `).all(date);
@@ -2590,7 +2591,7 @@ router.get("/api/admin/get-rounds-for-event", (req, res) => {
         SUM(CASE WHEN m.status = 'finished' THEN 1 ELSE 0 END) as finished_count
       FROM matches m
       WHERE m.event_id = ?
-        AND DATE(m.match_date) = ?
+        AND DATE(m.match_date${getSqliteDateOffsetMod()}) = ?
       GROUP BY m.round
       ORDER BY m.round
     `).all(eventId, date);

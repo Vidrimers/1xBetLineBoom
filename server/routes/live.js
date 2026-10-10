@@ -7,6 +7,7 @@ import { db } from '../database/db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { notifyAdmin } from '../services/notificationService.js';
+import { getSqliteDateOffsetMod } from '../services/autoCountingService.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, COMPETITION_DICTIONARY_MAPPING, PLAYERS_DICTIONARY_MAPPING, ICON_TO_COMPETITION, ROOT_DIR } from '../config.js';
 import { normalizeTeamNameForAPI, translateTeamNameToEnglish, normalizeTeamName, getMatchStatus } from '../utils/helpers.js';
 
@@ -526,7 +527,8 @@ router.get("/api/live-matches", async (req, res) => {
         const dbMatch = db.prepare(`
           SELECT id, api_finished, match_date FROM matches 
           WHERE event_id = ? 
-            AND match_date >= ? AND match_date <= ?
+            AND julianday(match_date) >= julianday(?)
+            AND julianday(match_date) <= julianday(?)
             AND status != 'finished'
           LIMIT 1
         `).get(parseInt(eventId), dateFrom, dateTo);
@@ -771,11 +773,12 @@ router.get("/api/yesterday-matches", async (req, res) => {
     console.log(`📅 Ищем завершенные матчи сгруппированные по датам`);
     
     // Получаем все завершенные матчи
+    const dateMod = getSqliteDateOffsetMod();
     const allMatches = db.prepare(`
       SELECT 
         m.*,
         e.name as event_name,
-        DATE(m.match_date) as match_day
+        DATE(m.match_date${dateMod}) as match_day
       FROM matches m
       JOIN events e ON m.event_id = e.id
       WHERE m.event_id = ?
@@ -802,7 +805,7 @@ router.get("/api/yesterday-matches", async (req, res) => {
         SELECT COUNT(*) as total
         FROM matches
         WHERE event_id = ?
-          AND DATE(match_date) = ?
+          AND DATE(match_date${dateMod}) = ?
       `).get(eventId, day);
       
       const finishedDayMatches = matchesByDate[day].length;
@@ -1153,7 +1156,7 @@ router.post("/api/admin/fill-upcoming-sstats-ids", async (req, res) => {
       FROM matches
       WHERE event_id = ?
         AND sstats_match_id IS NULL
-        AND match_date > datetime('now')
+        AND julianday(match_date) > julianday('now')
     `;
     
     const params = [eventId];

@@ -169,6 +169,13 @@ function getTimezoneOffset() {
   }
 }
 
+// SQL-модификатор для DATE()/DATETIME() с учётом смещения (напр. ", '+3 hours'")
+// match_date хранится со смещением (+03:00), DATE() без модификатора группирует по UTC
+export function getSqliteDateOffsetMod() {
+  const offset = getTimezoneOffset();
+  return offset === 0 ? '' : `, '${offset > 0 ? '+' : ''}${offset} hours'`;
+}
+
 /**
  * Получить активные даты с незавершенными матчами или недавно завершенными
  */

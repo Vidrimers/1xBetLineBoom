@@ -5,6 +5,7 @@ import { notifyAdmin, notifyUser } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
 import { notifyNewBet, notifyBetDeleted, notifyNewScorePrediction, notifyIllegalBet, sendUserMessage, sendAdminNotification } from '../../OnexBetLineBoombot.js';
 import { notifyMatchResultToBettors } from '../services/notificationService.js';
+import { getSqliteDateOffsetMod } from '../services/autoCountingService.js';
 import { LOG_FILE_PATH, MAX_LOG_SIZE } from '../config.js';
 import fs from 'fs';
 import { handleUserBetInTournament } from '../services/inactivityService.js';
@@ -424,8 +425,8 @@ router.get("/api/counting-bets", (req, res) => {
       JOIN events e ON m.event_id = e.id
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       WHERE m.winner IS NULL
-        AND DATE(m.match_date) >= DATE(?)
-        AND DATE(m.match_date) <= DATE(?)
+        AND DATE(m.match_date${getSqliteDateOffsetMod()}) >= DATE(?)
+        AND DATE(m.match_date${getSqliteDateOffsetMod()}) <= DATE(?)
       ORDER BY e.name, u.username, m.match_date
     `
       )
