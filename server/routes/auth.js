@@ -5,6 +5,12 @@ import rateLimit from 'express-rate-limit';
 import { db } from '../database/db.js';
 import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
+import {
+  findOrCreateUserByTelegram,
+  applyTelegramUsername,
+  notifyTelegramUsernameChange,
+  normalizeTgUsername,
+} from '../services/telegramAccountService.js';
 import { sendUserMessage, notifyTelegramLinked } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
 import { findSimilarUsername } from '../utils/helpers.js';
@@ -430,18 +436,13 @@ router.get("/api/telegram-auth/check-status", async (req, res) => {
 router.post("/api/telegram-auth/complete", async (req, res) => {
   try {
     let { auth_token, telegram_id, first_name, username: tg_username } = req.body;
-    
-    // Приводим telegram username к нижнему регистру
-    if (tg_username) {
-      tg_username = tg_username.toLowerCase();
-    }
-    
+
     if (!auth_token || !telegram_id) {
       return res.status(400).json({ error: "Токен и Telegram ID обязательны" });
     }
 
     const tokenData = telegramAuthTokens.get(auth_token);
-    
+
     if (!tokenData) {
       return res.status(404).json({ error: "Токен не найден" });
     }
@@ -452,47 +453,25 @@ router.post("/api/telegram-auth/complete", async (req, res) => {
       return res.status(400).json({ error: "Токен истек" });
     }
 
-    // Проверяем, существует ли пользователь с таким telegram_id
-    let user = db
-      .prepare("SELECT * FROM users WHERE telegram_id = ?")
-      .get(telegram_id);
-
     const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
-    const isNewUser = !user;
+    const cleanTgUsername = normalizeTgUsername(tg_username);
 
-    if (!user) {
-      // Генерируем уникальное имя "Малютка{число}"
-      let username;
-      let attempts = 0;
-      const maxAttempts = 100;
-      
-      do {
-        const randomNum = Math.floor(Math.random() * 10000);
-        username = `Малютка${randomNum}`;
-        const existing = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
-        if (!existing) break;
-        attempts++;
-      } while (attempts < maxAttempts);
-
-      if (attempts >= maxAttempts) {
-        return res.status(500).json({ error: "Не удалось сгенерировать уникальное имя" });
-      }
-
-      // Создаем нового пользователя
-      const result = db
-        .prepare("INSERT INTO users (username, telegram_id, telegram_username) VALUES (?, ?, ?)")
-        .run(username, telegram_id, tg_username || null);
-      
-      user = { 
-        id: result.lastInsertRowid, 
-        username,
+    let user, isNewUser;
+    try {
+      ({ user, isNewUser } = findOrCreateUserByTelegram({
         telegram_id,
-        telegram_username: tg_username || null
-      };
+        username: cleanTgUsername,
+        first_name,
+        source: "tg-auth-complete",
+      }));
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
 
+    if (isNewUser) {
       // Проверяем, были ли другие пользователи с этого IP
       const otherUsers = db.prepare(`
-        SELECT DISTINCT u.username 
+        SELECT DISTINCT u.username
         FROM sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.ip_address = ? AND u.id != ?
@@ -501,14 +480,14 @@ router.post("/api/telegram-auth/complete", async (req, res) => {
       `).all(ip_address, user.id);
 
       const time = new Date().toLocaleString("ru-RU");
-      
+
       const displayIp = (ip_address === '127.0.0.1' || ip_address === '::1') ? 'Telegram (IP недоступен)' : ip_address;
-      
+
       let message = `👤 НОВЫЙ ПОЛЬЗОВАТЕЛЬ (Telegram)
 
 🆔 ID: ${user.id}
-👤 Имя: ${username}
-📱 Telegram: ${first_name || 'N/A'} ${tg_username ? `(@${tg_username})` : ''}
+👤 Имя: ${user.username}
+📱 Telegram: ${first_name || 'N/A'} ${cleanTgUsername ? `(@${cleanTgUsername})` : ''}
 🔑 TG ID: ${telegram_id}
 🌍 IP: ${displayIp}
 🕐 Время: ${time}`;
@@ -552,57 +531,30 @@ router.post("/api/telegram-auth/complete", async (req, res) => {
 router.post("/api/user/telegram-auth", async (req, res) => {
   try {
     let { telegram_id, first_name, username: tg_username } = req.body;
-    
-    // Приводим telegram username к нижнему регистру
-    if (tg_username) {
-      tg_username = tg_username.toLowerCase();
-    }
-    
+
     if (!telegram_id) {
       return res.status(400).json({ error: "Telegram ID обязателен" });
     }
 
-    // Проверяем, существует ли пользователь с таким telegram_id
-    let user = db
-      .prepare("SELECT * FROM users WHERE telegram_id = ?")
-      .get(telegram_id);
-
     const ip_address = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
-    const isNewUser = !user;
+    const cleanTgUsername = normalizeTgUsername(tg_username);
 
-    if (!user) {
-      // Генерируем уникальное имя "Малютка{число}"
-      let username;
-      let attempts = 0;
-      const maxAttempts = 100;
-      
-      do {
-        const randomNum = Math.floor(Math.random() * 10000);
-        username = `Малютка${randomNum}`;
-        const existing = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
-        if (!existing) break;
-        attempts++;
-      } while (attempts < maxAttempts);
-
-      if (attempts >= maxAttempts) {
-        return res.status(500).json({ error: "Не удалось сгенерировать уникальное имя" });
-      }
-
-      // Создаем нового пользователя
-      const result = db
-        .prepare("INSERT INTO users (username, telegram_id, telegram_username) VALUES (?, ?, ?)")
-        .run(username, telegram_id, tg_username || null);
-      
-      user = { 
-        id: result.lastInsertRowid, 
-        username,
+    let user, isNewUser;
+    try {
+      ({ user, isNewUser } = findOrCreateUserByTelegram({
         telegram_id,
-        telegram_username: tg_username || null
-      };
+        username: cleanTgUsername,
+        first_name,
+        source: "tg-auth",
+      }));
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
 
+    if (isNewUser) {
       // Проверяем, были ли другие пользователи с этого IP
       const otherUsers = db.prepare(`
-        SELECT DISTINCT u.username 
+        SELECT DISTINCT u.username
         FROM sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.ip_address = ? AND u.id != ?
@@ -612,12 +564,12 @@ router.post("/api/user/telegram-auth", async (req, res) => {
 
       const time = new Date().toLocaleString("ru-RU");
       const displayIp = (ip_address === '127.0.0.1' || ip_address === '::1') ? 'Telegram (IP недоступен)' : ip_address;
-      
+
       let message = `👤 НОВЫЙ ПОЛЬЗОВАТЕЛЬ (Telegram)
 
 🆔 ID: ${user.id}
-👤 Имя: ${username}
-📱 Telegram: ${first_name || 'N/A'} ${tg_username ? `(@${tg_username})` : ''}
+👤 Имя: ${user.username}
+📱 Telegram: ${first_name || 'N/A'} ${cleanTgUsername ? `(@${cleanTgUsername})` : ''}
 🔑 TG ID: ${telegram_id}
 🌍 IP: ${displayIp}
 🕐 Время: ${time}`;
@@ -635,7 +587,7 @@ router.post("/api/user/telegram-auth", async (req, res) => {
       });
     }
 
-    res.json({ 
+    res.json({
       user,
       isNewUser
     });
@@ -785,7 +737,7 @@ router.put("/api/user/:userId/telegram", requireOwnership, async (req, res) => {
       const telegramUser = db
         .prepare("SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?")
         .get(telegram_username);
-      
+
       if (telegramUser && telegramUser.chat_id) {
         telegramId = telegramUser.chat_id;
       }
@@ -804,59 +756,39 @@ router.put("/api/user/:userId/telegram", requireOwnership, async (req, res) => {
       const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
-        const time = new Date().toLocaleString("ru-RU");
-        const action = oldTelegramUsername ? "изменил" : "добавил";
+        await notifyTelegramUsernameChange({
+          user: { ...user, telegram_id: telegramId },
+          oldUsername: oldTelegramUsername ? oldTelegramUsername.toLowerCase() : null,
+          newUsername: telegram_username,
+          source: "site-settings",
+        });
+      }
 
-        // Уведомление админу
-        const adminMessage = `📱 TELEGRAM USERNAME
+      // Личное сообщение пользователю
+      const cleanUsername = telegram_username.toLowerCase();
+      const telegramUser = db
+        .prepare(
+          "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
+        )
+        .get(cleanUsername);
 
-👤 Пользователь: ${user.username}
-✏️ Действие: ${action} свой ТГ
-📲 Username: @${telegram_username}
-🕐 Время: ${time}`;
-
-        try {
-          await fetch(
-            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: TELEGRAM_ADMIN_ID,
-                text: adminMessage,
-              }),
-            }
-          );
-        } catch (err) {
-          console.error("❌ Ошибка отправки уведомления админу:", err);
-        }
-
-        // Личное сообщение пользователю
-        const cleanUsername = telegram_username.toLowerCase();
-        const telegramUser = db
-          .prepare(
-            "SELECT chat_id FROM telegram_users WHERE LOWER(telegram_username) = ?"
-          )
-          .get(cleanUsername);
-
-        if (telegramUser && telegramUser.chat_id) {
-          // Пользователь уже писал боту - отправляем личное сообщение напрямую
-          notifyTelegramLinked(
-            user.username,
-            telegram_username,
-            telegramUser.chat_id
-          );
-          console.log(
-            `✅ Уведомление о привязке отправлено @${telegram_username} (${telegramUser.chat_id})`
-          );
-        } else {
-          // Если пользователь ещё не писал боту, добавляем уведомление в очередь
-          // чтобы отправить как только пользователь напишет боту
-          notifyTelegramLinked(user.username, telegram_username);
-          console.log(
-            `📱 Уведомление о привязке добавлено в очередь для @${telegram_username}`
-          );
-        }
+      if (telegramUser && telegramUser.chat_id) {
+        // Пользователь уже писал боту - отправляем личное сообщение напрямую
+        notifyTelegramLinked(
+          user.username,
+          telegram_username,
+          telegramUser.chat_id
+        );
+        console.log(
+          `✅ Уведомление о привязке отправлено @${telegram_username} (${telegramUser.chat_id})`
+        );
+      } else {
+        // Если пользователь ещё не писал боту, добавляем уведомление в очередь
+        // чтобы отправить как только пользователь напишет боту
+        notifyTelegramLinked(user.username, telegram_username);
+        console.log(
+          `📱 Уведомление о привязке добавлено в очередь для @${telegram_username}`
+        );
       }
 
       // Записываем в лог изменение настроек
@@ -898,34 +830,12 @@ router.delete("/api/user/:userId/telegram", requireOwnership, async (req, res) =
 
     // Отправляем уведомление админу если telegram_username был удалён
     if (oldTelegramUsername) {
-      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-      const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
-
-      if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
-        const time = new Date().toLocaleString("ru-RU");
-        const message = `📱 УДАЛЕНИЕ TELEGRAM USERNAME
-
-👤 Пользователь: ${user.username}
-✏️ Действие: удалил привязку Telegram
-📲 Был: @${oldTelegramUsername}
-🕐 Время: ${time}`;
-
-        try {
-          await fetch(
-            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: TELEGRAM_ADMIN_ID,
-                text: message,
-              }),
-            }
-          );
-        } catch (err) {
-          console.error("❌ Ошибка отправки уведомления в Telegram:", err);
-        }
-      }
+      await notifyTelegramUsernameChange({
+        user,
+        oldUsername: oldTelegramUsername.toLowerCase(),
+        newUsername: null,
+        source: "site-unlink",
+      });
     }
 
     // Записываем в лог удаление настройки
@@ -1702,15 +1612,14 @@ router.post("/api/telegram/register", (req, res) => {
 
     console.log(`📱 Зарегистрирован telegram: @${cleanUsername} → ${chat_id}`);
 
-    // Синхронизируем telegram_username в таблице users (если пользователь привязан по telegram_id)
+    // Синхронизируем ник в users и при изменении уведомляем админа (один раз)
     try {
-      const result = db.prepare(
-        `UPDATE users SET telegram_username = ? WHERE telegram_id = ? AND (telegram_username IS NULL OR telegram_username != ?)`
-      ).run(cleanUsername, chat_id, cleanUsername);
-      
-      if (result.changes > 0) {
-        console.log(`🔄 Синхронизирован telegram_username для chat_id ${chat_id}: @${cleanUsername}`);
-      }
+      applyTelegramUsername({
+        telegramId: chat_id,
+        newUsername: cleanUsername,
+        firstName: first_name,
+        source: "bot-register",
+      });
     } catch (syncError) {
       console.error('⚠️ Ошибка синхронизации telegram_username:', syncError);
       // Не прерываем выполнение, т.к. основная регистрация прошла успешно

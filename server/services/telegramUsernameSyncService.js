@@ -1,36 +1,9 @@
 import { db } from "../database/db.js";
 import { getTelegramUser } from "./telegramService.js";
+import { applyTelegramUsername } from "./telegramAccountService.js";
 
 // Смена ника в Telegram — редкое событие; 12 часов достаточно
 const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000;
-
-function normalizeUsername(username) {
-  return username ? username.replace("@", "").toLowerCase() : null;
-}
-
-function applyUsernameUpdate(userId, telegramId, newUsername, firstName) {
-  const clean = normalizeUsername(newUsername);
-
-  db.prepare("UPDATE users SET telegram_username = ? WHERE id = ?").run(clean, userId);
-
-  if (!clean) {
-    db.prepare("DELETE FROM telegram_users WHERE chat_id = ?").run(telegramId);
-    return;
-  }
-
-  // telegram_users уникален по username: актуальная строка + убираем устаревшие для этого chat_id
-  db.prepare(
-    `INSERT INTO telegram_users (telegram_username, chat_id, first_name)
-     VALUES (?, ?, ?)
-     ON CONFLICT(telegram_username) DO UPDATE SET
-       chat_id = excluded.chat_id,
-       first_name = excluded.first_name`
-  ).run(clean, telegramId, firstName || null);
-
-  db.prepare(
-    "DELETE FROM telegram_users WHERE chat_id = ? AND LOWER(telegram_username) != ?"
-  ).run(telegramId, clean);
-}
 
 async function syncTelegramUsernames() {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -56,27 +29,14 @@ async function syncTelegramUsernames() {
     const tgUser = await getTelegramUser(user.telegram_id);
     if (!tgUser) continue;
 
-    // username из Telegram актуален даже если стал null (юзер убрал @ник)
-    const fresh = normalizeUsername(tgUser.username);
-    const current = normalizeUsername(user.telegram_username);
+    const result = applyTelegramUsername({
+      telegramId: user.telegram_id,
+      newUsername: tgUser.username,
+      firstName: tgUser.first_name,
+      source: "cron-sync",
+    });
 
-    const staleTgRow = fresh
-      ? db
-          .prepare(
-            "SELECT 1 FROM telegram_users WHERE chat_id = ? AND LOWER(telegram_username) != ? LIMIT 1"
-          )
-          .get(user.telegram_id, fresh)
-      : db
-          .prepare("SELECT 1 FROM telegram_users WHERE chat_id = ? LIMIT 1")
-          .get(user.telegram_id);
-
-    if (fresh === current && !staleTgRow) continue;
-
-    applyUsernameUpdate(user.id, user.telegram_id, tgUser.username, tgUser.first_name);
-    updated++;
-    console.log(
-      `🔄 Telegram username sync: user_id=${user.id} @${current || "—"} → @${fresh || "—"}`
-    );
+    if (result?.changed) updated++;
   }
 
   console.log(`🔄 Telegram username sync: обновлено ${updated}`);
