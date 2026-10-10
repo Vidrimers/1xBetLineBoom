@@ -811,7 +811,7 @@ async function checkAndNotifyMatchStart() {
     const recentlyStartedMatches = db
       .prepare(
         `
-      SELECT DISTINCT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name
+      SELECT DISTINCT m.id, m.team1_name, m.team2_name, m.match_date, e.name as event_name, e.id as event_id
       FROM matches m
       JOIN events e ON m.event_id = e.id
       WHERE m.match_date > ? AND m.match_date <= ? AND m.winner IS NULL AND m.match_date IS NOT NULL
@@ -888,6 +888,21 @@ function matchIdsOf(matches) {
   return matches.map((m) => m.id);
 }
 
+// Есть ли у пользователя хотя бы одна ставка в одном из турниров этих матчей
+function hasBetInAnyEvent(userId, matches) {
+  const eventIds = [...new Set(matches.map((m) => m.event_id).filter(Boolean))];
+  if (eventIds.length === 0) return false;
+
+  const placeholders = eventIds.map(() => "?").join(",");
+  const row = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM bets b
+    JOIN matches m ON b.match_id = m.id
+    WHERE b.user_id = ? AND m.event_id IN (${placeholders})
+  `).get(userId, ...eventIds);
+  return row && row.count > 0;
+}
+
 async function sendMatchStartPersonalNotifications(matches, groupMessage, matchIds) {
   try {
     const users = db
@@ -913,6 +928,9 @@ async function sendMatchStartPersonalNotifications(matches, groupMessage, matchI
     let sentCount = 0;
 
     for (const user of users) {
+      // Не спамим тем, кто ни разу не ставил в этом турнире
+      if (!hasBetInAnyEvent(user.id, matches)) continue;
+
       const alreadySent = db
         .prepare(
           `SELECT id FROM sent_reminders WHERE kind = 'match_start' AND user_id = ? AND match_id IN (${placeholders})`
