@@ -1595,6 +1595,7 @@ router.post("/api/admin/test-auto-counting", async (req, res) => {
           u.username,
           u.telegram_id,
           u.telegram_notifications_enabled,
+          COALESCE(uns.match_results, 1) as match_results,
           m.team1_name,
           m.team2_name,
           m.score_prediction_enabled,
@@ -1603,6 +1604,7 @@ router.post("/api/admin/test-auto-counting", async (req, res) => {
         FROM bets b
         JOIN users u ON b.user_id = u.id
         JOIN matches m ON b.match_id = m.id
+        LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
         LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
         WHERE DATE(m.match_date) = ?
           AND m.round = ?
@@ -1625,6 +1627,7 @@ router.post("/api/admin/test-auto-counting", async (req, res) => {
             userId: bet.user_id,
             telegramId: bet.telegram_id,
             telegramNotificationsEnabled: bet.telegram_notifications_enabled,
+            matchResultsEnabled: bet.match_results,
             points: 0,
             correctResults: 0,
             correctScores: 0
@@ -1726,6 +1729,7 @@ router.post("/api/admin/test-auto-counting", async (req, res) => {
               
               for (const [username, stats] of sortedUsers) {
                 if (!stats.telegramId || stats.telegramNotificationsEnabled !== 1) continue;
+                if (stats.matchResultsEnabled === 0) continue;
                 
                 let personalMessage = '';
                 
@@ -2379,12 +2383,15 @@ router.post("/api/admin/send-counting-results", async (req, res) => {
 
     // Отправляем персонализированные сообщения в личку пользователям
     try {
-      // Получаем всех пользователей с привязанным Telegram и включенной настройкой личных сообщений
+      // Получаем всех пользователей с привязанным Telegram и включенными ЛС
+      // Тумблер "Результаты матчей" управляет именно этими сводками
       const usersWithTelegram = db.prepare(`
         SELECT u.id, u.username, u.telegram_id, u.telegram_username
         FROM users u
+        LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
         WHERE u.telegram_id IS NOT NULL 
           AND u.telegram_notifications_enabled = 1
+          AND COALESCE(uns.match_results, 1) = 1
       `).all();
 
       console.log(`📱 Найдено ${usersWithTelegram.length} пользователей для отправки личных сообщений`);
@@ -2867,6 +2874,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
         u.username,
         u.telegram_id,
         u.telegram_notifications_enabled,
+        COALESCE(uns.match_results, 1) as match_results,
         m.team1_name,
         m.team2_name,
         m.winner,
@@ -2886,6 +2894,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
       JOIN users u ON b.user_id = u.id
       JOIN matches m ON b.match_id = m.id
       JOIN events e ON m.event_id = e.id
+      LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
       LEFT JOIN score_predictions sp ON b.user_id = sp.user_id AND b.match_id = sp.match_id
       LEFT JOIN cards_predictions cp ON b.user_id = cp.user_id AND b.match_id = cp.match_id
       WHERE DATE(m.match_date${offsetMod}) = ?
@@ -2907,6 +2916,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
           userId: bet.user_id,
           telegramId: bet.telegram_id,
           telegramNotificationsEnabled: bet.telegram_notifications_enabled,
+          matchResultsEnabled: bet.match_results,
           points: 0,
           correctResults: 0,
           correctScores: 0,
@@ -3101,6 +3111,7 @@ router.post("/api/admin/recount-results", async (req, res) => {
           
           for (const [username, stats] of sortedUsers) {
             if (!stats.telegramId || stats.telegramNotificationsEnabled !== 1) continue;
+            if (stats.matchResultsEnabled === 0) continue;
             
             let personalMessage = '🔄 <b>Результаты пересчета</b>\n\n';
             personalMessage += `📅 Дата: ${formatDate(date)}\n`;
