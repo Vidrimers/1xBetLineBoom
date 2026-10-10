@@ -12,6 +12,7 @@ import {
   translateTeamNameToEnglish,
 } from "../utils/helpers.js";
 import { checkRoundInactivity } from "./inactivityService.js";
+import { notifyMatchResultToBettors } from "./notificationService.js";
 
 // Хранилище обработанных дат (чтобы не обрабатывать повторно)
 const processedDates = new Set();
@@ -485,6 +486,13 @@ async function updateMatchesFromAPI(matches) {
       insertScoreStmt.run(dbMatch.id, score1, score2);
 
       console.log(`✅ Обновлен матч: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner})${yellowCards !== null ? ` | 🟨${yellowCards}` : ''}${redCards !== null ? ` | 🟥${redCards}` : ''}`);
+
+      // Личные уведомления "Результат матча" тем, кто ставил
+      setImmediate(() => {
+        notifyMatchResultToBettors(dbMatch.id).catch((err) =>
+          console.error('❌ Ошибка отправки результатов ставок (автосчёт):', err)
+        );
+      });
 
       // Проверяем инактивность после обновления матча
       setImmediate(() => {

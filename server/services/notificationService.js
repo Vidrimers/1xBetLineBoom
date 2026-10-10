@@ -1216,6 +1216,95 @@ async function notifyNewRoundsToGroup(eventName, roundNames, totalMatches, neare
   }
 }
 
+// Личные уведомления о результате матча тем, кто на него ставил
+// Включается настройкой "Результаты матчей" + мастер-тумблером ЛС
+async function notifyMatchResultToBettors(matchId) {
+  try {
+    const match = db.prepare(`
+      SELECT m.id, m.team1_name, m.team2_name, m.winner, m.team1_score, m.team2_score, m.event_id, e.name as event_name
+      FROM matches m
+      JOIN events e ON m.event_id = e.id
+      WHERE m.id = ?
+    `).get(matchId);
+
+    if (!match || !match.winner) return;
+
+    const resultText =
+      match.winner === 'draw' ? 'Ничья' :
+      match.winner === 'team1' ? match.team1_name :
+      match.winner === 'team2' ? match.team2_name : match.winner;
+
+    const scoreText =
+      match.team1_score != null && match.team2_score != null
+        ? `\n⚽ Счёт: <b>${match.team1_score}:${match.team2_score}</b>`
+        : '';
+
+    const bettors = db.prepare(`
+      SELECT u.id, u.telegram_id,
+             b.prediction,
+             COALESCE(uns.match_results, 1) as match_results
+      FROM bets b
+      JOIN users u ON b.user_id = u.id
+      LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
+      WHERE b.match_id = ?
+        AND b.is_final_bet = 0
+        AND u.telegram_notifications_enabled = 1
+        AND u.telegram_id IS NOT NULL
+        AND COALESCE(uns.match_results, 1) = 1
+    `).all(matchId);
+
+    if (bettors.length === 0) return;
+
+    let sentCount = 0;
+
+    for (const bettor of bettors) {
+      const alreadySent = db.prepare(
+        `SELECT id FROM sent_reminders WHERE kind = 'match_result' AND user_id = ? AND match_id = ?`
+      ).get(bettor.id, matchId);
+      if (alreadySent) continue;
+
+      const isWon =
+        (bettor.prediction === 'team1' && match.winner === 'team1') ||
+        (bettor.prediction === 'team2' && match.winner === 'team2') ||
+        (bettor.prediction === 'draw' && match.winner === 'draw') ||
+        (bettor.prediction === match.team1_name && match.winner === 'team1') ||
+        (bettor.prediction === match.team2_name && match.winner === 'team2');
+
+      const predictionText =
+        bettor.prediction === 'team1' ? match.team1_name :
+        bettor.prediction === 'team2' ? match.team2_name :
+        bettor.prediction === 'draw' ? 'Ничья' : bettor.prediction;
+
+      const message = `${isWon ? '✅' : '❌'} <b>Результат матча</b>
+
+🏆 Турнир: ${match.event_name}
+⚽ <b>${match.team1_name}</b> vs <b>${match.team2_name}</b>
+🏁 Итог: <b>${resultText}</b>${scoreText}
+
+🎯 Ваш прогноз: <b>${predictionText}</b>
+${isWon ? '🎉 Поздравляем! Вы угадали!' : '😔 К сожалению, прогноз не сбылся'}
+
+🔗 <a href="http://${SERVER_IP}:${PORT}">Открыть сайт</a>`;
+
+      try {
+        await sendUserMessage(bettor.telegram_id, message, { parse_mode: "HTML" });
+        db.prepare(
+          `INSERT INTO sent_reminders (match_id, user_id, kind) VALUES (?, ?, 'match_result')`
+        ).run(matchId, bettor.id);
+        sentCount++;
+      } catch (error) {
+        console.error(`⚠️ Не удалось отправить результат матча пользователю ${bettor.id}:`, error.message);
+      }
+    }
+
+    if (sentCount > 0) {
+      console.log(`✅ Личные уведомления о результате матча ${matchId} отправлены: ${sentCount}`);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при отправке результатов матча:", error);
+  }
+}
+
 export {
   notifyAdmin,
   notifyUser,
@@ -1229,4 +1318,5 @@ export {
   checkAndNotifyTournamentStart,
   notifyNewRoundsToUsers,
   notifyNewRoundsToGroup,
+  notifyMatchResultToBettors,
 };

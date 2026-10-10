@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../database/db.js';
-import { notifyAdmin, notifyModeratorAction, notifyNewRoundsToUsers, notifyNewRoundsToGroup } from '../services/notificationService.js';
+import { notifyAdmin, notifyModeratorAction, notifyNewRoundsToUsers, notifyNewRoundsToGroup, notifyMatchResultToBettors } from '../services/notificationService.js';
 import { sendUserMessage } from '../../OnexBetLineBoombot.js';
 import { writeBetLog } from '../utils/logger.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, ICON_TO_COMPETITION, COMPETITION_DICTIONARY_MAPPING, ROOT_DIR } from '../config.js';
@@ -715,6 +715,15 @@ router.put("/api/admin/matches/:matchId", async (req, res) => {
         req.body.red_cards !== undefined ? req.body.red_cards : null,
         matchId
       );
+
+      // Личные уведомления "Результат матча" тем, кто ставил
+      if (winner) {
+        setImmediate(() => {
+          notifyMatchResultToBettors(matchId).catch((err) =>
+            console.error('❌ Ошибка отправки результатов ставок:', err)
+          );
+        });
+      }
 
       if (isModerator && username) {
         const match = db.prepare("SELECT team1_name, team2_name FROM matches WHERE id = ?").get(matchId);
