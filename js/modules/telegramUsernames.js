@@ -100,53 +100,68 @@ export async function openTelegramUsernamesModal() {
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
           <div style="color:#5a9fd4;font-weight:600;font-size:0.95em;">📜 История смены ников</div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div id="tgHistorySearchWrap" style="
-              display:flex;
-              align-items:center;
-              overflow:hidden;
-              width:36px;
-              max-width:220px;
-              transition:width 0.35s ease;
-              background:rgba(20,25,35,0.65);
-              border:1px solid rgba(90,159,212,0.35);
-              border-radius:8px;
-              height:34px;
+          <div id="tgHistorySearchWrap" style="
+            position:relative;
+            display:flex;
+            align-items:center;
+            overflow:hidden;
+            width:36px;
+            max-width:240px;
+            transition:width 0.35s ease;
+            background:transparent;
+            border:1px solid transparent;
+            border-radius:8px;
+            height:34px;
+          ">
+            <button onclick="toggleTelegramHistorySearch()" title="Поиск" style="
+              width:34px;height:32px;flex-shrink:0;
+              background:transparent;border:none;cursor:pointer;
+              color:#5a9fd4;display:flex;align-items:center;justify-content:center;
+              padding:0;
             ">
-              <button onclick="toggleTelegramHistorySearch()" title="Поиск" style="
-                width:34px;height:32px;flex-shrink:0;
+              <!-- icon-search из icons/icons-sprite.svg -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+            <input
+              id="tgHistorySearchInput"
+              type="text"
+              placeholder="Поиск по нику…"
+              autocomplete="off"
+              style="
+                flex:1;min-width:0;
+                background:transparent;border:none;outline:none;
+                color:#e0e6f0;font-size:0.88em;
+                padding:0 30px 0 2px;
+                opacity:0;
+                transition:opacity 0.25s ease;
+                height:32px;
+              "
+            />
+            <button
+              id="tgHistorySearchClear"
+              onclick="clearTelegramHistorySearch()"
+              title="Очистить"
+              style="
+                position:absolute;
+                right:4px;
+                top:50%;
+                transform:translateY(-50%);
+                width:26px;height:26px;
                 background:transparent;border:none;cursor:pointer;
-                color:#5a9fd4;display:flex;align-items:center;justify-content:center;
-              ">
-                <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
-              </button>
-              <input
-                id="tgHistorySearchInput"
-                type="text"
-                placeholder="Поиск по нику…"
-                autocomplete="off"
-                style="
-                  flex:1;min-width:0;
-                  background:transparent;border:none;outline:none;
-                  color:#e0e6f0;font-size:0.88em;
-                  padding:0 4px 0 0;
-                  opacity:0;
-                  transition:opacity 0.25s ease;
-                "
-              />
-              <button
-                id="tgHistorySearchClear"
-                onclick="clearTelegramHistorySearch()"
-                title="Очистить"
-                style="
-                  width:28px;height:32px;flex-shrink:0;
-                  background:transparent;border:none;cursor:pointer;
-                  color:#8aa0b8;display:none;align-items:center;justify-content:center;
-                "
-              >
-                <svg class="icon" aria-hidden="true"><use href="#icon-clear"></use></svg>
-              </button>
-            </div>
+                color:#8aa0b8;display:none;align-items:center;justify-content:center;
+                padding:0;
+                border-radius:50%;
+              "
+            >
+              <!-- icon-clear из icons/icons-sprite.svg -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -203,7 +218,8 @@ function setHistorySearchExpanded(expanded) {
   if (!wrap) return;
 
   historySearchOpen = expanded;
-  wrap.style.width = expanded ? '220px' : '36px';
+  wrap.style.width = expanded ? '240px' : '36px';
+  wrap.style.borderColor = expanded ? 'rgba(90,159,212,0.35)' : 'transparent';
   if (input) {
     input.style.opacity = expanded ? '1' : '0';
     if (expanded) {
