@@ -533,13 +533,31 @@ async function triggerAutoCountingForDate(dateGroup) {
 
     const { allFinished, matches } = await checkDateCompletion(dateGroup);
 
+    // Пишем результаты по мере завершения матчей, не дожидаясь конца дня
+    const finishedStatuses = [8, 9, 10];
+    const specialStatuses = [13, 14, 15, 17, 18];
+    const readyMatches = matches.filter(
+      ({ apiMatch }) =>
+        apiMatch && (finishedStatuses.includes(apiMatch.status) || specialStatuses.includes(apiMatch.status))
+    );
+
+    if (readyMatches.length > 0) {
+      console.log(`⚡ Пишем результаты для ${readyMatches.length} завершённых матчей (не ждём конца дня)`);
+      const updated = await updateMatchesFromAPI(readyMatches);
+      if (!updated) {
+        console.error(`❌ Не удалось обновить матчи для ${date}`);
+        return;
+      }
+    }
+
     if (!allFinished) {
-      console.log(`⏸️ Не все матчи завершены для ${date}`);
+      console.log(`⏸️ Не все матчи завершены для ${date} (уже записали ${readyMatches.length})`);
       return;
     }
 
     console.log(`✅ Все матчи завершены для ${date}!`);
 
+    // На всякий случай догоняем всё, что осталось
     const matchesWithApi = matches.filter(m => m.apiMatch !== null);
     if (matchesWithApi.length > 0) {
       const updated = await updateMatchesFromAPI(matchesWithApi);

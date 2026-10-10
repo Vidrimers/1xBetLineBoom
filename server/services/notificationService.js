@@ -1379,12 +1379,14 @@ async function notifyMatchResultToBettors(matchId) {
         WHERE user_id = ? AND match_id = ? AND is_final_bet = 1
       `).all(bettor.id, matchId);
 
-      // Итоги финальных параметров ставятся позже — ждём, чтобы не слать неполный отчёт
-      if (finalBets.length > 0 && !finalParams) {
+      // Ждём итоги финальных параметров только если кроме них ставок нет.
+      // Иначе шлём сразу (исход/счёт/карточки), чтобы не ждать конец дня.
+      if (finalBets.length > 0 && !finalParams && lines.length === 0) {
         continue;
       }
 
       for (const fb of finalBets) {
+        if (!finalParams) continue;
         anyBet = true;
         let actual;
         if (fb.parameter_type === 'goal_difference') {
