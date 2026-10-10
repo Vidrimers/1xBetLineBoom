@@ -1217,7 +1217,7 @@ async function notifyNewRoundsToGroup(eventName, roundNames, totalMatches, neare
 }
 
 // Личные уведомления о результате матча тем, кто на него ставил
-// Включается настройкой "Результаты матчей" + мастер-тумблером ЛС
+// Включается настройкой "Результат каждого матча" + мастер-тумблером ЛС
 async function notifyMatchResultToBettors(matchId) {
   try {
     const match = db.prepare(`
@@ -1242,7 +1242,7 @@ async function notifyMatchResultToBettors(matchId) {
     const bettors = db.prepare(`
       SELECT u.id, u.telegram_id,
              b.prediction,
-             COALESCE(uns.match_results, 1) as match_results
+             COALESCE(uns.per_match_results, 1) as per_match_results
       FROM bets b
       JOIN users u ON b.user_id = u.id
       LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
@@ -1250,7 +1250,7 @@ async function notifyMatchResultToBettors(matchId) {
         AND b.is_final_bet = 0
         AND u.telegram_notifications_enabled = 1
         AND u.telegram_id IS NOT NULL
-        AND COALESCE(uns.match_results, 1) = 1
+        AND COALESCE(uns.per_match_results, 1) = 1
     `).all(matchId);
 
     if (bettors.length === 0) return;

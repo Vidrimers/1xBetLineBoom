@@ -3935,10 +3935,22 @@
             <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
               <div style="flex: 1;">
                 <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Результаты матчей</h4>
-                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Уведомления о результатах матчей, на которые вы ставили</p>
+                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Сводка «Результаты за период» с очками и итогами дня</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="notifMatchResults" checked onchange="saveDetailedNotificationSettings()" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Результат каждого матча -->
+            <div class="notification-setting-item" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+              <div style="flex: 1;">
+                <h4 style="margin: 0 0 5px 0; color: #e0e6f0; font-size: 15px;"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg> Результат каждого матча</h4>
+                <p style="margin: 0; color: #b0b8c8; font-size: 13px;">Личные уведомления о каждом матче, на который вы ставили</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notifPerMatchResults" checked onchange="saveDetailedNotificationSettings()" />
                 <span class="slider"></span>
               </label>
             </div>

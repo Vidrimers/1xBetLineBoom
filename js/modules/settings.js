@@ -733,6 +733,7 @@ export async function loadDetailedNotificationSettings() {
       document.getElementById('notifTournamentAnnouncements').checked = settings.tournament_announcements !== false;
       document.getElementById('notifNewRounds').checked = settings.new_rounds !== false;
       document.getElementById('notifMatchResults').checked = settings.match_results !== false;
+      document.getElementById('notifPerMatchResults').checked = settings.per_match_results !== false;
       document.getElementById('notifMatchStart').checked = settings.match_start_notifications !== false;
       document.getElementById('notifSystemMessages').checked = settings.system_messages !== false;
       
@@ -792,6 +793,7 @@ export async function saveDetailedNotificationSettings() {
     tournament_announcements: document.getElementById('notifTournamentAnnouncements').checked,
     new_rounds: document.getElementById('notifNewRounds').checked,
     match_results: document.getElementById('notifMatchResults').checked,
+    per_match_results: document.getElementById('notifPerMatchResults').checked,
     match_start_notifications: document.getElementById('notifMatchStart').checked,
     system_messages: document.getElementById('notifSystemMessages').checked,
   };

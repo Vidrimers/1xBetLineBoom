@@ -416,6 +416,7 @@ export function initDatabase() {
       tournament_announcements INTEGER DEFAULT 1,
       new_rounds INTEGER DEFAULT 1,
       match_results INTEGER DEFAULT 1,
+      per_match_results INTEGER DEFAULT 1,
       match_start_notifications INTEGER DEFAULT 1,
       system_messages INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

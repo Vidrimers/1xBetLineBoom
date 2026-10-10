@@ -231,7 +231,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
     const { userId } = req.params;
     
     let settings = db.prepare(`
-      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, match_start_notifications, system_messages
+      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, per_match_results, match_start_notifications, system_messages
       FROM user_notification_settings
       WHERE user_id = ?
     `).get(userId);
@@ -244,6 +244,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
         tournament_announcements: 1,
         new_rounds: 1,
         match_results: 1,
+        per_match_results: 1,
         match_start_notifications: 1,
         system_messages: 1
       };
@@ -256,6 +257,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
       tournament_announcements: settings.tournament_announcements === 1,
       new_rounds: settings.new_rounds === 1,
       match_results: settings.match_results === 1,
+      per_match_results: settings.per_match_results !== 0,
       match_start_notifications: settings.match_start_notifications !== 0,
       system_messages: settings.system_messages === 1
     });
@@ -268,7 +270,7 @@ router.get("/api/user/:userId/notification-settings", (req, res) => {
 router.post("/api/user/:userId/notification-settings", requireOwnership, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, match_start_notifications, system_messages } = req.body;
+    const { match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, per_match_results, match_start_notifications, system_messages } = req.body;
     
     const user = db.prepare("SELECT id, username FROM users WHERE id = ?").get(userId);
     if (!user) {
@@ -276,14 +278,14 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
     }
     
     const oldSettings = db.prepare(`
-      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, match_start_notifications, system_messages
+      SELECT match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, per_match_results, match_start_notifications, system_messages
       FROM user_notification_settings
       WHERE user_id = ?
     `).get(userId);
     
     db.prepare(`
-      INSERT INTO user_notification_settings (user_id, match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, match_start_notifications, system_messages, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO user_notification_settings (user_id, match_reminders, three_hour_reminders, only_active_tournaments, tournament_announcements, new_rounds, match_results, per_match_results, match_start_notifications, system_messages, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(user_id) 
       DO UPDATE SET 
         match_reminders = excluded.match_reminders,
@@ -292,6 +294,7 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
         tournament_announcements = excluded.tournament_announcements,
         new_rounds = excluded.new_rounds,
         match_results = excluded.match_results,
+        per_match_results = excluded.per_match_results,
         match_start_notifications = excluded.match_start_notifications,
         system_messages = excluded.system_messages,
         updated_at = CURRENT_TIMESTAMP
@@ -303,6 +306,7 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
       tournament_announcements ? 1 : 0,
       new_rounds ? 1 : 0,
       match_results ? 1 : 0,
+      per_match_results === undefined ? 1 : (per_match_results ? 1 : 0),
       match_start_notifications === undefined ? 1 : (match_start_notifications ? 1 : 0),
       system_messages ? 1 : 0
     );
@@ -316,6 +320,7 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
       changes.push(`📢 Объявления о турнирах: ${tournament_announcements ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`⚽ Новые туры: ${new_rounds ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      changes.push(`⚽ Результат каждого матча: ${per_match_results === undefined ? '✅ ВКЛ' : (per_match_results ? '✅ ВКЛ' : '❌ ВЫКЛ')}`);
       changes.push(`⚽ Матч начался: ${match_start_notifications === undefined ? '✅ ВКЛ' : (match_start_notifications ? '✅ ВКЛ' : '❌ ВЫКЛ')}`);
       changes.push(`🔔 Системные уведомления: ${system_messages ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
     } else {
@@ -336,6 +341,10 @@ router.post("/api/user/:userId/notification-settings", requireOwnership, async (
       }
       if (oldSettings.match_results !== (match_results ? 1 : 0)) {
         changes.push(`⚽ Результаты матчей: ${match_results ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
+      }
+      const newPerMatch = per_match_results === undefined ? 1 : (per_match_results ? 1 : 0);
+      if (oldSettings.per_match_results !== newPerMatch) {
+        changes.push(`⚽ Результат каждого матча: ${newPerMatch ? '✅ ВКЛ' : '❌ ВЫКЛ'}`);
       }
       const newMatchStart = match_start_notifications === undefined ? 1 : (match_start_notifications ? 1 : 0);
       if (oldSettings.match_start_notifications !== newMatchStart) {
