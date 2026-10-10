@@ -1651,7 +1651,7 @@ router.put("/api/user/:userId/notify-on-view", requireOwnership, async (req, res
 });
 
 // Cooldown уведомлений о просмотре: один пинг на просмотр за 30 минут
-const VIEW_NOTIFY_COOLDOWN_MS = 30 * 60 * 1000;
+const VIEW_NOTIFY_COOLDOWN_MS = 10 * 60 * 1000;
 const viewNotifyCooldown = new Map();
 
 function shouldNotifyView(type, viewedUserId, eventId) {
