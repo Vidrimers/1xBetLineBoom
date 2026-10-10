@@ -801,9 +801,10 @@ router.get("/api/admin/telegram-username-changes", (req, res) => {
     let where = '';
     const params = [];
     if (q) {
-      where = `WHERE LOWER(COALESCE(site_username, '')) LIKE ?
-                  OR LOWER(COALESCE(old_username, '')) LIKE ?
-                  OR LOWER(COALESCE(new_username, '')) LIKE ?`;
+      // lower_unicode — иначе SQLite LOWER() не уменьшает кириллицу и поиск ломается
+      where = `WHERE lower_unicode(COALESCE(site_username, '')) LIKE ?
+                  OR lower_unicode(COALESCE(old_username, '')) LIKE ?
+                  OR lower_unicode(COALESCE(new_username, '')) LIKE ?`;
       const like = `%${q}%`;
       params.push(like, like, like);
     }

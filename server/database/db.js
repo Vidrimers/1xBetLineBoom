@@ -9,4 +9,11 @@ db.pragma("journal_mode = DELETE");
 // Отключаем FOREIGN KEY constraints для упрощения операций удаления
 db.pragma("foreign_keys = OFF");
 
+// SQL LOWER() в SQLite работает только с ASCII — кириллицу не уменьшает.
+// Своя функция для Unicode-регистронезависимого поиска.
+db.function("lower_unicode", (str) => {
+  if (str == null) return "";
+  return String(str).toLowerCase();
+});
+
 export { db };
