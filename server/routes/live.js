@@ -6,12 +6,84 @@ import { db } from '../database/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { notifyAdmin } from '../services/notificationService.js';
+import { notifyAdmin, notifyMatchResultToBettors } from '../services/notificationService.js';
 import { getSqliteDateOffsetMod } from '../services/autoCountingService.js';
+import { checkRoundInactivity } from '../services/inactivityService.js';
 import { SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING, COMPETITION_DICTIONARY_MAPPING, PLAYERS_DICTIONARY_MAPPING, ICON_TO_COMPETITION, ROOT_DIR } from '../config.js';
 import { normalizeTeamNameForAPI, translateTeamNameToEnglish, normalizeTeamName, getMatchStatus } from '../utils/helpers.js';
 
 const router = Router();
+
+// Мгновенная запись результата матча при api_finished — счёт, победитель, карточки + уведомление
+async function writeImmediateMatchResult(dbMatch, sstatsMatch) {
+  // Получаем полные данные матча из SStats (счёт, события/карточки)
+  const detailsUrl = `${SSTATS_API_BASE}/Games/${sstatsMatch.id}`;
+  const detailsResp = await fetch(detailsUrl, { headers: { "X-API-Key": SSTATS_API_KEY } });
+  if (!detailsResp.ok) {
+    console.warn(`⚠️ Не удалось получить детали матча ${sstatsMatch.id}: HTTP ${detailsResp.status}`);
+    return;
+  }
+  const detailsData = await detailsResp.json();
+  const game = detailsData.data || detailsData;
+
+  // Определяем счёт (с учётом доп. времени / пенальти)
+  const sStatus = game.status;
+  const homeScore = ([9, 10].includes(sStatus) && game.homeFTResult != null) ? game.homeFTResult : game.homeResult;
+  const awayScore = ([9, 10].includes(sStatus) && game.awayFTResult != null) ? game.awayFTResult : game.awayResult;
+
+  if (homeScore == null || awayScore == null) {
+    console.warn(`⚠️ Нет счёта для матча ${dbMatch.id} (SStats ${sstatsMatch.id})`);
+    return;
+  }
+
+  // Определяем isReversed (home/away swap)
+  const event = db.prepare("SELECT icon FROM events WHERE id = ?").get(dbMatch.event_id);
+  const competition_code = event ? ICON_TO_COMPETITION[event.icon] : null;
+  const apiHome = normalizeTeamNameForAPI(translateTeamNameToEnglish(game.homeTeam?.name || '', competition_code));
+  const dbTeam1English = translateTeamNameToEnglish(dbMatch.team1_name, competition_code);
+  const dbHome = normalizeTeamNameForAPI(dbTeam1English);
+  const isReversed = apiHome !== dbHome;
+
+  let winner;
+  if (homeScore > awayScore) winner = isReversed ? 'team2' : 'team1';
+  else if (homeScore < awayScore) winner = isReversed ? 'team1' : 'team2';
+  else winner = 'draw';
+
+  const score1 = isReversed ? awayScore : homeScore;
+  const score2 = isReversed ? homeScore : awayScore;
+
+  // Карточки из events
+  let yellowCards = null;
+  let redCards = null;
+  const eventsArray = game.events || detailsData.events;
+  if (eventsArray && Array.isArray(eventsArray)) {
+    yellowCards = eventsArray.filter(e => e.name === 'Yellow Card').length;
+    redCards = eventsArray.filter(e => e.name === 'Red Card').length;
+  }
+
+  // Пишем результат
+  db.prepare(`
+    UPDATE matches SET status='finished', winner=?, team1_score=?, team2_score=?, yellow_cards=?, red_cards=?
+    WHERE id=?
+  `).run(winner, score1, score2, yellowCards, redCards, dbMatch.id);
+
+  db.prepare(`INSERT OR REPLACE INTO match_scores (match_id, score_team1, score_team2) VALUES (?, ?, ?)`)
+    .run(dbMatch.id, score1, score2);
+
+  console.log(`⚡ Мгновенный результат: ${dbMatch.team1_name} ${score1}-${score2} ${dbMatch.team2_name} (${winner}) 🟨${yellowCards} 🟥${redCards}`);
+
+  // Уведомление "Результат каждого матча"
+  setImmediate(() => {
+    notifyMatchResultToBettors(dbMatch.id).catch(err =>
+      console.error('❌ Ошибка уведомления о результате:', err)
+    );
+  });
+
+  // Проверка инактивности
+  setImmediate(() => {
+    checkRoundInactivity(dbMatch.event_id, dbMatch.round).catch(() => {});
+  });
+}
 
 router.get("/api/fd-matches", async (req, res) => {
   try {
@@ -548,10 +620,17 @@ router.get("/api/live-matches", async (req, res) => {
 
         console.log(`🔍 Найден в БД:`, dbMatch);
 
-        if (dbMatch && dbMatch.api_finished !== 1) {
+        if (dbMatch && dbMatch.status !== 'finished') {
           db.prepare('UPDATE matches SET api_finished = 1, sstats_match_id = ? WHERE id = ?')
             .run(match.id, dbMatch.id);
           console.log(`✅ api_finished=1 для матча DB_id=${dbMatch.id} (SStats id=${match.id})`);
+
+          // Мгновенно пишем полный результат и шлём уведомление
+          try {
+            await writeImmediateMatchResult(dbMatch, match);
+          } catch (err) {
+            console.error(`❌ Ошибка мгновенного результата для DB_id=${dbMatch.id}:`, err.message);
+          }
         }
       }
     }
