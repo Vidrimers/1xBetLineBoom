@@ -816,7 +816,7 @@ async function checkAndNotifyMatchStart() {
     const matchesByTime = {};
     for (const match of recentlyStartedMatches) {
       const existingNotification = db
-        .prepare("SELECT id FROM sent_reminders WHERE kind = 'match_start' AND match_id = ?")
+        .prepare("SELECT id FROM sent_reminders WHERE kind = 'match_start' AND user_id IS NULL AND match_id = ?")
         .get(match.id);
 
       if (existingNotification) {
@@ -864,9 +864,70 @@ ${matchesText}
       console.log(
         `✅ Уведомление о начале ${matchCount} матча(ей) отправлено: ${matches.map((m) => `${m.team1_name} vs ${m.team2_name}`).join(", ")}`
       );
+
+      // Личные уведомления в ЛС (мастер-тумблер + "Матч начался")
+      await sendMatchStartPersonalNotifications(matches, message, matchIdsOf(matches));
     }
   } catch (error) {
     console.error("❌ Ошибка при проверке начала матчей:", error);
+  }
+}
+
+function matchIdsOf(matches) {
+  return matches.map((m) => m.id);
+}
+
+async function sendMatchStartPersonalNotifications(matches, groupMessage, matchIds) {
+  try {
+    const users = db
+      .prepare(
+        `
+      SELECT u.id, u.telegram_id
+      FROM users u
+      LEFT JOIN user_notification_settings uns ON u.id = uns.user_id
+      WHERE u.telegram_notifications_enabled = 1
+        AND u.telegram_id IS NOT NULL
+        AND COALESCE(uns.match_start_notifications, 1) = 1
+    `
+      )
+      .all();
+
+    if (users.length === 0) return;
+
+    const personalMessage = `${groupMessage}
+
+<i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ»</i>`;
+
+    const placeholders = matchIds.map(() => "?").join(",");
+    let sentCount = 0;
+
+    for (const user of users) {
+      const alreadySent = db
+        .prepare(
+          `SELECT id FROM sent_reminders WHERE kind = 'match_start' AND user_id = ? AND match_id IN (${placeholders})`
+        )
+        .get(user.id, ...matchIds);
+
+      if (alreadySent) continue;
+
+      try {
+        await sendUserMessage(user.telegram_id, personalMessage, { parse_mode: "HTML" });
+        for (const matchId of matchIds) {
+          db.prepare(
+            "INSERT INTO sent_reminders (match_id, user_id, kind) VALUES (?, ?, 'match_start')"
+          ).run(matchId, user.id);
+        }
+        sentCount++;
+      } catch (error) {
+        console.error(`⚠️ Не удалось отправить "Матч начался" пользователю ${user.id}:`, error.message);
+      }
+    }
+
+    if (sentCount > 0) {
+      console.log(`✅ Личные уведомления "Матч начался" отправлены: ${sentCount}`);
+    }
+  } catch (error) {
+    console.error("❌ Ошибка при отправке личных уведомлений о начале матча:", error);
   }
 }
 
