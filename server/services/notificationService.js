@@ -1316,6 +1316,7 @@ async function notifyMatchResultToBettors(matchId) {
       const lines = [];
       let anyWin = false;
       let anyBet = false;
+      let extrasMatchedNotCounted = false;
 
       // 1. Исход — от него зависят очки за счёт и карточки (как в подсчёте)
       const outcomeBet = db.prepare(`
@@ -1354,7 +1355,9 @@ async function notifyMatchResultToBettors(matchId) {
             sp.score_team1 === match.team1_score && sp.score_team2 === match.team2_score;
           const isWon = outcomeWon && scoreMatched;
           if (isWon) anyWin = true;
-          lines.push(`${isWon ? '✅' : '❌'} Счёт: <b>${sp.score_team1}:${sp.score_team2}</b>`);
+          else if (scoreMatched) extrasMatchedNotCounted = true;
+          // ✅ — цифра угадана (даже если не засчитана, об этом ниже)
+          lines.push(`${scoreMatched ? '✅' : '❌'} Счёт: <b>${sp.score_team1}:${sp.score_team2}</b>`);
         }
       }
 
@@ -1370,14 +1373,16 @@ async function notifyMatchResultToBettors(matchId) {
             const matched = matchRow.yellow_cards != null && cp.yellow_cards === matchRow.yellow_cards;
             const isWon = outcomeWon && matched;
             if (isWon) anyWin = true;
-            parts.push(`${isWon ? '✅' : '❌'} 🟨 <b>${cp.yellow_cards}</b>`);
+            else if (matched) extrasMatchedNotCounted = true;
+            parts.push(`${matched ? '✅' : '❌'} 🟨 <b>${cp.yellow_cards}</b>`);
           }
           if (matchRow.red_cards_prediction_enabled === 1 && cp.red_cards != null) {
             anyBet = true;
             const matched = matchRow.red_cards != null && cp.red_cards === matchRow.red_cards;
             const isWon = outcomeWon && matched;
             if (isWon) anyWin = true;
-            parts.push(`${isWon ? '✅' : '❌'} 🟥 <b>${cp.red_cards}</b>`);
+            else if (matched) extrasMatchedNotCounted = true;
+            parts.push(`${matched ? '✅' : '❌'} 🟥 <b>${cp.red_cards}</b>`);
           }
           if (parts.length > 0) lines.push(`Карточки: ${parts.join('  ')}`);
         }
@@ -1412,6 +1417,10 @@ async function notifyMatchResultToBettors(matchId) {
 
       if (!anyBet) continue;
 
+      const extrasNote = extrasMatchedNotCounted
+        ? '\nℹ️ Доп. прогнозы угаданы, но не засчитаны — нужен угаданный исход'
+        : '';
+
       const message = `${anyWin ? '✅' : '❌'} <b>Результат матча</b>
 
 🏆 Турнир: ${match.event_name}
@@ -1419,10 +1428,8 @@ async function notifyMatchResultToBettors(matchId) {
 🏁 Итог: <b>${resultText}</b>${scoreText}
 
 🎯 <b>Ваши прогнозы:</b>
-${lines.join('\n')}
-${anyWin ? '\n🎉 Поздравляем! Есть угаданные прогнозы!' : '\n😔 К сожалению, ни один прогноз не сбылся'}
-
-🔗 <a href="${SITE_URL}">Открыть сайт</a>
+${lines.join('\n')}${extrasNote}
+${anyWin ? '\n🎉 Поздравляем! Есть угаданные прогнозы!' : '\n😔 К сожалению, текущий прогноз не сбылся'}
 
 <i>Отключить можно в настройках сайта → «Получение личных сообщений в ТГ» → «Еще» → «Результат каждого матча»</i>`;
 
