@@ -1317,46 +1317,48 @@ async function notifyMatchResultToBettors(matchId) {
       let anyWin = false;
       let anyBet = false;
 
-      // 1. Исход
+      // 1. Исход — от него зависят очки за счёт и карточки (как в подсчёте)
       const outcomeBet = db.prepare(`
         SELECT prediction FROM bets
         WHERE user_id = ? AND match_id = ? AND (is_final_bet = 0 OR is_final_bet IS NULL)
       `).get(bettor.id, matchId);
 
+      let outcomeWon = false;
       if (outcomeBet) {
         anyBet = true;
-        const isWon =
+        outcomeWon =
           (outcomeBet.prediction === 'team1' && match.winner === 'team1') ||
           (outcomeBet.prediction === 'team2' && match.winner === 'team2') ||
           (outcomeBet.prediction === 'draw' && match.winner === 'draw') ||
           (outcomeBet.prediction === match.team1_name && match.winner === 'team1') ||
           (outcomeBet.prediction === match.team2_name && match.winner === 'team2');
-        if (isWon) anyWin = true;
+        if (outcomeWon) anyWin = true;
 
         const predictionText =
           outcomeBet.prediction === 'team1' ? match.team1_name :
           outcomeBet.prediction === 'team2' ? match.team2_name :
           outcomeBet.prediction === 'draw' ? 'Ничья' : outcomeBet.prediction;
 
-        lines.push(`${isWon ? '✅' : '❌'} Исход: <b>${predictionText}</b>`);
+        lines.push(`${outcomeWon ? '✅' : '❌'} Исход: <b>${predictionText}</b>`);
       }
 
-      // 2. Точный счёт
+      // 2. Точный счёт — очко только при угаданном исходе
       if (matchRow?.score_prediction_enabled === 1) {
         const sp = db.prepare(`
           SELECT score_team1, score_team2 FROM score_predictions WHERE user_id = ? AND match_id = ?
         `).get(bettor.id, matchId);
         if (sp) {
           anyBet = true;
-          const isWon =
+          const scoreMatched =
             match.team1_score != null && match.team2_score != null &&
             sp.score_team1 === match.team1_score && sp.score_team2 === match.team2_score;
+          const isWon = outcomeWon && scoreMatched;
           if (isWon) anyWin = true;
           lines.push(`${isWon ? '✅' : '❌'} Счёт: <b>${sp.score_team1}:${sp.score_team2}</b>`);
         }
       }
 
-      // 3. Карточки
+      // 3. Карточки — очки только при угаданном исходе
       if (matchRow?.yellow_cards_prediction_enabled === 1 || matchRow?.red_cards_prediction_enabled === 1) {
         const cp = db.prepare(`
           SELECT yellow_cards, red_cards FROM cards_predictions WHERE user_id = ? AND match_id = ?
@@ -1365,13 +1367,15 @@ async function notifyMatchResultToBettors(matchId) {
           const parts = [];
           if (matchRow.yellow_cards_prediction_enabled === 1 && cp.yellow_cards != null) {
             anyBet = true;
-            const isWon = matchRow.yellow_cards != null && cp.yellow_cards === matchRow.yellow_cards;
+            const matched = matchRow.yellow_cards != null && cp.yellow_cards === matchRow.yellow_cards;
+            const isWon = outcomeWon && matched;
             if (isWon) anyWin = true;
             parts.push(`${isWon ? '✅' : '❌'} 🟨 <b>${cp.yellow_cards}</b>`);
           }
           if (matchRow.red_cards_prediction_enabled === 1 && cp.red_cards != null) {
             anyBet = true;
-            const isWon = matchRow.red_cards != null && cp.red_cards === matchRow.red_cards;
+            const matched = matchRow.red_cards != null && cp.red_cards === matchRow.red_cards;
+            const isWon = outcomeWon && matched;
             if (isWon) anyWin = true;
             parts.push(`${isWon ? '✅' : '❌'} 🟥 <b>${cp.red_cards}</b>`);
           }
