@@ -37,8 +37,11 @@ function findNotificationCard(matchId) {
 }
 
 function clampToViewport(x, y, card) {
-  const maxX = Math.max(8, window.innerWidth - (card.offsetWidth || 300) - 8);
-  const maxY = Math.max(8, window.innerHeight - (card.offsetHeight || 120) - 8);
+  // Не полагаемся на offsetWidth: у free-карточки он может быть «на весь экран»
+  const w = Math.min(card.offsetWidth || 320, 350);
+  const h = card.offsetHeight || 120;
+  const maxX = Math.max(8, window.innerWidth - w - 8);
+  const maxY = Math.max(8, window.innerHeight - h - 8);
   return {
     x: Math.min(Math.max(8, x), maxX),
     y: Math.min(Math.max(8, y), maxY)
@@ -47,15 +50,23 @@ function clampToViewport(x, y, card) {
 
 // Выносим карточку в body (fixed в контейнере с transform не работает)
 function makeCardFree(card, x, y) {
-  const pos = clampToViewport(x, y, card);
+  // Фиксируем ширину ДО выноса: иначе width:100% из media.css растянется на viewport
+  const width = Math.min(350, Math.max(280, card.offsetWidth || 320));
+
   if (card.parentElement !== document.body) {
     document.body.appendChild(card);
   }
   card.classList.add('is-free');
   card.style.position = 'fixed';
+  card.style.width = `${width}px`;
+  card.style.maxWidth = '350px';
+  card.style.minWidth = '280px';
+  card.style.margin = '0';
+  card.style.zIndex = '10001';
+
+  const pos = clampToViewport(x, y, card);
   card.style.left = `${pos.x}px`;
   card.style.top = `${pos.y}px`;
-  card.style.zIndex = '10001';
   return pos;
 }
 
@@ -66,6 +77,10 @@ function makeCardDocked(card) {
   card.style.left = '';
   card.style.top = '';
   card.style.zIndex = '';
+  card.style.width = '';
+  card.style.maxWidth = '';
+  card.style.minWidth = '';
+  card.style.margin = '';
   if (container && card.parentElement !== container) {
     container.appendChild(card);
   }
