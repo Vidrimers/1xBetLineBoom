@@ -557,17 +557,8 @@ async function triggerAutoCountingForDate(dateGroup) {
 
     console.log(`✅ Все матчи завершены для ${date}!`);
 
-    // На всякий случай догоняем всё, что осталось
-    const matchesWithApi = matches.filter(m => m.apiMatch !== null);
-    if (matchesWithApi.length > 0) {
-      const updated = await updateMatchesFromAPI(matchesWithApi);
-      if (!updated) {
-        console.error(`❌ Не удалось обновить матчи для ${date}`);
-        return;
-      }
-    } else {
-      console.log(`ℹ️ Все матчи уже обновлены в БД`);
-    }
+    // Второй прогон не нужен: readyMatches уже покрыл все завершённые.
+    // Иначе updateMatchesFromAPI вызовется повторно и дублирует notify.
 
     processedDates.add(dateKey);
     saveProcessedDate(dateKey);

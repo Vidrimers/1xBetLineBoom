@@ -403,6 +403,35 @@ export function runMigrations() {
     console.error("❌ Ошибка миграции users:", error);
   }
 
+  // Уникальность дедупа уведомлений (match_id, user_id, kind) — защита от дублей
+  try {
+    db.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_sent_reminders_user_kind
+      ON sent_reminders(match_id, user_id, kind)
+      WHERE user_id IS NOT NULL
+    `);
+  } catch (error) {
+    // Индекс уже есть или есть дубли — чистим и создаём заново
+    try {
+      db.exec(`
+        DELETE FROM sent_reminders
+        WHERE user_id IS NOT NULL
+          AND id NOT IN (
+            SELECT MIN(id) FROM sent_reminders
+            WHERE user_id IS NOT NULL
+            GROUP BY match_id, user_id, kind
+          )
+      `);
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_sent_reminders_user_kind
+        ON sent_reminders(match_id, user_id, kind)
+        WHERE user_id IS NOT NULL
+      `);
+    } catch (e) {
+      console.error("❌ Не удалось создать индекс sent_reminders:", e.message);
+    }
+  }
+
   // Миграция: таблица отслеживания инактивности пользователей по турам
   try {
     db.exec(`

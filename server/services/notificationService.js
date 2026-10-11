@@ -1308,10 +1308,13 @@ async function notifyMatchResultToBettors(matchId) {
     let sentCount = 0;
 
     for (const bettor of bettors) {
-      const alreadySent = db.prepare(
-        `SELECT id FROM sent_reminders WHERE kind = 'match_result' AND user_id = ? AND match_id = ?`
-      ).get(bettor.id, matchId);
-      if (alreadySent) continue;
+      // Резервируем дедуп ДО отправки: два параллельных notify (auto-count + live)
+      // иначе проходят SELECT и шлют дубль
+      const claim = db.prepare(`
+        INSERT OR IGNORE INTO sent_reminders (match_id, user_id, kind)
+        VALUES (?, ?, 'match_result')
+      `).run(matchId, bettor.id);
+      if (claim.changes === 0) continue;
 
       const lines = [];
       let anyWin = false;
@@ -1438,11 +1441,12 @@ ${anyWin ? '\n🎉 Поздравляем! Есть угаданные прог�
           parse_mode: "HTML",
           ...siteKeyboard(bettor.id, bettor.telegram_id),
         });
-        db.prepare(
-          `INSERT INTO sent_reminders (match_id, user_id, kind) VALUES (?, ?, 'match_result')`
-        ).run(matchId, bettor.id);
         sentCount++;
       } catch (error) {
+        // Отправка не удалась — снимаем дедуп, чтобы можно было повторить
+        db.prepare(
+          `DELETE FROM sent_reminders WHERE kind = 'match_result' AND user_id = ? AND match_id = ?`
+        ).run(bettor.id, matchId);
         console.error(`⚠️ Не удалось отправить результат матча пользователю ${bettor.id}:`, error.message);
       }
     }
