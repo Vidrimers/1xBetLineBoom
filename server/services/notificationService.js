@@ -424,9 +424,9 @@ async function checkAndNotifyUpcomingMatches() {
         if (user.only_active_tournaments === 1) {
           const hasBets = db.prepare(`
             SELECT COUNT(*) as count
-            FROM predictions p
-            JOIN matches m ON p.match_id = m.id
-            WHERE p.user_id = ? AND m.event_id = ?
+            FROM bets b
+            JOIN matches m ON b.match_id = m.id
+            WHERE b.user_id = ? AND m.event_id = ?
           `).get(user.id, group.event_id);
 
           if (!hasBets || hasBets.count === 0) {
