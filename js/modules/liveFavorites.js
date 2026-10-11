@@ -300,48 +300,55 @@ async function pollFavoriteMatches() {
 
     if (response.ok) {
       const apiMatches = await response.json();
-      // Запоздавший ответ — не затираем данные нового poll
-      if (generation !== pollFavoriteGeneration) return;
+      // Запись только от последнего poll — чтобы старый ответ не затёр новый счёт
+      const isLatest = generation === pollFavoriteGeneration;
 
-      console.log(`⭐ API /live-matches-by-ids вернул ${apiMatches.length} матчей:`, apiMatches.map(m => `${m.team1} ${m.score} ${m.team2}`));
+      console.log(`⭐ API /live-matches-by-ids вернул ${apiMatches.length} матчей (latest=${isLatest}):`, apiMatches.map(m => `${m.team1} ${m.score} ${m.team2}`));
 
-      apiMatches.forEach(match => {
-        let betTeam = null;
-        if (currentUser && currentUser.bets) {
-          const bet = currentUser.bets.find(b => b.match_id === match.id);
-          if (bet) betTeam = bet.prediction;
+      if (isLatest) {
+        apiMatches.forEach(match => {
+          let betTeam = null;
+          if (currentUser && currentUser.bets) {
+            const bet = currentUser.bets.find(b => b.match_id === match.id);
+            if (bet) betTeam = bet.prediction;
+          }
+
+          // Русские имена из localStorage имеют приоритет над API
+          const existingData = getFavoriteMatchData(match.id);
+          const team1 = pickTeamName(existingData?.team1, match.team1 || match.homeTeam);
+          const team2 = pickTeamName(existingData?.team2, match.team2 || match.awayTeam);
+
+          // Счёт: homeResult/awayResult из API надёжнее строкового score
+          const hasResults = match.homeResult !== undefined && match.homeResult !== null &&
+                             match.awayResult !== undefined && match.awayResult !== null;
+          const score = hasResults
+            ? `${match.homeResult}:${match.awayResult}`
+            : (match.score || '0:0');
+
+          const matchData = {
+            id: match.id,
+            team1: team1,
+            team2: team2,
+            score: score,
+            status: match.status || match.statusName || 'live',
+            elapsed: match.elapsed || null,
+            betTeam: betTeam,
+            updatedAt: new Date().toISOString()
+          };
+          saveFavoriteMatchData(match.id, matchData);
+        });
+
+        if (currentUser && currentUser.id && favorites.length > 0) {
+          checkMatchEventsForNotifications(favorites, currentUser.id);
         }
-
-        // Русские имена из localStorage имеют приоритет над API
-        const existingData = getFavoriteMatchData(match.id);
-        const team1 = pickTeamName(existingData?.team1, match.team1 || match.homeTeam);
-        const team2 = pickTeamName(existingData?.team2, match.team2 || match.awayTeam);
-
-        const matchData = {
-          id: match.id,
-          team1: team1,
-          team2: team2,
-          score: match.score || `${match.homeResult || 0}:${match.awayResult || 0}`,
-          status: match.status || match.statusName || 'live',
-          elapsed: match.elapsed || null,
-          betTeam: betTeam,
-          updatedAt: new Date().toISOString()
-        };
-        saveFavoriteMatchData(match.id, matchData);
-      });
-
-
-      if (currentUser && currentUser.id && favorites.length > 0) {
-        checkMatchEventsForNotifications(favorites, currentUser.id);
       }
     }
   } catch (error) {
     console.error('⭐❌ Ошибка fetch в pollFavoriteMatches:', error);
-    return;
   }
 
-  if (generation !== pollFavoriteGeneration) return;
-
+  // Всегда отрисовываем карточки из актуального localStorage,
+  // даже если fetch упал или этот poll уже не последний
   const matches = [];
   favorites.forEach(matchId => {
     const matchData = getFavoriteMatchData(matchId);

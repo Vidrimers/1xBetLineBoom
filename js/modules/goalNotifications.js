@@ -33,7 +33,11 @@ function clearNotificationPosition(matchId) {
 }
 
 function findNotificationCard(matchId) {
-  return document.querySelector(`.goal-notification[data-match-id="${matchId}"]`);
+  return findNotificationCards(matchId)[0] || null;
+}
+
+function findNotificationCards(matchId) {
+  return Array.from(document.querySelectorAll(`.goal-notification[data-match-id="${matchId}"]`));
 }
 
 function formatTeamHtml(name, underlined) {
@@ -377,7 +381,7 @@ export async function playGoalSound() {
 
 export function processMatches(matches, favorites, isDesktop) {
   console.log(`⭐ processMatches: ${matches.length} матчей, isDesktop=${isDesktop}, вкладка: ${document.querySelector('.tab-btn.active')?.textContent?.trim() || 'неизвестно'}`);
-  const foundMatchIds = matches.map(m => m.id);
+  const foundMatchIds = matches.map(m => String(m.id));
 
   if (isDesktop) {
     console.log('🖥 ДЕСКТОП: Обработка матчей...');
@@ -456,7 +460,7 @@ export function processMatches(matches, favorites, isDesktop) {
 
     // Ищем и в колонке, и свободные (body)
     document.querySelectorAll('.goal-notification').forEach(notification => {
-      const matchId = parseInt(notification.getAttribute('data-match-id'));
+      const matchId = String(notification.getAttribute('data-match-id'));
       if (!foundMatchIds.includes(matchId)) {
         console.log(`🗑 Удаляем карточку уведомления для матча ${matchId} (убран из избранного)`);
         notification.classList.add('removing');
@@ -486,60 +490,62 @@ export function processMatches(matches, favorites, isDesktop) {
 export function updateDesktopNotification(match) {
   console.log('🎯 updateDesktopNotification вызвана для матча:', match);
 
-  let notification = findNotificationCard(match.id);
+  const notifications = findNotificationCards(match.id);
 
-  if (notification) {
-    console.log('♻ Обновляем существующую карточку');
+  if (notifications.length > 0) {
+    console.log(`♻ Обновляем существующие карточки (${notifications.length})`);
 
-    // Имена команд: обновляем, если пришли новые (в т.ч. RU вместо EN)
-    const teamsElement = notification.querySelector('.goal-notification-teams');
-    if (teamsElement && match.team1 && match.team2) {
-      const newTeamsHtml = buildTeamsHtml(match.team1, match.team2, match.betTeam);
-      if (teamsElement.innerHTML.trim() !== newTeamsHtml.trim()) {
-        teamsElement.innerHTML = newTeamsHtml;
-        console.log('🔤 Обновлены названия команд на карточке');
-      }
-    }
-
-    const scoreElement = notification.querySelector('.goal-notification-score');
-    const currentScore = scoreElement?.textContent || '';
-    const newScore = match.score || '0:0';
-
-    if (currentScore !== newScore) {
-      console.log(`📊 Обновление счета: ${currentScore} → ${newScore}`);
-      if (scoreElement) {
-        scoreElement.textContent = newScore;
-
-        scoreElement.style.animation = 'none';
-        setTimeout(() => {
-          scoreElement.style.animation = 'goalBounce 0.6s ease-out';
-        }, 10);
-
-        const isDesktop = window.innerWidth > 1400;
-        if (isDesktop) {
-          notification.classList.add('shake');
-          setTimeout(() => {
-            notification.classList.remove('shake');
-          }, 6000);
+    notifications.forEach(notification => {
+      // Имена команд: обновляем, если пришли новые (в т.ч. RU вместо EN)
+      const teamsElement = notification.querySelector('.goal-notification-teams');
+      if (teamsElement && match.team1 && match.team2) {
+        const newTeamsHtml = buildTeamsHtml(match.team1, match.team2, match.betTeam);
+        if (teamsElement.innerHTML.trim() !== newTeamsHtml.trim()) {
+          teamsElement.innerHTML = newTeamsHtml;
+          console.log('🔤 Обновлены названия команд на карточке');
         }
       }
-    }
 
-    const titleElement = notification.querySelector('.goal-notification-title');
-    if (titleElement && match.status) {
-      const isFinished = match.status === 'Finished' ||
-                        match.status === 'finished' ||
-                        match.status === 'Full Time' ||
-                        match.status === 'FT' ||
-                        match.status === 'Completed' ||
-                        match.status === 'completed';
+      const scoreElement = notification.querySelector('.goal-notification-score');
+      const currentScore = scoreElement?.textContent || '';
+      const newScore = match.score || '0:0';
 
-      if (isFinished && titleElement.textContent === 'LIVE') {
-        console.log('🏁 Матч завершен, обновляем статус');
-        titleElement.textContent = 'ЗАВЕРШЕН';
-        titleElement.style.color = '#ff9800';
+      if (currentScore !== newScore) {
+        console.log(`📊 Обновление счета: ${currentScore} → ${newScore}`);
+        if (scoreElement) {
+          scoreElement.textContent = newScore;
+
+          scoreElement.style.animation = 'none';
+          setTimeout(() => {
+            scoreElement.style.animation = 'goalBounce 0.6s ease-out';
+          }, 10);
+
+          const isDesktop = window.innerWidth > 1400;
+          if (isDesktop) {
+            notification.classList.add('shake');
+            setTimeout(() => {
+              notification.classList.remove('shake');
+            }, 6000);
+          }
+        }
       }
-    }
+
+      const titleElement = notification.querySelector('.goal-notification-title');
+      if (titleElement && match.status) {
+        const isFinished = match.status === 'Finished' ||
+                          match.status === 'finished' ||
+                          match.status === 'Full Time' ||
+                          match.status === 'FT' ||
+                          match.status === 'Completed' ||
+                          match.status === 'completed';
+
+        if (isFinished && titleElement.textContent === 'LIVE') {
+          console.log('🏁 Матч завершен, обновляем статус');
+          titleElement.textContent = 'ЗАВЕРШЕН';
+          titleElement.style.color = '#ff9800';
+        }
+      }
+    });
   } else {
     console.log('🆕 Создаем новую карточку');
     showGoalNotification(match);
