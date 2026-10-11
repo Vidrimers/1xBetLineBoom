@@ -166,6 +166,8 @@
   pointer-events: auto;
   position: relative;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .goal-notification::before {
@@ -337,16 +339,17 @@ background: linear-gradient(90deg, rgba(76, 175, 80, 0.5), rgba(139, 195, 74, 0.
 /* Свободная (перетащенная) карточка */
 .goal-notification.is-free {
   margin: 0;
-  /* отменяем width:100% из media.css — иначе на body становится на весь экран */
-  width: 320px;
-  min-width: 280px;
-  max-width: 350px;
+  /* ширина задаётся inline из JS (как в колонке) — не растягивать */
+  max-width: none;
+  min-width: 0;
 }
 
 .goal-notification.is-dragging {
   opacity: 0.95;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   cursor: grabbing !important;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Кнопки фильтра новостей */

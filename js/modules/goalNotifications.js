@@ -37,9 +37,9 @@ function findNotificationCard(matchId) {
 }
 
 function clampToViewport(x, y, card) {
-  // Не полагаемся на offsetWidth: у free-карточки он может быть «на весь экран»
-  const w = Math.min(card.offsetWidth || 320, 350);
-  const h = card.offsetHeight || 120;
+  // Ширина карточки — та, что уже выставлена / измерена, без раздувания
+  const w = card.getBoundingClientRect().width || 320;
+  const h = card.getBoundingClientRect().height || 120;
   const maxX = Math.max(8, window.innerWidth - w - 8);
   const maxY = Math.max(8, window.innerHeight - h - 8);
   return {
@@ -50,8 +50,8 @@ function clampToViewport(x, y, card) {
 
 // Выносим карточку в body (fixed в контейнере с transform не работает)
 function makeCardFree(card, x, y) {
-  // Фиксируем ширину ДО выноса: иначе width:100% из media.css растянется на viewport
-  const width = Math.min(350, Math.max(280, card.offsetWidth || 320));
+  // Запоминаем ТЕКУЩИЙ размер — без min-width, чтобы карточка не раздувалась
+  const width = card.getBoundingClientRect().width || 200;
 
   if (card.parentElement !== document.body) {
     document.body.appendChild(card);
@@ -59,8 +59,8 @@ function makeCardFree(card, x, y) {
   card.classList.add('is-free');
   card.style.position = 'fixed';
   card.style.width = `${width}px`;
-  card.style.maxWidth = '350px';
-  card.style.minWidth = '280px';
+  card.style.maxWidth = 'none';
+  card.style.minWidth = '0';
   card.style.margin = '0';
   card.style.zIndex = '10001';
 
@@ -128,6 +128,10 @@ function attachNotificationDrag(card, matchId) {
 
     if (!moved) {
       moved = true;
+      // Запрет выделения текста на карточке и на сайте под ней
+      e.preventDefault();
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
       makeCardFree(card, origX, origY);
       card.classList.add('is-dragging');
     }
@@ -143,6 +147,8 @@ function attachNotificationDrag(card, matchId) {
     try { card.releasePointerCapture(e.pointerId); } catch (_) {}
     card.style.cursor = '';
     card.classList.remove('is-dragging');
+    document.body.style.userSelect = '';
+    document.body.style.webkitUserSelect = '';
 
     if (moved) {
       const x = parseFloat(card.style.left) || origX;
