@@ -673,4 +673,12 @@
     <path d="M3 11l19-9-9 19-2-8-8-2z"/>
   </symbol>
 
+  <!-- Вернуть на место / Домик -->
+  <symbol id="icon-reset-position" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Вернуть на место</title>
+    <path d="M3 10.5L12 3l9 7.5"/>
+    <path d="M5 9.5V21h14V9.5"/>
+    <path d="M9.5 21v-6.5h5V21"/>
+  </symbol>
+
 </svg>

@@ -10,23 +10,154 @@ export function saveDeletedFinishedMatches() {
   localStorage.setItem('deletedFinishedMatches', JSON.stringify([...deletedFinishedMatches]));
 }
 
+// ===== ПОЗИЦИИ СВОБОДНЫХ КАРТОЧЕК (десктоп) =====
+function isDesktopNotifications() {
+  return window.innerWidth > 1400;
+}
+
+function getSavedNotificationPosition(matchId) {
+  try {
+    const raw = localStorage.getItem(`favoriteMatchPos_${matchId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveNotificationPosition(matchId, x, y) {
+  localStorage.setItem(`favoriteMatchPos_${matchId}`, JSON.stringify({ x, y }));
+}
+
+function clearNotificationPosition(matchId) {
+  localStorage.removeItem(`favoriteMatchPos_${matchId}`);
+}
+
+function findNotificationCard(matchId) {
+  return document.querySelector(`.goal-notification[data-match-id="${matchId}"]`);
+}
+
+function clampToViewport(x, y, card) {
+  const maxX = Math.max(8, window.innerWidth - (card.offsetWidth || 300) - 8);
+  const maxY = Math.max(8, window.innerHeight - (card.offsetHeight || 120) - 8);
+  return {
+    x: Math.min(Math.max(8, x), maxX),
+    y: Math.min(Math.max(8, y), maxY)
+  };
+}
+
+// Выносим карточку в body (fixed в контейнере с transform не работает)
+function makeCardFree(card, x, y) {
+  const pos = clampToViewport(x, y, card);
+  if (card.parentElement !== document.body) {
+    document.body.appendChild(card);
+  }
+  card.classList.add('is-free');
+  card.style.position = 'fixed';
+  card.style.left = `${pos.x}px`;
+  card.style.top = `${pos.y}px`;
+  card.style.zIndex = '10001';
+  return pos;
+}
+
+function makeCardDocked(card) {
+  const container = document.getElementById('goalNotifications');
+  card.classList.remove('is-free', 'is-dragging');
+  card.style.position = '';
+  card.style.left = '';
+  card.style.top = '';
+  card.style.zIndex = '';
+  if (container && card.parentElement !== container) {
+    container.appendChild(card);
+  }
+}
+
+// Вернуть карточку в дефолтную колонку
+export function resetGoalNotificationPosition(matchId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  clearNotificationPosition(matchId);
+  const card = findNotificationCard(matchId);
+  if (card) makeCardDocked(card);
+}
+
+// Drag только на десктопе; клик < 5px — открытие статистики
+function attachNotificationDrag(card, matchId) {
+  if (!isDesktopNotifications()) return;
+
+  let startX = 0, startY = 0, origX = 0, origY = 0;
+  let dragging = false, moved = false;
+
+  card.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('button')) return;
+
+    const rect = card.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    origX = rect.left;
+    origY = rect.top;
+    dragging = true;
+    moved = false;
+    card.setPointerCapture(e.pointerId);
+    card.style.cursor = 'grabbing';
+  });
+
+  card.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (!moved && Math.hypot(dx, dy) < 5) return;
+
+    if (!moved) {
+      moved = true;
+      makeCardFree(card, origX, origY);
+      card.classList.add('is-dragging');
+    }
+
+    const pos = clampToViewport(origX + dx, origY + dy, card);
+    card.style.left = `${pos.x}px`;
+    card.style.top = `${pos.y}px`;
+  });
+
+  const endDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    try { card.releasePointerCapture(e.pointerId); } catch (_) {}
+    card.style.cursor = '';
+    card.classList.remove('is-dragging');
+
+    if (moved) {
+      const x = parseFloat(card.style.left) || origX;
+      const y = parseFloat(card.style.top) || origY;
+      saveNotificationPosition(matchId, x, y);
+      // гасим click открытия статистики после drag
+      card.dataset.justDragged = '1';
+      setTimeout(() => { delete card.dataset.justDragged; }, 0);
+    }
+  };
+
+  card.addEventListener('pointerup', endDrag);
+  card.addEventListener('pointercancel', endDrag);
+}
+
 // Закрыть карточку уведомления вручную
 export function closeGoalNotification(matchId) {
-  const container = document.getElementById('goalNotifications');
-  if (!container) return;
+  const notification = findNotificationCard(matchId);
+  if (!notification) return;
 
-  const notification = container.querySelector(`[data-match-id="${matchId}"]`);
-  if (notification) {
-    console.log(`🗑 Ручное закрытие карточки матча ${matchId}`);
-    notification.classList.add('removing');
-    setTimeout(() => notification.remove(), 300);
+  console.log(`🗑 Ручное закрытие карточки матча ${matchId}`);
+  notification.classList.add('removing');
+  setTimeout(() => notification.remove(), 300);
 
-    deletedFinishedMatches.add(matchId);
-    saveDeletedFinishedMatches();
+  deletedFinishedMatches.add(matchId);
+  saveDeletedFinishedMatches();
+  clearNotificationPosition(matchId);
 
-    delete matchFinishTimes[matchId];
-    delete matchScores[matchId];
-  }
+  delete matchFinishTimes[matchId];
+  delete matchScores[matchId];
 }
 
 // Очередь уведомлений
@@ -43,7 +174,7 @@ export function showGoalNotification(match) {
     return;
   }
 
-  const existingNotification = container.querySelector(`[data-match-id="${match.id}"]`);
+  const existingNotification = findNotificationCard(match.id);
   if (existingNotification) {
     console.log('⚠ Карточка уже существует, пропускаем создание');
     return;
@@ -78,7 +209,10 @@ export function showGoalNotification(match) {
     <div class="goal-notification-header">
       <span class="goal-notification-icon"><svg class="icon" aria-hidden="true"><use href="#icon-matches"></use></svg></span>
       <span class="goal-notification-title" style="color: ${statusColor};">${statusText}</span>
-      <button onclick="closeGoalNotification(${match.id})" style="margin-left: auto; background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;" title="Закрыть"><svg class="icon" aria-label="Неправильно"><use href="#icon-wrong"></use></svg></button>
+      <div class="goal-notification-actions">
+        <button type="button" class="goal-notification-btn" onclick="resetGoalNotificationPosition(${match.id}, event)" title="Вернуть на место"><svg class="icon" aria-hidden="true"><use href="#icon-reset-position"></use></svg></button>
+        <button type="button" class="goal-notification-btn" onclick="closeGoalNotification(${match.id})" title="Закрыть"><svg class="icon" aria-label="Неправильно"><use href="#icon-wrong"></use></svg></button>
+      </div>
     </div>
     <div class="goal-notification-teams">
       ${team1Html} - ${team2Html}
@@ -88,29 +222,37 @@ export function showGoalNotification(match) {
 
   notification.style.cursor = 'pointer';
   notification.addEventListener('click', (e) => {
-    if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
-      console.log('🖱 Клик по карточке избранного, открываем статистику для матча:', match.id);
-      const matchData = {
-        id: match.id,
-        team1: match.team1,
-        team2: match.team2,
-        score: match.score,
-        status: match.status,
-        elapsed: match.elapsed
-      };
-      showLiveTeamStats(matchData);
-    }
+    if (e.target.closest('button')) return;
+    if (notification.dataset.justDragged) return;
+    console.log('🖱 Клик по карточке избранного, открываем статистику для матча:', match.id);
+    const matchData = {
+      id: match.id,
+      team1: match.team1,
+      team2: match.team2,
+      score: match.score,
+      status: match.status,
+      elapsed: match.elapsed
+    };
+    showLiveTeamStats(matchData);
   });
 
   console.log('➕ Добавляем карточку в контейнер');
   container.appendChild(notification);
   console.log('✅ Карточка добавлена, всего карточек:', container.children.length);
 
+  // Восстановление свободной позиции после F5 / повторного создания
+  const savedPos = getSavedNotificationPosition(match.id);
+  if (savedPos && isDesktopNotifications()) {
+    makeCardFree(notification, savedPos.x, savedPos.y);
+  }
+
+  attachNotificationDrag(notification, match.id);
+
   if (currentUser && currentUser.live_sound === 1) {
     playGoalSound();
   }
 
-  const isDesktop = window.innerWidth > 1400;
+  const isDesktop = isDesktopNotifications();
 
   if (isDesktop) {
     isShowingNotification = false;
@@ -120,6 +262,7 @@ export function showGoalNotification(match) {
       notification.classList.add('removing');
       setTimeout(() => {
         notification.remove();
+        clearNotificationPosition(match.id);
         isShowingNotification = false;
         processNotificationQueue();
       }, 300);
@@ -243,14 +386,11 @@ export function processMatches(matches, favorites, isDesktop) {
         console.log(`⏱ Матч ${match.id} завершен, запускаем таймер на 1 минуту`);
 
         setTimeout(() => {
-          const container = document.getElementById('goalNotifications');
-          if (container) {
-            const notification = container.querySelector(`[data-match-id="${match.id}"]`);
-            if (notification) {
-              console.log(`⏰ 1 минута прошла, удаляем карточку матча ${match.id}`);
-              notification.classList.add('removing');
-              setTimeout(() => notification.remove(), 300);
-            }
+          const notification = findNotificationCard(match.id);
+          if (notification) {
+            console.log(`⏰ 1 минута прошла, удаляем карточку матча ${match.id}`);
+            notification.classList.add('removing');
+            setTimeout(() => notification.remove(), 300);
           }
 
           // Удаляем матч из избранного напрямую через localStorage
@@ -264,6 +404,7 @@ export function processMatches(matches, favorites, isDesktop) {
             console.log(`🗑 Матч ${match.id} удален из избранного (завершен)`);
           }
 
+          clearNotificationPosition(match.id);
           deletedFinishedMatches.add(match.id);
           saveDeletedFinishedMatches();
           delete matchFinishTimes[match.id];
@@ -290,20 +431,18 @@ export function processMatches(matches, favorites, isDesktop) {
       matchScores[match.id] = currentScore;
     });
 
-    const container = document.getElementById('goalNotifications');
-    if (container) {
-      const existingNotifications = container.querySelectorAll('.goal-notification');
-      existingNotifications.forEach(notification => {
-        const matchId = parseInt(notification.getAttribute('data-match-id'));
-        if (!foundMatchIds.includes(matchId)) {
-          console.log(`🗑 Удаляем карточку уведомления для матча ${matchId} (убран из избранного)`);
-          notification.classList.add('removing');
-          setTimeout(() => notification.remove(), 300);
-          delete matchFinishTimes[matchId];
-          delete matchScores[matchId];
-        }
-      });
-    }
+    // Ищем и в колонке, и свободные (body)
+    document.querySelectorAll('.goal-notification').forEach(notification => {
+      const matchId = parseInt(notification.getAttribute('data-match-id'));
+      if (!foundMatchIds.includes(matchId)) {
+        console.log(`🗑 Удаляем карточку уведомления для матча ${matchId} (убран из избранного)`);
+        notification.classList.add('removing');
+        setTimeout(() => notification.remove(), 300);
+        clearNotificationPosition(matchId);
+        delete matchFinishTimes[matchId];
+        delete matchScores[matchId];
+      }
+    });
   } else {
     console.log('📱 МОБИЛЬНАЯ: Проверка изменений счета...');
     matches.forEach(match => {
@@ -324,13 +463,7 @@ export function processMatches(matches, favorites, isDesktop) {
 export function updateDesktopNotification(match) {
   console.log('🎯 updateDesktopNotification вызвана для матча:', match);
 
-  const container = document.getElementById('goalNotifications');
-  if (!container) {
-    console.error('❌ Контейнер goalNotifications не найден!');
-    return;
-  }
-
-  let notification = container.querySelector(`[data-match-id="${match.id}"]`);
+  let notification = findNotificationCard(match.id);
 
   if (notification) {
     console.log('♻ Обновляем существующую карточку');

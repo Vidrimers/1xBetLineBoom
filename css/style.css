@@ -4608,10 +4608,56 @@ body.theme-cyberpunk .countTournaments button.active {
 }
 
 
-/* Кнопка закрытия в goal-notification */
-.goal-notification-header button:hover {
+/* Кнопки на карточке goal-notification (крестик / вернуть на место) */
+.goal-notification-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.goal-notification-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+
+.goal-notification-btn:hover {
   color: rgba(255, 255, 255, 1) !important;
   transform: scale(1.2);
+}
+
+/* Десктоп: кнопки плавно появляются при hover */
+@media (min-width: 1400px) {
+  .goal-notification-actions {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .goal-notification:hover .goal-notification-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Свободная (перетащенная) карточка */
+.goal-notification.is-free {
+  margin: 0;
+}
+
+.goal-notification.is-dragging {
+  opacity: 0.95;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  cursor: grabbing !important;
 }
 
 /* Кнопки фильтра новостей */

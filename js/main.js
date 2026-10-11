@@ -258,6 +258,7 @@ import {
   handleScroll,
   checkMatchEventsForNotifications,
   saveDeletedFinishedMatches,
+  resetGoalNotificationPosition,
 } from './modules/goalNotifications.js';
 import {
   showLiveTeamStats,
@@ -661,7 +662,7 @@ Object.assign(window, {
   showGoalNotification, closeGoalNotification, processNotificationQueue,
   addNotificationToQueue, playGoalSound, processMatches, updateDesktopNotification,
   smoothScrollNotifications, handleScroll, checkMatchEventsForNotifications,
-  saveDeletedFinishedMatches,
+  saveDeletedFinishedMatches, resetGoalNotificationPosition,
   // liveStats
   showLiveTeamStats, displayBasicStats, displayDetailedStats, switchLiveStatsTab,
   renderStatistics, renderLineups, renderEvents, closeLiveTeamStatsModal,
