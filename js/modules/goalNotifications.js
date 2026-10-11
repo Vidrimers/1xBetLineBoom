@@ -36,6 +36,18 @@ function findNotificationCard(matchId) {
   return document.querySelector(`.goal-notification[data-match-id="${matchId}"]`);
 }
 
+function formatTeamHtml(name, underlined) {
+  if (!underlined) return name || '';
+  return `<span style="position: relative; display: inline-block;">${name}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #fff;"></span></span>`;
+}
+
+function buildTeamsHtml(team1, team2, betTeam) {
+  const isDraw = betTeam && (String(betTeam).toLowerCase() === 'ничья' || String(betTeam).toLowerCase() === 'draw');
+  const shouldUnderlineTeam1 = (betTeam === team1 || isDraw);
+  const shouldUnderlineTeam2 = (betTeam === team2 || isDraw);
+  return `${formatTeamHtml(team1, shouldUnderlineTeam1)} - ${formatTeamHtml(team2, shouldUnderlineTeam2)}`;
+}
+
 function clampToViewport(x, y, card) {
   // Ширина карточки — та, что уже выставлена / измерена, без раздувания
   const w = card.getBoundingClientRect().width || 320;
@@ -205,17 +217,6 @@ export function showGoalNotification(match) {
   notification.className = 'goal-notification';
   notification.setAttribute('data-match-id', match.id);
 
-  const isDraw = match.betTeam && (match.betTeam.toLowerCase() === 'ничья' || match.betTeam.toLowerCase() === 'draw');
-  const shouldUnderlineTeam1 = (match.betTeam === match.team1 || isDraw);
-  const shouldUnderlineTeam2 = (match.betTeam === match.team2 || isDraw);
-
-  const team1Html = shouldUnderlineTeam1
-    ? `<span style="position: relative; display: inline-block;">${match.team1}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #fff;"></span></span>`
-    : match.team1;
-  const team2Html = shouldUnderlineTeam2
-    ? `<span style="position: relative; display: inline-block;">${match.team2}<span style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #fff;"></span></span>`
-    : match.team2;
-
   const isFinished = match.status === 'Finished' ||
                     match.status === 'finished' ||
                     match.status === 'Full Time' ||
@@ -236,7 +237,7 @@ export function showGoalNotification(match) {
       </div>
     </div>
     <div class="goal-notification-teams">
-      ${team1Html} - ${team2Html}
+      ${buildTeamsHtml(match.team1, match.team2, match.betTeam)}
     </div>
     <div class="goal-notification-score">${match.score}</div>
   `;
@@ -439,7 +440,8 @@ export function processMatches(matches, favorites, isDesktop) {
         team2: match.team2,
         score: currentScore,
         status: match.status,
-        elapsed: match.elapsed
+        elapsed: match.elapsed,
+        betTeam: match.betTeam
       });
 
       if (previousScore && previousScore !== currentScore) {
@@ -488,6 +490,16 @@ export function updateDesktopNotification(match) {
 
   if (notification) {
     console.log('♻ Обновляем существующую карточку');
+
+    // Имена команд: обновляем, если пришли новые (в т.ч. RU вместо EN)
+    const teamsElement = notification.querySelector('.goal-notification-teams');
+    if (teamsElement && match.team1 && match.team2) {
+      const newTeamsHtml = buildTeamsHtml(match.team1, match.team2, match.betTeam);
+      if (teamsElement.innerHTML.trim() !== newTeamsHtml.trim()) {
+        teamsElement.innerHTML = newTeamsHtml;
+        console.log('🔤 Обновлены названия команд на карточке');
+      }
+    }
 
     const scoreElement = notification.querySelector('.goal-notification-score');
     const currentScore = scoreElement?.textContent || '';

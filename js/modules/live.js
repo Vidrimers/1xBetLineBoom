@@ -222,6 +222,8 @@ async function showLiveEventMatches(eventId) {
 
         html += `
           <div class="live-match-card ${isLive ? 'is-live' : ''} ${isCancelled ? 'match-cancelled' : ''}" data-match-id="${match.id}"
+            data-team1="${String(match.team1 || '').replace(/"/g, '&quot;')}"
+            data-team2="${String(match.team2 || '').replace(/"/g, '&quot;')}"
             onclick='showLiveTeamStats(${JSON.stringify(match).replace(/'/g, "\\'")})'
             style="
             background: ${isCancelled ? 'rgba(60, 60, 60, 0.7)' : 'rgba(255, 255, 255, 0.05)'};

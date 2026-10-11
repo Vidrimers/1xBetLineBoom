@@ -7,6 +7,8 @@ import { saveDeletedFinishedMatches, showGoalNotification, playGoalSound, addNot
 import { showLiveTeamStats } from './liveStats.js';
 
 let favoriteMatchesInterval = null;
+// Отмена устаревших poll: только последний ответ применяет данные
+let pollFavoriteGeneration = 0;
 
 function startFavoriteMatchesPolling() {
   if (favoriteMatchesInterval) {
@@ -52,6 +54,17 @@ function removeFavoriteMatchData(matchId) {
   localStorage.removeItem(`favoriteMatch_${matchId}`);
 }
 
+function hasCyrillic(str) {
+  return /[\u0400-\u04FF]/.test(String(str || ''));
+}
+
+// Не затираем русское имя английским из API
+function pickTeamName(existingName, apiName) {
+  if (hasCyrillic(existingName)) return existingName;
+  if (hasCyrillic(apiName)) return apiName;
+  return existingName || apiName || '';
+}
+
 function updateFavoriteMatchesData(liveMatches) {
   const favorites = getFavoriteMatches();
 
@@ -64,10 +77,11 @@ function updateFavoriteMatchesData(liveMatches) {
         if (bet) betTeam = bet.prediction;
       }
 
+      const existing = getFavoriteMatchData(matchId);
       const matchData = {
         id: match.id,
-        team1: match.team1,
-        team2: match.team2,
+        team1: pickTeamName(existing?.team1, match.team1),
+        team2: pickTeamName(existing?.team2, match.team2),
         score: match.score || '0:0',
         status: match.status,
         betTeam: betTeam,
@@ -89,10 +103,14 @@ function toggleFavoriteMatch(matchId, event) {
   const matchCard = event.target.closest('.live-match-card');
   let matchInfo = { match: 'Неизвестный матч', tournamentName: getLiveEventName() };
 
+  // Имена из data-атрибутов (надёжно), парсинг DOM — fallback
+  const teamDivs = matchCard
+    ? matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]')
+    : [];
+  const team1 = (matchCard && matchCard.getAttribute('data-team1')) || teamDivs[0]?.textContent.trim() || 'Команда 1';
+  const team2 = (matchCard && matchCard.getAttribute('data-team2')) || teamDivs[1]?.textContent.trim() || 'Команда 2';
+
   if (matchCard) {
-    const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
-    const team1 = teamDivs[0]?.textContent.trim() || 'Команда 1';
-    const team2 = teamDivs[1]?.textContent.trim() || 'Команда 2';
     matchInfo.match = `${team1} vs ${team2}`;
   }
 
@@ -126,7 +144,6 @@ function toggleFavoriteMatch(matchId, event) {
     saveDeletedFinishedMatches();
 
     if (matchCard) {
-      const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
       const scoreDiv = matchCard.querySelector('div[style*="font-size: 1.3em"][style*="color: #4caf50"]');
       const statusDiv = matchCard.querySelector('div[style*="color: #ff9800"]');
 
@@ -138,8 +155,8 @@ function toggleFavoriteMatch(matchId, event) {
 
       const matchData = {
         id: matchId,
-        team1: teamDivs[0]?.textContent.trim() || 'Команда 1',
-        team2: teamDivs[1]?.textContent.trim() || 'Команда 2',
+        team1,
+        team2,
         score: scoreDiv?.textContent.trim() || '0:0',
         status: statusDiv?.textContent.trim() || 'live',
         betTeam: betTeam,
@@ -249,6 +266,8 @@ async function pollFavoriteMatches() {
     return;
   }
 
+  const generation = ++pollFavoriteGeneration;
+
   console.log('⭐ pollFavoriteMatches вызвана, вкладка:', document.querySelector('.tab-btn.active')?.textContent?.trim() || 'неизвестно');
 
   const favorites = getFavoriteMatches();
@@ -281,6 +300,9 @@ async function pollFavoriteMatches() {
 
     if (response.ok) {
       const apiMatches = await response.json();
+      // Запоздавший ответ — не затираем данные нового poll
+      if (generation !== pollFavoriteGeneration) return;
+
       console.log(`⭐ API /live-matches-by-ids вернул ${apiMatches.length} матчей:`, apiMatches.map(m => `${m.team1} ${m.score} ${m.team2}`));
 
       apiMatches.forEach(match => {
@@ -290,10 +312,10 @@ async function pollFavoriteMatches() {
           if (bet) betTeam = bet.prediction;
         }
 
-        // Сохраняем русские названия из localStorage, если они уже есть
+        // Русские имена из localStorage имеют приоритет над API
         const existingData = getFavoriteMatchData(match.id);
-        const team1 = (existingData && existingData.team1) || match.team1 || match.homeTeam;
-        const team2 = (existingData && existingData.team2) || match.team2 || match.awayTeam;
+        const team1 = pickTeamName(existingData?.team1, match.team1 || match.homeTeam);
+        const team2 = pickTeamName(existingData?.team2, match.team2 || match.awayTeam);
 
         const matchData = {
           id: match.id,
@@ -315,7 +337,10 @@ async function pollFavoriteMatches() {
     }
   } catch (error) {
     console.error('⭐❌ Ошибка fetch в pollFavoriteMatches:', error);
+    return;
   }
+
+  if (generation !== pollFavoriteGeneration) return;
 
   const matches = [];
   favorites.forEach(matchId => {

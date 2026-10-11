@@ -14,6 +14,89 @@ import { normalizeTeamNameForAPI, translateTeamNameToEnglish, normalizeTeamName,
 
 const router = Router();
 
+// ===== Перевод названий команд EN→RU (общий для live-роутов) =====
+const TEAM_MAPPING_FILES = {
+  'SA': path.join(ROOT_DIR, 'names', 'SerieA.json'),
+  'PL': path.join(ROOT_DIR, 'names', 'PremierLeague.json'),
+  'BL1': path.join(ROOT_DIR, 'names', 'Bundesliga.json'),
+  'PD': path.join(ROOT_DIR, 'names', 'LaLiga.json'),
+  'FL1': path.join(ROOT_DIR, 'names', 'Ligue1.json'),
+  'DED': path.join(ROOT_DIR, 'names', 'Eredivisie.json'),
+  'CL': path.join(ROOT_DIR, 'names', 'LeagueOfChampionsTeams.json'),
+  'EL': path.join(ROOT_DIR, 'names', 'EuropaLeague.json'),
+  'ECL': path.join(ROOT_DIR, 'names', 'ConferenceLeague.json'),
+  'RPL': path.join(ROOT_DIR, 'names', 'RussianPremierLeague.json'),
+  'WC': path.join(ROOT_DIR, 'names', 'Countries.json'),
+  'EC': path.join(ROOT_DIR, 'names', 'Countries.json'),
+};
+
+function buildReverseMapping(teamMapping) {
+  const reverseMapping = {};
+  for (const [russian, english] of Object.entries(teamMapping || {})) {
+    if (english && typeof english === 'string') {
+      reverseMapping[english.toLowerCase()] = russian;
+    }
+  }
+  return reverseMapping;
+}
+
+function translateTeamWithMapping(teamName, reverseMapping) {
+  if (!teamName) return 'Команда';
+
+  const nameLower = teamName.toLowerCase().trim();
+
+  if (reverseMapping[nameLower]) {
+    return reverseMapping[nameLower];
+  }
+
+  const cleanName = nameLower
+    .replace(/\b(fc|ac|as|us|ss|afc|bsc|fk|gk|gnk|sk|cf|cd|rc|rcd|ud|sd)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (reverseMapping[cleanName]) {
+    return reverseMapping[cleanName];
+  }
+
+  for (const [englishLower, russian] of Object.entries(reverseMapping)) {
+    const cleanEnglish = englishLower
+      .replace(/\b(fc|ac|as|us|ss|afc|bsc|fk|gk|gnk|sk|cf|cd|rc|rcd|ud|sd)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (cleanName === cleanEnglish) {
+      return russian;
+    }
+
+    if (cleanName.length > 4 && cleanEnglish.length > 4) {
+      if (cleanName.includes(cleanEnglish) || cleanEnglish.includes(cleanName)) {
+        return russian;
+      }
+    }
+  }
+
+  return teamName;
+}
+
+let cachedAllTeamsReverseMapping = null;
+
+function getAllTeamsReverseMapping() {
+  if (cachedAllTeamsReverseMapping) return cachedAllTeamsReverseMapping;
+  const reverseMapping = {};
+  for (const mappingFile of Object.values(TEAM_MAPPING_FILES)) {
+    try {
+      if (!fs.existsSync(mappingFile)) continue;
+      const mappingData = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
+      const teamMapping = mappingData.teams || mappingData || {};
+      Object.assign(reverseMapping, buildReverseMapping(teamMapping));
+    } catch (error) {
+      console.warn(`⚠ Ошибка загрузки словаря ${mappingFile}:`, error.message);
+    }
+  }
+  cachedAllTeamsReverseMapping = reverseMapping;
+  return reverseMapping;
+}
+
 // Мгновенная запись результата матча при api_finished — счёт, победитель, карточки + уведомление
 async function writeImmediateMatchResult(dbMatch, sstatsMatch) {
   // Получаем полные данные матча из SStats (счёт, события/карточки)
@@ -409,20 +492,7 @@ router.get("/api/live-matches", async (req, res) => {
     }
     
     // Загружаем словарь команд для турнира
-    const mappingFiles = {
-      'SA': path.join(ROOT_DIR, 'names', 'SerieA.json'),
-      'PL': path.join(ROOT_DIR, 'names', 'PremierLeague.json'),
-      'BL1': path.join(ROOT_DIR, 'names', 'Bundesliga.json'),
-      'PD': path.join(ROOT_DIR, 'names', 'LaLiga.json'),
-      'FL1': path.join(ROOT_DIR, 'names', 'Ligue1.json'),
-      'DED': path.join(ROOT_DIR, 'names', 'Eredivisie.json'),
-      'CL': path.join(ROOT_DIR, 'names', 'LeagueOfChampionsTeams.json'),
-      'EL': path.join(ROOT_DIR, 'names', 'EuropaLeague.json'),
-      'ECL': path.join(ROOT_DIR, 'names', 'ConferenceLeague.json'),
-      'RPL': path.join(ROOT_DIR, 'names', 'RussianPremierLeague.json'),
-      'WC': path.join(ROOT_DIR, 'names', 'Countries.json'),
-      'EC': path.join(ROOT_DIR, 'names', 'Countries.json'),
-    };
+    const mappingFiles = TEAM_MAPPING_FILES;
     
     let teamMapping = {}; // Русское -> Английское
     let reverseMapping = {}; // Английское -> Русское
@@ -438,14 +508,7 @@ router.get("/api/live-matches", async (req, res) => {
           const fileContent = fs.readFileSync(mappingFile, 'utf8');
           const mappingData = JSON.parse(fileContent);
           teamMapping = mappingData.teams || mappingData || {};
-          
-          // Создаем обратный маппинг: Английское -> Русское
-          reverseMapping = {};
-          for (const [russian, english] of Object.entries(teamMapping)) {
-            if (english && typeof english === 'string') {
-              reverseMapping[english.toLowerCase()] = russian;
-            }
-          }
+          reverseMapping = buildReverseMapping(teamMapping);
           
           console.log(`📖 Загружен словарь команд для ${competition}: ${Object.keys(teamMapping).length} команд`);
         }
@@ -456,49 +519,7 @@ router.get("/api/live-matches", async (req, res) => {
     }
     
     // Функция для перевода английского названия в русское
-    const translateTeam = (teamName) => {
-      if (!teamName) return 'Команда';
-      
-      const nameLower = teamName.toLowerCase().trim();
-      
-      // 1. Ищем точное совпадение в обратном маппинге
-      if (reverseMapping[nameLower]) {
-        return reverseMapping[nameLower];
-      }
-      
-      // 2. Убираем распространенные суффиксы/префиксы и ищем снова
-      const cleanName = nameLower
-        .replace(/\b(fc|ac|as|us|ss|afc|bsc|fk|gk|gnk|sk|cf|cd|rc|rcd|ud|sd)\b/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      if (reverseMapping[cleanName]) {
-        return reverseMapping[cleanName];
-      }
-      
-      // 3. Ищем частичное совпадение (команда содержит ключевое слово)
-      for (const [englishLower, russian] of Object.entries(reverseMapping)) {
-        const cleanEnglish = englishLower
-          .replace(/\b(fc|ac|as|us|ss|afc|bsc|fk|gk|gnk|sk|cf|cd|rc|rcd|ud|sd)\b/g, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-        
-        // Проверяем точное совпадение очищенных названий
-        if (cleanName === cleanEnglish) {
-          return russian;
-        }
-        
-        // Проверяем вхождение (для длинных названий)
-        if (cleanName.length > 4 && cleanEnglish.length > 4) {
-          if (cleanName.includes(cleanEnglish) || cleanEnglish.includes(cleanName)) {
-            return russian;
-          }
-        }
-      }
-      
-      // 4. Если не нашли в JSON, возвращаем оригинал (он будет обработан dict.js на клиенте)
-      return teamName;
-    };
+    const translateTeam = (teamName) => translateTeamWithMapping(teamName, reverseMapping);
     
     // Определяем диапазон дат для запроса (сегодня)
     const now = new Date();
@@ -1646,12 +1667,15 @@ router.post("/api/live-matches-by-ids", async (req, res) => {
               
               if (game) {
                 console.log(`✅ SStats API вернул данные для матча ${matchId}: ${game.homeTeam?.name} ${game.homeResult || 0}:${game.awayResult || 0} ${game.awayTeam?.name}`);
+                const ruMapping = getAllTeamsReverseMapping();
+                const rawTeam1 = game.homeTeam?.name || '';
+                const rawTeam2 = game.awayTeam?.name || '';
                 allMatches.push({
                   id: matchId,
-                  team1: game.homeTeam?.name || 'Команда 1',
-                  team2: game.awayTeam?.name || 'Команда 2',
-                  homeTeam: game.homeTeam?.name || 'Команда 1',
-                  awayTeam: game.awayTeam?.name || 'Команда 2',
+                  team1: rawTeam1 ? translateTeamWithMapping(rawTeam1, ruMapping) : 'Команда 1',
+                  team2: rawTeam2 ? translateTeamWithMapping(rawTeam2, ruMapping) : 'Команда 2',
+                  homeTeam: rawTeam1 ? translateTeamWithMapping(rawTeam1, ruMapping) : 'Команда 1',
+                  awayTeam: rawTeam2 ? translateTeamWithMapping(rawTeam2, ruMapping) : 'Команда 2',
                   score: `${game.homeResult || 0}:${game.awayResult || 0}`,
                   homeResult: game.homeResult || 0,
                   awayResult: game.awayResult || 0,
