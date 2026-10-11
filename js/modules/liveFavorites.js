@@ -121,6 +121,10 @@ function toggleFavoriteMatch(matchId, event) {
     }
     favorites.push(matchId);
 
+    // Разрешаем карточке появиться снова (если её раньше закрывали ✕)
+    deletedFinishedMatches.delete(matchId);
+    saveDeletedFinishedMatches();
+
     if (matchCard) {
       const teamDivs = matchCard.querySelectorAll('div[style*="font-size: 0.95em"][style*="font-weight: 600"]');
       const scoreDiv = matchCard.querySelector('div[style*="font-size: 1.3em"][style*="color: #4caf50"]');
