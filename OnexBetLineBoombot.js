@@ -573,7 +573,7 @@ export async function sendGroupNotification(message, options = {}) {
 
     if (!bot) {
       console.error("❌ Бот еще не инициализирован!");
-      return;
+      return false;
     }
     console.log(`✅ Бот инициализирован`);
 
@@ -588,20 +588,24 @@ export async function sendGroupNotification(message, options = {}) {
       `🔔 sendGroupNotification: Чатов для отправки: ${chatIds.length}`
     );
 
+    let sentToAll = true;
     for (const chatId of chatIds) {
       try {
         console.log(`🔔 sendGroupNotification: Отправляем в чат ${chatId}...`);
         await sendMessageWithThread(chatId, message, options);
         console.log(`✅ Сообщение отправлено в группу ${chatId}`);
       } catch (err) {
+        sentToAll = false;
         console.error(
           `❌ Ошибка при отправке в группу ${chatId}:`,
           err.message
         );
       }
     }
+    return sentToAll;
   } catch (error) {
     console.error("❌ Ошибка при отправке сообщения в группы:", error.message);
+    return false;
   }
 }
 
@@ -633,12 +637,12 @@ export function buildSiteButtons(siteUserId, telegramId) {
   ];
 }
 
-// Функция для отправки сообщения пользователю
+// Функция для отправки сообщения пользователю; true — доставлено, false — нет
 export async function sendUserMessage(userId, message, options = {}) {
   try {
     if (!bot) {
       console.error("❌ Бот еще не инициализирован!");
-      return;
+      return false;
     }
 
     // Добавляем кнопки реакций для личных чатов (если не отключено и это НЕ админ)
@@ -673,11 +677,13 @@ export async function sendUserMessage(userId, message, options = {}) {
 
     await sendMessageWithThread(userId, message, options);
     console.log(`✅ Сообщение отправлено пользователю ${userId}`);
+    return true;
   } catch (error) {
     console.error(
       "❌ Ошибка при отправке сообщения пользователю:",
       error.message
     );
+    return false;
   }
 }
 

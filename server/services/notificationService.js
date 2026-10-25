@@ -9,13 +9,13 @@ function siteKeyboard(siteUserId, telegramId) {
 }
 
 // Гостевые кнопки для групповых сообщений (без JWT)
+// web_app-кнопки Telegram не принимает в группах (BUTTON_TYPE_INVALID) — только URL
 function siteKeyboardGuest() {
   return {
     reply_markup: {
       inline_keyboard: [
         [
           { text: "🌐 Сайт", url: SITE_URL },
-          { text: "📱 Открыть в Telegram", web_app: { url: SITE_URL } },
         ],
       ],
     },
@@ -307,20 +307,17 @@ ${mentions}
         console.log(`⏰ Отправляем напоминание в группу для ${matches.length} матчей`);
         console.log(`📝 Сообщение: ${message.substring(0, 150)}...`);
 
-        try {
-          await sendGroupNotification(message, siteKeyboardGuest());
-          console.log(`✅ sendGroupNotification выполнена успешно`);
-        } catch (err) {
-          console.error(`❌ ОШИБКА при отправке sendGroupNotification: ${err.message}`);
-          console.error(`   ${err.stack}`);
-        }
-
-        try {
-          const stmt = db.prepare("INSERT INTO sent_reminders (match_id, kind) VALUES (?, 'group_vote')");
-          matches.forEach(match => { stmt.run(match.id); });
-          console.log(`📢 Записи в БД добавлены для ${matches.length} матчей`);
-        } catch (err) {
-          console.error(`❌ ОШИБКА при добавлении в БД: ${err.message}`);
+        const sentOk = await sendGroupNotification(message, siteKeyboardGuest());
+        if (sentOk) {
+          try {
+            const stmt = db.prepare("INSERT INTO sent_reminders (match_id, kind) VALUES (?, 'group_vote')");
+            matches.forEach(match => { stmt.run(match.id); });
+            console.log(`📢 Записи в БД добавлены для ${matches.length} матчей`);
+          } catch (err) {
+            console.error(`❌ ОШИБКА при добавлении в БД: ${err.message}`);
+          }
+        } else {
+          console.warn(`⚠️ group_vote не отправлено — дедуп не записан, повторим в следующем цикле`);
         }
       } else {
         console.log(`⏰ Нет непроголосовавших (все поставили, либо никто ещё не играл в этом турнире)`);
@@ -901,18 +898,22 @@ ${matchesText}
 
 ⛔ Ставить больше нельзя!`;
 
-      await sendGroupNotification(message, siteKeyboardGuest());
+      // Личные уведомления в ЛС (мастер-тумблер + "Матч начался"); в группу не шлём
+      const allDelivered = await sendMatchStartPersonalNotifications(matches, message, matchIdsOf(matches));
 
-      for (const match of matches) {
-        db.prepare("INSERT INTO sent_reminders (match_id, kind) VALUES (?, 'match_start')").run(match.id);
+      // Маркер матча пишем только при полном успехе — иначе в следующем цикле повторим недоставленным
+      if (allDelivered) {
+        for (const match of matches) {
+          db.prepare("INSERT INTO sent_reminders (match_id, kind) VALUES (?, 'match_start')").run(match.id);
+        }
+        console.log(
+          `✅ Уведомление о начале ${matchCount} матча(ей) обработано: ${matches.map((m) => `${m.team1_name} vs ${m.team2_name}`).join(", ")}`
+        );
+      } else {
+        console.warn(
+          `⚠️ Часть личных уведомлений "Матч начался" не доставлена — маркер матча не записан, повтор в следующем цикле`
+        );
       }
-
-      console.log(
-        `✅ Уведомление о начале ${matchCount} матча(ей) отправлено: ${matches.map((m) => `${m.team1_name} vs ${m.team2_name}`).join(", ")}`
-      );
-
-      // Личные уведомления в ЛС (мастер-тумблер + "Матч начался")
-      await sendMatchStartPersonalNotifications(matches, message, matchIdsOf(matches));
     }
   } catch (error) {
     console.error("❌ Ошибка при проверке начала матчей:", error);
@@ -938,6 +939,7 @@ function hasBetInAnyEvent(userId, matches) {
   return row && row.count > 0;
 }
 
+// true — все нужные доставки прошли (или получателей нет), false — кто-то не получил и нужен повтор
 async function sendMatchStartPersonalNotifications(matches, groupMessage, matchIds) {
   try {
     const users = db
@@ -953,7 +955,7 @@ async function sendMatchStartPersonalNotifications(matches, groupMessage, matchI
       )
       .all();
 
-    if (users.length === 0) return;
+    if (users.length === 0) return true;
 
     const personalMessage = `${groupMessage}
 
@@ -961,6 +963,7 @@ async function sendMatchStartPersonalNotifications(matches, groupMessage, matchI
 
     const placeholders = matchIds.map(() => "?").join(",");
     let sentCount = 0;
+    let failedCount = 0;
 
     for (const user of users) {
       // Не спамим тем, кто ни разу не ставил в этом турнире
@@ -975,10 +978,15 @@ async function sendMatchStartPersonalNotifications(matches, groupMessage, matchI
       if (alreadySent) continue;
 
       try {
-        await sendUserMessage(user.telegram_id, personalMessage, {
+        const delivered = await sendUserMessage(user.telegram_id, personalMessage, {
           parse_mode: "HTML",
           ...siteKeyboard(user.id, user.telegram_id),
         });
+        if (!delivered) {
+          console.warn(`⚠️ "Матч начался" не доставлен пользователю ${user.id} — дедуп не записан`);
+          failedCount++;
+          continue;
+        }
         for (const matchId of matchIds) {
           db.prepare(
             "INSERT INTO sent_reminders (match_id, user_id, kind) VALUES (?, ?, 'match_start')"
@@ -986,6 +994,7 @@ async function sendMatchStartPersonalNotifications(matches, groupMessage, matchI
         }
         sentCount++;
       } catch (error) {
+        failedCount++;
         console.error(`⚠️ Не удалось отправить "Матч начался" пользователю ${user.id}:`, error.message);
       }
     }
@@ -993,8 +1002,10 @@ async function sendMatchStartPersonalNotifications(matches, groupMessage, matchI
     if (sentCount > 0) {
       console.log(`✅ Личные уведомления "Матч начался" отправлены: ${sentCount}`);
     }
+    return failedCount === 0;
   } catch (error) {
     console.error("❌ Ошибка при отправке личных уведомлений о начале матча:", error);
+    return false;
   }
 }
 
