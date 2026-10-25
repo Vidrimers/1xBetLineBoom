@@ -417,6 +417,10 @@ async function checkAndNotifyUpcomingMatches() {
       const matchWord = matches.length === 1 ? 'НАПОМИНАНИЕ О МАТЧЕ' : 'НАПОМИНАНИЕ О МАТЧАХ';
       const startWord = matches.length === 1 ? 'Матч начнется' : 'Матчи начнутся';
 
+      const placeholders = matchIds.map(() => "?").join(",");
+      let sentCount = 0;
+      let failedCount = 0;
+
       for (const user of usersWithNotifications) {
         if (user.only_active_tournaments === 1) {
           const hasBets = db.prepare(`
@@ -431,6 +435,12 @@ async function checkAndNotifyUpcomingMatches() {
             continue;
           }
         }
+
+        // Персональный дедуп: повтор цикла не заденет уже получивших
+        const alreadySent = db
+          .prepare(`SELECT id FROM sent_reminders WHERE kind = '3hour' AND user_id = ? AND match_id IN (${placeholders})`)
+          .get(user.id, ...matchIds);
+        if (alreadySent) continue;
 
         const userBetMatchIds = db
           .prepare(`SELECT DISTINCT match_id FROM bets WHERE user_id = ? AND match_id IN (${matchIds.join(',')})`)
@@ -457,34 +467,37 @@ ${matchesListWithStatus}
 🔗 <a href="${SITE_URL}">Открыть сайт</a>`;
 
         try {
-          const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-          if (TELEGRAM_BOT_TOKEN) {
-            await fetch(
-              `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: user.telegram_id,
-                  text: message,
-                  parse_mode: "HTML",
-                  reply_markup: siteKeyboard(user.id, user.telegram_id).reply_markup,
-                }),
-              }
-            );
-            console.log(`✅ Уведомление за 3 часа отправлено пользователю ${user.username} (${user.telegram_id})`);
+          const delivered = await sendUserMessage(user.telegram_id, message, {
+            parse_mode: "HTML",
+            noReactionButtons: true,
+            ...siteKeyboard(user.id, user.telegram_id),
+          });
+          if (!delivered) {
+            failedCount++;
+            console.warn(`⚠️ Уведомление за 3 часа не доставлено пользователю ${user.username} — дедуп не записан`);
+            continue;
           }
+          for (const matchId of matchIds) {
+            db.prepare("INSERT INTO sent_reminders (match_id, user_id, kind) VALUES (?, ?, '3hour')").run(matchId, user.id);
+          }
+          sentCount++;
+          console.log(`✅ Уведомление за 3 часа отправлено пользователю ${user.username} (${user.telegram_id})`);
         } catch (error) {
+          failedCount++;
           console.error(`⚠️ Не удалось отправить уведомление пользователю ${user.username}:`, error);
         }
 
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      const stmt = db.prepare("INSERT INTO sent_3hour_reminders (match_id) VALUES (?)");
-      matches.forEach(match => { stmt.run(match.id); });
-
-      console.log(`✅ Уведомления за 3 часа для ${matches.length} матчей отправлены всем пользователям`);
+      // Маркер группы — только когда все доставки прошли; иначе повтор недоставленным
+      if (failedCount === 0) {
+        const stmt = db.prepare("INSERT INTO sent_3hour_reminders (match_id) VALUES (?)");
+        matches.forEach(match => { stmt.run(match.id); });
+        console.log(`✅ Уведомления за 3 часа для ${matches.length} матчей отправлены (${sentCount})`);
+      } else {
+        console.warn(`⚠️ ${failedCount} уведомлений за 3 часа не доставлено — маркер группы не записан, повтор в следующем цикле`);
+      }
     }
   } catch (error) {
     console.error("❌ Ошибка при проверке предстоящих матчей:", error);
