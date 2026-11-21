@@ -116,19 +116,32 @@ async function loadRoundsForCheck() {
   }
 
   try {
-    const response = await fetch(`/api/admin/events/${eventId}/rounds`);
+    const response = await fetch(`/api/admin/events/${eventId}/rounds?withStatus=1`);
     if (!response.ok) throw new Error('Ошибка загрузки туров');
     const rounds = await response.json();
 
     // Бэкенд уже отдаёт туры в правильном порядке ("Тур 2" раньше "Тур 10")
     roundSelect.disabled = false;
     roundSelect.innerHTML = '<option value="">Все туры</option>';
-    (rounds || []).forEach(round => {
-      const option = document.createElement('option');
-      option.value = round;
-      option.textContent = round;
-      roundSelect.appendChild(option);
-    });
+
+    const active = (rounds || []).filter(r => !r.finished);
+    const finished = (rounds || []).filter(r => r.finished);
+
+    const addGroup = (label, list) => {
+      if (list.length === 0) return;
+      const group = document.createElement('optgroup');
+      group.label = label;
+      list.forEach(r => {
+        const option = document.createElement('option');
+        option.value = r.round;
+        option.textContent = r.round;
+        group.appendChild(option);
+      });
+      roundSelect.appendChild(group);
+    };
+
+    addGroup('Предстоящие туры', active);
+    addGroup('Завершившиеся', finished);
   } catch (error) {
     console.error('Ошибка загрузки туров:', error);
     roundSelect.disabled = false;

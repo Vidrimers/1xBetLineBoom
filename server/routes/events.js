@@ -1852,22 +1852,34 @@ router.put("/api/admin/events/:eventId", (req, res) => {
 });
 
 // GET /api/admin/events/:eventId/rounds
+// ?withStatus=1 — вернуть объекты {round, finished} вместо простых строк
 router.get("/api/admin/events/:eventId/rounds", (req, res) => {
   const { eventId } = req.params;
+  const withStatus = req.query.withStatus === '1';
 
   try {
     const rounds = db
       .prepare(
         `
-        SELECT DISTINCT round FROM matches
+        SELECT round,
+          SUM(CASE WHEN status = 'pending' AND winner IS NULL THEN 1 ELSE 0 END) as pending_count
+        FROM matches
         WHERE event_id = ? AND round IS NOT NULL
+        GROUP BY round
         ORDER BY round
       `
       )
       .all(eventId);
 
     // "Тур N" — по номеру (Тур 2 раньше Тур 10), кубковые форматы без изменений
-    res.json(sortRoundNames(rounds.map((r) => r.round)));
+    const sorted = sortRoundNames(rounds, (r) => r.round);
+
+    // Тур завершён, если в нём не осталось незавершённых матчей
+    res.json(
+      withStatus
+        ? sorted.map((r) => ({ round: r.round, finished: r.pending_count === 0 }))
+        : sorted.map((r) => r.round)
+    );
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
