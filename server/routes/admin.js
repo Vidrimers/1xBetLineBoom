@@ -4644,6 +4644,16 @@ router.get("/api/admin/panel-config", (req, res) => {
         db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
       }
 
+      // Кнопка "Проверка дат матчей": добавляем только если её нет НИ в одной категории
+      // (если пользователь перенёс её в другой раздел — не трогаем)
+      const hasMatchDatesCheckAnywhere = configData.categories.some(
+        c => c.buttons && c.buttons.some(b => b.id === 'check-match-dates')
+      );
+      if (!hasMatchDatesCheckAnywhere && utilitiesCategory && utilitiesCategory.buttons) {
+        utilitiesCategory.buttons.push({ id: 'check-match-dates', text: '🔍 Проверка дат матчей', action: 'openMatchDateCheckModal()', type: 'modal' });
+        db.prepare(`UPDATE admin_panel_config SET config_data = ? WHERE rowid = (SELECT MAX(rowid) FROM admin_panel_config)`).run(JSON.stringify(configData));
+      }
+
       // Удаляем устаревшую кнопку "Напоминания группы" (видимость карточки теперь автоматическая)
       let removedObsolete = false;
       for (const category of configData.categories) {
@@ -4791,6 +4801,7 @@ router.post("/api/admin/panel-config/reset", (req, res) => {
           collapsed: true,
           buttons: [
             { id: 'manage-dates', text: '📅 Управление датами', action: 'openDatesManagementModal()', type: 'modal' },
+            { id: 'check-match-dates', text: '🔍 Проверка дат матчей', action: 'openMatchDateCheckModal()', type: 'modal' },
             { id: 'event-ids', text: '🏆 ID турниров', action: 'runUtilityScript("check-event-id")', type: 'modal' },
             { id: 'db-structure', text: '🗄️ Структура БД', action: 'runUtilityScript("check-tables")', type: 'modal' },
             { id: 'deactivate-old', text: '🔒 Деактивировать старые', action: 'openDeactivateEventsModal()', type: 'modal' },

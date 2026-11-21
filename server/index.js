@@ -65,6 +65,7 @@ import {
 
 import { checkAndAutoCount } from "./services/autoCountingService.js";
 import { startTelegramUsernameSync } from "./services/telegramUsernameSyncService.js";
+import { startMatchDatesDailyCheck } from "./services/matchDatesCheckService.js";
 
 // ===== РОУТЫ =====
 import authRouter from "./routes/auth.js";
@@ -81,6 +82,7 @@ import adminRouter from "./routes/admin.js";
 import terminalRouter from "./routes/terminal.js";
 import autocountingRouter from "./routes/autocounting.js";
 import aiChatRouter from "./routes/aiChat.js";
+import matchDatesCheckRouter from "./routes/matchDatesCheck.js";
 
 // ===== EXPRESS APP =====
 const app = express();
@@ -166,6 +168,7 @@ app.use(adminRouter);
 app.use(terminalRouter);
 app.use(autocountingRouter);
 app.use(aiChatRouter);
+app.use(matchDatesCheckRouter);
 
 // ===== СТРАНИЦА ОЧЕРЕДИ УВЕДОМЛЕНИЙ =====
 app.get("/admin/notifications", (req, res) => {
@@ -304,6 +307,9 @@ console.log(
 
 // Синхронизация Telegram username (каждые 12 часов) + сразу при старте
 startTelegramUsernameSync();
+
+// Автопроверка дат матчей (ежедневно в 05:00, если включена в админке)
+startMatchDatesDailyCheck();
 
 // ===== ЗАПУСК СЕРВЕРА =====
 app.listen(PORT, "0.0.0.0", () => {

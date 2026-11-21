@@ -449,6 +449,14 @@ import {
   clearProcessedDates,
 } from './modules/adminUtils.js';
 import {
+  openMatchDateCheckModal,
+  closeMatchDateCheckModal,
+  runMatchDatesCheck,
+  fixMatchDatesFromModal,
+  loadAutoCheckSettings,
+  toggleMatchDatesAutoCheck,
+} from './modules/matchDatesCheck.js';
+import {
   openTournamentBreakdownModal,
   openPublicTournamentBreakdownModal,
   closeTournamentBreakdownModal,
@@ -727,6 +735,9 @@ Object.assign(window, {
   // adminUtils
   runUtilityScript, formatUtilityOutput, openDatesManagementModal, loadDatesData,
   clearProcessedDates,
+  // matchDatesCheck
+  openMatchDateCheckModal, closeMatchDateCheckModal, runMatchDatesCheck,
+  fixMatchDatesFromModal, loadAutoCheckSettings, toggleMatchDatesAutoCheck,
   // tournamentBreakdown
   openTournamentBreakdownModal, openPublicTournamentBreakdownModal, closeTournamentBreakdownModal,
   calculateBreakdown, exportBreakdownJpg, exportBreakdownMd,
