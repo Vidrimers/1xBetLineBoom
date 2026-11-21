@@ -6,7 +6,7 @@ import { db } from '../database/db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
-import { normalizeTeamNameForAPI, translateTeamNameToEnglish } from '../utils/helpers.js';
+import { normalizeTeamNameForAPI, translateTeamNameToEnglish, sortRoundNames } from '../utils/helpers.js';
 import { sendUserMessage, sendAdminNotification, sendGroupNotification, notifyIllegalBet, buildSiteButtons } from '../../OnexBetLineBoombot.js';
 import { registerCallbackHandler } from '../../OnexBetLineBoombot.js';
 import { BACKUPS_DIR, LOG_FILE_PATH, ROOT_DIR, ICON_TO_COMPETITION, SSTATS_API_KEY, SSTATS_API_BASE, SSTATS_LEAGUE_MAPPING } from '../config.js';
@@ -2608,7 +2608,8 @@ router.get("/api/admin/get-rounds-for-event", (req, res) => {
       ORDER BY m.round
     `).all(eventId, date);
 
-    res.json({ rounds });
+    // "Тур N" — по номеру (Тур 2 раньше Тур 10), кубковые форматы без изменений
+    res.json({ rounds: sortRoundNames(rounds, (r) => r.round) });
   } catch (error) {
     console.error("❌ Ошибка получения туров:", error);
     res.status(500).json({ error: error.message });

@@ -108,6 +108,32 @@ export function translateTeamNameToEnglish(russianName, competitionCode) {
 }
 
 /**
+ * Числовая сортировка списка туров: "Тур N" упорядочиваются по номеру
+ * (Тур 2 раньше Тур 10), все остальные форматы ("1/8", "Плей-офф 2/2",
+ * "🏆 Финал"...) остаются на своих местах с прежним относительным порядком.
+ * Возвращает новый массив; для объектов передать getName.
+ */
+export function sortRoundNames(list, getName = (x) => x) {
+  const positions = [];
+  const turItems = [];
+  list.forEach((item, i) => {
+    const m = /^Тур\s+(\d+)$/i.exec(String(getName(item) ?? '').trim());
+    if (m) {
+      positions.push(i);
+      turItems.push({ item, num: parseInt(m[1], 10) });
+    }
+  });
+  if (positions.length < 2) return list.slice();
+
+  turItems.sort((a, b) => a.num - b.num);
+  const result = list.slice();
+  positions.forEach((pos, j) => {
+    result[pos] = turItems[j].item;
+  });
+  return result;
+}
+
+/**
  * Нормализация названия команды (убираем FC, AC и т.д.)
  * Используется локально внутри autoCountingService при сопоставлении матчей
  */

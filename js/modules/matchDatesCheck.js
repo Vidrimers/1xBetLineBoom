@@ -64,7 +64,7 @@ export function closeMatchDateCheckModal() {
   if (modal) modal.remove();
 }
 
-// Загрузить турниры
+// Загрузить турниры (активные и завершившиеся — отдельными группами)
 async function loadEventsForCheck() {
   const select = document.getElementById('mdcEventSelect');
   if (!select) return;
@@ -74,13 +74,26 @@ async function loadEventsForCheck() {
     if (!response.ok) throw new Error('Ошибка загрузки турниров');
     const events = await response.json();
 
+    const active = (events || []).filter(e => e.status === 'active');
+    const finished = (events || []).filter(e => e.status !== 'active');
+
     select.innerHTML = '<option value="">Выберите турнир...</option>';
-    (events || []).forEach(event => {
-      const option = document.createElement('option');
-      option.value = event.id;
-      option.textContent = event.name;
-      select.appendChild(option);
-    });
+
+    const addGroup = (label, list) => {
+      if (list.length === 0) return;
+      const group = document.createElement('optgroup');
+      group.label = label;
+      list.forEach(event => {
+        const option = document.createElement('option');
+        option.value = event.id;
+        option.textContent = event.name;
+        group.appendChild(option);
+      });
+      select.appendChild(group);
+    };
+
+    addGroup('Активные турниры', active);
+    addGroup('Завершившиеся', finished);
   } catch (error) {
     console.error('Ошибка загрузки турниров:', error);
     select.innerHTML = '<option value="">Ошибка загрузки турниров</option>';
@@ -107,6 +120,7 @@ async function loadRoundsForCheck() {
     if (!response.ok) throw new Error('Ошибка загрузки туров');
     const rounds = await response.json();
 
+    // Бэкенд уже отдаёт туры в правильном порядке ("Тур 2" раньше "Тур 10")
     roundSelect.disabled = false;
     roundSelect.innerHTML = '<option value="">Все туры</option>';
     (rounds || []).forEach(round => {

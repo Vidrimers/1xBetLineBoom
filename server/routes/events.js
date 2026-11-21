@@ -3,6 +3,7 @@ import { db } from '../database/db.js';
 import { requireOwnership } from '../middleware/auth.js';
 import { notifyAdmin } from '../services/notificationService.js';
 import { writeBetLog } from '../utils/logger.js';
+import { sortRoundNames } from '../utils/helpers.js';
 import { sendTournamentAnnouncementToUsers, notifyTournamentToGroup } from '../services/notificationService.js';
 
 const router = Router();
@@ -1865,7 +1866,8 @@ router.get("/api/admin/events/:eventId/rounds", (req, res) => {
       )
       .all(eventId);
 
-    res.json(rounds.map((r) => r.round));
+    // "Тур N" — по номеру (Тур 2 раньше Тур 10), кубковые форматы без изменений
+    res.json(sortRoundNames(rounds.map((r) => r.round)));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
