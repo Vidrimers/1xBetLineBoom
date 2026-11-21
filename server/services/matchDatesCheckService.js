@@ -112,15 +112,44 @@ function teamPairKey(name1, name2, competitionCode) {
   return [n1, n2].sort().join("|");
 }
 
-// Поиск матча в API по паре команд (в обе стороны)
+// Поиск матча в API по паре команд. Пара играет дважды за сезон, поэтому
+// первый попавшийся — не тот: скоринг кандидатов — тур (+2), дом/гост (+1),
+// тай-брейк по ближайшей дате. Для кубковых форматов тур не парсится —
+// деградирует на дом/гост + дату.
 function findApiGame(dbMatch, apiGames, competitionCode) {
   const dbHome = normalizeTeamNameForAPI(translateTeamNameToEnglish(dbMatch.team1_name, competitionCode));
   const dbAway = normalizeTeamNameForAPI(translateTeamNameToEnglish(dbMatch.team2_name, competitionCode));
-  return apiGames.find((g) => {
+  const dbRoundNum = extractRoundNumber(dbMatch.round);
+  const dbTime = dbMatch.match_date ? new Date(dbMatch.match_date).getTime() : NaN;
+
+  let best = null;
+  let bestScore = -1;
+  let bestDateDiff = Infinity;
+
+  for (const g of apiGames) {
     const apiHome = normalizeTeamNameForAPI(translateTeamNameToEnglish(g.homeTeam.name, competitionCode));
     const apiAway = normalizeTeamNameForAPI(translateTeamNameToEnglish(g.awayTeam.name, competitionCode));
-    return (apiHome === dbHome && apiAway === dbAway) || (apiHome === dbAway && apiAway === dbHome);
-  });
+
+    const exact = apiHome === dbHome && apiAway === dbAway;
+    const reversed = apiHome === dbAway && apiAway === dbHome;
+    if (!exact && !reversed) continue;
+
+    let score = 0;
+    const gameRoundNum = extractRoundNumber(g.roundName);
+    if (dbRoundNum !== null && gameRoundNum !== null && dbRoundNum === gameRoundNum) score += 2;
+    if (exact) score += 1;
+
+    const apiTime = new Date(g.date).getTime();
+    const dateDiff = Number.isNaN(dbTime) || Number.isNaN(apiTime) ? Infinity : Math.abs(apiTime - dbTime);
+
+    if (score > bestScore || (score === bestScore && dateDiff < bestDateDiff)) {
+      best = g;
+      bestScore = score;
+      bestDateDiff = dateDiff;
+    }
+  }
+
+  return best;
 }
 
 function formatDateTime(dateStr) {
